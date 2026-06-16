@@ -13,6 +13,7 @@ export interface PrintTicketData {
   clientName?: string
   items: Array<{
     productName: string
+    variantLabel?: string
     saleMode: string
     quantity: number
     pricePerUnitUsd: number
@@ -20,6 +21,8 @@ export interface PrintTicketData {
   }>
   subtotalUsd: number
   discountUsd: number
+  ivaPct?: number
+  ivaUsd?: number
   totalUsd: number
   totalBs: number
   rateUsed: number
@@ -111,7 +114,7 @@ export function generarTicketPDF(data: PrintTicketData, format: '58mm' | '80mm' 
   `
 
   const items = data.items.map(i => [
-    `<div class="iname">${esc(i.productName)}</div>`,
+    `<div class="iname">${esc(i.productName)}${i.variantLabel ? ` · ${esc(i.variantLabel)}` : ''}</div>`,
     `<div class="row iprice">`,
     `  <span>${esc(fQty(i.quantity, i.saleMode))} &times; ${esc(fUSD(i.pricePerUnitUsd))}</span>`,
     `  <span>${esc(fBs(i.subtotalBs))}</span>`,
@@ -136,6 +139,9 @@ export function generarTicketPDF(data: PrintTicketData, format: '58mm' | '80mm' 
     `<hr/>`,
     data.discountUsd > 0
       ? `<div class="row"><span>Descuento</span><span>-${esc(fUSD(data.discountUsd))}</span></div>`
+      : '',
+    data.ivaUsd && data.ivaUsd > 0
+      ? `<div class="row"><span>IVA ${data.ivaPct ?? 0}%</span><span>+${esc(fUSD(data.ivaUsd))}</span></div>`
       : '',
     `<div class="row"><span>Total USD</span><span>${esc(fUSD(data.totalUsd))}</span></div>`,
     `<div class="total-bs">${esc(fBs(data.totalBs))}</div>`,

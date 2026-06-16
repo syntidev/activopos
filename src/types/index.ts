@@ -1,5 +1,12 @@
 export type { SessionPayload as SessionUser } from '@/lib/auth'
 
+export interface BusinessSettings {
+  pin?: string
+  ticket_format?: 'carta' | '80mm' | '58mm'
+  ticket_currency?: 'both' | 'usd' | 'bs'
+  hide_rate?: boolean
+}
+
 export type UserRole = 'super_admin' | 'admin' | 'cashier'
 
 export interface ClientRecord {
@@ -52,4 +59,71 @@ export interface AbonoForm {
   payment_method_id: string
   reference:         string
   notes:             string
+}
+
+export interface BusinessConfig {
+  id:           number
+  name:         string
+  legal_name:   string | null
+  rif:          string | null
+  logo_path:    string | null
+  address:      string | null
+  city:         string | null
+  state:        string | null
+  phone:        string | null
+  email:        string | null
+  theme:        string
+  theme_color:  string
+  rate_source:  string
+  current_rate: number
+}
+
+export interface TicketConfig {
+  ticket_prefix:   string
+  ticket_footer:   string | null
+  ticket_format:   'carta' | '80mm' | '58mm'
+  ticket_currency: 'both' | 'usd' | 'bs'
+  hide_rate:       boolean
+}
+
+export interface PaymentMethodRecord {
+  id:          number
+  business_id: number
+  name:        string
+  type:        string
+  is_active:   boolean
+  sort_order:  number
+}
+
+export interface ProductVariant {
+  id:           number
+  product_id:   number
+  tipo:         'talla' | 'color' | 'personalizado'
+  valor:        string
+  sku:          string | null
+  precio_extra: number
+  stock:        number
+  color_hex:    string | null
+  is_active:    boolean
+  sort_order:   number
+  created_at:   string
+}
+
+export interface IvaConfig {
+  iva_enabled: boolean
+  iva_pct:     number
+}
+
+export interface CatalogConfig {
+  catalog_plan: string | null
+  catalog_slug: string | null
+}
+
+export interface UserRecord {
+  id:         number
+  name:       string
+  email:      string | null
+  role:       UserRole
+  is_active:  boolean
+  created_at: string
 }

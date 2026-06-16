@@ -81,7 +81,7 @@ export function TicketPanel({
 
       {/* Totals */}
       <div className={styles.ticketTotals}>
-        {(discountPct > 0 || cargoPct > 0) && (
+        {(discountPct > 0 || cargoPct > 0 || ticket.iva_pct > 0) && (
           <div className={styles.totalBreakdown}>
             <div className={styles.totalRow}>
               <span>Subtotal</span>
@@ -97,6 +97,12 @@ export function TicketPanel({
               <div className={`${styles.totalRow} ${styles.totalRowCargo}`}>
                 <span>Cargo ({cargoPct}%)</span>
                 <span>+${totals.cargo_usd.toFixed(2)}</span>
+              </div>
+            )}
+            {ticket.iva_pct > 0 && (
+              <div className={`${styles.totalRow} ${styles.totalRowIva}`}>
+                <span>IVA ({ticket.iva_pct}%)</span>
+                <span>+${totals.iva_usd.toFixed(2)}</span>
               </div>
             )}
           </div>

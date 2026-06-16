@@ -487,6 +487,76 @@
   }
 }
 
+/* ── Sprint 5 additions ── */
+
+.tdCenter {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Unavailable row: dimmed */
+.trUnavailable .productName,
+.trUnavailable .priceRef,
+.trUnavailable .priceBs {
+  opacity: 0.45;
+}
+
+/* Product cell: now horizontal (thumb + info) */
+.productCell {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: var(--space-2-5) !important;
+}
+
+.productThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.productThumbEmpty {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.productInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.variantBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px var(--space-1-5);
+  border-radius: var(--radius-full);
+  background: var(--color-brand-subtle);
+  color: var(--color-brand);
+  border: 1px solid var(--color-brand-border);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* Availability toggle button off state */
+.rowActionOff {
+  color: var(--color-text-muted) !important;
+  opacity: 0.5;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; opacity: 0.55; }

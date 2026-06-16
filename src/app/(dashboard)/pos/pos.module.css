@@ -410,7 +410,8 @@
 }
 
 .totalRowDiscount { color: var(--color-success-text); }
-.totalRowCargo { color: var(--color-warning-text); }
+.totalRowCargo    { color: var(--color-warning-text); }
+.totalRowIva      { color: var(--color-info-text, var(--color-brand)); }
 
 .totalMain { display: flex; flex-direction: column; gap: var(--space-1); }
 

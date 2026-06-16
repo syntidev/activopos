@@ -12,6 +12,7 @@ import { CotizacionModal } from '@/components/pos/CotizacionModal'
 import { DescuentoModal } from '@/components/pos/DescuentoModal'
 import { CargoModal } from '@/components/pos/CargoModal'
 import { QtyInput } from '@/components/pos/QtyInput'
+import { VariantSelector } from '@/components/products/VariantSelector'
 import { useToast } from '@/components/ui'
 import type { ProductForPOS } from '@/lib/pos'
 import styles from './pos.module.css'
@@ -124,6 +125,17 @@ export default function POSPage() {
         currentPct={pos.ticket.cargo_global_pct}
         totalUsd={totals.subtotal_usd}
         onApply={pos.applyCargo}
+      />
+
+      <VariantSelector
+        open={pos.showVariantSelector}
+        onClose={pos.cancelVariantSelector}
+        product={pos.pendingVariantProduct}
+        onSelect={(variant) => {
+          if (pos.pendingVariantProduct) {
+            pos.addProductWithVariant(pos.pendingVariantProduct, variant)
+          }
+        }}
       />
     </div>
   )

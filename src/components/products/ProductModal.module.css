@@ -292,6 +292,226 @@
   opacity: 0.8;
 }
 
+/* ── Toggle icon (Globe, Layers) ── */
+.toggleIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Re-define fixedPriceLabel to allow icon+text alignment */
+.fixedPriceLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Image grid ── */
+.imgGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2-5);
+}
+
+.imgSlot {
+  position: relative;
+  height: 88px;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-2);
+  transition: border-color var(--transition-fast);
+}
+
+.imgSlot:hover { border-color: var(--color-brand); }
+
+.imgSlotFilled {
+  border-style: solid;
+  border-color: var(--color-border);
+}
+
+.imgFileInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.imgUploadBtn {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.imgUploadBtn:hover { color: var(--color-brand); }
+
+.imgPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.imgRemoveBtn {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.imgRemoveBtn:hover { background: rgba(0, 0, 0, 0.85); }
+
+.imgUploading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-brand);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinnerIcon { animation: spin 0.8s linear infinite; }
+
+/* ── Variants section ── */
+.variantsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2-5);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.presetGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1-5);
+}
+
+.presetBtn {
+  height: 28px;
+  padding: 0 var(--space-2-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.presetBtn:hover { border-color: var(--color-brand); color: var(--color-brand); }
+
+.presetBtnActive {
+  background: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.variantList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.variantRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-2-5);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.variantRowName {
+  flex: 1;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+}
+
+.variantRowExtra {
+  font-size: var(--text-xs);
+  color: var(--color-brand);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.variantRemoveBtn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.variantRemoveBtn:hover { color: var(--color-danger-text); background: var(--color-danger-subtle); }
+
+.variantAddRow {
+  display: grid;
+  grid-template-columns: 1fr 90px 36px;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.variantNameInput { font-size: var(--text-sm) !important; }
+.variantExtraInput { font-size: var(--text-sm) !important; }
+
+.variantAddBtn {
+  height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-brand);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.variantAddBtn:hover:not(:disabled) { opacity: 0.85; }
+.variantAddBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .pill,

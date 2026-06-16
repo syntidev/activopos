@@ -12,12 +12,14 @@ import {
   limpiarTicket,
   calcularTotales,
   agregarItem,
+  agregarItemConVariante,
   actualizarCantidad,
   eliminarItem,
   aplicarDescuentoGlobal,
   aplicarCargoGlobal,
   buildSalePayload,
 } from '@/lib/pos'
+import type { ProductVariant } from '@/components/products/VariantSelector'
 
 export interface PaymentMethod {
   id: number
@@ -28,33 +30,42 @@ export interface PaymentMethod {
 const FALLBACK_RATE = 36.50
 
 export function usePOS() {
-  const [rate, setRate] = useState(FALLBACK_RATE)
-  const [ticket, setTicket] = useState<TicketState>(() => limpiarTicket(FALLBACK_RATE))
-  const [search, setSearch] = useState('')
+  const [rate, setRate]         = useState(FALLBACK_RATE)
+  const [ivaPct, setIvaPct]     = useState(0)
+  const [ticket, setTicket]     = useState<TicketState>(() => limpiarTicket(FALLBACK_RATE, 0))
+  const [search, setSearch]     = useState('')
   const [searchResults, setSearchResults] = useState<ProductForPOS[]>([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [cajaStatus, setCajaStatus] = useState<'open' | 'closed' | 'loading'>('loading')
+  const [isSearching, setIsSearching]     = useState(false)
+  const [cajaStatus, setCajaStatus]       = useState<'open' | 'closed' | 'loading'>('loading')
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-  const [showCobro, setShowCobro] = useState(false)
-  const [showCliente, setShowCliente] = useState(false)
+
+  /* ── Modal visibility ── */
+  const [showCobro, setShowCobro]           = useState(false)
+  const [showCliente, setShowCliente]       = useState(false)
   const [showCotizacion, setShowCotizacion] = useState(false)
-  const [showDescuento, setShowDescuento] = useState(false)
-  const [showCargo, setShowCargo] = useState(false)
+  const [showDescuento, setShowDescuento]   = useState(false)
+  const [showCargo, setShowCargo]           = useState(false)
+
+  /* ── Variant selector state ── */
+  const [showVariantSelector, setShowVariantSelector]       = useState(false)
+  const [pendingVariantProduct, setPendingVariantProduct]   = useState<ProductForPOS | null>(null)
 
   const searchTimer = useRef<NodeJS.Timeout | null>(null)
 
   const fetchCajaStatus = useCallback(async () => {
-    const [rateRes, cajaRes, methodsRes] = await Promise.all([
+    const [rateRes, cajaRes, methodsRes, configRes] = await Promise.all([
       fetch('/api/rates/bcv').catch(() => null),
       fetch('/api/cash/status').catch(() => null),
       fetch('/api/payment-methods').catch(() => null),
+      fetch('/api/config/business').catch(() => null),
     ])
 
     if (rateRes?.ok) {
       const json = await rateRes.json().catch(() => null)
       if (json?.rate) {
-        setRate(json.rate)
-        setTicket(prev => ({ ...prev, rate: json.rate }))
+        const r = Number(json.rate)
+        setRate(r)
+        setTicket(prev => ({ ...prev, rate: r }))
       }
     }
 
@@ -69,9 +80,17 @@ export function usePOS() {
       const json = await methodsRes.json().catch(() => null)
       setPaymentMethods(json?.methods ?? [])
     }
+
+    if (configRes?.ok) {
+      const json = await configRes.json().catch(() => null)
+      if (json?.iva_enabled && json?.iva_pct) {
+        const pct = Number(json.iva_pct)
+        setIvaPct(pct)
+        setTicket(prev => ({ ...prev, iva_pct: pct }))
+      }
+    }
   }, [])
 
-  // Init: rate BCV + estado de caja + métodos de pago
   useEffect(() => {
     fetchCajaStatus()
   }, [fetchCajaStatus])
@@ -109,7 +128,26 @@ export function usePOS() {
   // ── Acciones síncronas del ticket ──────────────────────────────────────────
 
   const addProduct = useCallback((product: ProductForPOS, qty = 1) => {
+    if (product.has_variants) {
+      setPendingVariantProduct(product)
+      setShowVariantSelector(true)
+      return
+    }
     setTicket(prev => agregarItem(prev, product, qty))
+  }, [])
+
+  const addProductWithVariant = useCallback((
+    product: ProductForPOS,
+    variant: ProductVariant
+  ) => {
+    setTicket(prev => agregarItemConVariante(prev, product, variant))
+    setShowVariantSelector(false)
+    setPendingVariantProduct(null)
+  }, [])
+
+  const cancelVariantSelector = useCallback(() => {
+    setShowVariantSelector(false)
+    setPendingVariantProduct(null)
   }, [])
 
   const updateQty = useCallback((productId: number, qty: number) => {
@@ -131,15 +169,15 @@ export function usePOS() {
   const setClient = useCallback((client: ClientForPOS | null) => {
     setTicket(prev => ({
       ...prev,
-      client_id: client?.id ?? null,
-      client_name: client?.name ?? '',
+      client_id:    client?.id ?? null,
+      client_name:  client?.name ?? '',
       client_phone: client?.phone ?? '',
     }))
   }, [])
 
   const clearTicket = useCallback(() => {
-    setTicket(limpiarTicket(rate))
-  }, [rate])
+    setTicket(limpiarTicket(rate, ivaPct))
+  }, [rate, ivaPct])
 
   // ── Acciones asíncronas ────────────────────────────────────────────────────
 
@@ -151,7 +189,7 @@ export function usePOS() {
     options?: QuoteOptions
   ): Promise<SaleResult> => {
     const totals = calcularTotales(currentTicket)
-    const items = buildSalePayload(currentTicket, totals)
+    const items  = buildSalePayload(currentTicket, totals)
 
     const res = await fetch('/api/sales', {
       method: 'POST',
@@ -160,9 +198,10 @@ export function usePOS() {
         items,
         status,
         origin,
-        client_id: currentTicket.client_id ?? undefined,
+        client_id:   currentTicket.client_id ?? undefined,
         client_name: currentTicket.client_name || undefined,
-        notes: currentTicket.notes || options?.notes || undefined,
+        notes:       currentTicket.notes || options?.notes || undefined,
+        iva_pct:     currentTicket.iva_pct || undefined,
         payments,
       }),
     })
@@ -171,17 +210,17 @@ export function usePOS() {
     if (!res.ok) throw new Error(data.error ?? 'Error al procesar la venta')
 
     return {
-      id: data.sale.id,
+      id:            data.sale.id,
       ticket_number: data.sale.ticket_number,
-      status: data.sale.status,
-      total_usd: Number(data.sale.total_usd),
-      total_bs: Number(data.sale.total_bs),
+      status:        data.sale.status,
+      total_usd:     Number(data.sale.total_usd),
+      total_bs:      Number(data.sale.total_bs),
     }
   }
 
   const procesarPago = async (payments: PaymentInput[]): Promise<SaleResult> => {
     const result = await postSale(ticket, 'paid', 'pos', payments)
-    setTicket(limpiarTicket(rate))
+    setTicket(limpiarTicket(rate, ivaPct))
     setShowCobro(false)
     return result
   }
@@ -194,7 +233,7 @@ export function usePOS() {
 
   const venderACredito = async (): Promise<SaleResult> => {
     const result = await postSale(ticket, 'pending', 'credit')
-    setTicket(limpiarTicket(rate))
+    setTicket(limpiarTicket(rate, ivaPct))
     return result
   }
 
@@ -217,23 +256,23 @@ export function usePOS() {
   return {
     ticket,
     rate,
+    ivaPct,
     search,
     setSearch,
     searchResults,
     isSearching,
     cajaStatus,
     paymentMethods,
-    showCobro,
-    setShowCobro,
-    showCliente,
-    setShowCliente,
-    showCotizacion,
-    setShowCotizacion,
-    showDescuento,
-    setShowDescuento,
-    showCargo,
-    setShowCargo,
+    showCobro,      setShowCobro,
+    showCliente,    setShowCliente,
+    showCotizacion, setShowCotizacion,
+    showDescuento,  setShowDescuento,
+    showCargo,      setShowCargo,
+    showVariantSelector,
+    pendingVariantProduct,
     addProduct,
+    addProductWithVariant,
+    cancelVariantSelector,
     updateQty,
     removeItem,
     applyDiscount,

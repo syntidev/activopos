@@ -12,6 +12,9 @@ import {
   SlidersHorizontal,
   BarChart2,
   FileDown,
+  Eye,
+  EyeOff,
+  Layers,
 } from 'lucide-react'
 import { ProductModal } from '@/components/products/ProductModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
@@ -40,6 +43,9 @@ interface Product {
   min_stock: number | null
   category: Category | null
   category_id: number | null
+  image_path?: string | null
+  is_available?: boolean
+  has_variants?: boolean
 }
 
 /* ── Helpers ── */
@@ -209,12 +215,16 @@ export default function ProductosPage() {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name:                data.name,
-        barcode:             data.barcode || null,
-        sale_mode:           data.saleMode,
-        category_id:         data.categoryId,
-        cost_per_unit_usd:   data.costPerUnitUsd,
-        price_per_unit_usd:  data.pricePerUnitUsd,
+        name:               data.name,
+        barcode:            data.barcode || null,
+        sale_mode:          data.saleMode,
+        category_id:        data.categoryId,
+        cost_per_unit_usd:  data.costPerUnitUsd,
+        price_per_unit_usd: data.pricePerUnitUsd,
+        is_available:       data.isAvailable,
+        catalog_visible:    data.catalogVisible,
+        has_variants:       data.hasVariants,
+        images:             data.images,
         ...(isEdit ? {} : { stock_quantity: data.stockInitial }),
       }),
     })
@@ -278,6 +288,22 @@ export default function ProductosPage() {
   }, [fetchProducts])
 
   /* ── Open edit modal ── */
+  const handleToggleAvailable = useCallback(async (product: Product) => {
+    const next = !(product.is_available ?? true)
+    try {
+      await fetch(`/api/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_available: next }),
+      })
+      setProducts(prev => prev.map(p =>
+        p.id === product.id ? { ...p, is_available: next } : p
+      ))
+    } catch {
+      // Keep current state on error
+    }
+  }, [])
+
   const openEdit = useCallback((product: Product) => {
     setEditProduct({
       id:                 product.id,
@@ -287,6 +313,8 @@ export default function ProductosPage() {
       category_id:        product.category_id,
       cost_per_unit_usd:  product.cost_per_unit_usd,
       price_per_unit_usd: product.price_per_unit_usd,
+      is_available:       product.is_available,
+      has_variants:       product.has_variants,
     })
     setShowProductModal(true)
   }, [])
@@ -394,6 +422,9 @@ export default function ProductosPage() {
                 <th className={styles.th}>Precio (Bs)</th>
                 <th className={styles.th}>Stock</th>
                 <th className={styles.th}>Utilidad</th>
+                <th className={`${styles.th} ${styles.tdCenter}`}>
+                  <Eye size={14} aria-hidden="true" />
+                </th>
                 <th className={`${styles.th} ${styles.tdRight}`}>
                   <SlidersHorizontal size={14} aria-hidden="true" />
                 </th>
@@ -404,7 +435,7 @@ export default function ProductosPage() {
                 <TableSkeleton />
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={7}>
                     <div className={styles.emptyState}>
                       <div className={styles.emptyIcon}>
                         <Package size={24} aria-hidden="true" />
@@ -447,20 +478,43 @@ export default function ProductosPage() {
                     : null
 
                   return (
-                    <tr key={product.id} className={styles.tr}>
+                    <tr
+                      key={product.id}
+                      className={`${styles.tr} ${(product.is_available === false) ? styles.trUnavailable : ''}`}
+                    >
                       {/* PRODUCTO */}
                       <td className={styles.td}>
                         <div className={styles.productCell}>
-                          <span className={styles.productName}>{product.name}</span>
-                          <div className={styles.productMeta}>
-                            {product.category && catBadgeClass && (
-                              <span className={`${styles.categoryBadge} ${catBadgeClass}`}>
-                                {product.category.name}
+                          {product.image_path ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={product.image_path}
+                              alt={product.name}
+                              className={styles.productThumb}
+                            />
+                          ) : (
+                            <div className={styles.productThumbEmpty}>
+                              <Package size={14} aria-hidden="true" />
+                            </div>
+                          )}
+                          <div className={styles.productInfo}>
+                            <span className={styles.productName}>{product.name}</span>
+                            <div className={styles.productMeta}>
+                              {product.category && catBadgeClass && (
+                                <span className={`${styles.categoryBadge} ${catBadgeClass}`}>
+                                  {product.category.name}
+                                </span>
+                              )}
+                              <span className={styles.saleModeTag}>
+                                {SALE_MODE_LABEL[product.sale_mode]}
                               </span>
-                            )}
-                            <span className={styles.saleModeTag}>
-                              {SALE_MODE_LABEL[product.sale_mode]}
-                            </span>
+                              {product.has_variants && (
+                                <span className={styles.variantBadge}>
+                                  <Layers size={10} aria-hidden="true" />
+                                  Variantes
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -516,6 +570,21 @@ export default function ProductosPage() {
                             {fmtUsd(utility)}
                           </span>
                         )}
+                      </td>
+
+                      {/* DISPONIBLE */}
+                      <td className={`${styles.td} ${styles.tdCenter}`}>
+                        <button
+                          type="button"
+                          className={`${styles.rowActionBtn} ${(product.is_available === false) ? styles.rowActionOff : ''}`}
+                          title={product.is_available === false ? 'Activar producto' : 'Desactivar producto'}
+                          aria-label={product.is_available === false ? `Activar ${product.name}` : `Desactivar ${product.name}`}
+                          onClick={() => handleToggleAvailable(product)}
+                        >
+                          {product.is_available === false
+                            ? <EyeOff size={15} aria-hidden="true" />
+                            : <Eye size={15} aria-hidden="true" />}
+                        </button>
                       </td>
 
                       {/* ACCIONES */}

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       data: {
         sale_id:           data.sale_id,
         payment_method_id: data.payment_method_id,
-        amount_usd:        amountBs / rateUsed, // recalculate for precision
+        amount_usd:        data.amount_usd,
         amount_bs:         amountBs,
         rate_used:         rateUsed,
         reference:         data.reference ?? null,
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       where: { sale_id: data.sale_id },
       _sum: { amount_usd: true },
     })
-    if (Number(totalPaid._sum.amount_usd ?? 0) >= Number(sale.total_usd)) {
+    if (Number(totalPaid._sum.amount_usd ?? 0) >= Number(sale.total_usd) - 0.001) {
       await prisma.sale.update({
         where: { id: data.sale_id },
         data:  { status: 'paid', sold_at: new Date() },

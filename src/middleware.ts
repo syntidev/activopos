@@ -35,6 +35,16 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // Onboarding redirect — admin only, from dashboard root
+  if (
+    session.role === 'admin' &&
+    session.onboardingCompleted === false &&
+    (pathname === '/' || pathname === '/escritorio') &&
+    !pathname.startsWith('/onboarding')
+  ) {
+    return NextResponse.redirect(new URL('/onboarding', req.url))
+  }
+
   const res = NextResponse.next()
   res.headers.set('x-user-id', String(session.userId))
   res.headers.set('x-business-id', String(session.businessId))

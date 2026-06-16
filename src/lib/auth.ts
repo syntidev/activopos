@@ -13,6 +13,7 @@ export interface SessionPayload {
   businessId: number
   role: 'super_admin' | 'admin' | 'cashier'
   name: string
+  onboardingCompleted?: boolean
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {

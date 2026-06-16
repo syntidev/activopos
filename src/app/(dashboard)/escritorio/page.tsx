@@ -11,6 +11,8 @@ import {
   Minus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import DashboardCharts    from './DashboardCharts'
+import DashboardOperativo from './DashboardOperativo'
 import styles from './escritorio.module.css'
 
 export const metadata = {
@@ -138,39 +140,6 @@ async function KpiCards({ businessId }: { businessId: number }) {
   )
 }
 
-function SectionSkeletons() {
-  return (
-    <div className={styles.sectionsGrid}>
-      <div className={styles.sectionCard}>
-        <div className={styles.sectionHeader}>
-          <h3 className={styles.sectionTitle}>Ventas recientes</h3>
-        </div>
-        <div className={styles.sectionBody}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className={styles.rowSkeleton}>
-              <div className={`${styles.skeleton} ${styles.skeletonRowLabel}`} />
-              <div className={`${styles.skeleton} ${styles.skeletonRowValue}`} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className={styles.sectionCard}>
-        <div className={styles.sectionHeader}>
-          <h3 className={styles.sectionTitle}>Stock bajo</h3>
-        </div>
-        <div className={styles.sectionBody}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className={styles.rowSkeleton}>
-              <div className={`${styles.skeleton} ${styles.skeletonRowLabel}`} />
-              <div className={`${styles.skeleton} ${styles.skeletonRowBadge}`} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default async function EscritorioPage() {
   const session  = await getSession()
@@ -200,7 +169,8 @@ export default async function EscritorioPage() {
         <KpiCards businessId={session?.businessId ?? 0} />
       </Suspense>
 
-      <SectionSkeletons />
+      <DashboardCharts />
+      <DashboardOperativo />
     </div>
   )
 }

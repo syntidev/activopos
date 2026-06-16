@@ -1,0 +1,363 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ── Enums ──────────────────────────────────────────────
+
+enum Role {
+  super_admin
+  admin
+  cashier
+}
+
+enum SaleMode {
+  weight
+  unit
+  service
+}
+
+enum SaleStatus {
+  quote
+  pending
+  paid
+  cancelled
+}
+
+enum SaleOrigin {
+  pos
+  quote
+  credit
+}
+
+enum MoveType {
+  in
+  out
+}
+
+enum PmType {
+  cash
+  transfer
+  zelle
+  binance
+  card
+  other
+}
+
+// ── Modelos ────────────────────────────────────────────
+
+model Business {
+  id                   Int      @id @default(autoincrement())
+  name                 String   @db.VarChar(255)
+  legal_name           String?  @db.VarChar(255)
+  rif                  String?  @db.VarChar(20)
+  logo_path            String?
+  address              String?
+  city                 String?
+  state                String?
+  phone                String?
+  email                String?
+  theme                String   @default("dark")
+  theme_color          String   @default("#2563EB")
+  ticket_prefix        String   @default("ACT") @db.VarChar(10)
+  ticket_footer        String?  @db.Text
+  currency_default     String   @default("USD")
+  rate_source          String   @default("bcv")
+  subscription_active  Boolean  @default(true)
+  onboarding_completed Boolean  @default(false)
+  active               Boolean  @default(true)
+  settings             Json?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  users            User[]
+  products         Product[]
+  categories       Category[]
+  sales            Sale[]
+  cash_registers   CashRegister[]
+  clients          Client[]
+  payment_methods  PaymentMethod[]
+  activity_logs    ActivityLog[]
+  inventory_entries InventoryEntry[]
+
+  @@map("businesses")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  business_id  Int
+  name         String   @db.VarChar(255)
+  email        String?  @db.VarChar(255)
+  password     String   @db.VarChar(255)
+  role         Role     @default(cashier)
+  is_active    Boolean  @default(true)
+  access_start String?  @db.VarChar(5)
+  access_end   String?  @db.VarChar(5)
+  access_days  Json?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  business      Business      @relation(fields: [business_id], references: [id])
+  sales         Sale[]
+  cash_registers CashRegister[]
+  activity_logs ActivityLog[]
+  cash_movements CashMovement[]
+  inventory_entries InventoryEntry[]
+
+  @@unique([business_id, email])
+  @@map("users")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  name        String   @db.VarChar(80)
+  color       String?  @db.VarChar(20)
+  sort_order  Int      @default(0)
+  active      Boolean  @default(true)
+
+  business Business  @relation(fields: [business_id], references: [id])
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id                  Int      @id @default(autoincrement())
+  business_id         Int
+  category_id         Int?
+  name                String   @db.VarChar(120)
+  barcode             String?  @db.VarChar(50)
+  sku                 String?  @db.VarChar(50)
+  description         String?  @db.Text
+  sale_mode           SaleMode @default(unit)
+  product_type        String   @default("physical")
+  base_unit_label     String   @default("und") @db.VarChar(10)
+  price_per_kg_usd    Decimal? @db.Decimal(10, 2)
+  price_per_unit_usd  Decimal? @db.Decimal(10, 2)
+  cost_per_unit_usd   Decimal? @db.Decimal(10, 4)
+  min_stock           Decimal  @default(0) @db.Decimal(8, 3)
+  image_path          String?
+  is_favorite         Boolean  @default(false)
+  active              Boolean  @default(true)
+  sort_order          Int      @default(0)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  business          Business         @relation(fields: [business_id], references: [id])
+  category          Category?        @relation(fields: [category_id], references: [id])
+  inventory_entries InventoryEntry[]
+  sale_items        SaleItem[]
+
+  @@map("products")
+}
+
+model InventoryEntry {
+  id                Int      @id @default(autoincrement())
+  business_id       Int
+  product_id        Int
+  quantity          Decimal  @db.Decimal(10, 3)
+  waste             Decimal  @default(0) @db.Decimal(10, 3)
+  cost_per_unit_usd Decimal? @db.Decimal(10, 4)
+  supplier          String?  @db.VarChar(120)
+  notes             String?  @db.Text
+  created_by        Int
+  entered_at        DateTime @default(now())
+  created_at        DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+  product  Product  @relation(fields: [product_id], references: [id])
+  user     User     @relation(fields: [created_by], references: [id])
+
+  @@map("inventory_entries")
+}
+
+model Client {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  name        String   @db.VarChar(120)
+  phone       String?  @db.VarChar(20)
+  email       String?  @db.VarChar(120)
+  cedula      String?  @db.VarChar(15)
+  notes       String?  @db.Text
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  business Business @relation(fields: [business_id], references: [id])
+  sales    Sale[]
+
+  @@map("clients")
+}
+
+model PaymentMethod {
+  id          Int     @id @default(autoincrement())
+  business_id Int
+  name        String  @db.VarChar(60)
+  type        PmType  @default(cash)
+  is_active   Boolean @default(true)
+  sort_order  Int     @default(0)
+
+  business      Business       @relation(fields: [business_id], references: [id])
+  sale_payments SalePayment[]
+  sale_abonos   SaleAbono[]
+  cash_movements CashMovement[]
+
+  @@map("payment_methods")
+}
+
+model Sale {
+  id              Int        @id @default(autoincrement())
+  business_id     Int
+  cashier_id      Int
+  ticket_number   String     @db.VarChar(20)
+  status          SaleStatus @default(pending)
+  origin          SaleOrigin @default(pos)
+  total_usd       Decimal    @db.Decimal(10, 2)
+  total_bs        Decimal    @db.Decimal(12, 2)
+  rate_used       Decimal    @db.Decimal(10, 4)
+  client_id       Int?
+  client_name     String?    @db.VarChar(120)
+  client_phone    String?    @db.VarChar(20)
+  notes           String?    @db.Text
+  accounting_date DateTime?  @db.Date
+  sold_at         DateTime?
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  business  Business      @relation(fields: [business_id], references: [id])
+  cashier   User          @relation(fields: [cashier_id], references: [id])
+  client    Client?       @relation(fields: [client_id], references: [id])
+  items     SaleItem[]
+  payments  SalePayment[]
+  abonos    SaleAbono[]
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id                  Int     @id @default(autoincrement())
+  sale_id             Int
+  product_id          Int
+  product_name        String  @db.VarChar(120)
+  sale_mode           String  @db.VarChar(10)
+  unit_label          String  @db.VarChar(10)
+  quantity            Decimal @db.Decimal(10, 3)
+  price_per_unit_usd  Decimal @db.Decimal(10, 4)
+  subtotal_usd        Decimal @db.Decimal(10, 2)
+  subtotal_bs         Decimal @db.Decimal(12, 2)
+  rate_used           Decimal @db.Decimal(10, 4)
+  discount_usd        Decimal @default(0) @db.Decimal(10, 2)
+
+  sale    Sale    @relation(fields: [sale_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
+
+  @@map("sale_items")
+}
+
+model SalePayment {
+  id                Int      @id @default(autoincrement())
+  sale_id           Int
+  payment_method_id Int
+  amount_bs         Decimal  @db.Decimal(12, 2)
+  amount_usd        Decimal  @db.Decimal(10, 2)
+  reference         String?  @db.VarChar(100)
+  rate_used         Decimal  @db.Decimal(10, 4)
+  created_at        DateTime @default(now())
+
+  sale           Sale          @relation(fields: [sale_id], references: [id])
+  payment_method PaymentMethod @relation(fields: [payment_method_id], references: [id])
+
+  @@map("sale_payments")
+}
+
+model SaleAbono {
+  id                Int      @id @default(autoincrement())
+  sale_id           Int
+  payment_method_id Int
+  amount_bs         Decimal  @db.Decimal(12, 2)
+  amount_usd        Decimal  @db.Decimal(10, 2)
+  reference         String?  @db.VarChar(100)
+  rate_used         Decimal  @db.Decimal(10, 4)
+  notes             String?  @db.Text
+  created_by        Int
+  created_at        DateTime @default(now())
+
+  sale           Sale          @relation(fields: [sale_id], references: [id])
+  payment_method PaymentMethod @relation(fields: [payment_method_id], references: [id])
+
+  @@map("sale_abonos")
+}
+
+model CashRegister {
+  id                   Int       @id @default(autoincrement())
+  business_id          Int
+  cashier_id           Int
+  opening_amount_bs    Decimal   @default(0) @db.Decimal(12, 2)
+  opening_amount_usd   Decimal   @default(0) @db.Decimal(10, 2)
+  closing_amount_bs    Decimal?  @db.Decimal(12, 2)
+  closing_amount_usd   Decimal?  @db.Decimal(10, 2)
+  rate_at_open         Decimal   @db.Decimal(10, 4)
+  opened_at            DateTime  @default(now())
+  closed_at            DateTime?
+  close_notes          String?   @db.Text
+
+  business   Business       @relation(fields: [business_id], references: [id])
+  cashier    User           @relation(fields: [cashier_id], references: [id])
+  movements  CashMovement[]
+
+  @@map("cash_registers")
+}
+
+model CashMovement {
+  id                Int      @id @default(autoincrement())
+  business_id       Int
+  cash_register_id  Int
+  payment_method_id Int?
+  type              MoveType
+  amount_bs         Decimal  @db.Decimal(12, 2)
+  amount_usd        Decimal  @db.Decimal(10, 2)
+  rate_used         Decimal  @db.Decimal(10, 4)
+  concept           String   @db.VarChar(150)
+  created_by        Int
+  created_at        DateTime @default(now())
+
+  cash_register  CashRegister   @relation(fields: [cash_register_id], references: [id])
+  payment_method PaymentMethod? @relation(fields: [payment_method_id], references: [id])
+  user           User           @relation(fields: [created_by], references: [id])
+
+  @@map("cash_movements")
+}
+
+model DollarRate {
+  id         Int      @id @default(autoincrement())
+  rate       Decimal  @db.Decimal(10, 4)
+  source     String   @default("bcv") @db.VarChar(20)
+  is_active  Boolean  @default(true)
+  fetched_at DateTime @default(now())
+  created_at DateTime @default(now())
+
+  @@map("dollar_rates")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  user_id     Int
+  action      String   @db.VarChar(60)
+  model_type  String?  @db.VarChar(60)
+  model_id    Int?
+  reason      String?  @db.Text
+  old_values  Json?
+  new_values  Json?
+  ip_address  String?  @db.VarChar(45)
+  created_at  DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+  user     User     @relation(fields: [user_id], references: [id])
+
+  @@map("activity_logs")
+}

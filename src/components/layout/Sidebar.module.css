@@ -1,0 +1,285 @@
+/* ── Sidebar base ── */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100dvh;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: var(--z-sticky);
+  will-change: width;
+}
+
+/* ── Mobile: hidden by default, controlled by Framer Motion ── */
+.sidebarMobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px !important; /* override Framer Motion width on mobile */
+  height: 100dvh;
+  z-index: var(--z-modal);
+}
+
+/* ── Inner layout ── */
+.inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 220px; /* fixed inner width, sidebar clips via overflow:hidden */
+  overflow: hidden;
+}
+
+/* ── Logo area ── */
+.logoWrapper {
+  padding: var(--space-4) var(--space-3) var(--space-2);
+  flex-shrink: 0;
+  min-height: 56px; /* matches header height */
+  display: flex;
+  align-items: center;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  overflow: hidden;
+}
+
+.logoDot {
+  font-size: var(--text-xl);
+  color: var(--color-brand);
+  flex-shrink: 0;
+  line-height: 1;
+  width: 20px;
+  text-align: center;
+}
+
+.logoText {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-0-5);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.logoActivo {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-primary);
+}
+
+.logoPos {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-brand);
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background-color: var(--sidebar-border);
+  margin: 0 var(--space-3) var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ── Navigation ── */
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-1) 0 var(--space-2);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.nav::-webkit-scrollbar {
+  width: 3px;
+}
+
+.nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+/* ── Nav group ── */
+.group {
+  margin-bottom: var(--space-1);
+}
+
+.groupLabel {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-widest);
+  color: var(--sidebar-group-label);
+  padding: var(--space-2-5) var(--space-4) var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+}
+
+.groupList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── Nav item ── */
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  height: var(--touch-min);
+  padding: 0 var(--space-3);
+  color: var(--sidebar-text);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  position: relative;
+}
+
+.navItem:hover {
+  background-color: var(--sidebar-item-bg-hover);
+  color: var(--sidebar-text-hover);
+}
+
+.navItem:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+/* ── Active state ── */
+.navItemActive {
+  color: var(--sidebar-text-active);
+  background-color: var(--sidebar-item-bg-active);
+  border-left-color: var(--sidebar-item-border-active);
+}
+
+.navItemActive:hover {
+  background-color: var(--sidebar-item-bg-active);
+  color: var(--sidebar-text-active);
+}
+
+/* ── Icon wrapper ── */
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+}
+
+/* ── Nav label (animated) ── */
+.navLabel {
+  overflow: hidden;
+  white-space: nowrap;
+  display: block;
+}
+
+/* ── Footer ── */
+.sidebarFooter {
+  flex-shrink: 0;
+  border-top: 1px solid var(--sidebar-border);
+  padding: var(--space-2) 0;
+}
+
+/* ── BCV rate display ── */
+.bcvRate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-4);
+  height: var(--touch-min);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.bcvRateCollapsed {
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.bcvLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--sidebar-group-label);
+  flex-shrink: 0;
+}
+
+.bcvValue {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--sidebar-rate-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* ── Logout button ── */
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  height: var(--touch-min);
+  width: 100%;
+  padding: 0 var(--space-3);
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.logoutBtn:hover {
+  background-color: var(--color-danger-subtle);
+  color: var(--color-danger-hover);
+}
+
+.logoutBtn:focus-visible {
+  outline: 2px solid var(--color-danger);
+  outline-offset: -2px;
+}
+
+/* ── Responsive visibility ── */
+@media (max-width: 1023px) {
+  /* Hide fixed desktop sidebar on mobile */
+  .sidebar:not(.sidebarMobile) {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Prevent mobile drawer from appearing on desktop */
+  .sidebarMobile {
+    display: none !important;
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .navItem,
+  .logoutBtn {
+    transition: none;
+  }
+}

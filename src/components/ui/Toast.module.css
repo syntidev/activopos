@@ -1,0 +1,89 @@
+.region {
+  position: fixed;
+  top: var(--space-5);
+  right: var(--space-5);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  pointer-events: none;
+  width: 340px;
+  max-width: calc(100vw - var(--space-8));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: var(--border-width-thin) solid transparent;
+  box-shadow: var(--shadow-lg);
+  pointer-events: all;
+  backdrop-filter: blur(8px);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.message {
+  flex: 1;
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+.dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.dismiss:hover {
+  color: var(--color-text-primary);
+  background-color: rgba(255,255,255,0.08);
+}
+
+.dismiss:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Variants ── */
+.variant-success {
+  background-color: var(--color-surface);
+  border-color: var(--color-success-border);
+}
+.variant-success .icon { color: var(--color-success); }
+
+.variant-error {
+  background-color: var(--color-surface);
+  border-color: var(--color-danger-border);
+}
+.variant-error .icon { color: var(--color-danger); }
+
+.variant-warning {
+  background-color: var(--color-surface);
+  border-color: var(--color-warning-border);
+}
+.variant-warning .icon { color: var(--color-warning); }
+
+.variant-info {
+  background-color: var(--color-surface);
+  border-color: var(--color-info-border);
+}
+.variant-info .icon { color: var(--color-info); }

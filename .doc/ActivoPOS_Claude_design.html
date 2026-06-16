@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .activo-root{
+    --color-bg:#0D1117; --color-surface:#161B22; --color-surface-2:#1C2128; --color-surface-3:#21262D;
+    --color-brand:#2563EB; --color-brand-hover:#3B82F6; --color-brand-subtle:rgba(37,99,235,0.15);
+    --color-text-primary:#F0F6FC; --color-text-secondary:#8B949E; --color-text-muted:#6E7681;
+    --color-border:#30363D; --color-success:#1D9E75; --color-danger:#EF4444; --color-warning:#D97706; --color-info:#1F9CF0;
+    --kpi-bg:#161B22; --kpi-border:#30363D; --header-bg:rgba(13,17,23,0.72); --header-border:#30363D;
+    --sidebar-bg:#0D1117; --sidebar-text:#8B949E; --sidebar-text-active:#F0F6FC;
+    --sidebar-item-bg-active:rgba(37,99,235,0.15); --sidebar-item-border-active:#2563EB;
+    --sidebar-item-bg-hover:rgba(255,255,255,0.045); --sidebar-group-label:#6E7681; --sidebar-rate-text:#1D9E75;
+  }
+  .activo-root[data-theme=light]{
+    --color-bg:#F6F8FA; --color-surface:#FFFFFF; --color-surface-2:#F1F4F8; --color-surface-3:#E7ECF2;
+    --color-brand:#2563EB; --color-brand-hover:#1D4FD7; --color-brand-subtle:rgba(37,99,235,0.10);
+    --color-text-primary:#1F2328; --color-text-secondary:#59636E; --color-text-muted:#9AA5B1;
+    --color-border:#D8DEE4; --color-success:#1A7F4B; --color-danger:#CF222E; --color-warning:#9A6700; --color-info:#0969DA;
+    --kpi-bg:#FFFFFF; --kpi-border:#D8DEE4; --header-bg:rgba(255,255,255,0.72); --header-border:#D8DEE4;
+  }
+  .activo-root[data-accent=violet]{ --color-brand:#7C3AED; --color-brand-hover:#8B5CF6; --color-brand-subtle:rgba(124,58,237,0.16); --sidebar-item-bg-active:rgba(124,58,237,0.16); --sidebar-item-border-active:#7C3AED; }
+  .activo-root[data-accent=emerald]{ --color-brand:#059669; --color-brand-hover:#10B981; --color-brand-subtle:rgba(5,150,105,0.16); --sidebar-item-bg-active:rgba(5,150,105,0.16); --sidebar-item-border-active:#059669; }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+  .activo-root ::-webkit-scrollbar{width:10px;height:10px}
+  .activo-root ::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:8px}
+  .activo-root ::-webkit-scrollbar-track{background:transparent}
+  @media (prefers-reduced-motion: reduce){.activo-root *{animation-duration:0.001ms!important;transition-duration:0.001ms!important}}
+</style>
+</helmet>
+
+<div class="activo-root" data-theme="{{ theme }}" data-accent="{{ accentAttr }}" style="font-family:'Inter',system-ui,sans-serif; height:100dvh; width:100%; overflow:hidden; background:var(--color-bg); color:var(--color-text-primary); -webkit-font-smoothing:antialiased;">
+
+  <!-- ============ LOGIN ============ -->
+  <sc-if value="{{ showLogin }}" hint-placeholder-val="{{ true }}">
+    <div style="min-height:100dvh; display:flex; align-items:stretch; justify-content:center; background:var(--color-bg);">
+
+      <sc-if value="{{ isSplit }}">
+        <div style="flex:1; max-width:50%; display:flex; flex-direction:column; justify-content:space-between; padding:48px; background:var(--color-brand); color:#fff;">
+          <div style="display:flex; align-items:center; font-size:22px; font-weight:700; letter-spacing:-0.01em;">
+            <span style="color:#fff;">Activo</span><span style="margin:0 3px; font-size:13px; opacity:0.85;">●</span><span style="color:#fff;">POS</span>
+          </div>
+          <div>
+            <h2 style="font-size:30px; font-weight:700; line-height:1.2; margin:0 0 16px; letter-spacing:-0.02em; max-width:380px;">El POS para negocios que andan activos</h2>
+            <div style="display:flex; flex-direction:column; gap:14px; margin-top:28px; max-width:340px;">
+              <div style="display:flex; align-items:center; gap:10px; font-size:14px; opacity:0.92;">{{ checkIcon }}<span>Ventas en segundos, sin fricción</span></div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:14px; opacity:0.92;">{{ checkIcon2 }}<span>Tasa BCV sincronizada al instante</span></div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:14px; opacity:0.92;">{{ checkIcon3 }}<span>Reportes y utilidad en tiempo real</span></div>
+            </div>
+          </div>
+          <p style="font-size:12px; opacity:0.7; margin:0;">ActivoPOS © 2026 · SYNTIdev</p>
+        </div>
+      </sc-if>
+
+      <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:24px;">
+        <div style="width:100%; max-width:400px;">
+          <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:16px; padding:32px;">
+            <div style="display:flex; align-items:center; font-size:24px; font-weight:700; letter-spacing:-0.01em;">
+              <span style="color:var(--color-text-primary);">Activo</span><span style="color:var(--color-brand); margin:0 3px; font-size:13px;">●</span><span style="color:var(--color-brand);">POS</span>
+            </div>
+            <p style="color:var(--color-text-muted); font-size:13px; margin:8px 0 0;">El POS para negocios que andan activos</p>
+
+            <form onSubmit="{{ onSubmit }}" style="display:flex; flex-direction:column; gap:16px; margin-top:28px;">
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:13px; font-weight:500; color:var(--color-text-secondary);">Correo</label>
+                <input ref="{{ emailRef }}" type="email" defaultValue="admin@activopos.com" placeholder="tu@correo.com" style="height:44px; padding:0 12px; background:var(--color-surface-2); border:1px solid var(--color-border); border-radius:8px; color:var(--color-text-primary); font-size:14px; outline:none; width:100%; font-family:inherit;" style-focus="border-color:var(--color-brand); box-shadow:0 0 0 3px var(--color-brand-subtle)" />
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <label style="font-size:13px; font-weight:500; color:var(--color-text-secondary);">Contraseña</label>
+                <div style="position:relative;">
+                  <input ref="{{ passwordRef }}" type="{{ passwordType }}" defaultValue="demo1234" placeholder="••••••••" style="height:44px; padding:0 44px 0 12px; background:var(--color-surface-2); border:1px solid var(--color-border); border-radius:8px; color:var(--color-text-primary); font-size:14px; outline:none; width:100%; font-family:inherit;" style-focus="border-color:var(--color-brand); box-shadow:0 0 0 3px var(--color-brand-subtle)" />
+                  <button type="button" onClick="{{ onToggleEye }}" aria-label="Mostrar contraseña" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); height:36px; width:36px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; color:var(--color-text-secondary); cursor:pointer; border-radius:6px;" style-hover="color:var(--color-text-primary)">{{ eyeIcon }}</button>
+                </div>
+              </div>
+
+              <sc-if value="{{ loginError }}">
+                <div style="display:flex; align-items:center; gap:8px; color:var(--color-danger); font-size:13px; margin-top:-2px;">{{ alertIcon }}<span>{{ loginError }}</span></div>
+              </sc-if>
+
+              <button type="submit" disabled="{{ loading }}" style="height:44px; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; background:var(--color-brand); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:transform 100ms ease-out, background 100ms ease-out; margin-top:6px;" style-hover="background:var(--color-brand-hover); transform:translateY(-1px)">
+                <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">{{ spinner }}<span>Ingresando...</span></sc-if>
+                <sc-if value="{{ notLoading }}" hint-placeholder-val="{{ true }}"><span>Ingresar</span></sc-if>
+              </button>
+            </form>
+          </div>
+          <p style="text-align:center; color:var(--color-text-muted); font-size:12px; margin:20px 0 0;">ActivoPOS © 2026 · SYNTIdev</p>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ APP ============ -->
+  <sc-if value="{{ showApp }}">
+    <div style="height:100dvh; display:flex; overflow:hidden; position:relative;">
+
+      <sc-if value="{{ showOverlay }}">
+        <div onClick="{{ onCloseDrawer }}" style="position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:45; animation:fadeIn .2s ease-out;"></div>
+      </sc-if>
+
+      <!-- SIDEBAR -->
+      <aside style="{{ sidebarStyle }}">
+        <div style="display:flex; align-items:center; height:56px; padding:0 18px; flex-shrink:0; gap:10px; border-bottom:1px solid var(--color-border);">
+          <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:16px; font-weight:700; letter-spacing:-0.01em;"><span style="color:#fff;">Activo</span><span style="color:var(--color-brand); margin:0 2px; font-size:10px;">●</span><span style="color:var(--color-brand);">POS</span></div>
+          </sc-if>
+          <sc-if value="{{ collapsedLogo }}">
+            <div style="width:32px; height:32px; border-radius:8px; background:var(--color-brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; margin:0 auto;">A</div>
+          </sc-if>
+        </div>
+
+        <nav style="flex:1; overflow-y:auto; overflow-x:hidden; padding:8px; display:flex; flex-direction:column; gap:1px;">
+          <sc-for list="{{ navRows }}" as="row" hint-placeholder-count="14">
+            <sc-if value="{{ row.isDivider }}"><div style="height:1px; background:var(--color-border); margin:8px 10px;"></div></sc-if>
+            <sc-if value="{{ row.isGroup }}">
+              <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}"><div style="font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--sidebar-group-label); padding:12px 12px 5px;">{{ row.label }}</div></sc-if>
+              <sc-if value="{{ hideLabels }}"><div style="height:10px;"></div></sc-if>
+            </sc-if>
+            <sc-if value="{{ row.isItem }}">
+              <button onClick="{{ row.onClick }}" title="{{ row.title }}" style="{{ row.style }}" style-hover="background:var(--sidebar-item-bg-hover)">
+                {{ row.icon }}
+                <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}"><span>{{ row.label }}</span></sc-if>
+              </button>
+            </sc-if>
+          </sc-for>
+        </nav>
+
+        <div style="flex-shrink:0; border-top:1px solid var(--color-border); padding:8px;">
+          <sc-if value="{{ showBcvSidebar }}">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px 10px;">
+              <span style="font-size:11px; color:var(--sidebar-group-label);">USD / VES</span>
+              <span style="font-size:11px; font-weight:600; color:var(--sidebar-rate-text); font-variant-numeric:tabular-nums;">587,40 Bs</span>
+            </div>
+          </sc-if>
+          <button onClick="{{ onLogout }}" title="Salir" style="height:44px; width:100%; display:flex; align-items:center; gap:12px; padding:0 12px; background:transparent; border:none; border-radius:8px; color:var(--color-danger); font-size:14px; font-weight:500; cursor:pointer; font-family:inherit; justify-content:{{ logoutJustify }};" style-hover="background:rgba(239,68,68,0.08)">
+            {{ logoutIcon }}
+            <sc-if value="{{ showLabels }}" hint-placeholder-val="{{ true }}"><span>Salir</span></sc-if>
+          </button>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+        <header style="height:56px; flex-shrink:0; position:sticky; top:0; z-index:30; display:flex; align-items:center; justify-content:space-between; padding:0 16px; gap:12px; background:var(--header-bg); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--header-border);">
+          <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+            <button onClick="{{ onHamburger }}" aria-label="Menú" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; border-radius:8px; color:var(--color-text-secondary); cursor:pointer; flex-shrink:0;" style-hover="background:var(--color-surface-2); color:var(--color-text-primary)">{{ menuIcon }}</button>
+            <h1 style="font-size:16px; font-weight:600; color:var(--color-text-primary); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ pageTitle }}</h1>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+            <sc-if value="{{ showBcvHeader }}">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="width:7px; height:7px; border-radius:50%; background:var(--color-success); animation:blink 1.6s ease-in-out infinite; flex-shrink:0;"></span>
+                <span style="font-size:12px; color:var(--color-success); font-weight:600; font-variant-numeric:tabular-nums;">587,40 Bs</span>
+              </div>
+              <div style="width:1px; height:20px; background:var(--color-border);"></div>
+            </sc-if>
+            <button onClick="{{ onThemeToggle }}" aria-label="Cambiar tema" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; border-radius:8px; color:var(--color-text-secondary); cursor:pointer;" style-hover="background:var(--color-surface-2); color:var(--color-text-primary)">{{ themeIcon }}</button>
+            <div style="width:1px; height:20px; background:var(--color-border);"></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <sc-if value="{{ showUserMeta }}"><span style="font-size:14px; color:var(--color-text-secondary);">{{ demoName }}</span></sc-if>
+              <sc-if value="{{ showUserMeta }}"><span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--color-brand-subtle); color:var(--color-brand);">Admin</span></sc-if>
+              <div style="width:32px; height:32px; border-radius:50%; background:var(--color-brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; flex-shrink:0;">{{ initial }}</div>
+            </div>
+          </div>
+        </header>
+
+        <main style="flex:1; overflow-y:auto; padding:{{ contentPad }};">
+          <sc-if value="{{ isEscritorio }}">
+            <div style="max-width:1200px; margin:0 auto;">
+              <div style="margin-bottom:24px;">
+                <h2 style="font-size:20px; font-weight:600; margin:0; color:var(--color-text-primary); letter-spacing:-0.01em;">{{ greeting }}, {{ demoName }}</h2>
+                <p style="font-size:14px; color:var(--color-text-muted); margin:6px 0 0; text-transform:capitalize;">{{ dateStr }}</p>
+              </div>
+              <div style="display:grid; grid-template-columns:{{ kpiCols }}; gap:24px;">
+                <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+                  <div style="background:var(--kpi-bg); border:1px solid var(--kpi-border); border-radius:12px; padding:24px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+                      <div style="width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:{{ k.iconBg }}; color:{{ k.color }};">{{ k.icon }}</div>
+                      <sc-if value="{{ kpisLoaded }}"><span style="font-size:12px; font-weight:600; color:{{ k.deltaColor }}; font-variant-numeric:tabular-nums;">{{ k.delta }}</span></sc-if>
+                    </div>
+                    <div style="font-size:13px; color:var(--color-text-secondary); margin-bottom:8px;">{{ k.label }}</div>
+                    <sc-if value="{{ kpisLoaded }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size:28px; font-weight:700; color:var(--color-text-primary); font-variant-numeric:tabular-nums; line-height:1.1; letter-spacing:-0.02em;">{{ k.usd }}</div>
+                      <div style="font-size:13px; color:var(--color-text-muted); margin-top:5px; font-variant-numeric:tabular-nums;">{{ k.bs }}</div>
+                    </sc-if>
+                    <sc-if value="{{ kpisLoading }}">
+                      <div style="height:30px; width:72%; border-radius:6px; background:var(--color-surface-2); animation:pulse 1.4s ease-in-out infinite;"></div>
+                      <div style="height:14px; width:48%; border-radius:6px; background:var(--color-surface-2); margin-top:9px; animation:pulse 1.4s ease-in-out infinite;"></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ notEscritorio }}">
+            <div style="height:100%; min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:60px 24px; color:var(--color-text-muted);">
+              <div style="width:64px; height:64px; border-radius:16px; background:var(--color-surface); border:1px solid var(--color-border); display:flex; align-items:center; justify-content:center; color:var(--color-text-secondary); margin-bottom:18px;">{{ placeholderIcon }}</div>
+              <h2 style="font-size:18px; font-weight:600; color:var(--color-text-primary); margin:0;">{{ pageTitle }}</h2>
+              <p style="font-size:14px; margin:8px 0 0;">Este módulo está en construcción</p>
+            </div>
+          </sc-if>
+        </main>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;loginLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Centrado&quot;,&quot;Split&quot;],&quot;default&quot;:&quot;Centrado&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Azul&quot;,&quot;Violeta&quot;,&quot;Esmeralda&quot;],&quot;default&quot;:&quot;Azul&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;demoName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Administrador&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showBcv&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  ICONS = {
+    dashboard:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/>',
+    cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+    file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    package:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    rotate:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    calc:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
+    bar:'<line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>',
+    trending:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+    usercog:'<circle cx="18" cy="15" r="3"/><circle cx="9" cy="7" r="4"/><path d="M10 15H6a4 4 0 0 0-4 4v2"/><path d="m21.7 16.4-.9-.3"/><path d="m15.2 13.9-.9-.3"/><path d="m16.6 18.7.3-.9"/><path d="m19.1 12.2.3-.9"/><path d="m19.6 18.7-.4-1"/><path d="m16.8 12.3-.4-1"/><path d="m14.3 16.6 1-.4"/><path d="m20.7 13.8 1-.4"/>',
+    settings:'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+    logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+    menu:'<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
+    eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    eyeoff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
+    alert:'<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+    moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+    dollar:'<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    wallet:'<path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>',
+    check:'<path d="M20 6 9 17l-5-5"/>'
+  };
+
+  state = { screen:'login', loading:false, showPassword:false, loginError:'', theme:'dark', collapsed:false, isMobile:false, mobileOpen:false, activePage:'escritorio', kpisLoaded:false, vw: 1280 };
+
+  emailRef = React.createRef();
+  passwordRef = React.createRef();
+
+  componentDidMount(){
+    this._onResize = () => {
+      const vw = window.innerWidth;
+      const isMobile = vw < 768;
+      this.setState(s => ({ vw, isMobile, mobileOpen: isMobile ? s.mobileOpen : false }));
+    };
+    window.addEventListener('resize', this._onResize);
+    this._onResize();
+  }
+  componentWillUnmount(){ window.removeEventListener('resize', this._onResize); }
+
+  icon(name, size){
+    return React.createElement('svg', { width: size||18, height: size||18, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round', style:{flexShrink:0, display:'block'}, dangerouslySetInnerHTML:{__html: this.ICONS[name]||''} });
+  }
+
+  fmtUSD(n){ return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  fmtBs(n){ return 'Bs. ' + (n*587.40).toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  onSubmit = (e) => {
+    e.preventDefault();
+    const email = this.emailRef.current ? this.emailRef.current.value.trim() : '';
+    const pass = this.passwordRef.current ? this.passwordRef.current.value.trim() : '';
+    if(!email || !pass){ this.setState({ loginError: 'Ingresa tu correo y contraseña' }); return; }
+    this.setState({ loading:true, loginError:'' });
+    clearTimeout(this._t1); clearTimeout(this._t2);
+    this._t1 = setTimeout(() => {
+      this.setState({ loading:false, screen:'app', kpisLoaded:false });
+      this._t2 = setTimeout(() => this.setState({ kpisLoaded:true }), 950);
+    }, 1100);
+  };
+
+  onToggleEye = () => this.setState(s => ({ showPassword: !s.showPassword }));
+  onThemeToggle = () => this.setState(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' }));
+  onHamburger = () => this.setState(s => s.isMobile ? ({ mobileOpen: !s.mobileOpen }) : ({ collapsed: !s.collapsed }));
+  onCloseDrawer = () => this.setState({ mobileOpen:false });
+  onNav = (key) => this.setState(s => ({ activePage:key, mobileOpen: s.isMobile ? false : s.mobileOpen }));
+  onLogout = () => this.setState({ screen:'login', mobileOpen:false, loading:false });
+
+  greeting(){ const h = new Date().getHours(); if(h<12) return 'Buen día'; if(h<19) return 'Buenas tardes'; return 'Buenas noches'; }
+
+  renderVals(){
+    const s = this.state;
+    const demoName = this.props.demoName || 'Administrador';
+    const showBcv = this.props.showBcv !== false;
+    const mobile = s.isMobile;
+    const collapsed = s.collapsed && !mobile;
+    const showLabels = mobile || !collapsed;
+
+    // sidebar style
+    const base = { background:'var(--sidebar-bg)', display:'flex', flexDirection:'column', flexShrink:0, transition:'width 300ms cubic-bezier(0.34,1.56,0.64,1), transform 280ms ease-out' };
+    let sidebarStyle;
+    if(mobile){
+      sidebarStyle = Object.assign({}, base, { position:'fixed', top:0, left:0, height:'100%', width:'240px', zIndex:50, transform: s.mobileOpen ? 'translateX(0)' : 'translateX(-101%)', boxShadow: s.mobileOpen ? '0 0 40px rgba(0,0,0,0.5)' : 'none', borderRight:'1px solid var(--color-border)' });
+    } else {
+      sidebarStyle = Object.assign({}, base, { position:'relative', height:'100%', width:(collapsed?64:220)+'px', borderRight:'1px solid var(--color-border)' });
+    }
+
+    // nav
+    const groups = [
+      { label:'Principal', items:[['escritorio','Escritorio','dashboard']] },
+      { label:'Ventas', items:[['pos','Punto de Venta','cart'],['cotizaciones','Cotizaciones','file'],['clientes','Clientes','users']] },
+      { label:'Inventario', items:[['productos','Productos','package'],['devoluciones','Devoluciones','rotate']] },
+      { label:'Caja', items:[['caja','Gestión de Caja','calc'],['reportes','Reportes','bar']] },
+      { label:'Finanzas', items:[['finanzas','Finanzas','trending']] },
+      { label:'Administración', divider:true, items:[['usuarios','Usuarios','usercog'],['config','Configuración','settings'],['ayuda','Ayuda','help']] }
+    ];
+    const navRows = [];
+    groups.forEach((g, gi) => {
+      if(g.divider) navRows.push({ key:'div'+gi, isDivider:true });
+      navRows.push({ key:'grp'+gi, isGroup:true, label:g.label });
+      g.items.forEach(([key,label,iconName]) => {
+        const active = key === s.activePage;
+        const style = {
+          height:'44px', width:'100%', display:'flex', alignItems:'center',
+          gap: showLabels ? '12px' : '0', justifyContent: showLabels ? 'flex-start' : 'center',
+          paddingLeft: showLabels ? '10px' : '0', paddingRight: showLabels ? '12px' : '0',
+          borderRadius:'8px', cursor:'pointer', border:'none',
+          borderLeft: active ? '2px solid var(--sidebar-item-border-active)' : '2px solid transparent',
+          background: active ? 'var(--sidebar-item-bg-active)' : 'transparent',
+          color: active ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
+          fontSize:'14px', fontWeight: active ? '600' : '500', fontFamily:'inherit', textAlign:'left',
+          transition:'background 150ms ease-out, color 150ms ease-out'
+        };
+        navRows.push({ key, isItem:true, label, icon:this.icon(iconName,18), onClick:()=>this.onNav(key), style, title: showLabels ? '' : label });
+      });
+    });
+
+    // page title
+    const titles = { escritorio:'Escritorio', pos:'Punto de Venta', cotizaciones:'Cotizaciones', clientes:'Clientes', productos:'Productos', devoluciones:'Devoluciones', caja:'Gestión de Caja', reportes:'Reportes', finanzas:'Finanzas', usuarios:'Usuarios', config:'Configuración', ayuda:'Ayuda' };
+    const pageTitle = titles[s.activePage] || 'Escritorio';
+    const iconForPage = { escritorio:'dashboard', pos:'cart', cotizaciones:'file', clientes:'users', productos:'package', devoluciones:'rotate', caja:'calc', reportes:'bar', finanzas:'trending', usuarios:'usercog', config:'settings', ayuda:'help' };
+
+    // kpis
+    const kpiDefs = [
+      { label:'Ventas Hoy', usd:342.80, icon:'dollar', color:'var(--color-brand)', iconBg:'var(--color-brand-subtle)', delta:'+12.4%', up:true },
+      { label:'Utilidad Hoy', usd:98.40, icon:'trending', color:'var(--color-success)', iconBg:'rgba(29,158,117,0.14)', delta:'+8.1%', up:true },
+      { label:'Ventas Mes', usd:7842.50, icon:'bar', color:'var(--color-info)', iconBg:'rgba(31,156,240,0.14)', delta:'+23.7%', up:true },
+      { label:'Utilidad Mes', usd:2310.75, icon:'wallet', color:'var(--color-warning)', iconBg:'rgba(217,119,6,0.14)', delta:'-2.3%', up:false }
+    ];
+    const kpis = kpiDefs.map((k,i) => ({ key:'k'+i, label:k.label, usd:this.fmtUSD(k.usd), bs:this.fmtBs(k.usd), icon:this.icon(k.icon,20), color:k.color, iconBg:k.iconBg, delta:k.delta, deltaColor: k.up ? 'var(--color-success)' : 'var(--color-danger)' }));
+
+    // kpi columns
+    const vw = s.vw;
+    let cols = 4; if(vw < 600) cols = 1; else if(vw < 1024) cols = 2; else cols = 4;
+    const kpiCols = 'repeat('+cols+',minmax(0,1fr))';
+
+    // date
+    let dateStr = '';
+    try { dateStr = new Date().toLocaleDateString('es-VE', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); } catch(e){ dateStr = new Date().toDateString(); }
+
+    // accent
+    const accMap = { 'Violeta':'violet', 'Esmeralda':'emerald' };
+    const accentAttr = accMap[this.props.accent] || '';
+    const isSplit = (this.props.loginLayout === 'Split') && !mobile;
+
+    return {
+      theme: s.theme, accentAttr,
+      showLogin: s.screen !== 'app', showApp: s.screen === 'app',
+      isSplit,
+      // login
+      onSubmit: this.onSubmit, emailRef: this.emailRef, passwordRef: this.passwordRef,
+      passwordType: s.showPassword ? 'text' : 'password', onToggleEye: this.onToggleEye,
+      eyeIcon: this.icon(s.showPassword ? 'eyeoff' : 'eye', 18), alertIcon: this.icon('alert',16),
+      loginError: s.loginError, loading: s.loading, notLoading: !s.loading,
+      spinner: React.createElement('svg', { width:18, height:18, viewBox:'0 0 24 24', fill:'none', style:{animation:'spin 0.7s linear infinite', display:'block'} }, [
+        React.createElement('circle', { key:'c', cx:12, cy:12, r:9, stroke:'rgba(255,255,255,0.3)', strokeWidth:2.5 }),
+        React.createElement('path', { key:'p', d:'M12 3a9 9 0 0 1 9 9', stroke:'#fff', strokeWidth:2.5, strokeLinecap:'round' })
+      ]),
+      checkIcon: this.icon('check',18), checkIcon2: this.icon('check',18), checkIcon3: this.icon('check',18),
+      // sidebar
+      sidebarStyle, showLabels, hideLabels: !showLabels, collapsedLogo: !showLabels,
+      navRows, onLogout: this.onLogout, logoutIcon: this.icon('logout',18),
+      logoutJustify: showLabels ? 'flex-start' : 'center',
+      showBcvSidebar: showBcv && showLabels,
+      showOverlay: mobile && s.mobileOpen, onCloseDrawer: this.onCloseDrawer,
+      // header
+      onHamburger: this.onHamburger, menuIcon: this.icon('menu',20), pageTitle,
+      showBcvHeader: showBcv, onThemeToggle: this.onThemeToggle, themeIcon: this.icon(s.theme === 'dark' ? 'sun' : 'moon', 20),
+      showUserMeta: !mobile, demoName, initial: (demoName[0]||'A').toUpperCase(),
+      // content
+      contentPad: mobile ? '16px' : '24px',
+      isEscritorio: s.activePage === 'escritorio', notEscritorio: s.activePage !== 'escritorio',
+      greeting: this.greeting(), dateStr,
+      kpis, kpiCols, kpisLoaded: s.kpisLoaded, kpisLoading: !s.kpisLoaded,
+      placeholderIcon: this.icon(iconForPage[s.activePage] || 'dashboard', 28)
+    };
+  }
+}
+</script>
+</body>
+</html>

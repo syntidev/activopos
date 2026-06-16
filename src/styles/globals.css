@@ -1,0 +1,173 @@
+/* ============================================================
+   ACTIVOPOS — GLOBALS
+   src/styles/globals.css
+   Reset, base y utilidades globales
+   ============================================================ */
+
+@import './tokens.css';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  tab-size: 4;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ── Tipografía base ── */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl);  }
+h4 { font-size: var(--text-lg);  }
+h5 { font-size: var(--text-base);}
+h6 { font-size: var(--text-sm);  }
+
+p {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+a {
+  color: var(--color-brand);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-brand-hover);
+}
+
+/* ── Imágenes ── */
+img, video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ── Formularios base ── */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea, select {
+  outline: none;
+}
+
+/* ── Focus visible accesible ── */
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Scrollbar personalizado ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Selección de texto ── */
+::selection {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-text-primary);
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Utilidades globales ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* ── Moneda ── */
+.value-usd   { color: var(--color-usd); }
+.value-bs    { color: var(--color-bs);  }
+.value-rate  { color: var(--color-rate-live); font-variant-numeric: tabular-nums; }
+.value-profit{ color: var(--color-success); }
+.value-danger{ color: var(--color-danger);  }
+.value-warning{ color: var(--color-warning); }
+
+/* Números tabulares para moneda */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+}

@@ -1,0 +1,304 @@
+/* ============================================================
+   PRODUCT MODAL — specific styles
+   (overlay/modal chrome lives in modals.module.css)
+   ============================================================ */
+
+/* ── Pill toggles (Unidad / Kg / Servicio and Unidad / Bulto) ── */
+.pillGroup {
+  display: flex;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-0-5);
+  gap: var(--space-0-5);
+}
+
+.pill {
+  flex: 1;
+  height: 36px;
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.pill:hover:not(.pillActive) {
+  color: var(--color-text-primary);
+}
+
+.pillActive {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.pillActive:focus-visible,
+.pill:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+}
+
+/* ── Inline form row (two fields side by side) ── */
+.inlineRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.inlineRow2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+/* ── Fixed-price toggle row ── */
+.fixedPriceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+.fixedPriceLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.fixedPriceTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+}
+
+.fixedPriceSub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── Toggle switch ── */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.toggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleTrack {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-4);
+  transition: background-color var(--transition-fast);
+}
+
+.toggleInput:checked ~ .toggleTrack {
+  background: var(--color-brand);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-primary);
+  transition: transform var(--transition-fast);
+  pointer-events: none;
+}
+
+.toggleInput:checked ~ .toggleThumb {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+.toggle:focus-within .toggleTrack {
+  box-shadow: var(--shadow-brand);
+}
+
+/* ── Calculated (readonly) field ── */
+.calculatedField {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  background: var(--color-surface-2) !important;
+}
+
+/* ── Price inputs ── */
+.inputPrefix {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.inputPrefix:focus-within {
+  border-color: var(--input-border-focus);
+  box-shadow: var(--shadow-brand);
+}
+
+.inputPrefixCalculated {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--color-surface-2);
+}
+
+.prefixSymbol {
+  padding: 0 var(--space-2-5) 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.prefixInput {
+  flex: 1;
+  height: var(--touch-min);
+  padding: 0 var(--space-3) 0 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--input-text);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+}
+
+.prefixInput::placeholder {
+  color: var(--input-placeholder);
+}
+
+.prefixInput:disabled {
+  cursor: not-allowed;
+}
+
+/* ── Utility card ── */
+.utilityCard {
+  background: var(--color-success-subtle);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.utilityCardNegative {
+  background: var(--color-danger-subtle);
+  border-color: var(--color-danger-border);
+}
+
+.utilityInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.utilityLabel {
+  font-size: var(--text-xs);
+  color: var(--color-success-text);
+  font-weight: var(--weight-medium);
+}
+
+.utilityLabelNegative {
+  color: var(--color-danger-text);
+}
+
+.utilitySub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.utilityAmount {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-success-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+  flex-shrink: 0;
+}
+
+.utilityAmountNegative {
+  color: var(--color-danger-text);
+}
+
+/* ── Section heading inside modal ── */
+.sectionLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-text-muted);
+}
+
+/* ── Bulk info ── */
+.bulkRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.bulkHint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ── New category link ── */
+.newCategoryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-brand);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1) 0;
+  font-family: inherit;
+  transition: opacity var(--transition-fast);
+}
+
+.newCategoryBtn:hover {
+  opacity: 0.8;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .pillActive,
+  .toggleTrack,
+  .toggleThumb,
+  .inputPrefix {
+    transition: none;
+  }
+}

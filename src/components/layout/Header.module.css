@@ -1,0 +1,229 @@
+/* ── Header shell ── */
+.header {
+  position: sticky;
+  top: 0;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  backdrop-filter: blur(var(--header-blur));
+  -webkit-backdrop-filter: blur(var(--header-blur));
+  z-index: var(--z-sticky);
+  flex-shrink: 0;
+}
+
+/* ── Left side ── */
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* ── Hamburger buttons ── */
+.hamburgerDesktop,
+.hamburgerMobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.hamburgerDesktop:hover,
+.hamburgerMobile:hover {
+  background-color: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.hamburgerDesktop:focus-visible,
+.hamburgerMobile:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Desktop/Mobile visibility ── */
+.hamburgerMobile {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .hamburgerDesktop {
+    display: none;
+  }
+
+  .hamburgerMobile {
+    display: flex;
+  }
+}
+
+/* ── Page title ── */
+.pageTitle {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Reset h1 default styles from globals */
+  margin: 0;
+}
+
+/* ── Right side ── */
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* ── BCV rate pill ── */
+.bcvPill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-3);
+  background-color: var(--color-success-subtle);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-full);
+  height: 32px;
+}
+
+.bcvCurrency {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-success-text);
+  letter-spacing: var(--tracking-wide);
+}
+
+.bcvAmount {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+}
+
+.bcvBs {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-success-text);
+  opacity: 0.7;
+}
+
+/* ── User info ── */
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.userName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Role badge ── */
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+/* Admin badge */
+.roleAdmin {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-info-text);
+  border-color: var(--color-brand-border);
+}
+
+/* Super Admin badge */
+.roleSuperAdmin {
+  background-color: var(--badge-quote-bg);
+  color: var(--badge-quote-text);
+  border-color: var(--badge-quote-border);
+}
+
+/* Cashier badge */
+.roleCashier {
+  background-color: var(--color-surface-3);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+/* ── Vertical separator ── */
+.separator {
+  width: 1px;
+  height: 20px;
+  background-color: var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ── Theme toggle button ── */
+.themeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.themeToggle:hover {
+  background-color: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.themeToggle:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Responsive: hide BCV pill on small screens ── */
+@media (max-width: 640px) {
+  .bcvPill {
+    display: none;
+  }
+
+  .userName {
+    max-width: 100px;
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .hamburgerDesktop,
+  .hamburgerMobile {
+    transition: none;
+  }
+}

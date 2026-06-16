@@ -1,0 +1,85 @@
+/* ── Root shell ── */
+.root {
+  display: flex;
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+}
+
+/* ── Main content area ── */
+.mainWrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--duration-slow) var(--ease-spring);
+}
+
+.mainCollapsed {
+  margin-left: var(--sidebar-collapsed);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-6);
+}
+
+/* ── Mobile overlay ── */
+.mobileOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-bg);
+  backdrop-filter: blur(var(--overlay-blur));
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  z-index: var(--z-overlay);
+}
+
+/* ── Loading shell ── */
+.loadingShell {
+  position: fixed;
+  inset: 0;
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.loadingTrack {
+  height: 2px;
+  background-color: var(--color-brand);
+  animation: loadingPulse 1.4s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+@keyframes loadingPulse {
+  0%   { transform: scaleX(0); opacity: 1; }
+  70%  { transform: scaleX(0.9); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 1023px) {
+  .mainWrapper,
+  .mainCollapsed {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: var(--space-4);
+  }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .mainWrapper {
+    transition: none;
+  }
+
+  .loadingTrack {
+    animation: none;
+    transform: scaleX(0.5);
+    opacity: 0.6;
+  }
+}

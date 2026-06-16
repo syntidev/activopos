@@ -24,7 +24,6 @@
     "@radix-ui/react-tooltip": "^1.2.10",
     "@supabase/supabase-js": "^2.108.2",
     "bcryptjs": "^3.0.3",
-    "cloudinary": "^2.10.0",
     "framer-motion": "^12.40.0",
     "jose": "^6.2.3",
     "lucide-react": "^1.18.0",

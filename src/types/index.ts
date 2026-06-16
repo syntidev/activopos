@@ -30,3 +30,26 @@ export interface ClientHistory {
   client: { id: number; name: string; cedula: string | null; phone: string | null; pending_balance_usd: number }
   sales: SaleHistoryItem[]
 }
+
+export interface PaymentMethod {
+  id:   number
+  name: string
+  type: string
+}
+
+export interface ClientHistoryData extends ClientHistory {
+  paymentMethods: PaymentMethod[]
+}
+
+export interface AbonoTarget {
+  saleId:       number
+  ticketNumber: string
+  maxAmount:    number
+}
+
+export interface AbonoForm {
+  amount_usd:        string
+  payment_method_id: string
+  reference:         string
+  notes:             string
+}

@@ -1,0 +1,310 @@
+/* ============================================================
+   PEDIDOS — Kanban
+   src/app/(dashboard)/pedidos/pedidos.module.css
+   ============================================================ */
+
+/* ── Page shell ── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  height: 100%;
+  min-height: 0;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.pageTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: var(--space-0-5) 0 0;
+}
+
+/* ── Kanban board ── */
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+}
+
+@media (max-width: 1024px) {
+  .kanban {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .kanban {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Column ── */
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  min-height: 300px;
+  transition: border-color var(--transition-normal), background var(--transition-normal);
+}
+
+.columnDragOver {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-subtle);
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1) 0 var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: var(--space-1);
+  flex-shrink: 0;
+}
+
+.columnTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.columnDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+/* Column status dot colors */
+.colReceived  { background: var(--color-info); }
+.colPreparing { background: var(--color-warning); }
+.colReady     { background: var(--color-success); }
+.colDispatched{ background: var(--color-text-secondary); }
+
+.columnLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+
+.columnCount {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-2);
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.columnEmpty {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+}
+
+/* ── Order card ── */
+
+.orderCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  cursor: grab;
+  user-select: none;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+.orderCard:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.orderCard:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.orderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orderNumber {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-brand-hover);
+  letter-spacing: var(--tracking-wide);
+}
+
+.orderTime {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.orderClient {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.orderPhone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.orderMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orderTotal {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success-text);
+}
+
+.orderItems {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── Card actions ── */
+
+.orderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.advanceBtn {
+  flex: 1;
+  height: 28px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-brand-hover);
+  background: var(--color-brand-subtle);
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.advanceBtn:hover {
+  background: var(--color-brand);
+  color: var(--color-text-on-brand);
+}
+
+.waBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(37, 211, 102, 0.12);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  border-radius: var(--radius-sm);
+  color: #25D366;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.waBtn:hover {
+  background: rgba(37, 211, 102, 0.25);
+}
+
+/* ── Empty state ── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-16);
+  text-align: center;
+  color: var(--color-text-muted);
+  position: absolute;
+  inset: 0;
+  top: 180px;
+}
+
+.emptyIcon {
+  color: var(--color-border-strong);
+}
+
+.emptyTitle {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.emptyDesc {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 320px;
+}

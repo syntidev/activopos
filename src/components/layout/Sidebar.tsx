@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   FileText,
+  ShoppingBag,
   Users,
   Package,
   RotateCcw,
@@ -46,8 +47,9 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'VENTAS',
     items: [
       { href: '/pos', icon: ShoppingCart, label: 'Punto de Venta' },
-      { href: '/cotizaciones', icon: FileText, label: 'Cotizaciones' },
-      { href: '/clientes', icon: Users, label: 'Clientes' },
+      { href: '/cotizaciones', icon: FileText,    label: 'Cotizaciones' },
+      { href: '/pedidos',      icon: ShoppingBag, label: 'Pedidos' },
+      { href: '/clientes',     icon: Users,        label: 'Clientes' },
     ],
   },
   {

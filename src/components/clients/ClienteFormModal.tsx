@@ -107,7 +107,7 @@ export function ClienteFormModal({
 
       const saved: ClientRecord = {
         ...(client ?? { id: 0, pending_balance_usd: 0, created_at: new Date() }),
-        ...body.client,
+        ...body.client!,
       }
 
       if (isEdit) onUpdated(saved)

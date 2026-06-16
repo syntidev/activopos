@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, movement }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Datos inválidos', details: err.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Datos inválidos', details: err.issues }, { status: 400 })
     }
     console.error('cash/movement error:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

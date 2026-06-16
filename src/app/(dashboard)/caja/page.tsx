@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { MovimientoModal } from '@/components/cash/MovimientoModal'
 import { CierreConfirmModal } from '@/components/cash/CierreConfirmModal'

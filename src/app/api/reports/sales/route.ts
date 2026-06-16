@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Parámetros inválidos', details: err.errors },
+        { error: 'Parámetros inválidos', details: err.issues },
         { status: 400 }
       )
     }

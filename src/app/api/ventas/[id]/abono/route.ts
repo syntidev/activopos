@@ -1,0 +1,119 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
+import { getBcvRate } from '@/lib/bcv'
+
+type RouteContext = { params: { id: string } }
+
+const abonoSchema = z.object({
+  payment_method_id: z.number().int().positive(),
+  amount_bs:         z.number().positive(),
+  amount_usd:        z.number().positive(),
+  reference:         z.string().max(100).optional(),
+  notes:             z.string().max(500).optional(),
+})
+
+export async function POST(req: NextRequest, { params }: RouteContext) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
+  const saleId = parseInt(params.id, 10)
+  if (isNaN(saleId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+  try {
+    const body = abonoSchema.parse(await req.json())
+
+    const [sale, pm, rate] = await Promise.all([
+      prisma.sale.findFirst({
+        where: { id: saleId, business_id: session.businessId, status: 'pending' },
+        select: { id: true, total_usd: true, ticket_number: true, client_id: true },
+      }),
+      prisma.paymentMethod.findFirst({
+        where: { id: body.payment_method_id, business_id: session.businessId, is_active: true },
+        select: { id: true },
+      }),
+      getBcvRate(),
+    ])
+
+    if (!sale) {
+      return NextResponse.json({ error: 'Venta no encontrada o ya liquidada' }, { status: 404 })
+    }
+    if (!pm) {
+      return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
+    }
+
+    const abono = await prisma.$transaction(async (tx) => {
+      const newAbono = await tx.saleAbono.create({
+        data: {
+          sale_id:           saleId,
+          payment_method_id: body.payment_method_id,
+          amount_usd:        body.amount_usd,
+          amount_bs:         body.amount_bs,
+          rate_used:         rate,
+          reference:         body.reference ?? null,
+          notes:             body.notes ?? null,
+          created_by:        session.userId,
+        },
+      })
+
+      // Auto-cerrar si suma de abonos >= total
+      const totalAbonado = await tx.saleAbono.aggregate({
+        where:  { sale_id: saleId },
+        _sum:   { amount_usd: true },
+      })
+      const sumAbonado = Number(totalAbonado._sum.amount_usd ?? 0)
+
+      if (sumAbonado >= Number(sale.total_usd) - 0.01) {
+        await tx.sale.update({
+          where: { id: saleId },
+          data:  { status: 'paid', sold_at: new Date() },
+        })
+        await tx.activityLog.create({
+          data: {
+            business_id: session.businessId,
+            user_id:     session.userId,
+            action:      'sale_paid_by_abono',
+            model_type:  'Sale',
+            model_id:    saleId,
+            new_values:  { ticket_number: sale.ticket_number, total_abonado: sumAbonado },
+          },
+        })
+      } else {
+        await tx.activityLog.create({
+          data: {
+            business_id: session.businessId,
+            user_id:     session.userId,
+            action:      'sale_abono',
+            model_type:  'Sale',
+            model_id:    saleId,
+            new_values:  {
+              ticket_number:  sale.ticket_number,
+              amount_usd:     body.amount_usd,
+              total_abonado:  sumAbonado,
+              pending:        Math.max(0, Number(sale.total_usd) - sumAbonado),
+            },
+          },
+        })
+      }
+
+      return newAbono
+    })
+
+    return NextResponse.json({
+      ok:    true,
+      abono: {
+        ...abono,
+        amount_usd: Number(abono.amount_usd),
+        amount_bs:  Number(abono.amount_bs),
+        rate_used:  Number(abono.rate_used),
+      },
+    }, { status: 201 })
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    }
+    console.error(`ventas/${saleId}/abono POST:`, err)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
+}

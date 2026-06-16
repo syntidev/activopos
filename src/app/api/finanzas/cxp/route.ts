@@ -1,0 +1,79 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
+
+const CATEGORIAS = ['alquiler', 'nomina', 'servicios', 'proveedor', 'otro'] as const
+
+const cxpSchema = z.object({
+  concepto:    z.string().min(3).max(150),
+  monto_usd:   z.number().positive(),
+  categoria:   z.enum(CATEGORIAS).default('otro'),
+  fecha:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido'),
+  notas:       z.string().max(500).optional(),
+  vencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
+export async function GET(req: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
+  const sp  = req.nextUrl.searchParams
+  const cat = sp.get('categoria')
+
+  const gastos = await prisma.gasto.findMany({
+    where: {
+      business_id: session.businessId,
+      is_paid:     false,
+      ...(cat && CATEGORIAS.includes(cat as typeof CATEGORIAS[number])
+        ? { categoria: cat }
+        : {}),
+    },
+    orderBy: { fecha: 'asc' },
+  })
+
+  const total = Math.round(gastos.reduce((s, g) => s + Number(g.monto_usd), 0) * 100) / 100
+
+  return NextResponse.json({
+    ok:   true,
+    cxp:  gastos.map(g => ({ ...g, monto_usd: Number(g.monto_usd) })),
+    total_usd: total,
+  })
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (session.role === 'cashier') {
+    return NextResponse.json({ error: 'Solo administradores pueden registrar CxP' }, { status: 403 })
+  }
+
+  try {
+    const body = cxpSchema.parse(await req.json())
+
+    const gasto = await prisma.gasto.create({
+      data: {
+        business_id: session.businessId,
+        concepto:    body.concepto,
+        monto_usd:   body.monto_usd,
+        categoria:   body.categoria,
+        fecha:       new Date(body.fecha),
+        notas:       body.notas ?? null,
+        is_paid:     false,
+        paid_at:     null,
+        created_by:  session.userId,
+      },
+    })
+
+    return NextResponse.json(
+      { ok: true, gasto: { ...gasto, monto_usd: Number(gasto.monto_usd) } },
+      { status: 201 }
+    )
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    }
+    console.error('finanzas/cxp POST:', err)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
+}

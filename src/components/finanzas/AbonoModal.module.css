@@ -1,0 +1,77 @@
+.body { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* ── Sale info summary ── */
+.saleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  gap: var(--space-3);
+}
+
+.infoRow span:first-child { color: var(--color-text-secondary); }
+.infoRow strong            { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+
+.infoRowSaldo {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-subtle);
+  margin-top: var(--space-1);
+}
+
+.saldoValue {
+  font-size: var(--text-base);
+  color: var(--color-brand) !important;
+}
+
+/* ── Payment methods ── */
+.methodGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.methodBtn {
+  height: 34px;
+  padding: 0 var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.methodBtnActive {
+  background: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+/* ── Fields ── */
+.field { display: flex; flex-direction: column; gap: var(--space-1-5); }
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.conversion {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+  padding-left: var(--space-1);
+}

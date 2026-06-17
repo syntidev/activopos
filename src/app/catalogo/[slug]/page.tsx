@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { Fraunces } from 'next/font/google'
 import { MessageCircle, Package, MapPin } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
@@ -9,13 +8,6 @@ import styles from './catalogo.module.css'
 interface PageProps {
   params: { slug: string }
 }
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  weight: ['700', '900'],
-  variable: '--font-fraunces',
-  display: 'swap',
-})
 
 function parseImages(raw: string | null): string[] {
   if (!raw) return []
@@ -114,7 +106,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     : null
 
   return (
-    <div className={`light ${styles.root} ${fraunces.variable}`}>
+    <div className={`light ${styles.root}`}>
 
       {/* ── Header ──────────────────────────────────────────────── */}
       <header className={styles.header}>

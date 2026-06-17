@@ -28,22 +28,46 @@ interface PaletteOption {
 
 const PALETTES: PaletteOption[] = [
   {
-    key:       'noche_sabanera',
-    label:     'Noche Sabanera',
-    colors:    { sidebar: '#0D1117', bg: '#161B22', accent: '#2563EB' },
+    key:       'retail',
+    label:     'Retail & Comercio',
+    colors:    { sidebar: '#0D1117', bg: '#0F1D40', accent: '#2563EB' },
     accentHex: '#2563EB',
   },
   {
-    key:       'tierra_verde',
-    label:     'Tierra Verde',
-    colors:    { sidebar: '#0D1117', bg: '#161B22', accent: '#059669' },
+    key:       'restaurante',
+    label:     'Gastronomía',
+    colors:    { sidebar: '#1A0900', bg: '#2A1400', accent: '#D97706' },
+    accentHex: '#D97706',
+  },
+  {
+    key:       'servicios',
+    label:     'Servicios Pro',
+    colors:    { sidebar: '#041018', bg: '#071E32', accent: '#0891B2' },
+    accentHex: '#0891B2',
+  },
+  {
+    key:       'salud',
+    label:     'Clínica & Salud',
+    colors:    { sidebar: '#041A12', bg: '#083022', accent: '#059669' },
     accentHex: '#059669',
   },
   {
-    key:       'horizonte_llanero',
-    label:     'Horizonte Llanero',
-    colors:    { sidebar: '#1A1A2E', bg: '#16213E', accent: '#D97706' },
+    key:       'ferreteria',
+    label:     'Ferretería',
+    colors:    { sidebar: '#141005', bg: '#22180A', accent: '#D97706' },
     accentHex: '#D97706',
+  },
+  {
+    key:       'carniceria',
+    label:     'Carnicería',
+    colors:    { sidebar: '#150505', bg: '#240808', accent: '#DC2626' },
+    accentHex: '#DC2626',
+  },
+  {
+    key:       'tecnologia',
+    label:     'Tech & Digital',
+    colors:    { sidebar: '#080816', bg: '#0D0B22', accent: '#7C3AED' },
+    accentHex: '#7C3AED',
   },
 ]
 

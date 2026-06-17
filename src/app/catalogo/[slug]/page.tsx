@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { Fraunces } from 'next/font/google'
+import { MessageCircle, Package, MapPin } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import styles from './catalogo.module.css'
@@ -8,9 +10,24 @@ interface PageProps {
   params: { slug: string }
 }
 
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  weight: ['700', '900'],
+  variable: '--font-fraunces',
+  display: 'swap',
+})
+
 function parseImages(raw: string | null): string[] {
   if (!raw) return []
   try { return JSON.parse(raw) as string[] } catch { return [] }
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('')
 }
 
 async function getBusiness(slug: string) {
@@ -45,12 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title:       `${title} — Catálogo`,
     description,
     robots:      'index, follow',
-    openGraph: {
-      title,
-      description,
-      type:   'website',
-      images: ogImages,
-    },
+    openGraph:   { title, description, type: 'website', images: ogImages },
     twitter: {
       card:        ogImages.length ? 'summary_large_image' : 'summary',
       title,
@@ -62,10 +74,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CatalogoPage({ params }: PageProps) {
   const business = await getBusiness(params.slug)
-
   if (!business) notFound()
 
-  const [products, rate] = await Promise.all([
+  const [products, rate, stockEntries] = await Promise.all([
     prisma.product.findMany({
       where: {
         business_id:      business.id,
@@ -79,9 +90,23 @@ export default async function CatalogoPage({ params }: PageProps) {
       orderBy: [{ category_id: 'asc' }, { name: 'asc' }],
     }),
     getBcvRate(),
+    prisma.inventoryEntry.groupBy({
+      by:    ['product_id'],
+      where: { business_id: business.id },
+      _sum:  { quantity: true, waste: true },
+    }),
   ])
 
+  const stockMap = new Map<number, number>()
+  for (const e of stockEntries) {
+    stockMap.set(
+      e.product_id,
+      Number(e._sum.quantity ?? 0) - Number(e._sum.waste ?? 0),
+    )
+  }
+
   const displayTitle = business.catalog_title ?? business.name
+  const initials     = getInitials(displayTitle)
   const location     = [business.city, business.state].filter(Boolean).join(', ')
   const waPhone      = business.phone?.replace(/\D/g, '') ?? ''
   const waUrl        = waPhone
@@ -89,39 +114,68 @@ export default async function CatalogoPage({ params }: PageProps) {
     : null
 
   return (
-    <div className={`light ${styles.root}`}>
+    <div className={`light ${styles.root} ${fraunces.variable}`}>
+
+      {/* ── Header ──────────────────────────────────────────────── */}
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          {business.logo_path && (
+          {business.logo_path ? (
             <img
               src={business.logo_path}
               alt={`Logo de ${business.name}`}
               className={styles.logo}
-              width={72}
-              height={72}
+              width={80}
+              height={80}
             />
+          ) : (
+            <div
+              className={styles.initials}
+              style={business.theme_color
+                ? { '--initials-bg': business.theme_color } as React.CSSProperties
+                : undefined}
+              aria-hidden="true"
+            >
+              {initials}
+            </div>
           )}
           <div className={styles.bizInfo}>
             <h1 className={styles.bizName}>{displayTitle}</h1>
             {business.catalog_desc && (
               <p className={styles.bizDesc}>{business.catalog_desc}</p>
             )}
-            {location && <p className={styles.bizLocation}>{location}</p>}
+            {location && (
+              <p className={styles.bizLocation}>
+                <MapPin size={12} strokeWidth={2} aria-hidden="true" />
+                {location}
+              </p>
+            )}
           </div>
         </div>
       </header>
 
+      {/* ── BCV Bar ─────────────────────────────────────────────── */}
       <div className={styles.rateBar}>
         <span className={styles.rateLabel}>Tasa BCV</span>
+        <span className={styles.rateSep}>·</span>
         <span className={styles.rateValue}>
           Bs.&nbsp;{rate.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
         </span>
       </div>
 
+      {/* ── Products ────────────────────────────────────────────── */}
       <main className={styles.main}>
         {products.length === 0 ? (
           <div className={styles.empty}>
-            <p>No hay productos disponibles en este catálogo.</p>
+            <Package
+              className={styles.emptyIcon}
+              size={52}
+              strokeWidth={1.25}
+              aria-hidden="true"
+            />
+            <h2 className={styles.emptyTitle}>Catálogo en construcción</h2>
+            <p className={styles.emptySubtitle}>
+              Este negocio está preparando su vitrina digital.
+            </p>
           </div>
         ) : (
           <div className={styles.grid}>
@@ -129,6 +183,9 @@ export default async function CatalogoPage({ params }: PageProps) {
               const imgs     = parseImages(p.images)
               const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
               const priceBs  = priceUsd > 0 ? priceUsd * rate : null
+              const netQty   = stockMap.get(p.id)
+              const outOfStock = netQty !== undefined && netQty <= 0
+
               return (
                 <article key={p.id} className={styles.card}>
                   <div className={styles.cardImage}>
@@ -142,6 +199,9 @@ export default async function CatalogoPage({ params }: PageProps) {
                     ) : (
                       <div className={styles.noImage} aria-hidden="true" />
                     )}
+                    {outOfStock && (
+                      <span className={styles.badgeSinStock}>Sin stock</span>
+                    )}
                   </div>
                   <div className={styles.cardBody}>
                     {p.category && (
@@ -152,7 +212,7 @@ export default async function CatalogoPage({ params }: PageProps) {
                       <p className={styles.productDesc}>{p.description}</p>
                     )}
                     <div className={styles.priceRow}>
-                      {priceUsd > 0 && (
+                      {priceUsd > 0 ? (
                         <>
                           <span className={styles.priceUsd}>
                             ${priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -163,9 +223,10 @@ export default async function CatalogoPage({ params }: PageProps) {
                             </span>
                           )}
                         </>
+                      ) : (
+                        <span className={styles.priceConsultar}>Consultar precio</span>
                       )}
                     </div>
-                    {p.sku && <span className={styles.sku}>Ref: {p.sku}</span>}
                   </div>
                 </article>
               )
@@ -174,6 +235,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         )}
       </main>
 
+      {/* ── WhatsApp FAB ────────────────────────────────────────── */}
       {waUrl && (
         <a
           href={waUrl}
@@ -182,12 +244,12 @@ export default async function CatalogoPage({ params }: PageProps) {
           className={styles.waFab}
           aria-label="Contactar por WhatsApp"
         >
-          <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-          </svg>
+          <MessageCircle size={22} strokeWidth={2} aria-hidden="true" />
+          <span className={styles.waFabText}>Pedir por WhatsApp</span>
         </a>
       )}
 
+      {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className={styles.footer}>
         <p>
           Catálogo digital con{' '}

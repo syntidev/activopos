@@ -96,6 +96,8 @@ model Business {
   catalog_active       Boolean  @default(false)
   catalog_title        String?  @db.VarChar(150)
   catalog_desc         String?  @db.Text
+  segment              String?  @default("retail") @db.VarChar(40)
+  cobro_data           Json?
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
 

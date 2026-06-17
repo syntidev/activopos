@@ -21,3 +21,6 @@ export type { EmptyStateProps } from './EmptyState'
 
 export { Skeleton }  from './Skeleton'
 export type { SkeletonProps, SkeletonVariant } from './Skeleton'
+
+export { KpiCard }   from './KpiCard'
+export type { KpiCardProps, KpiIconVariant } from './KpiCard'

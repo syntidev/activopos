@@ -1,0 +1,86 @@
+/* ── Base card ── */
+.card {
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Hero: fondo sólido brand ── */
+.cardHero {
+  background: linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-hover) 100%);
+  border: 1px solid var(--color-brand-hover);
+}
+
+/* ── Glow: borde degradado A+C ── */
+.cardGlow {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border: 1px solid transparent;
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.07);
+}
+
+/* ── Card top row: icon + badge ── */
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+/* ── Icon wrap ── */
+.iconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.iconHero    { background: rgba(255, 255, 255, 0.2); color: var(--color-text-on-brand); }
+.iconBrand   { background: var(--color-brand-subtle);   color: var(--color-brand);       }
+.iconSuccess { background: var(--color-success-subtle); color: var(--color-success-text); }
+.iconInfo    { background: var(--color-info-subtle);    color: var(--color-info-text);   }
+.iconWarning { background: var(--color-warning-subtle); color: var(--color-warning-text); }
+
+/* ── Label ── */
+.cardLabel {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-2);
+  line-height: var(--leading-snug);
+}
+
+.cardLabelHero { color: rgba(255, 255, 255, 0.75); }
+
+/* ── Value ── */
+.cardValue {
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 var(--space-1-5);
+}
+
+.cardValueHero { color: var(--color-text-on-brand); }
+
+/* ── Bs equivalent ── */
+.cardBs {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.cardBsHero { color: rgba(255, 255, 255, 0.65); }
+
+/* ── Light mode: reduce glow intensity ── */
+[data-theme="light"] .cardGlow,
+.light .cardGlow {
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.04);
+}

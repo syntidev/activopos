@@ -559,8 +559,53 @@
   opacity: 0.5;
 }
 
+/* ── Category tabs ── */
+.tabsBar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-border);
+  scrollbar-width: none;
+}
+
+.tabsBar::-webkit-scrollbar { display: none; }
+
+.catTab {
+  height: 40px;
+  padding: 0 var(--space-4);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition-fast), border-bottom-color var(--transition-fast);
+  margin-bottom: -1px;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .catTab:hover { color: var(--color-text-primary); }
+}
+
+.catTab:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+.catTabActive {
+  color: var(--color-brand);
+  border-bottom-color: var(--color-brand);
+  font-weight: var(--weight-semibold);
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; opacity: 0.55; }
   .tr, .rowActionBtn, .btnAction, .btnPrimary { transition: none; }
+  .catTab { transition: none; }
 }

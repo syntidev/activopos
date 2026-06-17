@@ -160,6 +160,16 @@
   /* Focus ring */
   --focus-ring: 0 0 0 2px var(--color-brand);
   --focus-ring-offset: 0 0 0 4px var(--color-bg), 0 0 0 6px var(--color-brand);
+
+  /* ── Accent RGB + Card A+C Glow ── */
+  --accent-rgb: 37, 99, 235;
+  --card-glow-outline: rgba(var(--accent-rgb), 0.22);
+  --card-glow-gradient: linear-gradient(
+    135deg,
+    rgba(var(--accent-rgb), 0.45) 0%,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(var(--accent-rgb), 0.18) 100%
+  );
 }
 
 /* ============================================================

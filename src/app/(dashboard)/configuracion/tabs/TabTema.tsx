@@ -19,13 +19,47 @@ const ACCENT_COLORS = [
 
 type AccentHex = typeof ACCENT_COLORS[number]['hex']
 
+interface PaletteOption {
+  key: string
+  label: string
+  colors: { sidebar: string; bg: string; accent: string }
+  accentHex: AccentHex
+}
+
+const PALETTES: PaletteOption[] = [
+  {
+    key:       'noche_sabanera',
+    label:     'Noche Sabanera',
+    colors:    { sidebar: '#0D1117', bg: '#161B22', accent: '#2563EB' },
+    accentHex: '#2563EB',
+  },
+  {
+    key:       'tierra_verde',
+    label:     'Tierra Verde',
+    colors:    { sidebar: '#0D1117', bg: '#161B22', accent: '#059669' },
+    accentHex: '#059669',
+  },
+  {
+    key:       'horizonte_llanero',
+    label:     'Horizonte Llanero',
+    colors:    { sidebar: '#1A1A2E', bg: '#16213E', accent: '#D97706' },
+    accentHex: '#D97706',
+  },
+]
+
 export function TabTema({ businessId: _businessId }: Props) {
   const { toast }   = useToast()
 
-  const [loading, setLoading]     = useState(true)
-  const [saving, setSaving]       = useState(false)
-  const [theme, setTheme]         = useState<'dark' | 'light'>('dark')
+  const [loading, setLoading]       = useState(true)
+  const [saving, setSaving]         = useState(false)
+  const [theme, setTheme]           = useState<'dark' | 'light'>('dark')
   const [themeColor, setThemeColor] = useState<AccentHex>('#2563EB')
+  const [selectedPalette, setSelectedPalette] = useState<string | null>(null)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('activopos_segment')
+    if (saved) setSelectedPalette(saved)
+  }, [])
 
   const fetchConfig = useCallback(async () => {
     setLoading(true)
@@ -73,13 +107,22 @@ export function TabTema({ businessId: _businessId }: Props) {
     applyThemePreview(theme, color)
   }
 
+  const handlePaletteSelect = (palette: PaletteOption) => {
+    setSelectedPalette(palette.key)
+    setThemeColor(palette.accentHex)
+    applyThemePreview(theme, palette.accentHex)
+    localStorage.setItem('activopos_segment', palette.key)
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
+      const body: Record<string, string> = { theme, theme_color: themeColor }
+      if (selectedPalette) body.segment = selectedPalette
       const res = await fetch('/api/config/theme', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ theme, theme_color: themeColor }),
+        body:    JSON.stringify(body),
       })
       if (!res.ok) throw new Error()
       toast('Tema guardado correctamente.', 'success')
@@ -130,6 +173,36 @@ export function TabTema({ businessId: _businessId }: Props) {
                 <div className={`${styles.themeCardMain} ${t === 'dark' ? styles.themeCardMainDark : styles.themeCardMainLight}`} />
               </div>
               <p className={styles.themeCardLabel}>{t === 'dark' ? 'Oscuro' : 'Claro'}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Paletas de segmento ── */}
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>
+          <Palette size={16} aria-hidden="true" />
+          Paleta de segmento
+        </h3>
+        <p className={styles.formCardHint}>
+          Preajustes de color adaptados al ambiente del negocio. Cambia el acento automáticamente.
+        </p>
+
+        <div className={styles.paletteCards}>
+          {PALETTES.map((palette) => (
+            <button
+              key={palette.key}
+              type="button"
+              className={`${styles.paletteCard} ${selectedPalette === palette.key ? styles.paletteCardActive : ''}`}
+              onClick={() => handlePaletteSelect(palette)}
+              aria-pressed={selectedPalette === palette.key}
+            >
+              <div className={styles.paletteSwatches}>
+                <span className={styles.paletteSwatch} style={{ backgroundColor: palette.colors.sidebar }} />
+                <span className={styles.paletteSwatch} style={{ backgroundColor: palette.colors.bg }} />
+                <span className={styles.paletteSwatch} style={{ backgroundColor: palette.colors.accent }} />
+              </div>
+              <p className={styles.paletteLabel}>{palette.label}</p>
             </button>
           ))}
         </div>

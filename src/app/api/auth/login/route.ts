@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { signToken, setSessionCookie } from '@/lib/auth'
+import { loginLimiter, getClientIp } from '@/lib/rate-limit'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
@@ -10,6 +11,15 @@ const loginSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  try {
+    await loginLimiter.consume(getClientIp(req))
+  } catch {
+    return NextResponse.json(
+      { error: 'Demasiados intentos. Espera 15 minutos.' },
+      { status: 429 }
+    )
+  }
+
   try {
     const body = await req.json()
     const { email, password } = loginSchema.parse(body)

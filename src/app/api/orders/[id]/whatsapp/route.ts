@@ -1,6 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getBcvRate, formatBs, formatUsd } from '@/lib/bcv'
+
+interface CobroData {
+  pago_movil_banco?:    string
+  pago_movil_telefono?: string
+  pago_movil_titular?:  string
+  pago_movil_cedula?:   string
+  zelle_contacto?:      string
+  zelle_titular?:       string
+  binance_id?:          string
+  zinli_correo?:        string
+}
+
+const buildPaymentLines = (cobro: CobroData | null): string[] => {
+  if (!cobro) return []
+
+  const lines: string[] = []
+
+  if (cobro.pago_movil_telefono) {
+    if (cobro.pago_movil_banco)   lines.push(`• Banco: ${cobro.pago_movil_banco}`)
+    lines.push(`• Pago Móvil: ${cobro.pago_movil_telefono}`)
+    if (cobro.pago_movil_titular) lines.push(`• Titular: ${cobro.pago_movil_titular}`)
+    if (cobro.pago_movil_cedula)  lines.push(`• Cédula: ${cobro.pago_movil_cedula}`)
+  }
+
+  if (cobro.zelle_contacto) {
+    lines.push(`• Zelle: ${cobro.zelle_contacto}`)
+    if (cobro.zelle_titular) lines.push(`• Titular: ${cobro.zelle_titular}`)
+  }
+
+  if (cobro.binance_id)   lines.push(`• Binance ID: ${cobro.binance_id}`)
+  if (cobro.zinli_correo) lines.push(`• Zinli: ${cobro.zinli_correo}`)
+
+  return lines
+}
 
 export async function GET(
   _req: NextRequest,
@@ -12,32 +47,53 @@ export async function GET(
   const id = Number(params.id)
   if (!Number.isFinite(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const order = await prisma.order.findFirst({
-    where: { id, business_id: session.businessId },
-    include: { items: true },
-  })
+  const [order, biz, rate] = await Promise.all([
+    prisma.order.findFirst({
+      where:   { id, business_id: session.businessId },
+      include: { items: true },
+    }),
+    prisma.business.findUnique({
+      where:  { id: session.businessId },
+      select: { name: true, cobro_data: true },
+    }),
+    getBcvRate(),
+  ])
 
   if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
 
-  const fmtUsd = (n: number) =>
-    n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const clientName = order.client_name ?? 'Cliente'
+  const bizName    = biz?.name ?? 'nuestro negocio'
+  const totalUsd   = Number(order.total_usd)
+  const cobro      = (biz?.cobro_data ?? null) as CobroData | null
+  const payLines   = buildPaymentLines(cobro)
+
+  const itemLines = order.items.map(item => {
+    const qty   = Number(item.quantity)
+    const label = item.variant_label ? ` (${item.variant_label})` : ''
+    return `• ${item.product_name}${label} × ${qty} — $${formatUsd(Number(item.subtotal_usd))}`
+  })
 
   const lines: string[] = [
-    `📦 *Pedido ${order.order_number}*`,
+    `¡Hola ${clientName}! 👋`,
+    `Tu pedido en *${bizName}* está listo para procesar.`,
     '',
-    '*Detalle del pedido:*',
-    ...order.items.map((item) => {
-      const qty = Number(item.quantity)
-      const label = item.variant_label ? ` (${item.variant_label})` : ''
-      return `• ${item.product_name}${label} × ${qty} — $${fmtUsd(Number(item.subtotal_usd))}`
-    }),
+    `🛒 *ORDEN #${order.order_number}*`,
+    ...itemLines,
   ]
 
   if (Number(order.delivery_fee) > 0) {
-    lines.push(`🚚 Delivery: $${fmtUsd(Number(order.delivery_fee))}`)
+    lines.push(`🚚 Delivery: $${formatUsd(Number(order.delivery_fee))}`)
   }
 
-  lines.push('', `💰 *Total: $${fmtUsd(Number(order.total_usd))}*`)
+  lines.push(
+    '',
+    `💰 *Total: $${formatUsd(totalUsd)}*`,
+    `   (Bs. ${formatBs(totalUsd, rate)} al cambio BCV)`,
+  )
+
+  if (payLines.length > 0) {
+    lines.push('', '📲 *Para confirmar, realiza el pago a:*', ...payLines)
+  }
 
   if (order.client_address) {
     lines.push('', `📍 *Dirección:* ${order.client_address}`)
@@ -47,9 +103,13 @@ export async function GET(
     lines.push('', `📝 *Notas:* ${order.notes}`)
   }
 
-  const phone = (order.client_phone ?? '').replace(/[^0-9]/g, '')
-  const text  = encodeURIComponent(lines.join('\n'))
-  const url   = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`
+  lines.push('', 'Envíanos el comprobante y procesamos', 'tu pedido de inmediato. ¡Gracias! 🙌')
 
-  return NextResponse.json({ ok: true, url, order_number: order.order_number })
+  const mensaje      = lines.join('\n')
+  const phone        = (order.client_phone ?? '').replace(/[^0-9]/g, '')
+  const whatsapp_url = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`
+    : `https://wa.me/?text=${encodeURIComponent(mensaje)}`
+
+  return NextResponse.json({ ok: true, mensaje, whatsapp_url })
 }

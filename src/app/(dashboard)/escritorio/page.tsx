@@ -11,6 +11,8 @@ import {
   Minus,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { KpiCard } from '@/components/ui/KpiCard'
+import type { KpiIconVariant } from '@/components/ui/KpiCard'
 import DashboardCharts    from './DashboardCharts'
 import DashboardOperativo from './DashboardOperativo'
 import styles from './escritorio.module.css'
@@ -25,7 +27,7 @@ interface KpiItem {
   valueUsd: number
   trendPct: number
   icon: LucideIcon
-  iconClass: string
+  iconVariant: KpiIconVariant
 }
 
 function KpiSkeleton() {
@@ -77,63 +79,58 @@ async function KpiCards({ businessId }: { businessId: number }) {
 
   const kpis: KpiItem[] = [
     {
-      key:       'ventas-hoy',
-      label:     'Ventas hoy',
-      valueUsd:  kpiData.ventas_hoy.value_usd,
-      trendPct:  kpiData.ventas_hoy.trend_pct,
-      icon:      ShoppingCart,
-      iconClass: styles.iconBrand,
+      key:         'ventas-hoy',
+      label:       'Ventas hoy',
+      valueUsd:    kpiData.ventas_hoy.value_usd,
+      trendPct:    kpiData.ventas_hoy.trend_pct,
+      icon:        ShoppingCart,
+      iconVariant: 'brand',
     },
     {
-      key:       'utilidad-hoy',
-      label:     'Utilidad hoy',
-      valueUsd:  kpiData.utilidad_hoy.value_usd,
-      trendPct:  kpiData.utilidad_hoy.trend_pct,
-      icon:      TrendingUp,
-      iconClass: styles.iconSuccess,
+      key:         'utilidad-hoy',
+      label:       'Utilidad hoy',
+      valueUsd:    kpiData.utilidad_hoy.value_usd,
+      trendPct:    kpiData.utilidad_hoy.trend_pct,
+      icon:        TrendingUp,
+      iconVariant: 'success',
     },
     {
-      key:       'ventas-mes',
-      label:     'Ventas del mes',
-      valueUsd:  kpiData.ventas_mes.value_usd,
-      trendPct:  kpiData.ventas_mes.trend_pct,
-      icon:      BarChart2,
-      iconClass: styles.iconInfo,
+      key:         'ventas-mes',
+      label:       'Ventas del mes',
+      valueUsd:    kpiData.ventas_mes.value_usd,
+      trendPct:    kpiData.ventas_mes.trend_pct,
+      icon:        BarChart2,
+      iconVariant: 'info',
     },
     {
-      key:       'utilidad-mes',
-      label:     'Utilidad del mes',
-      valueUsd:  kpiData.utilidad_mes.value_usd,
-      trendPct:  uMesTrend,
-      icon:      DollarSign,
-      iconClass: uMesTrend >= 0 ? styles.iconSuccess : styles.iconWarning,
+      key:         'utilidad-mes',
+      label:       'Utilidad del mes',
+      valueUsd:    kpiData.utilidad_mes.value_usd,
+      trendPct:    uMesTrend,
+      icon:        DollarSign,
+      iconVariant: uMesTrend >= 0 ? 'success' : 'warning',
     },
   ]
 
   return (
     <div className={styles.kpiGrid}>
-      {kpis.map((kpi) => {
-        const Icon = kpi.icon
+      {kpis.map((kpi, index) => {
+        const fmtValue = '$' + kpi.valueUsd.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+        const valueBs = kpiData.bcvRate > 0 ? fmtBs(kpi.valueUsd, kpiData.bcvRate) : undefined
         return (
-          <div key={kpi.key} className={styles.kpiCard}>
-            <div className={styles.kpiCardTop}>
-              <div className={`${styles.iconCircle} ${kpi.iconClass}`}>
-                <Icon size={18} strokeWidth={2} aria-hidden="true" />
-              </div>
-              <TrendBadge pct={kpi.trendPct} />
-            </div>
-            <p className={styles.kpiLabel}>{kpi.label}</p>
-            <p className={styles.kpiValue}>
-              <span className={styles.kpiCurrency}>$</span>
-              {kpi.valueUsd.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-            {kpiData.bcvRate > 0 && (
-              <p className={styles.kpiBs}>{fmtBs(kpi.valueUsd, kpiData.bcvRate)}</p>
-            )}
-          </div>
+          <KpiCard
+            key={kpi.key}
+            label={kpi.label}
+            value={fmtValue}
+            valueBs={valueBs}
+            icon={kpi.icon}
+            iconVariant={kpi.iconVariant}
+            trendBadge={<TrendBadge pct={kpi.trendPct} />}
+            hero={index === 0}
+          />
         )
       })}
     </div>

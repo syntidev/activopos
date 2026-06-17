@@ -9,6 +9,17 @@ const PostSchema = z.object({
   type: z.nativeEnum(PmType).default('other'),
 })
 
+const CobroSchema = z.object({
+  pago_movil_banco:    z.string().max(80).optional(),
+  pago_movil_telefono: z.string().max(20).optional(),
+  pago_movil_titular:  z.string().max(80).optional(),
+  pago_movil_cedula:   z.string().max(15).optional(),
+  zelle_contacto:      z.string().max(80).optional(),
+  zelle_titular:       z.string().max(80).optional(),
+  binance_id:          z.string().max(80).optional(),
+  zinli_correo:        z.string().max(80).optional(),
+})
+
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -53,4 +64,28 @@ export async function POST(request: Request) {
   })
 
   return NextResponse.json({ ok: true, method }, { status: 201 })
+}
+
+export async function PATCH(request: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+  const body: unknown = await request.json()
+
+  let data: z.infer<typeof CobroSchema>
+  try {
+    data = CobroSchema.parse(body)
+  } catch (err) {
+    if (err instanceof z.ZodError) return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    throw err
+  }
+
+  const updated = await prisma.business.update({
+    where:  { id: session.businessId },
+    data:   { cobro_data: data },
+    select: { id: true, cobro_data: true },
+  })
+
+  return NextResponse.json({ ok: true, cobro_data: updated.cobro_data })
 }

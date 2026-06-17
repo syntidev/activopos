@@ -57,10 +57,10 @@ function getStockLevel(qty: number, minStock: number | null): 'ok' | 'low' | 'ou
   return 'ok'
 }
 
-function fmtUsd(n: number): string {
+function fmtUsd(n: number | null | undefined): string {
   return (
     '$' +
-    n.toLocaleString('en-US', {
+    (n ?? 0).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })

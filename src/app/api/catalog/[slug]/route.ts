@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
+import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -14,6 +15,15 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  try {
+    await catalogLimiter.consume(getClientIp(_req))
+  } catch {
+    return NextResponse.json(
+      { error: 'Demasiados intentos. Intenta más tarde.' },
+      { status: 429 }
+    )
+  }
+
   const parsed = slugSchema.safeParse(params.slug)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })

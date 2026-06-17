@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   const sp           = req.nextUrl.searchParams
   const q            = sp.get('q')?.trim() ?? ''
   const limit        = Math.min(parseInt(sp.get('limit') ?? '20'), 50)
-  const includeEmpty = sp.get('include_empty') === 'true'
+  const includeEmpty = sp.get('include_empty') !== 'false'
 
   if (!q) return NextResponse.json({ ok: true, products: [] })
 

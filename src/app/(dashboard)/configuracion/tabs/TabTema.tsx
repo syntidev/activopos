@@ -46,7 +46,10 @@ export function TabTema({ businessId: _businessId }: Props) {
 
   useEffect(() => {
     const saved = localStorage.getItem('activopos_segment')
-    if (saved) setSelectedPalette(saved)
+    if (saved) {
+      setSelectedPalette(saved)
+      document.documentElement.setAttribute('data-segment', saved)
+    }
   }, [])
 
   const fetchConfig = useCallback(async () => {
@@ -62,7 +65,11 @@ export function TabTema({ businessId: _businessId }: Props) {
       const c = (ACCENT_COLORS.find(a => a.hex === body.business.theme_color)?.hex ?? '#2563EB') as AccentHex
       setTheme(t)
       setThemeColor(c)
-      if (body.business.segment) setSelectedPalette(body.business.segment)
+      if (body.business.segment) {
+        setSelectedPalette(body.business.segment)
+        document.documentElement.setAttribute('data-segment', body.business.segment)
+        localStorage.setItem('activopos_segment', body.business.segment)
+      }
     } catch {
       toast('Error al cargar el tema.', 'error')
     } finally {
@@ -100,6 +107,8 @@ export function TabTema({ businessId: _businessId }: Props) {
     if (!palette) return
     setSelectedPalette(key)
     setThemeColor(palette.accentHex)
+    document.documentElement.setAttribute('data-segment', key)
+    document.documentElement.style.removeProperty('--color-brand')
     localStorage.setItem('activopos_segment', key)
   }
 

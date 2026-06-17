@@ -476,3 +476,73 @@
   --overlay-bg: rgba(0,0,0,0.5);
   --overlay-blur: 4px;
 }
+
+/* ============================================================
+   TEMAS DE SEGMENTO COMERCIAL
+   Activados con data-segment="..." en <html>
+   Sobreescriben solo las variables de marca/acento.
+   Compatible con dark y light mode simultáneamente.
+   ============================================================ */
+
+[data-segment="retail"] {
+  --color-brand:        #2563EB;
+  --color-brand-hover:  #3B82F6;
+  --color-brand-active: #1D4ED8;
+  --color-brand-subtle: rgba(37,99,235,0.12);
+  --color-brand-border: rgba(37,99,235,0.35);
+  --accent-rgb: 37, 99, 235;
+}
+
+[data-segment="restaurante"] {
+  --color-brand:        #D97706;
+  --color-brand-hover:  #F59E0B;
+  --color-brand-active: #B45309;
+  --color-brand-subtle: rgba(217,119,6,0.12);
+  --color-brand-border: rgba(217,119,6,0.35);
+  --accent-rgb: 217, 119, 6;
+}
+
+[data-segment="servicios"] {
+  --color-brand:        #0891B2;
+  --color-brand-hover:  #06B6D4;
+  --color-brand-active: #0E7490;
+  --color-brand-subtle: rgba(8,145,178,0.12);
+  --color-brand-border: rgba(8,145,178,0.35);
+  --accent-rgb: 8, 145, 178;
+}
+
+[data-segment="salud"] {
+  --color-brand:        #059669;
+  --color-brand-hover:  #10B981;
+  --color-brand-active: #047857;
+  --color-brand-subtle: rgba(5,150,105,0.12);
+  --color-brand-border: rgba(5,150,105,0.35);
+  --accent-rgb: 5, 150, 105;
+}
+
+[data-segment="ferreteria"] {
+  --color-brand:        #F59E0B;
+  --color-brand-hover:  #FBBF24;
+  --color-brand-active: #D97706;
+  --color-brand-subtle: rgba(245,158,11,0.12);
+  --color-brand-border: rgba(245,158,11,0.35);
+  --accent-rgb: 245, 158, 11;
+}
+
+[data-segment="carniceria"] {
+  --color-brand:        #DC2626;
+  --color-brand-hover:  #EF4444;
+  --color-brand-active: #B91C1C;
+  --color-brand-subtle: rgba(220,38,38,0.12);
+  --color-brand-border: rgba(220,38,38,0.35);
+  --accent-rgb: 220, 38, 38;
+}
+
+[data-segment="tecnologia"] {
+  --color-brand:        #7C3AED;
+  --color-brand-hover:  #8B5CF6;
+  --color-brand-active: #6D28D9;
+  --color-brand-subtle: rgba(124,58,237,0.12);
+  --color-brand-border: rgba(124,58,237,0.35);
+  --accent-rgb: 124, 58, 237;
+}

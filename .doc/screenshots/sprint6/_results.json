@@ -1,25 +1,40 @@
 {
-  "auth": {},
-  "pos": {},
-  "inventario": {},
+  "auth": {
+    "redirect_root": true,
+    "redirect_protected": true,
+    "wrong_creds_401": true,
+    "login_200_cookie": true,
+    "escritorio_with_session": true
+  },
+  "pos": {
+    "pos_loads": true,
+    "no_js_errors": true,
+    "caja_apertura": "no_modal_already_open",
+    "search_api_count": 0,
+    "busqueda_productos": false,
+    "agregar_ticket": "blocked_by_bug06",
+    "totales_usd_bs": true,
+    "cobro_exitoso": false
+  },
+  "inventario": {
+    "lista_productos": true,
+    "tabla_visible": true,
+    "crear_producto": true,
+    "name_filled": true,
+    "producto_en_lista": true
+  },
+  "catalogo": {
+    "url_ok": true,
+    "no_500": true,
+    "has_content": true,
+    "no_auth_required": true
+  },
   "bugs": [
     {
-      "flujo": "auth",
-      "route": "FATAL",
-      "expected": "flow",
-      "actual": "Timeout 30000ms exceeded."
-    },
-    {
       "flujo": "pos",
-      "route": "FATAL",
-      "expected": "flow",
-      "actual": "Expecting value: line 2 column 15 (char 15)"
-    },
-    {
-      "flujo": "inventario",
-      "route": "FATAL",
-      "expected": "flow",
-      "actual": "Expecting value: line 2 column 15 (char 15)"
+      "route": "GET /api/products/search?q=Camisa",
+      "expected": "productos en resultado",
+      "actual": "0 productos (BUG-06: search API retorna vacio)"
     }
   ]
 }

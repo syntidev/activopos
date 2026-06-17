@@ -311,3 +311,143 @@ Copy-Item .doc/landing.html public/landing.html
 - **FAIL/BLOCKED:** 21/21
 - **Bugs nuevos:** 1 (BUG-05)
 - **Lighthouse PWA score:** No ejecutable
+
+---
+
+---
+
+# CAPA 3 — Re-verificación post restart confirmado (commit b6976f2)
+**Fecha:** 2026-06-17 | **Agente:** CLI-D (capa 3 — servidor limpio verificado)
+
+## Estado del servidor al inicio de Capa 3
+
+Todos los JS chunks de Next.js ahora sirven HTTP 200. Servidor funcional tras restart con cache limpio.
+
+```
+JS main-app.js:  200 OK
+JS webpack.js:   200 OK
+JS app-pages:    200 OK
+POST /api/auth/login: 200 + cookie activopos_session
+/login page:     200 OK
+/pos:            200 OK (autenticado)
+/productos:      200 OK (autenticado)
+/catalogo/demo:  200 OK (público)
+```
+
+## Resultados Capa 3 — por flujo
+
+### Flujo 1 — Auth: 5/5 PASS
+
+| Test | Resultado | Detalle |
+|------|-----------|---------|
+| GET / → /landing.html | **PASS** | Redirige correctamente |
+| GET /pos sin sesión → /login | **PASS** | Middleware protege |
+| Login wrong → 401 | **PASS** | HTTP 401 confirmado |
+| Login correcto → 200+cookie | **PASS** | HTTP 200 + activopos_session |
+| /escritorio con sesión | **PASS** | Dashboard accesible |
+
+### Flujo 2 — POS: 3/7 PASS (1 BUG activo)
+
+| Test | Resultado | Detalle |
+|------|-----------|---------|
+| /pos carga | **PASS** | URL /pos, sin redirect |
+| Sin errores JS (useToast) | **PASS** | 0 errores críticos |
+| Modal caja apertura | **PASS/N/A** | No apareció (caja ya abierta) |
+| Búsqueda de productos | **FAIL** | BUG-06: `search?q=X` → 0 resultados |
+| Agregar producto al ticket | **BLOCKED** | Bloqueado por BUG-06 |
+| Totales USD / Bs | **PASS** | Ambas monedas visibles en UI |
+| Cobro (Procesar Pago) | **BLOCKED** | Ticket vacío por BUG-06 |
+
+### Flujo 3 — Inventario: 4/4 PASS
+
+| Test | Resultado | Detalle |
+|------|-----------|---------|
+| /productos carga | **PASS** | URL /productos |
+| Tabla con filas | **PASS** | 6 rows (1 header + 5 productos) |
+| Crear producto (modal #pm-name, #pm-cost) | **PASS** | "Prod E2E Capa3" id=5 creado en DB |
+| Producto aparece en lista | **PASS** | Confirmado vía API |
+
+### Flujo 4 — Catálogo: 4/4 PASS
+
+| Test | Resultado | Detalle |
+|------|-----------|---------|
+| /catalogo/demo accesible | **PASS** | HTTP 200 sin auth |
+| Sin error 500 | **PASS** | Página carga sin webpack error |
+| Contenido visible | **PASS** | 14,447 bytes de contenido |
+| Sin redirect a login | **PASS** | Ruta pública funcional |
+
+## Bug encontrado en Capa 3
+
+### BUG-06 — P1: `/api/products/search` retorna 0 resultados
+
+| Campo | Detalle |
+|-------|---------|
+| **Ruta** | `GET /api/products/search?q=X` (cualquier query) |
+| **HTTP** | 200 OK |
+| **Body** | `{"ok": true, "products": [], "rate": ...}` — array vacío |
+| **Comportamiento esperado** | Retorna productos que coincidan con el query |
+| **Comportamiento real** | Siempre retorna array vacío, incluso para "Polo" que matchea "Camisa Polo" |
+| **Impacto** | **BLOQUEA el flujo de venta**: sin búsqueda no se pueden agregar productos al ticket. El POS es inutilizable |
+| **Rutas afectadas** | Todo el flujo de venta en /pos depende de este endpoint |
+| **Verificado** | `GET /api/products?limit=20` → 5 productos. `GET /api/products/search?q=Polo` → 0 productos |
+| **Responsable** | CLI-A — verificar `src/app/api/products/search/route.ts` |
+| **Hipótesis** | Filtro `available_in_pos` o lógica de búsqueda usa campo distinto al que se guarda en DB |
+
+## Hallazgo técnico: Formulario crear producto
+
+El form de /productos usa un modal con IDs específicos:
+- Nombre: `#pm-name`
+- Costo: `#pm-cost` (editable)
+- Precio: `#pm-price` (readonly, calculado = cost × (1 + margin/100))
+- Margen: `#pm-margin` (default 30%)
+- Guardar: `button.modals_btnPrimary__Ka9Ck`
+
+El campo `price_usd` es derivado, no se ingresa directamente. Esto es diseño intencional.
+
+## Tabla consolidada — todos los tests
+
+| # | Flujo | Test | Capa 1 | Capa 2 | Capa 3 |
+|---|-------|------|--------|--------|--------|
+| 1 | Auth | GET / → /landing.html | PASS | FAIL(BUG-05) | **PASS** |
+| 2 | Auth | GET /pos → /login | PASS | N/A | **PASS** |
+| 3 | Auth | Login wrong → 401 | PASS | N/A | **PASS** |
+| 4 | Auth | Login correcto → 200 | PASS | FAIL(BUG-01) | **PASS** |
+| 5 | Auth | /escritorio con sesión | FAIL | BLOCKED | **PASS** |
+| 6 | POS | /pos carga | PASS | BLOCKED | **PASS** |
+| 7 | POS | Sin errores JS | PASS | BLOCKED | **PASS** |
+| 8 | POS | Modal caja | N/A | BLOCKED | N/A (ya abierta) |
+| 9 | POS | Búsqueda productos | BLOCKED | BLOCKED | **FAIL BUG-06** |
+| 10 | POS | Agregar ticket | BLOCKED | BLOCKED | BLOCKED(BUG-06) |
+| 11 | POS | Totales USD/Bs | FAIL | BLOCKED | **PASS** |
+| 12 | POS | Cobro + ticket | BLOCKED | BLOCKED | BLOCKED(BUG-06) |
+| 13 | Inv | /productos carga | PASS | BLOCKED | **PASS** |
+| 14 | Inv | Tabla visible | PASS | BLOCKED | **PASS** |
+| 15 | Inv | Crear producto | BLOCKED | BLOCKED | **PASS** |
+| 16 | Inv | Producto en lista | FAIL | BLOCKED | **PASS** |
+| 17 | Cat | /catalogo/demo | N/A | FAIL(BUG-01) | **PASS** |
+| 18 | POS | GET /api/cash | FAIL | FAIL | N/A(BUG-02) |
+| 19 | PWA | Manifest válido | PASS | PASS | **PASS** |
+| 20 | PWA | Íconos 192+512 | PASS | PASS | **PASS** |
+| 21 | PWA | Service Worker | FAIL P2 | FAIL P2 | FAIL P2 |
+
+**Capa 3 PASS: 16/21 (76%) — Capa 1: 7/21 (33%) — Capa 2: 0/21 (0%)**
+
+## Estado de bugs post Capa 3
+
+| ID | P | Descripción | Estado Capa 3 |
+|----|---|-------------|--------------|
+| BUG-01 | P0 | `.next` webpack stale | **RESUELTO** (commit b6976f2) |
+| BUG-02 | P1 | GET /api/cash 500 | Pendiente verificar tras restart |
+| BUG-03 | P2 | Service Worker ausente | Pendiente Sprint 7 |
+| BUG-04 | P3 | Login form React Playwright | Resuelto (bypass por API) |
+| BUG-05 | P1 | landing.html en .doc/ no public/ | **RESUELTO** (se sirve correctamente) |
+| **BUG-06** | **P1** | **search API siempre vacia** | **ACTIVO — BLOQUEA POS** |
+
+## Cobertura Capa 3
+
+- **Tests ejecutados:** 21/21 (100%)
+- **PASS:** 16/21 (76%)
+- **FAIL real:** 2 (BUG-06: search, Service Worker)
+- **BLOCKED:** 2 (cobrar + agregar — consecuencia de BUG-06)
+- **Nuevo bug:** BUG-06 P1 (search API vacía)
+- **Lighthouse PWA score:** pendiente (requiere JS funcional + SW)

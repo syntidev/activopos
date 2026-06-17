@@ -286,6 +286,7 @@ function ReportesContent() {
   const [page, setPage]           = useState(1)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [exporting, setExporting]     = useState(false)
   const initRef = useRef(false)
 
   const fetchSales = useCallback(
@@ -349,6 +350,155 @@ function ReportesContent() {
     { key: 'month', label: 'Mes' },
   ]
 
+  const handleExportPDF = useCallback(async () => {
+    if (sales.length === 0) { toast('No hay datos para exportar', 'error'); return }
+    setExporting(true)
+    try {
+      const { jsPDF } = await import('jspdf')
+      const doc       = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+      const pw        = doc.internal.pageSize.getWidth()
+      const ph        = doc.internal.pageSize.getHeight()
+      const m         = 15
+
+      /* ── Header ── */
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text('ActivoPOS — Historial de Ventas', m, 18)
+
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Período: ${from} al ${to}`, m, 26)
+      doc.text(`Total del período: ${pagination.total} ventas`, m, 31)
+      if (pagination.pages > 1) {
+        doc.text(`(Página ${page} de ${pagination.pages} — mostrando ${sales.length} de ${pagination.total})`, m, 36)
+      }
+      doc.text(`Generado: ${new Date().toLocaleString('es-VE')}`, pw - m, 26, { align: 'right' })
+
+      /* ── Aggregate from loaded data ── */
+      let totalPaidUsd = 0
+      let totalPaidBs  = 0
+      const byMethod:  Record<string, number>                    = {}
+      const byProduct: Record<string, { qty: number; usd: number }> = {}
+
+      for (const sale of sales) {
+        if (sale.status === 'paid') {
+          totalPaidUsd += Number(sale.total_usd)
+          totalPaidBs  += Number(sale.total_bs)
+        }
+        for (const p of sale.payments) {
+          const mn = p.payment_method.name
+          byMethod[mn] = (byMethod[mn] ?? 0) + Number(p.amount_usd)
+        }
+        for (const item of sale.items) {
+          const pn = item.product_name
+          if (!byProduct[pn]) byProduct[pn] = { qty: 0, usd: 0 }
+          byProduct[pn].qty += Number(item.quantity)
+          byProduct[pn].usd += Number(item.total_usd)
+        }
+      }
+
+      /* ── Table ── */
+      const headers  = ['Fecha', 'Orden', 'Cliente', 'Método de pago', 'Total USD', 'Estado']
+      const colW     = [40, 18, 55, 55, 30, 24]
+      let y          = pagination.pages > 1 ? 44 : 39
+
+      doc.setFillColor(30, 30, 30)
+      doc.rect(m, y - 5, pw - m * 2, 7, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(7.5)
+      doc.setFont('helvetica', 'bold')
+
+      let x = m
+      for (let i = 0; i < headers.length; i++) {
+        doc.text(headers[i], x + 2, y)
+        x += colW[i]
+      }
+
+      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'normal')
+      y += 4
+
+      for (let ri = 0; ri < sales.length; ri++) {
+        const sale = sales[ri]
+        if (y > ph - 40) { doc.addPage(); y = 20 }
+
+        const dt     = sale.sold_at ?? sale.created_at
+        const dateS  = dt ? new Date(dt).toLocaleDateString('es-VE') : '—'
+        const client = sale.client?.name ?? 'Contado'
+        const method = sale.payments.map(p => p.payment_method.name).join(', ') || '—'
+        const status = STATUS_LABEL[sale.status] ?? sale.status
+
+        if (ri % 2 === 0) {
+          doc.setFillColor(246, 246, 248)
+          doc.rect(m, y - 4, pw - m * 2, 6.5, 'F')
+        }
+
+        const cells = [dateS, `#${sale.id}`, client, method, `$${Number(sale.total_usd).toFixed(2)}`, status]
+        x = m
+        for (let i = 0; i < cells.length; i++) {
+          const cell = String(cells[i])
+          const max  = Math.floor(colW[i] / 1.8)
+          doc.text(cell.length > max ? cell.slice(0, max - 1) + '…' : cell, x + 2, y)
+          x += colW[i]
+        }
+        y += 6.5
+      }
+
+      /* ── Summary ── */
+      y += 6
+      if (y > ph - 50) { doc.addPage(); y = 20 }
+
+      doc.setDrawColor(180, 180, 180)
+      doc.line(m, y, pw - m, y)
+      y += 5
+
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Resumen', m, y)
+      y += 5
+
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Total pagado: $${totalPaidUsd.toFixed(2)} · Bs. ${totalPaidBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}`, m, y)
+      y += 5
+
+      const methods = Object.entries(byMethod).sort((a, b) => b[1] - a[1])
+      if (methods.length > 0) {
+        doc.setFont('helvetica', 'bold')
+        doc.text('Métodos de pago:', m, y)
+        y += 4
+        doc.setFont('helvetica', 'normal')
+        for (const [name, amt] of methods) {
+          doc.text(`  ${name}: $${amt.toFixed(2)}`, m, y)
+          y += 4
+        }
+        y += 2
+      }
+
+      const topProds = Object.entries(byProduct).sort((a, b) => b[1].usd - a[1].usd).slice(0, 5)
+      if (topProds.length > 0) {
+        if (y > ph - 30) { doc.addPage(); y = 20 }
+        doc.setFont('helvetica', 'bold')
+        doc.text('Top productos:', m, y)
+        y += 4
+        doc.setFont('helvetica', 'normal')
+        for (const [name, data] of topProds) {
+          doc.text(`  ${name}: ${Number(data.qty).toFixed(2)} und · $${data.usd.toFixed(2)}`, m, y)
+          y += 4
+        }
+      }
+
+      /* ── Save ── */
+      const filename = `reporte_${to}.pdf`
+      doc.save(filename)
+      toast('PDF generado correctamente', 'success')
+    } catch {
+      toast('Error al generar el PDF', 'error')
+    } finally {
+      setExporting(false)
+    }
+  }, [sales, from, to, page, pagination, toast])
+
   return (
     <div className={styles.page}>
       {/* Header */}
@@ -362,6 +512,9 @@ function ReportesContent() {
             variant="ghost"
             size="sm"
             leftIcon={<Printer size={14} aria-hidden="true" />}
+            onClick={handleExportPDF}
+            loading={exporting}
+            disabled={sales.length === 0 || loading}
           >
             Exportar PDF
           </Button>

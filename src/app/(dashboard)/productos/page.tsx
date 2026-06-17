@@ -390,26 +390,39 @@ export default function ProductosPage() {
           />
         </div>
 
-        <select
-          className={styles.categoryFilter}
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          aria-label="Filtrar por categoría"
-        >
-          <option value="">Todas las Categorías</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={String(cat.id)}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-
         {!isLoading && products.length > 0 && (
           <span className={styles.countInfo}>
             {products.length} {products.length === 1 ? 'producto' : 'productos'}
           </span>
         )}
       </div>
+
+      {/* ── Category tabs ── */}
+      {categories.length > 0 && (
+        <div className={styles.tabsBar} role="tablist" aria-label="Filtrar por categoría">
+          <button
+            role="tab"
+            type="button"
+            className={`${styles.catTab} ${selectedCategory === '' ? styles.catTabActive : ''}`}
+            onClick={() => setSelectedCategory('')}
+            aria-selected={selectedCategory === ''}
+          >
+            Todos
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              role="tab"
+              type="button"
+              className={`${styles.catTab} ${selectedCategory === String(cat.id) ? styles.catTabActive : ''}`}
+              onClick={() => setSelectedCategory(String(cat.id))}
+              aria-selected={selectedCategory === String(cat.id)}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Table ── */}
       <div className={styles.tableWrapper}>

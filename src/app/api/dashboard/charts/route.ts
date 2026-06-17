@@ -37,19 +37,20 @@ export async function GET(req: NextRequest) {
   const tomorrowStart = new Date(todayStart.getTime() + 86_400_000)
 
   let from: Date
-  // dateExpr and groupExpr are period-derived constants — NOT user input
   let dateExpr: string
   let groupExpr: string
 
   if (period === '12m') {
     from      = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1)
-    dateExpr  = "DATE_FORMAT(s.sold_at, '%Y-%m')"
-    groupExpr = "DATE_FORMAT(s.sold_at, '%Y-%m')"
+    dateExpr  = "DATE_FORMAT(sold_at, '%Y-%m')"
+    groupExpr = "DATE_FORMAT(sold_at, '%Y-%m')"
   } else {
     const days = period === '30d' ? 29 : 6
     from      = new Date(todayStart.getTime() - days * 86_400_000)
-    dateExpr  = "DATE_FORMAT(s.sold_at, '%d/%m')"
-    groupExpr = "DATE(s.sold_at)"
+    // dateExpr == groupExpr — evita only_full_group_by en MariaDB
+    // El formato dd/mm se aplica en JS (ver formatLabel)
+    dateExpr  = "DATE(sold_at)"
+    groupExpr = "DATE(sold_at)"
   }
 
   const fromIso = from.toISOString().slice(0, 19).replace('T', ' ')
@@ -57,50 +58,60 @@ export async function GET(req: NextRequest) {
 
   const [salesRows, methodRows, topRows, lowStockRow, opsToday, creditosAbiertos, cxcSales, rateRows] =
     await Promise.all([
+
+      // Subquery interna agrupa por s.id — evita only_full_group_by en MariaDB
       prisma.$queryRawUnsafe<DailyRow[]>(`
         SELECT
           ${dateExpr} AS date_label,
-          SUM(s.total_usd) AS total_usd,
-          SUM(s.total_bs)  AS total_bs,
-          SUM(si_profit.profit) AS profit,
-          COUNT(DISTINCT s.id) AS tx_count
-        FROM sales s
-        LEFT JOIN (
-          SELECT si.sale_id,
-                 SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd,0)) AS profit
-          FROM sale_items si JOIN products p ON p.id = si.product_id
-          GROUP BY si.sale_id
-        ) si_profit ON si_profit.sale_id = s.id
-        WHERE s.business_id = ${bid}
-          AND s.status = 'paid'
-          AND s.sold_at >= '${fromIso}'
-          AND s.sold_at <  '${toIso}'
+          SUM(total_usd)       AS total_usd,
+          SUM(total_bs)        AS total_bs,
+          SUM(profit)          AS profit,
+          COUNT(DISTINCT id)   AS tx_count
+        FROM (
+          SELECT
+            s.id,
+            s.sold_at,
+            s.total_usd,
+            s.total_bs,
+            COALESCE(SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)), 0) AS profit
+          FROM sales s
+          LEFT JOIN sale_items si ON si.sale_id = s.id
+          LEFT JOIN products   p  ON p.id = si.product_id
+          WHERE s.business_id = ${bid}
+            AND s.status      = 'paid'
+            AND s.sold_at    >= '${fromIso}'
+            AND s.sold_at     < '${toIso}'
+          GROUP BY s.id, s.sold_at, s.total_usd, s.total_bs
+        ) q
         GROUP BY ${groupExpr}
-        ORDER BY MIN(s.sold_at) ASC
+        ORDER BY ${groupExpr} ASC
       `),
+
       prisma.$queryRawUnsafe<MethodRow[]>(`
         SELECT pm.type, pm.name, SUM(sp.amount_usd) AS total_usd
         FROM sale_payments sp
         JOIN payment_methods pm ON pm.id = sp.payment_method_id
-        JOIN sales s ON s.id = sp.sale_id
+        JOIN sales s            ON s.id  = sp.sale_id
         WHERE s.business_id = ${bid}
-          AND s.sold_at >= '${fromIso}'
-          AND s.sold_at <  '${toIso}'
+          AND s.sold_at    >= '${fromIso}'
+          AND s.sold_at     < '${toIso}'
         GROUP BY pm.type, pm.name
         ORDER BY total_usd DESC
       `),
+
       prisma.$queryRawUnsafe<TopRow[]>(`
         SELECT si.product_name, SUM(si.quantity) AS qty, SUM(si.subtotal_usd) AS total_usd
         FROM sale_items si
         JOIN sales s ON s.id = si.sale_id
         WHERE s.business_id = ${bid}
-          AND s.status = 'paid'
-          AND s.sold_at >= '${fromIso}'
-          AND s.sold_at <  '${toIso}'
+          AND s.status      = 'paid'
+          AND s.sold_at    >= '${fromIso}'
+          AND s.sold_at     < '${toIso}'
         GROUP BY si.product_id, si.product_name
         ORDER BY total_usd DESC
         LIMIT 5
       `),
+
       prisma.$queryRawUnsafe<LowRow[]>(`
         SELECT COUNT(*) AS cnt
         FROM products p
@@ -111,16 +122,19 @@ export async function GET(req: NextRequest) {
           GROUP BY product_id
         ) inv ON inv.product_id = p.id
         WHERE p.business_id = ${bid}
-          AND p.active = 1
-          AND p.min_stock > 0
+          AND p.active      = 1
+          AND p.min_stock   > 0
           AND COALESCE(inv.net_qty, 0) <= p.min_stock
       `),
+
       prisma.sale.aggregate({
         where:  { business_id: bid, status: 'paid', sold_at: { gte: todayStart, lt: tomorrowStart } },
         _sum:   { total_usd: true },
         _count: { id: true },
       }),
+
       prisma.sale.count({ where: { business_id: bid, status: 'pending' } }),
+
       prisma.sale.findMany({
         where: { business_id: bid, status: 'pending', client_id: { not: null } },
         select: {
@@ -131,15 +145,19 @@ export async function GET(req: NextRequest) {
         orderBy: { created_at: 'asc' },
         take: 10,
       }),
+
       prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
     ])
 
   const formatLabel = (label: string): string => {
     if (period === '12m') {
+      // label = 'YYYY-MM' → nombre de mes en español
       const [, month] = label.split('-')
       return MONTHS_ES[parseInt(month, 10) - 1] ?? label
     }
-    return label
+    // label = 'YYYY-MM-DD' (DATE(sold_at)) → 'DD/MM'
+    const parts = label.split('-')
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}` : label
   }
 
   const bcvRate = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50

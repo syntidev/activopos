@@ -170,6 +170,11 @@
     rgba(255, 255, 255, 0.06) 45%,
     rgba(var(--accent-rgb), 0.18) 100%
   );
+
+  /* ── Card shadows (sellado Sprint 7 CLI-B) ── */
+  --card-hero-shadow:       0 4px 16px rgba(37,99,235,0.35), 0 1px 4px rgba(37,99,235,0.5);
+  --card-glow-shadow-dark:  0 0 14px rgba(37,99,235,0.18);
+  --card-glow-shadow-light: 0 2px 12px rgba(37,99,235,0.1), 0 1px 3px rgba(0,0,0,0.04);
 }
 
 /* ============================================================
@@ -332,8 +337,9 @@
 .light {
 
   /* ── Fondos ── */
-  --color-bg:        #F6F8FA;
-  --color-surface:   #FFFFFF;
+  --color-bg:          #F4F6F8;
+  --color-bg-primary:  #F4F6F8;
+  --color-surface:     #FFFFFF;
   --color-surface-2: #F6F8FA;
   --color-surface-3: #EAEEF2;
   --color-surface-4: #D0D7DE;

@@ -83,7 +83,27 @@ async function main() {
     },
   })
 
-  // Producto demo con variantes
+  // ── Categorías ──────────────────────────────────────────────────────
+  const categoryDefs = [
+    { name: 'Ropa',       color: '#2563EB', sort_order: 0 },
+    { name: 'Alimentos',  color: '#16A34A', sort_order: 1 },
+    { name: 'Tecnología', color: '#7C3AED', sort_order: 2 },
+    { name: 'Servicios',  color: '#D97706', sort_order: 3 },
+  ]
+
+  const catIds: Record<string, number> = {}
+  for (const def of categoryDefs) {
+    const existing = await prisma.category.findFirst({
+      where: { business_id: business.id, name: def.name },
+    })
+    const cat = existing ?? await prisma.category.create({
+      data: { business_id: business.id, ...def },
+    })
+    catIds[def.name] = cat.id
+  }
+  console.log('✅ Categorías: Ropa, Alimentos, Tecnología, Servicios')
+
+  // ── Ropa — Camisa Polo (con variantes) ──────────────────────────────
   const existingPolo = await prisma.product.findFirst({
     where: { business_id: business.id, name: 'Camisa Polo' },
   })
@@ -92,6 +112,7 @@ async function main() {
     await prisma.product.create({
       data: {
         business_id:        business.id,
+        category_id:        catIds['Ropa'],
         name:               'Camisa Polo',
         description:        'Camisa polo de algodón, disponible en varias tallas y colores',
         sale_mode:          'unit',
@@ -115,41 +136,64 @@ async function main() {
       },
     })
     console.log('✅ Camisa Polo con variantes creada')
+  } else if (!existingPolo.category_id) {
+    await prisma.product.update({
+      where: { id: existingPolo.id },
+      data:  { category_id: catIds['Ropa'] },
+    })
   }
 
-  // Productos adicionales para demo del catálogo
-  const demoCatalogProducts = [
-    {
-      name:               'Pantalón Jean',
-      description:        'Jean de mezclilla corte slim, resistente y cómodo',
-      price_per_unit_usd: 22.00,
-      cost_per_unit_usd:  12.00,
-    },
-    {
-      name:               'Zapatos Deportivos',
-      description:        'Calzado deportivo con suela antideslizante',
-      price_per_unit_usd: 35.00,
-      cost_per_unit_usd:  18.00,
-    },
+  // ── Resto de productos por categoría (idempotente) ───────────────────
+  const seedProducts = [
+    // Ropa
+    { name: 'Pantalón Jean',        cat: 'Ropa',       price: 22.00, cost: 12.00, desc: 'Jean de mezclilla corte slim, resistente y cómodo' },
+    { name: 'Zapatos Deportivos',   cat: 'Ropa',       price: 35.00, cost: 18.00, desc: 'Calzado deportivo con suela antideslizante' },
+    { name: 'Vestido Casual',       cat: 'Ropa',       price: 25.00, cost: 13.00, desc: 'Vestido de tela liviana, ideal para el día a día' },
+    { name: 'Chaqueta de Cuero',    cat: 'Ropa',       price: 89.00, cost: 45.00, desc: 'Chaqueta de cuero genuino con forro interior' },
+    { name: 'Gorra Cap',            cat: 'Ropa',       price: 12.00, cost:  6.00, desc: 'Gorra estilo cap ajustable con visera plana' },
+    // Alimentos
+    { name: 'Arepa con Pollo',      cat: 'Alimentos',  price:  3.50, cost:  1.50, desc: 'Arepa rellena de pollo mechado con guasacaca' },
+    { name: 'Jugo Natural',         cat: 'Alimentos',  price:  2.00, cost:  0.80, desc: 'Jugo fresco del día: parchita, guayaba o naranja' },
+    { name: 'Torta de Chocolate',   cat: 'Alimentos',  price: 15.00, cost:  7.00, desc: 'Torta húmeda de chocolate con ganache artesanal' },
+    { name: 'Café Espresso',        cat: 'Alimentos',  price:  1.50, cost:  0.50, desc: 'Espresso doble de granos venezolanos seleccionados' },
+    // Tecnología
+    { name: 'Audífonos Bluetooth',  cat: 'Tecnología', price: 35.00, cost: 18.00, desc: 'Audífonos inalámbricos con cancelación de ruido' },
+    { name: 'Cable USB-C',          cat: 'Tecnología', price:  8.00, cost:  3.00, desc: 'Cable USB-C 3A para carga rápida, 1 metro' },
+    { name: 'Funda iPhone',         cat: 'Tecnología', price: 12.00, cost:  5.00, desc: 'Funda de silicona premium, varios modelos disponibles' },
+    { name: 'Cargador Inalámbrico', cat: 'Tecnología', price: 25.00, cost: 12.00, desc: 'Cargador Qi 15W compatible con iPhone y Android' },
+    // Servicios
+    { name: 'Corte de Cabello',     cat: 'Servicios',  price:  8.00, cost:  2.00, desc: 'Corte clásico o moderno con lavado incluido',         svc: true },
+    { name: 'Manicure',             cat: 'Servicios',  price: 12.00, cost:  4.00, desc: 'Manicure completo con esmaltado semipermanente',       svc: true },
+    { name: 'Delivery Express',     cat: 'Servicios',  price:  5.00, cost:  2.00, desc: 'Entrega a domicilio en radio de 5 km',                 svc: true },
   ]
 
-  for (const prod of demoCatalogProducts) {
+  for (const p of seedProducts) {
     const exists = await prisma.product.findFirst({
-      where: { business_id: business.id, name: prod.name },
+      where: { business_id: business.id, name: p.name },
     })
     if (!exists) {
       await prisma.product.create({
         data: {
-          business_id:       business.id,
-          sale_mode:         'unit',
-          is_available:      true,
-          available_in_pos:  true,
-          show_in_catalog:   true,
-          min_stock:         3,
-          ...prod,
+          business_id:        business.id,
+          category_id:        catIds[p.cat],
+          name:               p.name,
+          description:        p.desc,
+          sale_mode:          p.svc ? 'service' : 'unit',
+          product_type:       p.svc ? 'service'  : 'physical',
+          price_per_unit_usd: p.price,
+          cost_per_unit_usd:  p.cost,
+          is_available:       true,
+          available_in_pos:   true,
+          show_in_catalog:    true,
+          min_stock:          p.svc ? 0 : 3,
         },
       })
-      console.log(`✅ ${prod.name} creado`)
+      console.log(`✅ ${p.name}`)
+    } else if (!exists.category_id) {
+      await prisma.product.update({
+        where: { id: exists.id },
+        data:  { category_id: catIds[p.cat] },
+      })
     }
   }
 

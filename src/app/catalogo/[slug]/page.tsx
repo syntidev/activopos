@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { MessageCircle, Package, MapPin } from 'lucide-react'
+import { MessageCircle, MapPin } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
+import { CatalogoGrid } from './CatalogoGrid'
+import type { CatalogProduct } from './CatalogoGrid'
 import styles from './catalogo.module.css'
 
 interface PageProps {
@@ -97,6 +99,32 @@ export default async function CatalogoPage({ params }: PageProps) {
     )
   }
 
+  // Serialize products for client component — no Decimal/Date types
+  const catalogProducts: CatalogProduct[] = products.map(p => {
+    const imgs     = parseImages(p.images)
+    const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+    const priceBs  = priceUsd > 0 ? priceUsd * rate : null
+    const netQty   = stockMap.get(p.id)
+    return {
+      id:           p.id,
+      name:         p.name,
+      description:  p.description,
+      image:        imgs[0] ?? null,
+      categoryName: p.category?.name ?? null,
+      priceUsd,
+      priceBs,
+      outOfStock:   netQty !== undefined && netQty <= 0,
+    }
+  })
+
+  const categories = Array.from(
+    new Set(
+      catalogProducts
+        .map(p => p.categoryName)
+        .filter((c): c is string => c !== null),
+    ),
+  )
+
   const displayTitle = business.catalog_title ?? business.name
   const initials     = getInitials(displayTitle)
   const location     = [business.city, business.state].filter(Boolean).join(', ')
@@ -154,78 +182,8 @@ export default async function CatalogoPage({ params }: PageProps) {
         </span>
       </div>
 
-      {/* ── Products ────────────────────────────────────────────── */}
-      <main className={styles.main}>
-        {products.length === 0 ? (
-          <div className={styles.empty}>
-            <Package
-              className={styles.emptyIcon}
-              size={52}
-              strokeWidth={1.25}
-              aria-hidden="true"
-            />
-            <h2 className={styles.emptyTitle}>Catálogo en construcción</h2>
-            <p className={styles.emptySubtitle}>
-              Este negocio está preparando su vitrina digital.
-            </p>
-          </div>
-        ) : (
-          <div className={styles.grid}>
-            {products.map(p => {
-              const imgs     = parseImages(p.images)
-              const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
-              const priceBs  = priceUsd > 0 ? priceUsd * rate : null
-              const netQty   = stockMap.get(p.id)
-              const outOfStock = netQty !== undefined && netQty <= 0
-
-              return (
-                <article key={p.id} className={styles.card}>
-                  <div className={styles.cardImage}>
-                    {imgs[0] ? (
-                      <img
-                        src={imgs[0]}
-                        alt={p.name}
-                        className={styles.productImg}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className={styles.noImage} aria-hidden="true" />
-                    )}
-                    {outOfStock && (
-                      <span className={styles.badgeSinStock}>Sin stock</span>
-                    )}
-                  </div>
-                  <div className={styles.cardBody}>
-                    {p.category && (
-                      <span className={styles.category}>{p.category.name}</span>
-                    )}
-                    <h2 className={styles.productName}>{p.name}</h2>
-                    {p.description && (
-                      <p className={styles.productDesc}>{p.description}</p>
-                    )}
-                    <div className={styles.priceRow}>
-                      {priceUsd > 0 ? (
-                        <>
-                          <span className={styles.priceUsd}>
-                            ${priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </span>
-                          {priceBs && (
-                            <span className={styles.priceBs}>
-                              Bs.&nbsp;{priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className={styles.priceConsultar}>Consultar precio</span>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-        )}
-      </main>
+      {/* ── Grid + Tabs (Client Component) ──────────────────────── */}
+      <CatalogoGrid products={catalogProducts} categories={categories} />
 
       {/* ── WhatsApp FAB ────────────────────────────────────────── */}
       {waUrl && (

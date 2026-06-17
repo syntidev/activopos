@@ -183,7 +183,11 @@ export default async function CatalogoPage({ params }: PageProps) {
       </div>
 
       {/* ── Grid + Tabs (Client Component) ──────────────────────── */}
-      <CatalogoGrid products={catalogProducts} categories={categories} />
+      <CatalogoGrid
+          products={catalogProducts}
+          categories={categories}
+          waPhone={waPhone || undefined}
+        />
 
       {/* ── WhatsApp FAB ────────────────────────────────────────── */}
       {waUrl && (

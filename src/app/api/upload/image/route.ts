@@ -7,7 +7,6 @@ import sharp from 'sharp'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_SIZE      = 2 * 1024 * 1024
-const UPLOAD_DIR    = join(process.cwd(), 'public', 'uploads', 'products')
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -28,19 +27,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El archivo no puede superar 2 MB' }, { status: 400 })
     }
 
-    const buffer   = Buffer.from(await file.arrayBuffer())
-    const filename = `${randomUUID()}.jpg`
+    const buffer    = Buffer.from(await file.arrayBuffer())
+    const filename  = `${randomUUID()}.webp`
+    const uploadDir = join(process.cwd(), 'public', 'uploads', String(session.businessId))
 
-    await mkdir(UPLOAD_DIR, { recursive: true })
+    await mkdir(uploadDir, { recursive: true })
 
     const processed = await sharp(buffer)
       .resize(800, 800, { fit: 'cover' })
-      .jpeg({ quality: 85 })
+      .webp({ quality: 85 })
       .toBuffer()
 
-    await writeFile(join(UPLOAD_DIR, filename), processed)
+    await writeFile(join(uploadDir, filename), processed)
 
-    return NextResponse.json({ ok: true, url: `/uploads/products/${filename}` }, { status: 201 })
+    return NextResponse.json(
+      { ok: true, url: `/uploads/${session.businessId}/${filename}` },
+      { status: 201 },
+    )
   } catch (err) {
     console.error('Upload error:', err)
     return NextResponse.json({ error: 'Error al subir la imagen' }, { status: 500 })

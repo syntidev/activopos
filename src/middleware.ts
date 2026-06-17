@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login']
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/', '/landing', '/catalogo', '/api/catalog']
 const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports']
 
 export async function middleware(req: NextRequest) {
@@ -11,7 +11,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  if (pathname.startsWith('/_next') || pathname.startsWith('/api/rates')) {
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/rates') ||
+    pathname === '/landing.html'
+  ) {
     return NextResponse.next()
   }
 
@@ -39,7 +43,7 @@ export async function middleware(req: NextRequest) {
   if (
     session.role === 'admin' &&
     session.onboardingCompleted === false &&
-    (pathname === '/' || pathname === '/escritorio') &&
+    pathname === '/escritorio' &&
     !pathname.startsWith('/onboarding')
   ) {
     return NextResponse.redirect(new URL('/onboarding', req.url))

@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
   const showInactive    = sp.get('active') === 'false'
   const lowStockOnly    = sp.get('low_stock') === 'true'
   const availableFilter = sp.get('available')
+  const posFilter       = sp.get('pos') === 'true'
 
   const [products, stockAgg, rate, biz] = await Promise.all([
     prisma.product.findMany({
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
         active:      showInactive ? false : true,
         ...(availableFilter === 'true'  ? { is_available: true  } : {}),
         ...(availableFilter === 'false' ? { is_available: false } : {}),
+        ...(posFilter ? { available_in_pos: true } : {}),
         ...(search     ? { name: { contains: search } } : {}),
         ...(categoryId ? { category_id: parseInt(categoryId) } : {}),
       },

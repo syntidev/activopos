@@ -93,6 +93,9 @@ model Business {
   iva_pct              Decimal  @default(16) @db.Decimal(5, 2)
   catalog_plan         String?  @db.VarChar(30)
   catalog_slug         String?  @db.VarChar(80)
+  catalog_active       Boolean  @default(false)
+  catalog_title        String?  @db.VarChar(150)
+  catalog_desc         String?  @db.Text
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
 
@@ -169,6 +172,7 @@ model Product {
   images              String?  @db.Text
   has_variants        Boolean  @default(false)
   show_in_catalog     Boolean  @default(false)
+  available_in_pos    Boolean  @default(true)
   is_favorite         Boolean  @default(false)
   is_available        Boolean  @default(true)
   active              Boolean  @default(true)

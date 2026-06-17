@@ -16,11 +16,15 @@
 /* ── Glow: borde degradado (dark mode base) ── */
 .cardGlow {
   background:
-    linear-gradient(#132035, #132035) padding-box,
-    linear-gradient(135deg, rgba(37,99,235,0.9), rgba(120,180,255,0.4), rgba(37,99,235,0.3)) border-box;
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.9),
+      rgba(255,255,255,0.18),
+      rgba(var(--accent-rgb), 0.3)
+    ) border-box;
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
-  box-shadow: var(--card-glow-shadow-dark);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.18);
 }
 
 /* ── Card top row: icon + badge ── */
@@ -86,6 +90,11 @@
 .light .cardGlow {
   background:
     linear-gradient(#ffffff, #ffffff) padding-box,
-    linear-gradient(135deg, rgba(37,99,235,0.7), rgba(120,180,255,0.3), rgba(37,99,235,0.15)) border-box;
-  box-shadow: var(--card-glow-shadow-light);
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.7),
+      rgba(255,255,255,0.3),
+      rgba(var(--accent-rgb), 0.15)
+    ) border-box;
+  box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.1),
+              0 1px 3px rgba(0,0,0,0.04);
 }

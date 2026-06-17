@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
 const PatchSchema = z.object({
-  theme: z.enum(['default', 'premium', 'calle', 'tropical']),
+  theme: z.enum(['default', 'premium', 'calle', 'tropical', 'salud', 'construye', 'oficina', 'sabor', 'estilo', 'verde']),
 })
 
 export async function PATCH(request: Request) {

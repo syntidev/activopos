@@ -7,7 +7,10 @@ import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
 
-type ThemeKey = 'default' | 'premium' | 'calle' | 'tropical'
+type ThemeKey =
+  | 'default' | 'premium'  | 'calle'    | 'tropical'
+  | 'salud'   | 'construye' | 'oficina'  | 'sabor'
+  | 'estilo'  | 'verde'
 
 interface ThemeOption {
   key:   ThemeKey
@@ -16,14 +19,22 @@ interface ThemeOption {
 }
 
 const THEMES: ThemeOption[] = [
-  { key: 'default',  label: 'Default — Azul clásico',            color: '#2563EB' },
-  { key: 'premium',  label: 'Premium Operativo — Dark profundo',  color: '#0B1220' },
-  { key: 'calle',    label: 'Calle Premium — Naranja urbano',     color: '#EA580C' },
-  { key: 'tropical', label: 'Tech Tropical — Teal moderno',       color: '#14B8A6' },
+  { key: 'default',   label: 'Azul Sereno',   color: '#2563EB' },
+  { key: 'premium',   label: 'Medianoche',     color: '#2563EB' },
+  { key: 'calle',     label: 'Amanecer',       color: '#EA580C' },
+  { key: 'tropical',  label: 'Aguamarina',     color: '#14B8A6' },
+  { key: 'salud',     label: 'Menta Fresca',   color: '#10B981' },
+  { key: 'construye', label: 'Tierra Dorada',  color: '#D97706' },
+  { key: 'oficina',   label: 'Cielo Abierto',  color: '#6366F1' },
+  { key: 'sabor',     label: 'Brasa Viva',     color: '#DC2626' },
+  { key: 'estilo',    label: 'Champán',        color: '#B45309' },
+  { key: 'verde',     label: 'Jardín',         color: '#059669' },
 ]
 
+const VALID_KEYS = new Set<string>(THEMES.map(t => t.key))
+
 function isValidTheme(t: string | null): t is ThemeKey {
-  return t === 'default' || t === 'premium' || t === 'calle' || t === 'tropical'
+  return t !== null && VALID_KEYS.has(t)
 }
 
 export function TabTema({ businessId: _b }: Props) {

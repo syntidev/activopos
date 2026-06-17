@@ -556,7 +556,13 @@
 /* ── Base compartida: temas de fondo claro ── */
 [data-theme="default"],
 [data-theme="calle"],
-[data-theme="tropical"] {
+[data-theme="tropical"],
+[data-theme="salud"],
+[data-theme="construye"],
+[data-theme="oficina"],
+[data-theme="sabor"],
+[data-theme="estilo"],
+[data-theme="verde"] {
   --color-surface-2:   #F1F5F9;
   --color-surface-3:   #E2E8F0;
   --color-surface-4:   #CBD5E1;
@@ -944,4 +950,418 @@
 
   --card-hero-shadow:       0 4px 16px rgba(20,184,166,0.25), 0 1px 4px rgba(20,184,166,0.35);
   --card-glow-shadow-light: 0 2px 12px rgba(20,184,166,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 5 — salud (Menta Fresca) ── */
+[data-theme="salud"] {
+  --color-bg:          #F0FDF4;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #10B981;
+  --color-brand-hover:  #059669;
+  --color-brand-active: #047857;
+  --color-brand-subtle: rgba(16,185,129,0.08);
+  --color-brand-border: rgba(16,185,129,0.3);
+  --accent-rgb:         16, 185, 129;
+
+  --color-text-primary:   #064E3B;
+  --color-text-secondary: #6B7280;
+  --color-text-muted:     #9CA3AF;
+  --color-text-disabled:  #D1FAE5;
+  --color-border:         #D1FAE5;
+  --color-border-subtle:  #ECFDF5;
+  --color-border-strong:  #6EE7B7;
+  --color-border-focus:   #10B981;
+  --color-bs:             #6B7280;
+  --color-info:           #10B981;
+  --color-info-text:      #059669;
+  --color-info-subtle:    rgba(16,185,129,0.08);
+  --color-info-border:    rgba(16,185,129,0.3);
+
+  --sidebar-bg:                #064E3B;
+  --sidebar-border:            #065F46;
+  --sidebar-text:              #6EE7B7;
+  --sidebar-text-active:       #ECFDF5;
+  --sidebar-text-hover:        #A7F3D0;
+  --sidebar-group-label:       #059669;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.06);
+  --sidebar-item-bg-active:    #065F46;
+  --sidebar-item-border-active:#10B981;
+  --sidebar-dot:               #10B981;
+  --sidebar-rate-text:         #6EE7B7;
+
+  --header-bg:     rgba(240,253,244,0.9);
+  --header-border: #D1FAE5;
+
+  --pos-grid-bg:         #DCFCE7;
+  --pos-card-hover:      #F0FDF4;
+  --pos-card-border:     #D1FAE5;
+  --pos-card-active:     rgba(16,185,129,0.08);
+  --pos-ticket-border:   #D1FAE5;
+  --pos-category-bg:     #BBF7D0;
+  --pos-category-active: #10B981;
+
+  --input-border:        #D1FAE5;
+  --input-border-focus:  #10B981;
+  --input-text:          #064E3B;
+  --input-placeholder:   #9CA3AF;
+
+  --kpi-border:          #D1FAE5;
+  --kpi-value-sales:     #064E3B;
+
+  --badge-quote-bg:      rgba(16,185,129,0.08);
+  --badge-quote-text:    #059669;
+  --badge-quote-border:  rgba(16,185,129,0.3);
+
+  --scrollbar-track:       #DCFCE7;
+  --scrollbar-thumb:       #D1FAE5;
+  --scrollbar-thumb-hover: #6EE7B7;
+
+  --card-hero-shadow:       0 4px 16px rgba(16,185,129,0.25), 0 1px 4px rgba(16,185,129,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(16,185,129,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 6 — construye (Tierra Dorada) ── */
+[data-theme="construye"] {
+  --color-bg:          #FFFBEB;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #D97706;
+  --color-brand-hover:  #B45309;
+  --color-brand-active: #92400E;
+  --color-brand-subtle: rgba(217,119,6,0.08);
+  --color-brand-border: rgba(217,119,6,0.3);
+  --accent-rgb:         217, 119, 6;
+
+  --color-text-primary:   #1C1917;
+  --color-text-secondary: #78716C;
+  --color-text-muted:     #A8A29E;
+  --color-text-disabled:  #FDE68A;
+  --color-border:         #FDE68A;
+  --color-border-subtle:  #FEF9C3;
+  --color-border-strong:  #A8A29E;
+  --color-border-focus:   #D97706;
+  --color-bs:             #78716C;
+  --color-info:           #D97706;
+  --color-info-text:      #B45309;
+  --color-info-subtle:    rgba(217,119,6,0.08);
+  --color-info-border:    rgba(217,119,6,0.3);
+
+  --sidebar-bg:                #1C1917;
+  --sidebar-border:            #292524;
+  --sidebar-text:              #A8A29E;
+  --sidebar-text-active:       #FEF9C3;
+  --sidebar-text-hover:        #D6D3D1;
+  --sidebar-group-label:       #57534E;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.04);
+  --sidebar-item-bg-active:    #292524;
+  --sidebar-item-border-active:#D97706;
+  --sidebar-dot:               #D97706;
+  --sidebar-rate-text:         #1D9E75;
+
+  --header-bg:     rgba(255,251,235,0.9);
+  --header-border: #FDE68A;
+
+  --pos-grid-bg:         #FEF3C7;
+  --pos-card-hover:      #FFFBEB;
+  --pos-card-border:     #FDE68A;
+  --pos-card-active:     rgba(217,119,6,0.08);
+  --pos-ticket-border:   #FDE68A;
+  --pos-category-bg:     #FDE68A;
+  --pos-category-active: #D97706;
+
+  --input-border:        #FDE68A;
+  --input-border-focus:  #D97706;
+  --input-text:          #1C1917;
+  --input-placeholder:   #A8A29E;
+
+  --kpi-border:          #FDE68A;
+  --kpi-value-sales:     #1C1917;
+
+  --badge-quote-bg:      rgba(217,119,6,0.08);
+  --badge-quote-text:    #B45309;
+  --badge-quote-border:  rgba(217,119,6,0.3);
+
+  --scrollbar-track:       #FEF3C7;
+  --scrollbar-thumb:       #FDE68A;
+  --scrollbar-thumb-hover: #A8A29E;
+
+  --card-hero-shadow:       0 4px 16px rgba(217,119,6,0.25), 0 1px 4px rgba(217,119,6,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(217,119,6,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 7 — oficina (Cielo Abierto) ── */
+[data-theme="oficina"] {
+  --color-bg:          #F5F3FF;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #6366F1;
+  --color-brand-hover:  #4F46E5;
+  --color-brand-active: #4338CA;
+  --color-brand-subtle: rgba(99,102,241,0.08);
+  --color-brand-border: rgba(99,102,241,0.3);
+  --accent-rgb:         99, 102, 241;
+
+  --color-text-primary:   #1E1B4B;
+  --color-text-secondary: #6B7280;
+  --color-text-muted:     #A5B4FC;
+  --color-text-disabled:  #DDD6FE;
+  --color-border:         #DDD6FE;
+  --color-border-subtle:  #EDE9FE;
+  --color-border-strong:  #A5B4FC;
+  --color-border-focus:   #6366F1;
+  --color-bs:             #6B7280;
+  --color-info:           #6366F1;
+  --color-info-text:      #4F46E5;
+  --color-info-subtle:    rgba(99,102,241,0.08);
+  --color-info-border:    rgba(99,102,241,0.3);
+
+  --sidebar-bg:                #1E1B4B;
+  --sidebar-border:            #312E81;
+  --sidebar-text:              #A5B4FC;
+  --sidebar-text-active:       #EDE9FE;
+  --sidebar-text-hover:        #C4B5FD;
+  --sidebar-group-label:       #7C3AED;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.05);
+  --sidebar-item-bg-active:    #312E81;
+  --sidebar-item-border-active:#6366F1;
+  --sidebar-dot:               #6366F1;
+  --sidebar-rate-text:         #1D9E75;
+
+  --header-bg:     rgba(245,243,255,0.9);
+  --header-border: #DDD6FE;
+
+  --pos-grid-bg:         #EDE9FE;
+  --pos-card-hover:      #F5F3FF;
+  --pos-card-border:     #DDD6FE;
+  --pos-card-active:     rgba(99,102,241,0.08);
+  --pos-ticket-border:   #DDD6FE;
+  --pos-category-bg:     #DDD6FE;
+  --pos-category-active: #6366F1;
+
+  --input-border:        #DDD6FE;
+  --input-border-focus:  #6366F1;
+  --input-text:          #1E1B4B;
+  --input-placeholder:   #A5B4FC;
+
+  --kpi-border:          #DDD6FE;
+  --kpi-value-sales:     #1E1B4B;
+
+  --badge-quote-bg:      rgba(99,102,241,0.08);
+  --badge-quote-text:    #4F46E5;
+  --badge-quote-border:  rgba(99,102,241,0.3);
+
+  --scrollbar-track:       #EDE9FE;
+  --scrollbar-thumb:       #DDD6FE;
+  --scrollbar-thumb-hover: #A5B4FC;
+
+  --card-hero-shadow:       0 4px 16px rgba(99,102,241,0.25), 0 1px 4px rgba(99,102,241,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(99,102,241,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 8 — sabor (Brasa Viva) ── */
+[data-theme="sabor"] {
+  --color-bg:          #FFF5F5;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #DC2626;
+  --color-brand-hover:  #B91C1C;
+  --color-brand-active: #991B1B;
+  --color-brand-subtle: rgba(220,38,38,0.08);
+  --color-brand-border: rgba(220,38,38,0.3);
+  --accent-rgb:         220, 38, 38;
+
+  --color-text-primary:   #1F0A0A;
+  --color-text-secondary: #78716C;
+  --color-text-muted:     #FCA5A5;
+  --color-text-disabled:  #FECACA;
+  --color-border:         #FECACA;
+  --color-border-subtle:  #FEF2F2;
+  --color-border-strong:  #FCA5A5;
+  --color-border-focus:   #DC2626;
+  --color-bs:             #78716C;
+  --color-info:           #DC2626;
+  --color-info-text:      #B91C1C;
+  --color-info-subtle:    rgba(220,38,38,0.08);
+  --color-info-border:    rgba(220,38,38,0.3);
+
+  --sidebar-bg:                #1F0A0A;
+  --sidebar-border:            #3B0F0F;
+  --sidebar-text:              #FCA5A5;
+  --sidebar-text-active:       #FEE2E2;
+  --sidebar-text-hover:        #FECACA;
+  --sidebar-group-label:       #7F1D1D;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.05);
+  --sidebar-item-bg-active:    #3B0F0F;
+  --sidebar-item-border-active:#DC2626;
+  --sidebar-dot:               #DC2626;
+  --sidebar-rate-text:         #1D9E75;
+
+  --header-bg:     rgba(255,245,245,0.9);
+  --header-border: #FECACA;
+
+  --pos-grid-bg:         #FEE2E2;
+  --pos-card-hover:      #FFF5F5;
+  --pos-card-border:     #FECACA;
+  --pos-card-active:     rgba(220,38,38,0.08);
+  --pos-ticket-border:   #FECACA;
+  --pos-category-bg:     #FECACA;
+  --pos-category-active: #DC2626;
+
+  --input-border:        #FECACA;
+  --input-border-focus:  #DC2626;
+  --input-text:          #1F0A0A;
+  --input-placeholder:   #FCA5A5;
+
+  --kpi-border:          #FECACA;
+  --kpi-value-sales:     #1F0A0A;
+
+  --badge-quote-bg:      rgba(220,38,38,0.08);
+  --badge-quote-text:    #B91C1C;
+  --badge-quote-border:  rgba(220,38,38,0.3);
+
+  --scrollbar-track:       #FEE2E2;
+  --scrollbar-thumb:       #FECACA;
+  --scrollbar-thumb-hover: #FCA5A5;
+
+  --card-hero-shadow:       0 4px 16px rgba(220,38,38,0.25), 0 1px 4px rgba(220,38,38,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(220,38,38,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 9 — estilo (Champán) ── */
+[data-theme="estilo"] {
+  --color-bg:          #FFFBF0;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #B45309;
+  --color-brand-hover:  #92400E;
+  --color-brand-active: #78350F;
+  --color-brand-subtle: rgba(180,83,9,0.08);
+  --color-brand-border: rgba(180,83,9,0.3);
+  --accent-rgb:         180, 83, 9;
+
+  --color-text-primary:   #1C1408;
+  --color-text-secondary: #78716C;
+  --color-text-muted:     #A8A29E;
+  --color-text-disabled:  #FDE68A;
+  --color-border:         #FDE68A;
+  --color-border-subtle:  #FEF9C3;
+  --color-border-strong:  #A8A29E;
+  --color-border-focus:   #B45309;
+  --color-bs:             #78716C;
+  --color-info:           #B45309;
+  --color-info-text:      #92400E;
+  --color-info-subtle:    rgba(180,83,9,0.08);
+  --color-info-border:    rgba(180,83,9,0.3);
+
+  --sidebar-bg:                #1C1408;
+  --sidebar-border:            #292011;
+  --sidebar-text:              #D97706;
+  --sidebar-text-active:       #FDE68A;
+  --sidebar-text-hover:        #F59E0B;
+  --sidebar-group-label:       #78350F;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.04);
+  --sidebar-item-bg-active:    #292011;
+  --sidebar-item-border-active:#B45309;
+  --sidebar-dot:               #B45309;
+  --sidebar-rate-text:         #1D9E75;
+
+  --header-bg:     rgba(255,251,240,0.9);
+  --header-border: #FDE68A;
+
+  --pos-grid-bg:         #FEF3C7;
+  --pos-card-hover:      #FFFBF0;
+  --pos-card-border:     #FDE68A;
+  --pos-card-active:     rgba(180,83,9,0.08);
+  --pos-ticket-border:   #FDE68A;
+  --pos-category-bg:     #FDE68A;
+  --pos-category-active: #B45309;
+
+  --input-border:        #FDE68A;
+  --input-border-focus:  #B45309;
+  --input-text:          #1C1408;
+  --input-placeholder:   #A8A29E;
+
+  --kpi-border:          #FDE68A;
+  --kpi-value-sales:     #1C1408;
+
+  --badge-quote-bg:      rgba(180,83,9,0.08);
+  --badge-quote-text:    #92400E;
+  --badge-quote-border:  rgba(180,83,9,0.3);
+
+  --scrollbar-track:       #FEF3C7;
+  --scrollbar-thumb:       #FDE68A;
+  --scrollbar-thumb-hover: #A8A29E;
+
+  --card-hero-shadow:       0 4px 16px rgba(180,83,9,0.25), 0 1px 4px rgba(180,83,9,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(180,83,9,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 10 — verde (Jardín) ── */
+[data-theme="verde"] {
+  --color-bg:          #F0FDF4;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #059669;
+  --color-brand-hover:  #047857;
+  --color-brand-active: #065F46;
+  --color-brand-subtle: rgba(5,150,105,0.08);
+  --color-brand-border: rgba(5,150,105,0.3);
+  --accent-rgb:         5, 150, 105;
+
+  --color-text-primary:   #052E16;
+  --color-text-secondary: #6B7280;
+  --color-text-muted:     #9CA3AF;
+  --color-text-disabled:  #BBF7D0;
+  --color-border:         #BBF7D0;
+  --color-border-subtle:  #DCFCE7;
+  --color-border-strong:  #6EE7B7;
+  --color-border-focus:   #059669;
+  --color-bs:             #6B7280;
+  --color-info:           #059669;
+  --color-info-text:      #047857;
+  --color-info-subtle:    rgba(5,150,105,0.08);
+  --color-info-border:    rgba(5,150,105,0.3);
+
+  --sidebar-bg:                #052E16;
+  --sidebar-border:            #064E3B;
+  --sidebar-text:              #6EE7B7;
+  --sidebar-text-active:       #DCFCE7;
+  --sidebar-text-hover:        #A7F3D0;
+  --sidebar-group-label:       #059669;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.06);
+  --sidebar-item-bg-active:    #064E3B;
+  --sidebar-item-border-active:#059669;
+  --sidebar-dot:               #059669;
+  --sidebar-rate-text:         #6EE7B7;
+
+  --header-bg:     rgba(240,253,244,0.9);
+  --header-border: #BBF7D0;
+
+  --pos-grid-bg:         #DCFCE7;
+  --pos-card-hover:      #F0FDF4;
+  --pos-card-border:     #BBF7D0;
+  --pos-card-active:     rgba(5,150,105,0.08);
+  --pos-ticket-border:   #BBF7D0;
+  --pos-category-bg:     #A7F3D0;
+  --pos-category-active: #059669;
+
+  --input-border:        #BBF7D0;
+  --input-border-focus:  #059669;
+  --input-text:          #052E16;
+  --input-placeholder:   #9CA3AF;
+
+  --kpi-border:          #BBF7D0;
+  --kpi-value-sales:     #052E16;
+
+  --badge-quote-bg:      rgba(5,150,105,0.08);
+  --badge-quote-text:    #047857;
+  --badge-quote-border:  rgba(5,150,105,0.3);
+
+  --scrollbar-track:       #DCFCE7;
+  --scrollbar-thumb:       #BBF7D0;
+  --scrollbar-thumb-hover: #6EE7B7;
+
+  --card-hero-shadow:       0 4px 16px rgba(5,150,105,0.25), 0 1px 4px rgba(5,150,105,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(5,150,105,0.1), 0 1px 3px rgba(0,0,0,0.04);
 }

@@ -1,21 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/', '/landing', '/catalogo', '/api/catalog']
+// Prefijos públicos — todos con slash final para evitar bypass tipo /catalogo-admin
+const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
+
+// Rutas exactas públicas — no usan startsWith
+const PUBLIC_EXACT = new Set(['/', '/landing.html'])
+
 const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  // Rutas exactas (raíz, landing estático)
+  if (PUBLIC_EXACT.has(pathname)) {
     return NextResponse.next()
   }
 
+  // Activos estáticos y tasa pública
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/rates') ||
-    pathname === '/landing.html'
+    pathname.startsWith('/icons/') ||
+    pathname.startsWith('/uploads/')
   ) {
+    return NextResponse.next()
+  }
+
+  // Prefijos públicos (login, catálogo, auth API)
+  if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 

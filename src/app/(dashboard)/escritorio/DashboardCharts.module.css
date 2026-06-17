@@ -30,8 +30,8 @@
 }
 
 .periodBtn {
-  height: 30px;
-  padding: 0 var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-4);
   background: none;
   border: none;
   border-radius: var(--radius-sm);

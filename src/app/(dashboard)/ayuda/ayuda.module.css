@@ -2,7 +2,6 @@
 .page {
   display: flex;
   flex-direction: column;
-  padding: var(--space-6);
   min-height: calc(100vh - var(--header-height));
 }
 
@@ -22,7 +21,7 @@
 }
 
 .pageTitle {
-  font-size: var(--text-3xl);
+  font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   color: var(--color-text-primary);
   letter-spacing: var(--tracking-tight);
@@ -386,8 +385,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  min-width: 44px;
+  min-height: 44px;
   background: none;
   border: none;
   border-radius: var(--radius-sm);
@@ -470,8 +469,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  min-height: 44px;
   background: var(--color-brand);
   border: none;
   border-radius: var(--radius-md);

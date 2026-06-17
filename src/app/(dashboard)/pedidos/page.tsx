@@ -11,6 +11,7 @@ import {
   DollarSign,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './pedidos.module.css'
 
@@ -190,7 +191,7 @@ function KanbanColumn({
       </div>
 
       {orders.length === 0 ? (
-        <div className={styles.columnEmpty}>Sin pedidos</div>
+        <EmptyState icon={ShoppingBag} title="Sin pedidos" />
       ) : (
         orders.map((order) => (
           <OrderCard

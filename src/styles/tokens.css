@@ -409,6 +409,12 @@
   --color-rate-live:   #1A7F64;
   --color-rate-stale:  #B45309;
 
+  /* ── Caja / Finanzas ── */
+  --color-cash:        #15803D;
+  --color-transfer:    #1D4ED8;
+  --color-zelle:       #4C1D95;
+  --color-binance:     #92400E;
+
   /* ── KPI Cards ── */
   --kpi-bg:            #FFFFFF;
   --kpi-border:        #D0D7DE;
@@ -424,6 +430,26 @@
   --input-border-error:#CF222E;
   --input-text:        #1C2128;
   --input-placeholder: #8C959F;
+
+  /* ── Badge ── */
+  --badge-paid-bg:       rgba(26,127,100,0.08);
+  --badge-paid-text:     #1A7F64;
+  --badge-paid-border:   rgba(26,127,100,0.3);
+
+  --badge-pending-bg:    rgba(180,83,9,0.08);
+  --badge-pending-text:  #B45309;
+  --badge-pending-border:rgba(180,83,9,0.3);
+
+  --badge-quote-bg:      rgba(37,99,235,0.08);
+  --badge-quote-text:    #1D4ED8;
+  --badge-quote-border:  rgba(37,99,235,0.3);
+
+  --badge-cancelled-bg:   rgba(207,34,46,0.08);
+  --badge-cancelled-text: #CF222E;
+  --badge-cancelled-border:rgba(207,34,46,0.3);
+
+  --badge-low-stock-bg:   rgba(207,34,46,0.08);
+  --badge-low-stock-text: #CF222E;
 
   /* ── Scrollbar ── */
   --scrollbar-track: #F6F8FA;

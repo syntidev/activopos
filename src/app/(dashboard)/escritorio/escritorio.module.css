@@ -17,8 +17,8 @@
 }
 
 .welcomeTitle {
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
   color: var(--color-text-primary);
   letter-spacing: var(--tracking-tight);
   margin: 0;
@@ -120,7 +120,7 @@
 
 /* ── KPI value (32px bold) ── */
 .kpiValue {
-  font-size: 2rem;
+  font-size: var(--text-4xl);
   font-weight: var(--weight-bold);
   color: var(--color-text-primary);
   line-height: 1.1;

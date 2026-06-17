@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
+import { ToastProvider } from '@/components/ui'
 import type { SessionUser } from '@/types'
 import type { ReactNode } from 'react'
 import styles from './DashboardShell.module.css'
@@ -71,37 +72,39 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
   }, [])
 
   return (
-    <div className={styles.root}>
-      <Sidebar
-        session={session}
-        bcvRate={bcvRate}
-        isCollapsed={isCollapsed}
-        isMobileOpen={isMobileOpen}
-        onCloseMobile={handleCloseMobile}
-      />
-
-      {isMobileOpen && (
-        <div
-          className={styles.mobileOverlay}
-          onClick={handleCloseMobile}
-          aria-hidden="true"
-        />
-      )}
-
-      <div className={`${styles.mainWrapper} ${isCollapsed ? styles.mainCollapsed : ''}`}>
-        <Header
+    <ToastProvider>
+      <div className={styles.root}>
+        <Sidebar
           session={session}
           bcvRate={bcvRate}
           isCollapsed={isCollapsed}
-          theme={theme}
-          onToggleCollapse={handleToggleCollapse}
-          onToggleMobile={handleToggleMobile}
-          onToggleTheme={handleToggleTheme}
+          isMobileOpen={isMobileOpen}
+          onCloseMobile={handleCloseMobile}
         />
-        <main className={styles.content}>
-          {children}
-        </main>
+
+        {isMobileOpen && (
+          <div
+            className={styles.mobileOverlay}
+            onClick={handleCloseMobile}
+            aria-hidden="true"
+          />
+        )}
+
+        <div className={`${styles.mainWrapper} ${isCollapsed ? styles.mainCollapsed : ''}`}>
+          <Header
+            session={session}
+            bcvRate={bcvRate}
+            isCollapsed={isCollapsed}
+            theme={theme}
+            onToggleCollapse={handleToggleCollapse}
+            onToggleMobile={handleToggleMobile}
+            onToggleTheme={handleToggleTheme}
+          />
+          <main className={styles.content}>
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   )
 }

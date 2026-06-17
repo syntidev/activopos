@@ -111,12 +111,18 @@
   color: var(--color-text-muted);
   cursor: pointer;
   border-radius: var(--radius-md);
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-.cameraBtn:hover {
-  color: var(--color-text-primary);
-  background: var(--color-surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .cameraBtn:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-2);
+  }
+}
+
+.cameraBtn:active {
+  transform: scale(0.93);
 }
 
 .resultsArea {
@@ -197,12 +203,18 @@
   font-size: var(--text-sm);
   font-family: var(--font-sans);
   cursor: pointer;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-.clienteBtn:hover {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-3);
+@media (hover: hover) and (pointer: fine) {
+  .clienteBtn:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-3);
+  }
+}
+
+.clienteBtn:active {
+  transform: scale(0.98);
 }
 
 .clienteBtn span {
@@ -230,13 +242,19 @@
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-.ticketIconBtn:hover:not(:disabled) {
-  color: var(--color-text-primary);
-  border-color: var(--color-border);
-  background: var(--color-surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .ticketIconBtn:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    border-color: var(--color-border);
+    background: var(--color-surface-2);
+  }
+}
+
+.ticketIconBtn:active:not(:disabled) {
+  transform: scale(0.93);
 }
 
 .ticketIconBtn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -329,10 +347,14 @@
   border: none;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-.qtyBtn:hover { color: var(--color-text-primary); background: var(--color-surface-4); }
+@media (hover: hover) and (pointer: fine) {
+  .qtyBtn:hover { color: var(--color-text-primary); background: var(--color-surface-4); }
+}
+
+.qtyBtn:active { transform: scale(0.9); }
 
 .qtyValue {
   font-size: var(--text-xs);
@@ -376,12 +398,19 @@
   color: var(--color-text-muted);
   cursor: pointer;
   border-radius: var(--radius-md);
-  transition: color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-.removeBtn:hover {
+@media (hover: hover) and (pointer: fine) {
+  .removeBtn:hover {
+    color: var(--color-danger);
+    background: var(--color-danger-subtle);
+  }
+}
+
+.removeBtn:active {
+  transform: scale(0.88);
   color: var(--color-danger);
-  background: var(--color-danger-subtle);
 }
 
 /* ── Totals ── */
@@ -481,13 +510,19 @@
   font-size: var(--text-sm);
   font-family: var(--font-sans);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-.footerBtn:hover:not(:disabled) {
-  color: var(--color-text-primary);
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-2);
+@media (hover: hover) and (pointer: fine) {
+  .footerBtn:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-2);
+  }
+}
+
+.footerBtn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .footerBtn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -530,5 +565,27 @@
 @media (min-width: 1280px) {
   .productGrid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+/* ── Reduced motion: remove transform animations, keep fades ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .qtyBtn,
+  .removeBtn,
+  .footerBtn,
+  .clienteBtn,
+  .ticketIconBtn,
+  .cameraBtn {
+    transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .qtyBtn:active,
+  .removeBtn:active,
+  .footerBtn:active:not(:disabled),
+  .clienteBtn:active,
+  .ticketIconBtn:active:not(:disabled),
+  .cameraBtn:active {
+    transform: none;
   }
 }

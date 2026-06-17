@@ -60,11 +60,16 @@ export function TicketPanel({
       {/* Items */}
       <div className={styles.ticketItems}>
         {isEmpty ? (
-          <div className={styles.ticketEmpty}>
+          <motion.div
+            className={styles.ticketEmpty}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
             <ShoppingCart size={36} strokeWidth={1} aria-hidden="true" />
             <p className={styles.ticketEmptyTitle}>Ticket vacío</p>
             <p className={styles.ticketEmptySubtitle}>Toca un producto para agregarlo</p>
-          </div>
+          </motion.div>
         ) : (
           <AnimatePresence initial={false}>
             {ticket.items.map((item) => (
@@ -162,10 +167,10 @@ function TicketItemRow({ item, onUpdateQty, onRemove }: RowProps) {
   return (
     <motion.div
       className={styles.ticketItem}
-      initial={{ opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -12, height: 0, marginBottom: 0 }}
-      transition={{ duration: 0.15 }}
+      initial={{ opacity: 0, x: 16, scale: 0.98 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: -12, scale: 0.96, height: 0, marginBottom: 0 }}
+      transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
     >
       <div className={styles.itemInfo}>
         <span className={styles.itemName}>{item.product_name}</span>

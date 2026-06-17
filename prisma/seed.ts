@@ -122,6 +122,8 @@ async function main() {
         is_available:       true,
         available_in_pos:   true,
         show_in_catalog:    true,
+        badge:              'popular',
+        is_featured:        true,
         min_stock:          5,
         variants: {
           create: [
@@ -136,10 +138,10 @@ async function main() {
       },
     })
     console.log('✅ Camisa Polo con variantes creada')
-  } else if (!existingPolo.category_id) {
+  } else {
     await prisma.product.update({
       where: { id: existingPolo.id },
-      data:  { category_id: catIds['Ropa'] },
+      data:  { category_id: catIds['Ropa'], badge: 'popular', is_featured: true },
     })
   }
 
@@ -152,12 +154,12 @@ async function main() {
     { name: 'Chaqueta de Cuero',    cat: 'Ropa',       price: 89.00, cost: 45.00, desc: 'Chaqueta de cuero genuino con forro interior' },
     { name: 'Gorra Cap',            cat: 'Ropa',       price: 12.00, cost:  6.00, desc: 'Gorra estilo cap ajustable con visera plana' },
     // Alimentos
-    { name: 'Arepa con Pollo',      cat: 'Alimentos',  price:  3.50, cost:  1.50, desc: 'Arepa rellena de pollo mechado con guasacaca' },
+    { name: 'Arepa con Pollo',      cat: 'Alimentos',  price:  3.50, cost:  1.50, desc: 'Arepa rellena de pollo mechado con guasacaca',         badge: 'recomendado', is_featured: true },
     { name: 'Jugo Natural',         cat: 'Alimentos',  price:  2.00, cost:  0.80, desc: 'Jugo fresco del día: parchita, guayaba o naranja' },
-    { name: 'Torta de Chocolate',   cat: 'Alimentos',  price: 15.00, cost:  7.00, desc: 'Torta húmeda de chocolate con ganache artesanal' },
+    { name: 'Torta de Chocolate',   cat: 'Alimentos',  price: 15.00, cost:  7.00, desc: 'Torta húmeda de chocolate con ganache artesanal',      badge: 'promo' },
     { name: 'Café Espresso',        cat: 'Alimentos',  price:  1.50, cost:  0.50, desc: 'Espresso doble de granos venezolanos seleccionados' },
     // Tecnología
-    { name: 'Audífonos Bluetooth',  cat: 'Tecnología', price: 35.00, cost: 18.00, desc: 'Audífonos inalámbricos con cancelación de ruido' },
+    { name: 'Audífonos Bluetooth',  cat: 'Tecnología', price: 35.00, cost: 18.00, desc: 'Audífonos inalámbricos con cancelación de ruido',     badge: 'nuevo' },
     { name: 'Cable USB-C',          cat: 'Tecnología', price:  8.00, cost:  3.00, desc: 'Cable USB-C 3A para carga rápida, 1 metro' },
     { name: 'Funda iPhone',         cat: 'Tecnología', price: 12.00, cost:  5.00, desc: 'Funda de silicona premium, varios modelos disponibles' },
     { name: 'Cargador Inalámbrico', cat: 'Tecnología', price: 25.00, cost: 12.00, desc: 'Cargador Qi 15W compatible con iPhone y Android' },
@@ -165,7 +167,10 @@ async function main() {
     { name: 'Corte de Cabello',     cat: 'Servicios',  price:  8.00, cost:  2.00, desc: 'Corte clásico o moderno con lavado incluido',         svc: true },
     { name: 'Manicure',             cat: 'Servicios',  price: 12.00, cost:  4.00, desc: 'Manicure completo con esmaltado semipermanente',       svc: true },
     { name: 'Delivery Express',     cat: 'Servicios',  price:  5.00, cost:  2.00, desc: 'Entrega a domicilio en radio de 5 km',                 svc: true },
-  ]
+  ] as Array<{
+    name: string; cat: string; price: number; cost: number; desc: string;
+    svc?: boolean; badge?: string; is_featured?: boolean
+  }>
 
   for (const p of seedProducts) {
     const exists = await prisma.product.findFirst({
@@ -186,13 +191,19 @@ async function main() {
           available_in_pos:   true,
           show_in_catalog:    true,
           min_stock:          p.svc ? 0 : 3,
+          badge:              p.badge ?? 'none',
+          is_featured:        p.is_featured ?? false,
         },
       })
       console.log(`✅ ${p.name}`)
-    } else if (!exists.category_id) {
+    } else {
+      const badgeUpdate = p.badge !== undefined || p.is_featured !== undefined
       await prisma.product.update({
         where: { id: exists.id },
-        data:  { category_id: catIds[p.cat] },
+        data:  {
+          category_id: catIds[p.cat],
+          ...(badgeUpdate ? { badge: p.badge ?? 'none', is_featured: p.is_featured ?? false } : {}),
+        },
       })
     }
   }

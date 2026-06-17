@@ -68,9 +68,12 @@ export async function GET(
         images:             true,
         sale_mode:          true,
         base_unit_label:    true,
+        badge:              true,
+        subcategory:        true,
+        is_featured:        true,
         category: { select: { name: true } },
       },
-      orderBy: [{ category_id: 'asc' }, { name: 'asc' }],
+      orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
     }),
     getBcvRate(),
   ])
@@ -95,6 +98,9 @@ export async function GET(
         sale_mode:     p.sale_mode,
         base_unit_label: p.base_unit_label,
         category_name: p.category?.name ?? null,
+        badge:         p.badge ?? 'none',
+        subcategory:   p.subcategory ?? null,
+        is_featured:   p.is_featured,
       }
     }),
     rate,

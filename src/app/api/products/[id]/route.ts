@@ -5,22 +5,29 @@ import { getBcvRate } from '@/lib/bcv'
 import { z } from 'zod'
 
 const patchSchema = z.object({
-  name: z.string().min(1).max(120).optional(),
-  category_id: z.number().int().nullable().optional(),
-  barcode: z.string().max(50).nullable().optional(),
-  sku: z.string().max(50).nullable().optional(),
-  description: z.string().nullable().optional(),
-  sale_mode: z.enum(['weight', 'unit', 'service']).optional(),
-  product_type: z.string().optional(),
-  base_unit_label: z.string().max(10).optional(),
-  cost_per_unit_usd: z.number().min(0).nullable().optional(),
-  margin: z.number().min(0).max(99.99).optional(),
+  name:               z.string().min(1).max(120).optional(),
+  category_id:        z.number().int().nullable().optional(),
+  barcode:            z.string().max(50).nullable().optional(),
+  sku:                z.string().max(50).nullable().optional(),
+  description:        z.string().nullable().optional(),
+  sale_mode:          z.enum(['weight', 'unit', 'service']).optional(),
+  product_type:       z.string().optional(),
+  base_unit_label:    z.string().max(10).optional(),
+  cost_per_unit_usd:  z.number().min(0).nullable().optional(),
+  margin:             z.number().min(0).max(99.99).optional(),
   price_per_unit_usd: z.number().min(0).nullable().optional(),
-  price_per_kg_usd: z.number().min(0).nullable().optional(),
-  min_stock: z.number().min(0).optional(),
-  is_favorite: z.boolean().optional(),
-  active: z.boolean().optional(),
-  sort_order: z.number().int().optional(),
+  price_per_kg_usd:   z.number().min(0).nullable().optional(),
+  min_stock:          z.number().min(0).optional(),
+  is_favorite:        z.boolean().optional(),
+  is_available:       z.boolean().optional(),
+  show_in_catalog:    z.boolean().optional(),
+  has_variants:       z.boolean().optional(),
+  images:             z.array(z.string()).nullable().optional(),
+  badge:              z.enum(['none', 'popular', 'nuevo', 'promo', 'recomendado']).nullable().optional(),
+  subcategory:        z.string().max(60).nullable().optional(),
+  is_featured:        z.boolean().optional(),
+  active:             z.boolean().optional(),
+  sort_order:         z.number().int().optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -90,10 +97,14 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     // Recalculate price if margin provided and no explicit price override
-    const patchData: Record<string, unknown> = { ...data }
-    if (margin !== undefined && data.price_per_unit_usd === undefined) {
-      const cost = data.cost_per_unit_usd ?? Number(existing.cost_per_unit_usd ?? 0)
+    const { images, ...rest } = data
+    const patchData: Record<string, unknown> = { ...rest }
+    if (margin !== undefined && rest.price_per_unit_usd === undefined) {
+      const cost = rest.cost_per_unit_usd ?? Number(existing.cost_per_unit_usd ?? 0)
       patchData.price_per_unit_usd = cost / (1 - margin / 100)
+    }
+    if (images !== undefined) {
+      patchData.images = images ? JSON.stringify(images) : null
     }
 
     const product = await prisma.product.update({

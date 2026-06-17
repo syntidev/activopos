@@ -23,6 +23,9 @@ const productSchema = z.object({
   has_variants:       z.boolean().default(false),
   show_in_catalog:    z.boolean().default(false),
   is_favorite:        z.boolean().default(false),
+  badge:              z.enum(['none', 'popular', 'nuevo', 'promo', 'recomendado']).default('none'),
+  subcategory:        z.string().max(60).nullable().optional(),
+  is_featured:        z.boolean().default(false),
   sort_order:         z.number().int().default(0),
 })
 
@@ -162,6 +165,9 @@ export async function POST(req: NextRequest) {
         has_variants:       data.has_variants,
         show_in_catalog:    data.show_in_catalog,
         is_favorite:        data.is_favorite,
+        badge:              data.badge,
+        subcategory:        data.subcategory        ?? null,
+        is_featured:        data.is_featured,
         sort_order:         data.sort_order,
       },
       include: {

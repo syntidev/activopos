@@ -178,6 +178,9 @@ model Product {
   is_favorite         Boolean  @default(false)
   is_available        Boolean  @default(true)
   active              Boolean  @default(true)
+  badge               String?  @default("none")
+  subcategory         String?
+  is_featured         Boolean  @default(false)
   sort_order          Int      @default(0)
   created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt

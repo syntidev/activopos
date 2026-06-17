@@ -81,7 +81,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       include: {
         category: { select: { name: true } },
       },
-      orderBy: [{ category_id: 'asc' }, { name: 'asc' }],
+      orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
     }),
     getBcvRate(),
     prisma.inventoryEntry.groupBy({
@@ -119,6 +119,9 @@ export default async function CatalogoPage({ params }: PageProps) {
       priceUsd,
       priceBs,
       outOfStock:   netQty !== undefined && netQty <= 0,
+      badge:        p.badge ?? null,
+      subcategory:  p.subcategory ?? null,
+      isFeatured:   p.is_featured,
     }
   })
 

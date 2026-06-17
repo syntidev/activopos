@@ -13,6 +13,9 @@ export interface CatalogProduct {
   priceUsd:     number
   priceBs:      number | null
   outOfStock:   boolean
+  badge:        string | null
+  subcategory:  string | null
+  isFeatured:   boolean
 }
 
 export interface PaymentMethod {
@@ -45,6 +48,22 @@ function fmtBs(n: number): string {
   return `Bs. ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
+const BADGE_LABEL: Record<string, string> = {
+  popular:     'Popular',
+  nuevo:       'Nuevo',
+  promo:       'Promo',
+  recomendado: 'Recomendado',
+}
+
+const BADGE_CSS: Record<string, string> = {
+  popular:     'badgePopular',
+  nuevo:       'badgeNuevo',
+  promo:       'badgePromo',
+  recomendado: 'badgeRecomendado',
+}
+
+const FEATURED_KEY = '__destacados__'
+
 function getCategoryClass(categoryName: string | null | undefined): string {
   if (!categoryName) return styles.gradDefault
   const key = categoryName
@@ -62,6 +81,7 @@ function getCategoryClass(categoryName: string | null | undefined): string {
 
 export function CatalogoGrid({ products, categories, slug, rate, paymentMethods }: Props) {
   const [active,          setActive]          = useState<string | null>(null)
+  const [activeSub,       setActiveSub]       = useState<string | null>(null)
   const [query,           setQuery]           = useState('')
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
   const [modalQty,        setModalQty]        = useState(1)
@@ -79,6 +99,8 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
   const nameRef   = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
+  const hasFeatured = useMemo(() => products.some(p => p.isFeatured), [products])
+
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>()
     for (const p of products) {
@@ -86,6 +108,18 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
     }
     return map
   }, [products])
+
+  const subcategoriesForActive = useMemo(() => {
+    if (!active || active === FEATURED_KEY) return []
+    const subs = new Set<string>()
+    for (const p of products) {
+      if (p.categoryName === active && p.subcategory) subs.add(p.subcategory)
+    }
+    return Array.from(subs).sort()
+  }, [products, active])
+
+  // Reset subcategory when main category changes
+  useEffect(() => { setActiveSub(null) }, [active])
 
   const visible = useMemo(() => {
     if (query.trim()) {
@@ -95,8 +129,10 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
         (p.categoryName?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ?? '').includes(q),
       )
     }
-    return active ? products.filter(p => p.categoryName === active) : products
-  }, [products, query, active])
+    if (active === FEATURED_KEY) return products.filter(p => p.isFeatured)
+    const byCat = active ? products.filter(p => p.categoryName === active) : products
+    return activeSub ? byCat.filter(p => p.subcategory === activeSub) : byCat
+  }, [products, query, active, activeSub])
 
   // Cart computed
   const totalItems  = cart.reduce((acc, i) => acc + i.qty, 0)
@@ -247,9 +283,19 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
       </div>
 
       {/* ── Category tabs (mobile, hidden while searching) ──────── */}
-      {categories.length > 0 && !query && (
+      {!query && (
         <div className={styles.tabsWrapperMobile}>
           <div className={styles.tabs} role="tablist" aria-label="Filtrar por categoría">
+            {hasFeatured && (
+              <button
+                role="tab"
+                aria-selected={active === FEATURED_KEY}
+                className={`${styles.tab} ${active === FEATURED_KEY ? styles.tabActive : ''}`}
+                onClick={() => setActive(FEATURED_KEY)}
+              >
+                ⭐ Destacados
+              </button>
+            )}
             <button
               role="tab"
               aria-selected={active === null}
@@ -270,6 +316,28 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
               </button>
             ))}
           </div>
+          {/* Subcategory pills — appear when a real category is selected and has subs */}
+          {subcategoriesForActive.length > 0 && (
+            <div className={styles.subcatPills} role="group" aria-label="Subcategorías">
+              <button
+                type="button"
+                className={`${styles.subcatPill} ${activeSub === null ? styles.subcatPillActive : ''}`}
+                onClick={() => setActiveSub(null)}
+              >
+                Todas
+              </button>
+              {subcategoriesForActive.map(sub => (
+                <button
+                  key={sub}
+                  type="button"
+                  className={`${styles.subcatPill} ${activeSub === sub ? styles.subcatPillActive : ''}`}
+                  onClick={() => setActiveSub(sub)}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -277,10 +345,19 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
       <div className={styles.contentLayout}>
 
         {/* Desktop sidebar (hidden while searching) */}
-        {categories.length > 0 && !query && (
+        {!query && (
           <aside className={styles.sidebar} aria-label="Categorías">
             <p className={styles.sidebarTitle}>Categorías</p>
             <nav>
+              {hasFeatured && (
+                <button
+                  className={`${styles.categoryItem} ${active === FEATURED_KEY ? styles.categoryItemActive : ''}`}
+                  onClick={() => setActive(FEATURED_KEY)}
+                >
+                  <span className={styles.categoryName}>⭐ Destacados</span>
+                  <span className={styles.categoryCount}>{products.filter(p => p.isFeatured).length}</span>
+                </button>
+              )}
               <button
                 className={`${styles.categoryItem} ${active === null ? styles.categoryItemActive : ''}`}
                 onClick={() => setActive(null)}
@@ -299,6 +376,29 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                 </button>
               ))}
             </nav>
+            {/* Subcategory second level */}
+            {subcategoriesForActive.length > 0 && (
+              <div className={styles.sidebarSubcats}>
+                <p className={styles.sidebarSubcatsLabel}>Subcategorías</p>
+                <button
+                  type="button"
+                  className={`${styles.subcatItem} ${activeSub === null ? styles.subcatItemActive : ''}`}
+                  onClick={() => setActiveSub(null)}
+                >
+                  Todas
+                </button>
+                {subcategoriesForActive.map(sub => (
+                  <button
+                    key={sub}
+                    type="button"
+                    className={`${styles.subcatItem} ${activeSub === sub ? styles.subcatItemActive : ''}`}
+                    onClick={() => setActiveSub(sub)}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            )}
           </aside>
         )}
 
@@ -347,6 +447,11 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                       </div>
                     )}
                     {p.outOfStock && <span className={styles.badgeSinStock}>Sin stock</span>}
+                    {!p.outOfStock && p.badge && p.badge !== 'none' && BADGE_CSS[p.badge] && (
+                      <span className={`${styles.productBadge} ${styles[BADGE_CSS[p.badge] as keyof typeof styles]}`}>
+                        {BADGE_LABEL[p.badge]}
+                      </span>
+                    )}
                   </div>
                   <div className={styles.cardBody}>
                     {p.categoryName && <span className={styles.category}>{p.categoryName}</span>}

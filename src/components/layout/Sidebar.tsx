@@ -13,6 +13,7 @@ import {
   Calculator,
   BarChart2,
   TrendingUp,
+  Sparkles,
   Settings,
   HelpCircle,
   LogOut,
@@ -66,6 +67,13 @@ const NAV_GROUPS: NavGroup[] = [
     adminOnly: true,
     items: [
       { href: '/finanzas', icon: TrendingUp, label: 'Finanzas' },
+    ],
+  },
+  {
+    label: 'INTELIGENCIA',
+    adminOnly: true,
+    items: [
+      { href: '/tu-dia', icon: Sparkles, label: 'Tu Día' },
     ],
   },
   {

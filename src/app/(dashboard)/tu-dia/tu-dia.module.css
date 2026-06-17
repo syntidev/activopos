@@ -1,0 +1,154 @@
+/* ============================================================
+   ACTIVOPOS — Tu Día · Narrativa de cierre de jornada
+   src/app/(dashboard)/tu-dia/tu-dia.module.css
+   ============================================================ */
+
+/* ── Página ─────────────────────────────────────────────────── */
+.page {
+  padding:    var(--space-10) var(--space-6);
+  max-width:  680px;
+  margin:     0 auto;
+  min-height: calc(100vh - var(--header-height));
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.header {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-5);
+  margin-bottom: var(--space-10);
+}
+
+.iconWrapper {
+  width:            var(--space-14);
+  height:           var(--space-14);
+  border-radius:    var(--radius-xl);
+  background:       var(--color-brand-subtle);
+  border:           var(--border-width-thin) solid var(--color-brand-border);
+  display:          flex;
+  align-items:      center;
+  justify-content:  center;
+  color:            var(--color-brand);
+  flex-shrink:      0;
+}
+
+.iconWrapperNight {
+  background: rgba(109, 40, 217, 0.12);
+  border-color: rgba(109, 40, 217, 0.30);
+  color: #A78BFA;
+}
+
+.headerMeta {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-0-5);
+}
+
+.headerTitle {
+  font-size:   var(--text-base);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  line-height: 1;
+}
+
+.headerDate {
+  font-size:   var(--text-xl);
+  font-weight: var(--weight-bold);
+  color:       var(--color-text-primary);
+  line-height: var(--leading-tight);
+}
+
+/* ── Divider ─────────────────────────────────────────────────── */
+.divider {
+  height:     var(--border-width-thin);
+  background: var(--color-border);
+  margin:     var(--space-8) 0;
+}
+
+/* ── Narrativa ───────────────────────────────────────────────── */
+.narrative {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-6);
+}
+
+/* Texto principal — Fraunces bold 28–30px */
+.paraMain {
+  font-family:    var(--font-fraunces), Georgia, serif;
+  font-size:      var(--text-3xl);
+  font-weight:    var(--weight-bold);
+  color:          var(--color-text-primary);
+  line-height:    var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Texto secundario — Inter regular 16px */
+.paraSecondary {
+  font-family: var(--font-sans);
+  font-size:   var(--text-base);
+  font-weight: var(--weight-normal);
+  color:       var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+/* Advertencia — vencimiento próximo */
+.paraWarning {
+  font-family:    var(--font-sans);
+  font-size:      var(--text-base);
+  font-weight:    var(--weight-medium);
+  color:          var(--color-warning-text);
+  line-height:    var(--leading-relaxed);
+  padding:        var(--space-3) var(--space-4);
+  background:     var(--color-warning-subtle);
+  border-left:    3px solid var(--color-warning);
+  border-radius:  0 var(--radius-md) var(--radius-md) 0;
+}
+
+/* ── Cierre ──────────────────────────────────────────────────── */
+.closingWrapper {
+  padding:    var(--space-10) 0 var(--space-4);
+  text-align: center;
+}
+
+.closingText {
+  font-family:    var(--font-fraunces), Georgia, serif;
+  font-size:      var(--text-2xl);
+  font-weight:    var(--weight-bold);
+  color:          var(--color-success-text);
+  letter-spacing: var(--tracking-tight);
+  line-height:    var(--leading-tight);
+}
+
+/* ── Separador de sección ────────────────────────────────────── */
+.sectionDivider {
+  height:     var(--border-width-thin);
+  background: var(--color-border-subtle);
+  margin:     var(--space-6) 0;
+}
+
+/* ── Estado vacío ────────────────────────────────────────────── */
+.emptyClosing {
+  font-family: var(--font-sans);
+  font-size:   var(--text-base);
+  color:       var(--color-text-muted);
+  font-style:  italic;
+  text-align:  center;
+  margin-top:  var(--space-8);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .page {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .paraMain {
+    font-size: var(--text-2xl);
+  }
+
+  .headerDate {
+    font-size: var(--text-lg);
+  }
+}

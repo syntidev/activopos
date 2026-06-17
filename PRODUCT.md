@@ -2,45 +2,26 @@
 
 ## Register
 
-product
+brand
 
 ## Users
-
-**Cajeros (cashiers):** Venezuelan SMB staff operating physical POS terminals. Speed is everything — they're mid-transaction, often in loud retail environments, touching a tablet or laptop. They know the workflow cold; the interface should disappear into the task.
-
-**Administradores (business owners):** PYME owners reviewing end-of-day numbers, checking caja history, managing products. Analytical mode — they want accurate totals, clear differences, and no cognitive load between them and the number.
+Venezuelan SME customers browsing a public storefront. Mobile-first — most arrive via WhatsApp link. They want to see products, prices in Bs, and order with one tap.
 
 ## Product Purpose
-
-ActivoPOS is a SaaS POS system for Venezuelan SMBs. It handles sales (Bolívares + USD dual-currency), cash register management (open/close turns, movements), inventory, credit sales, and reporting. The defining complexity: every price is USD but every transaction settles in Bs at the live BCV rate. The system must make that conversion invisible to the operator.
-
-Success looks like: a cashier can complete a sale in under 10 seconds. An admin can close the caja and know immediately if it cuadra.
+Public catalog per ActivoPOS business at activopos.com/catalogo/[slug]. Customers browse, filter by category, see prices (USD + Bs at live BCV rate), and order via WhatsApp. Success = customer sends a WhatsApp order.
 
 ## Brand Personality
-
-**Confiable. Veloz. Claro.** A tool that earns trust through precision — not through decoration. Venezuelan context means operators may be working on mid-range hardware, in variable lighting, under pressure. The interface must perform.
-
-Anti-flash, anti-chrome. Every pixel earns its place by serving a task.
+Trustworthy, clear, local. Real-shop feel. Not a startup landing page.
 
 ## Anti-references
-
-- Consumer-facing SaaS dashboards with hero metrics and gradient cards (Stripe Dashboard aesthetic — too decorative for a cashier's workflow)
-- Busy marketplace UIs with competing CTAs everywhere
-- Overly minimal "aesthetic" dashboards that bury numbers in whitespace
-- Light mode POS systems that cause eye strain under store lighting
+Cream/beige editorial minimalism, Stripe-adjacent monochromatic restraint, abstract decorative elements with no product purpose.
 
 ## Design Principles
-
-1. **The number is the hero.** Sales totals, efectivo esperado, diferencia — these are load-bearing. Size, weight, and placement serve readability, not decoration.
-2. **Danger is never ambiguous.** Faltante (negative difference), anulaciones, and destructive actions use the danger color with no exceptions. A cashier must never mistake a red number for green.
-3. **One action per moment.** The primary action on any screen (cobrar, cerrar caja, guardar movimiento) is always reachable without scroll and visually dominant.
-4. **Trust through density.** Venezuelan operators are trained on dense tools. Comfortable data density beats spacious emptiness.
-5. **Speed over delight.** No orchestrated load sequences, no celebration animations on routine transactions. Motion only for state feedback.
+1. Prices are the hero — USD + Bs legible on every card without zooming
+2. WhatsApp is the CTA — every screen has a clear path to ordering
+3. Light theme only — public storefront always light; all lighting conditions
+4. Mobile-first — most traffic is mobile, but desktop gets sidebar treatment
+5. Business identity first — logo/initials and name immediately visible
 
 ## Accessibility & Inclusion
-
-- WCAG 2.1 AA minimum
-- Touch targets ≥ 44px (tablet POS use)
-- High contrast dark theme — readable under store lighting
-- `prefers-reduced-motion` respected on all transitions
-- Bilingual: Spanish only (no i18n needed for MVP)
+WCAG AA. Touch targets ≥44px. Reduced motion respected. Focus visible on all interactive elements.

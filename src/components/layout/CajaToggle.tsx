@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Store, X } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 import styles from './CajaToggle.module.css'
 
 interface RegisterInfo {
@@ -30,6 +31,7 @@ function getElapsed(openedAt: string): string {
 
 export function CajaToggle() {
   const router = useRouter()
+  const { toast } = useToast()
   const [status, setStatus] = useState<CajaStatus | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [amount, setAmount] = useState('')
@@ -92,8 +94,11 @@ export function CajaToggle() {
       if (res.ok) {
         setModalOpen(false)
         await fetchStatus()
+      } else {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        toast(body.error ?? 'Error al abrir la caja', 'error')
       }
-    } catch { /* silently fail — caja toggle is non-critical */ }
+    } catch { toast('Error de conexión al abrir la caja', 'error') }
     finally { setOpening(false) }
   }
 
@@ -107,6 +112,8 @@ export function CajaToggle() {
 
   return (
     <>
+      {/* Separator lives here so it mounts/unmounts with the toggle */}
+      <div className={styles.separator} aria-hidden="true" />
       <button
         type="button"
         className={`${styles.toggle} ${isOpen ? styles.toggleOpen : styles.toggleClosed}`}

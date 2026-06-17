@@ -3,8 +3,11 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
+const SEGMENTS = ['retail', 'restaurante', 'servicios', 'salud', 'ferreteria', 'carniceria', 'tecnologia'] as const
+
 const PatchSchema = z.object({
   theme: z.enum(['dark', 'light']),
+  segment: z.enum(SEGMENTS).optional(),
 })
 
 export async function PATCH(request: Request) {
@@ -25,7 +28,7 @@ export async function PATCH(request: Request) {
   const updated = await prisma.business.update({
     where: { id: session.businessId },
     data,
-    select: { id: true, theme: true },
+    select: { id: true, theme: true, segment: true },
   })
 
   return NextResponse.json({ ok: true, business: updated })

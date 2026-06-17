@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { Menu, Sun, Moon } from 'lucide-react'
 import type { SessionUser } from '@/types'
+import { CajaToggle } from './CajaToggle'
 import styles from './Header.module.css'
 
 interface HeaderProps {
@@ -109,6 +110,9 @@ export function Header({
             <div className={styles.separator} aria-hidden="true" />
           </>
         )}
+
+        {/* Caja status toggle */}
+        <CajaToggle />
 
         {/* Theme toggle */}
         <button

@@ -12,7 +12,10 @@ const PatchSchema = z.object({
   state: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email().optional(),
-  logo_path: z.string().nullable().optional(),
+  logo_path: z.string()
+    .refine(v => v === null || v.startsWith('/uploads/'), 'Path inválido')
+    .nullable()
+    .optional(),
   rate_source: z.enum(['bcv', 'manual']).optional(),
   rate: z.number().positive().optional(),
 })
@@ -37,6 +40,7 @@ export async function GET() {
       theme: true,
       theme_color: true,
       rate_source: true,
+      segment: true,
     },
   })
 
@@ -70,14 +74,11 @@ export async function PATCH(request: Request) {
   const { rate, ...businessFields } = data
 
   if (businessFields.rate_source === 'manual' && rate !== undefined) {
-    await prisma.dollarRate.create({
-      data: {
-        rate,
-        source: 'manual',
-        is_active: true,
-        fetched_at: new Date(),
-      },
-    })
+    // SEC-002: DollarRate no tiene business_id — crear tasas aquí afectaría todos los tenants.
+    return NextResponse.json(
+      { error: 'Use el endpoint /api/rates/bcv para actualizar la tasa' },
+      { status: 400 },
+    )
   }
 
   const updated = await prisma.business.update({
@@ -97,6 +98,7 @@ export async function PATCH(request: Request) {
       theme: true,
       theme_color: true,
       rate_source: true,
+      segment: true,
     },
   })
 

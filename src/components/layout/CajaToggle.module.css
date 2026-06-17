@@ -1,3 +1,11 @@
+/* ── Separator — matches Header.module.css .separator ── */
+.separator {
+  width: 1px;
+  height: 20px;
+  background-color: var(--color-border);
+  flex-shrink: 0;
+}
+
 /* ── Toggle pill en header ── */
 .toggle {
   display: flex;

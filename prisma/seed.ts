@@ -14,18 +14,27 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   console.log('🌱 Seeding ActivoPOS...')
 
+  const catalogFields = {
+    catalog_slug:   'demo',
+    catalog_active: true,
+    catalog_title:  'Tienda Demo',
+    catalog_desc:   'Catálogo de prueba de ActivoPOS — explora nuestros productos',
+  }
+
   const business = await prisma.business.upsert({
     where:  { id: 1 },
-    update: {},
+    update: catalogFields,
     create: {
       name:                 'Mi Negocio Demo',
       legal_name:           'Mi Negocio Demo C.A.',
       rif:                  'J-000000000',
       city:                 'Caracas',
       state:                'Distrito Capital',
+      phone:                '04120000000',
       theme:                'dark',
       ticket_prefix:        'ACT',
       onboarding_completed: true,
+      ...catalogFields,
     },
   })
 
@@ -84,11 +93,14 @@ async function main() {
       data: {
         business_id:        business.id,
         name:               'Camisa Polo',
+        description:        'Camisa polo de algodón, disponible en varias tallas y colores',
         sale_mode:          'unit',
         price_per_unit_usd: 15.00,
         cost_per_unit_usd:  8.00,
         has_variants:       true,
         is_available:       true,
+        available_in_pos:   true,
+        show_in_catalog:    true,
         min_stock:          5,
         variants: {
           create: [
@@ -103,6 +115,42 @@ async function main() {
       },
     })
     console.log('✅ Camisa Polo con variantes creada')
+  }
+
+  // Productos adicionales para demo del catálogo
+  const demoCatalogProducts = [
+    {
+      name:               'Pantalón Jean',
+      description:        'Jean de mezclilla corte slim, resistente y cómodo',
+      price_per_unit_usd: 22.00,
+      cost_per_unit_usd:  12.00,
+    },
+    {
+      name:               'Zapatos Deportivos',
+      description:        'Calzado deportivo con suela antideslizante',
+      price_per_unit_usd: 35.00,
+      cost_per_unit_usd:  18.00,
+    },
+  ]
+
+  for (const prod of demoCatalogProducts) {
+    const exists = await prisma.product.findFirst({
+      where: { business_id: business.id, name: prod.name },
+    })
+    if (!exists) {
+      await prisma.product.create({
+        data: {
+          business_id:       business.id,
+          sale_mode:         'unit',
+          is_available:      true,
+          available_in_pos:  true,
+          show_in_catalog:   true,
+          min_stock:         3,
+          ...prod,
+        },
+      })
+      console.log(`✅ ${prod.name} creado`)
+    }
   }
 
   console.log('✅ Seed completado')

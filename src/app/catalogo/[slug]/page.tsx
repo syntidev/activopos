@@ -33,14 +33,30 @@ async function getBusiness(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const biz = await prisma.business.findFirst({
     where:  { catalog_slug: params.slug, active: true },
-    select: { name: true, catalog_title: true, catalog_desc: true },
+    select: { name: true, catalog_title: true, catalog_desc: true, logo_path: true },
   })
   if (!biz) return { title: 'Catálogo no encontrado' }
-  const title = biz.catalog_title ?? biz.name
+
+  const title       = biz.catalog_title ?? biz.name
+  const description = biz.catalog_desc ?? `Catálogo de productos de ${biz.name}`
+  const ogImages    = biz.logo_path ? [{ url: biz.logo_path, alt: title }] : []
+
   return {
     title:       `${title} — Catálogo`,
-    description: biz.catalog_desc ?? `Catálogo de productos de ${biz.name}`,
+    description,
     robots:      'index, follow',
+    openGraph: {
+      title,
+      description,
+      type:   'website',
+      images: ogImages,
+    },
+    twitter: {
+      card:        ogImages.length ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images:      ogImages.map(i => i.url),
+    },
   }
 }
 

@@ -29,19 +29,33 @@ function fmtUsd(n: number) {
 export function ResumenSection({ month }: Props) {
   const [data, setData]       = useState<ResumenData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(false)
 
   useEffect(() => {
+    const ctrl = new AbortController()
     setLoading(true)
     setData(null)
-    fetch(`/api/finanzas/resumen?month=${month}`)
-      .then(r => r.json())
-      .then((j: { ok: boolean } & ResumenData) => { if (j.ok) setData(j) })
-      .catch(() => {})
+    setError(false)
+    fetch(`/api/finanzas/resumen?month=${month}`, { signal: ctrl.signal })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((j: { ok: boolean } & ResumenData) => {
+        if (j.ok) setData(j)
+        else setError(true)
+      })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return
+        setError(true)
+      })
       .finally(() => setLoading(false))
+    return () => ctrl.abort()
   }, [month])
 
   if (loading) return <div className={styles.loading}>Cargando resumen...</div>
-  if (!data)   return <div className={styles.loading}>No se pudo cargar el resumen financiero.</div>
+  if (error)   return <div className={styles.loading}>Error al cargar el resumen financiero. Intente de nuevo.</div>
+  if (!data)   return <div className={styles.loading}>No hay datos financieros para este período.</div>
 
   const er           = data.estado_resultados
   const utilPositiva = er.utilidad_neta >= 0

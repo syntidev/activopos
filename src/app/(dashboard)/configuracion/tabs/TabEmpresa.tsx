@@ -98,6 +98,8 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
     if (!file.type.startsWith('image/')) { toast('Solo se aceptan imágenes PNG, JPG o WebP.', 'error'); return }
     if (file.size > 2 * 1024 * 1024)    { toast('El archivo no puede superar 2 MB.', 'error');          return }
 
+    const prevPreview = logoPreview
+
     const reader = new FileReader()
     reader.onload = (e) => setLogoPreview(e.target?.result as string)
     reader.readAsDataURL(file)
@@ -107,7 +109,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
       const fd = new FormData()
       fd.append('file', file)
       const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: fd })
-      if (!uploadRes.ok) { toast('Error al subir la imagen.', 'error'); return }
+      if (!uploadRes.ok) { toast('Error al subir la imagen.', 'error'); setLogoPreview(prevPreview); return }
       const { url } = await uploadRes.json() as { url: string }
 
       const patchRes = await fetch('/api/config/business', {
@@ -115,11 +117,12 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ logo_path: url }),
       })
-      if (!patchRes.ok) { toast('Error al guardar el logo.', 'error'); return }
+      if (!patchRes.ok) { toast('Error al guardar el logo.', 'error'); setLogoPreview(prevPreview); return }
       setLogoPath(url)
       toast('Logo guardado correctamente.', 'success')
     } catch {
       toast('Error de conexión al subir el logo.', 'error')
+      setLogoPreview(prevPreview)
     } finally {
       setUploading(false)
     }

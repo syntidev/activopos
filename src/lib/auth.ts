@@ -2,10 +2,10 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
 const rawSecret = process.env.JWT_SECRET
-if (!rawSecret && process.env.NODE_ENV === 'production') {
-  throw new Error('[ActivoPOS] JWT_SECRET env variable is required in production')
+if (!rawSecret) {
+  throw new Error('[ActivoPOS] JWT_SECRET env variable is required — set it in .env.local for dev')
 }
-const SECRET = new TextEncoder().encode(rawSecret ?? 'activopos_dev_secret_2026')
+const SECRET = new TextEncoder().encode(rawSecret)
 
 const COOKIE_NAME = 'activopos_session'
 const EXPIRES_IN = '8h'
@@ -28,7 +28,7 @@ export async function signToken(payload: SessionPayload): Promise<string> {
 
 export async function verifyToken(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET)
+    const { payload } = await jwtVerify(token, SECRET, { algorithms: ['HS256'] })
     return payload as unknown as SessionPayload
   } catch {
     return null

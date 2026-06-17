@@ -7,16 +7,23 @@ Revisado por: CLI-C (Auditoría de seguridad y calidad)
 ## P0 — Crítico (CORREGIDO EN ESTA SESIÓN)
 
 ### [FIXED] JWT_SECRET con fallback hardcodeado en código fuente
-**Archivo:** `src/lib/auth.ts:4-6`
-**Riesgo:** Cualquier actor con acceso al repositorio puede forjar tokens JWT válidos si `JWT_SECRET` no está configurado en producción.
-**Código original:**
+**Archivo:** `src/lib/auth.ts:4-8`
+**Riesgo:** Cualquier actor con acceso al repositorio puede forjar tokens JWT válidos si `JWT_SECRET` no está configurado en ningún entorno (dev, staging, producción).
+
+**Fix final aplicado (fail-closed en todo entorno):**
 ```typescript
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? 'activopos_dev_secret_2026'
-)
+const rawSecret = process.env.JWT_SECRET
+if (!rawSecret) {
+  throw new Error('[ActivoPOS] JWT_SECRET env variable is required — set it in .env.local for dev')
+}
+const SECRET = new TextEncoder().encode(rawSecret)
 ```
-**Fix aplicado:** Se agregó guard que lanza excepción al iniciar el servidor si `NODE_ENV === 'production'` y `JWT_SECRET` no está definido. El fallback `'activopos_dev_secret_2026'` solo opera en dev.
-**Acción requerida en VPS:** Verificar que `JWT_SECRET` esté definido en `.env.production` antes del próximo deploy.
+Además se pineó el algoritmo en `jwtVerify`: `{ algorithms: ['HS256'] }` — previene algorithm confusion attacks.
+
+**Nota sobre el fix anterior:** El primer fix (guard solo en `NODE_ENV === 'production'`) era insuficiente — staging/testing con NODE_ENV=development y JWT_SECRET sin configurar seguía usando el secret conocido. El fix final es fail-closed en todo entorno.
+
+**Acción requerida en desarrollo:** Crear `.env.local` con `JWT_SECRET=<valor-aleatorio>` antes de correr `npm run dev`. Usar `openssl rand -base64 32` para generarlo.
+**Acción requerida en VPS:** Verificar `JWT_SECRET` en `.env.production` — ya debería estar configurado.
 
 ---
 

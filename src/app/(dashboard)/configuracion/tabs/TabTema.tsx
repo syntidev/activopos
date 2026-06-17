@@ -37,6 +37,14 @@ export function TabTema({ businessId: _businessId }: Props) {
     if (saved) setSelectedPalette(saved)
   }, [])
 
+  useEffect(() => {
+    const saved = localStorage.getItem('activopos_theme')
+    if (saved === 'dark' || saved === 'light') {
+      document.documentElement.setAttribute('data-theme', saved)
+      setTheme(saved)
+    }
+  }, [])
+
   const fetchConfig = useCallback(async () => {
     setLoading(true)
     try {
@@ -61,16 +69,8 @@ export function TabTema({ businessId: _businessId }: Props) {
   useEffect(() => { void fetchConfig() }, [fetchConfig])
 
   const applyThemePreview = (t: 'dark' | 'light') => {
-    const html = document.documentElement
-    if (t === 'dark') {
-      html.classList.add('dark')
-      html.classList.remove('light')
-      html.removeAttribute('data-theme')
-    } else {
-      html.classList.add('light')
-      html.classList.remove('dark')
-      html.setAttribute('data-theme', 'light')
-    }
+    document.documentElement.setAttribute('data-theme', t)
+    localStorage.setItem('activopos_theme', t)
   }
 
   const handleThemeSelect = (t: 'dark' | 'light') => {

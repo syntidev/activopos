@@ -83,8 +83,9 @@ export function TabTema({ businessId: _businessId }: Props) {
 
   useEffect(() => { void fetchConfig() }, [fetchConfig])
 
-  const applyThemePreview = (t: 'dark' | 'light', color: string) => {
+  const applyThemePreview = (t: 'dark' | 'light') => {
     const html = document.documentElement
+    html.style.removeProperty('--color-brand')
     if (t === 'dark') {
       html.classList.add('dark')
       html.classList.remove('light')
@@ -94,23 +95,20 @@ export function TabTema({ businessId: _businessId }: Props) {
       html.classList.remove('dark')
       html.setAttribute('data-theme', 'light')
     }
-    html.style.setProperty('--color-brand', color)
   }
 
   const handleThemeSelect = (t: 'dark' | 'light') => {
     setTheme(t)
-    applyThemePreview(t, themeColor)
+    applyThemePreview(t)
   }
 
   const handleColorSelect = (color: AccentHex) => {
     setThemeColor(color)
-    applyThemePreview(theme, color)
   }
 
   const handlePaletteSelect = (palette: PaletteOption) => {
     setSelectedPalette(palette.key)
     setThemeColor(palette.accentHex)
-    applyThemePreview(theme, palette.accentHex)
     localStorage.setItem('activopos_segment', palette.key)
   }
 

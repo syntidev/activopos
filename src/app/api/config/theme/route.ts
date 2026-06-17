@@ -4,14 +4,13 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
 const ALLOWED_COLORS = ['#2563EB', '#7C3AED', '#0891B2', '#D97706', '#059669', '#DC2626'] as const
-const ALLOWED_SEGMENTS = ['retail', 'restaurante', 'servicios', 'salud', 'ferreteria', 'carniceria', 'tecnologia'] as const
 
 const PatchSchema = z.object({
   theme: z.enum(['dark', 'light']).optional(),
   theme_color: z.string().refine((v) => (ALLOWED_COLORS as readonly string[]).includes(v), {
     message: 'Color no permitido',
   }).optional(),
-  segment: z.enum(ALLOWED_SEGMENTS).optional(),
+  segment: z.string().max(40).optional(),
 })
 
 export async function PATCH(request: Request) {

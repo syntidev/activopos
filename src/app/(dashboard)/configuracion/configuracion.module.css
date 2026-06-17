@@ -819,6 +819,55 @@
   color: var(--color-text-primary);
 }
 
+/* ── Theme icon cards ── */
+.themeIconCards {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
+
+.themeIconCard {
+  flex: 1;
+  padding: var(--space-5) var(--space-4);
+  border: var(--border-width-thick) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.themeIconCard:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .themeIconCard:hover:not(.themeIconCardActive) {
+    border-color: var(--color-border-strong);
+    color: var(--color-text-secondary);
+  }
+}
+
+.themeIconCardActive {
+  border-color: var(--color-brand);
+  background: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
+.themeIconCardLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: inherit;
+}
+
 /* ── Mobile responsive ── */
 @media (max-width: 768px) {
   .configLayout {

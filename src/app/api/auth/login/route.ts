@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { signToken, setSessionCookie } from '@/lib/auth'
-import { loginLimiter, getClientIp } from '@/lib/rate-limit'
+import { loginLimiter, loginEmailLimiter, getClientIp } from '@/lib/rate-limit'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
@@ -23,6 +23,16 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { email, password } = loginSchema.parse(body)
+
+    // Capa 2: rate limit por email — bloquea brute-force aunque el atacante rote IPs
+    try {
+      await loginEmailLimiter.consume(email.toLowerCase())
+    } catch {
+      return NextResponse.json(
+        { error: 'Demasiados intentos. Espera 15 minutos.' },
+        { status: 429 }
+      )
+    }
 
     const user = await prisma.user.findFirst({
       where: { email, is_active: true },

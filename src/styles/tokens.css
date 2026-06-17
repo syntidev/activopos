@@ -546,3 +546,402 @@
   --color-brand-border: rgba(124,58,237,0.35);
   --accent-rgb: 124, 58, 237;
 }
+
+/* ============================================================
+   TEMAS GLOBALES — 4 opciones selladas Sprint 8
+   Activados con data-theme="..." en <html>
+   Cada tema es autónomo: marca + modo + sidebar definidos aquí.
+   ============================================================ */
+
+/* ── Base compartida: temas de fondo claro ── */
+[data-theme="default"],
+[data-theme="calle"],
+[data-theme="tropical"] {
+  --color-surface-2:   #F1F5F9;
+  --color-surface-3:   #E2E8F0;
+  --color-surface-4:   #CBD5E1;
+
+  --color-text-muted:     #94A3B8;
+  --color-text-disabled:  #CBD5E1;
+  --color-text-inverse:   #F8FAFC;
+  --color-text-on-brand:  #FFFFFF;
+
+  --color-border-subtle:  #F1F5F9;
+  --color-border-strong:  #94A3B8;
+
+  --header-blur: 12px;
+
+  --pos-card-bg:       #FFFFFF;
+  --pos-ticket-bg:     #FFFFFF;
+
+  --color-usd:           #0F172A;
+  --color-rate-live:     #1A7F64;
+  --color-rate-stale:    #B45309;
+  --color-cash:          #15803D;
+  --color-transfer:      #1D4ED8;
+  --color-zelle:         #4C1D95;
+  --color-binance:       #92400E;
+
+  --kpi-bg:              #FFFFFF;
+  --kpi-value-profit:    #1A7F64;
+  --kpi-value-pending:   #B45309;
+  --kpi-value-danger:    #CF222E;
+
+  --input-bg:            #FFFFFF;
+  --input-border-error:  #CF222E;
+
+  --badge-paid-bg:       rgba(26,127,100,0.08);
+  --badge-paid-text:     #1A7F64;
+  --badge-paid-border:   rgba(26,127,100,0.3);
+  --badge-pending-bg:    rgba(180,83,9,0.08);
+  --badge-pending-text:  #B45309;
+  --badge-pending-border:rgba(180,83,9,0.3);
+  --badge-cancelled-bg:  rgba(207,34,46,0.08);
+  --badge-cancelled-text:#CF222E;
+  --badge-cancelled-border:rgba(207,34,46,0.3);
+  --badge-low-stock-bg:  rgba(207,34,46,0.08);
+  --badge-low-stock-text:#CF222E;
+
+  --overlay-bg:  rgba(0,0,0,0.5);
+  --overlay-blur:4px;
+
+  --color-success:        #1A7F64;
+  --color-success-hover:  #16A34A;
+  --color-success-subtle: rgba(26,127,100,0.08);
+  --color-success-border: rgba(26,127,100,0.3);
+  --color-success-text:   #1A7F64;
+  --color-warning:        #B45309;
+  --color-warning-hover:  #D97706;
+  --color-warning-subtle: rgba(180,83,9,0.08);
+  --color-warning-border: rgba(180,83,9,0.3);
+  --color-warning-text:   #B45309;
+  --color-danger:         #CF222E;
+  --color-danger-hover:   #EF4444;
+  --color-danger-active:  #B91C1C;
+  --color-danger-subtle:  rgba(207,34,46,0.08);
+  --color-danger-border:  rgba(207,34,46,0.3);
+  --color-danger-text:    #CF222E;
+  --color-info-subtle:    rgba(37,99,235,0.08);
+  --color-info-border:    rgba(37,99,235,0.3);
+}
+
+/* ── TEMA 1 — default (light azul clásico) ── */
+[data-theme="default"] {
+  --color-bg:          #F8FAFC;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #2563EB;
+  --color-brand-hover:  #1D4ED8;
+  --color-brand-active: #1E40AF;
+  --color-brand-subtle: rgba(37,99,235,0.08);
+  --color-brand-border: rgba(37,99,235,0.3);
+  --accent-rgb:         37, 99, 235;
+
+  --color-text-primary:   #0F172A;
+  --color-text-secondary: #64748B;
+  --color-border:         #E2E8F0;
+  --color-border-focus:   #2563EB;
+  --color-bs:             #64748B;
+  --color-info:           #2563EB;
+  --color-info-text:      #2563EB;
+
+  --sidebar-bg:                #0F172A;
+  --sidebar-border:            #1E293B;
+  --sidebar-text:              #94A3B8;
+  --sidebar-text-active:       #F1F5F9;
+  --sidebar-text-hover:        #CBD5E1;
+  --sidebar-group-label:       #475569;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.04);
+  --sidebar-item-bg-active:    #1E293B;
+  --sidebar-item-border-active:#2563EB;
+  --sidebar-dot:               #2563EB;
+  --sidebar-rate-text:         #1D9E75;
+
+  --header-bg:     rgba(248,250,252,0.9);
+  --header-border: #E2E8F0;
+
+  --pos-grid-bg:         #F1F5F9;
+  --pos-card-hover:      #F8FAFC;
+  --pos-card-border:     #E2E8F0;
+  --pos-card-active:     rgba(37,99,235,0.08);
+  --pos-ticket-border:   #E2E8F0;
+  --pos-category-bg:     #E2E8F0;
+  --pos-category-active: #2563EB;
+
+  --input-border:        #E2E8F0;
+  --input-border-focus:  #2563EB;
+  --input-text:          #0F172A;
+  --input-placeholder:   #94A3B8;
+
+  --kpi-border:          #E2E8F0;
+  --kpi-value-sales:     #0F172A;
+
+  --badge-quote-bg:      rgba(37,99,235,0.08);
+  --badge-quote-text:    #1D4ED8;
+  --badge-quote-border:  rgba(37,99,235,0.3);
+
+  --scrollbar-track:       #F1F5F9;
+  --scrollbar-thumb:       #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+
+  --card-hero-shadow:       0 4px 16px rgba(37,99,235,0.25), 0 1px 4px rgba(37,99,235,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(37,99,235,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 2 — premium (dark profundo) ── */
+[data-theme="premium"] {
+  --color-bg:          #0B1220;
+  --color-surface:     #111827;
+  --color-surface-2:   #1A2540;
+  --color-surface-3:   #1F2937;
+  --color-surface-4:   #374151;
+
+  --color-brand:        #2563EB;
+  --color-brand-hover:  #3B82F6;
+  --color-brand-active: #1D4ED8;
+  --color-brand-subtle: rgba(37,99,235,0.12);
+  --color-brand-border: rgba(37,99,235,0.35);
+  --accent-rgb:         37, 99, 235;
+
+  --color-text-primary:   #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted:     #4B5563;
+  --color-text-disabled:  #374151;
+  --color-text-inverse:   #0B1220;
+  --color-text-on-brand:  #FFFFFF;
+  --color-border:         #1F2937;
+  --color-border-subtle:  #111827;
+  --color-border-strong:  #374151;
+  --color-border-focus:   #2563EB;
+  --color-bs:             #94A3B8;
+  --color-usd:            #F1F5F9;
+  --color-info:           #3B82F6;
+  --color-info-text:      #93C5FD;
+  --color-info-subtle:    rgba(59,130,246,0.12);
+  --color-info-border:    rgba(59,130,246,0.35);
+
+  --sidebar-bg:                #111827;
+  --sidebar-border:            #1F2937;
+  --sidebar-text:              #94A3B8;
+  --sidebar-text-active:       #F1F5F9;
+  --sidebar-text-hover:        #CBD5E1;
+  --sidebar-group-label:       #4B5563;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.04);
+  --sidebar-item-bg-active:    #1F2937;
+  --sidebar-item-border-active:#2563EB;
+  --sidebar-dot:               #2563EB;
+  --sidebar-rate-text:         #1D9E75;
+
+  --header-bg:     rgba(11,18,32,0.85);
+  --header-border: #1F2937;
+  --header-blur:   12px;
+
+  --pos-grid-bg:         #0B1220;
+  --pos-card-bg:         #111827;
+  --pos-card-hover:      #1A2540;
+  --pos-card-border:     #1F2937;
+  --pos-card-active:     rgba(37,99,235,0.15);
+  --pos-ticket-bg:       #111827;
+  --pos-ticket-border:   #1F2937;
+  --pos-category-bg:     #1A2540;
+  --pos-category-active: #2563EB;
+
+  --input-bg:            #0B1220;
+  --input-border:        #1F2937;
+  --input-border-focus:  #2563EB;
+  --input-border-error:  #EF4444;
+  --input-text:          #F1F5F9;
+  --input-placeholder:   #4B5563;
+
+  --kpi-bg:              #111827;
+  --kpi-border:          #1F2937;
+  --kpi-value-sales:     #F1F5F9;
+  --kpi-value-profit:    #1D9E75;
+  --kpi-value-pending:   #D97706;
+  --kpi-value-danger:    #EF4444;
+
+  --badge-paid-bg:       rgba(29,158,117,0.15);
+  --badge-paid-text:     #4ADE80;
+  --badge-paid-border:   rgba(29,158,117,0.3);
+  --badge-pending-bg:    rgba(217,119,6,0.15);
+  --badge-pending-text:  #FCD34D;
+  --badge-pending-border:rgba(217,119,6,0.3);
+  --badge-quote-bg:      rgba(59,130,246,0.15);
+  --badge-quote-text:    #93C5FD;
+  --badge-quote-border:  rgba(59,130,246,0.3);
+  --badge-cancelled-bg:  rgba(239,68,68,0.15);
+  --badge-cancelled-text:#FCA5A5;
+  --badge-cancelled-border:rgba(239,68,68,0.3);
+  --badge-low-stock-bg:  rgba(239,68,68,0.15);
+  --badge-low-stock-text:#FCA5A5;
+
+  --scrollbar-track:       #111827;
+  --scrollbar-thumb:       #1F2937;
+  --scrollbar-thumb-hover: #374151;
+
+  --overlay-bg:  rgba(0,0,0,0.75);
+  --overlay-blur:4px;
+
+  --color-success:        #1D9E75;
+  --color-success-hover:  #22C55E;
+  --color-success-subtle: rgba(29,158,117,0.12);
+  --color-success-border: rgba(29,158,117,0.35);
+  --color-success-text:   #4ADE80;
+  --color-warning:        #D97706;
+  --color-warning-hover:  #F59E0B;
+  --color-warning-subtle: rgba(217,119,6,0.12);
+  --color-warning-border: rgba(217,119,6,0.35);
+  --color-warning-text:   #FCD34D;
+  --color-danger:         #EF4444;
+  --color-danger-hover:   #F87171;
+  --color-danger-active:  #DC2626;
+  --color-danger-subtle:  rgba(239,68,68,0.12);
+  --color-danger-border:  rgba(239,68,68,0.35);
+  --color-danger-text:    #FCA5A5;
+  --color-rate-live:      #1D9E75;
+  --color-rate-stale:     #D97706;
+  --color-cash:           #1D9E75;
+  --color-transfer:       #3B82F6;
+  --color-zelle:          #6C2BD9;
+  --color-binance:        #F0B90B;
+  --color-credit:         #D97706;
+
+  --card-hero-shadow:      0 4px 16px rgba(37,99,235,0.35), 0 1px 4px rgba(37,99,235,0.5);
+  --card-glow-shadow-dark: 0 0 14px rgba(37,99,235,0.18);
+}
+
+/* ── TEMA 3 — calle (warm light, naranja urbano) ── */
+[data-theme="calle"] {
+  --color-bg:          #FFF7ED;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #EA580C;
+  --color-brand-hover:  #C2410C;
+  --color-brand-active: #9A3412;
+  --color-brand-subtle: rgba(234,88,12,0.08);
+  --color-brand-border: rgba(234,88,12,0.3);
+  --accent-rgb:         234, 88, 12;
+
+  --color-text-primary:   #18181B;
+  --color-text-secondary: #78716C;
+  --color-text-muted:     #A8A29E;
+  --color-text-disabled:  #E7E5E4;
+  --color-border:         #E7E5E4;
+  --color-border-subtle:  #F5F5F4;
+  --color-border-strong:  #A8A29E;
+  --color-border-focus:   #EA580C;
+  --color-bs:             #78716C;
+  --color-info:           #EA580C;
+  --color-info-text:      #C2410C;
+  --color-info-subtle:    rgba(234,88,12,0.08);
+  --color-info-border:    rgba(234,88,12,0.3);
+
+  --sidebar-bg:                #111111;
+  --sidebar-border:            #1F2937;
+  --sidebar-text:              #9CA3AF;
+  --sidebar-text-active:       #F5F5F4;
+  --sidebar-text-hover:        #D6D3D1;
+  --sidebar-group-label:       #52525B;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.04);
+  --sidebar-item-bg-active:    #1F2937;
+  --sidebar-item-border-active:#EA580C;
+  --sidebar-dot:               #EA580C;
+  --sidebar-rate-text:         #1D9E75;
+
+  --header-bg:     rgba(255,247,237,0.9);
+  --header-border: #E7E5E4;
+
+  --pos-grid-bg:         #FEF3C7;
+  --pos-card-hover:      #FFF7ED;
+  --pos-card-border:     #E7E5E4;
+  --pos-card-active:     rgba(234,88,12,0.08);
+  --pos-ticket-border:   #E7E5E4;
+  --pos-category-bg:     #FFEDD5;
+  --pos-category-active: #EA580C;
+
+  --input-border:        #E7E5E4;
+  --input-border-focus:  #EA580C;
+  --input-text:          #18181B;
+  --input-placeholder:   #A8A29E;
+
+  --kpi-border:          #E7E5E4;
+  --kpi-value-sales:     #18181B;
+
+  --badge-quote-bg:      rgba(234,88,12,0.08);
+  --badge-quote-text:    #C2410C;
+  --badge-quote-border:  rgba(234,88,12,0.3);
+
+  --scrollbar-track:       #FEF3C7;
+  --scrollbar-thumb:       #E7E5E4;
+  --scrollbar-thumb-hover: #A8A29E;
+
+  --card-hero-shadow:       0 4px 16px rgba(234,88,12,0.25), 0 1px 4px rgba(234,88,12,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(234,88,12,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ── TEMA 4 — tropical (light teal moderno) ── */
+[data-theme="tropical"] {
+  --color-bg:          #F8FAFC;
+  --color-surface:     #FFFFFF;
+
+  --color-brand:        #14B8A6;
+  --color-brand-hover:  #0E9F8F;
+  --color-brand-active: #0D9488;
+  --color-brand-subtle: rgba(20,184,166,0.08);
+  --color-brand-border: rgba(20,184,166,0.3);
+  --accent-rgb:         20, 184, 166;
+
+  --color-text-primary:   #1E293B;
+  --color-text-secondary: #64748B;
+  --color-border:         #CBD5E1;
+  --color-border-subtle:  #E2E8F0;
+  --color-border-strong:  #94A3B8;
+  --color-border-focus:   #14B8A6;
+  --color-bs:             #64748B;
+  --color-info:           #14B8A6;
+  --color-info-text:      #0D9488;
+  --color-info-subtle:    rgba(20,184,166,0.08);
+  --color-info-border:    rgba(20,184,166,0.3);
+
+  --sidebar-bg:                #164E63;
+  --sidebar-border:            #155E75;
+  --sidebar-text:              #A5F3FC;
+  --sidebar-text-active:       #ECFEFF;
+  --sidebar-text-hover:        #CFFAFE;
+  --sidebar-group-label:       #0891B2;
+  --sidebar-item-bg-hover:     rgba(255,255,255,0.06);
+  --sidebar-item-bg-active:    #155E75;
+  --sidebar-item-border-active:#14B8A6;
+  --sidebar-dot:               #14B8A6;
+  --sidebar-rate-text:         #6EE7B7;
+
+  --header-bg:     rgba(248,250,252,0.9);
+  --header-border: #CBD5E1;
+
+  --pos-grid-bg:         #F0FDFA;
+  --pos-card-hover:      #F0FDFA;
+  --pos-card-border:     #CBD5E1;
+  --pos-card-active:     rgba(20,184,166,0.08);
+  --pos-ticket-border:   #CBD5E1;
+  --pos-category-bg:     #CCFBF1;
+  --pos-category-active: #14B8A6;
+
+  --input-border:        #CBD5E1;
+  --input-border-focus:  #14B8A6;
+  --input-text:          #1E293B;
+  --input-placeholder:   #94A3B8;
+
+  --kpi-border:          #CBD5E1;
+  --kpi-value-sales:     #1E293B;
+
+  --badge-quote-bg:      rgba(20,184,166,0.08);
+  --badge-quote-text:    #0D9488;
+  --badge-quote-border:  rgba(20,184,166,0.3);
+
+  --scrollbar-track:       #F0FDFA;
+  --scrollbar-thumb:       #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+
+  --card-hero-shadow:       0 4px 16px rgba(20,184,166,0.25), 0 1px 4px rgba(20,184,166,0.35);
+  --card-glow-shadow-light: 0 2px 12px rgba(20,184,166,0.1), 0 1px 3px rgba(0,0,0,0.04);
+}

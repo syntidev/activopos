@@ -32,10 +32,13 @@ export async function GET() {
     prisma.saleAbono.aggregate({
       where: {
         created_at: { gte: register.opened_at },
-        sale: { business_id: session.businessId },
+        sale: {
+          business_id: session.businessId,
+          sold_at: { gte: register.opened_at },
+        },
       },
       _sum: { amount_usd: true, amount_bs: true },
-      _count: { id: true },
+      _count: { _all: true },
     }),
   ])
 
@@ -81,9 +84,9 @@ export async function GET() {
       movOut,
       efectivoEsperado,
       cobrosCredito: {
-        usd: Number(abonosAgg._sum.amount_usd ?? 0),
-        bs:  Number(abonosAgg._sum.amount_bs  ?? 0),
-        count: abonosAgg._count.id,
+        usd: Number(abonosAgg._sum?.amount_usd ?? 0),
+        bs:  Number(abonosAgg._sum?.amount_bs  ?? 0),
+        count: abonosAgg._count._all,
       },
     },
   })

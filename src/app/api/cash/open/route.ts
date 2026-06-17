@@ -17,17 +17,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = openSchema.parse(await req.json())
 
-    const existing = await prisma.cashRegister.findFirst({
-      where: { business_id: session.businessId, closed_at: null },
-    })
-
-    if (existing) {
-      return NextResponse.json({ error: 'Ya hay una caja abierta' }, { status: 409 })
-    }
-
+    // getBcvRate fuera de la transacción — evita network call bloqueando TX
     const rate = await getBcvRate()
 
     const register = await prisma.$transaction(async (tx) => {
+      const existing = await tx.cashRegister.findFirst({
+        where: { business_id: session.businessId, closed_at: null },
+      })
+      if (existing) throw new Error('ALREADY_OPEN')
+
       const reg = await tx.cashRegister.create({
         data: {
           business_id: session.businessId,
@@ -59,6 +57,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, register }, { status: 201 })
   } catch (err) {
+    if (err instanceof Error && err.message === 'ALREADY_OPEN') {
+      return NextResponse.json({ error: 'Ya hay una caja abierta' }, { status: 409 })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', details: err.issues }, { status: 400 })
     }

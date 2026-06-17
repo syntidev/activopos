@@ -6,11 +6,10 @@ import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
+// price_usd and name intentionally omitted — server fetches canonical values from DB
 const ItemSchema = z.object({
   product_id: z.number().int().positive(),
-  name:       z.string().min(1).max(120).trim(),
   qty:        z.number().positive().max(9999),
-  price_usd:  z.number().min(0).max(999999),
 })
 
 const BodySchema = z.object({
@@ -22,13 +21,18 @@ const BodySchema = z.object({
   notes:              z.string().max(500).trim().optional(),
 })
 
-type Body = z.infer<typeof BodySchema>
-
-// TxClient type for use inside $transaction
 type TxClient = Omit<
   typeof prisma,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
+
+interface ResolvedItem {
+  product_id:   number
+  product_name: string
+  qty:          number
+  price_usd:    number
+  subtotal_usd: number
+}
 
 async function generateOrderNumber(businessId: number, prefix: string, tx: TxClient): Promise<string> {
   const last = await tx.order.findFirst({
@@ -51,20 +55,24 @@ async function generateOrderNumber(businessId: number, prefix: string, tx: TxCli
 }
 
 function buildWaMessage(
-  order_number: string,
-  body: Body,
-  totalUsd: number,
-  totalBs: number,
+  order_number:       string,
+  customer_name:      string,
+  customer_phone:     string,
+  customer_reference: string,
+  payment_method:     string,
+  resolvedItems:      ResolvedItem[],
+  totalUsd:           number,
+  totalBs:            number,
 ): string {
-  const itemLines = body.items
-    .map(i => `- ${i.name} x${i.qty} — $${i.price_usd.toFixed(2)}`)
+  const itemLines = resolvedItems
+    .map(i => `- ${i.product_name} x${i.qty} — $${i.price_usd.toFixed(2)}`)
     .join('\n')
 
   return [
     `🛍️ *Nuevo pedido #${order_number}*`,
-    `Cliente: ${body.customer_name}`,
-    `WhatsApp: ${body.customer_phone}`,
-    `Sector: ${body.customer_reference}`,
+    `Cliente: ${customer_name}`,
+    `WhatsApp: ${customer_phone}`,
+    `Sector: ${customer_reference}`,
     '',
     `*Productos:*`,
     itemLines,
@@ -72,7 +80,7 @@ function buildWaMessage(
     `💰 *Total: $${totalUsd.toFixed(2)}*`,
     `   Bs. ${totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} al cambio BCV`,
     '',
-    `Método de pago: ${body.payment_method}`,
+    `Método de pago: ${payment_method}`,
   ].join('\n')
 }
 
@@ -80,7 +88,6 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { slug: string } },
 ): Promise<NextResponse> {
-  // Rate limiting
   try {
     await catalogLimiter.consume(getClientIp(req))
   } catch {
@@ -90,13 +97,11 @@ export async function POST(
     )
   }
 
-  // Validate slug
   const parsedSlug = slugSchema.safeParse(params.slug)
   if (!parsedSlug.success) {
     return NextResponse.json({ error: 'Slug inválido' }, { status: 400 })
   }
 
-  // Parse + validate body
   let rawBody: unknown
   try { rawBody = await req.json() } catch {
     return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
@@ -112,7 +117,6 @@ export async function POST(
 
   const body = parsed.data
 
-  // Find business
   const business = await prisma.business.findFirst({
     where: { catalog_slug: parsedSlug.data, catalog_active: true, active: true },
     select: { id: true, name: true, phone: true, ticket_prefix: true },
@@ -122,34 +126,56 @@ export async function POST(
     return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
   }
 
-  // Validate all product_ids belong to this business
+  // Fetch canonical products from DB — never trust client-supplied prices or names
   const uniqueProductIds = Array.from(new Set(body.items.map(i => i.product_id)))
 
-  const validCount = await prisma.product.count({
+  const dbProducts = await prisma.product.findMany({
     where: {
       id:              { in: uniqueProductIds },
       business_id:     business.id,
       active:          true,
       show_in_catalog: true,
     },
+    select: {
+      id:                 true,
+      name:               true,
+      sale_mode:          true,
+      price_per_unit_usd: true,
+      price_per_kg_usd:   true,
+    },
   })
 
-  if (validCount !== uniqueProductIds.length) {
+  if (dbProducts.length !== uniqueProductIds.length) {
     return NextResponse.json(
       { error: 'Uno o más productos no están disponibles en este catálogo' },
       { status: 422 },
     )
   }
 
-  // Get BCV rate — never throws
+  const productMap = new Map(dbProducts.map(p => [p.id, p]))
+
+  // Build resolved items using server-side prices and names
+  const resolvedItems: ResolvedItem[] = body.items.map(item => {
+    const p = productMap.get(item.product_id)!
+    const priceUsd = p.sale_mode === 'weight'
+      ? (p.price_per_kg_usd  ? Number(p.price_per_kg_usd)  : 0)
+      : (p.price_per_unit_usd ? Number(p.price_per_unit_usd) : 0)
+    return {
+      product_id:   item.product_id,
+      product_name: p.name,
+      qty:          item.qty,
+      price_usd:    priceUsd,
+      subtotal_usd: Math.round(item.qty * priceUsd * 100) / 100,
+    }
+  })
+
   const rate = await getBcvRate()
 
-  // Create order + items + upsert client in one transaction
   const order = await prisma.$transaction(async (tx) => {
     const order_number = await generateOrderNumber(business.id, business.ticket_prefix, tx)
 
     const totalUsd = Math.round(
-      body.items.reduce((s, i) => s + i.qty * i.price_usd, 0) * 100,
+      resolvedItems.reduce((s, i) => s + i.subtotal_usd, 0) * 100,
     ) / 100
     const totalBs = Math.round(totalUsd * rate * 100) / 100
 
@@ -174,7 +200,6 @@ export async function POST(
       clientId = created.id
     }
 
-    // Combine payment method + optional notes
     const noteLines = [
       `Método de pago: ${body.payment_method}`,
       body.notes ?? '',
@@ -195,12 +220,12 @@ export async function POST(
         total_bs:       totalBs,
         rate_used:      rate,
         items: {
-          create: body.items.map(item => ({
+          create: resolvedItems.map(item => ({
             product_id:         item.product_id,
-            product_name:       item.name,
+            product_name:       item.product_name,
             quantity:           item.qty,
             price_per_unit_usd: item.price_usd,
-            subtotal_usd:       Math.round(item.qty * item.price_usd * 100) / 100,
+            subtotal_usd:       item.subtotal_usd,
           })),
         },
       },
@@ -213,14 +238,18 @@ export async function POST(
     })
   })
 
-  // Build WhatsApp URL with packed message
   const bizPhone = business.phone?.replace(/\D/g, '') ?? ''
   const waMessage = buildWaMessage(
     order.order_number,
-    body,
+    body.customer_name,
+    body.customer_phone,
+    body.customer_reference,
+    body.payment_method,
+    resolvedItems,
     Number(order.total_usd),
     Number(order.total_bs),
   )
+
   const whatsapp_url = bizPhone
     ? `https://wa.me/${bizPhone}?text=${encodeURIComponent(waMessage)}`
     : null

@@ -317,57 +317,30 @@
     0 0 0 4px var(--color-border-strong);
 }
 
-/* ── Palette segment cards ── */
-.paletteCards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
+/* ── Selector de segmento ── */
+.segmentSelect {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
   margin-top: var(--space-3);
 }
 
-.paletteCard {
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-  background: none;
-  padding: 0;
-  text-align: left;
-  width: 100%;
+.segmentSelect:focus {
+  outline: none;
+  border-color: var(--input-border-focus);
+  box-shadow: var(--shadow-brand);
 }
 
-.paletteCard:hover {
-  border-color: var(--color-border-strong);
-}
-
-.paletteCard:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-}
-
-.paletteCardActive {
-  border-color: var(--color-brand);
-  box-shadow: 0 0 0 1px var(--color-brand);
-}
-
-.paletteSwatches {
-  display: flex;
-  height: 56px;
-}
-
-.paletteSwatch {
-  flex: 1;
-}
-
-.paletteLabel {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.segmentSelect option {
+  background: var(--color-surface-3);
+  color: var(--input-text);
 }
 
 /* ── Theme preview cards ── */

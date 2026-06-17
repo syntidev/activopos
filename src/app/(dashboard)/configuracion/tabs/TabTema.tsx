@@ -20,65 +20,29 @@ const ACCENT_COLORS = [
 type AccentHex = typeof ACCENT_COLORS[number]['hex']
 
 interface PaletteOption {
-  key: string
-  label: string
-  colors: { sidebar: string; bg: string; accent: string }
+  key:      string
+  label:    string
   accentHex: AccentHex
 }
 
 const PALETTES: PaletteOption[] = [
-  {
-    key:       'retail',
-    label:     'Retail & Comercio',
-    colors:    { sidebar: '#0D1117', bg: '#0F1D40', accent: '#2563EB' },
-    accentHex: '#2563EB',
-  },
-  {
-    key:       'restaurante',
-    label:     'Gastronomía',
-    colors:    { sidebar: '#1A0900', bg: '#2A1400', accent: '#D97706' },
-    accentHex: '#D97706',
-  },
-  {
-    key:       'servicios',
-    label:     'Servicios Pro',
-    colors:    { sidebar: '#041018', bg: '#071E32', accent: '#0891B2' },
-    accentHex: '#0891B2',
-  },
-  {
-    key:       'salud',
-    label:     'Clínica & Salud',
-    colors:    { sidebar: '#041A12', bg: '#083022', accent: '#059669' },
-    accentHex: '#059669',
-  },
-  {
-    key:       'ferreteria',
-    label:     'Ferretería',
-    colors:    { sidebar: '#141005', bg: '#22180A', accent: '#D97706' },
-    accentHex: '#D97706',
-  },
-  {
-    key:       'carniceria',
-    label:     'Carnicería',
-    colors:    { sidebar: '#150505', bg: '#240808', accent: '#DC2626' },
-    accentHex: '#DC2626',
-  },
-  {
-    key:       'tecnologia',
-    label:     'Tech & Digital',
-    colors:    { sidebar: '#080816', bg: '#0D0B22', accent: '#7C3AED' },
-    accentHex: '#7C3AED',
-  },
+  { key: 'retail',      label: 'Retail & Comercio', accentHex: '#2563EB' },
+  { key: 'restaurante', label: 'Gastronomía',        accentHex: '#D97706' },
+  { key: 'servicios',   label: 'Servicios Pro',      accentHex: '#0891B2' },
+  { key: 'salud',       label: 'Clínica & Salud',    accentHex: '#059669' },
+  { key: 'ferreteria',  label: 'Ferretería',          accentHex: '#D97706' },
+  { key: 'carniceria',  label: 'Carnicería',          accentHex: '#DC2626' },
+  { key: 'tecnologia',  label: 'Tech & Digital',      accentHex: '#7C3AED' },
 ]
 
 export function TabTema({ businessId: _businessId }: Props) {
-  const { toast }   = useToast()
+  const { toast } = useToast()
 
   const [loading, setLoading]       = useState(true)
   const [saving, setSaving]         = useState(false)
   const [theme, setTheme]           = useState<'dark' | 'light'>('dark')
   const [themeColor, setThemeColor] = useState<AccentHex>('#2563EB')
-  const [selectedPalette, setSelectedPalette] = useState<string | null>(null)
+  const [selectedPalette, setSelectedPalette] = useState<string>('')
 
   useEffect(() => {
     const saved = localStorage.getItem('activopos_segment')
@@ -92,12 +56,13 @@ export function TabTema({ businessId: _businessId }: Props) {
       if (!res.ok) throw new Error()
       const body = await res.json() as {
         ok: boolean
-        business: { theme: string; theme_color: string }
+        business: { theme: string; theme_color: string; segment?: string }
       }
       const t = body.business.theme === 'light' ? 'light' : 'dark'
       const c = (ACCENT_COLORS.find(a => a.hex === body.business.theme_color)?.hex ?? '#2563EB') as AccentHex
       setTheme(t)
       setThemeColor(c)
+      if (body.business.segment) setSelectedPalette(body.business.segment)
     } catch {
       toast('Error al cargar el tema.', 'error')
     } finally {
@@ -130,10 +95,12 @@ export function TabTema({ businessId: _businessId }: Props) {
     setThemeColor(color)
   }
 
-  const handlePaletteSelect = (palette: PaletteOption) => {
-    setSelectedPalette(palette.key)
+  const handlePaletteSelect = (key: string) => {
+    const palette = PALETTES.find(p => p.key === key)
+    if (!palette) return
+    setSelectedPalette(key)
     setThemeColor(palette.accentHex)
-    localStorage.setItem('activopos_segment', palette.key)
+    localStorage.setItem('activopos_segment', key)
   }
 
   const handleSave = async () => {
@@ -200,34 +167,27 @@ export function TabTema({ businessId: _businessId }: Props) {
         </div>
       </div>
 
-      {/* ── Paletas de segmento ── */}
+      {/* ── Tipo de negocio ── */}
       <div className={styles.formCard}>
         <h3 className={styles.formCardTitle}>
           <Palette size={16} aria-hidden="true" />
-          Paleta de segmento
+          Tipo de negocio
         </h3>
         <p className={styles.formCardHint}>
-          Preajustes de color adaptados al ambiente del negocio. Cambia el acento automáticamente.
+          Preajusta el color de acento según el rubro del negocio.
         </p>
 
-        <div className={styles.paletteCards}>
-          {PALETTES.map((palette) => (
-            <button
-              key={palette.key}
-              type="button"
-              className={`${styles.paletteCard} ${selectedPalette === palette.key ? styles.paletteCardActive : ''}`}
-              onClick={() => handlePaletteSelect(palette)}
-              aria-pressed={selectedPalette === palette.key}
-            >
-              <div className={styles.paletteSwatches}>
-                <span className={styles.paletteSwatch} style={{ backgroundColor: palette.colors.sidebar }} />
-                <span className={styles.paletteSwatch} style={{ backgroundColor: palette.colors.bg }} />
-                <span className={styles.paletteSwatch} style={{ backgroundColor: palette.colors.accent }} />
-              </div>
-              <p className={styles.paletteLabel}>{palette.label}</p>
-            </button>
+        <select
+          className={styles.segmentSelect}
+          value={selectedPalette}
+          onChange={(e) => handlePaletteSelect(e.target.value)}
+          aria-label="Tipo de negocio"
+        >
+          <option value="" disabled>Selecciona el tipo de negocio…</option>
+          {PALETTES.map(p => (
+            <option key={p.key} value={p.key}>{p.label}</option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* ── Color de acento ── */}

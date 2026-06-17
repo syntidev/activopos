@@ -89,7 +89,7 @@ export function TabTema({ businessId: _businessId }: Props) {
       const res = await fetch('/api/config/theme', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ theme }),
+        body:    JSON.stringify({ theme, segment: selectedPalette || undefined }),
       })
       if (!res.ok) throw new Error()
       toast('Tema guardado correctamente.', 'success')

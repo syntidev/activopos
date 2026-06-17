@@ -13,7 +13,7 @@ export async function GET() {
 
   if (!register) return NextResponse.json({ isOpen: false })
 
-  const [sales, movements] = await Promise.all([
+  const [sales, movements, abonosAgg] = await Promise.all([
     prisma.sale.findMany({
       where: {
         business_id: session.businessId,
@@ -28,6 +28,14 @@ export async function GET() {
     }),
     prisma.cashMovement.findMany({
       where: { cash_register_id: register.id },
+    }),
+    prisma.saleAbono.aggregate({
+      where: {
+        created_at: { gte: register.opened_at },
+        sale: { business_id: session.businessId },
+      },
+      _sum: { amount_usd: true, amount_bs: true },
+      _count: { id: true },
     }),
   ])
 
@@ -72,6 +80,11 @@ export async function GET() {
       movIn,
       movOut,
       efectivoEsperado,
+      cobrosCredito: {
+        usd: Number(abonosAgg._sum.amount_usd ?? 0),
+        bs:  Number(abonosAgg._sum.amount_bs  ?? 0),
+        count: abonosAgg._count.id,
+      },
     },
   })
 }

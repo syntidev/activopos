@@ -12,6 +12,7 @@ const PatchSchema = z.object({
   state: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email().optional(),
+  logo_path: z.string().nullable().optional(),
   rate_source: z.enum(['bcv', 'manual']).optional(),
   rate: z.number().positive().optional(),
 })

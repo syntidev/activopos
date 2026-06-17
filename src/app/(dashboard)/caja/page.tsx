@@ -36,6 +36,7 @@ interface TurnoStats {
   movIn: number
   movOut: number
   efectivoEsperado: number
+  cobrosCredito: { usd: number; bs: number; count: number }
 }
 
 interface CashStatus {
@@ -374,9 +375,9 @@ function CajaContent() {
         />
         <KpiCard
           label="Cobros de Crédito"
-          usd={0}
-          bs={0}
-          meta="0 abonos"
+          usd={stats.cobrosCredito?.usd ?? 0}
+          bs={stats.cobrosCredito?.bs ?? 0}
+          meta={`${stats.cobrosCredito?.count ?? 0} abono${(stats.cobrosCredito?.count ?? 0) !== 1 ? 's' : ''}`}
         />
         <KpiCard
           label="Efectivo Esperado"

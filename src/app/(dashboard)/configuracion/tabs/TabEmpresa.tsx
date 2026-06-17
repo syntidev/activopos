@@ -31,6 +31,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
 
   const [loading, setLoading]         = useState(true)
   const [saving, setSaving]           = useState(false)
+  const [uploading, setUploading]     = useState(false)
   const [form, setForm]               = useState<EmpresaForm>(EMPTY_FORM)
   const [logoPath, setLogoPath]       = useState<string | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -93,12 +94,35 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
     }
   }
 
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast('Solo se aceptan imágenes PNG, JPG o WebP.', 'error'); return }
     if (file.size > 2 * 1024 * 1024)    { toast('El archivo no puede superar 2 MB.', 'error');          return }
+
     const reader = new FileReader()
     reader.onload = (e) => setLogoPreview(e.target?.result as string)
     reader.readAsDataURL(file)
+
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: fd })
+      if (!uploadRes.ok) { toast('Error al subir la imagen.', 'error'); return }
+      const { url } = await uploadRes.json() as { url: string }
+
+      const patchRes = await fetch('/api/config/business', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ logo_path: url }),
+      })
+      if (!patchRes.ok) { toast('Error al guardar el logo.', 'error'); return }
+      setLogoPath(url)
+      toast('Logo guardado correctamente.', 'success')
+    } catch {
+      toast('Error de conexión al subir el logo.', 'error')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -146,15 +170,15 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
             role="button"
             tabIndex={0}
             aria-label="Subir logo"
-            onClick={() => fileRef.current?.click()}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click() }}
+            onClick={() => !uploading && fileRef.current?.click()}
+            onKeyDown={(e) => { if (!uploading && (e.key === 'Enter' || e.key === ' ')) fileRef.current?.click() }}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true)  }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
           >
             <Upload size={20} aria-hidden="true" />
             <p className={styles.logoDropText}>
-              {logoPreview ? 'Cambiar imagen' : 'Arrastra o haz clic para subir'}
+              {uploading ? 'Subiendo...' : logoPreview ? 'Cambiar imagen' : 'Arrastra o haz clic para subir'}
             </p>
             <p className={styles.logoDropHint}>PNG, JPG hasta 2 MB</p>
           </div>

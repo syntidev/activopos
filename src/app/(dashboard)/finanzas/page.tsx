@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CxCSection }    from './CxCSection'
-import { CxPSection }    from './CxPSection'
-import { GastosSection } from './GastosSection'
+import { CxCSection }      from './CxCSection'
+import { CxPSection }      from './CxPSection'
+import { GastosSection }   from './GastosSection'
+import { ResumenSection }  from './ResumenSection'
 import styles from './finanzas.module.css'
 
 const TABS = [
-  { key: 'cxc',    label: 'Por Cobrar'      },
-  { key: 'cxp',    label: 'Por Pagar'       },
-  { key: 'gastos', label: 'Ingresos/Gastos' },
+  { key: 'cxc',     label: 'Por Cobrar'      },
+  { key: 'cxp',     label: 'Por Pagar'       },
+  { key: 'gastos',  label: 'Ingresos/Gastos' },
+  { key: 'resumen', label: 'Resumen'          },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -56,9 +58,10 @@ export default function FinanzasPage() {
       </div>
 
       <div className={styles.tabContent} role="tabpanel">
-        {tab === 'cxc'    && <CxCSection rate={rate} />}
-        {tab === 'cxp'    && <CxPSection month={month} />}
-        {tab === 'gastos' && <GastosSection month={month} />}
+        {tab === 'cxc'     && <CxCSection rate={rate} />}
+        {tab === 'cxp'     && <CxPSection month={month} />}
+        {tab === 'gastos'  && <GastosSection month={month} />}
+        {tab === 'resumen' && <ResumenSection month={month} />}
       </div>
     </div>
   )

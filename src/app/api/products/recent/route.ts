@@ -46,7 +46,13 @@ export async function GET(): Promise<NextResponse> {
         base_unit_label: true,
         price_per_unit_usd: true,
         price_per_kg_usd: true,
+        cost_per_unit_usd: true,
         images: true,
+        is_favorite: true,
+        has_variants: true,
+        inventory_entries: {
+          select: { quantity: true, waste: true },
+        },
       },
     }),
     getBcvRate(),
@@ -68,6 +74,11 @@ export async function GET(): Promise<NextResponse> {
         try { parsedImages = JSON.parse(p.images) as string[] } catch { /* skip */ }
       }
 
+      const netQty = p.inventory_entries.reduce(
+        (sum, e) => sum + Number(e.quantity) - Number(e.waste),
+        0,
+      )
+
       return {
         id: p.id,
         name: p.name,
@@ -75,7 +86,11 @@ export async function GET(): Promise<NextResponse> {
         base_unit_label: p.base_unit_label,
         price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
         price_per_kg_usd: p.price_per_kg_usd ? Number(p.price_per_kg_usd) : null,
+        cost_per_unit_usd: p.cost_per_unit_usd ? Number(p.cost_per_unit_usd) : null,
         images: parsedImages,
+        is_favorite: p.is_favorite,
+        has_variants: p.has_variants,
+        stock: { net_qty: Math.max(0, netQty) },
         price_bs: priceUsd !== null ? Math.round(priceUsd * rate * 100) / 100 : null,
       }
     })

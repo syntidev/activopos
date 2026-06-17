@@ -1,20 +1,7 @@
 {
   "auth": {},
-  "pos": {
-    "pos_loads": true,
-    "no_js_errors": true,
-    "caja_apertura": "no_modal",
-    "busqueda_productos": false,
-    "agregar_ticket": false,
-    "totales_usd_bs": false,
-    "cobro_exitoso": "cobrar_btn_not_visible"
-  },
-  "inventario": {
-    "lista_productos": true,
-    "tabla_visible": true,
-    "crear_producto": false,
-    "producto_en_lista": false
-  },
+  "pos": {},
+  "inventario": {},
   "bugs": [
     {
       "flujo": "auth",
@@ -24,39 +11,15 @@
     },
     {
       "flujo": "pos",
-      "route": "/pos",
-      "expected": "search input visible",
-      "actual": "no search input found"
-    },
-    {
-      "flujo": "pos",
-      "route": "/pos add product",
-      "expected": "item appears in ticket",
-      "actual": "clicked=True, 0 items"
-    },
-    {
-      "flujo": "pos",
-      "route": "/pos totales",
-      "expected": "USD and Bs visible",
-      "actual": "USD=True Bs=False"
-    },
-    {
-      "flujo": "pos",
-      "route": "/pos cobrar",
-      "expected": "Cobrar button visible",
-      "actual": "not visible - ticket may be empty"
+      "route": "FATAL",
+      "expected": "flow",
+      "actual": "Expecting value: line 2 column 15 (char 15)"
     },
     {
       "flujo": "inventario",
-      "route": "/productos nuevo",
-      "expected": "product created",
-      "actual": "no confirmation in page"
-    },
-    {
-      "flujo": "inventario",
-      "route": "/productos list",
-      "expected": "new product in list",
-      "actual": "Sprint6 not found"
+      "route": "FATAL",
+      "expected": "flow",
+      "actual": "Expecting value: line 2 column 15 (char 15)"
     }
   ]
 }

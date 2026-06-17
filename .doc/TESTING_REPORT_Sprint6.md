@@ -195,3 +195,119 @@ Todos en: `.doc/screenshots/sprint6/`
 - **Flujos UI completados (SSR):** 6/15 pasos (40% — bloqueado por BUG-01)
 - **PWA verificado:** 7/8 checks (88% — falta SW)
 - **Bugs encontrados:** 4 (1 P0, 1 P1, 1 P2, 1 P3)
+
+---
+
+---
+
+# CAPA 2 — Re-verificación post CLI-A
+**Fecha:** 2026-06-17 | **Agente:** CLI-D (webapp-testing segunda pasada)
+
+## Estado del servidor al inicio de Capa 2
+
+```
+BCV API:      HTTP 200  OK  (unico endpoint estable)
+/login page:  HTTP 200  OK  (intermitente)
+/api/auth:    HTTP 500  FAIL (BUG-01 propagado al login route)
+/catalogo/demo: HTTP 500 FAIL (BUG-01)
+/api/cash:    HTTP 500  FAIL (BUG-01 o BUG-02)
+JS chunks:    HTTP 500  FAIL (BUG-01 sin reparar)
+/landing.html: HTTP 404 FAIL (BUG-05 — nuevo)
+```
+
+## Diagnóstico: BUG-01 agravado
+
+BUG-01 NO fue reparado antes de esta ejecución. El servidor ha degradado desde la Capa 1:
+- En Capa 1: login API devolvía 200 intermitentemente; SSR de `/pos` y `/productos` funcionaba
+- En Capa 2: login API devuelve 500 consistentemente; webpack-runtime.js ahora bloquea más rutas
+
+La causa es la misma (`Cannot find module './N.js'` en webpack-runtime.js), pero el número de módulo afectado varía (`8948.js` → `1682.js`), lo que indica que el cache continúa corrompiendo más rutas a medida que el servidor intenta resolver dependencias.
+
+## Nuevo bug detectado
+
+### BUG-05 — P1: landing.html no existe en public/
+
+| Campo | Detalle |
+|-------|---------|
+| **Ruta** | `GET /` → 307 → `GET /landing.html` → **404** |
+| **Causa** | `src/app/page.tsx` hace `redirect('/landing.html')` pero el archivo está en `.doc/landing.html`, no en `public/landing.html` |
+| **Comportamiento esperado** | `/` carga la landing page sin auth |
+| **Comportamiento real** | 404 Not Found |
+| **Fix** | Copiar/mover `.doc/landing.html` a `public/landing.html` |
+| **Responsable** | CLI-A |
+
+## Resultados Capa 2 — TODOS BLOQUEADOS
+
+| Flujo | Estado Capa 2 | Razón |
+|-------|--------------|-------|
+| Auth completo | **BLOQUEADO** | Login API 500 (BUG-01) |
+| POS completo | **BLOQUEADO** | Login API 500 + JS chunks 500 |
+| Inventario completo | **BLOQUEADO** | Idem |
+| Catálogo /demo | **BLOQUEADO** | SSR 500 (BUG-01: `1682.js`) |
+| GET /api/cash | **BLOQUEADO** | 500 (BUG-01 o BUG-02 — indistinguible) |
+| Lighthouse PWA | **BLOQUEADO** | Sin JS no hay hidratación |
+
+## Estado por flujo — consolidado Capa 1 + Capa 2
+
+| # | Test | Capa 1 | Capa 2 |
+|---|------|--------|--------|
+| 1 | GET / → /landing.html | PASS | **FAIL** (BUG-05) |
+| 2 | GET /pos → /login | PASS | N/A |
+| 3 | Login wrong → 401 | PASS | N/A |
+| 4 | Login correcto → 200+cookie | PASS | **FAIL** (BUG-01) |
+| 5 | /escritorio con sesión | FAIL | FAIL |
+| 6 | /pos carga URL | PASS | BLOCKED |
+| 7 | /pos sin errores useToast | PASS | BLOCKED |
+| 8 | /pos caja apertura | N/A | BLOCKED |
+| 9 | /pos búsqueda productos | BLOCKED | BLOCKED |
+| 10 | /pos agregar ticket | BLOCKED | BLOCKED |
+| 11 | /pos totales USD/Bs | BLOCKED | BLOCKED |
+| 12 | /pos cobro+ticket | BLOCKED | BLOCKED |
+| 13 | /productos carga | PASS | BLOCKED |
+| 14 | /productos tabla visible | PASS | BLOCKED |
+| 15 | /productos crear (UI) | BLOCKED | BLOCKED |
+| 16 | POST /api/products (API) | PASS | BLOCKED |
+| 17 | /catalogo/demo público | N/A | **FAIL** 500 |
+| 18 | GET /api/cash | FAIL | FAIL |
+| 19 | PWA manifest válido | PASS | PASS |
+| 20 | PWA íconos 192+512 | PASS | PASS |
+| 21 | Service Worker | FAIL P2 | FAIL P2 |
+
+## Bugs totales del Sprint 6
+
+| ID | Prioridad | Descripción | Estado |
+|----|-----------|-------------|--------|
+| BUG-01 | **P0** | `.next` cache stale — webpack modulos faltantes | **SIN REPARAR — CRÍTICO** |
+| BUG-02 | P1 | GET /api/cash → 500 | Indistinguible de BUG-01 |
+| BUG-03 | P2 | Service Worker no implementado | Pendiente Sprint 7 |
+| BUG-04 | P3 | Login form React en Playwright | Consecuencia BUG-01 |
+| BUG-05 | **P1** | landing.html en `.doc/` no en `public/` | **NUEVO — sin reparar** |
+
+## Acción bloqueante
+
+**CLI-D no puede completar los tests hasta que CLI-A ejecute:**
+
+```bash
+# 1. Detener el proceso del servidor
+# 2. Limpiar el cache
+Remove-Item -Recurse -Force .next
+# 3. Reiniciar
+npm run dev
+# 4. Esperar que compile (puede tomar 30-60s)
+# 5. Verificar: curl http://localhost:3000/api/auth/login (POST) → 200
+# 6. Avisar a CLI-D para re-ejecutar tests
+```
+
+**Adicionalmente (BUG-05):**
+```bash
+# Copiar landing page a public/
+Copy-Item .doc/landing.html public/landing.html
+```
+
+## Cobertura Capa 2
+
+- **Tests ejecutados:** 3/21 (14% — todos los demás bloqueados)
+- **PASS:** 0 en Capa 2 (BCV API sigue UP, no forma parte de los flujos)
+- **FAIL/BLOCKED:** 21/21
+- **Bugs nuevos:** 1 (BUG-05)
+- **Lighthouse PWA score:** No ejecutable

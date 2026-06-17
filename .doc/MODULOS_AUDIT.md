@@ -319,3 +319,30 @@ Archivos auditados: 52 API routes + 26 páginas/componentes de dashboard.
 - **0 módulos** son puramente fachada sin backend real
 - **El sistema central (POS → Caja → Inventario → Clientes) es 100% funcional y conectado a DB**
 - Los gaps son features secundarias o botones de UI incompletos, no módulos rotos
+
+---
+
+## Audit Sprint-7 CLI-A — Rutas en CLAUDE.md sin directorio real
+_Agente: CLI-A | Fecha: 2026-06-17_
+
+Verificado contra `src/app/(dashboard)/` — directorios existentes confirmados:
+`ayuda` · `caja` · `clientes` · `configuracion` · `escritorio` · `finanzas` · `onboarding` · `pedidos` · `pos` · `productos` · `reportes`
+
+| Ruta            | Estado    | Nota                                                                                 |
+|-----------------|-----------|--------------------------------------------------------------------------------------|
+| /cotizaciones   | FACHADA   | No existe directorio. Mencionada en CLAUDE.md como módulo planificado. Sin page.tsx ni API. |
+| /devoluciones   | FACHADA   | No existe directorio. Nunca iniciada. Sin API `/api/returns/` ni modelo en schema.   |
+| /usuarios       | FACHADA   | No existe directorio. Gestión de usuarios en `/configuracion` tab `TabUsuarios` (CRUD completo via `/api/users`). Ruta dedicada no necesaria en sprint actual. |
+
+**Acción requerida:** Ninguna en Sprint-7. Rutas a crear en sprints futuros según roadmap.
+**NOTA:** `/usuarios` tiene backend completo (`/api/users` CRUD) — solo falta ruta dedicada si se requiere vista standalone.
+
+---
+
+## Limpieza DB Sprint-7 CLI-A
+_Fecha: 2026-06-17_
+
+- `DELETE FROM sales WHERE ticket_number LIKE 'TST-%'` — ejecutado. Resultado: 0 filas (DB ya estaba limpia).
+- `DELETE FROM sale_items WHERE sale_id NOT IN (SELECT id FROM sales)` — ejecutado. 0 huérfanos.
+- `DELETE FROM sale_payments WHERE sale_id NOT IN (SELECT id FROM sales)` — ejecutado. 0 huérfanos.
+- Verificación post-limpieza: `SELECT COUNT(*) FROM sales` → 0 ventas. Caja sin contaminación.

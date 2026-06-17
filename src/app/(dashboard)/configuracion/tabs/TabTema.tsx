@@ -8,48 +8,33 @@ import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
 
-const ACCENT_COLORS = [
-  { hex: '#2563EB', label: 'Azul'    },
-  { hex: '#7C3AED', label: 'Violeta' },
-  { hex: '#0891B2', label: 'Cian'    },
-  { hex: '#D97706', label: 'Ámbar'   },
-  { hex: '#059669', label: 'Verde'   },
-  { hex: '#DC2626', label: 'Rojo'    },
-] as const
-
-type AccentHex = typeof ACCENT_COLORS[number]['hex']
-
 interface PaletteOption {
-  key:      string
-  label:    string
-  accentHex: AccentHex
+  key:   string
+  label: string
 }
 
 const PALETTES: PaletteOption[] = [
-  { key: 'retail',      label: 'Retail & Comercio', accentHex: '#2563EB' },
-  { key: 'restaurante', label: 'Gastronomía',        accentHex: '#D97706' },
-  { key: 'servicios',   label: 'Servicios Pro',      accentHex: '#0891B2' },
-  { key: 'salud',       label: 'Clínica & Salud',    accentHex: '#059669' },
-  { key: 'ferreteria',  label: 'Ferretería',          accentHex: '#D97706' },
-  { key: 'carniceria',  label: 'Carnicería',          accentHex: '#DC2626' },
-  { key: 'tecnologia',  label: 'Tech & Digital',      accentHex: '#7C3AED' },
+  { key: 'retail',      label: 'Retail & Comercio' },
+  { key: 'restaurante', label: 'Gastronomía'        },
+  { key: 'servicios',   label: 'Servicios Pro'      },
+  { key: 'salud',       label: 'Clínica & Salud'    },
+  { key: 'ferreteria',  label: 'Ferretería'          },
+  { key: 'carniceria',  label: 'Carnicería'          },
+  { key: 'tecnologia',  label: 'Tech & Digital'      },
 ]
 
 export function TabTema({ businessId: _businessId }: Props) {
   const { toast } = useToast()
 
-  const [loading, setLoading]       = useState(true)
-  const [saving, setSaving]         = useState(false)
-  const [theme, setTheme]           = useState<'dark' | 'light'>('dark')
-  const [themeColor, setThemeColor] = useState<AccentHex>('#2563EB')
+  const [loading, setLoading]     = useState(true)
+  const [saving, setSaving]       = useState(false)
+  const [theme, setTheme]         = useState<'dark' | 'light'>('dark')
   const [selectedPalette, setSelectedPalette] = useState<string>('')
 
   useEffect(() => {
+    document.documentElement.style.removeProperty('--color-brand')
     const saved = localStorage.getItem('activopos_segment')
-    if (saved) {
-      setSelectedPalette(saved)
-      document.documentElement.setAttribute('data-segment', saved)
-    }
+    if (saved) setSelectedPalette(saved)
   }, [])
 
   const fetchConfig = useCallback(async () => {
@@ -59,15 +44,11 @@ export function TabTema({ businessId: _businessId }: Props) {
       if (!res.ok) throw new Error()
       const body = await res.json() as {
         ok: boolean
-        business: { theme: string; theme_color: string; segment?: string }
+        business: { theme: string; segment?: string }
       }
-      const t = body.business.theme === 'light' ? 'light' : 'dark'
-      const c = (ACCENT_COLORS.find(a => a.hex === body.business.theme_color)?.hex ?? '#2563EB') as AccentHex
-      setTheme(t)
-      setThemeColor(c)
+      setTheme(body.business.theme === 'light' ? 'light' : 'dark')
       if (body.business.segment) {
         setSelectedPalette(body.business.segment)
-        document.documentElement.setAttribute('data-segment', body.business.segment)
         localStorage.setItem('activopos_segment', body.business.segment)
       }
     } catch {
@@ -81,7 +62,6 @@ export function TabTema({ businessId: _businessId }: Props) {
 
   const applyThemePreview = (t: 'dark' | 'light') => {
     const html = document.documentElement
-    html.style.removeProperty('--color-brand')
     if (t === 'dark') {
       html.classList.add('dark')
       html.classList.remove('light')
@@ -98,29 +78,18 @@ export function TabTema({ businessId: _businessId }: Props) {
     applyThemePreview(t)
   }
 
-  const handleColorSelect = (color: AccentHex) => {
-    setThemeColor(color)
-  }
-
   const handlePaletteSelect = (key: string) => {
-    const palette = PALETTES.find(p => p.key === key)
-    if (!palette) return
     setSelectedPalette(key)
-    setThemeColor(palette.accentHex)
-    document.documentElement.setAttribute('data-segment', key)
-    document.documentElement.style.removeProperty('--color-brand')
     localStorage.setItem('activopos_segment', key)
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      const body: Record<string, string> = { theme, theme_color: themeColor }
-      if (selectedPalette) body.segment = selectedPalette
       const res = await fetch('/api/config/theme', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(body),
+        body:    JSON.stringify({ theme }),
       })
       if (!res.ok) throw new Error()
       toast('Tema guardado correctamente.', 'success')
@@ -144,7 +113,7 @@ export function TabTema({ businessId: _businessId }: Props) {
     <div className={styles.configSection}>
       <div className={styles.pageHeader}>
         <h2 className={styles.pageTitle}>Tema Visual</h2>
-        <p className={styles.pageSubtitle}>Modo oscuro/claro y color de acento del sistema</p>
+        <p className={styles.pageSubtitle}>Modo oscuro/claro del sistema</p>
       </div>
 
       {/* ── Modo ── */}
@@ -183,7 +152,7 @@ export function TabTema({ businessId: _businessId }: Props) {
           Tipo de negocio
         </h3>
         <p className={styles.formCardHint}>
-          Preajusta el color de acento según el rubro del negocio.
+          Identifica el rubro del negocio para personalización futura.
         </p>
 
         <select
@@ -197,28 +166,6 @@ export function TabTema({ businessId: _businessId }: Props) {
             <option key={p.key} value={p.key}>{p.label}</option>
           ))}
         </select>
-      </div>
-
-      {/* ── Color de acento ── */}
-      <div className={styles.formCard}>
-        <h3 className={styles.formCardTitle}>Color de acento</h3>
-        <p className={styles.formCardHint}>
-          Color principal para botones, enlaces y elementos activos.
-        </p>
-
-        <div className={styles.colorPicker} role="radiogroup" aria-label="Color de acento">
-          {ACCENT_COLORS.map(({ hex, label }) => (
-            <button
-              key={hex}
-              type="button"
-              className={`${styles.colorDot} ${themeColor === hex ? styles.colorDotActive : ''}`}
-              style={{ backgroundColor: hex }}
-              onClick={() => handleColorSelect(hex)}
-              aria-label={label}
-              aria-pressed={themeColor === hex}
-            />
-          ))}
-        </div>
 
         <div className={styles.saveRow}>
           <Button variant="primary" onClick={handleSave} loading={saving}>

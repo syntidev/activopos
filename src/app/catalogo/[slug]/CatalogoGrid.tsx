@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
-import { Package, X, MessageCircle } from 'lucide-react'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search, CheckCircle } from 'lucide-react'
 import styles from './catalogo.module.css'
 
 export interface CatalogProduct {
@@ -15,10 +15,34 @@ export interface CatalogProduct {
   outOfStock:   boolean
 }
 
+export interface PaymentMethod {
+  id:   number
+  name: string
+  type: string
+}
+
+interface CartItem {
+  product_id: number
+  name:       string
+  qty:        number
+  price_usd:  number
+  image_url:  string | null
+}
+
 interface Props {
-  products:   CatalogProduct[]
-  categories: string[]
-  waPhone?:   string
+  products:       CatalogProduct[]
+  categories:     string[]
+  slug:           string
+  rate:           number
+  paymentMethods: PaymentMethod[]
+}
+
+function fmtUsd(n: number): string {
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function fmtBs(n: number): string {
+  return `Bs. ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function getCategoryClass(categoryName: string | null | undefined): string {
@@ -36,10 +60,24 @@ function getCategoryClass(categoryName: string | null | undefined): string {
   return map[key] ?? styles.gradDefault
 }
 
-export function CatalogoGrid({ products, categories, waPhone }: Props) {
-  const [active, setActive]                   = useState<string | null>(null)
+export function CatalogoGrid({ products, categories, slug, rate, paymentMethods }: Props) {
+  const [active,          setActive]          = useState<string | null>(null)
+  const [query,           setQuery]           = useState('')
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
-  const closeRef                              = useRef<HTMLButtonElement>(null)
+  const [modalQty,        setModalQty]        = useState(1)
+  const [cart,            setCart]            = useState<CartItem[]>([])
+  const [cartOpen,        setCartOpen]        = useState(false)
+  const [checkoutOpen,    setCheckoutOpen]    = useState(false)
+  const [cName,           setCName]           = useState('')
+  const [cPhone,          setCPhone]          = useState('')
+  const [cRef,            setCRef]            = useState('')
+  const [cPayment,        setCPayment]        = useState(paymentMethods[0]?.name ?? '')
+  const [submitting,      setSubmitting]      = useState(false)
+  const [submitted,       setSubmitted]       = useState(false)
+
+  const closeRef  = useRef<HTMLButtonElement>(null)
+  const nameRef   = useRef<HTMLInputElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -49,35 +87,167 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
     return map
   }, [products])
 
-  const visible = active
-    ? products.filter(p => p.categoryName === active)
-    : products
+  const visible = useMemo(() => {
+    if (query.trim()) {
+      const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      return products.filter(p =>
+        p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q) ||
+        (p.categoryName?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ?? '').includes(q),
+      )
+    }
+    return active ? products.filter(p => p.categoryName === active) : products
+  }, [products, query, active])
 
-  const openModal  = (p: CatalogProduct) => setSelectedProduct(p)
-  const closeModal = ()                   => setSelectedProduct(null)
+  // Cart computed
+  const totalItems  = cart.reduce((acc, i) => acc + i.qty, 0)
+  const subtotalUsd = cart.reduce((acc, i) => acc + i.qty * i.price_usd, 0)
+  const subtotalBs  = subtotalUsd * rate
 
+  const addToCart = (product: CatalogProduct, qty: number) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.product_id === product.id)
+      if (existing) {
+        return prev.map(i =>
+          i.product_id === product.id ? { ...i, qty: i.qty + qty } : i,
+        )
+      }
+      return [...prev, {
+        product_id: product.id,
+        name:       product.name,
+        qty,
+        price_usd:  product.priceUsd,
+        image_url:  product.image,
+      }]
+    })
+  }
+
+  const updateCartQty = (productId: number, delta: number) => {
+    setCart(prev => {
+      const item = prev.find(i => i.product_id === productId)
+      if (!item) return prev
+      const newQty = item.qty + delta
+      if (newQty <= 0) return prev.filter(i => i.product_id !== productId)
+      return prev.map(i => i.product_id === productId ? { ...i, qty: newQty } : i)
+    })
+  }
+
+  const openModal  = (p: CatalogProduct) => { setSelectedProduct(p); setModalQty(1) }
+  const closeModal = () => setSelectedProduct(null)
+
+  // Scroll lock
+  useEffect(() => {
+    const locked = !!selectedProduct || cartOpen || checkoutOpen
+    document.body.style.overflow = locked ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [selectedProduct, cartOpen, checkoutOpen])
+
+  // Escape key: close top layer
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (checkoutOpen && !submitting) { setCheckoutOpen(false); return }
+      if (selectedProduct)             { closeModal(); return }
+      if (cartOpen)                    { setCartOpen(false) }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [checkoutOpen, selectedProduct, cartOpen, submitting])
+
+  // Focus traps
   useEffect(() => {
     if (!selectedProduct) return
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeModal() }
-    document.addEventListener('keydown', handleKey)
-    document.body.style.overflow = 'hidden'
     const t = setTimeout(() => closeRef.current?.focus(), 50)
-    return () => {
-      document.removeEventListener('keydown', handleKey)
-      document.body.style.overflow = ''
-      clearTimeout(t)
-    }
+    return () => clearTimeout(t)
   }, [selectedProduct])
 
-  const selP   = selectedProduct
-  const waLink = selP && waPhone
-    ? `https://wa.me/${waPhone}?text=${encodeURIComponent(`Hola, vi tu catálogo y me interesa "${selP.name}". ¿Está disponible?`)}`
-    : null
+  useEffect(() => {
+    if (!checkoutOpen) return
+    const t = setTimeout(() => nameRef.current?.focus(), 80)
+    return () => clearTimeout(t)
+  }, [checkoutOpen])
+
+  const handleCheckout = async () => {
+    if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/catalog/${slug}/order`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          items:              cart.map(i => ({ product_id: i.product_id, qty: i.qty })),
+          customer_name:      cName.trim(),
+          customer_phone:     cPhone.trim(),
+          customer_reference: cRef.trim() || 'Sin especificar',
+          payment_method:     cPayment,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json() as { whatsapp_url: string | null }
+        setSubmitted(true)
+        if (data.whatsapp_url) {
+          window.open(data.whatsapp_url, '_blank', 'noopener,noreferrer')
+        }
+        setCart([])
+        setTimeout(() => {
+          setSubmitted(false)
+          setCheckoutOpen(false)
+          setCartOpen(false)
+          setCName(''); setCPhone(''); setCRef('')
+          setCPayment(paymentMethods[0]?.name ?? '')
+        }, 3000)
+      }
+    } catch { /* noop — user stays in form */ }
+    finally { setSubmitting(false) }
+  }
+
+  const selP = selectedProduct
 
   return (
     <>
-      {/* Mobile: horizontal tabs (hidden ≥ 1024px) */}
-      {categories.length > 0 && (
+      {/* ── Toolbar: search + cart ─────────────────────────────── */}
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarInner}>
+          <div className={styles.searchWrap}>
+            <Search className={styles.searchIcon} size={16} aria-hidden="true" />
+            <input
+              ref={searchRef}
+              type="search"
+              className={styles.searchInput}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar productos…"
+              aria-label="Buscar productos"
+            />
+            {query && (
+              <button
+                type="button"
+                className={styles.searchClear}
+                onClick={() => { setQuery(''); searchRef.current?.focus() }}
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            className={styles.cartBtn}
+            onClick={() => setCartOpen(true)}
+            aria-label={`Carrito — ${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`}
+          >
+            <ShoppingBag size={18} aria-hidden="true" />
+            {totalItems > 0 && (
+              <span key={totalItems} className={styles.cartBadge} aria-hidden="true">
+                {totalItems > 99 ? '99+' : totalItems}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Category tabs (mobile, hidden while searching) ──────── */}
+      {categories.length > 0 && !query && (
         <div className={styles.tabsWrapperMobile}>
           <div className={styles.tabs} role="tablist" aria-label="Filtrar por categoría">
             <button
@@ -103,11 +273,11 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
         </div>
       )}
 
-      {/* Content layout: sidebar + grid */}
+      {/* ── Content layout ──────────────────────────────────────── */}
       <div className={styles.contentLayout}>
 
-        {/* Desktop sidebar (hidden < 1024px) */}
-        {categories.length > 0 && (
+        {/* Desktop sidebar (hidden while searching) */}
+        {categories.length > 0 && !query && (
           <aside className={styles.sidebar} aria-label="Categorías">
             <p className={styles.sidebarTitle}>Categorías</p>
             <nav>
@@ -136,20 +306,21 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
         <main className={styles.main}>
           {products.length === 0 ? (
             <div className={styles.empty}>
-              <Package
-                className={styles.emptyIcon}
-                size={52}
-                strokeWidth={1.25}
-                aria-hidden="true"
-              />
+              <Package className={styles.emptyIcon} size={52} strokeWidth={1.25} aria-hidden="true" />
               <h2 className={styles.emptyTitle}>Catálogo en construcción</h2>
-              <p className={styles.emptySubtitle}>
-                Este negocio está preparando su vitrina digital.
-              </p>
+              <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
             </div>
           ) : visible.length === 0 ? (
             <div className={styles.empty}>
-              <p className={styles.emptyTitle}>Sin productos en esta categoría</p>
+              {query ? (
+                <>
+                  <Search className={styles.emptyIcon} size={40} strokeWidth={1.25} aria-hidden="true" />
+                  <p className={styles.emptyTitle}>Sin resultados para &ldquo;{query}&rdquo;</p>
+                  <p className={styles.emptySubtitle}>Intenta con otro nombre o categoría.</p>
+                </>
+              ) : (
+                <p className={styles.emptyTitle}>Sin productos en esta categoría</p>
+              )}
             </div>
           ) : (
             <div className={styles.grid}>
@@ -160,8 +331,7 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
                   onClick={() => openModal(p)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      openModal(p)
+                      e.preventDefault(); openModal(p)
                     }
                   }}
                   tabIndex={0}
@@ -170,34 +340,18 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
                 >
                   <div className={styles.cardImage}>
                     {p.image ? (
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className={styles.productImg}
-                        loading="lazy"
-                      />
+                      <img src={p.image} alt={p.name} className={styles.productImg} loading="lazy" />
                     ) : (
-                      <div
-                        className={`${styles.noImage} ${getCategoryClass(p.categoryName)}`}
-                        aria-hidden="true"
-                      >
-                        <span className={styles.noImageInitial}>
-                          {p.name.charAt(0).toUpperCase()}
-                        </span>
+                      <div className={`${styles.noImage} ${getCategoryClass(p.categoryName)}`} aria-hidden="true">
+                        <span className={styles.noImageInitial}>{p.name.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
-                    {p.outOfStock && (
-                      <span className={styles.badgeSinStock}>Sin stock</span>
-                    )}
+                    {p.outOfStock && <span className={styles.badgeSinStock}>Sin stock</span>}
                   </div>
                   <div className={styles.cardBody}>
-                    {p.categoryName && (
-                      <span className={styles.category}>{p.categoryName}</span>
-                    )}
+                    {p.categoryName && <span className={styles.category}>{p.categoryName}</span>}
                     <h2 className={styles.productName}>{p.name}</h2>
-                    {p.description && (
-                      <p className={styles.productDesc}>{p.description}</p>
-                    )}
+                    {p.description && <p className={styles.productDesc}>{p.description}</p>}
                     <div className={styles.priceRow}>
                       {p.priceUsd > 0 ? (
                         <>
@@ -222,7 +376,233 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
         </main>
       </div>
 
-      {/* Product detail modal */}
+      {/* ── Cart drawer backdrop ────────────────────────────────── */}
+      {cartOpen && (
+        <div
+          className={styles.drawerBackdrop}
+          aria-hidden="true"
+          onClick={() => { if (!checkoutOpen) setCartOpen(false) }}
+        />
+      )}
+
+      {/* ── Cart drawer ─────────────────────────────────────────── */}
+      {cartOpen && (
+        <div className={styles.drawer} role="dialog" aria-modal="true" aria-label="Mi Pedido">
+          <div className={styles.drawerHeader}>
+            <div className={styles.drawerTitleGroup}>
+              <h2 className={styles.drawerTitle}>Mi Pedido</h2>
+              <span className={styles.drawerSubtitle}>Shopping Bag</span>
+            </div>
+            <button
+              type="button"
+              className={styles.drawerClose}
+              onClick={() => setCartOpen(false)}
+              aria-label="Cerrar carrito"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className={styles.drawerItems}>
+            {cart.length === 0 ? (
+              <div className={styles.drawerEmpty}>
+                <ShoppingBag size={40} strokeWidth={1.25} aria-hidden="true" />
+                <p className={styles.drawerEmptyText}>
+                  Tu carrito está vacío.<br />Agrega productos para ordenar.
+                </p>
+              </div>
+            ) : (
+              cart.map(item => (
+                <div key={item.product_id} className={styles.drawerItem}>
+                  <div className={styles.drawerItemThumb}>
+                    {item.image_url ? (
+                      <img src={item.image_url} alt={item.name} />
+                    ) : (
+                      <div className={`${styles.drawerItemThumbFallback} ${styles.gradDefault}`}>
+                        {item.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.drawerItemInfo}>
+                    <span className={styles.drawerItemName}>{item.name}</span>
+                    <span className={styles.drawerItemPrice}>{fmtUsd(item.price_usd)} c/u</span>
+                    <span className={styles.drawerItemSubtotal}>{fmtUsd(item.qty * item.price_usd)}</span>
+                  </div>
+                  <div className={styles.drawerQtyCtrl}>
+                    <button
+                      type="button"
+                      className={styles.drawerQtyBtn}
+                      onClick={() => updateCartQty(item.product_id, -1)}
+                      aria-label={`Reducir cantidad de ${item.name}`}
+                    >
+                      <Minus size={12} />
+                    </button>
+                    <span className={styles.drawerQtyNum}>{item.qty}</span>
+                    <button
+                      type="button"
+                      className={styles.drawerQtyBtn}
+                      onClick={() => updateCartQty(item.product_id, 1)}
+                      aria-label={`Aumentar cantidad de ${item.name}`}
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Payment method badges */}
+          {paymentMethods.length > 0 && (
+            <div className={styles.drawerPayments}>
+              <p className={styles.drawerPaymentsLabel}>Métodos de pago</p>
+              <div className={styles.drawerPaymentBadges}>
+                {paymentMethods.map(pm => (
+                  <span key={pm.id} className={styles.drawerPaymentBadge}>{pm.name}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {cart.length > 0 && (
+            <div className={styles.drawerFooter}>
+              <div className={styles.drawerTotals}>
+                <div className={styles.drawerTotalRow}>
+                  <span className={styles.drawerTotalLabel}>Subtotal</span>
+                  <span className={styles.drawerTotalUsd}>{fmtUsd(subtotalUsd)}</span>
+                </div>
+                <div className={styles.drawerTotalRow}>
+                  <span className={styles.drawerTotalLabel}>Equivalente Bs.</span>
+                  <span className={styles.drawerTotalBs}>{fmtBs(subtotalBs)}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.drawerWaBtn}
+                onClick={() => setCheckoutOpen(true)}
+              >
+                <MessageCircle size={18} aria-hidden="true" />
+                Finalizar por WhatsApp
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Checkout modal "Antes de enviar" ────────────────────── */}
+      {checkoutOpen && (
+        <div
+          className={styles.checkoutOverlay}
+          onClick={e => { if (e.target === e.currentTarget && !submitting) setCheckoutOpen(false) }}
+        >
+          <div className={styles.checkoutModal} role="dialog" aria-modal="true" aria-label="Antes de enviar">
+            {submitted ? (
+              <div className={styles.checkoutSuccess}>
+                <div className={styles.successIcon}>
+                  <CheckCircle size={32} aria-hidden="true" />
+                </div>
+                <h3 className={styles.successTitle}>¡Pedido enviado!</h3>
+                <p className={styles.successSubtitle}>
+                  WhatsApp se abrió con los detalles de tu pedido.<br />El negocio lo recibirá en breve.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className={styles.checkoutHeader}>
+                  <h3 className={styles.checkoutTitle}>Antes de enviar</h3>
+                  <p className={styles.checkoutSubtitle}>
+                    Déjanos tus datos para personalizar tu pedido.
+                  </p>
+                </div>
+                <div className={styles.checkoutFields}>
+                  <div className={styles.checkoutFieldGroup}>
+                    <label className={styles.checkoutLabel} htmlFor="co-name">
+                      Nombre <span className={styles.checkoutRequired}>*</span>
+                    </label>
+                    <input
+                      ref={nameRef}
+                      id="co-name"
+                      type="text"
+                      className={styles.checkoutInput}
+                      value={cName}
+                      onChange={e => setCName(e.target.value)}
+                      placeholder="Tu nombre completo"
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className={styles.checkoutFieldGroup}>
+                    <label className={styles.checkoutLabel} htmlFor="co-phone">
+                      WhatsApp <span className={styles.checkoutRequired}>*</span>
+                    </label>
+                    <input
+                      id="co-phone"
+                      type="tel"
+                      className={styles.checkoutInput}
+                      value={cPhone}
+                      onChange={e => setCPhone(e.target.value)}
+                      placeholder="58XXXXXXXXXX"
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className={styles.checkoutFieldGroup}>
+                    <label className={styles.checkoutLabel} htmlFor="co-ref">
+                      Referencia / Sector <span className={styles.checkoutOptional}>(opcional)</span>
+                    </label>
+                    <input
+                      id="co-ref"
+                      type="text"
+                      className={styles.checkoutInput}
+                      value={cRef}
+                      onChange={e => setCRef(e.target.value)}
+                      placeholder="Ej: El Paraíso, piso 2"
+                      disabled={submitting}
+                    />
+                  </div>
+                  {paymentMethods.length > 0 && (
+                    <div className={styles.checkoutFieldGroup}>
+                      <label className={styles.checkoutLabel} htmlFor="co-payment">
+                        Método de pago <span className={styles.checkoutRequired}>*</span>
+                      </label>
+                      <select
+                        id="co-payment"
+                        className={styles.checkoutSelect}
+                        value={cPayment}
+                        onChange={e => setCPayment(e.target.value)}
+                        disabled={submitting}
+                      >
+                        {paymentMethods.map(pm => (
+                          <option key={pm.id} value={pm.name}>{pm.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.checkoutActions}>
+                  <button
+                    type="button"
+                    className={styles.sendBtn}
+                    onClick={handleCheckout}
+                    disabled={submitting || !cName.trim() || !cPhone.trim() || (paymentMethods.length > 0 && !cPayment)}
+                  >
+                    <MessageCircle size={18} aria-hidden="true" />
+                    {submitting ? 'Enviando…' : 'Enviar por WhatsApp'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cancelBtn}
+                    onClick={() => setCheckoutOpen(false)}
+                    disabled={submitting}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Product detail modal ────────────────────────────────── */}
       {selP && (
         <div
           className={styles.productModalOverlay}
@@ -231,32 +611,20 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
           aria-label={`Detalle: ${selP.name}`}
           onClick={closeModal}
         >
-          <div
-            className={styles.productModal}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Image */}
+          <div className={styles.productModal} onClick={e => e.stopPropagation()}>
             <div className={styles.productModalImg}>
               {selP.image ? (
-                <img
-                  src={selP.image}
-                  alt={selP.name}
-                  className={styles.productModalImgEl}
-                />
+                <img src={selP.image} alt={selP.name} className={styles.productModalImgEl} />
               ) : (
                 <div
                   className={`${styles.productModalImgFallback} ${getCategoryClass(selP.categoryName)}`}
                   aria-hidden="true"
                 >
-                  <span className={styles.productModalImgInitial}>
-                    {selP.name.charAt(0).toUpperCase()}
-                  </span>
+                  <span className={styles.productModalImgInitial}>{selP.name.charAt(0).toUpperCase()}</span>
                 </div>
               )}
               {selP.outOfStock && (
-                <span className={`${styles.badgeSinStock} ${styles.badgeModal}`}>
-                  Sin stock
-                </span>
+                <span className={`${styles.badgeSinStock} ${styles.badgeModal}`}>Sin stock</span>
               )}
               <button
                 ref={closeRef}
@@ -269,15 +637,10 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
               </button>
             </div>
 
-            {/* Body */}
             <div className={styles.productModalBody}>
-              {selP.categoryName && (
-                <span className={styles.category}>{selP.categoryName}</span>
-              )}
+              {selP.categoryName && <span className={styles.category}>{selP.categoryName}</span>}
               <h3 className={styles.productModalName}>{selP.name}</h3>
-              {selP.description && (
-                <p className={styles.productModalDesc}>{selP.description}</p>
-              )}
+              {selP.description && <p className={styles.productModalDesc}>{selP.description}</p>}
               <div className={styles.productModalPrices}>
                 {selP.priceUsd > 0 ? (
                   <>
@@ -294,16 +657,63 @@ export function CatalogoGrid({ products, categories, waPhone }: Props) {
                   <span className={styles.priceConsultar}>Consultar precio</span>
                 )}
               </div>
-              {waLink && (
-                <a
-                  href={waLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.waBtn}
-                >
-                  <MessageCircle size={16} strokeWidth={2} aria-hidden="true" />
-                  Pedir por WhatsApp
-                </a>
+
+              {selP.priceUsd > 0 && (
+                <>
+                  <div className={styles.productModalQtyRow}>
+                    <span className={styles.productModalQtyLabel}>Cantidad</span>
+                    <div className={styles.productModalQtyCtrl}>
+                      <button
+                        type="button"
+                        className={styles.productModalQtyBtn}
+                        onClick={() => setModalQty(q => Math.max(1, q - 1))}
+                        disabled={modalQty <= 1}
+                        aria-label="Reducir cantidad"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className={styles.productModalQtyNum}>{modalQty}</span>
+                      <button
+                        type="button"
+                        className={styles.productModalQtyBtn}
+                        onClick={() => setModalQty(q => q + 1)}
+                        aria-label="Aumentar cantidad"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.productModalCtas}>
+                    <button
+                      type="button"
+                      className={styles.addToCartBtn}
+                      disabled={selP.outOfStock}
+                      onClick={() => {
+                        addToCart(selP, modalQty)
+                        closeModal()
+                        setCartOpen(true)
+                      }}
+                    >
+                      <ShoppingBag size={16} aria-hidden="true" />
+                      {selP.outOfStock ? 'Sin stock' : 'Agregar al carrito'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.waOrangeBtn}
+                      disabled={selP.outOfStock}
+                      onClick={() => {
+                        addToCart(selP, modalQty)
+                        closeModal()
+                        setCartOpen(true)
+                        setCheckoutOpen(true)
+                      }}
+                    >
+                      <MessageCircle size={16} aria-hidden="true" />
+                      Pedir por WhatsApp
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>

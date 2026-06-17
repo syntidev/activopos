@@ -4,7 +4,7 @@ import { MessageCircle, MapPin } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
-import type { CatalogProduct } from './CatalogoGrid'
+import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import styles from './catalogo.module.css'
 
 interface PageProps {
@@ -70,7 +70,7 @@ export default async function CatalogoPage({ params }: PageProps) {
   const business = await getBusiness(params.slug)
   if (!business) notFound()
 
-  const [products, rate, stockEntries] = await Promise.all([
+  const [products, rate, stockEntries, paymentMethods] = await Promise.all([
     prisma.product.findMany({
       where: {
         business_id:      business.id,
@@ -88,6 +88,11 @@ export default async function CatalogoPage({ params }: PageProps) {
       by:    ['product_id'],
       where: { business_id: business.id },
       _sum:  { quantity: true, waste: true },
+    }),
+    prisma.paymentMethod.findMany({
+      where:   { business_id: business.id, is_active: true },
+      select:  { id: true, name: true, type: true },
+      orderBy: { sort_order: 'asc' },
     }),
   ])
 
@@ -186,7 +191,9 @@ export default async function CatalogoPage({ params }: PageProps) {
       <CatalogoGrid
           products={catalogProducts}
           categories={categories}
-          waPhone={waPhone || undefined}
+          slug={params.slug}
+          rate={rate}
+          paymentMethods={paymentMethods as PaymentMethod[]}
         />
 
       {/* ── WhatsApp FAB ────────────────────────────────────────── */}

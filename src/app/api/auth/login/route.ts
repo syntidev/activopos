@@ -13,7 +13,8 @@ const loginSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     await loginLimiter.consume(getClientIp(req))
-  } catch {
+  } catch (rateLimitErr) {
+    if (rateLimitErr instanceof Error) console.error('[rate-limit] IP limiter error:', rateLimitErr)
     return NextResponse.json(
       { error: 'Demasiados intentos. Espera 15 minutos.' },
       { status: 429 }
@@ -22,12 +23,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { email, password } = loginSchema.parse(body)
+    const { email: rawEmail, password } = loginSchema.parse(body)
+    const email = rawEmail.toLowerCase()
 
     // Capa 2: rate limit por email — bloquea brute-force aunque el atacante rote IPs
     try {
-      await loginEmailLimiter.consume(email.toLowerCase())
-    } catch {
+      await loginEmailLimiter.consume(email)
+    } catch (rateLimitErr) {
+      if (rateLimitErr instanceof Error) console.error('[rate-limit] email limiter error:', rateLimitErr)
       return NextResponse.json(
         { error: 'Demasiados intentos. Espera 15 minutos.' },
         { status: 429 }

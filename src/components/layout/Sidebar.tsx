@@ -7,15 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   ShoppingCart,
-  FileText,
   ShoppingBag,
   Users,
   Package,
-  RotateCcw,
   Calculator,
   BarChart2,
   TrendingUp,
-  UserCog,
   Settings,
   HelpCircle,
   LogOut,
@@ -46,24 +43,22 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'VENTAS',
     items: [
-      { href: '/pos', icon: ShoppingCart, label: 'Punto de Venta' },
-      { href: '/cotizaciones', icon: FileText,    label: 'Cotizaciones' },
-      { href: '/pedidos',      icon: ShoppingBag, label: 'Pedidos' },
-      { href: '/clientes',     icon: Users,        label: 'Clientes' },
+      { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta' },
+      { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos' },
+      { href: '/clientes', icon: Users,         label: 'Clientes' },
     ],
   },
   {
     label: 'INVENTARIO',
     items: [
       { href: '/productos', icon: Package, label: 'Productos' },
-      { href: '/devoluciones', icon: RotateCcw, label: 'Devoluciones' },
     ],
   },
   {
     label: 'CAJA',
     items: [
-      { href: '/caja', icon: Calculator, label: 'Gestión de Caja' },
-      { href: '/reportes', icon: BarChart2, label: 'Reportes' },
+      { href: '/caja',     icon: Calculator, label: 'Gestión de Caja' },
+      { href: '/reportes', icon: BarChart2,  label: 'Reportes' },
     ],
   },
   {
@@ -74,11 +69,11 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: 'ADMINISTRACIÓN',
+    label: 'SISTEMA',
+    adminOnly: true,
     items: [
-      { href: '/usuarios', icon: UserCog, label: 'Usuarios' },
-      { href: '/configuracion', icon: Settings, label: 'Configuración' },
-      { href: '/ayuda', icon: HelpCircle, label: 'Ayuda' },
+      { href: '/configuracion', icon: Settings,   label: 'Configuración' },
+      { href: '/ayuda',         icon: HelpCircle, label: 'Ayuda' },
     ],
   },
 ]

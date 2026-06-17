@@ -1,5 +1,6 @@
 import { RateLimiterMemory } from 'rate-limiter-flexible'
 
+// RateLimiterMemory no es cluster-safe — pendiente Redis en producción
 export const loginLimiter = new RateLimiterMemory({
   points:   5,    // 5 intentos por IP
   duration: 900,  // en 15 minutos (900 s)

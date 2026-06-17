@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="ActivoPOS — El punto de venta para negocios venezolanos que andan activos. POS táctil, tasa BCV automática, catálogo digital con pedidos por WhatsApp, variantes y especificaciones de producto, servicios e inventario en tiempo real.">
+<meta name="keywords" content="punto de venta venezuela, POS venezuela, sistema de ventas venezuela, BCV automatico, pago movil POS, software ventas bodega, carniceria sistema, inventario venezuela, catalogo digital whatsapp, cotizacion servicios venezuela, activopos">
+<meta name="author" content="synti.dev">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://activopos.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://activopos.com/">
+<meta property="og:title" content="ActivoPOS — El POS para negocios que andan activos">
+<meta property="og:description" content="POS táctil, BCV automático, catálogo digital, variantes por especificación y cotización de servicios. Diseñado para Venezuela.">
+<meta property="og:locale" content="es_VE">
+<meta property="og:site_name" content="ActivoPOS">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ActivoPOS — El POS para negocios que andan activos">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ActivoPOS",
+  "url": "https://activopos.com",
+  "description": "Sistema de punto de venta y catálogo digital diseñado nativamente para negocios venezolanos.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "offers": {"@type": "Offer","priceCurrency": "USD","availability": "https://schema.org/InStock"},
+  "provider": {"@type": "Organization","name": "synti.dev","url": "https://syntiweb.com",
+    "contactPoint": {"@type": "ContactPoint","telephone": "+58-422-265-4827","contactType": "sales","availableLanguage": "Spanish"}}
+}
+</script>
+<link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+<meta name="theme-color" content="#0D1B2E">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ActivoPOS — El POS para negocios que andan activos</title>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800;9..144,900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --brand:#2563EB;--brand-d:#1D4ED8;--brand-l:#3B82F6;--brand-a:rgba(37,99,235,0.13);
+  --navy:#0D1B2E;--navy2:#132035;--navy3:#1A2D47;--navy4:#223555;
+  --text1:#EEF2FF;--text2:#94A3B8;--text3:#64748B;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --success:#10B981;--warning:#F59E0B;--danger:#EF4444;
+  --fh:'Fraunces',serif;--fb:'DM Sans',sans-serif;
+}
+body{font-family:var(--fb);background:var(--navy);color:var(--text1);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.5}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;height:64px;background:rgba(13,27,46,0.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--fh);font-size:22px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:3px;text-decoration:none}
+.nla{color:#fff}.nlp{color:var(--brand-l)}
+.nav-links{display:flex;gap:28px}
+.nav-links a{font-size:14px;font-weight:500;color:var(--text2);text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:var(--text1)}
+.nav-cta{background:var(--brand);color:#fff;border:none;padding:9px 22px;border-radius:8px;font-family:var(--fb);font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .2s,transform .15s}
+.nav-cta:hover{background:var(--brand-d);transform:translateY(-1px)}
+@media(max-width:700px){.nav-links{display:none}}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 5vw 60px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 50% -5%,rgba(37,99,235,.15) 0%,transparent 65%),radial-gradient(ellipse 40% 30% at 90% 100%,rgba(16,185,129,.07) 0%,transparent 60%)}
+.hero::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:56px 56px;opacity:.4;mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 0%,transparent 70%)}
+.hero>*{position:relative;z-index:1}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);border:1px solid var(--border2);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:28px;animation:fadeUp .6s ease both}
+.ey-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 10px var(--success);animation:blink 2.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero h1{font-family:var(--fh);font-size:clamp(36px,7vw,82px);font-weight:900;line-height:1.04;letter-spacing:-2.5px;max-width:900px;animation:fadeUp .6s .1s ease both}
+.hero h1 .blue{color:var(--brand-l)}
+.hero-sub{font-size:clamp(15px,2vw,19px);color:var(--text2);line-height:1.65;max-width:580px;margin:24px auto 0;animation:fadeUp .6s .2s ease both}
+.bcv-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;color:var(--warning);vertical-align:middle;margin:0 3px}
+.hero-actions{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:36px;animation:fadeUp .6s .3s ease both}
+.btn-p{background:var(--brand);color:#fff;border:none;padding:14px 30px;border-radius:10px;font-family:var(--fb);font-size:16px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s;box-shadow:0 4px 24px rgba(37,99,235,.32)}
+.btn-p:hover{background:var(--brand-d);transform:translateY(-2px);box-shadow:0 8px 32px rgba(37,99,235,.45)}
+.btn-g{color:var(--text2);background:rgba(255,255,255,.05);border:1px solid var(--border2);padding:13px 26px;border-radius:10px;font-family:var(--fb);font-size:15px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-g:hover{border-color:var(--brand-l);color:var(--text1)}
+
+/* APP MOCKUP — oculto en móvil */
+.hero-mockup{margin-top:56px;width:100%;max-width:980px;animation:fadeUp .8s .4s ease both}
+@media(max-width:768px){.hero-mockup{display:none}}
+
+/* Features móvil — solo visible en móvil */
+.hero-mobile-feats{display:none;margin-top:40px;width:100%;max-width:480px}
+@media(max-width:768px){.hero-mobile-feats{display:flex;flex-direction:column;gap:12px}}
+.hmf-item{display:flex;align-items:center;gap:12px;background:var(--navy2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;text-align:left}
+.hmf-icon{width:36px;height:36px;border-radius:9px;background:var(--brand-a);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hmf-icon svg{width:18px;height:18px;color:var(--brand-l)}
+.hmf-text{font-size:14px;font-weight:600;color:var(--text1)}
+.hmf-sub{font-size:12px;color:var(--text3);margin-top:1px}
+
+.app-frame{background:var(--navy2);border:1px solid var(--border2);border-radius:16px;overflow:hidden;box-shadow:0 32px 100px rgba(0,0,0,.6),0 0 60px rgba(37,99,235,.10);display:grid;grid-template-columns:200px 1fr;height:380px}
+.app-sidebar{background:#0A1628;display:flex;flex-direction:column;padding:16px 0;border-right:1px solid var(--border)}
+.sb-logo{font-family:var(--fh);font-size:15px;font-weight:800;padding:0 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:var(--brand-l);box-shadow:0 0 8px var(--brand);animation:blink 2.5s infinite}
+.sla{color:#fff}.slp{color:var(--brand-l)}
+.sb-sec{padding:12px 12px 3px;font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 12px;margin:1px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--text2);cursor:pointer}
+.sb-item.on{background:var(--brand);color:#fff}
+.sb-item svg{width:13px;height:13px;flex-shrink:0}
+.sb-badge{margin-left:auto;background:var(--success);color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:100px}
+.app-content{background:var(--navy);display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.app-topbar{background:var(--navy2);border-bottom:1px solid var(--border);padding:9px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.topbar-title{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--text1);flex:1}
+.topbar-bcv{display:flex;align-items:center;gap:5px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:700;color:var(--warning)}
+.bcv-dot{width:5px;height:5px;border-radius:50%;background:var(--warning);animation:blink 2s infinite}
+.app-main{flex:1;display:flex;overflow:hidden;min-height:0}
+.pos-area{flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;gap:7px;min-width:0}
+.pos-tabs{display:flex;gap:3px;flex-wrap:nowrap;overflow:hidden}
+.pos-tab{padding:4px 10px;border-radius:5px;font-size:10px;font-weight:600;color:var(--text3);cursor:pointer;border:1px solid transparent;background:transparent;font-family:var(--fb);white-space:nowrap}
+.pos-tab.on{background:var(--navy3);border-color:var(--border2);color:var(--text1)}
+.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1}
+.pos-card{background:var(--navy3);border:1px solid var(--border);border-radius:7px;padding:9px 8px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.pc-accent{width:100%;height:2px;border-radius:2px;margin-bottom:5px}
+.pc-name{font-size:10px;font-weight:600;color:var(--text1);line-height:1.2}
+.pc-price{font-size:9px;color:var(--text2)}
+.pc-spec{font-size:8px;color:var(--brand-l);margin-top:1px}
+.pc-stock{font-size:8px;color:var(--success);margin-top:auto}
+.order-panel{width:185px;background:var(--navy2);border-left:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.op-title{font-size:9px;font-weight:700;color:var(--text1);text-transform:uppercase;letter-spacing:.5px}
+.op-items{flex:1;display:flex;flex-direction:column;gap:3px}
+.op-item{display:flex;justify-content:space-between;align-items:center;padding:4px 6px;background:var(--navy3);border-radius:4px;border:1px solid var(--border);font-size:9px}
+.oi-n{color:var(--text1);font-weight:500}
+.oi-v{color:var(--brand-l);font-weight:700}
+.op-div{height:1px;background:var(--border)}
+.op-total{display:flex;justify-content:space-between;font-size:12px;font-weight:700}
+.op-tv{color:var(--success)}
+.op-bs{font-size:9px;color:var(--text3);text-align:right}
+.op-btn{background:var(--brand);color:#fff;border:none;border-radius:6px;padding:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--fb);width:100%}
+
+/* TICKER */
+.ticker-wrap{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--navy2);padding:11px 0;position:relative;z-index:1}
+.ticker{display:flex;animation:ticker 40s linear infinite;width:max-content}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ti{padding:0 28px;font-size:12px;font-weight:500;color:var(--text3);white-space:nowrap;display:flex;align-items:center;gap:7px}
+.ti svg{width:12px;height:12px;color:var(--brand-l);flex-shrink:0}
+
+/* SEGMENT STRIP */
+.seg-strip{padding:64px 0;position:relative;z-index:1;overflow:hidden}
+.seg-strip::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 50%,var(--navy) 100%)}
+.seg-inner{position:relative;z-index:1}
+.seg-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand-l);margin-bottom:14px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
+.seg-title{font-family:var(--fh);font-size:clamp(22px,3.5vw,36px);font-weight:800;text-align:center;letter-spacing:-1px;margin-bottom:40px;line-height:1.1}
+.seg-track-wrap{overflow:hidden;position:relative;padding:16px 0 20px;mask-image:linear-gradient(90deg,transparent 0%,black 8%,black 92%,transparent 100%)}
+.seg-track{display:flex;gap:16px;width:max-content;animation:seg-loop 35s linear infinite;padding:4px 0}
+.seg-track:hover{animation-play-state:paused}
+@keyframes seg-loop{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.seg-item{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 26px;background:var(--navy3);border:1px solid var(--border);border-radius:16px;min-width:130px;transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s,border-color .25s;cursor:pointer;position:relative;overflow:hidden}
+.seg-item::before{content:'';position:absolute;inset:0;opacity:0;border-radius:16px;background:radial-gradient(circle 80px at var(--mx,50%) var(--my,50%),rgba(37,99,235,.35) 0%,transparent 70%);transition:opacity .2s;pointer-events:none}
+.seg-item::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:2px;background:linear-gradient(90deg,transparent,var(--brand-l),transparent);opacity:0;transform:scaleX(0);transition:opacity .3s,transform .4s cubic-bezier(.34,1.56,.64,1)}
+.seg-item:hover{border-color:rgba(59,130,246,.5);transform:translateY(-8px) scale(1.07);box-shadow:0 24px 56px rgba(0,0,0,.55),0 0 36px rgba(37,99,235,.22)}
+.seg-item:hover::before{opacity:1}
+.seg-item:hover::after{opacity:1;transform:scaleX(1)}
+.seg-item svg{width:28px;height:28px;color:var(--brand-l);display:block}
+.seg-name{font-size:12px;font-weight:700;color:var(--text1);text-align:center;line-height:1.2}
+.seg-sub{font-size:10px;color:var(--text3);text-align:center}
+
+/* SECTIONS */
+section{position:relative;z-index:1}
+.container{max-width:1140px;margin:0 auto;padding:0 5vw}
+.sec-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand-l);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.sec-label svg{width:11px;height:11px}
+.sec-title{font-family:var(--fh);font-size:clamp(26px,4vw,48px);font-weight:800;line-height:1.08;letter-spacing:-1.5px;color:var(--text1)}
+.sec-sub{font-size:16px;color:var(--text2);line-height:1.65;max-width:520px;margin-top:14px}
+
+/* ESPECIFICACIONES (ex variantes) */
+.specs-section{padding:96px 0;background:var(--navy2)}
+.specs-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-top:48px}
+@media(max-width:860px){.specs-grid{grid-template-columns:1fr}}
+.specs-copy .sec-sub{font-size:15px}
+.specs-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--success);margin-bottom:16px}
+.specs-badge svg{width:11px;height:11px}
+
+/* Tabs de tipo de negocio */
+.specs-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 20px}
+.spec-tab{padding:6px 14px;border-radius:100px;font-size:12px;font-weight:600;border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .2s;background:transparent}
+.spec-tab.on{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* Demo de especificaciones */
+.specs-demo{background:var(--navy3);border:1px solid var(--border2);border-radius:20px;padding:24px;box-shadow:0 16px 48px rgba(0,0,0,.4)}
+.sd-header{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.sd-icon{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sd-icon svg{width:24px;height:24px}
+.sd-name{font-family:var(--fh);font-size:17px;font-weight:700;color:var(--text1);margin-bottom:4px}
+.sd-type{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.sd-price{font-size:13px;color:var(--text2);margin-top:4px}
+.sd-price strong{color:var(--success)}
+
+.sd-specs{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.sd-spec-row{display:flex;flex-direction:column;gap:6px}
+.sd-spec-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3)}
+.sd-spec-opts{display:flex;gap:6px;flex-wrap:wrap}
+.sd-opt{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .15s}
+.sd-opt.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.sd-opt.out{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+.sd-opt.color-dot{width:28px;height:28px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.sd-opt.color-dot.on{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--brand)}
+
+.sd-add{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-family:var(--fb);font-size:13px;font-weight:600;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:7px}
+.sd-add svg{width:14px;height:14px}
+
+/* Panel de tipos — contenido dinámico */
+.specs-panel{display:none}
+.specs-panel.active{display:block}
+
+/* PAIN */
+.pain{padding:96px 0}
+.pain-list{display:flex;flex-direction:column;gap:0;margin-top:48px;border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.pain-row{display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:20px;padding:24px 32px;border-bottom:1px solid var(--border);transition:background .2s}
+.pain-row:last-child{border-bottom:none}
+.pain-row:hover{background:rgba(255,255,255,.03)}
+.pain-num{font-family:var(--fh);font-size:34px;font-weight:900;color:rgba(255,255,255,.07);line-height:1}
+.pain-title{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--text1);margin-bottom:4px}
+.pain-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.pain-cost{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:100px;white-space:nowrap;flex-shrink:0}
+.pain-cost svg{width:11px;height:11px}
+.pc-r{background:rgba(239,68,68,.10);color:var(--danger)}
+.pc-a{background:rgba(245,158,11,.10);color:var(--warning)}
+.pc-b{background:rgba(37,99,235,.12);color:var(--brand-l)}
+.pc-p{background:rgba(139,92,246,.10);color:#A78BFA}
+@media(max-width:640px){.pain-row{grid-template-columns:1fr;gap:8px}.pain-num{display:none}.pain-cost{align-self:flex-start}}
+
+/* REFRAME */
+.reframe{padding:96px 0;background:var(--navy2)}
+.reframe-callout{border-left:4px solid var(--brand);padding:22px 28px;background:rgba(37,99,235,.08);border-radius:0 14px 14px 0;margin:28px 0}
+.reframe-callout p{font-family:var(--fh);font-size:clamp(17px,2.5vw,25px);font-weight:700;line-height:1.4;color:var(--text1)}
+.reframe-callout strong{color:var(--brand-l)}
+.compare-wrap{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:44px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.compare-head{padding:14px 24px;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.compare-head svg{width:13px;height:13px}
+.bef .compare-head{background:rgba(239,68,68,.10);color:var(--danger)}
+.aft .compare-head{background:rgba(16,185,129,.10);color:var(--success)}
+.compare-row{display:flex;align-items:flex-start;gap:10px;padding:12px 24px;border-top:1px solid var(--border);font-size:13px;line-height:1.5}
+.compare-row svg{width:13px;height:13px;flex-shrink:0;margin-top:2px}
+.bef .compare-row{color:var(--text2)}
+.bef .compare-row svg{color:var(--danger)}
+.aft .compare-row{color:var(--text1);font-weight:500}
+.aft .compare-row svg{color:var(--success)}
+@media(max-width:640px){.compare-wrap{grid-template-columns:1fr}}
+
+/* BCV BAND */
+.bcv-band{padding:56px 0;position:relative;overflow:hidden}
+.bcv-band::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(37,99,235,.12) 0%,transparent 60%)}
+.bcv-inner{display:flex;align-items:center;gap:48px;flex-wrap:wrap;position:relative;z-index:1}
+.bcv-text{flex:1;min-width:260px}
+.bcv-widget{flex-shrink:0;background:var(--navy2);border:1px solid var(--border2);border-radius:16px;padding:24px 28px;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.bcv-live-row{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.bcv-live-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);animation:blink 2s infinite}
+.bcv-rate-big{font-family:var(--fh);font-size:38px;font-weight:900;color:var(--text1);letter-spacing:-1.5px;line-height:1}
+.bcv-rate-sub{font-size:12px;color:var(--text3);margin-top:5px}
+.bcv-times{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.bcv-time{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px}
+.bcv-time svg{width:10px;height:10px}
+
+/* ECOSYSTEM */
+.ecosystem{padding:96px 0}
+.eco-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-top:48px}
+.eco-col{padding:36px 32px;border-right:1px solid var(--border);position:relative;transition:background .25s;display:flex;flex-direction:column}
+.eco-col:last-child{border-right:none}
+.eco-col:hover{background:rgba(255,255,255,.03)}
+.eco-col.feat{background:rgba(37,99,235,.07);border-left:2px solid var(--brand)}
+.eco-layer{font-size:10px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:5px}
+.eco-layer svg{width:11px;height:11px}
+.eco-col:nth-child(1) .eco-layer{color:var(--brand-l)}
+.eco-col:nth-child(2) .eco-layer{color:var(--success)}
+.eco-col:nth-child(3) .eco-layer{color:#A78BFA}
+.eco-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.eco-col:nth-child(1) .eco-icon{background:var(--brand-a);color:var(--brand-l)}
+.eco-col:nth-child(2) .eco-icon{background:rgba(16,185,129,.12);color:var(--success)}
+.eco-col:nth-child(3) .eco-icon{background:rgba(139,92,246,.12);color:#A78BFA}
+.eco-icon svg{width:22px;height:22px}
+.eco-title{font-family:var(--fh);font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px;color:var(--text1)}
+.eco-promise{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.eco-desc{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:18px;flex:1}
+.eco-feats{list-style:none;display:flex;flex-direction:column;gap:7px}
+.eco-feats li{font-size:12px;color:var(--text2);display:flex;gap:7px;align-items:flex-start}
+.eco-feats li svg{width:12px;height:12px;color:var(--success);flex-shrink:0;margin-top:2px}
+@media(max-width:860px){.eco-grid{grid-template-columns:1fr}.eco-col{border-right:none;border-bottom:1px solid var(--border)}.eco-col:last-child{border-bottom:none}}
+
+/* QR DEMO en Plan 3 */
+.qr-demo{margin-top:18px;background:var(--navy);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px}
+.qr-box{width:56px;height:56px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:4px}
+.qr-box svg{width:44px;height:44px;color:#000}
+.qr-info{flex:1}
+.qr-url{font-size:11px;font-weight:700;color:var(--brand-l);margin-bottom:2px}
+.qr-desc{font-size:10px;color:var(--text3)}
+.qr-stats{display:flex;gap:10px;margin-top:10px}
+.qr-stat{flex:1;background:var(--navy2);border-radius:7px;padding:7px 10px;text-align:center}
+.qr-stat-n{font-family:var(--fh);font-size:18px;font-weight:800;color:var(--text1)}
+.qr-stat-l{font-size:9px;color:var(--text3);margin-top:1px}
+
+/* PRICING */
+.pricing{padding:96px 0;background:var(--navy2)}
+.pricing-head{text-align:center;max-width:600px;margin:0 auto 52px}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:980px;margin:0 auto;border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.p-col{padding:36px 28px;border-right:1px solid var(--border);position:relative;display:flex;flex-direction:column}
+.p-col:last-child{border-right:none}
+.p-col.feat{background:rgba(37,99,235,.07);border-left:2px solid var(--brand)}
+.p-badge{position:absolute;top:-1px;right:24px;background:var(--brand);color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 0 8px 8px;letter-spacing:.5px;text-transform:uppercase}
+.p-head{margin-bottom:20px}
+.p-tier{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.p-name{font-family:var(--fh);font-size:26px;font-weight:800;line-height:1.1;letter-spacing:-.5px;color:var(--text1);margin-bottom:10px}
+.p-tagline{font-size:12px;font-weight:600;color:var(--brand-l);display:flex;align-items:center;gap:5px;margin-bottom:12px}
+.p-tagline svg{width:12px;height:12px}
+.p-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.p-divider{height:1px;background:var(--border);margin:20px 0}
+.p-feats{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:24px}
+.p-feats li{font-size:13px;color:var(--text1);display:flex;align-items:flex-start;gap:8px;line-height:1.4}
+.p-feats li svg{width:13px;height:13px;color:var(--success);flex-shrink:0;margin-top:2px}
+.p-cta{background:var(--navy3);color:var(--text1);border:1px solid var(--border2);padding:11px 20px;border-radius:9px;font-family:var(--fb);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s;margin-top:auto}
+.p-cta:hover{border-color:var(--brand-l);color:var(--brand-l)}
+.p-col.feat .p-cta{background:var(--brand);border-color:var(--brand);color:#fff}
+.p-col.feat .p-cta:hover{background:var(--brand-d)}
+.pricing-note{text-align:center;margin-top:28px;font-size:13px;color:var(--text3)}
+.pricing-note a{color:var(--brand-l);text-decoration:none}
+@media(max-width:860px){.pricing-grid{grid-template-columns:1fr}.p-col{border-right:none;border-bottom:1px solid var(--border)}.p-col:last-child{border-bottom:none}}
+
+/* PROOF */
+.proof{padding:96px 0}
+.proof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px}
+@media(max-width:860px){.proof-grid{grid-template-columns:1fr}}
+.proof-card{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:28px}
+.proof-stars{display:flex;gap:3px;margin-bottom:14px}
+.proof-stars svg{width:14px;height:14px}
+.proof-text{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:18px;font-style:italic}
+.proof-author{display:flex;align-items:center;gap:10px}
+.proof-av{width:36px;height:36px;border-radius:50%;background:var(--brand-a);border:1px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--brand-l);flex-shrink:0}
+.proof-name{font-size:13px;font-weight:700;color:var(--text1)}
+.proof-biz{font-size:11px;color:var(--text3)}
+
+/* FINAL CTA */
+.final-cta{padding:120px 5vw;text-align:center;position:relative;overflow:hidden}
+.final-cta::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 50% 50%,rgba(37,99,235,.1) 0%,transparent 70%)}
+.final-cta>*{position:relative;z-index:1}
+.final-cta h2{font-family:var(--fh);font-size:clamp(30px,5vw,60px);font-weight:900;line-height:1.1;letter-spacing:-2px;max-width:700px;margin:0 auto 20px}
+.final-cta h2 em{font-style:italic;color:var(--brand-l)}
+.final-cta p{font-size:18px;color:var(--text2);max-width:480px;margin:0 auto 36px;line-height:1.65}
+.trust-row{display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:28px}
+.trust-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text3);font-weight:500}
+.trust-item svg{width:13px;height:13px;color:var(--success)}
+
+/* REVEAL */
+.reveal,.reveal-l,.reveal-r{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.reveal-l{transform:translateX(-24px)}
+.reveal-r{transform:translateX(24px)}
+.reveal.visible,.reveal-l.visible,.reveal-r.visible{opacity:1;transform:none}
+.d1{transition-delay:.05s}.d2{transition-delay:.15s}.d3{transition-delay:.25s}
+
+/* FOOTER */
+footer{padding:40px 5vw;border-top:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.footer-logo{font-family:var(--fh);font-size:20px;font-weight:800}
+.fla{color:#fff}.flp{color:var(--brand-l)}
+.footer-copy,.footer-synti{font-size:12px;color:var(--text3)}
+.footer-synti a{color:var(--brand-l);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/"><span class="nla">Activo</span><span class="nlp">POS</span></a>
+  <div class="nav-links">
+    <a href="#segmentos">¿Para quién?</a>
+    <a href="#ecosystem">Cómo funciona</a>
+    <a href="#pricing">Planes</a>
+  </div>
+  <a href="/login" class="nav-cta">Ingresar →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow"><span class="ey-dot"></span>POS · Hecho en Venezuela · Para Venezuela</div>
+  <h1>El dinero entra.<br><span class="blue">Tú lo controlas.</span></h1>
+  <p class="hero-sub">
+    POS táctil, BCV automático
+    <span class="bcv-tag"><i data-lucide="refresh-cw" style="width:11px;height:11px;display:inline"></i> Bs. <span id="bcv-hero">...</span></span>,
+    catálogo digital con pedidos por WhatsApp y especificaciones flexibles para cualquier tipo de producto o servicio.
+  </p>
+  <div class="hero-actions">
+    <a href="https://wa.me/584222654827?text=Hola%2C+quiero+ver+ActivoPOS+en+acci%C3%B3n" target="_blank" class="btn-p">
+      <i data-lucide="message-circle" style="width:17px;height:17px"></i>Ver demostración
+    </a>
+    <a href="/login" class="btn-g">
+      <i data-lucide="log-in" style="width:16px;height:16px"></i>Entrar al sistema
+    </a>
+  </div>
+
+  <!-- MOCKUP DESKTOP -->
+  <div class="hero-mockup">
+    <div class="app-frame">
+      <div class="app-sidebar">
+        <div class="sb-logo"><span class="sb-dot"></span><span class="sla">Activo</span><span class="slp">POS</span></div>
+        <div class="sb-sec">Principal</div>
+        <div class="sb-item"><i data-lucide="layout-dashboard"></i>Escritorio</div>
+        <div class="sb-sec">Ventas</div>
+        <div class="sb-item on"><i data-lucide="shopping-cart"></i>Punto de Venta<span class="sb-badge">LIVE</span></div>
+        <div class="sb-item"><i data-lucide="file-text"></i>Cotizaciones</div>
+        <div class="sb-item"><i data-lucide="shopping-bag"></i>Pedidos</div>
+        <div class="sb-sec">Inventario</div>
+        <div class="sb-item"><i data-lucide="package"></i>Productos</div>
+        <div class="sb-sec">Caja</div>
+        <div class="sb-item"><i data-lucide="calculator"></i>Caja</div>
+      </div>
+      <div class="app-content">
+        <div class="app-topbar">
+          <div class="topbar-title">Punto de Venta</div>
+          <div class="topbar-bcv"><div class="bcv-dot"></div>BCV Bs. <span id="bcv-topbar">...</span></div>
+        </div>
+        <div class="app-main">
+          <div class="pos-area">
+            <div class="pos-tabs">
+              <button class="pos-tab on">Todos</button>
+              <button class="pos-tab">Carnes</button>
+              <button class="pos-tab">Ropa</button>
+              <button class="pos-tab">Servicios</button>
+            </div>
+            <div class="pos-grid">
+              <div class="pos-card"><div class="pc-accent" style="background:var(--success)"></div><div class="pc-name">Pechuga de Res</div><div class="pc-price">$4.80/kg</div><div class="pc-spec">Vendido por kg</div><div class="pc-stock">12.5 kg</div></div>
+              <div class="pos-card"><div class="pc-accent" style="background:var(--brand)"></div><div class="pc-name">Camisa Polo</div><div class="pc-price">$15.00</div><div class="pc-spec">M · Azul</div><div class="pc-stock">18 und</div></div>
+              <div class="pos-card"><div class="pc-accent" style="background:var(--warning)"></div><div class="pc-name">Instalación Eléct.</div><div class="pc-price">$25.00</div><div class="pc-spec">Servicio · 2h</div><div class="pc-stock">Disponible</div></div>
+            </div>
+          </div>
+          <div class="order-panel">
+            <div class="op-title">Ticket · ACT-0047</div>
+            <div class="op-items">
+              <div class="op-item"><span class="oi-n">Pechuga 0.8kg</span><span class="oi-v">$3.84</span></div>
+              <div class="op-item"><span class="oi-n">Polo M · Azul</span><span class="oi-v">$15.00</span></div>
+              <div class="op-item"><span class="oi-n">Instalación 2h</span><span class="oi-v">$50.00</span></div>
+            </div>
+            <div class="op-div"></div>
+            <div class="op-total"><span>Total</span><span class="op-tv">$68.84</span></div>
+            <div class="op-bs">Bs. <span id="bcv-ticket">...</span></div>
+            <button class="op-btn">Cobrar →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES MÓVIL -->
+  <div class="hero-mobile-feats">
+    <div class="hmf-item">
+      <div class="hmf-icon"><i data-lucide="refresh-cw"></i></div>
+      <div><div class="hmf-text">BCV automático en cada cobro</div><div class="hmf-sub">Siempre en USD, Bs exacto al cobrar</div></div>
+    </div>
+    <div class="hmf-item">
+      <div class="hmf-icon"><i data-lucide="layers"></i></div>
+      <div><div class="hmf-text">Especificaciones por producto</div><div class="hmf-sub">Tallas, kg, litros, horas de servicio</div></div>
+    </div>
+    <div class="hmf-item">
+      <div class="hmf-icon"><i data-lucide="globe"></i></div>
+      <div><div class="hmf-text">Catálogo digital con pedidos</div><div class="hmf-sub">WhatsApp directo, sin intermediarios</div></div>
+    </div>
+    <div class="hmf-item">
+      <div class="hmf-icon"><i data-lucide="smartphone"></i></div>
+      <div><div class="hmf-text">Pago Móvil, Zelle, Efectivo, USDT</div><div class="hmf-sub">Todos los métodos venezolanos</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span class="ti"><i data-lucide="check-circle"></i>BCV automático en cada cobro</span>
+    <span class="ti"><i data-lucide="smartphone"></i>Pago Móvil nativo</span>
+    <span class="ti"><i data-lucide="layers"></i>Tallas · kg · litros · horas · metros</span>
+    <span class="ti"><i data-lucide="globe"></i>Catálogo digital 24/7</span>
+    <span class="ti"><i data-lucide="briefcase"></i>Cotización de servicios integrada</span>
+    <span class="ti"><i data-lucide="shopping-bag"></i>Pedidos por WhatsApp</span>
+    <span class="ti"><i data-lucide="truck"></i>Delivery con zonas configurables</span>
+    <span class="ti"><i data-lucide="qr-code"></i>QR propio de tu catálogo</span>
+    <span class="ti"><i data-lucide="bar-chart-2"></i>Reportes en tiempo real</span>
+    <span class="ti"><i data-lucide="zap"></i>Sin instalación · corre en el navegador</span>
+    <span class="ti"><i data-lucide="check-circle"></i>BCV automático en cada cobro</span>
+    <span class="ti"><i data-lucide="smartphone"></i>Pago Móvil nativo</span>
+    <span class="ti"><i data-lucide="layers"></i>Tallas · kg · litros · horas · metros</span>
+    <span class="ti"><i data-lucide="globe"></i>Catálogo digital 24/7</span>
+    <span class="ti"><i data-lucide="briefcase"></i>Cotización de servicios integrada</span>
+    <span class="ti"><i data-lucide="shopping-bag"></i>Pedidos por WhatsApp</span>
+    <span class="ti"><i data-lucide="truck"></i>Delivery con zonas configurables</span>
+    <span class="ti"><i data-lucide="qr-code"></i>QR propio de tu catálogo</span>
+    <span class="ti"><i data-lucide="bar-chart-2"></i>Reportes en tiempo real</span>
+    <span class="ti"><i data-lucide="zap"></i>Sin instalación · corre en el navegador</span>
+  </div>
+</div>
+
+<!-- SEGMENTOS -->
+<section class="seg-strip" id="segmentos">
+  <div class="seg-inner">
+    <div class="seg-label"><i data-lucide="store"></i>Negocios que ya lo usan</div>
+    <h2 class="seg-title">Si produces, vendas o prestas un servicio<br>en Venezuela, esto es para ti.</h2>
+    <div class="seg-track-wrap">
+      <div class="seg-track">
+        <div class="seg-item"><i data-lucide="beef"></i><div class="seg-name">Carnicería</div><div class="seg-sub">Res · Cerdo · Aves</div></div>
+        <div class="seg-item"><i data-lucide="coffee"></i><div class="seg-name">Café</div><div class="seg-sub">Cafetería · Panadería</div></div>
+        <div class="seg-item"><i data-lucide="shirt"></i><div class="seg-name">Ropa</div><div class="seg-sub">Boutique · Calzado</div></div>
+        <div class="seg-item"><i data-lucide="shopping-basket"></i><div class="seg-name">Bodega</div><div class="seg-sub">Abastos · Licores</div></div>
+        <div class="seg-item"><i data-lucide="utensils"></i><div class="seg-name">Restaurante</div><div class="seg-sub">Comida · Food truck</div></div>
+        <div class="seg-item"><i data-lucide="zap"></i><div class="seg-name">Técnico Eléctrico</div><div class="seg-sub">Servicios · Cotización</div></div>
+        <div class="seg-item"><i data-lucide="wrench"></i><div class="seg-name">Taller</div><div class="seg-sub">Mecánica · Repuestos</div></div>
+        <div class="seg-item"><i data-lucide="building-2"></i><div class="seg-name">Ferretería</div><div class="seg-sub">Materiales · Metro lineal</div></div>
+        <div class="seg-item"><i data-lucide="monitor"></i><div class="seg-name">Sportbar</div><div class="seg-sub">Estadio · Venue</div></div>
+        <div class="seg-item"><i data-lucide="scissors"></i><div class="seg-name">Peluquería</div><div class="seg-sub">Servicios · Por hora</div></div>
+        <div class="seg-item"><i data-lucide="fish"></i><div class="seg-name">Pescadería</div><div class="seg-sub">Mariscos · Por kg</div></div>
+        <div class="seg-item"><i data-lucide="flower-2"></i><div class="seg-name">Floristería</div><div class="seg-sub">Flores · Decoración</div></div>
+        <div class="seg-item"><i data-lucide="pill"></i><div class="seg-name">Farmacia</div><div class="seg-sub">Medicamentos · Salud</div></div>
+        <div class="seg-item"><i data-lucide="ice-cream"></i><div class="seg-name">Heladería</div><div class="seg-sub">Helados · Por litro</div></div>
+        <div class="seg-item"><i data-lucide="beef"></i><div class="seg-name">Carnicería</div><div class="seg-sub">Res · Cerdo · Aves</div></div>
+        <div class="seg-item"><i data-lucide="coffee"></i><div class="seg-name">Café</div><div class="seg-sub">Cafetería · Panadería</div></div>
+        <div class="seg-item"><i data-lucide="shirt"></i><div class="seg-name">Ropa</div><div class="seg-sub">Boutique · Calzado</div></div>
+        <div class="seg-item"><i data-lucide="shopping-basket"></i><div class="seg-name">Bodega</div><div class="seg-sub">Abastos · Licores</div></div>
+        <div class="seg-item"><i data-lucide="utensils"></i><div class="seg-name">Restaurante</div><div class="seg-sub">Comida · Food truck</div></div>
+        <div class="seg-item"><i data-lucide="zap"></i><div class="seg-name">Técnico Eléctrico</div><div class="seg-sub">Servicios · Cotización</div></div>
+        <div class="seg-item"><i data-lucide="wrench"></i><div class="seg-name">Taller</div><div class="seg-sub">Mecánica · Repuestos</div></div>
+        <div class="seg-item"><i data-lucide="building-2"></i><div class="seg-name">Ferretería</div><div class="seg-sub">Materiales · Metro lineal</div></div>
+        <div class="seg-item"><i data-lucide="monitor"></i><div class="seg-name">Sportbar</div><div class="seg-sub">Estadio · Venue</div></div>
+        <div class="seg-item"><i data-lucide="scissors"></i><div class="seg-name">Peluquería</div><div class="seg-sub">Servicios · Por hora</div></div>
+        <div class="seg-item"><i data-lucide="fish"></i><div class="seg-name">Pescadería</div><div class="seg-sub">Mariscos · Por kg</div></div>
+        <div class="seg-item"><i data-lucide="flower-2"></i><div class="seg-name">Floristería</div><div class="seg-sub">Flores · Decoración</div></div>
+        <div class="seg-item"><i data-lucide="pill"></i><div class="seg-name">Farmacia</div><div class="seg-sub">Medicamentos · Salud</div></div>
+        <div class="seg-item"><i data-lucide="ice-cream"></i><div class="seg-name">Heladería</div><div class="seg-sub">Helados · Por litro</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ESPECIFICACIONES -->
+<section class="specs-section" id="especificaciones">
+  <div class="container">
+    <div class="specs-grid">
+      <div class="specs-copy">
+        <div class="specs-badge"><i data-lucide="star"></i>Exclusivo en Venezuela</div>
+        <div class="sec-label reveal"><i data-lucide="sliders"></i>Especificaciones flexibles</div>
+        <h2 class="sec-title reveal">Cada producto como<br>realmente es.</h2>
+        <p class="sec-sub reveal">Ningún negocio vende igual. ActivoPOS se adapta a cómo tú trabajas — no al revés. Define las especificaciones que tiene sentido para tu producto: peso, talla, color, medida, tiempo, modelo.</p>
+        <div class="specs-tabs reveal">
+          <button class="spec-tab on" data-panel="ropa">Ropa</button>
+          <button class="spec-tab" data-panel="carne">Carnicería</button>
+          <button class="spec-tab" data-panel="servicio">Servicio</button>
+          <button class="spec-tab" data-panel="material">Ferretería</button>
+        </div>
+        <p class="sec-sub reveal" style="font-size:13px;margin-top:0;color:var(--text3)">El sistema calcula el precio final, descuenta el inventario y lo imprime en el ticket. Siempre en USD con equivalente en Bs al momento del cobro.</p>
+      </div>
+      <div class="reveal-r">
+
+        <!-- PANEL ROPA -->
+        <div class="specs-panel active" id="panel-ropa">
+          <div class="specs-demo">
+            <div class="sd-header">
+              <div class="sd-icon" style="background:rgba(37,99,235,.12);color:var(--brand-l)"><i data-lucide="shirt"></i></div>
+              <div>
+                <div class="sd-name">Camisa Polo</div>
+                <div class="sd-type">Producto físico · Tienda de ropa</div>
+                <div class="sd-price">$15.00 · <strong>Bs. <span class="bcv-spec">...</span></strong></div>
+              </div>
+            </div>
+            <div class="sd-specs">
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Talla</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt out">XS</div><div class="sd-opt">S</div>
+                  <div class="sd-opt on">M</div><div class="sd-opt">L</div>
+                  <div class="sd-opt">XL</div><div class="sd-opt out">XXL</div>
+                </div>
+              </div>
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Color</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt color-dot on" style="background:#1D4ED8"></div>
+                  <div class="sd-opt color-dot" style="background:#DC2626"></div>
+                  <div class="sd-opt color-dot" style="background:#1F2937"></div>
+                  <div class="sd-opt color-dot" style="background:#F9FAFB;border:1px solid #374151"></div>
+                </div>
+              </div>
+            </div>
+            <button class="sd-add"><i data-lucide="plus"></i>Agregar · Camisa M · Azul · $15.00</button>
+          </div>
+        </div>
+
+        <!-- PANEL CARNE -->
+        <div class="specs-panel" id="panel-carne">
+          <div class="specs-demo">
+            <div class="sd-header">
+              <div class="sd-icon" style="background:rgba(239,68,68,.12);color:#F87171"><i data-lucide="beef"></i></div>
+              <div>
+                <div class="sd-name">Lomo de Res</div>
+                <div class="sd-type">Vendido por peso · Carnicería</div>
+                <div class="sd-price">$8.50/kg · <strong>Bs. <span class="bcv-spec2">...</span>/kg</strong></div>
+              </div>
+            </div>
+            <div class="sd-specs">
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Cantidad (kg)</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt">0.25</div><div class="sd-opt">0.5</div>
+                  <div class="sd-opt on">1.0</div><div class="sd-opt">1.5</div><div class="sd-opt">2.0</div>
+                </div>
+              </div>
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Corte</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt on">Entero</div><div class="sd-opt">Molido</div><div class="sd-opt">Bistec</div>
+                </div>
+              </div>
+            </div>
+            <button class="sd-add"><i data-lucide="plus"></i>Agregar · Lomo 1.0kg Entero · $8.50</button>
+          </div>
+        </div>
+
+        <!-- PANEL SERVICIO -->
+        <div class="specs-panel" id="panel-servicio">
+          <div class="specs-demo">
+            <div class="sd-header">
+              <div class="sd-icon" style="background:rgba(245,158,11,.12);color:var(--warning)"><i data-lucide="zap"></i></div>
+              <div>
+                <div class="sd-name">Instalación Eléctrica</div>
+                <div class="sd-type">Servicio · Cotización con mano de obra</div>
+                <div class="sd-price">Desde $25.00/hora · <strong>Bs. <span class="bcv-spec3">...</span>/h</strong></div>
+              </div>
+            </div>
+            <div class="sd-specs">
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Tipo de servicio</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt on">Residencial</div><div class="sd-opt">Comercial</div><div class="sd-opt">Industrial</div>
+                </div>
+              </div>
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Horas estimadas</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt">1h</div><div class="sd-opt on">2h</div>
+                  <div class="sd-opt">4h</div><div class="sd-opt">Día completo</div>
+                </div>
+              </div>
+            </div>
+            <button class="sd-add"><i data-lucide="file-text"></i>Generar cotización · 2h Residencial · $50.00</button>
+          </div>
+        </div>
+
+        <!-- PANEL MATERIAL -->
+        <div class="specs-panel" id="panel-material">
+          <div class="specs-demo">
+            <div class="sd-header">
+              <div class="sd-icon" style="background:rgba(16,185,129,.12);color:var(--success)"><i data-lucide="ruler"></i></div>
+              <div>
+                <div class="sd-name">Tubo PVC</div>
+                <div class="sd-type">Vendido por metro · Ferretería</div>
+                <div class="sd-price">$1.20/m · <strong>Bs. <span class="bcv-spec4">...</span>/m</strong></div>
+              </div>
+            </div>
+            <div class="sd-specs">
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Diámetro</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt">½"</div><div class="sd-opt on">¾"</div>
+                  <div class="sd-opt">1"</div><div class="sd-opt">2"</div>
+                </div>
+              </div>
+              <div class="sd-spec-row">
+                <div class="sd-spec-label">Metros</div>
+                <div class="sd-spec-opts">
+                  <div class="sd-opt">1m</div><div class="sd-opt">2m</div>
+                  <div class="sd-opt on">3m</div><div class="sd-opt">6m</div>
+                </div>
+              </div>
+            </div>
+            <button class="sd-add"><i data-lucide="plus"></i>Agregar · Tubo ¾" × 3m · $3.60</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAIN -->
+<section class="pain">
+  <div class="container">
+    <div class="sec-label reveal"><i data-lucide="alert-triangle"></i>El problema que nadie dice en voz alta</div>
+    <h2 class="sec-title reveal">Tu negocio factura.<br>Pero lo controlas con papel.</h2>
+    <p class="sec-sub reveal">No es culpa tuya. Los sistemas que existen o son caros, o no entienden Venezuela, o son tan complicados que el cajero no los usa.</p>
+    <div class="pain-list reveal">
+      <div class="pain-row">
+        <div class="pain-num">01</div>
+        <div class="pain-body">
+          <div class="pain-title">No sabes cuánto vendiste hasta cerrar el día</div>
+          <p class="pain-desc">El cuaderno registra pero no suma. Para saber el total alguien tiene que calcularlo todo a mano — y ese alguien casi siempre eres tú.</p>
+        </div>
+        <span class="pain-cost pc-r"><i data-lucide="clock"></i>Costo: tiempo y control</span>
+      </div>
+      <div class="pain-row">
+        <div class="pain-num">02</div>
+        <div class="pain-body">
+          <div class="pain-title">El BCV cambia y tú actualizas precios a mano</div>
+          <p class="pain-desc">Cada vez que sube el dólar alguien recalcula los precios en bolívares. Si nadie lo hace, vendes barato sin darte cuenta.</p>
+        </div>
+        <span class="pain-cost pc-a"><i data-lucide="trending-down"></i>Costo: margen invisible</span>
+      </div>
+      <div class="pain-row">
+        <div class="pain-num">03</div>
+        <div class="pain-body">
+          <div class="pain-title">Respondes WhatsApps con precios todo el día</div>
+          <p class="pain-desc">Uno a uno, con fotos, con precios escritos a mano. Todo eso es trabajo que no cobras y tiempo que no tienes.</p>
+        </div>
+        <span class="pain-cost pc-b"><i data-lucide="message-circle"></i>Costo: ventas que no cierran</span>
+      </div>
+      <div class="pain-row">
+        <div class="pain-num">04</div>
+        <div class="pain-body">
+          <div class="pain-title">Tu sistema no fue hecho para Venezuela</div>
+          <p class="pain-desc">Sin BCV nativo. Sin Pago Móvil. Una sola moneda. Te cobran desde otro país y el soporte contesta en tres días.</p>
+        </div>
+        <span class="pain-cost pc-p"><i data-lucide="globe-2"></i>Costo: plata y paciencia</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REFRAME -->
+<section class="reframe">
+  <div class="container">
+    <div style="max-width:800px">
+      <div class="sec-label reveal"><i data-lucide="lightbulb"></i>Lo que realmente necesitas</div>
+      <h2 class="sec-title reveal">Un sistema que trabaje<br>como trabaja tu negocio.</h2>
+      <div class="reframe-callout reveal">
+        <p>Si el cuaderno te ayuda a <strong>contar la plata al final del día</strong>,<br>ActivoPOS te ayuda a <strong>multiplicarla mientras el día ocurre.</strong></p>
+      </div>
+      <div class="compare-wrap reveal">
+        <div class="bef">
+          <div class="compare-head"><i data-lucide="x-circle"></i>Sin ActivoPOS</div>
+          <div class="compare-row"><i data-lucide="x"></i>Ventas anotadas en cuaderno o Excel</div>
+          <div class="compare-row"><i data-lucide="x"></i>BCV calculado a mano cada día</div>
+          <div class="compare-row"><i data-lucide="x"></i>Sin especificaciones por producto</div>
+          <div class="compare-row"><i data-lucide="x"></i>WhatsApps con precios uno a uno</div>
+          <div class="compare-row"><i data-lucide="x"></i>Cotizaciones de servicios en papel</div>
+          <div class="compare-row"><i data-lucide="x"></i>Sin Pago Móvil ni USDT nativo</div>
+        </div>
+        <div class="aft">
+          <div class="compare-head"><i data-lucide="check-circle"></i>Con ActivoPOS</div>
+          <div class="compare-row"><i data-lucide="check"></i>Cada venta registrada al instante en USD y Bs</div>
+          <div class="compare-row"><i data-lucide="check"></i>BCV actualizado automáticamente, siempre</div>
+          <div class="compare-row"><i data-lucide="check"></i>Especificaciones flexibles por producto o servicio</div>
+          <div class="compare-row"><i data-lucide="check"></i>Catálogo activo 24/7 con pedidos por WhatsApp</div>
+          <div class="compare-row"><i data-lucide="check"></i>Cotizaciones digitales con mano de obra e insumos</div>
+          <div class="compare-row"><i data-lucide="check"></i>Pago Móvil, Zelle, Efectivo, USDT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BCV BAND -->
+<section class="bcv-band">
+  <div class="container">
+    <div class="bcv-inner">
+      <div class="bcv-text reveal-l">
+        <div class="sec-label"><i data-lucide="refresh-cw"></i>Tasa BCV automática</div>
+        <h2 class="sec-title" style="max-width:400px">Nunca más calcules bolívares a mano.</h2>
+        <p class="sec-sub" style="font-size:15px">ActivoPOS actualiza la tasa BCV y la congela en cada venta. El historial siempre en USD, la conversión siempre exacta. Tú te concentras en vender.</p>
+      </div>
+      <div class="bcv-widget reveal-r">
+        <div class="bcv-live-row"><div class="bcv-live-dot"></div>BCV en vivo</div>
+        <div class="bcv-rate-big">1 USD = Bs. <span id="bcv-widget">...</span></div>
+        <div class="bcv-rate-sub" id="bcv-fecha">Consultando tasa oficial...</div>
+        <div class="bcv-times">
+          <div class="bcv-time"><i data-lucide="refresh-cw"></i>Actualización automática</div>
+          <div class="bcv-time"><i data-lucide="lock"></i>Congelada en cada venta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ECOSYSTEM -->
+<section class="ecosystem" id="ecosystem">
+  <div class="container">
+    <div class="sec-label reveal"><i data-lucide="layers"></i>El ecosistema</div>
+    <h2 class="sec-title reveal">No compras software.<br>Compras una progresión.</h2>
+    <p class="sec-sub reveal">Empiezas con el mostrador. Cuando estés listo, abres el catálogo digital. Cuando quieras crecer, activas el pulso del negocio.</p>
+    <div class="eco-grid reveal">
+
+      <div class="eco-col d1">
+        <div class="eco-layer"><i data-lucide="monitor"></i>Capa 1 · Núcleo</div>
+        <div class="eco-icon"><i data-lucide="monitor" style="width:22px;height:22px"></i></div>
+        <div class="eco-title">ActivoPOS</div>
+        <div class="eco-promise">Domina tu mostrador</div>
+        <p class="eco-desc">POS completo con caja, inventario, especificaciones de producto, clientes y cierre del día. Deja de operar a ciegas.</p>
+        <ul class="eco-feats">
+          <li><i data-lucide="check"></i>POS táctil en cualquier pantalla</li>
+          <li><i data-lucide="check"></i>BCV automático en cada cobro</li>
+          <li><i data-lucide="check"></i>Especificaciones: talla, peso, medida, tiempo</li>
+          <li><i data-lucide="check"></i>Pago Móvil, Zelle, Efectivo, USDT</li>
+          <li><i data-lucide="check"></i>Cotización de servicios con mano de obra</li>
+        </ul>
+      </div>
+
+      <div class="eco-col feat d2">
+        <div class="eco-layer"><i data-lucide="shopping-bag"></i>Capa 2 · Digital</div>
+        <div class="eco-icon"><i data-lucide="shopping-bag" style="width:22px;height:22px"></i></div>
+        <div class="eco-title">Catálogo Activo</div>
+        <div class="eco-promise">Tu mostrador abierto 24/7</div>
+        <p class="eco-desc">Vitrina web conectada al inventario del POS en tiempo real. Pedidos por WhatsApp, con delivery, sin mover un dedo. Tu código QR propio para compartir donde quieras.</p>
+        <ul class="eco-feats">
+          <li><i data-lucide="check"></i>tutienda.activopos.com</li>
+          <li><i data-lucide="check"></i>Inventario sincronizado automáticamente</li>
+          <li><i data-lucide="check"></i>Pedidos directo al WhatsApp del negocio</li>
+          <li><i data-lucide="check"></i>Delivery con zonas y precios configurables</li>
+          <li><i data-lucide="check"></i>QR propio para imprimir, compartir o publicar</li>
+        </ul>
+      </div>
+
+      <div class="eco-col d3">
+        <div class="eco-layer"><i data-lucide="activity"></i>Capa 3 · Inteligencia</div>
+        <div class="eco-icon"><i data-lucide="activity" style="width:22px;height:22px"></i></div>
+        <div class="eco-title">Pulso del Negocio</div>
+        <div class="eco-promise">Lo que tu catálogo ve, tú lo sabes</div>
+        <p class="eco-desc">Tu QR rastrea cada escaneo. Tu catálogo registra cada clic. Sabes qué producto está caliente antes de que se agote y qué casi compraron pero no cerraron.</p>
+        <ul class="eco-feats">
+          <li><i data-lucide="check"></i>Escaneos de QR por día y por fuente</li>
+          <li><i data-lucide="check"></i>Productos más vistos vs más vendidos</li>
+          <li><i data-lucide="check"></i>Intención de compra sin conversión</li>
+          <li><i data-lucide="check"></i>Único en Venezuela</li>
+        </ul>
+        <div class="qr-demo">
+          <div class="qr-box">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="10" width="30" height="30" rx="3" fill="none" stroke="#000" stroke-width="6"/>
+              <rect x="18" y="18" width="14" height="14" fill="#000"/>
+              <rect x="60" y="10" width="30" height="30" rx="3" fill="none" stroke="#000" stroke-width="6"/>
+              <rect x="68" y="18" width="14" height="14" fill="#000"/>
+              <rect x="10" y="60" width="30" height="30" rx="3" fill="none" stroke="#000" stroke-width="6"/>
+              <rect x="18" y="68" width="14" height="14" fill="#000"/>
+              <rect x="60" y="55" width="8" height="8" fill="#000"/>
+              <rect x="72" y="55" width="8" height="8" fill="#000"/>
+              <rect x="84" y="55" width="8" height="8" fill="#000"/>
+              <rect x="60" y="67" width="8" height="8" fill="#000"/>
+              <rect x="76" y="67" width="16" height="8" fill="#000"/>
+              <rect x="60" y="79" width="8" height="8" fill="#000"/>
+              <rect x="72" y="79" width="8" height="8" fill="#000"/>
+              <rect x="84" y="79" width="8" height="8" fill="#000"/>
+              <rect x="44" y="10" width="8" height="8" fill="#000"/>
+              <rect x="44" y="22" width="8" height="8" fill="#000"/>
+              <rect x="44" y="44" width="8" height="8" fill="#000"/>
+              <rect x="44" y="56" width="8" height="8" fill="#000"/>
+              <rect x="44" y="68" width="8" height="8" fill="#000"/>
+              <rect x="44" y="80" width="8" height="8" fill="#000"/>
+            </svg>
+          </div>
+          <div class="qr-info">
+            <div class="qr-url">tucafe.activopos.com</div>
+            <div class="qr-desc">QR propio · rastrea cada escaneo</div>
+          </div>
+        </div>
+        <div class="qr-stats">
+          <div class="qr-stat"><div class="qr-stat-n">247</div><div class="qr-stat-l">Escaneos hoy</div></div>
+          <div class="qr-stat"><div class="qr-stat-n">18</div><div class="qr-stat-l">Pedidos</div></div>
+          <div class="qr-stat"><div class="qr-stat-n">73%</div><div class="qr-stat-l">Conversión</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <div class="pricing-head">
+      <div class="sec-label reveal" style="justify-content:center"><i data-lucide="package"></i>Planes</div>
+      <h2 class="sec-title reveal" style="text-align:center">Empieza donde estás.<br>Escala cuando quieras.</h2>
+      <p class="sec-sub reveal" style="text-align:center;margin:12px auto 0;max-width:440px">Escríbenos y te explicamos todo en menos de 24 horas. Sin contratos anuales, sin letras pequeñas.</p>
+    </div>
+    <div class="pricing-grid reveal">
+
+      <div class="p-col d1">
+        <div class="p-head">
+          <div class="p-tier">Plan 1</div>
+          <div class="p-name">Mostrador<br>activado</div>
+          <div class="p-tagline"><i data-lucide="zap"></i>Deja el papel hoy mismo</div>
+          <p class="p-desc">Para el negocio que quiere control real desde el primer día. Ventas, inventario, especificaciones y caja — todo en una sola pantalla.</p>
+        </div>
+        <div class="p-divider"></div>
+        <ul class="p-feats">
+          <li><i data-lucide="check"></i>POS táctil completo</li>
+          <li><i data-lucide="check"></i>Especificaciones por producto: peso, talla, color, medida, tiempo y más</li>
+          <li><i data-lucide="check"></i>Cotización de servicios con mano de obra</li>
+          <li><i data-lucide="check"></i>Inventario con alertas de stock</li>
+          <li><i data-lucide="check"></i>BCV automático en cada cobro</li>
+          <li><i data-lucide="check"></i>Pago Móvil, Zelle, Efectivo, USDT</li>
+        </ul>
+        <a href="https://wa.me/584222654827?text=Hola%2C+me+interesa+el+plan+Mostrador+de+ActivoPOS" target="_blank" class="p-cta">
+          <i data-lucide="message-circle"></i>Consultar por WhatsApp
+        </a>
+      </div>
+
+      <div class="p-col feat d2">
+        <div class="p-badge">Más popular</div>
+        <div class="p-head">
+          <div class="p-tier">Plan 2</div>
+          <div class="p-name">Catálogo<br>en la calle</div>
+          <div class="p-tagline"><i data-lucide="globe"></i>Tu negocio abierto 24/7</div>
+          <p class="p-desc">El POS completo más tu vitrina digital que recibe pedidos por WhatsApp con delivery mientras tú duermes. Tu QR propio para compartir donde quieras.</p>
+        </div>
+        <div class="p-divider"></div>
+        <ul class="p-feats">
+          <li><i data-lucide="check"></i>Todo lo del plan Mostrador</li>
+          <li><i data-lucide="check"></i>Vitrina web tutienda.activopos.com</li>
+          <li><i data-lucide="check"></i>Inventario sincronizado en tiempo real</li>
+          <li><i data-lucide="check"></i>Pedidos y delivery por WhatsApp</li>
+          <li><i data-lucide="check"></i>QR propio para imprimir, compartir o publicar</li>
+          <li><i data-lucide="check"></i>Múltiples cajeros con roles diferenciados</li>
+        </ul>
+        <a href="https://wa.me/584222654827?text=Hola%2C+me+interesa+el+plan+Cat%C3%A1logo+de+ActivoPOS" target="_blank" class="p-cta">
+          <i data-lucide="message-circle"></i>Activar mi catálogo
+        </a>
+      </div>
+
+      <div class="p-col d3">
+        <div class="p-head">
+          <div class="p-tier">Plan 3</div>
+          <div class="p-name">Pulso<br>del negocio</div>
+          <div class="p-tagline"><i data-lucide="activity"></i>Lo que tu catálogo ve, tú lo sabes</div>
+          <p class="p-desc">Para el negocio que quiere entender a sus clientes. Tu QR rastrea cada escaneo, tu catálogo registra cada clic — sabes qué está caliente antes de que se agote.</p>
+        </div>
+        <div class="p-divider"></div>
+        <ul class="p-feats">
+          <li><i data-lucide="check"></i>Todo lo del plan Catálogo</li>
+          <li><i data-lucide="check"></i>Escaneos de QR por día y por fuente</li>
+          <li><i data-lucide="check"></i>Productos más vistos vs más vendidos</li>
+          <li><i data-lucide="check"></i>Intención de compra sin conversión detectada</li>
+          <li><i data-lucide="check"></i>Dashboard de comportamiento digital</li>
+          <li><i data-lucide="check"></i>Único en Venezuela</li>
+        </ul>
+        <a href="https://wa.me/584222654827?text=Hola%2C+me+interesa+el+plan+Pulso+de+ActivoPOS" target="_blank" class="p-cta">
+          <i data-lucide="message-circle"></i>Quiero saber más
+        </a>
+      </div>
+
+    </div>
+    <div class="pricing-note reveal">¿Tienes un sportbar, estadio o venue? <a href="https://wa.me/584222654827?text=Hola%2C+tengo+un+venue+y+quiero+info+de+ActivoPOS" target="_blank">Hablemos directamente →</a></div>
+  </div>
+</section>
+
+<!-- PROOF -->
+<section class="proof">
+  <div class="container">
+    <div class="sec-label reveal" style="justify-content:center"><i data-lucide="star"></i>Primeros en usarlo</div>
+    <h2 class="sec-title reveal" style="text-align:center;margin:0 auto">Lo que dicen quienes<br>ya lo tienen activo.</h2>
+    <div class="proof-grid">
+      <div class="proof-card reveal d1">
+        <div class="proof-stars">
+          <i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i>
+        </div>
+        <p class="proof-text">"Antes respondía 40 mensajes al día con precios. Ahora les mando el QR y ellos mismos ven lo que hay. Los pedidos llegan solos al WhatsApp."</p>
+        <div class="proof-author"><div class="proof-av">D</div><div><div class="proof-name">Daniel A.</div><div class="proof-biz">Café · Margarita · Plan Catálogo</div></div></div>
+      </div>
+      <div class="proof-card reveal d2">
+        <div class="proof-stars">
+          <i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i>
+        </div>
+        <p class="proof-text">"El BCV se actualiza solo. Ya no llamo a nadie para cambiar los precios en bolívares. Eso solo ya valió la pena desde el primer día."</p>
+        <div class="proof-author"><div class="proof-av">M</div><div><div class="proof-name">María R.</div><div class="proof-biz">Bodega · Caracas · Plan Mostrador</div></div></div>
+      </div>
+      <div class="proof-card reveal d3">
+        <div class="proof-stars">
+          <i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i><i data-lucide="star" style="fill:var(--warning)"></i>
+        </div>
+        <p class="proof-text">"Vendo ropa y con las especificaciones de talla y color el cajero sabe exactamente qué salió. El inventario cuadra solo, sin contar a mano."</p>
+        <div class="proof-author"><div class="proof-av">L</div><div><div class="proof-name">Luisana V.</div><div class="proof-biz">Boutique · Valencia · Plan Catálogo</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta" id="final">
+  <h2 class="reveal">Tu negocio está activo.<br><em>Tu sistema también debería estarlo.</em></h2>
+  <p class="reveal">Un mensaje y en menos de 24 horas tienes la demo lista. Sin instalar nada. Sin compromisos.</p>
+  <div class="hero-actions reveal">
+    <a href="https://wa.me/584222654827?text=Hola%2C+quiero+activar+mi+negocio+con+ActivoPOS" target="_blank" class="btn-p">
+      <i data-lucide="message-circle" style="width:17px;height:17px"></i>Escríbenos por WhatsApp
+    </a>
+  </div>
+  <div class="trust-row reveal">
+    <span class="trust-item"><i data-lucide="check-circle"></i>Sin contrato anual</span>
+    <span class="trust-item"><i data-lucide="check-circle"></i>BCV nativo incluido</span>
+    <span class="trust-item"><i data-lucide="check-circle"></i>Especificaciones sin costo extra</span>
+    <span class="trust-item"><i data-lucide="check-circle"></i>Soporte en español</span>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo"><span class="fla">Activo</span><span class="flp">POS</span></div>
+  <div class="footer-copy">© 2026 ActivoPOS · activopos.com</div>
+  <div class="footer-synti">Parte del ecosistema <a href="https://syntiweb.com" target="_blank">synti.dev</a></div>
+</footer>
+
+<script>
+lucide.createIcons();
+
+// Reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)} });
+},{threshold:0.08,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el=>obs.observe(el));
+
+// Spotlight segmentos
+document.querySelectorAll('.seg-item').forEach(el => {
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', ((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    el.style.setProperty('--my', ((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  });
+});
+
+// Tabs de especificaciones
+document.querySelectorAll('.spec-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.spec-tab').forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('.specs-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('on');
+    document.getElementById('panel-'+tab.dataset.panel).classList.add('active');
+  });
+});
+
+// BCV LIVE
+(async function fetchBCV() {
+  const fmt = n => parseFloat(n).toLocaleString('es-VE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fallback = 592.51;
+
+  function applyRate(rate) {
+    const r = parseFloat(rate);
+    const els = {
+      'bcv-topbar': r, 'bcv-widget': r, 'bcv-hero': r,
+      'bcv-ticket': (68.84*r), 'bcv-variant': (15*r),
+    };
+    for(const [id,val] of Object.entries(els)){
+      const el = document.getElementById(id);
+      if(el) el.textContent = fmt(val);
+    }
+    // specs demos
+    document.querySelectorAll('.bcv-spec').forEach(el=>el.textContent=fmt(15*r));
+    document.querySelectorAll('.bcv-spec2').forEach(el=>el.textContent=fmt(8.5*r));
+    document.querySelectorAll('.bcv-spec3').forEach(el=>el.textContent=fmt(25*r));
+    document.querySelectorAll('.bcv-spec4').forEach(el=>el.textContent=fmt(1.2*r));
+  }
+
+  try {
+    const res = await fetch('/api/rates/bcv');
+    const data = await res.json();
+    if(data.ok && data.rate){
+      applyRate(data.rate);
+      const f = document.getElementById('bcv-fecha');
+      if(f) f.textContent = 'Oficial BCV · actualizado automáticamente';
+      return;
+    }
+  } catch(e){}
+
+  try {
+    const res = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+    const data = await res.json();
+    const rate = data.promedio || fallback;
+    applyRate(rate);
+    const f = document.getElementById('bcv-fecha');
+    if(f && data.fechaActualizacion){
+      const d = new Date(data.fechaActualizacion);
+      f.textContent = 'Oficial BCV · '+d.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric'});
+    }
+  } catch(e){ applyRate(fallback); }
+})();
+</script>
+</body>
+</html>

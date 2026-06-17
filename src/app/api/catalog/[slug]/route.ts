@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
+
+const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
 function parseImages(raw: string | null): string[] {
   if (!raw) return []
@@ -11,7 +14,12 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
-  const { slug } = params
+  const parsed = slugSchema.safeParse(params.slug)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })
+  }
+
+  const { data: slug } = parsed
 
   const business = await prisma.business.findFirst({
     where: { catalog_slug: slug, catalog_active: true, active: true },

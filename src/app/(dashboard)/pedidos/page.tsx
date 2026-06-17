@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
 import styles from './pedidos.module.css'
 
 /* ── Types ── */
@@ -214,6 +215,7 @@ function PedidosContent() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [dragOverCol, setDragOverCol] = useState<OrderStatus | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
   const draggingRef = useRef<Order | null>(null)
 
   const fetchOrders = useCallback(async () => {
@@ -330,6 +332,7 @@ function PedidosContent() {
           variant="primary"
           size="sm"
           leftIcon={<Plus size={14} aria-hidden="true" />}
+          onClick={() => setModalOpen(true)}
         >
           Nuevo Pedido
         </Button>
@@ -365,6 +368,15 @@ function PedidosContent() {
           </p>
         </div>
       )}
+
+      {/* Modal: Nuevo Pedido */}
+      <NuevoPedidoModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreated={(order: CreatedOrder) => {
+          setOrders((prev) => [order as Order, ...prev])
+        }}
+      />
     </div>
   )
 }

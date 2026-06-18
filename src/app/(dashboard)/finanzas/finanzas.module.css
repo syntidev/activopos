@@ -93,14 +93,25 @@
 }
 
 .summaryCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
   min-width: 180px;
+  box-shadow: var(--card-glow-shadow-dark);
 }
 
-.summaryDanger { border-color: var(--color-danger-border); }
+[data-theme="light"] .summaryCard,
+.light .summaryCard {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border-light) border-box;
+  box-shadow: var(--card-glow-shadow-light);
+}
+
+.summaryDanger { box-shadow: 0 0 14px rgba(239,68,68,0.15); }
 
 .summaryLabel {
   font-size: var(--text-xs);
@@ -158,9 +169,13 @@
 .cxcList {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--card-glow-shadow-dark);
 }
 
 .cxcRow {
@@ -235,10 +250,13 @@
 
 /* ── Estado de Resultados ── */
 .erCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-5);
+  box-shadow: var(--card-glow-shadow-dark);
 }
 
 .erTitle {

@@ -74,9 +74,9 @@
 
 .logoPos {
   font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-extrabold);
   letter-spacing: var(--tracking-tight);
-  color: var(--color-brand);
+  color: var(--sidebar-text-active);
 }
 
 /* ── Divider ── */
@@ -162,15 +162,23 @@
   outline-offset: -2px;
 }
 
-/* ── Active state ── */
+/* ── Active state — gradient gives depth vs flat fill ── */
 .navItemActive {
   color: var(--sidebar-text-active);
-  background-color: var(--sidebar-item-bg-active);
+  background: linear-gradient(
+    to right,
+    rgba(var(--accent-rgb), 0.22) 0%,
+    rgba(var(--accent-rgb), 0.07) 100%
+  );
   border-left-color: var(--sidebar-item-border-active);
 }
 
 .navItemActive:hover {
-  background-color: var(--sidebar-item-bg-active);
+  background: linear-gradient(
+    to right,
+    rgba(var(--accent-rgb), 0.26) 0%,
+    rgba(var(--accent-rgb), 0.10) 100%
+  );
   color: var(--sidebar-text-active);
 }
 

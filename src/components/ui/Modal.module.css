@@ -10,12 +10,14 @@
   padding: 16px;
 }
 
-/* ── Modal box ── */
+/* ── Modal box — A+C Glow ── */
 .modal {
-  background: var(--color-surface);
-  border: var(--border-width-thin) solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-2xl);
+  box-shadow: var(--shadow-2xl), var(--card-glow-shadow-dark);
   width: 100%;
   max-width: 560px;
   max-height: calc(100vh - 32px);
@@ -23,6 +25,14 @@
   flex-direction: column;
   overflow: hidden;
   will-change: opacity, transform;
+}
+
+[data-theme="light"] .modal,
+.light .modal {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border-light) border-box;
+  box-shadow: var(--shadow-2xl), var(--card-glow-shadow-light);
 }
 
 /* ── Size variants ── */

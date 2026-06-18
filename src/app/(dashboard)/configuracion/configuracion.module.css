@@ -94,13 +94,28 @@
   margin-top: var(--space-1);
 }
 
-/* ── Form cards ── */
+/* ── Form cards — A+C Glow ── */
 .formCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   margin-bottom: var(--space-6);
+  box-shadow: var(--card-glow-shadow-dark);
+}
+
+[data-theme="light"] .formCard,
+.light .formCard {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.4),
+      rgba(255,255,255,0.2),
+      rgba(var(--accent-rgb), 0.1)
+    ) border-box;
+  box-shadow: var(--card-glow-shadow-light);
 }
 
 .formCardTitle {
@@ -461,13 +476,24 @@
 }
 
 .summaryCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  box-shadow: var(--card-glow-shadow-dark);
+}
+
+[data-theme="light"] .summaryCard,
+.light .summaryCard {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border-light) border-box;
+  box-shadow: var(--card-glow-shadow-light);
 }
 
 .summaryCount {

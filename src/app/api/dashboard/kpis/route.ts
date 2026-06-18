@@ -204,19 +204,25 @@ export async function GET(req: NextRequest) {
     },
     cxc_alertas: cxcRows.map(row => {
       const vencimientoMs = new Date(row.created_at).getTime() + 30 * 86_400_000
+      const tusd = parseFloat(String(row.total_usd))
       return {
         client_name:  row.client_name ?? 'Sin nombre',
-        total_usd:    parseFloat(String(row.total_usd)),
+        total_usd:    tusd,
+        total_bs:     r2(tusd * rate),
         vencimiento:  new Date(vencimientoMs).toISOString().split('T')[0],
         dias_vencido: Math.max(0, Math.floor((nowMs - vencimientoMs) / 86_400_000)),
       }
     }),
-    top_productos: topProductsRows.map((p, i) => ({
-      name:      p.name,
-      qty:       parseFloat(String(p.qty)),
-      total_usd: parseFloat(String(p.total_usd)),
-      rank:      i + 1,
-    })),
+    top_productos: topProductsRows.map((p, i) => {
+      const tusd = parseFloat(String(p.total_usd))
+      return {
+        name:      p.name,
+        qty:       parseFloat(String(p.qty)),
+        total_usd: tusd,
+        total_bs:  r2(tusd * rate),
+        rank:      i + 1,
+      }
+    }),
     ventas_por_metodo: methodsRows.map(m => ({
       method_name: m.method_name,
       total_usd:   parseFloat(String(m.total_usd)),

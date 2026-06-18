@@ -398,8 +398,8 @@ function ReportesContent() {
       }
 
       /* ── Table ── */
-      const headers  = ['Fecha', 'Orden', 'Cliente', 'Método de pago', 'Total USD', 'Estado']
-      const colW     = [40, 18, 55, 55, 30, 24]
+      const headers  = ['Fecha', 'Orden', 'Cliente', 'Método de pago', 'Total USD', 'Total Bs', 'Estado']
+      const colW     = [36, 16, 48, 48, 26, 34, 19]
       let y          = pagination.pages > 1 ? 44 : 39
 
       doc.setFillColor(30, 30, 30)
@@ -433,7 +433,8 @@ function ReportesContent() {
           doc.rect(m, y - 4, pw - m * 2, 6.5, 'F')
         }
 
-        const cells = [dateS, `#${sale.id}`, client, method, `$${Number(sale.total_usd).toFixed(2)}`, status]
+        const bsVal = Number(sale.total_bs).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        const cells = [dateS, `#${sale.id}`, client, method, `$${Number(sale.total_usd).toFixed(2)}`, `Bs.${bsVal}`, status]
         x = m
         for (let i = 0; i < cells.length; i++) {
           const cell = String(cells[i])

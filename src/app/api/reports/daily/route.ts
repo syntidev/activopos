@@ -12,6 +12,8 @@ type TopProductRow = {
   total_usd: string | number
 }
 
+type RateRow = { rate: string | number }
+
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
   const dayStart = new Date(year, month - 1, day)
   const dayEnd = new Date(dayStart.getTime() + 86_400_000)
 
-  const [salesAgg, payments, topProductsRaw] = await Promise.all([
+  const [salesAgg, payments, topProductsRaw, rateRows] = await Promise.all([
     prisma.sale.aggregate({
       where: {
         business_id: session.businessId,
@@ -63,6 +65,7 @@ export async function GET(req: NextRequest) {
       ORDER BY total_usd DESC
       LIMIT 5
     `,
+    prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
   ])
 
   const pmMap = new Map<
@@ -88,18 +91,26 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const rate = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
+  const r2   = (x: number) => Math.round(x * 100) / 100
+
   return NextResponse.json({
     ok: true,
     date: dateStr,
+    rate,
     salesCount: salesAgg._count.id,
     totalUsd: Number(salesAgg._sum.total_usd ?? 0),
     totalBs: Number(salesAgg._sum.total_bs ?? 0),
     byPaymentMethod: Array.from(pmMap.values()),
-    topProducts: topProductsRaw.map(p => ({
-      productId: Number(p.product_id),
-      name: p.product_name,
-      quantity: Number(p.quantity),
-      totalUsd: Number(p.total_usd),
-    })),
+    topProducts: topProductsRaw.map(p => {
+      const tusd = Number(p.total_usd)
+      return {
+        productId: Number(p.product_id),
+        name: p.product_name,
+        quantity: Number(p.quantity),
+        totalUsd: tusd,
+        totalBs: r2(tusd * rate),
+      }
+    }),
   })
 }

@@ -3,9 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { z } from 'zod'
 
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
+
 const categorySchema = z.object({
-  name: z.string().min(1).max(80),
-  color: z.string().max(20).nullable().optional(),
+  name:       z.string().min(1).max(80),
+  color:      z.string().regex(HEX_COLOR).nullable().optional(),
   sort_order: z.number().int().default(0),
 })
 
@@ -27,7 +29,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  if (!['admin', 'super_admin'].includes(session.role)) {
+    return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  }
 
   try {
     const body = await req.json()

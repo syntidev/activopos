@@ -153,6 +153,7 @@ model Category {
   business Business  @relation(fields: [business_id], references: [id])
   products Product[]
 
+  @@unique([business_id, name], name: "name_business")
   @@map("categories")
 }
 

@@ -93,11 +93,10 @@ async function main() {
 
   const catIds: Record<string, number> = {}
   for (const def of categoryDefs) {
-    const existing = await prisma.category.findFirst({
-      where: { business_id: business.id, name: def.name },
-    })
-    const cat = existing ?? await prisma.category.create({
-      data: { business_id: business.id, ...def },
+    const cat = await prisma.category.upsert({
+      where:  { name_business: { business_id: business.id, name: def.name } },
+      update: { color: def.color, sort_order: def.sort_order },
+      create: { business_id: business.id, ...def },
     })
     catIds[def.name] = cat.id
   }

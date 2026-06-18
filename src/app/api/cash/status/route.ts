@@ -32,10 +32,7 @@ export async function GET() {
     prisma.saleAbono.aggregate({
       where: {
         created_at: { gte: register.opened_at },
-        sale: {
-          business_id: session.businessId,
-          sold_at: { gte: register.opened_at },
-        },
+        sale: { business_id: session.businessId },
       },
       _sum: { amount_usd: true, amount_bs: true },
       _count: { _all: true },

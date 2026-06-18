@@ -15,12 +15,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const dbTheme = business?.theme === 'light' ? 'light' : 'dark'
 
   return (
-    <>
-      {/* Runs before first paint — prevents theme flash */}
+    <div id="dashboard-root" data-theme={dbTheme} suppressHydrationWarning>
+      {/* Applies client theme preference before first paint — scoped to dashboard only */}
       <script dangerouslySetInnerHTML={{
-        __html: `(function(){var ls=localStorage.getItem('activopos_theme');var t=(ls==='dark'||ls==='light')?ls:'${dbTheme}';document.documentElement.setAttribute('data-theme',t);})()`,
+        __html: `(function(){var ls=localStorage.getItem('activopos_theme');var t=(ls==='dark'||ls==='light')?ls:'${dbTheme}';var el=document.getElementById('dashboard-root');if(el)el.setAttribute('data-theme',t);})()`,
       }} />
       <DashboardShell session={session}>{children}</DashboardShell>
-    </>
+    </div>
   )
 }

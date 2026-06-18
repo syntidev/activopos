@@ -37,7 +37,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
     const saved = localStorage.getItem('activopos_theme') as 'dark' | 'light' | null
     const initial = saved === 'light' ? 'light' : 'dark'
     setTheme(initial)
-    document.documentElement.setAttribute('data-theme', initial)
+    document.getElementById('dashboard-root')?.setAttribute('data-theme', initial)
   }, [])
 
   /* ── BCV polling every 5 min ── */
@@ -65,7 +65,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
   const handleToggleTheme = useCallback(() => {
     setTheme((current) => {
       const next = current === 'dark' ? 'light' : 'dark'
-      document.documentElement.setAttribute('data-theme', next)
+      document.getElementById('dashboard-root')?.setAttribute('data-theme', next)
       localStorage.setItem('activopos_theme', next)
       return next
     })

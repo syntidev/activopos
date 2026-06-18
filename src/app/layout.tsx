@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import '@/styles/globals.css'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -39,40 +37,13 @@ export const metadata: Metadata = {
   },
 }
 
-const VALID_THEMES = new Set(['default', 'premium', 'calle', 'tropical', 'dark', 'light'])
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // Best-effort: read theme from DB to set correct data-theme server-side
-  // Falls back to 'default'; localStorage override fires via inline script
-  let dbTheme = 'default'
-  try {
-    const session = await getSession()
-    if (session?.businessId) {
-      const biz = await prisma.business.findUnique({
-        where:  { id: session.businessId },
-        select: { theme: true },
-      })
-      if (biz?.theme && VALID_THEMES.has(biz.theme)) {
-        dbTheme = biz.theme
-      }
-    }
-  } catch {
-    // Silent fallback — localStorage inline script handles client-side
-  }
-
   return (
-    <html lang="es" data-theme={dbTheme} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('activopos_theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`,
-          }}
-        />
-      </head>
+    <html lang="es" data-theme="dark" suppressHydrationWarning>
       <body className={inter.variable}>{children}</body>
     </html>
   )

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Plus, ImagePlus, Loader2, Layers, Globe } from 'lucide-react'
+import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star } from 'lucide-react'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
 import styles from './ProductModal.module.css'
@@ -28,6 +28,9 @@ export interface ProductFormData {
   hasVariants: boolean
   images: string[]
   variants: ProductVariantInput[]
+  badge: string
+  subcategory: string
+  isFeatured: boolean
 }
 
 export interface ModalCategory {
@@ -49,6 +52,9 @@ export interface EditableProduct {
   has_variants?: boolean
   images?: string[]
   variants?: ProductVariantInput[]
+  badge?: string | null
+  subcategory?: string | null
+  is_featured?: boolean
 }
 
 interface ProductModalProps {
@@ -110,6 +116,9 @@ export function ProductModal({
   const [variants, setVariants]       = useState<ProductVariantInput[]>([])
   const [newVarName, setNewVarName]   = useState('')
   const [newVarExtra, setNewVarExtra] = useState('')
+  const [badge, setBadge]             = useState('none')
+  const [subcategory, setSubcategory] = useState('')
+  const [isFeatured, setIsFeatured]   = useState(false)
 
   const imgRef0 = useRef<HTMLInputElement>(null)
   const imgRef1 = useRef<HTMLInputElement>(null)
@@ -125,6 +134,7 @@ export function ProductModal({
       setIsSaving(false); setImages([null, null, null]); setIsAvailable(true)
       setCatalogVisible(false); setHasVariants(false); setVariants([])
       setNewVarName(''); setNewVarExtra('')
+      setBadge('none'); setSubcategory(''); setIsFeatured(false)
       return
     }
 
@@ -141,6 +151,10 @@ export function ProductModal({
       const loadedImgs: Array<string | null> = [null, null, null]
       editProduct.images?.forEach((url, i) => { if (i < 3) loadedImgs[i] = url })
       setImages(loadedImgs)
+
+      setBadge(editProduct.badge ?? 'none')
+      setSubcategory(editProduct.subcategory ?? '')
+      setIsFeatured(editProduct.is_featured ?? false)
 
       const c = editProduct.cost_per_unit_usd ?? 0
       const p = editProduct.price_per_unit_usd
@@ -243,6 +257,9 @@ export function ProductModal({
         hasVariants,
         images:   images.filter((u): u is string => u !== null),
         variants,
+        badge,
+        subcategory:  subcategory.trim(),
+        isFeatured,
       })
     } catch {
       setErrors({ submit: 'Error al guardar. Intenta de nuevo.' })
@@ -418,6 +435,60 @@ export function ProductModal({
                       <Plus size={12} aria-hidden="true" />
                       Nueva Categoría
                     </button>
+                  </div>
+
+                  {/* ── Subcategoría ── */}
+                  <div className={mStyles.formGroup}>
+                    <label className={mStyles.label} htmlFor="pm-subcategory">Subcategoría</label>
+                    <input
+                      id="pm-subcategory"
+                      type="text"
+                      className={mStyles.input}
+                      placeholder="Ej: Camisas, Collares, Snacks, etc."
+                      value={subcategory}
+                      onChange={(e) => setSubcategory(e.target.value)}
+                      maxLength={60}
+                    />
+                  </div>
+
+                  {/* ── Badge ── */}
+                  <div className={mStyles.formGroup}>
+                    <label className={mStyles.label} htmlFor="pm-badge">Badge en catálogo</label>
+                    <select
+                      id="pm-badge"
+                      className={mStyles.select}
+                      value={badge}
+                      onChange={(e) => setBadge(e.target.value)}
+                    >
+                      <option value="none">Sin badge</option>
+                      <option value="popular">Popular</option>
+                      <option value="nuevo">Nuevo</option>
+                      <option value="promo">Promo</option>
+                      <option value="recomendado">Recomendado</option>
+                    </select>
+                  </div>
+
+                  {/* ── Toggle: Destacado ── */}
+                  <div className={styles.fixedPriceRow}>
+                    <div className={styles.fixedPriceLabel}>
+                      <Star size={14} className={styles.toggleIcon} aria-hidden="true" />
+                      <div>
+                        <span className={styles.fixedPriceTitle}>Destacado</span>
+                        <span className={styles.fixedPriceSub}>
+                          Aparece primero en el catálogo público
+                        </span>
+                      </div>
+                    </div>
+                    <label className={styles.toggle} aria-label="Destacado">
+                      <input
+                        type="checkbox"
+                        className={styles.toggleInput}
+                        checked={isFeatured}
+                        onChange={(e) => setIsFeatured(e.target.checked)}
+                      />
+                      <span className={styles.toggleTrack} />
+                      <span className={styles.toggleThumb} />
+                    </label>
                   </div>
 
                   {/* ── Toggle: Disponible para venta ── */}

@@ -46,6 +46,11 @@ interface Product {
   image_path?: string | null
   is_available?: boolean
   has_variants?: boolean
+  show_in_catalog?: boolean
+  images?: string[] | null
+  badge?: string | null
+  subcategory?: string | null
+  is_featured?: boolean
 }
 
 /* ── Helpers ── */
@@ -222,9 +227,12 @@ export default function ProductosPage() {
         cost_per_unit_usd:  data.costPerUnitUsd,
         price_per_unit_usd: data.pricePerUnitUsd,
         is_available:       data.isAvailable,
-        catalog_visible:    data.catalogVisible,
+        show_in_catalog:    data.catalogVisible,
         has_variants:       data.hasVariants,
         images:             data.images,
+        badge:              data.badge || 'none',
+        subcategory:        data.subcategory || null,
+        is_featured:        data.isFeatured,
         ...(isEdit ? {} : { stock_quantity: data.stockInitial }),
       }),
     })
@@ -314,7 +322,12 @@ export default function ProductosPage() {
       cost_per_unit_usd:  product.cost_per_unit_usd,
       price_per_unit_usd: product.price_per_unit_usd,
       is_available:       product.is_available,
+      catalog_visible:    product.show_in_catalog,
       has_variants:       product.has_variants,
+      images:             product.images ?? [],
+      badge:              product.badge,
+      subcategory:        product.subcategory,
+      is_featured:        product.is_featured,
     })
     setShowProductModal(true)
   }, [])

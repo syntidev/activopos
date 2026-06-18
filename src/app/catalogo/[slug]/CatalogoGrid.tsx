@@ -55,14 +55,17 @@ const BADGE_LABEL: Record<string, string> = {
   recomendado: 'Recomendado',
 }
 
-const BADGE_CSS: Record<string, string> = {
-  popular:     'badgePopular',
-  nuevo:       'badgeNuevo',
-  promo:       'badgePromo',
-  recomendado: 'badgeRecomendado',
-}
-
 const FEATURED_KEY = '__destacados__'
+
+function getBadgeClass(badge: string | null | undefined): string {
+  switch (badge) {
+    case 'popular':     return styles.badgePopular
+    case 'nuevo':       return styles.badgeNuevo
+    case 'promo':       return styles.badgePromo
+    case 'recomendado': return styles.badgeRecomendado
+    default:            return ''
+  }
+}
 
 function getCategoryClass(categoryName: string | null | undefined): string {
   if (!categoryName) return styles.gradDefault
@@ -447,8 +450,8 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                       </div>
                     )}
                     {p.outOfStock && <span className={styles.badgeSinStock}>Sin stock</span>}
-                    {!p.outOfStock && p.badge && p.badge !== 'none' && BADGE_CSS[p.badge] && (
-                      <span className={`${styles.productBadge} ${styles[BADGE_CSS[p.badge] as keyof typeof styles]}`}>
+                    {!p.outOfStock && p.badge && p.badge !== 'none' && getBadgeClass(p.badge) && (
+                      <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
                         {BADGE_LABEL[p.badge]}
                       </span>
                     )}

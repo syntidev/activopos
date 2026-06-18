@@ -142,52 +142,52 @@ export default async function CatalogoPage({ params }: PageProps) {
     : null
 
   return (
-    <div className={`light ${styles.root}`}>
+    <div
+      className={`light ${styles.root}`}
+      style={business.theme_color
+        ? { '--biz-color': business.theme_color } as React.CSSProperties
+        : undefined}
+    >
 
-      {/* ── Header ──────────────────────────────────────────────── */}
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
+      {/* ── Hero ────────────────────────────────────────────────── */}
+      <div className={styles.hero} role="banner">
+        <div className={styles.heroGradient} aria-hidden="true" />
+        <div className={styles.heroPattern}  aria-hidden="true" />
+        <div className={styles.heroOverlay}  aria-hidden="true" />
+        <div className={styles.logoCircle}   aria-hidden="true">
           {business.logo_path ? (
             <img
               src={business.logo_path}
-              alt={`Logo de ${business.name}`}
-              className={styles.logo}
-              width={80}
-              height={80}
+              alt=""
+              className={styles.logoImg}
+              width={96}
+              height={96}
             />
           ) : (
-            <div
-              className={styles.initials}
-              style={business.theme_color
-                ? { '--initials-bg': business.theme_color } as React.CSSProperties
-                : undefined}
-              aria-hidden="true"
-            >
-              {initials}
-            </div>
+            <span className={styles.logoInitials}>{initials}</span>
           )}
-          <div className={styles.bizInfo}>
-            <h1 className={styles.bizName}>{displayTitle}</h1>
-            {business.catalog_desc && (
-              <p className={styles.bizDesc}>{business.catalog_desc}</p>
-            )}
-            {location && (
-              <p className={styles.bizLocation}>
-                <MapPin size={12} strokeWidth={2} aria-hidden="true" />
-                {location}
-              </p>
-            )}
-          </div>
         </div>
-      </header>
+      </div>
 
-      {/* ── BCV Bar ─────────────────────────────────────────────── */}
-      <div className={styles.rateBar}>
-        <span className={styles.rateLabel}>Tasa BCV</span>
-        <span className={styles.rateSep}>·</span>
-        <span className={styles.rateValue}>
-          Bs.&nbsp;{rate.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-        </span>
+      {/* ── Biz Info ────────────────────────────────────────────── */}
+      <div className={styles.bizSection}>
+        <div className={styles.bizSectionInner}>
+          <div className={styles.bizMeta}>
+            <h1 className={styles.bizName}>{displayTitle}</h1>
+            <span className={styles.openBadge} aria-label="Tienda abierta">
+              <span aria-hidden="true">●</span> Abierto
+            </span>
+          </div>
+          {location && (
+            <p className={styles.bizLocation}>
+              <MapPin size={12} strokeWidth={2} aria-hidden="true" />
+              {location}
+            </p>
+          )}
+          {business.catalog_desc && (
+            <p className={styles.bizDesc}>{business.catalog_desc}</p>
+          )}
+        </div>
       </div>
 
       {/* ── Grid + Tabs (Client Component) ──────────────────────── */}

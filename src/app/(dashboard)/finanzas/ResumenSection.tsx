@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle } from 'lucide-react'
 import styles from './finanzas.module.css'
 
 interface ER {
@@ -31,8 +31,17 @@ const fmtBs = (n: number, rate: number) =>
 
 const fmtPct = (n: number) => `${n.toFixed(1)}%`
 
+function safePct(value: number, base: number, decimals = 1): string {
+  if (!base || base === 0) return '—'
+  const pct = (value / base) * 100
+  if (!isFinite(pct)) return '—'
+  if (Math.abs(pct) > 999) return pct > 0 ? '>999%' : '<-999%'
+  return `${pct.toFixed(decimals)}%`
+}
+
 function computePE(er: ER, month: string) {
-  const pe = er.margen_bruto_pct > 0
+  const sin_margen = er.margen_bruto_pct <= 0
+  const pe = !sin_margen
     ? er.gastos_operativos / (er.margen_bruto_pct / 100)
     : 0
 
@@ -55,7 +64,7 @@ function computePE(er: ER, month: string) {
     status = 'risk'
   }
 
-  return { pe, projected, dayOfMonth, daysInMonth, barPct, status }
+  return { pe, projected, dayOfMonth, daysInMonth, barPct, status, sin_margen }
 }
 
 export function ResumenSection({ month, rate }: Props) {
@@ -190,7 +199,7 @@ export function ResumenSection({ month, rate }: Props) {
               <div className={`${styles.plBarFill} ${styles.plBarWarning}`} style={{ width: barW(er.gastos_operativos) }} />
             </div>
             <span className={styles.plValue}>({fmtUsd(er.gastos_operativos)})</span>
-            <span className={styles.plPct}>{fmtPct((er.gastos_operativos / er.ventas_netas) * 100)}</span>
+            <span className={styles.plPct}>{safePct(er.gastos_operativos, er.ventas_netas)}</span>
           </div>
 
           <hr className={styles.plDivider} />
@@ -211,7 +220,14 @@ export function ResumenSection({ month, rate }: Props) {
       </div>
 
       {/* ── Punto de Equilibrio ── */}
-      {peData.pe > 0 && (
+      {peData.sin_margen ? (
+        <div className={styles.peCard}>
+          <div className={`${styles.peStatusRow} ${styles.peStatusRisk}`}>
+            <AlertTriangle size={16} aria-hidden="true" />
+            <span>El costo de ventas supera los ingresos — revisa tus precios</span>
+          </div>
+        </div>
+      ) : peData.pe > 0 && (
         <div className={styles.peCard}>
           <h3 className={styles.peTitle}>
             Punto de Equilibrio — {new Date(month + '-01').toLocaleDateString('es-VE', { month: 'long', year: 'numeric' })}

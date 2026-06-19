@@ -1,18 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal, Button, Input, useToast } from '@/components/ui'
 import styles from './GastoModal.module.css'
 
-const CATEGORIAS = [
-  { key: 'alquiler',  label: 'Alquiler'  },
-  { key: 'nomina',    label: 'Nómina'    },
-  { key: 'servicios', label: 'Servicios' },
-  { key: 'proveedor', label: 'Proveedor' },
-  { key: 'otro',      label: 'Otro'      },
-] as const
+interface ExpenseCat {
+  id:        number
+  name:      string
+  is_system: boolean
+}
 
-type Categoria = typeof CATEGORIAS[number]['key']
 export type GastoMode = 'gasto' | 'cxp'
 
 interface GastoModalProps {
@@ -24,40 +21,68 @@ interface GastoModalProps {
 }
 
 export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModalProps) {
-  const { toast }   = useToast()
-  const [concepto, setConcepto]   = useState('')
-  const [monto, setMonto]         = useState('')
-  const [categoria, setCategoria] = useState<Categoria>('otro')
-  const [fecha, setFecha]         = useState(`${month}-01`)
-  const [notas, setNotas]         = useState('')
-  const [loading, setLoading]     = useState(false)
+  const { toast } = useToast()
+
+  const [concepto,  setConcepto]  = useState('')
+  const [monto,     setMonto]     = useState('')
+  const [catId,     setCatId]     = useState<number | null>(null)
+  const [fecha,     setFecha]     = useState(`${month}-01`)
+  const [notas,     setNotas]     = useState('')
+  const [loading,   setLoading]   = useState(false)
+  const [cats,      setCats]      = useState<ExpenseCat[]>([])
 
   const endpoint = mode === 'gasto' ? '/api/finanzas/gastos' : '/api/finanzas/cxp'
   const title    = mode === 'gasto' ? 'Nuevo Gasto' : 'Nueva Cuenta por Pagar'
   const valid    = concepto.trim().length >= 3 && parseFloat(monto) > 0 && !!fecha
 
+  // Load categories once on mount
+  useEffect(() => {
+    fetch('/api/finanzas/categorias')
+      .then(r => r.json() as Promise<{ ok: boolean; categories: ExpenseCat[] }>)
+      .then(j => {
+        if (j.ok && j.categories.length > 0) {
+          setCats(j.categories)
+          const def = j.categories.find(c => c.is_system) ?? j.categories[0]
+          setCatId(def.id)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  // Reset text fields when modal closes
+  useEffect(() => {
+    if (!open) {
+      setConcepto('')
+      setMonto('')
+      setNotas('')
+      setFecha(`${month}-01`)
+    }
+  }, [open, month])
+
   const handleSubmit = async () => {
     if (!valid) return
     setLoading(true)
     try {
+      const body: Record<string, unknown> = {
+        concepto:  concepto.trim(),
+        monto_usd: parseFloat(monto),
+        fecha,
+        notas:     notas.trim() || undefined,
+      }
+      if (catId != null) body.expense_category_id = catId
+      else               body.categoria           = 'otro'
+
       const res = await fetch(endpoint, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          concepto:  concepto.trim(),
-          monto_usd: parseFloat(monto),
-          categoria,
-          fecha,
-          notas: notas.trim() || undefined,
-        }),
+        body:    JSON.stringify(body),
       })
       if (res.ok) {
         toast(mode === 'gasto' ? 'Gasto registrado' : 'CxP creada', 'success')
         onSuccess()
         onClose()
-        setConcepto(''); setMonto(''); setCategoria('otro'); setNotas('')
       } else {
-        const err = await res.json()
+        const err = await res.json() as { error?: string }
         toast(err.error ?? 'Error al guardar', 'error')
       }
     } finally {
@@ -115,19 +140,21 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Categoría</label>
-          <div className={styles.catGrid}>
-            {CATEGORIAS.map(c => (
-              <button
-                key={c.key}
-                type="button"
-                className={`${styles.catBtn} ${categoria === c.key ? styles.catBtnActive : ''}`}
-                onClick={() => setCategoria(c.key)}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
+          <label className={styles.label} htmlFor="gasto-categoria">Categoría</label>
+          <select
+            id="gasto-categoria"
+            className={styles.select}
+            value={catId ?? ''}
+            onChange={e => setCatId(Number(e.target.value))}
+            disabled={cats.length === 0}
+          >
+            {cats.length === 0
+              ? <option value="">Cargando…</option>
+              : cats.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))
+            }
+          </select>
         </div>
 
         <div className={styles.field}>

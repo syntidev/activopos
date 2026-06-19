@@ -8,6 +8,7 @@ import {
   CreditCard,
   Palette,
   Users,
+  Tag,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import styles from './configuracion.module.css'
@@ -17,8 +18,9 @@ import { TabImpresion } from './tabs/TabImpresion'
 import { TabPagos } from './tabs/TabPagos'
 import { TabTema } from './tabs/TabTema'
 import { TabUsuarios } from './tabs/TabUsuarios'
+import { TabCategorias } from './tabs/TabCategorias'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'tema' | 'usuarios'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'tema' | 'usuarios' | 'categorias'
 
 interface Tab {
   key: TabKey
@@ -27,11 +29,12 @@ interface Tab {
 }
 
 const MAIN_TABS: Tab[] = [
-  { key: 'general',   label: 'General',          Icon: Settings    },
-  { key: 'empresa',   label: 'Empresa',           Icon: Building2   },
-  { key: 'impresion', label: 'Impresión',         Icon: Printer     },
-  { key: 'pagos',     label: 'Métodos de Pago',   Icon: CreditCard  },
-  { key: 'tema',      label: 'Tema Visual',        Icon: Palette     },
+  { key: 'general',     label: 'General',            Icon: Settings    },
+  { key: 'empresa',     label: 'Empresa',             Icon: Building2   },
+  { key: 'impresion',   label: 'Impresión',           Icon: Printer     },
+  { key: 'pagos',       label: 'Métodos de Pago',     Icon: CreditCard  },
+  { key: 'categorias',  label: 'Categorías',           Icon: Tag         },
+  { key: 'tema',        label: 'Tema Visual',          Icon: Palette     },
 ]
 
 const BOTTOM_TABS: Tab[] = [
@@ -82,7 +85,8 @@ export function ConfiguracionView({ session }: ConfiguracionViewProps) {
         {activeTab === 'empresa'   && <TabEmpresa   businessId={session.businessId} />}
         {activeTab === 'impresion' && <TabImpresion businessId={session.businessId} />}
         {activeTab === 'pagos'     && <TabPagos     businessId={session.businessId} />}
-        {activeTab === 'tema'      && <TabTema      businessId={session.businessId} />}
+        {activeTab === 'tema'        && <TabTema       businessId={session.businessId} />}
+        {activeTab === 'categorias'  && <TabCategorias businessId={session.businessId} />}
         {activeTab === 'usuarios'  && (
           <TabUsuarios
             businessId={session.businessId}

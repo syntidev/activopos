@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
   Target,
   Settings,
@@ -84,7 +84,7 @@ interface ConfettiPiece {
   size: string
 }
 
-const CONFETTI_COLORS = ['#2563EB', '#1D9E75', '#D97706', '#F0B90B', '#F0F6FC']
+const CONFETTI_COLORS = ['#0D9488', '#1D9E75', '#D97706', '#F0B90B', '#F0F6FC']
 
 function Confetti() {
   const [pieces, setPieces] = useState<ConfettiPiece[]>([])
@@ -157,18 +157,17 @@ const POLL_FNS: Partial<Record<number, () => Promise<boolean>>> = {
   4: checkStep4,
 }
 
-/* ── Variants ── */
-
-const stepVariants = {
-  enter: { opacity: 0, x: 48 },
-  center: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -48 },
-}
-
 /* ── Main component ── */
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const prefersReduced = useReducedMotion()
+
+  const stepVariants = useMemo(() => ({
+    enter:  { opacity: 0, x: prefersReduced ? 0 : 48 },
+    center: { opacity: 1, x: 0 },
+    exit:   { opacity: 0, x: prefersReduced ? 0 : -48 },
+  }), [prefersReduced])
 
   const [step, setStep] = useState<number>(() => {
     if (typeof window === 'undefined') return 1
@@ -257,7 +256,7 @@ export default function OnboardingPage() {
           <div className={styles.progressTrack}>
             <div
               className={styles.progressFill}
-              style={{ width: `${((step - 1) / 4) * 100}%` }}
+              style={{ width: `${(step / 5) * 100}%` }}
             />
           </div>
         </div>
@@ -300,8 +299,9 @@ export default function OnboardingPage() {
             {/* Detected badge */}
             {detected && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: prefersReduced ? 1 : 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: prefersReduced ? 0 : 0.2 }}
                 className={styles.detectedBadge}
               >
                 <CheckCircle2 size={14} aria-hidden="true" />

@@ -3,7 +3,7 @@ import styles from './devoluciones.module.css'
 
 export default function DevolucionesPage() {
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       <header className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Devoluciones</h1>
       </header>

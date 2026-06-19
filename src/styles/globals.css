@@ -172,3 +172,10 @@ input, textarea, select {
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--tracking-tight);
 }
+
+/* ── Layout utilities ── */
+.page-container {
+  max-width: 1200px;
+  margin:    0 auto;
+  width:     100%;
+}

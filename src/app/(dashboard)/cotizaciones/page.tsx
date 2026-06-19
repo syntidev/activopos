@@ -3,7 +3,7 @@ import styles from './cotizaciones.module.css'
 
 export default function CotizacionesPage() {
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       <header className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Cotizaciones</h1>
       </header>

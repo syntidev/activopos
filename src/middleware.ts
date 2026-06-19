@@ -8,12 +8,15 @@ const PUBLIC_PREFIXES = [
   '/catalogo/',
   '/api/catalog/',
   '/api/r/',                              // descarga pública de reportes por token
-  '/api/reports/monthly/pending',         // n8n: lista pending (x-api-key)
-  '/api/reports/monthly/mark-pending',    // n8n: marca todos como pending (x-api-key)
 ]
 
 // Rutas exactas públicas — no usan startsWith
-const PUBLIC_EXACT = new Set(['/', '/landing.html'])
+const PUBLIC_EXACT = new Set([
+  '/',
+  '/landing.html',
+  '/api/reports/monthly/pending',      // n8n: lista pending (x-api-key)
+  '/api/reports/monthly/mark-pending', // n8n: marca todos como pending (x-api-key)
+])
 
 const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports']
 

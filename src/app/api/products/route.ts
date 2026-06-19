@@ -145,6 +145,9 @@ export async function POST(req: NextRequest) {
     const body                = await req.json()
     const { margin, ...data } = productSchema.parse(body)
 
+    // service type always inherits service sale_mode — single discriminator downstream
+    if (data.product_type === 'service') data.sale_mode = 'service'
+
     const product = await prisma.product.create({
       data: {
         business_id:        session.businessId,

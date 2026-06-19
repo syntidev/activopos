@@ -18,8 +18,10 @@ export function ProductCard({ product, rate, onAdd }: ProductCardProps) {
       : (product.price_per_unit_usd ?? 0)
 
   const stock = product.stock?.net_qty ?? 0
-  const stockVariant = stock <= 0 ? 'danger' : stock <= 5 ? 'warning' : 'success'
-  const stockLabel = stock <= 0 ? 'Sin stock' : stock <= 5 ? `${stock} quedan` : `${stock}`
+  const isService = product.sale_mode === 'service'
+  const outOfStock = !isService && stock <= 0
+  const stockVariant = isService ? 'success' : stock <= 0 ? 'danger' : stock <= 5 ? 'warning' : 'success'
+  const stockLabel = isService ? 'Disponible' : stock <= 0 ? 'Sin stock' : stock <= 5 ? `${stock} quedan` : `${stock}`
 
   const initial = product.name.charAt(0).toUpperCase()
   const unitSuffix = product.sale_mode === 'weight' ? '/kg' : `/${product.base_unit_label}`
@@ -32,7 +34,7 @@ export function ProductCard({ product, rate, onAdd }: ProductCardProps) {
       transition={{ duration: 0.1 }}
       aria-label={`Agregar ${product.name}`}
       type="button"
-      disabled={stock <= 0}
+      disabled={outOfStock}
     >
       <div className={styles.imageArea}>
         {product.image_path ? (

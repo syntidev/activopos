@@ -43,6 +43,7 @@ export async function GET(): Promise<NextResponse> {
         id: true,
         name: true,
         sale_mode: true,
+        product_type: true,
         base_unit_label: true,
         price_per_unit_usd: true,
         price_per_kg_usd: true,
@@ -82,7 +83,7 @@ export async function GET(): Promise<NextResponse> {
       return {
         id: p.id,
         name: p.name,
-        sale_mode: p.sale_mode,
+        sale_mode: p.product_type === 'service' ? 'service' : p.sale_mode,
         base_unit_label: p.base_unit_label,
         price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
         price_per_kg_usd: p.price_per_kg_usd ? Number(p.price_per_kg_usd) : null,

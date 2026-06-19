@@ -96,6 +96,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
+    // service type always inherits service sale_mode — single discriminator downstream
+    if (data.product_type === 'service') data.sale_mode = 'service'
+
     // Recalculate price if margin provided and no explicit price override
     const { images, ...rest } = data
     const patchData: Record<string, unknown> = { ...rest }

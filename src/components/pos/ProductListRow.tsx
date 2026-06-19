@@ -19,9 +19,10 @@ export function ProductListRow({ product, rate, onAdd }: Props) {
       : (product.price_per_unit_usd ?? 0)
 
   const stock        = product.stock?.net_qty ?? 0
-  const outOfStock   = stock <= 0
-  const stockVariant = stock <= 0 ? 'danger' : stock <= 5 ? 'warning' : 'success'
-  const stockLabel   = stock <= 0 ? 'Agotado' : stock <= 5 ? `${stock} quedan` : `${stock}`
+  const isService    = product.sale_mode === 'service'
+  const outOfStock   = !isService && stock <= 0
+  const stockVariant = isService ? 'success' : stock <= 0 ? 'danger' : stock <= 5 ? 'warning' : 'success'
+  const stockLabel   = isService ? 'Disponible' : stock <= 0 ? 'Agotado' : stock <= 5 ? `${stock} quedan` : `${stock}`
   const unitSuffix   = product.sale_mode === 'weight' ? '/kg' : `/${product.base_unit_label}`
 
   return (

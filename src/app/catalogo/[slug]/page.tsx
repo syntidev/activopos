@@ -73,10 +73,11 @@ export default async function CatalogoPage({ params }: PageProps) {
   const [products, rate, stockEntries, paymentMethods] = await Promise.all([
     prisma.product.findMany({
       where: {
-        business_id:      business.id,
-        active:           true,
-        show_in_catalog:  true,
-        available_in_pos: true,
+        business_id:        business.id,
+        active:             true,
+        show_in_catalog:    true,
+        available_in_pos:   true,
+        catalog_visibility: { not: 'hidden' },
       },
       include: {
         category: { select: { name: true } },

@@ -22,6 +22,8 @@ const productSchema = z.object({
   is_available:       z.boolean().default(true),
   has_variants:       z.boolean().default(false),
   show_in_catalog:    z.boolean().default(false),
+  catalog_visibility: z.enum(['visible', 'hidden', 'on_request']).default('hidden'),
+  availability:       z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).default('in_stock'),
   is_favorite:        z.boolean().default(false),
   badge:              z.enum(['none', 'popular', 'nuevo', 'promo', 'recomendado']).default('none'),
   subcategory:        z.string().max(60).nullable().optional(),
@@ -160,8 +162,11 @@ export async function POST(req: NextRequest) {
     const body                = await req.json()
     const { margin, ...data } = productSchema.parse(body)
 
-    // service type always inherits service sale_mode — single discriminator downstream
-    if (data.product_type === 'service') data.sale_mode = 'service'
+    // service type always inherits service sale_mode and is always in_stock
+    if (data.product_type === 'service') {
+      data.sale_mode    = 'service'
+      data.availability = 'in_stock'
+    }
 
     const product = await prisma.product.create({
       data: {
@@ -182,6 +187,8 @@ export async function POST(req: NextRequest) {
         is_available:       data.is_available,
         has_variants:       data.has_variants,
         show_in_catalog:    data.show_in_catalog,
+        catalog_visibility: data.catalog_visibility,
+        availability:       data.availability,
         is_favorite:        data.is_favorite,
         badge:              data.badge,
         subcategory:        data.subcategory        ?? null,

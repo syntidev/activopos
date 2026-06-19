@@ -307,3 +307,62 @@ No existe un QUALITY_REPORT de sprints anteriores — esta es la primera auditor
 | P3 | upload: MIME spoofing | CLI-A | Backlog |
 | P3 | clients/[id]/abono: raw rate query | CLI-A | Backlog |
 | P3 | orders: precio $0 posible | CLI-A | Backlog |
+
+---
+
+## Auditoría de Integración — Visibility System (CLI-C)
+Fecha: 2026-06-19
+
+### Supuestos verificados
+- Migration `add_product_visibility`: ✅ Applied (11 migrations, DB up to date)
+- Enums en schema.prisma: ✅ `Availability` (línea 69) y `CatalogVisibility` (línea 76)
+- TypeScript baseline: ✅ 0 errores antes y después de correcciones
+
+### Matriz de coherencia
+
+| Campo | Schema DB | Write API POST | Write API PATCH | Read API catálogo | Read API POS | ProductModal UI | CatalogoGrid |
+|---|---|---|---|---|---|---|---|
+| `availability` | ✅ enum correcto | ✅ [CORREGIDO] | ✅ + servicio forzado | ✅ raw DB | ✅ computeAvailability | ✅ toggle servicio / badge físico | ⚠️ discontinued no renderizado |
+| `catalog_visibility` | ✅ enum correcto | ✅ [CORREGIDO] | ✅ | ✅ filtro `not hidden` | ✅ incluido | ✅ selector 3 opciones | ✅ on_request WhatsApp |
+
+### Críticos corregidos — [CORREGIDO]
+
+#### [CORREGIDO] POST `/api/products` ignoraba `catalog_visibility` y `availability`
+- **Archivo:** `src/app/api/products/route.ts`
+- **Líneas modificadas:** 22-23 (schema), 166-167 (create data), 163-165 (service override)
+- **Bug:** El `productSchema` Zod no incluía los campos. Zod los strippeaba del body. Prisma usaba los defaults DB (`visible`, `in_stock`). Un producto creado como `on_request` quedaba guardado como `visible` — botón de compra en lugar de link WhatsApp.
+- **Fix aplicado:** Añadidos al schema con defaults `'hidden'` y `'in_stock'`. Añadidos al `prisma.product.create`. Service override ampliado para incluir `availability = 'in_stock'` en POST.
+
+#### [CORREGIDO] `catalogo/[slug]/page.tsx` no filtraba productos `hidden`
+- **Archivo:** `src/app/catalogo/[slug]/page.tsx`
+- **Línea modificada:** 79
+- **Bug:** La query SSR del catálogo (que es el path de renderizado real para los usuarios) no tenía `catalog_visibility: { not: 'hidden' }`. La API route SÍ lo tenía, pero el SSR page no. Productos marcados como "hidden — solo visible en POS" aparecían en el catálogo público.
+- **Fix aplicado:** Añadido `catalog_visibility: { not: 'hidden' }` al `where` de `prisma.product.findMany` en el page.tsx.
+
+### Inconsistencias menores documentadas
+
+#### ⚠️ `discontinued` no tiene badge visual en CatalogoGrid
+- **Archivo:** `src/app/catalogo/[slug]/CatalogoGrid.tsx`
+- **Descripción:** La condición de renderizado de botones no cubre `availability === 'discontinued'`. Un producto (servicio descontinuado) que tenga `show_in_catalog = true` y `catalog_visibility != 'hidden'` mostrará el botón "Agregar al pedido" normal, aunque el ProductModal lo describe como "no aparece en catálogo ni POS".
+- **Probabilidad de ocurrencia:** Baja (requiere estado DB inconsistente — `discontinued` + `show_in_catalog: true`)
+- **Recomendación:** Añadir al filtro del catálogo: `availability: { not: 'discontinued' }` en page.tsx, o añadir manejo en CatalogoGrid para `discontinued`.
+
+#### ⚠️ Catalog API route vs SSR page — doble fuente de verdad para filtros
+- **Archivos:** `src/app/api/catalog/[slug]/route.ts` y `src/app/catalogo/[slug]/page.tsx`
+- **Descripción:** Existen dos paths que sirven datos de catálogo con filtros potencialmente diferentes. El SSR page es el path real; el API route es llamado por el frontend para el order POST. Mantener ambos sincronizados es propenso a divergencia.
+- **Recomendación:** Centralizar los filtros de catálogo en una función `getCatalogProducts(businessId)` compartida entre ambos.
+
+#### ⚠️ Catalog API route no llama `computeAvailability`
+- **Archivo:** `src/app/api/catalog/[slug]/route.ts`
+- **Descripción:** Este API devuelve `p.availability` raw desde DB. La lógica de stock-to-availability solo se aplica en el panel interno. Para el catálogo, si el `min_stock` es 5 y el stock real es 3, el catalogo mostrará la `availability` guardada en DB (posiblemente `in_stock` del default inicial) en lugar de `low_stock`. El SSR page sí tiene el `stockMap` y calcula `outOfStock` correctamente, pero el campo `availability` que se pasa a CatalogoGrid viene sin computar.
+- **Aclaración:** `outOfStock` en el SSR page SÍ se calcula correctamente desde stock real (`netQty <= 0`). El problema es solo `low_stock` que no se computa en el catálogo.
+
+### Verificación TypeScript post-correcciones
+```
+npx tsc --noEmit → 0 errores ✅
+```
+
+### Veredicto
+**✅ Sistema integrado correctamente** — con 2 correcciones críticas aplicadas por CLI-C.
+
+Los flujos principales (nuevo producto `on_request` → WhatsApp en catálogo; producto `hidden` → no aparece en catálogo) funcionan correctamente después de las correcciones. Las inconsistencias menores documentadas no bloquean el release.

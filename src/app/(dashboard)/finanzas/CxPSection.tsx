@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle, Plus, FileText } from 'lucide-react'
-import { Badge, EmptyState, useToast } from '@/components/ui'
+import { EmptyState, useToast } from '@/components/ui'
 import { GastoModal } from '@/components/finanzas/GastoModal'
 import styles from './finanzas.module.css'
 
@@ -14,12 +14,21 @@ interface CxPItem {
   fecha:     string
 }
 
+const fmtUsd = (n: number) =>
+  `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+function isUrgente(fechaStr: string): boolean {
+  const fecha     = new Date(fechaStr)
+  const threshold = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+  return fecha <= threshold
+}
+
 export function CxPSection({ month }: { month: string }) {
   const { toast } = useToast()
-  const [items, setItems]         = useState<CxPItem[]>([])
-  const [total, setTotal]         = useState(0)
-  const [showModal, setShowModal] = useState(false)
-  const [loading, setLoading]     = useState(true)
+  const [items,      setItems]      = useState<CxPItem[]>([])
+  const [total,      setTotal]      = useState(0)
+  const [showModal,  setShowModal]  = useState(false)
+  const [loading,    setLoading]    = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -47,15 +56,18 @@ export function CxPSection({ month }: { month: string }) {
     }
   }
 
-  if (loading) return <div className={styles.loading}>Cargando cuentas por pagar...</div>
+  if (loading) return <div className={styles.loading}>Cargando cuentas por pagar…</div>
 
   return (
     <>
+      {/* ── Header ── */}
       <div className={styles.sectionHeader}>
-        <div className={styles.summaryRow}>
-          <div className={`${styles.summaryCard} ${items.length > 0 ? styles.summaryDanger : ''}`}>
-            <span className={styles.summaryLabel}>Por pagar</span>
-            <span className={styles.summaryValue}>${total.toFixed(2)}</span>
+        <div className={styles.miniKpiRow}>
+          <div className={`${styles.miniKpi} ${items.length > 0 ? styles.miniKpiDanger : ''}`}>
+            <span className={styles.miniKpiLabel}>Por pagar</span>
+            <span className={`${styles.miniKpiValue} ${items.length > 0 ? styles.miniKpiValueDanger : ''}`}>
+              {fmtUsd(total)}
+            </span>
           </div>
         </div>
         <button className={styles.newBtn} onClick={() => setShowModal(true)}>
@@ -64,6 +76,7 @@ export function CxPSection({ month }: { month: string }) {
         </button>
       </div>
 
+      {/* ── Table ── */}
       {!items.length ? (
         <EmptyState
           icon={FileText}
@@ -71,26 +84,52 @@ export function CxPSection({ month }: { month: string }) {
           description="No hay deudas pendientes."
         />
       ) : (
-        <div className={styles.cxcList}>
-          {items.map(item => (
-            <div key={item.id} className={styles.cxcRow}>
-              <div className={styles.cxcLeft}>
-                <span className={styles.cxcName}>{item.concepto}</span>
-                <div className={styles.cxcMeta}>
-                  <Badge variant="neutral" size="sm">{item.categoria}</Badge>
-                  <span>·</span>
-                  <span>{new Date(item.fecha).toLocaleDateString('es-VE')}</span>
-                </div>
-              </div>
-              <div className={styles.cxcRight}>
-                <span className={styles.cxcSaldo}>${item.monto_usd.toFixed(2)}</span>
-                <button className={styles.abonarBtn} onClick={() => markPaid(item.id)}>
-                  <CheckCircle size={13} aria-hidden="true" />
-                  Pagar
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className={styles.catSection}>
+          <div className={styles.finTableWrap}>
+            <table className={styles.finTable}>
+              <thead>
+                <tr>
+                  <th className={styles.finTh}>Concepto</th>
+                  <th className={styles.finTh}>Categoría</th>
+                  <th className={`${styles.finTh} ${styles.colRight}`}>Monto</th>
+                  <th className={styles.finTh}>Fecha</th>
+                  <th className={`${styles.finTh} ${styles.colCenter}`}>Estado</th>
+                  <th className={`${styles.finTh} ${styles.colRight}`}>Pagar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(item => {
+                  const urgente = isUrgente(item.fecha)
+                  return (
+                    <tr key={item.id}>
+                      <td className={styles.finTd}>
+                        <span className={styles.finAmtBold}>{item.concepto}</span>
+                      </td>
+                      <td className={styles.finTd}>{item.categoria}</td>
+                      <td className={`${styles.finTd} ${styles.colRight}`}>
+                        <span className={styles.finAmtBold}>{fmtUsd(item.monto_usd)}</span>
+                      </td>
+                      <td className={styles.finTd}>
+                        {new Date(item.fecha).toLocaleDateString('es-VE')}
+                      </td>
+                      <td className={`${styles.finTd} ${styles.colCenter}`}>
+                        {urgente && <span className={styles.badgeUrgente}>Urgente</span>}
+                      </td>
+                      <td className={`${styles.finTd} ${styles.colRight}`}>
+                        <button
+                          className={styles.actionBtn}
+                          onClick={() => markPaid(item.id)}
+                        >
+                          <CheckCircle size={12} aria-hidden="true" />
+                          Pagar
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

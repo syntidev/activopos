@@ -8,16 +8,16 @@ import { ResumenSection }  from './ResumenSection'
 import styles from './finanzas.module.css'
 
 const TABS = [
-  { key: 'cxc',     label: 'Por Cobrar'      },
-  { key: 'cxp',     label: 'Por Pagar'       },
-  { key: 'gastos',  label: 'Ingresos/Gastos' },
-  { key: 'resumen', label: 'Resumen'          },
+  { key: 'resumen', label: 'Resumen'     },
+  { key: 'gastos',  label: 'Gastos'      },
+  { key: 'cxc',     label: 'Por Cobrar'  },
+  { key: 'cxp',     label: 'Por Pagar'   },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
 
 export default function FinanzasPage() {
-  const [tab, setTab]   = useState<TabKey>('cxc')
+  const [tab, setTab]   = useState<TabKey>('resumen')
   const [month, setMonth] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -61,7 +61,7 @@ export default function FinanzasPage() {
         {tab === 'cxc'     && <CxCSection rate={rate} />}
         {tab === 'cxp'     && <CxPSection month={month} />}
         {tab === 'gastos'  && <GastosSection month={month} />}
-        {tab === 'resumen' && <ResumenSection month={month} />}
+        {tab === 'resumen' && <ResumenSection month={month} rate={rate} />}
       </div>
     </div>
   )

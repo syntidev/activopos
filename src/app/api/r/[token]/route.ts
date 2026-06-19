@@ -38,8 +38,13 @@ export async function GET(
     return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 })
   }
 
-  const buffer   = await readFile(report.file_path)
-  const filename = `reporte-${report.period}-${report.business.name.replace(/\s+/g, '-')}.pdf`
+  const buffer    = await readFile(report.file_path)
+  const safePeriod = report.period.replace(/[^0-9-]/g, '')
+  const safeName   = report.business.name
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-').slice(0, 40)
+  const filename  = `reporte-${safePeriod}-${safeName}.pdf`
 
   return new NextResponse(buffer, {
     status: 200,

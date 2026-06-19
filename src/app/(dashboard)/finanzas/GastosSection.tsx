@@ -14,54 +14,37 @@ interface Gasto {
   fecha:     string
 }
 
-interface ER {
-  ventas_netas:      number
-  costo_ventas:      number
-  utilidad_bruta:    number
-  margen_bruto_pct:  number
-  gastos_operativos: number
-  utilidad_neta:     number
-  margen_neto_pct:   number
-}
+interface CategoryRow { name: string; amount: number; pct: number }
 
-function ErLine({
-  label, value, pct, isSubtotal, isPositive, isNegative,
-}: {
-  label: string; value: number; pct?: number
-  isSubtotal?: boolean; isPositive?: boolean; isNegative?: boolean
-}) {
-  const cls = isPositive ? styles.erPositivo
-            : isNegative ? styles.erNegativo
-            : isSubtotal ? styles.erSubtotal
-            : styles.erLinea
-  return (
-    <div className={cls}>
-      <span>{label}</span>
-      <span>
-        {value < 0 ? '-' : ''}${Math.abs(value).toFixed(2)}
-        {pct !== undefined && <span className={styles.erPct}> ({pct.toFixed(1)}%)</span>}
-      </span>
-    </div>
-  )
+function buildCategories(gastos: Gasto[], total: number): CategoryRow[] {
+  const map = new Map<string, number>()
+  for (const g of gastos) {
+    map.set(g.categoria, (map.get(g.categoria) ?? 0) + g.monto_usd)
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, amount]) => ({
+      name,
+      amount,
+      pct: total > 0 ? (amount / total) * 100 : 0,
+    }))
 }
 
 export function GastosSection({ month }: { month: string }) {
-  const [gastos, setGastos]       = useState<Gasto[]>([])
-  const [er, setEr]               = useState<ER | null>(null)
-  const [insight, setInsight]     = useState('')
-  const [total, setTotal]         = useState(0)
-  const [showModal, setShowModal] = useState(false)
-  const [loading, setLoading]     = useState(true)
+  const [gastos,     setGastos]     = useState<Gasto[]>([])
+  const [total,      setTotal]      = useState(0)
+  const [showModal,  setShowModal]  = useState(false)
+  const [loading,    setLoading]    = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [gRes, rRes] = await Promise.all([
-        fetch(`/api/finanzas/gastos?month=${month}`),
-        fetch(`/api/finanzas/resumen?month=${month}`),
-      ])
-      if (gRes.ok) { const j = await gRes.json(); setGastos(j.gastos ?? []); setTotal(j.total_usd ?? 0) }
-      if (rRes.ok) { const j = await rRes.json(); setEr(j.estado_resultados ?? null); setInsight(j.insight ?? '') }
+      const res = await fetch(`/api/finanzas/gastos?month=${month}`)
+      if (res.ok) {
+        const j = await res.json()
+        setGastos(j.gastos ?? [])
+        setTotal(j.total_usd ?? 0)
+      }
     } finally {
       setLoading(false)
     }
@@ -69,33 +52,32 @@ export function GastosSection({ month }: { month: string }) {
 
   useEffect(() => { load() }, [load])
 
-  if (loading) return <div className={styles.loading}>Cargando ingresos y gastos...</div>
+  if (loading) return <div className={styles.loading}>Cargando gastos…</div>
 
-  const netaPositive = er && er.utilidad_neta >= 0
-  const netaNegative = er && er.utilidad_neta < 0
+  const categories = buildCategories(gastos, total)
 
   return (
     <>
-      {er && (
-        <div className={styles.erCard}>
-          <h4 className={styles.erTitle}>Estado de Resultados</h4>
-          {insight && <p className={styles.erInsight}>{insight}</p>}
-          <div className={styles.erBody}>
-            <ErLine label="Ventas netas"            value={er.ventas_netas} />
-            <ErLine label="(-) Costo de ventas"     value={-er.costo_ventas} />
-            <ErLine label="Utilidad bruta"           value={er.utilidad_bruta}   pct={er.margen_bruto_pct} isSubtotal />
-            <ErLine label="(-) Gastos operativos"   value={-er.gastos_operativos} />
-            <ErLine
-              label="Utilidad neta"
-              value={er.utilidad_neta}
-              pct={er.margen_neto_pct}
-              isPositive={!!netaPositive}
-              isNegative={!!netaNegative}
-            />
+      {/* ── Category distribution ── */}
+      {categories.length > 0 && (
+        <div className={styles.catSection}>
+          <h3 className={styles.catSectionTitle}>Distribución por categoría</h3>
+          <div className={styles.catList}>
+            {categories.map(cat => (
+              <div key={cat.name} className={styles.catRow}>
+                <span className={styles.catName}>{cat.name}</span>
+                <div className={styles.catBarWrap}>
+                  <div className={styles.catBarFill} style={{ width: `${cat.pct}%` }} />
+                </div>
+                <span className={styles.catPct}>{cat.pct.toFixed(0)}%</span>
+                <span className={styles.catAmt}>${cat.amount.toFixed(2)}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
+      {/* ── Header ── */}
       <div className={styles.sectionHeader}>
         <p className={styles.sectionSubtitle}>
           Gastos del mes · Total: <strong>${total.toFixed(2)}</strong>
@@ -106,6 +88,7 @@ export function GastosSection({ month }: { month: string }) {
         </button>
       </div>
 
+      {/* ── Expense list ── */}
       {!gastos.length ? (
         <EmptyState
           icon={BarChart2}

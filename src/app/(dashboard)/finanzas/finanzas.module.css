@@ -334,3 +334,457 @@
   .cxcRight { gap: var(--space-2); }
   .summaryCard { min-width: 140px; }
 }
+
+/* ── KPI grid (ResumenSection) ────────────────────────── */
+
+.kpiGrid {
+  display:               grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap:                   var(--space-4);
+}
+
+.kpiCard {
+  display:      flex;
+  align-items:  flex-start;
+  gap:          var(--space-3);
+  padding:      var(--space-4) var(--space-5);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.85) 0%,
+      rgba(255,255,255,0.18)        45%,
+      rgba(var(--accent-rgb), 0.25) 100%
+    ) border-box;
+  border:        1px solid transparent;
+  border-radius: var(--radius-xl);
+  box-shadow:    0 0 14px rgba(var(--accent-rgb), 0.08);
+}
+
+.kpiCardSuccess {
+  box-shadow: 0 0 14px rgba(var(--success-rgb), 0.14);
+}
+
+.kpiCardDanger {
+  box-shadow: 0 0 14px rgba(var(--danger-rgb), 0.15);
+}
+
+.kpiIconWrap {
+  flex-shrink:     0;
+  width:           38px;
+  height:          38px;
+  border-radius:   var(--radius-lg);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      rgba(var(--accent-rgb), 0.10);
+  color:           var(--color-brand);
+  margin-top:      2px;
+}
+
+.kpiIconWrapSuccess { background: rgba(var(--success-rgb), 0.12); color: var(--color-success-text); }
+.kpiIconWrapDanger  { background: rgba(var(--danger-rgb),  0.12); color: var(--color-danger-text); }
+
+.kpiBody {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-0-5);
+  min-width:      0;
+}
+
+.kpiLabel2 {
+  font-size:      var(--text-xs);
+  font-weight:    var(--weight-medium);
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.kpiPrimary {
+  font-size:            var(--text-xl);
+  font-weight:          var(--weight-bold);
+  color:                var(--color-text-primary);
+  letter-spacing:       var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+  white-space:          nowrap;
+}
+
+.kpiPrimarySuccess { color: var(--color-success-text); }
+.kpiPrimaryDanger  { color: var(--color-danger-text); }
+
+.kpiSub2 {
+  font-size:            var(--text-xs);
+  color:                var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── P&L visual bars ──────────────────────────────────── */
+
+.plSection {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2-5);
+}
+
+.plRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-3);
+}
+
+.plLabel {
+  flex:      1;
+  font-size: var(--text-sm);
+  color:     var(--color-text-secondary);
+  min-width: 160px;
+}
+
+.plSubtotalLabel {
+  composes: plLabel;
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+}
+
+.plBarWrap {
+  flex:     2;
+  height:   6px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
+  overflow:  hidden;
+  min-width: 60px;
+}
+
+.plBarFill {
+  height:        100%;
+  border-radius: var(--radius-full);
+  transition:    width 0.6s ease-out;
+}
+
+.plBarBrand   { background: var(--color-brand); }
+.plBarMuted   { background: var(--color-text-muted); opacity: 0.5; }
+.plBarWarning { background: var(--color-warning-text); }
+.plBarSuccess { background: var(--color-success-text); }
+.plBarDanger  { background: var(--color-danger-text); }
+
+.plValue {
+  font-size:            var(--text-sm);
+  font-weight:          var(--weight-semibold);
+  color:                var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  min-width:            80px;
+  text-align:           right;
+}
+
+.plPct {
+  font-size:  var(--text-xs);
+  color:      var(--color-text-muted);
+  min-width:  42px;
+  text-align: right;
+}
+
+.plDivider {
+  border:     none;
+  border-top: 1px solid var(--color-border-subtle);
+  margin:     var(--space-1) 0;
+}
+
+/* ── Punto de Equilibrio ──────────────────────────────── */
+
+.peCard {
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding:       var(--space-5);
+}
+
+.peTitle {
+  font-size:   var(--text-base);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+  margin:      0 0 var(--space-4);
+}
+
+.peStatsRow {
+  display:               grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:                   var(--space-4);
+  margin-bottom:         var(--space-5);
+}
+
+.peStat { display: flex; flex-direction: column; gap: var(--space-0-5); }
+
+.peStatLabel {
+  font-size:      var(--text-xs);
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.peStatValue {
+  font-size:            var(--text-lg);
+  font-weight:          var(--weight-bold);
+  color:                var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.peBar {
+  height:        10px;
+  border-radius: 100px;
+  background:    var(--color-border);
+  overflow:      hidden;
+  margin-bottom: var(--space-3);
+}
+
+.peBarFill {
+  height:        100%;
+  border-radius: 100px;
+  transition:    width 0.8s ease-out;
+}
+
+.peBarSuccess  { background: var(--color-success-text); }
+.peBarProgress { background: var(--color-brand); }
+.peBarRisk     { background: var(--color-warning-text); }
+
+.peCaption {
+  font-size:  var(--text-xs);
+  color:      var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.peStatusRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  padding:     var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.peStatusSuccess { background: var(--color-success-subtle); color: var(--color-success-text); border: 1px solid var(--color-success-border); }
+.peStatusProgress { background: var(--color-brand-subtle); color: var(--color-brand); border: 1px solid rgba(var(--accent-rgb), 0.25); }
+.peStatusRisk    { background: var(--color-warning-subtle); color: var(--color-warning-text); border: 1px solid var(--color-warning-border); }
+
+/* ── Category bars (GastosSection) ───────────────────── */
+
+.catSection {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow:      hidden;
+}
+
+.catSectionTitle {
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-semibold);
+  color:         var(--color-text-primary);
+  padding:       var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin:        0;
+}
+
+.catList {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2-5);
+  padding:        var(--space-4);
+}
+
+.catRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-3);
+}
+
+.catName {
+  min-width:  100px;
+  font-size:  var(--text-xs);
+  font-weight: var(--weight-medium);
+  color:      var(--color-text-secondary);
+  white-space: nowrap;
+  overflow:   hidden;
+  text-overflow: ellipsis;
+}
+
+.catBarWrap {
+  flex:       1;
+  height:     4px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
+  overflow:   hidden;
+}
+
+.catBarFill {
+  height:        100%;
+  background:    var(--color-brand);
+  border-radius: var(--radius-full);
+  transition:    width 0.5s ease-out;
+}
+
+.catPct {
+  font-size:  var(--text-xs);
+  color:      var(--color-text-muted);
+  min-width:  32px;
+  text-align: right;
+}
+
+.catAmt {
+  font-size:            var(--text-xs);
+  font-weight:          var(--weight-semibold);
+  color:                var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  min-width:            64px;
+  text-align:           right;
+}
+
+/* ── Finance table (CxC / CxP) ───────────────────────── */
+
+.finTableWrap {
+  overflow-x:              auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.finTable {
+  width:           100%;
+  border-collapse: collapse;
+}
+
+.finTh {
+  padding:        10px 12px;
+  font-size:      11px;
+  font-weight:    var(--weight-medium);
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom:  1px solid var(--color-border);
+  text-align:     left;
+  white-space:    nowrap;
+}
+
+.finTd {
+  padding:       10px 12px;
+  font-size:     var(--text-sm);
+  color:         var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
+  white-space:   nowrap;
+}
+
+.finTd:first-child, .finTh:first-child { white-space: normal; }
+
+.finTable tbody tr:hover { background: rgba(var(--accent-rgb), 0.04); }
+
+.colRight { text-align: right; }
+.colCenter { text-align: center; }
+
+.finAmtBold {
+  font-weight:          var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.finSubText {
+  font-size: var(--text-xs);
+  color:     var(--color-text-muted);
+  display:   block;
+  margin-top: 1px;
+}
+
+/* ── Status badges ────────────────────────────────────── */
+
+.badgeVencido {
+  display:       inline-flex;
+  align-items:   center;
+  padding:       2px 7px;
+  background:    var(--color-danger-subtle);
+  color:         var(--color-danger-text);
+  border:        1px solid var(--color-danger-border);
+  border-radius: var(--radius-full);
+  font-size:     var(--text-2xs);
+  font-weight:   var(--weight-semibold);
+  white-space:   nowrap;
+}
+
+.badgeUrgente {
+  display:       inline-flex;
+  align-items:   center;
+  padding:       2px 7px;
+  background:    var(--color-warning-subtle);
+  color:         var(--color-warning-text);
+  border:        1px solid var(--color-warning-border);
+  border-radius: var(--radius-full);
+  font-size:     var(--text-2xs);
+  font-weight:   var(--weight-semibold);
+  white-space:   nowrap;
+}
+
+.actionBtn {
+  display:     inline-flex;
+  align-items: center;
+  gap:         var(--space-1);
+  height:      30px;
+  padding:     0 var(--space-2-5);
+  background:  var(--color-brand-subtle);
+  border:      1px solid var(--color-brand);
+  border-radius: var(--radius-sm);
+  font-size:   var(--text-xs);
+  font-family: inherit;
+  font-weight: var(--weight-semibold);
+  color:       var(--color-brand);
+  cursor:      pointer;
+  transition:  all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.actionBtn:hover { background: var(--color-brand); color: #fff; }
+
+/* ── CxC/CxP KPI mini row ────────────────────────────── */
+
+.miniKpiRow {
+  display:   flex;
+  gap:       var(--space-3);
+  flex-wrap: wrap;
+}
+
+.miniKpi {
+  padding:       var(--space-3) var(--space-4);
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display:       flex;
+  flex-direction: column;
+  gap:           var(--space-0-5);
+  min-width:     120px;
+}
+
+.miniKpiLabel {
+  font-size:      var(--text-xs);
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.miniKpiValue {
+  font-size:            var(--text-lg);
+  font-weight:          var(--weight-bold);
+  color:                var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.miniKpiDanger { border-color: rgba(var(--danger-rgb), 0.3); box-shadow: 0 0 8px rgba(var(--danger-rgb), 0.1); }
+.miniKpiValueDanger { color: var(--color-danger-text); }
+
+/* ── Responsive additions ─────────────────────────────── */
+
+@media (max-width: 900px) {
+  .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+  .peStatsRow { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .kpiGrid { grid-template-columns: 1fr; }
+  .peStatsRow { grid-template-columns: 1fr; }
+  .plLabel, .plSubtotalLabel { min-width: 120px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plBarFill, .catBarFill, .peBarFill { transition: none; }
+}

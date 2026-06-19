@@ -40,3 +40,7 @@ tests/.auth-state.json
 test-results/
 scripts/recon_*.png
 scripts/recon_*.mjs
+
+storage/
+.playwright-mcp/
+public/uploads/

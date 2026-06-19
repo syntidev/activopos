@@ -396,3 +396,99 @@ Micro-interacciones, timing de animaciones, feedback táctil.
 Ningún plugin oficial lo reemplaza.
 Siempre incluirlo en CLI-B y CLI-D.
 
+
+---
+
+## 11. SISTEMA DE TEMAS — 10 SEGMENTOS
+
+### Base técnica (HTML activopos_temas.html — aprobado por Carlos)
+4 temas base implementados como data-theme en tokens.css:
+- `default` — Retail azul clásico
+- `premium` — Dark profundo operativo  
+- `calle` — Naranja urbano / carnicería
+- `tropical` — Teal tech digital
+
+### 10 segmentos objetivo (Sprint 9 — CLI-A)
+Cada segmento tiene su data-theme propio con variables completas:
+
+| Segmento | Key | Color brand | Industria |
+|---|---|---|---|
+| Retail & Comercio | default | #2563EB azul | Tiendas generales |
+| Premium Operativo | premium | #2563EB azul dark | Negocios premium |
+| Calle Premium | calle | #EA580C naranja | Carnicerías, abastos |
+| Tech & Digital | tropical | #14B8A6 teal | Tecnología |
+| Clínica & Salud | clinica | #10B981 verde menta | Farmacias, clínicas |
+| Ferretería | ferreteria | #D97706 amarillo oscuro | Ferreterías, construcción |
+| Servicios & Oficina | oficina | #6366F1 índigo | Oficinas, servicios pro |
+| Gastronomía | restaurante | #DC2626 rojo cálido | Restaurantes, food |
+| Moda & Joyería | joyeria | #B45309 dorado | Joyerías, ropa |
+| Farmacia | farmacia | #059669 verde limpio | Farmacias, bienestar |
+
+### Implementación
+- `businesses.theme` guarda el key del segmento
+- `layout.tsx` lee el tema y aplica `data-theme` al `<html>`
+- `tokens.css` tiene un bloque `[data-theme="X"]` por cada segmento
+- El selector en Configuración → Tema Visual muestra los 10 con preview
+- El inline script en layout.tsx permite override del usuario via localStorage
+
+---
+
+## 12. LANDING SEO POR SEGMENTO — Fase futura
+
+### Estrategia
+Una página de aterrizaje por segmento para captura orgánica.
+Modelo: Pulpos tiene `/pos-para-carniceria`, `/pos-para-ferreterias`, etc.
+
+### URLs objetivo para ActivoPOS
+- activopos.com/para-carniceria
+- activopos.com/para-ferreterias
+- activopos.com/para-restaurantes
+- activopos.com/para-clinicas
+- activopos.com/para-farmacias
+- activopos.com/para-joyerias
+- activopos.com/para-tecnologia
+- activopos.com/para-servicios
+- activopos.com/para-tiendas-de-ropa
+- activopos.com/para-abastos
+
+### Contenido por página
+- Hero con captura del sistema en el tema del segmento
+- Beneficios específicos para esa industria
+- Testimonios del segmento (cuando existan)
+- CTA directo a registro/contacto
+- Schema.org SoftwareApplication markup
+- Keywords long-tail del segmento + Venezuela
+
+### Este desarrollo es independiente del POS
+- Stack: Next.js (mismo repo) o sitio estático separado
+- No tiene dependencia con el dashboard
+- Se construye cuando haya al menos 2-3 clientes reales por segmento
+
+---
+
+## 13. CATÁLOGO DIGITAL — FLUJO COMPLETO (Sprint 8, completado)
+
+### Flujo aprobado (modelo LLEVA.app)
+1. Cliente navega `/catalogo/[slug]`
+2. Ve productos con buscador en tiempo real + tabs de categorías
+3. Hace clic en producto → modal con galería + variantes + qty
+4. Agrega al carrito → drawer lateral "Mi Pedido"
+5. "Finalizar por WhatsApp" → modal "Antes de enviar"
+   - Nombre (requerido)
+   - WhatsApp cliente (requerido)
+   - Referencia/Sector (opcional)
+   - Método de pago (dropdown)
+6. POST `/api/catalog/[slug]/order` → crea Order en DB
+7. WhatsApp se abre con mensaje empaquetado + BCV real
+8. El pedido aparece en el Kanban del negocio bajo source='catalog'
+
+### Seguridad implementada
+- Precios vienen del servidor (DB), nunca del cliente
+- Price tampering imposible (Zod descarta price_usd del body)
+- Endpoint público agregado a PUBLIC_PREFIXES del middleware
+
+### Diferenciador vs FINA y SOFI
+- Carrito completo empaquetado en WhatsApp (ellos solo producto individual)
+- Precio en Bs calculado con BCV en tiempo real al momento del envío
+- Pedido registrado en DB automáticamente sin intervención del negocio
+

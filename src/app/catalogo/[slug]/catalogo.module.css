@@ -636,6 +636,25 @@
   backdrop-filter: blur(4px);
 }
 
+.badgeDiscontinued {
+  position:        absolute;
+  top:             var(--space-2);
+  left:            var(--space-2);
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--space-1);
+  padding:         2px 8px;
+  background:      var(--color-surface-3);
+  color:           var(--color-text-muted);
+  border:          var(--border-width-thin) solid var(--color-border);
+  border-radius:   var(--radius-full);
+  font-size:       var(--text-2xs);
+  font-weight:     var(--weight-semibold);
+  text-transform:  uppercase;
+  letter-spacing:  var(--tracking-wide);
+  backdrop-filter: blur(4px);
+}
+
 .cardBody {
   padding:        var(--space-4);
   display:        flex;
@@ -694,6 +713,12 @@
 .priceConsultar {
   font-size:  var(--text-sm);
   color:      var(--color-text-muted);
+  font-style: italic;
+}
+
+.priceDiscontinued {
+  font-size:  var(--text-sm);
+  color:      var(--color-text-disabled);
   font-style: italic;
 }
 

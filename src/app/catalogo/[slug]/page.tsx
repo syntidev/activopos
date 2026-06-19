@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
+import { CATALOG_WHERE_FILTER, computeAvailability } from '@/lib/catalog'
 import styles from './catalogo.module.css'
 
 interface PageProps {
@@ -77,7 +78,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         active:             true,
         show_in_catalog:    true,
         available_in_pos:   true,
-        catalog_visibility: { not: 'hidden' },
+        ...CATALOG_WHERE_FILTER,
       },
       include: {
         category: { select: { name: true } },
@@ -126,7 +127,12 @@ export default async function CatalogoPage({ params }: PageProps) {
       subcategory:      p.subcategory ?? null,
       isFeatured:       p.is_featured,
       catalogVisibility: p.catalog_visibility ?? 'visible',
-      availability:     p.availability ?? 'in_stock',
+      availability:     computeAvailability({
+        product_type: p.product_type ?? p.sale_mode,
+        availability: p.availability ?? 'in_stock',
+        net_stock:    netQty ?? null,
+        min_stock:    p.min_stock !== null ? Number(p.min_stock) : null,
+      }),
     }
   })
 

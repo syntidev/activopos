@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search, CheckCircle, Star } from 'lucide-react'
+import { Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search, CheckCircle, Star, Archive } from 'lucide-react'
 import styles from './catalogo.module.css'
 
 export interface CatalogProduct {
@@ -459,7 +459,12 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
                         <span className={styles.noImageInitial}>{p.name.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
-                    {p.catalogVisibility === 'on_request' ? (
+                    {p.availability === 'discontinued' ? (
+                      <span className={styles.badgeDiscontinued}>
+                        <Archive size={10} aria-hidden="true" />
+                        Descontinuado
+                      </span>
+                    ) : p.catalogVisibility === 'on_request' ? (
                       <span className={styles.badgeOnRequest}>Consultar</span>
                     ) : (p.outOfStock || p.availability === 'out_of_stock') ? (
                       <span className={styles.badgeSinStock}>Sin stock</span>
@@ -485,6 +490,8 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
                     <div className={styles.priceRow}>
                       {p.catalogVisibility === 'on_request' ? (
                         <span className={styles.priceConsultar}>Consultar precio</span>
+                      ) : p.availability === 'discontinued' ? (
+                        <span className={styles.priceDiscontinued}>No disponible</span>
                       ) : p.priceUsd > 0 ? (
                         <>
                           <span className={styles.priceUsd}>
@@ -755,7 +762,12 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
                   <span className={styles.productModalImgInitial}>{selP.name.charAt(0).toUpperCase()}</span>
                 </div>
               )}
-              {selP.catalogVisibility === 'on_request' ? (
+              {selP.availability === 'discontinued' ? (
+                <span className={`${styles.badgeDiscontinued} ${styles.badgeModal}`}>
+                  <Archive size={10} aria-hidden="true" />
+                  Descontinuado
+                </span>
+              ) : selP.catalogVisibility === 'on_request' ? (
                 <span className={`${styles.badgeOnRequest} ${styles.badgeModal}`}>Consultar</span>
               ) : (selP.outOfStock || selP.availability === 'out_of_stock') ? (
                 <span className={`${styles.badgeSinStock} ${styles.badgeModal}`}>Sin stock</span>
@@ -778,7 +790,9 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
               <h3 className={styles.productModalName}>{selP.name}</h3>
               {selP.description && <p className={styles.productModalDesc}>{selP.description}</p>}
               <div className={styles.productModalPrices}>
-                {selP.catalogVisibility === 'on_request' ? (
+                {selP.availability === 'discontinued' ? (
+                  <span className={styles.priceDiscontinued}>No disponible</span>
+                ) : selP.catalogVisibility === 'on_request' ? (
                   <span className={styles.priceConsultar}>Consultar precio</span>
                 ) : selP.priceUsd > 0 ? (
                   <>
@@ -796,7 +810,8 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
                 )}
               </div>
 
-              {selP.catalogVisibility === 'on_request' ? (
+              {selP.availability === 'discontinued' ? null
+              : selP.catalogVisibility === 'on_request' ? (
                 <div className={styles.productModalCtas}>
                   <a
                     href={getConsultarWaUrl(businessPhone, selP.name)}

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
+import { CATALOG_WHERE_FILTER } from '@/lib/catalog'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -57,7 +58,7 @@ export async function GET(
         active:             true,
         show_in_catalog:    true,
         available_in_pos:   true,
-        catalog_visibility: { not: 'hidden' },
+        ...CATALOG_WHERE_FILTER,
       },
       select: {
         id:                 true,

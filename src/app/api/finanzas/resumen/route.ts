@@ -191,7 +191,7 @@ export async function GET(req: NextRequest) {
       ventas_usd:           r2(ventasUsd),
       ventas_bs:            r2(ventasBs),
       abonos_cobrados_usd:  r2(abonosUsd),
-      total_usd:            r2(ventasUsd + abonosUsd),
+      total_usd:            r2(ventasUsd),
     },
 
     egresos: {

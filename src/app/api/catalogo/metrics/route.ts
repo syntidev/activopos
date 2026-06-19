@@ -8,7 +8,7 @@ type TopProductRow = {
   product_name: string
   images:       string | null
   order_count:  string | number
-  catalog_visibility: string
+  catalog_visibility: string | null
 }
 
 export async function GET() {
@@ -58,14 +58,15 @@ export async function GET() {
 
       prisma.product.groupBy({
         by:    ['catalog_visibility'],
-        where: { business_id: bid, active: true, show_in_catalog: true },
+        where: { business_id: bid },
         _count: { id: true },
       }),
     ])
 
   const monthLabel = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
+  const baseUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://activopos.com'
   const catalogUrl = business.catalog_slug
-    ? `https://activopos.com/catalogo/${business.catalog_slug}`
+    ? `${baseUrl}/catalogo/${business.catalog_slug}`
     : null
 
   const visibilityCounts = { total: 0, visible: 0, hidden: 0, on_request: 0 }
@@ -105,7 +106,7 @@ export async function GET() {
         name:               p.product_name,
         image_url:          imageUrl,
         order_count:        parseInt(String(p.order_count), 10),
-        catalog_visibility: p.catalog_visibility ?? 'visible',
+        catalog_visibility: p.catalog_visibility,
       }
     }),
 

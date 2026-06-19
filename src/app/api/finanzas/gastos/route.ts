@@ -146,13 +146,24 @@ export async function POST(req: NextRequest) {
     const fecha     = fechaStr ? new Date(fechaStr) : new Date()
     const notas     = body.notes ?? body.notas ?? null
 
+    // Validate category belongs to this tenant (IDOR guard)
+    let validatedCategoryId: number | null = null
+    if (body.expense_category_id) {
+      const cat = await prisma.expenseCategory.findFirst({
+        where: { id: body.expense_category_id, business_id: session.businessId, active: true },
+        select: { id: true },
+      })
+      if (!cat) return NextResponse.json({ error: 'Categoría inválida' }, { status: 400 })
+      validatedCategoryId = cat.id
+    }
+
     const gasto = await prisma.gasto.create({
       data: {
         business_id:  session.businessId,
         concepto:     body.concepto,
         monto_usd:    montoUsd,
         categoria,
-        category_id:  body.expense_category_id ?? null,
+        category_id:  validatedCategoryId,
         fecha,
         notas,
         is_paid:      true,

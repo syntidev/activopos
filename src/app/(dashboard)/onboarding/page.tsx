@@ -178,13 +178,12 @@ export default function OnboardingPage() {
 
     if (step === 2) {
       if (!segment) { setError('Selecciona el tipo de negocio'); return }
-      setSaving(true)
-      // Non-blocking — segment is enrichment data
-      fetch('/api/config/business', {
+      // Fire-and-forget — segment is enrichment data, don't gate the user
+      void fetch('/api/config/business', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ segment }),
-      }).catch(() => {}).finally(() => setSaving(false))
+      }).catch(() => {})
     }
 
     setStep(s => Math.min(s + 1, TOTAL))

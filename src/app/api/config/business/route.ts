@@ -18,6 +18,7 @@ const PatchSchema = z.object({
     .optional(),
   rate_source: z.enum(['bcv', 'manual']).optional(),
   rate: z.number().positive().optional(),
+  segment: z.string().max(50).optional(),
 })
 
 export async function GET() {

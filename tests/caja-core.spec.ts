@@ -52,7 +52,7 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async ({ browser }) => {
   // Restaurar estado: abrir una caja nueva para que pos-core.spec.ts encuentre caja abierta
-  const ctx  = await browser.newContext()
+  const ctx  = await browser.newContext({ storageState: 'tests/.auth-state.json' })
   const page = await ctx.newPage()
 
   const statusRes  = await page.request.get(`${BASE}/api/cash/status`)

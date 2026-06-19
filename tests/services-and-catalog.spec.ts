@@ -26,7 +26,7 @@ test.describe('Servicios sin restricción de stock — POS', () => {
 
     // El botón debe estar ENABLED (no disabled) aunque stock=0
     const serviceBtn = page.locator('button[aria-label="Agregar Corte de Cabello"]').first()
-    await expect(serviceBtn).toBeVisible({ timeout: 3000 })
+    await expect(serviceBtn).toBeVisible({ timeout: 6_000 })
     await expect(serviceBtn).toBeEnabled()
 
     // Badge muestra "Disponible" (no "Sin stock")

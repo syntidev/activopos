@@ -7,31 +7,31 @@
 
 ## 0. ESTADO GENERAL
 
-| Campo              | Valor                                                             |
-|--------------------|-------------------------------------------------------------------|
-| Último sprint      | Sprint 12                                                         |
-| Último commit      | 9bbf473 — cert(sprint-12/CLI-C): certificación módulo Finanzas   |
-| TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                 |
-| Build              | ✅ Limpio — verificar con `npm run build`                         |
-| Tests E2E          | ✅ 28/28 pasando — no regresiones                                 |
+| Campo              | Valor                                                                  |
+|--------------------|------------------------------------------------------------------------|
+| Último sprint      | Sprint 13                                                              |
+| Último commit      | 707b27c — cert(sprint-13/CLI-C): certificación catálogo admin CA01-CA05|
+| TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
+| Build              | ✅ Limpio — verificar con `npm run build`                              |
+| Tests E2E          | ✅ 33/33 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
-Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ⏳ → Analytics
+Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ⏳
 ```
 
-| Módulo        | Estado               | Sprint | Evidencia                                          |
-|---------------|----------------------|--------|----------------------------------------------------|
-| Productos     | ✅ CERTIFICADO        | 10     | TypeScript 0 errores, visibility system E2E        |
-| POS           | ✅ CERTIFICADO        | 10     | 6/6 Playwright: apertura → venta → cobro           |
-| Servicios POS | ✅ CERTIFICADO        | 10     | S01-S03: service siempre enabled en POS            |
-| Catálogo      | ✅ CERTIFICADO        | 10     | C01-C04: stock + badges + on_request + hidden      |
-| Caja          | ✅ CERTIFICADO        | 11     | C01-C05: open/close/TOCTOU/DT-012/DT-013           |
-| Reportes      | ✅ CERTIFICADO        | 11     | R01-R05: daily, top products, PDF, mensual, token  |
-| Finanzas      | ✅ CERTIFICADO        | 12     | F01-F05: P&L, PE, gastos, CxC, role guard cashier  |
-| Catálogo admin | ⏳ PENDIENTE         | 13     | Métricas, QR, toggle masivo                        |
-| Analytics     | ❌ NO INICIADO        | —      |                                                    |
+| Módulo          | Estado               | Sprint | Evidencia                                                      |
+|-----------------|----------------------|--------|----------------------------------------------------------------|
+| Productos       | ✅ CERTIFICADO        | 10     | TypeScript 0 errores, visibility system E2E                    |
+| POS             | ✅ CERTIFICADO        | 10     | 6/6 Playwright: apertura → venta → cobro                       |
+| Servicios POS   | ✅ CERTIFICADO        | 10     | S01-S03: service siempre enabled en POS                        |
+| Catálogo        | ✅ CERTIFICADO        | 10     | C01-C04: stock + badges + on_request + hidden                  |
+| Caja            | ✅ CERTIFICADO        | 11     | C01-C05: open/close/TOCTOU/DT-012/DT-013                       |
+| Reportes        | ✅ CERTIFICADO        | 11     | R01-R05: daily, top products, PDF, mensual, token              |
+| Finanzas        | ✅ CERTIFICADO        | 12     | F01-F05: P&L, PE, gastos, CxC, role guard cashier              |
+| Catálogo admin  | ✅ CERTIFICADO        | 13     | CA01-CA05: métricas, QR, bulk toggle, link, orders             |
+| Analytics       | ⏳ DESBLOQUEADO       | 14     | Siguiente sprint — catálogo completado                         |
 
 ---
 
@@ -51,12 +51,14 @@ Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Cat
 | `/caja/historial`     | `src/app/(dashboard)/caja/historial/page.tsx`    | JWT      |                                |
 | `/reportes`           | `src/app/(dashboard)/reportes/page.tsx`          | JWT      | Certificado ✅ Sprint 11       |
 | `/finanzas`           | `src/app/(dashboard)/finanzas/page.tsx`          | JWT      | CxC, CxP, Gastos, Resumen      |
+| `/catalogo-digital`   | `src/app/(dashboard)/catalogo-digital/page.tsx`  | JWT admin| Métricas QR + bulk toggle ✅ 13|
 | `/configuracion`      | `src/app/(dashboard)/configuracion/page.tsx`     | JWT      |                                |
 | `/devoluciones`       | `src/app/(dashboard)/devoluciones/page.tsx`      | JWT      |                                |
 | `/tu-dia`             | `src/app/(dashboard)/tu-dia/page.tsx`            | JWT      |                                |
 | `/usuarios`           | `src/app/(dashboard)/usuarios/page.tsx`          | JWT      |                                |
 | `/ayuda`              | `src/app/(dashboard)/ayuda/page.tsx`             | JWT      |                                |
 | `/onboarding`         | `src/app/(dashboard)/onboarding/page.tsx`        | JWT      |                                |
+| `/catalogo-digital`   | `src/app/(dashboard)/catalogo-digital/page.tsx`  | JWT admin| Métricas + QR + bulk toggle ✅ |
 | `/catalogo/[slug]`    | `src/app/catalogo/[slug]/page.tsx`               | pública  | SSR + CatalogoGrid client      |
 
 **Middleware público** (`src/middleware.ts`):
@@ -84,6 +86,12 @@ PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
 | GET      | `/api/cash/status`       | Stats del turno activo             |
 | GET\|POST| `/api/cash/movement`     | Entradas/salidas de efectivo       |
 | GET      | `/api/cash/history`      | Historial de registros             |
+
+### Catálogo admin (JWT, admin/super_admin)
+| Método | Endpoint                           | Notas                                              |
+|--------|------------------------------------|----------------------------------------------------|
+| GET    | `/api/catalogo/metrics`            | ✅ Sprint 13 — KPIs, orders, top_products, QR data |
+| PATCH  | `/api/products/bulk-visibility`    | ✅ Sprint 13 — hasta 50 IDs, business_id guard     |
 
 ### Catálogo (público, sin JWT)
 | Método | Endpoint                       | Notas                                     |
@@ -282,6 +290,12 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 ## 5. ÚLTIMOS 15 COMMITS
 
 ```
+[ver luego vía git log --oneline -15]   ← Sprint 13 commits añadidos
+707b27c  cert(sprint-13/CLI-C): certificación catálogo admin — CA01-CA05
+9a359f6  feat(sprint-13/CLI-B): UI catálogo digital admin — métricas + QR + visibilidad bulk
+ed83ba7  fix+feat(sprint-13/CLI-A): DT-025/027/028/029/031 + catálogo admin API
+48de9cb  fix(sprint-13/CLI-B): DT-024 — Infinity% en ResumenSection (P1)
+4bad02f  docs+test(sprint-12/CLI-D): 28 tests + SYSTEM_MAP v12 + HANDOFF Sprint 13
 9bbf473  cert(sprint-12/CLI-C): certificación módulo Finanzas — 5/5 E2E verde
 3243cde  feat(sprint-12/CLI-B): rediseño completo /finanzas — P&L + PE + tablas
 c665f08  docs+test(sprint-11/CLI-D): suite 23 tests + n8n workflow + SYSTEM_MAP
@@ -292,11 +306,6 @@ b069bdb  cert(sprint-11/CLI-C): certificación módulo Reportes — 5/5 E2E verd
 fac1f29  cert(sprint-11/CLI-C): certificación módulo Caja — DT-011 DT-012 DT-013
 2ccc4b9  fix(sprint-11/CLI-A): DT-011 DT-012 DT-013
 c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
-6acea5e  docs(sprint-10/cierre): SYSTEM_MAP v10 + HANDOFF Sprint 11
-26efc1a  audit(sprint-10/CLI-C): integración visibility system verificada
-6e916c2  feat(sprint-10/CLI-B): DT-006+DT-007+BLOQUE-2 — visibilidad catálogo
-e46c9ce  fix+feat(sprint-10/CLI-A): BUG-001 + P1 security + product visibility
-5a40e8e  fix(sprint-10/CLI-A): DT-001 DT-003 DT-005 — deuda técnica backend
 ```
 
 ---
@@ -327,6 +336,14 @@ e46c9ce  fix+feat(sprint-10/CLI-A): BUG-001 + P1 security + product visibility
 | DT-020 | P3  | ❌ PENDIENTE      | Export Excel en reportes                                | 13       |
 | DT-021 | P2  | ❌ PENDIENTE      | Export Excel en finanzas                                | 13       |
 | DT-022 | P3  | ❌ BACKLOG        | Gastos recurrentes (definir una vez, pagar mensual)     | Backlog  |
+| DT-023 | P3  | 📄 DISEÑADO       | Expense Categories — schema documentado, no implementado| 14       |
+| DT-024 | P1  | ✅ RESUELTO       | Infinity% en ResumenSection — safePct() + sin_margen   | 13       |
+| DT-025 | P2  | ✅ RESUELTO       | punto-equilibrio PE=0 con gastos=0 — early return      | 13       |
+| DT-026 | P3  | ❌ PENDIENTE      | regex diacríticos en r/[token]/route.ts                | Backlog  |
+| DT-027 | P2  | ✅ RESUELTO       | gastos concepto vacío con espacios — .trim().min(3)    | 13       |
+| DT-028 | P2  | ✅ RESUELTO       | egresos.total_usd excluía cuentas_pagadas              | 13       |
+| DT-029 | P2  | ✅ RESUELTO       | gastos/resumen raw SQL para rate → readCachedBcvRate() | 13       |
+| DT-031 | P2  | ✅ RESUELTO       | parsePeriod() DRY en lib/finanzas.ts (3 copias → 1)    | 13       |
 
 ---
 
@@ -393,10 +410,14 @@ src/
 │   └── globals.css
 ├── types/
 └── tests/
-    ├── pos-core.spec.ts                  ← 6/6 E2E POS certificado ✅
-    ├── services-and-catalog.spec.ts      ← 7/7 E2E services + stock ✅
+    ├── pos-core.spec.ts                  ← 6/6 ✅ POS certificado
+    ├── caja-core.spec.ts                 ← 5/5 ✅ afterAll fix: storageState
+    ├── reportes-core.spec.ts             ← 5/5 ✅
+    ├── finanzas-core.spec.ts             ← 5/5 ✅
+    ├── services-and-catalog.spec.ts      ← 7/7 ✅ timeout 6s anti-flaky
+    ├── catalogo-admin.spec.ts            ← 5/5 ✅ Sprint 13 CA01-CA05
     ├── auth.setup.ts
-    └── playwright.config.ts
+    └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
 
 ---

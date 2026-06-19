@@ -79,6 +79,13 @@ enum CatalogVisibility {
   on_request
 }
 
+enum ReportStatus {
+  pending
+  generating
+  ready
+  failed
+}
+
 // ── Modelos ────────────────────────────────────────────
 
 model Business {
@@ -111,6 +118,7 @@ model Business {
   catalog_desc         String?  @db.Text
   segment              String?  @default("retail") @db.VarChar(40)
   cobro_data           Json?
+  whatsapp             String?  @db.VarChar(30)
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
 
@@ -126,6 +134,7 @@ model Business {
   gastos           Gasto[]
   orders           Order[]
   dollar_rates     DollarRate[]
+  monthly_reports  MonthlyReport[]
 
   @@map("businesses")
 }
@@ -502,4 +511,26 @@ model OrderItem {
   order Order @relation(fields: [order_id], references: [id])
 
   @@map("order_items")
+}
+
+model MonthlyReport {
+  id               Int          @id @default(autoincrement())
+  business_id      Int
+  period           String       @db.VarChar(7)
+  status           ReportStatus @default(pending)
+  file_path        String?
+  download_token   String?      @unique
+  token_expires_at DateTime?
+  generated_at     DateTime?
+  notified_at      DateTime?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@unique([business_id, period])
+  @@index([business_id])
+  @@index([status])
+  @@index([download_token])
+  @@map("monthly_reports")
 }

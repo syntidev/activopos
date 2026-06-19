@@ -18,7 +18,7 @@ const PUBLIC_EXACT = new Set([
   '/api/reports/monthly/mark-pending', // n8n: marca todos como pending (x-api-key)
 ])
 
-const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports']
+const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports', '/analytics', '/api/analytics']
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl

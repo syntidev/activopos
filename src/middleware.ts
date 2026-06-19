@@ -8,7 +8,7 @@ const PUBLIC_PREFIXES = [
   '/catalogo/',
   '/api/catalog/',
   '/api/r/',                              // descarga pública de reportes por token
-  '/onboarding',
+  '/onboarding/',
   '/api/onboarding/',
 ]
 

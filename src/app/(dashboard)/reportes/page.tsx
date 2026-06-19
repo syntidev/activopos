@@ -127,7 +127,23 @@ function ReportesContent() {
       const res = await fetch(`/api/reports/daily?date=${d}`)
       if (res.ok) {
         const json = await res.json()
-        if (json.ok) setData(json)
+        if (json.ok) setData({
+          date:            json.date,
+          rate:            json.rate,
+          salesCount:      json.sales_count,
+          totalUsd:        json.total_usd,
+          totalBs:         json.total_bs,
+          byPaymentMethod: json.by_payment_method ?? [],
+          topProducts: (json.top_products ?? []).map((p: {
+            product_id: number; name: string; quantity: number; total_usd: number; total_bs: number
+          }) => ({
+            productId: p.product_id,
+            name:      p.name,
+            quantity:  p.quantity,
+            totalUsd:  p.total_usd,
+            totalBs:   p.total_bs,
+          })),
+        })
         else toast('Error al cargar el reporte', 'error')
       } else {
         toast('Error al cargar el reporte', 'error')

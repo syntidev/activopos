@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 
 // Prefijos públicos — todos con slash final para evitar bypass tipo /catalogo-admin
-const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
+const PUBLIC_PREFIXES = [
+  '/login',
+  '/api/auth/',
+  '/catalogo/',
+  '/api/catalog/',
+  '/api/r/',                              // descarga pública de reportes por token
+  '/api/reports/monthly/pending',         // n8n: lista pending (x-api-key)
+  '/api/reports/monthly/mark-pending',    // n8n: marca todos como pending (x-api-key)
+]
 
 // Rutas exactas públicas — no usan startsWith
 const PUBLIC_EXACT = new Set(['/', '/landing.html'])

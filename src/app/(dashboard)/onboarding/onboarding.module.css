@@ -266,6 +266,102 @@
   }
 }
 
+/* ── Step form (step 1 — biz info) ── */
+.stepForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+}
+
+.stepError {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-danger-subtle);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-danger-text);
+}
+
+/* ── Segment grid (step 2) ── */
+.segmentGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.segmentOption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  padding: var(--space-3) var(--space-2);
+  min-height: 72px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.segmentOption:hover {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-subtle);
+}
+
+.segmentOptionActive {
+  background: var(--color-brand-subtle);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+}
+
+.segmentIcon {
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.segmentOptionActive .segmentIcon {
+  color: var(--color-brand);
+}
+
+.segmentLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.segmentOptionActive .segmentLabel {
+  color: var(--color-brand-hover);
+}
+
+/* ── Feature chips (step 3 — informational) ── */
+.featureChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  width: 100%;
+}
+
+.featureChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--color-brand-subtle);
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-brand-hover);
+  cursor: default;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .progressFill      { transition: none; }
@@ -275,6 +371,8 @@
   .confettiPiece     { animation: none; opacity: 0; }
   .linkBtn           { transition: none; }
   .skipLink          { transition: none; }
+  .segmentOption     { transition: none; }
+  .segmentIcon       { transition: none; }
 }
 
 /* ── Responsive ── */
@@ -291,5 +389,9 @@
   .iconWrap {
     width: 56px;
     height: 56px;
+  }
+
+  .segmentGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

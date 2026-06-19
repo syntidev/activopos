@@ -1,87 +1,66 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
-  Target,
-  Settings,
-  Package,
+  Building2,
+  ShoppingBag,
+  Utensils,
+  Coffee,
+  HeartPulse,
+  Wheat,
+  Wrench,
+  BookOpen,
   ShoppingCart,
+  Globe,
+  Package,
+  BarChart2,
+  TrendingUp,
+  Users,
   PartyPopper,
-  ArrowRight,
-  ExternalLink,
   CheckCircle2,
+  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { Input }  from '@/components/ui/Input'
 import styles from './onboarding.module.css'
 
-/* ── Constants ── */
+/* ── Business segments ── */
 
-const STORAGE_KEY = 'activopos_onboarding_step'
-
-const STEPS = [
-  {
-    id: 1,
-    icon: Target,
-    title: 'Bienvenido a ActivoPOS',
-    subtitle: 'Tu nuevo punto de venta',
-    description:
-      'Vamos a configurar tu negocio en 5 minutos. Sigue estos pasos para hacer tu primera venta.',
-    action: null,
-    pollInterval: null,
-  },
-  {
-    id: 2,
-    icon: Settings,
-    title: 'Configura la Tasa BCV',
-    subtitle: 'Paso 2 de 5',
-    description:
-      'Primero asegúrate de que la tasa BCV esté activa. Ve a Configuración → General y presiona "Guardar Tasas".',
-    action: { label: 'Ir a Configuración', href: '/configuracion?tab=general' },
-    pollInterval: 2000,
-  },
-  {
-    id: 3,
-    icon: Package,
-    title: 'Crea tu Primer Producto',
-    subtitle: 'Paso 3 de 5',
-    description:
-      'Ahora crea tu primer producto. Haz clic en "+ Nuevo" e ingresa nombre, costo y margen de ganancia.',
-    action: { label: 'Ir a Productos', href: '/productos' },
-    pollInterval: 3000,
-  },
-  {
-    id: 4,
-    icon: ShoppingCart,
-    title: 'Haz tu Primera Venta',
-    subtitle: 'Paso 4 de 5',
-    description:
-      '¡Producto listo! Búscalo en el POS, agrégalo al ticket y procesa el pago.',
-    action: { label: 'Ir al POS', href: '/pos' },
-    pollInterval: 3000,
-  },
-  {
-    id: 5,
-    icon: PartyPopper,
-    title: '¡Tour Completado!',
-    subtitle: 'Ya eres un profesional',
-    description:
-      'Ya dominas ActivoPOS. Si necesitas ayuda usa la sección de Ayuda o contacta soporte por WhatsApp.',
-    action: null,
-    pollInterval: null,
-  },
+const SEGMENTS = [
+  { value: 'tienda',      label: 'Tienda',      Icon: ShoppingBag },
+  { value: 'restaurante', label: 'Restaurante',  Icon: Utensils    },
+  { value: 'cafeteria',   label: 'Cafetería',    Icon: Coffee      },
+  { value: 'farmacia',    label: 'Farmacia',     Icon: HeartPulse  },
+  { value: 'panaderia',   label: 'Panadería',    Icon: Wheat       },
+  { value: 'servicios',   label: 'Servicios',    Icon: Wrench      },
+  { value: 'libreria',    label: 'Librería',     Icon: BookOpen    },
+  { value: 'otro',        label: 'Otro',         Icon: Building2   },
 ] as const
+
+/* ── Feature chips (informational, step 3) ── */
+
+const FEATURES = [
+  { label: 'POS',        Icon: ShoppingCart },
+  { label: 'Catálogo',   Icon: Globe        },
+  { label: 'Inventario', Icon: Package      },
+  { label: 'Reportes',   Icon: BarChart2    },
+  { label: 'Finanzas',   Icon: TrendingUp   },
+  { label: 'Clientes',   Icon: Users        },
+]
+
+const TOTAL = 4
 
 /* ── Confetti ── */
 
 interface ConfettiPiece {
-  id: number
-  color: string
-  left: string
-  delay: string
+  id:       number
+  color:    string
+  left:     string
+  delay:    string
   duration: string
-  size: string
+  size:     string
 }
 
 const CONFETTI_COLORS = ['#0D9488', '#1D9E75', '#D97706', '#F0B90B', '#F0F6FC']
@@ -92,12 +71,12 @@ function Confetti() {
   useEffect(() => {
     setPieces(
       Array.from({ length: 60 }, (_, i) => ({
-        id: i,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-        left: `${Math.floor(Math.random() * 100)}%`,
-        delay: `${(Math.random() * 1.5).toFixed(2)}s`,
+        id:       i,
+        color:    CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        left:     `${Math.floor(Math.random() * 100)}%`,
+        delay:    `${(Math.random() * 1.5).toFixed(2)}s`,
         duration: `${(2 + Math.random() * 2).toFixed(2)}s`,
-        size: `${Math.floor(6 + Math.random() * 9)}px`,
+        size:     `${Math.floor(6 + Math.random() * 9)}px`,
       }))
     )
   }, [])
@@ -109,11 +88,11 @@ function Confetti() {
           key={p.id}
           className={styles.confettiPiece}
           style={{
-            left: p.left,
-            backgroundColor: p.color,
-            width: p.size,
-            height: p.size,
-            animationDelay: p.delay,
+            left:              p.left,
+            backgroundColor:   p.color,
+            width:             p.size,
+            height:            p.size,
+            animationDelay:    p.delay,
             animationDuration: p.duration,
           }}
         />
@@ -122,46 +101,24 @@ function Confetti() {
   )
 }
 
-/* ── Poll functions ── */
-
-async function checkStep2(): Promise<boolean> {
-  try {
-    const res = await fetch('/api/dashboard/kpis')
-    if (!res.ok) return false
-    const data = await res.json()
-    return data.ok === true
-  } catch { return false }
-}
-
-async function checkStep3(): Promise<boolean> {
-  try {
-    const res = await fetch('/api/products?limit=1')
-    if (!res.ok) return false
-    const data = await res.json()
-    return (data.pagination?.total ?? data.products?.length ?? 0) > 0
-  } catch { return false }
-}
-
-async function checkStep4(): Promise<boolean> {
-  try {
-    const res = await fetch('/api/reports/sales?status=paid&limit=1')
-    if (!res.ok) return false
-    const data = await res.json()
-    return (data.pagination?.total ?? data.sales?.length ?? 0) > 0
-  } catch { return false }
-}
-
-const POLL_FNS: Partial<Record<number, () => Promise<boolean>>> = {
-  2: checkStep2,
-  3: checkStep3,
-  4: checkStep4,
-}
-
 /* ── Main component ── */
 
 export default function OnboardingPage() {
-  const router = useRouter()
+  const router        = useRouter()
   const prefersReduced = useReducedMotion()
+
+  const [step,       setStep]       = useState(1)
+  const [saving,     setSaving]     = useState(false)
+  const [error,      setError]      = useState('')
+  const [loadingBiz, setLoadingBiz] = useState(true)
+
+  // Step 1 — business info
+  const [bizName, setBizName] = useState('')
+  const [phone,   setPhone]   = useState('')
+  const [city,    setCity]    = useState('')
+
+  // Step 2 — segment
+  const [segment, setSegment] = useState<string | null>(null)
 
   const stepVariants = useMemo(() => ({
     enter:  { opacity: 0, x: prefersReduced ? 0 : 48 },
@@ -169,100 +126,117 @@ export default function OnboardingPage() {
     exit:   { opacity: 0, x: prefersReduced ? 0 : -48 },
   }), [prefersReduced])
 
-  const [step, setStep] = useState<number>(() => {
-    if (typeof window === 'undefined') return 1
-    return Number(localStorage.getItem(STORAGE_KEY) ?? '1')
-  })
-
-  const [completing, setCompleting] = useState(false)
-  const [detected, setDetected] = useState(false)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const current = STEPS[step - 1]
-  const isLast = step === 5
-
-  /* ── Persist step ── */
+  /* ── Pre-fill biz info ── */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, String(step))
-    setDetected(false)
-  }, [step])
-
-  /* ── Polling ── */
-  const stopPoll = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current)
-      pollRef.current = null
-    }
+    fetch('/api/config/business')
+      .then(r => r.json() as Promise<{
+        ok: boolean
+        business?: { name?: string; phone?: string; city?: string; segment?: string }
+      }>)
+      .then(j => {
+        if (j.ok && j.business) {
+          if (j.business.name)    setBizName(j.business.name)
+          if (j.business.phone)   setPhone(j.business.phone)
+          if (j.business.city)    setCity(j.business.city)
+          if (j.business.segment) setSegment(j.business.segment)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingBiz(false))
   }, [])
 
-  useEffect(() => {
-    stopPoll()
-    const pollFn = POLL_FNS[step]
-    if (!pollFn) return
+  /* ── Advance logic ── */
 
-    pollRef.current = setInterval(async () => {
-      const ok = await pollFn()
-      if (ok) {
-        stopPoll()
-        setDetected(true)
-        // Small delay so user sees the success state before advancing
-        setTimeout(() => setStep((s) => Math.min(s + 1, 5)), 1200)
+  async function advance() {
+    setError('')
+
+    if (step === 1) {
+      if (!bizName.trim()) { setError('El nombre del negocio es requerido'); return }
+      setSaving(true)
+      try {
+        const res = await fetch('/api/config/business', {
+          method:  'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({
+            name:  bizName.trim(),
+            phone: phone.trim() || undefined,
+            city:  city.trim()  || undefined,
+          }),
+        })
+        if (!res.ok) {
+          const j = await res.json() as { error?: string }
+          setError(j.error ?? 'Error al guardar')
+          return
+        }
+      } catch {
+        setError('Error de conexión')
+        return
+      } finally {
+        setSaving(false)
       }
-    }, STEPS[step - 1].pollInterval ?? 3000)
+    }
 
-    return stopPoll
-  }, [step, stopPoll])
+    if (step === 2) {
+      if (!segment) { setError('Selecciona el tipo de negocio'); return }
+      setSaving(true)
+      // Non-blocking — segment is enrichment data
+      fetch('/api/config/business', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ segment }),
+      }).catch(() => {}).finally(() => setSaving(false))
+    }
 
-  /* ── Complete handler ── */
-  const handleComplete = async () => {
-    setCompleting(true)
+    setStep(s => Math.min(s + 1, TOTAL))
+  }
+
+  async function handleComplete() {
+    setSaving(true)
     try {
       await fetch('/api/onboarding/complete', { method: 'PATCH' })
-      localStorage.removeItem(STORAGE_KEY)
       router.push('/escritorio')
     } catch {
-      setCompleting(false)
+      setSaving(false)
     }
   }
 
-  /* ── Skip ── */
-  const handleSkip = async () => {
-    stopPoll()
+  async function handleSkip() {
     await fetch('/api/onboarding/complete', { method: 'PATCH' })
-    localStorage.removeItem(STORAGE_KEY)
     router.push('/escritorio')
   }
 
-  /* ── Step dots ── */
+  /* ── Dots ── */
   const dots = useMemo(() =>
-    STEPS.map((s) => ({
-      id: s.id,
-      done: s.id < step,
-      active: s.id === step,
-    })), [step])
+    Array.from({ length: TOTAL }, (_, i) => ({
+      id:     i + 1,
+      done:   i + 1 < step,
+      active: i + 1 === step,
+    })),
+    [step]
+  )
 
-  const Icon = current.icon
+  const isLast = step === TOTAL
 
   return (
     <div className={styles.page}>
       {isLast && <Confetti />}
 
       <div className={styles.card}>
-        {/* Progress header */}
+        {/* Progress bar */}
         <div className={styles.progressBar}>
           <span className={styles.progressLabel}>
-            {isLast ? '¡Completado!' : `Paso ${step} de 5`}
+            {isLast ? '¡Listo!' : `Paso ${step} de ${TOTAL}`}
           </span>
           <div className={styles.progressTrack}>
             <div
               className={styles.progressFill}
-              style={{ width: `${(step / 5) * 100}%` }}
+              style={{ width: `${(step / TOTAL) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Step dots */}
-        <div className={styles.dots} role="tablist" aria-label="Pasos del tour">
+        <div className={styles.dots} role="tablist" aria-label="Pasos de configuración">
           {dots.map((d) => (
             <span
               key={d.id}
@@ -287,88 +261,175 @@ export default function OnboardingPage() {
             transition={{ duration: 0.22, ease: 'easeOut' }}
             className={styles.stepContent}
           >
-            {/* Icon */}
-            <div className={`${styles.iconWrap} ${isLast ? styles.iconWrapSuccess : ''}`}>
-              <Icon size={28} aria-hidden="true" />
-            </div>
-
-            <p className={styles.stepSubtitle}>{current.subtitle}</p>
-            <h1 className={styles.stepTitle}>{current.title}</h1>
-            <p className={styles.stepDescription}>{current.description}</p>
-
-            {/* Detected badge */}
-            {detected && (
-              <motion.div
-                initial={{ opacity: 0, scale: prefersReduced ? 1 : 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: prefersReduced ? 0 : 0.2 }}
-                className={styles.detectedBadge}
-              >
-                <CheckCircle2 size={14} aria-hidden="true" />
-                ¡Detectado! Avanzando...
-              </motion.div>
+            {/* Step 1 — Biz info */}
+            {step === 1 && (
+              <>
+                <div className={styles.iconWrap}>
+                  <Building2 size={28} aria-hidden="true" />
+                </div>
+                <h1 className={styles.stepTitle}>¿Cómo se llama tu negocio?</h1>
+                <p className={styles.stepDescription}>
+                  Cuéntanos un poco sobre ti para personalizar tu experiencia.
+                </p>
+                {loadingBiz ? (
+                  <p className={styles.stepDescription}>Cargando…</p>
+                ) : (
+                  <form
+                    id="step1-form"
+                    className={styles.stepForm}
+                    onSubmit={e => { e.preventDefault(); void advance() }}
+                  >
+                    <Input
+                      label="Nombre del negocio"
+                      value={bizName}
+                      onChange={e => setBizName(e.target.value)}
+                      placeholder="ej. Tienda La Esperanza"
+                      maxLength={100}
+                      required
+                      autoFocus
+                    />
+                    <Input
+                      label="Teléfono (opcional)"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="ej. +58 412 0000000"
+                      maxLength={30}
+                    />
+                    <Input
+                      label="Ciudad (opcional)"
+                      value={city}
+                      onChange={e => setCity(e.target.value)}
+                      placeholder="ej. Caracas"
+                      maxLength={80}
+                    />
+                    {error && <p className={styles.stepError}>{error}</p>}
+                  </form>
+                )}
+              </>
             )}
 
-            {/* Polling indicator */}
-            {!detected && current.pollInterval && (
-              <p className={styles.pollingHint}>
-                <span className={styles.pollingDot} aria-hidden="true" />
-                Esperando detección automática...
-              </p>
+            {/* Step 2 — Segment */}
+            {step === 2 && (
+              <>
+                <div className={styles.iconWrap}>
+                  <ShoppingBag size={28} aria-hidden="true" />
+                </div>
+                <h1 className={styles.stepTitle}>¿Qué tipo de negocio tienes?</h1>
+                <p className={styles.stepDescription}>
+                  Esto nos ayuda a mostrarte lo más relevante para ti.
+                </p>
+                <div
+                  className={styles.segmentGrid}
+                  role="radiogroup"
+                  aria-label="Tipo de negocio"
+                >
+                  {SEGMENTS.map(({ value, label, Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={segment === value}
+                      className={`${styles.segmentOption} ${segment === value ? styles.segmentOptionActive : ''}`}
+                      onClick={() => { setSegment(value); setError('') }}
+                    >
+                      <Icon
+                        size={20}
+                        className={styles.segmentIcon}
+                        aria-hidden="true"
+                      />
+                      <span className={styles.segmentLabel}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+                {error && <p className={styles.stepError}>{error}</p>}
+              </>
+            )}
+
+            {/* Step 3 — Feature discovery */}
+            {step === 3 && (
+              <>
+                <div className={styles.iconWrap}>
+                  <ShoppingCart size={28} aria-hidden="true" />
+                </div>
+                <h1 className={styles.stepTitle}>Todo lo que necesitas, incluido</h1>
+                <p className={styles.stepDescription}>
+                  ActivoPOS viene con todas estas herramientas listas para usar desde el primer día.
+                </p>
+                <div className={styles.featureChips} role="list">
+                  {FEATURES.map(({ label, Icon }) => (
+                    <span key={label} className={styles.featureChip} role="listitem">
+                      <Icon size={12} aria-hidden="true" />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Step 4 — Success */}
+            {step === 4 && (
+              <>
+                <div className={`${styles.iconWrap} ${styles.iconWrapSuccess}`}>
+                  <PartyPopper size={28} aria-hidden="true" />
+                </div>
+                <h1 className={styles.stepTitle}>
+                  ¡Todo listo{bizName ? `, ${bizName}` : ''}!
+                </h1>
+                <p className={styles.stepDescription}>
+                  Tu negocio está configurado. Haz tu primera venta ahora mismo.
+                </p>
+              </>
             )}
           </motion.div>
         </AnimatePresence>
 
         {/* Actions */}
         <div className={styles.actions}>
-          {current.action && (
-            <a
-              href={current.action.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.linkBtn}
-            >
-              {current.action.label}
-              <ExternalLink size={13} aria-hidden="true" />
-            </a>
-          )}
-
           {isLast ? (
             <Button
               variant="primary"
               size="lg"
               fullWidth
               onClick={handleComplete}
-              loading={completing}
+              loading={saving}
             >
-              ¡Empieza a usar ActivoPOS!
+              ¡Empieza a vender!
             </Button>
           ) : step === 1 ? (
             <Button
               variant="primary"
               size="lg"
               fullWidth
+              type="submit"
+              form="step1-form"
+              loading={saving}
+              disabled={loadingBiz}
               rightIcon={<ArrowRight size={16} aria-hidden="true" />}
-              onClick={() => setStep(2)}
             >
-              ¡Empezar!
+              Continuar
             </Button>
           ) : (
             <Button
-              variant="ghost"
-              size="sm"
-              rightIcon={<ArrowRight size={14} aria-hidden="true" />}
-              onClick={() => setStep((s) => Math.min(s + 1, 5))}
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={() => void advance()}
+              loading={saving}
+              rightIcon={step < TOTAL - 1 ? <ArrowRight size={16} aria-hidden="true" /> : undefined}
             >
-              Saltar este paso
+              {step === TOTAL - 1 ? 'Finalizar' : 'Continuar'}
             </Button>
           )}
         </div>
 
-        {/* Skip tour */}
+        {/* Skip */}
         {!isLast && (
-          <button className={styles.skipLink} onClick={handleSkip}>
-            Omitir tour completo
+          <button
+            type="button"
+            className={styles.skipLink}
+            onClick={() => void handleSkip()}
+          >
+            Configurar después
           </button>
         )}
       </div>

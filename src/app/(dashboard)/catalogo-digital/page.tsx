@@ -48,10 +48,11 @@ function buildQrUrl(data: string): string {
 
 function CatalogoAdminContent() {
   const { toast } = useToast()
-  const [data,     setData]     = useState<MetricsData | null>(null)
-  const [loading,  setLoading]  = useState(true)
-  const [selected, setSelected] = useState<number[]>([])
-  const [updating, setUpdating] = useState(false)
+  const [data,        setData]        = useState<MetricsData | null>(null)
+  const [loading,     setLoading]     = useState(true)
+  const [selected,    setSelected]    = useState<number[]>([])
+  const [updating,    setUpdating]    = useState(false)
+  const [togglingId,  setTogglingId]  = useState<number | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -78,10 +79,17 @@ function CatalogoAdminContent() {
   }
 
   async function quickToggle(productId: number, current: CatalogVisibility) {
-    const next: CatalogVisibility = current === 'visible' ? 'hidden' : 'visible'
-    const ok = await callBulkVisibility([productId], next)
-    if (ok) { toast('Visibilidad actualizada', 'success'); load() }
-    else toast('Error al actualizar', 'error')
+    setTogglingId(productId)
+    try {
+      const next: CatalogVisibility = current === 'visible' ? 'hidden' : 'visible'
+      const ok = await callBulkVisibility([productId], next)
+      if (ok) { toast('Visibilidad actualizada', 'success'); await load() }
+      else toast('Error al actualizar', 'error')
+    } catch {
+      toast('Error de conexión', 'error')
+    } finally {
+      setTogglingId(null)
+    }
   }
 
   async function bulkUpdate(visibility: CatalogVisibility) {
@@ -89,8 +97,15 @@ function CatalogoAdminContent() {
     setUpdating(true)
     try {
       const ok = await callBulkVisibility(selected, visibility)
-      if (ok) { toast(`${selected.length} productos actualizados`, 'success'); load() }
-      else toast('Error al actualizar', 'error')
+      if (ok) {
+        toast(`${selected.length} productos actualizados`, 'success')
+        await load()
+        setSelected([])
+      } else {
+        toast('Error al actualizar', 'error')
+      }
+    } catch {
+      toast('Error de conexión', 'error')
     } finally {
       setUpdating(false)
     }
@@ -240,7 +255,7 @@ function CatalogoAdminContent() {
                       type="checkbox"
                       checked={products.length > 0 && selected.length === products.length}
                       onChange={toggleAll}
-                      aria-label="Seleccionar todos"
+                      aria-label={`Seleccionar los ${products.length} mostrados`}
                     />
                   </th>
                   <th className={styles.th}>Producto</th>
@@ -274,6 +289,7 @@ function CatalogoAdminContent() {
                     <td className={`${styles.td} ${styles.colRight}`}>
                       <button
                         className={styles.actionBtn}
+                        disabled={togglingId === p.id}
                         onClick={() => quickToggle(p.id, p.catalog_visibility)}
                       >
                         {p.catalog_visibility === 'visible'

@@ -60,6 +60,23 @@ export async function getBcvRate(businessId?: number): Promise<number> {
   }
 }
 
+// Lee la tasa desde cache o DB sin hacer fetch externo ni escribir registros.
+// Uso: endpoints públicos (catálogo) donde no hay session.businessId disponible.
+export async function readCachedBcvRate(): Promise<number> {
+  if (cache && Date.now() - cache.fetchedAt < CACHE_TTL) return cache.rate
+
+  const last = await prisma.dollarRate.findFirst({
+    orderBy: { created_at: 'desc' },
+  })
+  if (last) {
+    const rate = parseFloat(last.rate.toString())
+    cache = { rate, fetchedAt: Date.now() }
+    return rate
+  }
+
+  return FALLBACK_RATE
+}
+
 export function formatBs(usd: number, rate: number): string {
   return (usd * rate).toLocaleString('es-VE', {
     minimumFractionDigits: 2,

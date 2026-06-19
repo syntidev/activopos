@@ -8,7 +8,6 @@ type RouteContext = { params: { id: string } }
 
 const abonoSchema = z.object({
   payment_method_id: z.number().int().positive(),
-  amount_bs:         z.number().positive(),
   amount_usd:        z.number().positive(),
   reference:         z.string().max(100).optional(),
   notes:             z.string().max(500).optional(),
@@ -51,13 +50,15 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const abono = await prisma.$transaction(async (tx) => {
+      const amount_bs = body.amount_usd * rate
+
       const newAbono = await tx.saleAbono.create({
         data: {
           sale_id:           saleId,
           payment_method_id: body.payment_method_id,
           cash_register_id:  activeRegister.id,
           amount_usd:        body.amount_usd,
-          amount_bs:         body.amount_bs,
+          amount_bs,
           rate_used:         rate,
           reference:         body.reference ?? null,
           notes:             body.notes ?? null,

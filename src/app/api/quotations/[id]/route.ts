@@ -87,6 +87,15 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     const existing = await prisma.quotation.findFirst({ where: { id, business_id: bid } })
     if (!existing) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
 
+    // Verify client belongs to this business before writing
+    if (body.client_id !== undefined && body.client_id !== null) {
+      const owned = await prisma.client.findFirst({
+        where: { id: body.client_id, business_id: bid },
+        select: { id: true },
+      })
+      if (!owned) return NextResponse.json({ error: 'Cliente inválido' }, { status: 400 })
+    }
+
     // Content edits only allowed on draft/sent
     const hasContentEdit = body.items !== undefined || body.notes !== undefined ||
       body.valid_until !== undefined || body.client_id !== undefined

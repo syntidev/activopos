@@ -27,6 +27,15 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     })
     if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
+    // Prevent horizontal/vertical privilege escalation:
+    // admin cannot reset another admin's or super_admin's PIN
+    if (target.role === 'super_admin' && session.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    }
+    if (target.role === 'admin' && session.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    }
+
     const hashed = await bcrypt.hash(pin, 10)
     await prisma.user.update({ where: { id }, data: { password: hashed } })
 

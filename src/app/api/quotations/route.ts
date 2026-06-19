@@ -95,6 +95,15 @@ export async function POST(req: NextRequest) {
     const subtotal = body.items.reduce((s, i) => s + i.qty * i.price_usd, 0)
     const r2       = (x: number) => Math.round(x * 100) / 100
 
+    // Verify client belongs to this business before writing
+    if (body.client_id !== undefined) {
+      const owned = await prisma.client.findFirst({
+        where: { id: body.client_id, business_id: bid },
+        select: { id: true },
+      })
+      if (!owned) return NextResponse.json({ error: 'Cliente inválido' }, { status: 400 })
+    }
+
     const quotation = await prisma.$transaction(async tx => {
       const count  = await tx.quotation.count({ where: { business_id: bid } })
       const number = `QUO-${year}-${String(count + 1).padStart(4, '0')}`

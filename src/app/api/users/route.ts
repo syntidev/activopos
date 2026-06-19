@@ -5,11 +5,12 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
 const PostSchema = z.object({
-  name: z.string().min(2).max(255),
-  email: z.string().email().max(255),
-  password: z.string().min(6).max(72),
-  role: z.enum(['admin', 'cashier']),
-})
+  name:     z.string().min(2).max(255),
+  email:    z.string().email().max(255),
+  password: z.string().min(6).max(72).optional(),
+  pin:      z.string().regex(/^\d{4}$/).optional(),
+  role:     z.enum(['admin', 'cashier']),
+}).refine(d => d.password ?? d.pin, { message: 'password o pin requerido' })
 
 export async function GET() {
   const session = await getSession()
@@ -49,21 +50,32 @@ export async function POST(request: Request) {
     throw err
   }
 
+  // Límite de 5 cajeros activos por negocio
+  if (data.role === 'cashier') {
+    const cashierCount = await prisma.user.count({
+      where: { business_id: session.businessId, role: 'cashier', is_active: true },
+    })
+    if (cashierCount >= 5) {
+      return NextResponse.json({ error: 'Límite de 5 cajeros activos alcanzado' }, { status: 422 })
+    }
+  }
+
   const duplicate = await prisma.user.findUnique({
     where: { business_id_email: { business_id: session.businessId, email: data.email } },
   })
 
   if (duplicate) return NextResponse.json({ error: 'Email ya registrado en este negocio' }, { status: 409 })
 
-  const hashed = await bcrypt.hash(data.password, 10)
+  const credential = data.password ?? data.pin ?? ''
+  const hashed = await bcrypt.hash(credential, 10)
 
   const user = await prisma.user.create({
     data: {
       business_id: session.businessId,
-      name: data.name,
-      email: data.email,
-      password: hashed,
-      role: data.role,
+      name:        data.name,
+      email:       data.email,
+      password:    hashed,
+      role:        data.role,
     },
     select: {
       id: true,

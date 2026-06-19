@@ -136,21 +136,22 @@ model Business {
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
 
-  users            User[]
-  products         Product[]
-  categories       Category[]
-  sales            Sale[]
-  cash_registers   CashRegister[]
-  clients          Client[]
-  payment_methods  PaymentMethod[]
-  activity_logs    ActivityLog[]
-  inventory_entries InventoryEntry[]
-  gastos           Gasto[]
-  orders           Order[]
-  dollar_rates     DollarRate[]
-  monthly_reports  MonthlyReport[]
-  quotations       Quotation[]
-  returns          Return[]
+  users              User[]
+  products           Product[]
+  categories         Category[]
+  sales              Sale[]
+  cash_registers     CashRegister[]
+  clients            Client[]
+  payment_methods    PaymentMethod[]
+  activity_logs      ActivityLog[]
+  inventory_entries  InventoryEntry[]
+  gastos             Gasto[]
+  orders             Order[]
+  dollar_rates       DollarRate[]
+  monthly_reports    MonthlyReport[]
+  quotations         Quotation[]
+  returns            Return[]
+  expense_categories ExpenseCategory[]
 
   @@map("businesses")
 }
@@ -452,21 +453,39 @@ model ActivityLog {
   @@map("activity_logs")
 }
 
-model Gasto {
-  id          Int       @id @default(autoincrement())
+model ExpenseCategory {
+  id          Int      @id @default(autoincrement())
   business_id Int
-  concepto    String    @db.VarChar(150)
-  monto_usd   Decimal   @db.Decimal(10, 2)
-  categoria   String    @default("otro") @db.VarChar(50)
-  fecha       DateTime  @db.Date
-  notas       String?   @db.Text
-  is_paid     Boolean   @default(true)
-  paid_at     DateTime?
-  created_by  Int
-  created_at  DateTime  @default(now())
+  name        String   @db.VarChar(80)
+  color       String?  @db.VarChar(7)
+  is_system   Boolean  @default(false)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
 
   business Business @relation(fields: [business_id], references: [id])
-  creator  User     @relation(fields: [created_by], references: [id])
+  gastos   Gasto[]
+
+  @@unique([business_id, name])
+  @@map("expense_categories")
+}
+
+model Gasto {
+  id           Int       @id @default(autoincrement())
+  business_id  Int
+  concepto     String    @db.VarChar(150)
+  monto_usd    Decimal   @db.Decimal(10, 2)
+  categoria    String    @default("otro") @db.VarChar(50)
+  category_id  Int?
+  fecha        DateTime  @db.Date
+  notas        String?   @db.Text
+  is_paid      Boolean   @default(true)
+  paid_at      DateTime?
+  created_by   Int
+  created_at   DateTime  @default(now())
+
+  business          Business         @relation(fields: [business_id], references: [id])
+  creator           User             @relation(fields: [created_by], references: [id])
+  expense_category  ExpenseCategory? @relation(fields: [category_id], references: [id])
 
   @@map("gastos")
 }

@@ -14,15 +14,16 @@ const CATEGORIAS = [
 ] as const
 
 const gastoSchema = z.object({
-  concepto:   z.string().trim().min(3).max(200),
-  category:   z.enum(CATEGORIAS).optional(),
-  categoria:  z.enum(CATEGORIAS).optional(),
-  amount_usd: z.number().positive().optional(),
-  monto_usd:  z.number().positive().optional(),
-  date:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  fecha:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  notes:      z.string().max(500).optional(),
-  notas:      z.string().max(500).optional(),
+  concepto:            z.string().trim().min(3).max(200),
+  category:            z.enum(CATEGORIAS).optional(),
+  categoria:           z.enum(CATEGORIAS).optional(),
+  expense_category_id: z.number().int().positive().optional(),
+  amount_usd:          z.number().positive().optional(),
+  monto_usd:           z.number().positive().optional(),
+  date:                z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  fecha:               z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  notes:               z.string().max(500).optional(),
+  notas:               z.string().max(500).optional(),
 }).refine(d => d.amount_usd ?? d.monto_usd, {
   message: 'amount_usd requerido',
 })
@@ -96,21 +97,22 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok:   true,
     gastos: gastos.map(g => ({
-      id:         g.id,
-      concepto:   g.concepto,
-      category:   g.categoria,
-      amount_usd: Number(g.monto_usd),
-      amount_bs:  r2(Number(g.monto_usd) * rate),
-      date:       g.fecha,
-      notes:      g.notas,
-      is_paid:    g.is_paid,
-      paid_at:    g.paid_at,
-      created_at: g.created_at,
+      id:                  g.id,
+      concepto:            g.concepto,
+      category:            g.categoria,
+      expense_category_id: g.category_id,
+      amount_usd:          Number(g.monto_usd),
+      amount_bs:           r2(Number(g.monto_usd) * rate),
+      date:                g.fecha,
+      notes:               g.notas,
+      is_paid:             g.is_paid,
+      paid_at:             g.paid_at,
+      created_at:          g.created_at,
       // backward compat
-      categoria:  g.categoria,
-      monto_usd:  Number(g.monto_usd),
-      fecha:      g.fecha,
-      notas:      g.notas,
+      categoria:           g.categoria,
+      monto_usd:           Number(g.monto_usd),
+      fecha:               g.fecha,
+      notas:               g.notas,
     })),
     totals: {
       total_usd:   totalUsd,
@@ -146,15 +148,16 @@ export async function POST(req: NextRequest) {
 
     const gasto = await prisma.gasto.create({
       data: {
-        business_id: session.businessId,
-        concepto:    body.concepto,
-        monto_usd:   montoUsd,
+        business_id:  session.businessId,
+        concepto:     body.concepto,
+        monto_usd:    montoUsd,
         categoria,
+        category_id:  body.expense_category_id ?? null,
         fecha,
         notas,
-        is_paid:     true,
-        paid_at:     fecha,
-        created_by:  session.userId,
+        is_paid:      true,
+        paid_at:      fecha,
+        created_by:   session.userId,
       },
     })
 
@@ -163,8 +166,9 @@ export async function POST(req: NextRequest) {
         ok:    true,
         gasto: {
           ...gasto,
-          amount_usd: Number(gasto.monto_usd),
-          monto_usd:  Number(gasto.monto_usd),
+          amount_usd:          Number(gasto.monto_usd),
+          monto_usd:           Number(gasto.monto_usd),
+          expense_category_id: gasto.category_id,
         },
       },
       { status: 201 }

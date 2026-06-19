@@ -9,32 +9,36 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 14                                                              |
-| Último commit      | (ver git log — post Sprint 14)                                         |
+| Último sprint      | Sprint 15                                                              |
+| Último commit      | (ver git log — post Sprint 15)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 38/38 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 47/47 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
-Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅
+Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ → Sprint 15 ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados.**
 
-| Módulo          | Estado               | Sprint | Evidencia                                                      |
-|-----------------|----------------------|--------|----------------------------------------------------------------|
-| Productos       | ✅ CERTIFICADO        | 10     | TypeScript 0 errores, visibility system E2E                    |
-| POS             | ✅ CERTIFICADO        | 10     | 6/6 Playwright: apertura → venta → cobro                       |
-| Servicios POS   | ✅ CERTIFICADO        | 10     | S01-S03: service siempre enabled en POS                        |
-| Catálogo        | ✅ CERTIFICADO        | 10     | C01-C04: stock + badges + on_request + hidden                  |
-| Caja            | ✅ CERTIFICADO        | 11     | C01-C05: open/close/TOCTOU/DT-012/DT-013                       |
-| Reportes        | ✅ CERTIFICADO        | 11     | R01-R05: daily, top products, PDF, mensual, token              |
-| Finanzas        | ✅ CERTIFICADO        | 12     | F01-F05: P&L, PE, gastos, CxC, role guard cashier              |
-| Catálogo admin  | ✅ CERTIFICADO        | 13     | CA01-CA05: métricas, QR, bulk toggle, link, orders             |
-| Analytics       | ✅ CERTIFICADO        | 14     | AN01-AN05: page load, no NaN, período, chart, role guard       |
-| PWA             | ✅ IMPLEMENTADO       | 14     | DT-004: sw.js + offline.html + manifest.json + íconos          |
+| Módulo              | Estado               | Sprint | Evidencia                                                      |
+|---------------------|----------------------|--------|----------------------------------------------------------------|
+| Productos           | ✅ CERTIFICADO        | 10     | TypeScript 0 errores, visibility system E2E                    |
+| POS                 | ✅ CERTIFICADO        | 10     | 6/6 Playwright: apertura → venta → cobro                       |
+| Servicios POS       | ✅ CERTIFICADO        | 10     | S01-S03: service siempre enabled en POS                        |
+| Catálogo            | ✅ CERTIFICADO        | 10     | C01-C04: stock + badges + on_request + hidden                  |
+| Caja                | ✅ CERTIFICADO        | 11     | C01-C05: open/close/TOCTOU/DT-012/DT-013                       |
+| Reportes            | ✅ CERTIFICADO        | 11     | R01-R05: daily, top products, PDF, mensual, token              |
+| Finanzas            | ✅ CERTIFICADO        | 12     | F01-F05: P&L, PE, gastos, CxC, role guard cashier              |
+| Catálogo admin      | ✅ CERTIFICADO        | 13     | CA01-CA05: métricas, QR, bulk toggle, link, orders             |
+| Analytics           | ✅ CERTIFICADO        | 14     | AN01-AN05: page load, no NaN, período, chart, role guard       |
+| PWA                 | ✅ IMPLEMENTADO       | 14     | DT-004: sw.js + offline.html + manifest.json + íconos          |
+| Cotizaciones        | ✅ CERTIFICADO        | 15     | Q01-Q02: page load, POST → QUO-YYYY-NNNN                       |
+| Devoluciones        | ✅ CERTIFICADO        | 15     | R01-R02: page load, 404 venta inexistente                      |
+| Usuarios            | ✅ CERTIFICADO        | 15     | U01: page load, CRUD UI completa                               |
+| Expense Categories  | ✅ CERTIFICADO        | 15     | EX01-EX04: CRUD categorías, 409 dup, category_id en gasto      |
 
 ---
 
@@ -144,14 +148,16 @@ PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
 | GET    | `/api/dashboard/charts`     | ✅ BUG-001 resuelto — DATE_FORMAT  |
 
 ### Finanzas
-| Método    | Endpoint                             | Notas                            |
-|-----------|--------------------------------------|----------------------------------|
-| GET       | `/api/finanzas/cxc`                  | ✅ role guard + certificado F04  |
-| GET\|POST | `/api/finanzas/cxp`                  | ✅ role guard cashier→403        |
-| PATCH     | `/api/finanzas/cxp/[id]`             | ✅ role guard cashier→403        |
-| GET\|POST | `/api/finanzas/gastos`               | ✅ role guard + certificado F03  |
-| GET       | `/api/finanzas/resumen`              | ✅ role guard + certificado F01  |
-| GET       | `/api/finanzas/punto-equilibrio`     | ✅ PE con proyección — F02       |
+| Método    | Endpoint                             | Notas                                                |
+|-----------|--------------------------------------|------------------------------------------------------|
+| GET       | `/api/finanzas/cxc`                  | ✅ role guard + certificado F04                      |
+| GET\|POST | `/api/finanzas/cxp`                  | ✅ role guard cashier→403                            |
+| PATCH     | `/api/finanzas/cxp/[id]`             | ✅ role guard cashier→403                            |
+| GET\|POST | `/api/finanzas/gastos`               | ✅ role guard + certificado F03 + expense_category_id|
+| GET       | `/api/finanzas/resumen`              | ✅ role guard + certificado F01                      |
+| GET       | `/api/finanzas/punto-equilibrio`     | ✅ PE con proyección — F02                           |
+| GET\|POST | `/api/finanzas/categorias`           | ✅ DT-023 Sprint 15 — CRUD categorías de gastos      |
+| PATCH     | `/api/finanzas/categorias/[id]`      | ✅ DT-023 Sprint 15 — editar/desactivar              |
 
 ### Inventario
 | Método    | Endpoint          |
@@ -222,29 +228,34 @@ PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
 
 ## 3. MODELOS PRISMA
 
-**19 modelos** · **19 tablas** · **233+ campos** en total
+**21 modelos** · **21 tablas** · **240+ campos** en total
 
-| Modelo          | Tabla                | Descripción                                  |
-|-----------------|----------------------|----------------------------------------------|
-| Business        | businesses           | Tenant principal                             |
-| User            | users                | Usuarios del sistema (roles)                 |
-| Category        | categories           | Categorías de productos                      |
-| Product         | products             | Productos con visibilidad y disponibilidad   |
-| ProductVariant  | product_variants     | Variantes (talla, color, etc.)               |
-| InventoryEntry  | inventory_entries    | Entradas de inventario                       |
-| Client          | clients              | Clientes del negocio                         |
-| PaymentMethod   | payment_methods      | Métodos de pago configurables                |
-| Sale            | sales                | Ventas (quote/pending/paid/cancelled)        |
-| SaleItem        | sale_items           | Líneas de cada venta                         |
-| SalePayment     | sale_payments        | Pagos de una venta                           |
-| SaleAbono       | sale_abonos          | Abonos — con cash_register_id ✅ DT-003      |
-| CashRegister    | cash_registers       | Turnos de caja                               |
-| CashMovement    | cash_movements       | Movimientos — con business_id ✅ DT-005      |
-| DollarRate      | dollar_rates         | Tasas BCV — con business_id ✅ DT-001        |
-| ActivityLog     | activity_logs        | Auditoría de acciones críticas               |
-| Gasto           | gastos               | Gastos / CxP del negocio                     |
-| Order           | orders               | Pedidos del catálogo público                 |
-| OrderItem       | order_items          | Líneas de cada pedido                        |
+| Modelo          | Tabla                | Descripción                                                     |
+|-----------------|----------------------|-----------------------------------------------------------------|
+| Business        | businesses           | Tenant principal                                                |
+| User            | users                | Usuarios del sistema (roles)                                    |
+| Category        | categories           | Categorías de productos                                         |
+| Product         | products             | Productos con visibilidad y disponibilidad                      |
+| ProductVariant  | product_variants     | Variantes (talla, color, etc.)                                  |
+| InventoryEntry  | inventory_entries    | Entradas de inventario                                          |
+| Client          | clients              | Clientes del negocio                                            |
+| PaymentMethod   | payment_methods      | Métodos de pago configurables                                   |
+| Sale            | sales                | Ventas (quote/pending/paid/cancelled)                           |
+| SaleItem        | sale_items           | Líneas de cada venta                                            |
+| SalePayment     | sale_payments        | Pagos de una venta                                              |
+| SaleAbono       | sale_abonos          | Abonos — con cash_register_id ✅ DT-003                         |
+| CashRegister    | cash_registers       | Turnos de caja                                                  |
+| CashMovement    | cash_movements       | Movimientos — con business_id ✅ DT-005                         |
+| DollarRate      | dollar_rates         | Tasas BCV — con business_id ✅ DT-001                           |
+| ActivityLog     | activity_logs        | Auditoría de acciones críticas                                  |
+| ExpenseCategory | expense_categories   | Categorías de gastos ✅ DT-023 Sprint 15 — 6 system + custom    |
+| Gasto           | gastos               | Gastos / CxP — FK category_id nullable ✅ DT-023               |
+| Order           | orders               | Pedidos del catálogo público                                    |
+| OrderItem       | order_items          | Líneas de cada pedido                                           |
+| Quotation       | quotations           | Cotizaciones ✅ Sprint 15                                        |
+| QuotationItem   | quotation_items      | Líneas de cotización ✅ Sprint 15                                |
+| Return          | returns              | Devoluciones ✅ Sprint 15                                        |
+| ReturnItem      | return_items         | Líneas de devolución ✅ Sprint 15                                |
 
 ### Enums
 
@@ -295,6 +306,8 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 | 9  | 20260619051022_add_business_id_to_dollar_rates          | 2026-06-19  |
 | 10 | 20260619051109_add_cash_register_id_to_sale_abonos      | 2026-06-19  |
 | 11 | 20260619055722_add_product_visibility                   | 2026-06-19  |
+| 12 | 20260619_quotations_returns_users (Sprint 15)           | 2026-06-19  |
+| 13 | 20260619174857_expense_categories                       | 2026-06-19  |
 
 ---
 
@@ -353,7 +366,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-020 | P3  | ❌ PENDIENTE      | Export Excel en reportes                                | 13       |
 | DT-021 | P2  | ❌ PENDIENTE      | Export Excel en finanzas                                | 13       |
 | DT-022 | P3  | ❌ BACKLOG        | Gastos recurrentes (definir una vez, pagar mensual)     | Backlog  |
-| DT-023 | P3  | 📄 DISEÑADO       | Expense Categories — schema documentado, no implementado| 14       |
+| DT-023 | P3  | ✅ RESUELTO       | Expense Categories — schema + API + seed + tests EX01-04| 15       |
 | DT-024 | P1  | ✅ RESUELTO       | Infinity% en ResumenSection — safePct() + sin_margen   | 13       |
 | DT-025 | P2  | ✅ RESUELTO       | punto-equilibrio PE=0 con gastos=0 — early return      | 13       |
 | DT-026 | P3  | ❌ PENDIENTE      | regex diacríticos en r/[token]/route.ts                | Backlog  |

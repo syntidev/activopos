@@ -83,6 +83,25 @@ async function main() {
     },
   })
 
+  // ── Expense Categories (DT-023) ──────────────────────────────────────
+  const expenseCategoryDefs = [
+    { name: 'Alquiler',           color: '#6366f1', is_system: true  },
+    { name: 'Servicios públicos', color: '#0ea5e9', is_system: true  },
+    { name: 'Nómina',             color: '#f59e0b', is_system: true  },
+    { name: 'Insumos',            color: '#10b981', is_system: true  },
+    { name: 'Marketing',          color: '#ec4899', is_system: true  },
+    { name: 'Otros',              color: '#94a3b8', is_system: true  },
+  ]
+
+  for (const def of expenseCategoryDefs) {
+    await prisma.expenseCategory.upsert({
+      where:  { business_id_name: { business_id: business.id, name: def.name } },
+      update: { color: def.color },
+      create: { business_id: business.id, ...def },
+    })
+  }
+  console.log('✅ Expense Categories: Alquiler, Servicios públicos, Nómina, Insumos, Marketing, Otros')
+
   // ── Categorías ──────────────────────────────────────────────────────
   const categoryDefs = [
     { name: 'Ropa',       color: '#2563EB', sort_order: 0 },

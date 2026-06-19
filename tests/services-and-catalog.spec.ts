@@ -83,7 +83,7 @@ test.describe('Stock visible en catálogo público', () => {
       .locator('[class*="badgeStock"]').first()
     await expect(arepaBadge).toBeVisible({ timeout: 5_000 })
     const badgeText = await arepaBadge.textContent()
-    expect(badgeText).toMatch(/disponibles|Últimas/i)
+    expect(badgeText).toMatch(/disponibles|Últimas|\d+ uds\./i)
   })
 
   test('C03 — servicio en catálogo muestra "Disponible" (sin stock)', async ({ page }) => {

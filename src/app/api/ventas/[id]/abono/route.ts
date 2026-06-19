@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
     const body = abonoSchema.parse(await req.json())
 
-    const [sale, pm, rate] = await Promise.all([
+    const [sale, pm, rate, activeRegister] = await Promise.all([
       prisma.sale.findFirst({
         where: { id: saleId, business_id: session.businessId, status: 'pending' },
         select: { id: true, total_usd: true, ticket_number: true, client_id: true },
@@ -34,6 +34,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         select: { id: true },
       }),
       getBcvRate(),
+      prisma.cashRegister.findFirst({
+        where: { business_id: session.businessId, closed_at: null },
+        select: { id: true },
+      }),
     ])
 
     if (!sale) {
@@ -42,12 +46,16 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     if (!pm) {
       return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
     }
+    if (!activeRegister) {
+      return NextResponse.json({ error: 'No hay turno de caja abierto' }, { status: 400 })
+    }
 
     const abono = await prisma.$transaction(async (tx) => {
       const newAbono = await tx.saleAbono.create({
         data: {
           sale_id:           saleId,
           payment_method_id: body.payment_method_id,
+          cash_register_id:  activeRegister.id,
           amount_usd:        body.amount_usd,
           amount_bs:         body.amount_bs,
           rate_used:         rate,

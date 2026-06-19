@@ -44,6 +44,15 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     })
     if (!pm) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
+    /* Active cash register — required to track abono in shift */
+    const activeRegister = await prisma.cashRegister.findFirst({
+      where: { business_id: session.businessId, closed_at: null },
+      select: { id: true },
+    })
+    if (!activeRegister) {
+      return NextResponse.json({ error: 'No hay turno de caja abierto' }, { status: 400 })
+    }
+
     /* Current BCV rate */
     type RateRow = { rate: string | number }
     const rateRows = await prisma.$queryRaw<RateRow[]>`
@@ -56,6 +65,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       data: {
         sale_id:           data.sale_id,
         payment_method_id: data.payment_method_id,
+        cash_register_id:  activeRegister.id,
         amount_usd:        data.amount_usd,
         amount_bs:         amountBs,
         rate_used:         rateUsed,

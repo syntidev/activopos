@@ -112,6 +112,7 @@ model Business {
   inventory_entries InventoryEntry[]
   gastos           Gasto[]
   orders           Order[]
+  dollar_rates     DollarRate[]
 
   @@map("businesses")
 }
@@ -319,6 +320,7 @@ model SaleAbono {
   id                Int      @id @default(autoincrement())
   sale_id           Int
   payment_method_id Int
+  cash_register_id  Int?
   amount_bs         Decimal  @db.Decimal(12, 2)
   amount_usd        Decimal  @db.Decimal(10, 2)
   reference         String?  @db.VarChar(100)
@@ -327,8 +329,9 @@ model SaleAbono {
   created_by        Int
   created_at        DateTime @default(now())
 
-  sale           Sale          @relation(fields: [sale_id], references: [id])
-  payment_method PaymentMethod @relation(fields: [payment_method_id], references: [id])
+  sale           Sale           @relation(fields: [sale_id], references: [id])
+  payment_method PaymentMethod  @relation(fields: [payment_method_id], references: [id])
+  cash_register  CashRegister?  @relation(fields: [cash_register_id], references: [id])
 
   @@map("sale_abonos")
 }
@@ -349,6 +352,7 @@ model CashRegister {
   business   Business       @relation(fields: [business_id], references: [id])
   cashier    User           @relation(fields: [cashier_id], references: [id])
   movements  CashMovement[]
+  abonos     SaleAbono[]
 
   @@map("cash_registers")
 }
@@ -374,12 +378,15 @@ model CashMovement {
 }
 
 model DollarRate {
-  id         Int      @id @default(autoincrement())
-  rate       Decimal  @db.Decimal(10, 4)
-  source     String   @default("bcv") @db.VarChar(20)
-  is_active  Boolean  @default(true)
-  fetched_at DateTime @default(now())
-  created_at DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  business_id Int?
+  rate        Decimal  @db.Decimal(10, 4)
+  source      String   @default("bcv") @db.VarChar(20)
+  is_active   Boolean  @default(true)
+  fetched_at  DateTime @default(now())
+  created_at  DateTime @default(now())
+
+  business Business? @relation(fields: [business_id], references: [id])
 
   @@map("dollar_rates")
 }

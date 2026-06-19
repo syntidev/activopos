@@ -6,7 +6,7 @@ const CACHE_TTL = 60 * 60 * 1000 // 1 hora en ms
 
 let cache: { rate: number; fetchedAt: number } | null = null
 
-export async function getBcvRate(): Promise<number> {
+export async function getBcvRate(businessId?: number): Promise<number> {
   // Retornar cache si es fresco
   if (cache && Date.now() - cache.fetchedAt < CACHE_TTL) {
     return cache.rate
@@ -25,9 +25,9 @@ export async function getBcvRate(): Promise<number> {
 
     if (!rate || isNaN(rate)) throw new Error('BCV: tasa inválida')
 
-    // Guardar en DB
+    // Guardar en DB con business_id si está disponible
     await prisma.dollarRate.create({
-      data: { rate, source: 'bcv', is_active: true },
+      data: { rate, source: 'bcv', is_active: true, business_id: businessId ?? null },
     })
 
     // Desactivar tasa anterior

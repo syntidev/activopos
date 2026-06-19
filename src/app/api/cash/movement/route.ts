@@ -27,7 +27,7 @@ export async function GET() {
   }
 
   const movements = await prisma.cashMovement.findMany({
-    where: { cash_register_id: register.id },
+    where: { cash_register_id: register.id, cash_register: { business_id: session.businessId } },
     include: {
       payment_method: { select: { id: true, name: true, type: true } },
       user: { select: { name: true } },

@@ -15,6 +15,9 @@ export interface ProductVariantInput {
   price_extra_usd: number
 }
 
+type CatalogVisibility = 'visible' | 'on_request' | 'hidden'
+type Availability      = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued'
+
 export interface ProductFormData {
   name: string
   barcode: string
@@ -24,7 +27,8 @@ export interface ProductFormData {
   pricePerUnitUsd: number
   stockInitial: number
   isAvailable: boolean
-  catalogVisible: boolean
+  catalogVisibility: CatalogVisibility
+  availability: Availability
   hasVariants: boolean
   images: string[]
   variants: ProductVariantInput[]
@@ -48,7 +52,8 @@ export interface EditableProduct {
   cost_per_unit_usd: number | null
   price_per_unit_usd: number
   is_available?: boolean
-  catalog_visible?: boolean
+  catalog_visibility?: CatalogVisibility
+  availability?: Availability
   has_variants?: boolean
   images?: string[]
   variants?: ProductVariantInput[]
@@ -74,6 +79,13 @@ const SALE_MODES: Array<{ key: 'unit' | 'weight' | 'service'; label: string }> =
   { key: 'weight',  label: 'Kg'       },
   { key: 'service', label: 'Servicio' },
 ]
+
+const AVAIL_LABEL: Record<string, string> = {
+  in_stock:     'En stock',
+  low_stock:    'Stock bajo',
+  out_of_stock: 'Sin stock',
+  discontinued: 'Descontinuado',
+}
 
 const SIZE_PRESETS  = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const COLOR_PRESETS = ['Negro', 'Blanco', 'Rojo', 'Azul', 'Verde', 'Amarillo']
@@ -106,11 +118,12 @@ export function ProductModal({
   const [errors, setErrors]       = useState<Record<string, string>>({})
   const [isSaving, setIsSaving]   = useState(false)
 
-  /* ── Sprint 5: images, availability, catalog, variants ── */
-  const [images, setImages]           = useState<Array<string | null>>([null, null, null])
-  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null)
-  const [isAvailable, setIsAvailable] = useState(true)
-  const [catalogVisible, setCatalogVisible] = useState(false)
+  /* ── Sprint 5+10: images, availability, catalog visibility, variants ── */
+  const [images, setImages]                     = useState<Array<string | null>>([null, null, null])
+  const [uploadingSlot, setUploadingSlot]       = useState<number | null>(null)
+  const [isAvailable, setIsAvailable]           = useState(true)
+  const [catalogVisibility, setCatalogVisibility] = useState<CatalogVisibility>('hidden')
+  const [availability, setAvailability]         = useState<Availability>('in_stock')
   const [showCatalogUpgrade, setShowCatalogUpgrade] = useState(false)
   const [hasVariants, setHasVariants] = useState(false)
   const [variants, setVariants]       = useState<ProductVariantInput[]>([])
@@ -132,7 +145,8 @@ export function ProductModal({
       setCostMode('unit'); setBulkSize('12'); setCost(''); setIsFixedPrice(false)
       setMargin('30'); setPrice(''); setStockInitial('0'); setErrors({})
       setIsSaving(false); setImages([null, null, null]); setIsAvailable(true)
-      setCatalogVisible(false); setHasVariants(false); setVariants([])
+      setCatalogVisibility('hidden'); setAvailability('in_stock')
+      setHasVariants(false); setVariants([])
       setNewVarName(''); setNewVarExtra('')
       setBadge('none'); setSubcategory(''); setIsFeatured(false)
       return
@@ -144,7 +158,8 @@ export function ProductModal({
       setSaleMode(editProduct.sale_mode)
       setCategoryId(editProduct.category_id)
       setIsAvailable(editProduct.is_available ?? true)
-      setCatalogVisible(editProduct.catalog_visible ?? false)
+      setCatalogVisibility(editProduct.catalog_visibility ?? 'hidden')
+      setAvailability(editProduct.availability ?? 'in_stock')
       setHasVariants(editProduct.has_variants ?? false)
       setVariants(editProduct.variants ?? [])
 
@@ -253,7 +268,8 @@ export function ProductModal({
         pricePerUnitUsd: computed.displayPrice,
         stockInitial:    Math.max(parseInt(stockInitial) || 0, 0),
         isAvailable,
-        catalogVisible,
+        catalogVisibility,
+        availability,
         hasVariants,
         images:   images.filter((u): u is string => u !== null),
         variants,
@@ -511,34 +527,64 @@ export function ProductModal({
                     </label>
                   </div>
 
-                  {/* ── Toggle: Catálogo digital ── */}
-                  <div className={styles.fixedPriceRow}>
-                    <div className={styles.fixedPriceLabel}>
-                      <Globe size={14} className={styles.toggleIcon} aria-hidden="true" />
-                      <div>
-                        <span className={styles.fixedPriceTitle}>Catálogo digital</span>
+                  {/* ── Visibilidad y disponibilidad ── */}
+                  <div className={mStyles.formGroup}>
+                    <label className={mStyles.label} htmlFor="pm-catalog-vis">
+                      <Globe size={13} className={styles.toggleIcon} aria-hidden="true" />
+                      Visibilidad en catálogo
+                    </label>
+                    <select
+                      id="pm-catalog-vis"
+                      className={mStyles.select}
+                      value={catalogVisibility}
+                      onChange={(e) => {
+                        const v = e.target.value as CatalogVisibility
+                        if ((v === 'visible' || v === 'on_request') && !hasCatalogPlan) {
+                          setShowCatalogUpgrade(true)
+                        } else {
+                          setCatalogVisibility(v)
+                        }
+                      }}
+                    >
+                      <option value="hidden">Oculto — solo visible en POS</option>
+                      <option value="visible">Visible — con precio y botón de pedido</option>
+                      <option value="on_request">Solo consulta — sin precio, botón WhatsApp</option>
+                    </select>
+                  </div>
+
+                  {/* Disponibilidad — toggle para servicios */}
+                  {saleMode === 'service' && (
+                    <div className={styles.fixedPriceRow}>
+                      <div className={styles.fixedPriceLabel}>
+                        <span className={styles.fixedPriceTitle}>Estado del servicio</span>
                         <span className={styles.fixedPriceSub}>
-                          Muestra este producto en tu enlace público
+                          {availability === 'discontinued'
+                            ? 'Descontinuado — no aparece en catálogo ni POS'
+                            : 'Activo — disponible para solicitar'}
                         </span>
                       </div>
+                      <label className={styles.toggle} aria-label="Estado del servicio">
+                        <input
+                          type="checkbox"
+                          className={styles.toggleInput}
+                          checked={availability !== 'discontinued'}
+                          onChange={(e) => setAvailability(e.target.checked ? 'in_stock' : 'discontinued')}
+                        />
+                        <span className={styles.toggleTrack} />
+                        <span className={styles.toggleThumb} />
+                      </label>
                     </div>
-                    <label className={styles.toggle} aria-label="Catálogo digital">
-                      <input
-                        type="checkbox"
-                        className={styles.toggleInput}
-                        checked={catalogVisible}
-                        onChange={(e) => {
-                          if (e.target.checked && !hasCatalogPlan) {
-                            setShowCatalogUpgrade(true)
-                          } else {
-                            setCatalogVisible(e.target.checked)
-                          }
-                        }}
-                      />
-                      <span className={styles.toggleTrack} />
-                      <span className={styles.toggleThumb} />
-                    </label>
-                  </div>
+                  )}
+
+                  {/* Disponibilidad calculada — badge read-only para físicos en edición */}
+                  {saleMode !== 'service' && isEdit && editProduct?.availability && (
+                    <div className={styles.availabilityReadOnly}>
+                      <span className={styles.fixedPriceSub}>Disponibilidad en stock:</span>
+                      <span className={`${styles.availabilityBadge} ${styles[`avail_${editProduct.availability}`]}`}>
+                        {AVAIL_LABEL[editProduct.availability]}
+                      </span>
+                    </div>
+                  )}
 
                   <div className={mStyles.divider} />
 

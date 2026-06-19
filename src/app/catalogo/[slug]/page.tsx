@@ -121,9 +121,11 @@ export default async function CatalogoPage({ params }: PageProps) {
       isService:    p.sale_mode === 'service' || p.product_type === 'service',
       stockQty:     p.sale_mode === 'service' || p.product_type === 'service' ? null : (netQty ?? null),
       outOfStock:   p.sale_mode !== 'service' && p.product_type !== 'service' && (netQty ?? 0) <= 0,
-      badge:        p.badge ?? null,
-      subcategory:  p.subcategory ?? null,
-      isFeatured:   p.is_featured,
+      badge:            p.badge ?? null,
+      subcategory:      p.subcategory ?? null,
+      isFeatured:       p.is_featured,
+      catalogVisibility: p.catalog_visibility ?? 'visible',
+      availability:     p.availability ?? 'in_stock',
     }
   })
 
@@ -199,6 +201,7 @@ export default async function CatalogoPage({ params }: PageProps) {
           slug={params.slug}
           rate={rate}
           paymentMethods={paymentMethods as PaymentMethod[]}
+          businessPhone={waPhone}
         />
 
       {/* ── WhatsApp FAB ────────────────────────────────────────── */}

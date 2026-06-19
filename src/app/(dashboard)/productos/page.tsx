@@ -47,6 +47,8 @@ interface Product {
   is_available?: boolean
   has_variants?: boolean
   show_in_catalog?: boolean
+  catalog_visibility?: 'visible' | 'on_request' | 'hidden'
+  availability?: 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued'
   images?: string[] | null
   badge?: string | null
   subcategory?: string | null
@@ -227,7 +229,9 @@ export default function ProductosPage() {
         cost_per_unit_usd:  data.costPerUnitUsd,
         price_per_unit_usd: data.pricePerUnitUsd,
         is_available:       data.isAvailable,
-        show_in_catalog:    data.catalogVisible,
+        catalog_visibility: data.catalogVisibility,
+        availability:       data.availability,
+        show_in_catalog:    data.catalogVisibility !== 'hidden',
         has_variants:       data.hasVariants,
         images:             data.images,
         badge:              data.badge || 'none',
@@ -322,7 +326,8 @@ export default function ProductosPage() {
       cost_per_unit_usd:  product.cost_per_unit_usd,
       price_per_unit_usd: product.price_per_unit_usd,
       is_available:       product.is_available,
-      catalog_visible:    product.show_in_catalog,
+      catalog_visibility: product.catalog_visibility,
+      availability:       product.availability,
       has_variants:       product.has_variants,
       images:             product.images ?? [],
       badge:              product.badge,

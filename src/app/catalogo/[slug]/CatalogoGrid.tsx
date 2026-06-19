@@ -5,19 +5,21 @@ import { Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search, CheckCircl
 import styles from './catalogo.module.css'
 
 export interface CatalogProduct {
-  id:           number
-  name:         string
-  description:  string | null
-  image:        string | null
-  categoryName: string | null
-  priceUsd:     number
-  priceBs:      number | null
-  outOfStock:   boolean
-  isService:    boolean
-  stockQty:     number | null
-  badge:        string | null
-  subcategory:  string | null
-  isFeatured:   boolean
+  id:                number
+  name:              string
+  description:       string | null
+  image:             string | null
+  categoryName:      string | null
+  priceUsd:          number
+  priceBs:           number | null
+  outOfStock:        boolean
+  isService:         boolean
+  stockQty:          number | null
+  badge:             string | null
+  subcategory:       string | null
+  isFeatured:        boolean
+  catalogVisibility: 'visible' | 'on_request' | 'hidden'
+  availability:      'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued'
 }
 
 export interface PaymentMethod {
@@ -40,6 +42,7 @@ interface Props {
   slug:           string
   rate:           number
   paymentMethods: PaymentMethod[]
+  businessPhone:  string
 }
 
 function fmtUsd(n: number): string {
@@ -69,6 +72,11 @@ function getBadgeClass(badge: string | null | undefined): string {
   }
 }
 
+function getConsultarWaUrl(phone: string, productName: string): string {
+  if (!phone) return '#'
+  return `https://wa.me/${phone}?text=${encodeURIComponent(`Hola, quiero consultar disponibilidad de: ${productName}`)}`
+}
+
 function getCategoryClass(categoryName: string | null | undefined): string {
   if (!categoryName) return styles.gradDefault
   const key = categoryName
@@ -84,7 +92,7 @@ function getCategoryClass(categoryName: string | null | undefined): string {
   return map[key] ?? styles.gradDefault
 }
 
-export function CatalogoGrid({ products, categories, slug, rate, paymentMethods }: Props) {
+export function CatalogoGrid({ products, categories, slug, rate, paymentMethods, businessPhone }: Props) {
   const [active,          setActive]          = useState<string | null>(null)
   const [activeSub,       setActiveSub]       = useState<string | null>(null)
   const [query,           setQuery]           = useState('')
@@ -451,16 +459,20 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                         <span className={styles.noImageInitial}>{p.name.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
-                    {p.outOfStock && <span className={styles.badgeSinStock}>Sin stock</span>}
-                    {!p.outOfStock && p.isService && (
+                    {p.catalogVisibility === 'on_request' ? (
+                      <span className={styles.badgeOnRequest}>Consultar</span>
+                    ) : (p.outOfStock || p.availability === 'out_of_stock') ? (
+                      <span className={styles.badgeSinStock}>Sin stock</span>
+                    ) : p.availability === 'low_stock' ? (
+                      <span className={styles.badgeLowStock}>Pocas unidades</span>
+                    ) : p.isService ? (
                       <span className={styles.badgeDisponible}>Disponible</span>
-                    )}
-                    {!p.outOfStock && !p.isService && p.stockQty !== null && p.stockQty > 0 && (
+                    ) : p.stockQty !== null && p.stockQty > 0 ? (
                       <span className={styles.badgeStock}>
                         {p.stockQty <= 5 ? `Últimas ${p.stockQty}` : `${p.stockQty} disponibles`}
                       </span>
-                    )}
-                    {!p.outOfStock && !p.isService && p.badge && p.badge !== 'none' && getBadgeClass(p.badge) && (
+                    ) : null}
+                    {p.catalogVisibility !== 'on_request' && !p.outOfStock && !p.isService && p.badge && p.badge !== 'none' && getBadgeClass(p.badge) && (
                       <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
                         {BADGE_LABEL[p.badge]}
                       </span>
@@ -471,7 +483,9 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                     <h2 className={styles.productName}>{p.name}</h2>
                     {p.description && <p className={styles.productDesc}>{p.description}</p>}
                     <div className={styles.priceRow}>
-                      {p.priceUsd > 0 ? (
+                      {p.catalogVisibility === 'on_request' ? (
+                        <span className={styles.priceConsultar}>Consultar precio</span>
+                      ) : p.priceUsd > 0 ? (
                         <>
                           <span className={styles.priceUsd}>
                             ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -741,9 +755,13 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                   <span className={styles.productModalImgInitial}>{selP.name.charAt(0).toUpperCase()}</span>
                 </div>
               )}
-              {selP.outOfStock && (
+              {selP.catalogVisibility === 'on_request' ? (
+                <span className={`${styles.badgeOnRequest} ${styles.badgeModal}`}>Consultar</span>
+              ) : (selP.outOfStock || selP.availability === 'out_of_stock') ? (
                 <span className={`${styles.badgeSinStock} ${styles.badgeModal}`}>Sin stock</span>
-              )}
+              ) : selP.availability === 'low_stock' ? (
+                <span className={`${styles.badgeLowStock} ${styles.badgeModal}`}>Pocas unidades</span>
+              ) : null}
               <button
                 ref={closeRef}
                 type="button"
@@ -760,7 +778,9 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
               <h3 className={styles.productModalName}>{selP.name}</h3>
               {selP.description && <p className={styles.productModalDesc}>{selP.description}</p>}
               <div className={styles.productModalPrices}>
-                {selP.priceUsd > 0 ? (
+                {selP.catalogVisibility === 'on_request' ? (
+                  <span className={styles.priceConsultar}>Consultar precio</span>
+                ) : selP.priceUsd > 0 ? (
                   <>
                     <span className={styles.priceUsd}>
                       ${selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -776,7 +796,19 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                 )}
               </div>
 
-              {selP.priceUsd > 0 && (
+              {selP.catalogVisibility === 'on_request' ? (
+                <div className={styles.productModalCtas}>
+                  <a
+                    href={getConsultarWaUrl(businessPhone, selP.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.waOrangeBtn}
+                  >
+                    <MessageCircle size={16} aria-hidden="true" />
+                    Consultar disponibilidad
+                  </a>
+                </div>
+              ) : selP.priceUsd > 0 && (
                 <>
                   <div className={styles.productModalQtyRow}>
                     <span className={styles.productModalQtyLabel}>Cantidad</span>

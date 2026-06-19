@@ -512,6 +512,26 @@
 .variantAddBtn:hover:not(:disabled) { opacity: 0.85; }
 .variantAddBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── Availability read-only badge (physical products in edit) ── */
+.availabilityReadOnly {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-3);
+}
+
+.availabilityBadge {
+  padding:       2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size:     var(--text-xs);
+  font-weight:   var(--weight-semibold);
+  border:        var(--border-width-thin) solid transparent;
+}
+
+.avail_in_stock     { background: var(--color-success-subtle); color: var(--color-success-text); border-color: var(--color-success-border); }
+.avail_low_stock    { background: var(--color-warning-subtle); color: var(--color-warning-text); border-color: var(--color-warning-border); }
+.avail_out_of_stock { background: var(--color-danger-subtle);  color: var(--color-danger-text);  border-color: var(--color-danger-border);  }
+.avail_discontinued { background: var(--color-surface-3);      color: var(--color-text-muted);   border-color: var(--color-border);         }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .pill,

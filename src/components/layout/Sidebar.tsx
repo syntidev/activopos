@@ -13,6 +13,7 @@ import {
   Calculator,
   BarChart2,
   TrendingUp,
+  Activity,
   Store,
   Sparkles,
   Settings,
@@ -74,7 +75,8 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'FINANZAS',
     adminOnly: true,
     items: [
-      { href: '/finanzas', icon: TrendingUp, label: 'Finanzas' },
+      { href: '/finanzas',   icon: TrendingUp, label: 'Finanzas' },
+      { href: '/analytics',  icon: Activity,   label: 'Pulso del Negocio' },
     ],
   },
   {

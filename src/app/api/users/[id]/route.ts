@@ -54,7 +54,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
   const user = await prisma.user.update({
-    where: { id },
+    where: { id, business_id: session.businessId },
     data,
     select: USER_SELECT,
   })
@@ -76,7 +76,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
   const user = await prisma.user.update({
-    where: { id },
+    where: { id, business_id: session.businessId },
     data: { is_active: false },
     select: USER_SELECT,
   })

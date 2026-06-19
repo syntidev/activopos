@@ -25,14 +25,16 @@ export async function getBcvRate(businessId?: number): Promise<number> {
 
     if (!rate || isNaN(rate)) throw new Error('BCV: tasa inválida')
 
-    // Guardar en DB con business_id si está disponible
+    // Guardar en DB con business_id si está disponible.
+    // Cache es global (BCV emite una sola tasa para todos los tenants) — la
+    // atribución por tenant es best-effort: se registra en el miss de cache (~1h).
     await prisma.dollarRate.create({
       data: { rate, source: 'bcv', is_active: true, business_id: businessId ?? null },
     })
 
-    // Desactivar tasa anterior
+    // Desactivar tasas anteriores SOLO del mismo tenant para no tocar filas de otros negocios
     await prisma.dollarRate.updateMany({
-      where: { is_active: true, NOT: { fetched_at: { gte: new Date() } } },
+      where: { is_active: true, business_id: businessId ?? null, NOT: { fetched_at: { gte: new Date() } } },
       data: { is_active: false },
     })
 

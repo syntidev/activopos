@@ -274,7 +274,7 @@ function AyudaContent() {
   }, [router, toast])
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       <div className={styles.container}>
         {/* Header */}
         <div className={styles.pageHeader}>

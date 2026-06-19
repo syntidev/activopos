@@ -152,7 +152,7 @@ export default async function EscritorioPage() {
   })
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       <div className={styles.welcomeRow}>
         <div>
           <h2 className={styles.welcomeTitle}>

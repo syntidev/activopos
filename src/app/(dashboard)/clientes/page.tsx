@@ -10,7 +10,7 @@ export default async function ClientesPage() {
   const clients = await getClientsWithBalance(session?.businessId ?? 0)
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       <ClientesView initialClients={clients} />
     </div>
   )

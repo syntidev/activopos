@@ -204,7 +204,7 @@ function ReportesContent() {
     : 0
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
 
       {/* Monthly banner */}
       <MonthlyReportBanner period={period} periodLabel={periodLabel} />

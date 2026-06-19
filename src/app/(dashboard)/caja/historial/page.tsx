@@ -77,7 +77,7 @@ function HistorialContent() {
   }, [from, to, toast])
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>

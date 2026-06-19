@@ -319,7 +319,7 @@ function PedidosContent() {
     orders.filter((o) => o.status === status)
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container-full`}>
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>

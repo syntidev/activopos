@@ -192,7 +192,7 @@ export default async function TuDiaPage() {
   const closingPar = paras.find(p => p.style === 'closing')
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
 
       {/* ── Header ──────────────────────────────────────────── */}
       <div className={styles.header}>

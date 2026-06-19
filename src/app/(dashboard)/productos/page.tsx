@@ -342,7 +342,7 @@ export default function ProductosPage() {
   const modalCategories: ModalCategory[] = categories
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       {/* ── Page header ── */}
       <div className={styles.pageHeader}>
         <div className={styles.titleBlock}>

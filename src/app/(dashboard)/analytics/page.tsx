@@ -135,7 +135,7 @@ export default function AnalyticsPage() {
   const { ventas, vs_anterior, por_metodo, mejor_dia, mejor_hora } = summary
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
 
       {/* ── Header ── */}
       <div className={styles.pageHeader}>

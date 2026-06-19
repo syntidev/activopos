@@ -31,7 +31,7 @@ export default function FinanzasPage() {
   }, [])
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Finanzas</h1>
         <input

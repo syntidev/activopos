@@ -286,7 +286,7 @@ function CajaContent() {
   /* ── Caja cerrada ── */
   if (!status?.isOpen) {
     return (
-      <div className={styles.page}>
+      <div className={`${styles.page} page-container`}>
         <h1 className={styles.pageTitle}>Gestión de Caja</h1>
         <div className={styles.closedWrap}>
           <div className={styles.closedCard}>
@@ -342,7 +342,7 @@ function CajaContent() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} page-container`}>
       {/* Header */}
       <div className={styles.pageHeader}>
         <div className={styles.pageTitleGroup}>

@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search, CheckCircle, Star, Archive } from 'lucide-react'
+import {
+  Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
+  CheckCircle, Star, Archive, MapPin,
+} from 'lucide-react'
 import styles from './catalogo.module.css'
+
+/* ── Public interfaces ───────────────────────────────────────── */
 
 export interface CatalogProduct {
   id:                number
@@ -28,6 +33,8 @@ export interface PaymentMethod {
   type: string
 }
 
+/* ── Internal types ──────────────────────────────────────────── */
+
 interface CartItem {
   product_id: number
   name:       string
@@ -43,7 +50,13 @@ interface Props {
   rate:           number
   paymentMethods: PaymentMethod[]
   businessPhone:  string
+  businessName:   string
+  businessLogo:   string | null
+  businessCity:   string | null
+  businessDesc:   string | null
 }
+
+/* ── Helpers ─────────────────────────────────────────────────── */
 
 function fmtUsd(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -53,14 +66,18 @@ function fmtBs(n: number): string {
   return `Bs. ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-const BADGE_LABEL: Record<string, string> = {
-  popular:     'Popular',
-  nuevo:       'Nuevo',
-  promo:       'Promo',
-  recomendado: 'Recomendado',
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('')
 }
 
-const FEATURED_KEY = '__destacados__'
+function getConsultarWaUrl(phone: string, productName: string): string {
+  if (!phone) return '#'
+  return `https://wa.me/${phone}?text=${encodeURIComponent(`Hola, quiero consultar disponibilidad de: ${productName}`)}`
+}
 
 function getBadgeClass(badge: string | null | undefined): string {
   switch (badge) {
@@ -72,9 +89,11 @@ function getBadgeClass(badge: string | null | undefined): string {
   }
 }
 
-function getConsultarWaUrl(phone: string, productName: string): string {
-  if (!phone) return '#'
-  return `https://wa.me/${phone}?text=${encodeURIComponent(`Hola, quiero consultar disponibilidad de: ${productName}`)}`
+const BADGE_LABEL: Record<string, string> = {
+  popular:     'Popular',
+  nuevo:       'Nuevo',
+  promo:       'Promo',
+  recomendado: 'Recomendado',
 }
 
 function getCategoryClass(categoryName: string | null | undefined): string {
@@ -92,27 +111,44 @@ function getCategoryClass(categoryName: string | null | undefined): string {
   return map[key] ?? styles.gradDefault
 }
 
-export function CatalogoGrid({ products, categories, slug, rate, paymentMethods, businessPhone }: Props) {
-  const [active,          setActive]          = useState<string | null>(null)
-  const [activeSub,       setActiveSub]       = useState<string | null>(null)
-  const [query,           setQuery]           = useState('')
+const FEATURED_KEY = '__destacados__'
+
+/* ── Component ───────────────────────────────────────────────── */
+
+export function CatalogoGrid({
+  products,
+  categories,
+  slug,
+  rate,
+  paymentMethods,
+  businessPhone,
+  businessName,
+  businessLogo,
+  businessCity,
+  businessDesc,
+}: Props) {
+
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeSub,      setActiveSub]      = useState<string | null>(null)
+  const [query,          setQuery]          = useState('')
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
-  const [modalQty,        setModalQty]        = useState(1)
-  const [cart,            setCart]            = useState<CartItem[]>([])
-  const [cartOpen,        setCartOpen]        = useState(false)
-  const [checkoutOpen,    setCheckoutOpen]    = useState(false)
-  const [cName,           setCName]           = useState('')
-  const [cPhone,          setCPhone]          = useState('')
-  const [cRef,            setCRef]            = useState('')
-  const [cPayment,        setCPayment]        = useState(paymentMethods[0]?.name ?? '')
-  const [submitting,      setSubmitting]      = useState(false)
-  const [submitted,       setSubmitted]       = useState(false)
+  const [modalQty,       setModalQty]       = useState(1)
+  const [cart,           setCart]           = useState<CartItem[]>([])
+  const [cartOpen,       setCartOpen]       = useState(false)
+  const [checkoutOpen,   setCheckoutOpen]   = useState(false)
+  const [cName,          setCName]          = useState('')
+  const [cPhone,         setCPhone]         = useState('')
+  const [cRef,           setCRef]           = useState('')
+  const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
+  const [submitting,     setSubmitting]     = useState(false)
+  const [submitted,      setSubmitted]      = useState(false)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const hasFeatured = useMemo(() => products.some(p => p.isFeatured), [products])
+  const initials    = getInitials(businessName)
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -123,16 +159,15 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
   }, [products])
 
   const subcategoriesForActive = useMemo(() => {
-    if (!active || active === FEATURED_KEY) return []
+    if (!activeCategory || activeCategory === FEATURED_KEY) return []
     const subs = new Set<string>()
     for (const p of products) {
-      if (p.categoryName === active && p.subcategory) subs.add(p.subcategory)
+      if (p.categoryName === activeCategory && p.subcategory) subs.add(p.subcategory)
     }
     return Array.from(subs).sort()
-  }, [products, active])
+  }, [products, activeCategory])
 
-  // Reset subcategory when main category changes
-  useEffect(() => { setActiveSub(null) }, [active])
+  useEffect(() => { setActiveSub(null) }, [activeCategory])
 
   const visible = useMemo(() => {
     if (query.trim()) {
@@ -142,10 +177,10 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
         (p.categoryName?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ?? '').includes(q),
       )
     }
-    if (active === FEATURED_KEY) return products.filter(p => p.isFeatured)
-    const byCat = active ? products.filter(p => p.categoryName === active) : products
+    if (activeCategory === FEATURED_KEY) return products.filter(p => p.isFeatured)
+    const byCat = activeCategory ? products.filter(p => p.categoryName === activeCategory) : products
     return activeSub ? byCat.filter(p => p.subcategory === activeSub) : byCat
-  }, [products, query, active, activeSub])
+  }, [products, query, activeCategory, activeSub])
 
   // Cart computed
   const totalItems  = cart.reduce((acc, i) => acc + i.qty, 0)
@@ -190,13 +225,13 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
     return () => { document.body.style.overflow = '' }
   }, [selectedProduct, cartOpen, checkoutOpen])
 
-  // Escape key: close top layer
+  // Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       if (checkoutOpen && !submitting) { setCheckoutOpen(false); return }
-      if (selectedProduct)             { closeModal(); return }
-      if (cartOpen)                    { setCartOpen(false) }
+      if (selectedProduct)            { closeModal(); return }
+      if (cartOpen)                   { setCartOpen(false) }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
@@ -246,7 +281,7 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
           setCPayment(paymentMethods[0]?.name ?? '')
         }, 3000)
       }
-    } catch { /* noop — user stays in form */ }
+    } catch { /* user stays in form */ }
     finally { setSubmitting(false) }
   }
 
@@ -254,148 +289,145 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
 
   return (
     <>
-      {/* ── Toolbar: search + cart ─────────────────────────────── */}
-      <div className={styles.toolbar}>
-        <div className={styles.toolbarInner}>
-          <div className={styles.searchWrap}>
-            <Search className={styles.searchIcon} size={16} aria-hidden="true" />
-            <input
-              ref={searchRef}
-              type="search"
-              className={styles.searchInput}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Buscar productos…"
-              aria-label="Buscar productos"
+      {/* ── Sticky header ──────────────────────────────────────── */}
+      <header className={styles.stickyHeader}>
+        <div className={styles.headerLogo}>
+          {businessLogo ? (
+            <img
+              src={businessLogo}
+              alt={businessName}
+              className={styles.headerLogoImg}
             />
-            {query && (
-              <button
-                type="button"
-                className={styles.searchClear}
-                onClick={() => { setQuery(''); searchRef.current?.focus() }}
-                aria-label="Limpiar búsqueda"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            className={styles.cartBtn}
-            onClick={() => setCartOpen(true)}
-            aria-label={`Carrito — ${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`}
-          >
-            <ShoppingBag size={18} aria-hidden="true" />
-            {totalItems > 0 && (
-              <span key={totalItems} className={styles.cartBadge} aria-hidden="true">
-                {totalItems > 99 ? '99+' : totalItems}
+          ) : (
+            <span className={styles.headerLogoInitials} aria-hidden="true">
+              {initials}
+            </span>
+          )}
+          <span className={styles.headerName}>{businessName}</span>
+        </div>
+
+        <button
+          type="button"
+          className={styles.stickyCartBtn}
+          onClick={() => setCartOpen(true)}
+          aria-label={`Carrito — ${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`}
+        >
+          <ShoppingBag size={20} aria-hidden="true" />
+          {totalItems > 0 && (
+            <span key={totalItems} className={styles.cartCount} aria-hidden="true">
+              {totalItems > 99 ? '99+' : totalItems}
+            </span>
+          )}
+        </button>
+      </header>
+
+      {/* ── Hero ───────────────────────────────────────────────── */}
+      <section className={styles.hero} aria-label="Información del negocio">
+        <div className={styles.heroGradient} aria-hidden="true" />
+        <div className={styles.heroOverlay}  aria-hidden="true" />
+        <div className={styles.heroContent}>
+          {businessLogo ? (
+            <img
+              src={businessLogo}
+              alt=""
+              className={styles.heroLogoImg}
+            />
+          ) : (
+            <span className={styles.heroLogoInitials} aria-hidden="true">
+              {initials}
+            </span>
+          )}
+          <h1 className={styles.heroTitle}>{businessName}</h1>
+          <div className={styles.heroMeta}>
+            {businessCity && (
+              <span className={styles.heroMetaItem}>
+                <MapPin size={12} aria-hidden="true" />
+                {businessCity}
               </span>
             )}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Category tabs (mobile, hidden while searching) ──────── */}
-      {!query && (
-        <div className={styles.tabsWrapperMobile}>
-          <div className={styles.tabs} role="tablist" aria-label="Filtrar por categoría">
-            {hasFeatured && (
-              <button
-                role="tab"
-                aria-selected={active === FEATURED_KEY}
-                className={`${styles.tab} ${active === FEATURED_KEY ? styles.tabActive : ''}`}
-                onClick={() => setActive(FEATURED_KEY)}
-              >
-                <Star size={14} aria-hidden="true" className={styles.tabIcon} /> Destacados
-              </button>
-            )}
-            <button
-              role="tab"
-              aria-selected={active === null}
-              className={`${styles.tab} ${active === null ? styles.tabActive : ''}`}
-              onClick={() => setActive(null)}
-            >
-              Todos
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat}
-                role="tab"
-                aria-selected={active === cat}
-                className={`${styles.tab} ${active === cat ? styles.tabActive : ''}`}
-                onClick={() => setActive(cat)}
-              >
-                {cat}
-              </button>
-            ))}
+            <span className={styles.heroBadgeOpen}>
+              <span className={styles.heroDot} aria-hidden="true" />
+              Abierto
+            </span>
           </div>
-          {/* Subcategory pills — appear when a real category is selected and has subs */}
-          {subcategoriesForActive.length > 0 && (
-            <div className={styles.subcatPills} role="group" aria-label="Subcategorías">
-              <button
-                type="button"
-                className={`${styles.subcatPill} ${activeSub === null ? styles.subcatPillActive : ''}`}
-                onClick={() => setActiveSub(null)}
-              >
-                Todas
-              </button>
-              {subcategoriesForActive.map(sub => (
-                <button
-                  key={sub}
-                  type="button"
-                  className={`${styles.subcatPill} ${activeSub === sub ? styles.subcatPillActive : ''}`}
-                  onClick={() => setActiveSub(sub)}
-                >
-                  {sub}
-                </button>
-              ))}
-            </div>
+          {businessDesc && (
+            <p className={styles.heroDesc}>{businessDesc}</p>
           )}
         </div>
-      )}
+      </section>
 
-      {/* ── Content layout ──────────────────────────────────────── */}
-      <div className={styles.contentLayout}>
+      {/* ── Search bar (sticky) ────────────────────────────────── */}
+      <div className={styles.searchBar} role="search">
+        <Search size={16} className={styles.searchBarIcon} aria-hidden="true" />
+        <input
+          ref={searchRef}
+          type="search"
+          className={styles.searchBarInput}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Buscar productos…"
+          aria-label="Buscar productos"
+        />
+        {query && (
+          <button
+            type="button"
+            className={styles.searchBarClear}
+            onClick={() => { setQuery(''); searchRef.current?.focus() }}
+            aria-label="Limpiar búsqueda"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        )}
+      </div>
 
-        {/* Desktop sidebar (hidden while searching) */}
-        {!query && (
-          <aside className={styles.sidebar} aria-label="Categorías">
-            <p className={styles.sidebarTitle}>Categorías</p>
-            <nav>
+      {/* ── Category tabs (horizontal scroll) ─────────────────── */}
+      {!query && (
+        <>
+          <div className={styles.categoryScroll}>
+            <div className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
               {hasFeatured && (
                 <button
-                  className={`${styles.categoryItem} ${active === FEATURED_KEY ? styles.categoryItemActive : ''}`}
-                  onClick={() => setActive(FEATURED_KEY)}
+                  role="tab"
+                  aria-selected={activeCategory === FEATURED_KEY}
+                  className={`${styles.categoryTab} ${activeCategory === FEATURED_KEY ? styles.categoryTabActive : ''}`}
+                  onClick={() => setActiveCategory(FEATURED_KEY)}
                 >
-                  <span className={styles.categoryName}><Star size={14} aria-hidden="true" className={styles.categoryIcon} /> Destacados</span>
-                  <span className={styles.categoryCount}>{products.filter(p => p.isFeatured).length}</span>
+                  <Star size={13} aria-hidden="true" />
+                  Destacados
+                  <span className={styles.categoryTabCount}>{products.filter(p => p.isFeatured).length}</span>
                 </button>
               )}
               <button
-                className={`${styles.categoryItem} ${active === null ? styles.categoryItemActive : ''}`}
-                onClick={() => setActive(null)}
+                role="tab"
+                aria-selected={activeCategory === null}
+                className={`${styles.categoryTab} ${activeCategory === null ? styles.categoryTabActive : ''}`}
+                onClick={() => setActiveCategory(null)}
               >
-                <span className={styles.categoryName}>Todos</span>
-                <span className={styles.categoryCount}>{products.length}</span>
+                Todos
+                <span className={styles.categoryTabCount}>{products.length}</span>
               </button>
               {categories.map(cat => (
                 <button
                   key={cat}
-                  className={`${styles.categoryItem} ${active === cat ? styles.categoryItemActive : ''}`}
-                  onClick={() => setActive(cat)}
+                  role="tab"
+                  aria-selected={activeCategory === cat}
+                  className={`${styles.categoryTab} ${activeCategory === cat ? styles.categoryTabActive : ''}`}
+                  onClick={() => setActiveCategory(cat)}
                 >
-                  <span className={styles.categoryName}>{cat}</span>
-                  <span className={styles.categoryCount}>{categoryCounts.get(cat) ?? 0}</span>
+                  {cat}
+                  <span className={styles.categoryTabCount}>{categoryCounts.get(cat) ?? 0}</span>
                 </button>
               ))}
-            </nav>
-            {/* Subcategory second level */}
-            {subcategoriesForActive.length > 0 && (
-              <div className={styles.sidebarSubcats}>
-                <p className={styles.sidebarSubcatsLabel}>Subcategorías</p>
+            </div>
+          </div>
+
+          {/* Subcategory pills */}
+          {subcategoriesForActive.length > 0 && (
+            <div className={styles.subcatScroll}>
+              <div className={styles.subcatTrack} role="group" aria-label="Subcategorías">
                 <button
                   type="button"
-                  className={`${styles.subcatItem} ${activeSub === null ? styles.subcatItemActive : ''}`}
+                  className={`${styles.subcatPill} ${activeSub === null ? styles.subcatPillActive : ''}`}
                   onClick={() => setActiveSub(null)}
                 >
                   Todas
@@ -404,116 +436,141 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
                   <button
                     key={sub}
                     type="button"
-                    className={`${styles.subcatItem} ${activeSub === sub ? styles.subcatItemActive : ''}`}
+                    className={`${styles.subcatPill} ${activeSub === sub ? styles.subcatPillActive : ''}`}
                     onClick={() => setActiveSub(sub)}
                   >
                     {sub}
                   </button>
                 ))}
               </div>
-            )}
-          </aside>
-        )}
-
-        {/* Product grid */}
-        <main className={styles.main}>
-          {products.length === 0 ? (
-            <div className={styles.empty}>
-              <Package className={styles.emptyIcon} size={52} strokeWidth={1.25} aria-hidden="true" />
-              <h2 className={styles.emptyTitle}>Catálogo en construcción</h2>
-              <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
-            </div>
-          ) : visible.length === 0 ? (
-            <div className={styles.empty}>
-              {query ? (
-                <>
-                  <Search className={styles.emptyIcon} size={40} strokeWidth={1.25} aria-hidden="true" />
-                  <p className={styles.emptyTitle}>Sin resultados para &ldquo;{query}&rdquo;</p>
-                  <p className={styles.emptySubtitle}>Intenta con otro nombre o categoría.</p>
-                </>
-              ) : (
-                <p className={styles.emptyTitle}>Sin productos en esta categoría</p>
-              )}
-            </div>
-          ) : (
-            <div className={styles.grid}>
-              {visible.map(p => (
-                <article
-                  key={p.id}
-                  className={styles.card}
-                  onClick={() => openModal(p)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault(); openModal(p)
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Ver detalle: ${p.name}`}
-                >
-                  <div className={styles.cardImage}>
-                    {p.image ? (
-                      <img src={p.image} alt={p.name} className={styles.productImg} loading="lazy" />
-                    ) : (
-                      <div className={`${styles.noImage} ${getCategoryClass(p.categoryName)}`} aria-hidden="true">
-                        <span className={styles.noImageInitial}>{p.name.charAt(0).toUpperCase()}</span>
-                      </div>
-                    )}
-                    {p.availability === 'discontinued' ? (
-                      <span className={styles.badgeDiscontinued}>
-                        <Archive size={10} aria-hidden="true" />
-                        Descontinuado
-                      </span>
-                    ) : p.catalogVisibility === 'on_request' ? (
-                      <span className={styles.badgeOnRequest}>Consultar</span>
-                    ) : (p.outOfStock || p.availability === 'out_of_stock') ? (
-                      <span className={styles.badgeSinStock}>Sin stock</span>
-                    ) : p.availability === 'low_stock' ? (
-                      <span className={styles.badgeLowStock}>Pocas unidades</span>
-                    ) : p.isService ? (
-                      <span className={styles.badgeDisponible}>Disponible</span>
-                    ) : p.stockQty !== null && p.stockQty > 0 ? (
-                      <span className={styles.badgeStock}>
-                        {p.stockQty <= 5 ? `Últimas ${p.stockQty}` : `${p.stockQty} disponibles`}
-                      </span>
-                    ) : null}
-                    {p.catalogVisibility !== 'on_request' && !p.outOfStock && !p.isService && p.badge && p.badge !== 'none' && getBadgeClass(p.badge) && (
-                      <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
-                        {BADGE_LABEL[p.badge]}
-                      </span>
-                    )}
-                  </div>
-                  <div className={styles.cardBody}>
-                    {p.categoryName && <span className={styles.category}>{p.categoryName}</span>}
-                    <h2 className={styles.productName}>{p.name}</h2>
-                    {p.description && <p className={styles.productDesc}>{p.description}</p>}
-                    <div className={styles.priceRow}>
-                      {p.catalogVisibility === 'on_request' ? (
-                        <span className={styles.priceConsultar}>Consultar precio</span>
-                      ) : p.availability === 'discontinued' ? (
-                        <span className={styles.priceDiscontinued}>No disponible</span>
-                      ) : p.priceUsd > 0 ? (
-                        <>
-                          <span className={styles.priceUsd}>
-                            ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </span>
-                          {p.priceBs && (
-                            <span className={styles.priceBs}>
-                              Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className={styles.priceConsultar}>Consultar precio</span>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
             </div>
           )}
-        </main>
-      </div>
+        </>
+      )}
+
+      {/* ── Product grid ───────────────────────────────────────── */}
+      <main className={styles.productsSection}>
+        {products.length === 0 ? (
+          <div className={styles.empty}>
+            <Package className={styles.emptyIcon} size={52} strokeWidth={1.25} aria-hidden="true" />
+            <h2 className={styles.emptyTitle}>Catálogo en construcción</h2>
+            <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
+          </div>
+        ) : visible.length === 0 ? (
+          <div className={styles.empty}>
+            {query ? (
+              <>
+                <Search className={styles.emptyIcon} size={40} strokeWidth={1.25} aria-hidden="true" />
+                <p className={styles.emptyTitle}>Sin resultados para &ldquo;{query}&rdquo;</p>
+                <p className={styles.emptySubtitle}>Intenta con otro nombre o categoría.</p>
+              </>
+            ) : (
+              <p className={styles.emptyTitle}>Sin productos en esta categoría</p>
+            )}
+          </div>
+        ) : (
+          <div className={styles.productsGrid}>
+            {visible.map(p => (
+              <article
+                key={p.id}
+                className={styles.productCard}
+                onClick={() => openModal(p)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Ver detalle: ${p.name}`}
+              >
+                {/* Image */}
+                <div className={styles.productImageWrap}>
+                  {p.image ? (
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      className={styles.productImage}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      className={`${styles.productImagePlaceholder} ${getCategoryClass(p.categoryName)}`}
+                      aria-hidden="true"
+                    >
+                      <span className={styles.productInitial}>
+                        {p.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Status badge (top right) */}
+                  {p.availability === 'discontinued' ? (
+                    <div className={styles.badgeDiscontinued} aria-label="Descontinuado">
+                      <span>
+                        <Archive size={10} aria-hidden="true" />
+                        &nbsp;Descontinuado
+                      </span>
+                    </div>
+                  ) : p.catalogVisibility === 'on_request' ? (
+                    <div className={styles.badgeOnRequest} aria-label="Bajo pedido">
+                      Consultar
+                    </div>
+                  ) : (p.outOfStock || p.availability === 'out_of_stock') ? (
+                    <span className={styles.badgeSinStock}>Sin stock</span>
+                  ) : p.availability === 'low_stock' ? (
+                    <span className={styles.badgeLowStock}>Pocas unidades</span>
+                  ) : p.isService ? (
+                    <span className={styles.badgeDisponible}>Disponible</span>
+                  ) : p.stockQty !== null && p.stockQty > 0 ? (
+                    <span className={styles.badgeStock}>
+                      {p.stockQty <= 5 ? `Últimas ${p.stockQty}` : `${p.stockQty} uds.`}
+                    </span>
+                  ) : null}
+
+                  {/* Product badge (top left) */}
+                  {p.catalogVisibility !== 'on_request' &&
+                    !p.outOfStock &&
+                    !p.isService &&
+                    p.badge && p.badge !== 'none' &&
+                    getBadgeClass(p.badge) && (
+                    <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
+                      {BADGE_LABEL[p.badge]}
+                    </span>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className={styles.productInfo}>
+                  {p.categoryName && (
+                    <p className={styles.productCategory}>{p.categoryName}</p>
+                  )}
+                  <h2 className={styles.productName}>{p.name}</h2>
+
+                  <div className={styles.productPrice}>
+                    {p.catalogVisibility === 'on_request' ? (
+                      <span className={styles.priceConsultar}>Consultar precio</span>
+                    ) : p.availability === 'discontinued' ? (
+                      <span className={styles.priceDiscontinued}>No disponible</span>
+                    ) : p.priceUsd > 0 ? (
+                      <>
+                        <span className={styles.priceUsd}>
+                          ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
+                        {p.priceBs && (
+                          <span className={styles.priceBs}>
+                            Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className={styles.priceConsultar}>Consultar precio</span>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </main>
 
       {/* ── Cart drawer backdrop ────────────────────────────────── */}
       {cartOpen && (
@@ -591,7 +648,6 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
             )}
           </div>
 
-          {/* Payment method badges */}
           {paymentMethods.length > 0 && (
             <div className={styles.drawerPayments}>
               <p className={styles.drawerPaymentsLabel}>Métodos de pago</p>
@@ -628,7 +684,7 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
         </div>
       )}
 
-      {/* ── Checkout modal "Antes de enviar" ────────────────────── */}
+      {/* ── Checkout modal ──────────────────────────────────────── */}
       {checkoutOpen && (
         <div
           className={styles.checkoutOverlay}
@@ -741,148 +797,172 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods,
         </div>
       )}
 
-      {/* ── Product detail modal ────────────────────────────────── */}
+      {/* ── Product detail modal (bottom sheet) ────────────────── */}
       {selP && (
-        <div
-          className={styles.productModalOverlay}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Detalle: ${selP.name}`}
-          onClick={closeModal}
-        >
-          <div className={styles.productModal} onClick={e => e.stopPropagation()}>
-            <div className={styles.productModalImg}>
+        <>
+          <div
+            className={styles.modalOverlay}
+            aria-hidden="true"
+            onClick={closeModal}
+          />
+          <div
+            className={styles.modalSheet}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Detalle: ${selP.name}`}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drag handle (mobile only) */}
+            <div className={styles.modalHandle} aria-hidden="true" />
+
+            {/* Image */}
+            <div className={styles.modalImageWrap}>
               {selP.image ? (
-                <img src={selP.image} alt={selP.name} className={styles.productModalImgEl} />
+                <img
+                  src={selP.image}
+                  alt={selP.name}
+                  className={styles.modalImage}
+                />
               ) : (
                 <div
-                  className={`${styles.productModalImgFallback} ${getCategoryClass(selP.categoryName)}`}
+                  className={`${styles.modalImagePlaceholder} ${getCategoryClass(selP.categoryName)}`}
                   aria-hidden="true"
                 >
-                  <span className={styles.productModalImgInitial}>{selP.name.charAt(0).toUpperCase()}</span>
+                  <span className={styles.modalInitial}>
+                    {selP.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
               )}
-              {selP.availability === 'discontinued' ? (
-                <span className={`${styles.badgeDiscontinued} ${styles.badgeModal}`}>
-                  <Archive size={10} aria-hidden="true" />
-                  Descontinuado
-                </span>
-              ) : selP.catalogVisibility === 'on_request' ? (
-                <span className={`${styles.badgeOnRequest} ${styles.badgeModal}`}>Consultar</span>
-              ) : (selP.outOfStock || selP.availability === 'out_of_stock') ? (
-                <span className={`${styles.badgeSinStock} ${styles.badgeModal}`}>Sin stock</span>
-              ) : selP.availability === 'low_stock' ? (
-                <span className={`${styles.badgeLowStock} ${styles.badgeModal}`}>Pocas unidades</span>
-              ) : null}
               <button
                 ref={closeRef}
                 type="button"
-                className={styles.productModalClose}
+                className={styles.modalClose}
                 onClick={closeModal}
                 aria-label="Cerrar"
               >
-                <X size={18} aria-hidden="true" />
+                <X size={16} aria-hidden="true" />
               </button>
+
+              {/* Status badge on modal image */}
+              {selP.availability === 'discontinued' && (
+                <div className={styles.badgeDiscontinued} aria-label="Descontinuado">
+                  <span><Archive size={10} aria-hidden="true" />&nbsp;Descontinuado</span>
+                </div>
+              )}
+              {selP.catalogVisibility === 'on_request' && selP.availability !== 'discontinued' && (
+                <div className={styles.badgeOnRequest}>Consultar</div>
+              )}
+              {(selP.outOfStock || selP.availability === 'out_of_stock') &&
+                selP.availability !== 'discontinued' && selP.catalogVisibility !== 'on_request' && (
+                <span className={styles.badgeSinStock}>Sin stock</span>
+              )}
+              {selP.availability === 'low_stock' && !selP.outOfStock && selP.catalogVisibility !== 'on_request' && (
+                <span className={styles.badgeLowStock}>Pocas unidades</span>
+              )}
             </div>
 
-            <div className={styles.productModalBody}>
-              {selP.categoryName && <span className={styles.category}>{selP.categoryName}</span>}
-              <h3 className={styles.productModalName}>{selP.name}</h3>
-              {selP.description && <p className={styles.productModalDesc}>{selP.description}</p>}
-              <div className={styles.productModalPrices}>
+            {/* Scrollable body */}
+            <div className={styles.modalBody}>
+              {selP.categoryName && (
+                <p className={styles.productCategory}>{selP.categoryName}</p>
+              )}
+              <h2 className={styles.modalTitle}>{selP.name}</h2>
+              {selP.description && (
+                <p className={styles.modalDesc}>{selP.description}</p>
+              )}
+
+              <div className={styles.modalPrice}>
                 {selP.availability === 'discontinued' ? (
                   <span className={styles.priceDiscontinued}>No disponible</span>
                 ) : selP.catalogVisibility === 'on_request' ? (
-                  <span className={styles.priceConsultar}>Consultar precio</span>
+                  <span className={styles.modalPriceConsultar}>Consultar precio</span>
                 ) : selP.priceUsd > 0 ? (
                   <>
-                    <span className={styles.priceUsd}>
+                    <span className={styles.modalPriceUsd}>
                       ${selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
                     {selP.priceBs && (
-                      <span className={styles.priceBs}>
+                      <span className={styles.modalPriceBs}>
                         Bs.&nbsp;{selP.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
                       </span>
                     )}
                   </>
                 ) : (
-                  <span className={styles.priceConsultar}>Consultar precio</span>
+                  <span className={styles.modalPriceConsultar}>Consultar precio</span>
                 )}
               </div>
 
-              {selP.availability === 'discontinued' ? null
-              : selP.catalogVisibility === 'on_request' ? (
-                <div className={styles.productModalCtas}>
-                  <a
-                    href={getConsultarWaUrl(businessPhone, selP.name)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.waOrangeBtn}
-                  >
-                    <MessageCircle size={16} aria-hidden="true" />
-                    Consultar disponibilidad
-                  </a>
+              {/* Qty stepper (only for purchasable products) */}
+              {selP.availability !== 'discontinued' &&
+                selP.catalogVisibility !== 'on_request' &&
+                selP.priceUsd > 0 && (
+                <div className={styles.modalQtyRow}>
+                  <span className={styles.modalQtyLabel}>Cantidad</span>
+                  <div className={styles.qtyControl}>
+                    <button
+                      type="button"
+                      className={styles.qtyControlBtn}
+                      onClick={() => setModalQty(q => Math.max(1, q - 1))}
+                      disabled={modalQty <= 1}
+                      aria-label="Reducir cantidad"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className={styles.qtyValue}>{modalQty}</span>
+                    <button
+                      type="button"
+                      className={styles.qtyControlBtn}
+                      onClick={() => setModalQty(q => q + 1)}
+                      aria-label="Aumentar cantidad"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
                 </div>
-              ) : selP.priceUsd > 0 && (
-                <>
-                  <div className={styles.productModalQtyRow}>
-                    <span className={styles.productModalQtyLabel}>Cantidad</span>
-                    <div className={styles.productModalQtyCtrl}>
-                      <button
-                        type="button"
-                        className={styles.productModalQtyBtn}
-                        onClick={() => setModalQty(q => Math.max(1, q - 1))}
-                        disabled={modalQty <= 1}
-                        aria-label="Reducir cantidad"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className={styles.productModalQtyNum}>{modalQty}</span>
-                      <button
-                        type="button"
-                        className={styles.productModalQtyBtn}
-                        onClick={() => setModalQty(q => q + 1)}
-                        aria-label="Aumentar cantidad"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  </div>
+              )}
+            </div>
 
-                  <div className={styles.productModalCtas}>
-                    <button
-                      type="button"
-                      className={styles.addToCartBtn}
-                      disabled={selP.outOfStock}
-                      onClick={() => {
-                        addToCart(selP, modalQty)
-                        closeModal()
-                        setCartOpen(true)
-                      }}
-                    >
-                      <ShoppingBag size={16} aria-hidden="true" />
-                      {selP.outOfStock ? 'Sin stock' : 'Agregar al carrito'}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.waOrangeBtn}
-                      disabled={selP.outOfStock}
-                      onClick={() => {
-                        addToCart(selP, modalQty)
-                        closeModal()
-                        setCartOpen(true)
-                        setCheckoutOpen(true)
-                      }}
-                    >
-                      <MessageCircle size={16} aria-hidden="true" />
-                      Pedir por WhatsApp
-                    </button>
-                  </div>
-                </>
+            {/* Always-visible footer CTA */}
+            <div className={styles.modalFooter}>
+              {selP.availability === 'discontinued' ? (
+                <div className={styles.btnDisabled} aria-disabled="true">No disponible</div>
+              ) : selP.catalogVisibility === 'on_request' ? (
+                <a
+                  href={getConsultarWaUrl(businessPhone, selP.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.btnWhatsapp}
+                >
+                  <MessageCircle size={17} aria-hidden="true" />
+                  Consultar disponibilidad
+                </a>
+              ) : selP.outOfStock || selP.availability === 'out_of_stock' ? (
+                <div className={styles.btnDisabled} aria-disabled="true">Sin stock</div>
+              ) : selP.priceUsd > 0 ? (
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.btnAddCart}
+                    onClick={() => { addToCart(selP, modalQty); closeModal(); setCartOpen(true) }}
+                  >
+                    <ShoppingBag size={17} aria-hidden="true" />
+                    Agregar · ${(selP.priceUsd * modalQty).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </button>
+                </div>
+              ) : (
+                <a
+                  href={getConsultarWaUrl(businessPhone, selP.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.btnWhatsapp}
+                >
+                  <MessageCircle size={17} aria-hidden="true" />
+                  Consultar precio
+                </a>
               )}
             </div>
           </div>
-        </div>
+        </>
       )}
     </>
   )

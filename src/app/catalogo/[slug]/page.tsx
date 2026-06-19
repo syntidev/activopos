@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { MessageCircle, MapPin } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
@@ -15,14 +15,6 @@ interface PageProps {
 function parseImages(raw: string | null): string[] {
   if (!raw) return []
   try { return JSON.parse(raw) as string[] } catch { return [] }
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() ?? '')
-    .join('')
 }
 
 async function getBusiness(slug: string) {
@@ -145,7 +137,6 @@ export default async function CatalogoPage({ params }: PageProps) {
   )
 
   const displayTitle = business.catalog_title ?? business.name
-  const initials     = getInitials(displayTitle)
   const location     = [business.city, business.state].filter(Boolean).join(', ')
   const waPhone      = business.phone?.replace(/\D/g, '') ?? ''
   const waUrl        = waPhone
@@ -159,57 +150,19 @@ export default async function CatalogoPage({ params }: PageProps) {
         ? { '--biz-color': business.theme_color } as React.CSSProperties
         : undefined}
     >
-
-      {/* ── Hero ────────────────────────────────────────────────── */}
-      <div className={styles.hero} role="banner">
-        <div className={styles.heroGradient} aria-hidden="true" />
-        <div className={styles.heroPattern}  aria-hidden="true" />
-        <div className={styles.heroOverlay}  aria-hidden="true" />
-        <div className={styles.logoCircle}   aria-hidden="true">
-          {business.logo_path ? (
-            <img
-              src={business.logo_path}
-              alt=""
-              className={styles.logoImg}
-              width={96}
-              height={96}
-            />
-          ) : (
-            <span className={styles.logoInitials}>{initials}</span>
-          )}
-        </div>
-      </div>
-
-      {/* ── Biz Info ────────────────────────────────────────────── */}
-      <div className={styles.bizSection}>
-        <div className={styles.bizSectionInner}>
-          <div className={styles.bizMeta}>
-            <h1 className={styles.bizName}>{displayTitle}</h1>
-            <span className={styles.openBadge} aria-label="Tienda abierta">
-              <span aria-hidden="true">●</span> Abierto
-            </span>
-          </div>
-          {location && (
-            <p className={styles.bizLocation}>
-              <MapPin size={12} strokeWidth={2} aria-hidden="true" />
-              {location}
-            </p>
-          )}
-          {business.catalog_desc && (
-            <p className={styles.bizDesc}>{business.catalog_desc}</p>
-          )}
-        </div>
-      </div>
-
-      {/* ── Grid + Tabs (Client Component) ──────────────────────── */}
+      {/* ── CatalogoGrid: header + hero + search + tabs + grid + modals ── */}
       <CatalogoGrid
-          products={catalogProducts}
-          categories={categories}
-          slug={params.slug}
-          rate={rate}
-          paymentMethods={paymentMethods as PaymentMethod[]}
-          businessPhone={waPhone}
-        />
+        products={catalogProducts}
+        categories={categories}
+        slug={params.slug}
+        rate={rate}
+        paymentMethods={paymentMethods as PaymentMethod[]}
+        businessPhone={waPhone}
+        businessName={displayTitle}
+        businessLogo={business.logo_path}
+        businessCity={location || null}
+        businessDesc={business.catalog_desc ?? null}
+      />
 
       {/* ── WhatsApp FAB ────────────────────────────────────────── */}
       {waUrl && (

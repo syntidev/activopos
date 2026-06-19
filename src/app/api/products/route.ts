@@ -44,6 +44,19 @@ function parseImages(raw: string | null): string[] | null {
   try { return JSON.parse(raw) as string[] } catch { return null }
 }
 
+function computeAvailability(
+  dbAvailability: string,
+  productType: string,
+  netStock: number,
+  minStock: number
+): string {
+  if (dbAvailability === 'discontinued') return 'discontinued'
+  if (productType === 'service') return 'in_stock'
+  if (netStock <= 0) return 'out_of_stock'
+  if (netStock <= minStock) return 'low_stock'
+  return 'in_stock'
+}
+
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -123,6 +136,8 @@ export async function GET(req: NextRequest) {
           : null,
         iva_pct:            ivaEnabled ? ivaPct : null,
         is_low_stock:       stock.net_qty < Number(p.min_stock),
+        availability:       computeAvailability(p.availability, p.product_type, stock.net_qty, Number(p.min_stock)),
+        catalog_visibility: p.catalog_visibility,
       }
     })
     .filter(p => !lowStockOnly || p.is_low_stock)

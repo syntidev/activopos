@@ -37,6 +37,9 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'Campo "file" requerido' }, { status: 400 })
   }
+  if (file.size > 5 * 1024 * 1024) {
+    return NextResponse.json({ error: 'Archivo demasiado grande (máx 5 MB)' }, { status: 413 })
+  }
 
   const buffer = Buffer.from(await file.arrayBuffer())
   const workbook = XLSX.read(buffer)

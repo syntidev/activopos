@@ -35,6 +35,7 @@ function generateInsight(
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   const sp = req.nextUrl.searchParams
   const monthParam = sp.get('month') ?? ''

@@ -66,6 +66,19 @@ enum PmType {
   other
 }
 
+enum Availability {
+  in_stock
+  low_stock
+  out_of_stock
+  discontinued
+}
+
+enum CatalogVisibility {
+  visible
+  hidden
+  on_request
+}
+
 // ── Modelos ────────────────────────────────────────────
 
 model Business {
@@ -178,8 +191,10 @@ model Product {
   show_in_catalog     Boolean  @default(false)
   available_in_pos    Boolean  @default(true)
   is_favorite         Boolean  @default(false)
-  is_available        Boolean  @default(true)
-  active              Boolean  @default(true)
+  is_available        Boolean           @default(true)
+  availability        Availability      @default(in_stock)
+  catalog_visibility  CatalogVisibility @default(visible)
+  active              Boolean           @default(true)
   badge               String?  @default("none")
   subcategory         String?
   is_featured         Boolean  @default(false)

@@ -47,10 +47,10 @@ export async function GET(req: NextRequest) {
   } else {
     const days = period === '30d' ? 29 : 6
     from      = new Date(todayStart.getTime() - days * 86_400_000)
-    // dateExpr == groupExpr — evita only_full_group_by en MariaDB
-    // El formato dd/mm se aplica en JS (ver formatLabel)
-    dateExpr  = "DATE(sold_at)"
-    groupExpr = "DATE(sold_at)"
+    // DATE_FORMAT fuerza retorno string desde mysql2; DATE(sold_at) devuelve
+    // un objeto Date de JS que rompe label.split() en formatLabel.
+    dateExpr  = "DATE_FORMAT(sold_at, '%Y-%m-%d')"
+    groupExpr = "DATE_FORMAT(sold_at, '%Y-%m-%d')"
   }
 
   const fromIso = from.toISOString().slice(0, 19).replace('T', ' ')

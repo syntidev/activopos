@@ -53,10 +53,11 @@ export async function GET(
   const [products, rate] = await Promise.all([
     prisma.product.findMany({
       where: {
-        business_id:      business.id,
-        active:           true,
-        show_in_catalog:  true,
-        available_in_pos: true,
+        business_id:        business.id,
+        active:             true,
+        show_in_catalog:    true,
+        available_in_pos:   true,
+        catalog_visibility: { not: 'hidden' },
       },
       select: {
         id:                 true,
@@ -71,6 +72,8 @@ export async function GET(
         badge:              true,
         subcategory:        true,
         is_featured:        true,
+        availability:       true,
+        catalog_visibility: true,
         category: { select: { name: true } },
       },
       orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
@@ -97,10 +100,12 @@ export async function GET(
         image_url:     imgs[0] ?? null,
         sale_mode:     p.sale_mode,
         base_unit_label: p.base_unit_label,
-        category_name: p.category?.name ?? null,
-        badge:         p.badge ?? 'none',
-        subcategory:   p.subcategory ?? null,
-        is_featured:   p.is_featured,
+        category_name:      p.category?.name ?? null,
+        badge:              p.badge ?? 'none',
+        subcategory:        p.subcategory ?? null,
+        is_featured:        p.is_featured,
+        availability:       p.availability,
+        catalog_visibility: p.catalog_visibility,
       }
     }),
     rate,

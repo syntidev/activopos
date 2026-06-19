@@ -28,6 +28,8 @@ const patchSchema = z.object({
   is_featured:        z.boolean().optional(),
   active:             z.boolean().optional(),
   sort_order:         z.number().int().optional(),
+  availability:       z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).optional(),
+  catalog_visibility: z.enum(['visible', 'hidden', 'on_request']).optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -97,7 +99,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     // service type always inherits service sale_mode — single discriminator downstream
-    if (data.product_type === 'service') data.sale_mode = 'service'
+    if (data.product_type === 'service') {
+      data.sale_mode    = 'service'
+      data.availability = 'in_stock'
+    }
 
     // Recalculate price if margin provided and no explicit price override
     const { images, ...rest } = data

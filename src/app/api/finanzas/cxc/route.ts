@@ -7,6 +7,7 @@ const DAYS_CREDIT = 30 // días de crédito por defecto
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   const sp     = req.nextUrl.searchParams
   const status = sp.get('status') ?? 'todo' // pendiente | vencido | todo

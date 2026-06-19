@@ -6,11 +6,11 @@
 
 ## Resumen ejecutivo
 
-| Estado          | Tests  | Seguridad         | Code Review |
-|-----------------|--------|-------------------|-------------|
-| NO CERTIFICADO  | 4/5 ✗  | P2 activo (middleware) | 6 hallazgos (0 P0, 2 P2-seg, 2 P2-css, 2 P3) |
+| Estado      | Tests  | Seguridad   | Code Review |
+|-------------|--------|-------------|-------------|
+| CERTIFICADO | 5/5 ✓  | ✓ sin P0/P1 | 5 hallazgos (0 P0, 1 P2-seg-resuelto, 1 P2-css, 1 P2-style, 2 P3) |
 
-**Bloqueante:** AN05 falla porque `/analytics` no está en `ADMIN_ONLY` del middleware. El cajero puede cargar la página directamente — los 3 endpoints API sí devuelven 403, no hay fuga de datos, pero el middleware no redirige. **Requiere fix de CLI-A antes de certificar.**
+Módulo Analytics certificado tras fix de middleware (CLI-A commit `dfac146`). AN05 pasa. Los 5 tests en verde. Sin vulnerabilidades P0/P1 activas.
 
 ---
 
@@ -106,21 +106,13 @@ Verificado en código: `if (session.role === 'cashier') return 403` en las 3 rut
 
 `Sidebar.tsx`: `/analytics` está en el grupo FINANZAS con `adminOnly: true`. Los cajeros no ven el ítem. ✓
 
-### ✗ MIDDLEWARE — /analytics NO en ADMIN_ONLY (P2 — BLOQUEANTE)
+### ✓ MIDDLEWARE — /analytics y /api/analytics en ADMIN_ONLY (resuelto dfac146)
 
-`src/middleware.ts:21`:
+`src/middleware.ts:21` (post-fix CLI-A):
 ```typescript
-const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports']
-// /analytics AUSENTE
+const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports', '/analytics', '/api/analytics']
 ```
-Un cajero con cookie válida puede navegar directamente a `http://localhost:3000/analytics`. El middleware lo deja pasar. La página carga, los 3 fetch devuelven 403, y la UI muestra "Error al cargar los datos." — sin datos expuestos, pero la URL es accesible.
-
-**Impacto:** Bajo (sin fuga de datos). **Riesgo:** Defense-in-depth incompleta. Bloquea AN05.
-
-**Fix CLI-A:**
-```typescript
-const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports', '/analytics']
-```
+Cajero que navega a `/analytics` es redirigido a `/pos` por middleware. Defense-in-depth de doble capa: middleware redirige la UI + API devuelve 403. ✓
 
 ### ✓ Sin Infinity% ni NaN en analytics
 
@@ -136,12 +128,10 @@ const ADMIN_ONLY = ['/configuracion', '/finanzas', '/api/reports', '/analytics']
 
 ## Code Review — Hallazgos CONFIRMED
 
-### P2 — `middleware.ts:21`: /analytics sin gate de cashier (CLI-A) — BLOQUEANTE
+### ✓ P2 RESUELTO — `middleware.ts:21`: /analytics y /api/analytics en ADMIN_ONLY (CLI-A, dfac146)
 
 **Archivo:** `src/middleware.ts`
-**Línea:** 21
-**Problema:** `/analytics` no está en `ADMIN_ONLY`. El middleware no redirige a cajeros. Los 3 API endpoints sí devuelven 403 (sin fuga de datos), pero la URL `/analytics` es accesible para cualquier usuario autenticado independientemente del rol. AN05 falla.
-**Fix (CLI-A):** Añadir `/analytics` a `ADMIN_ONLY`. Añadir también `/api/analytics` si se desea defense-in-depth de doble capa (actualmente el API ya devuelve 403 por código, pero el middleware consistente es más robusto).
+**Problema original:** `/analytics` ausente de `ADMIN_ONLY` → cajero podía cargar la página. Fix aplicado: ambas rutas añadidas, middleware redirige a `/pos`. AN05 pasa. ✓
 
 ---
 
@@ -209,16 +199,9 @@ Y en CSS:
 | AN02 | ✓   | Sin NaN ni Infinity en el contenido renderizado          | PASS   |
 | AN03 | ✓   | Selector período: clic en tab, sin crash                 | PASS   |
 | AN04 | ✓   | LineChart (Recharts SVG) visible en el DOM               | PASS   |
-| AN05 | ✗   | Cashier no accede a /analytics — **FALLA**               | FAIL   |
+| AN05 | ✓   | Cashier redirigido de /analytics → /pos por middleware   | PASS   |
 
-**4/5 en 19.7s** — chromium headless.
-
-**AN05 error:**
-```
-Expected pattern: not /^http:\/\/localhost:3000\/analytics$/
-Received string:  "http://localhost:3000/analytics"
-```
-Middleware no redirige al cajero. Fix: añadir `/analytics` a `ADMIN_ONLY`.
+**5/5 en 9.6s** — chromium headless.
 
 ---
 
@@ -229,7 +212,7 @@ Middleware no redirige al cajero. Fix: añadir `/analytics` a `ADMIN_ONLY`.
 - [x] Sin Infinity% ni NaN en ningún cálculo de analytics
 - [x] TypeScript strict: `npx tsc --noEmit` → 0 errores
 - [x] AN01-AN04 pasan
-- [ ] **AN05 FALLA** — `/analytics` falta en `ADMIN_ONLY` del middleware
+- [x] AN05 pasa — `/analytics` y `/api/analytics` en `ADMIN_ONLY` (dfac146)
 - [x] Sidebar gateado: adminOnly: true en grupo FINANZAS
 - [x] Sprint 13 P1/P2 fixes confirmados: quickToggle, bulkUpdate, color token, label
 
@@ -237,10 +220,9 @@ Middleware no redirige al cajero. Fix: añadir `/analytics` a `ADMIN_ONLY`.
 
 ## Hallazgos pendientes por agente
 
-### Para CLI-A (bloqueante + P2 + P3):
+### Para CLI-A (P2 + P3):
 | Severidad | Archivo | Acción |
 |-----------|---------|--------|
-| **P2 BLOQUEANTE** | middleware.ts:21 | Añadir `/analytics` a ADMIN_ONLY |
 | P2 | catalogo/metrics/route.ts:108 | Filtrar null catalog_visibility antes de map |
 | P3 | analytics/summary/route.ts:8 | Extraer parseDate a @/lib/analytics |
 | P3 | analytics/trends/route.ts:5 | Mover MONTH_SHORT a @/lib/finanzas |

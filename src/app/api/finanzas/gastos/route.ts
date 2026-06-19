@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { readCachedBcvRate } from '@/lib/bcv'
+import { parsePeriodFromParams } from '@/lib/finanzas'
 
 const CATEGORIAS = [
   'alquiler', 'servicios', 'nomina',
@@ -12,7 +14,7 @@ const CATEGORIAS = [
 ] as const
 
 const gastoSchema = z.object({
-  concepto:   z.string().min(1).max(200),
+  concepto:   z.string().trim().min(3).max(200),
   category:   z.enum(CATEGORIAS).optional(),
   categoria:  z.enum(CATEGORIAS).optional(),
   amount_usd: z.number().positive().optional(),
@@ -25,23 +27,13 @@ const gastoSchema = z.object({
   message: 'amount_usd requerido',
 })
 
-function parsePeriod(sp: URLSearchParams): { year: number; month: number } {
-  const raw = sp.get('period') ?? sp.get('month') ?? ''
-  const m   = /^(\d{4})-(\d{2})$/.exec(raw)
-  const now = new Date()
-  return {
-    year:  m ? parseInt(m[1], 10) : now.getFullYear(),
-    month: m ? parseInt(m[2], 10) : now.getMonth() + 1,
-  }
-}
-
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   const sp               = req.nextUrl.searchParams
-  const { year, month }  = parsePeriod(sp)
+  const { year, month }  = parsePeriodFromParams(sp)
   const from             = new Date(year, month - 1, 1)
   const to               = new Date(year, month, 1)
   const fromPrev         = new Date(year, month - 2, 1)
@@ -51,7 +43,7 @@ export async function GET(req: NextRequest) {
   const validCat = categoryFilter && CATEGORIAS.includes(categoryFilter as typeof CATEGORIAS[number])
     ? categoryFilter : undefined
 
-  const [gastos, gastosAnteriores, rateRows] = await Promise.all([
+  const [gastos, gastosAnteriores] = await Promise.all([
     prisma.gasto.findMany({
       where: {
         business_id: session.businessId,
@@ -69,10 +61,9 @@ export async function GET(req: NextRequest) {
       _sum: { monto_usd: true },
     }),
 
-    prisma.$queryRaw<{ rate: string | number }[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
   ])
 
-  const rate       = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
+  const rate       = await readCachedBcvRate()
   const r2         = (x: number) => Math.round(x * 100) / 100
   const totalUsd   = r2(gastos.reduce((s, g) => s + Number(g.monto_usd), 0))
   const prevUsd    = Number(gastosAnteriores._sum.monto_usd ?? 0)

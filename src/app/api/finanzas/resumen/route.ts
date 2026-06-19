@@ -1,29 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { readCachedBcvRate } from '@/lib/bcv'
+import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
 
 type InvRow = {
   valor_costo: string | null
   valor_venta: string | null
   productos_count: string | number
-}
-type RateRow = { rate: string | number }
-
-const MONTH_NAMES = [
-  'Enero','Febrero','Marzo','Abril','Mayo','Junio',
-  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
-]
-
-function parsePeriod(req: NextRequest): { year: number; month: number } {
-  const sp  = req.nextUrl.searchParams
-  // Soportar ?period=YYYY-MM (nuevo) y ?month=YYYY-MM (compat)
-  const raw = sp.get('period') ?? sp.get('month') ?? ''
-  const m   = /^(\d{4})-(\d{2})$/.exec(raw)
-  const now = new Date()
-  return {
-    year:  m ? parseInt(m[1], 10) : now.getFullYear(),
-    month: m ? parseInt(m[2], 10) : now.getMonth() + 1,
-  }
 }
 
 function generateInsight(
@@ -57,7 +41,7 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const { year, month } = parsePeriod(req)
+  const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
   const from     = new Date(year, month - 1, 1)
   const to       = new Date(year, month, 1)
   const bid      = session.businessId
@@ -76,7 +60,6 @@ export async function GET(req: NextRequest) {
     cxpAgg,
     cxpVencidasCount,
     inventarioRow,
-    rateRows,
   ] = await Promise.all([
     // Ventas pagas del período
     prisma.sale.aggregate({
@@ -171,10 +154,9 @@ export async function GET(req: NextRequest) {
         AND p.active = true
         AND p.product_type = 'physical'`,
 
-    prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
   ])
 
-  const rate          = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
+  const rate          = await readCachedBcvRate()
   const r2            = (x: number) => Math.round(x * 100) / 100
 
   const ventasUsd     = Number(ingresosAgg._sum.total_usd ?? 0)
@@ -215,7 +197,7 @@ export async function GET(req: NextRequest) {
     egresos: {
       gastos_operativos_usd: r2(gastosOpUsd),
       cuentas_pagadas_usd:   r2(cuentasPagUsd),
-      total_usd:             r2(gastosOpUsd),
+      total_usd:             r2(gastosOpUsd + cuentasPagUsd),
     },
 
     resultado: {

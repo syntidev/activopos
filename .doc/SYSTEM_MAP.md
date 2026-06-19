@@ -9,16 +9,16 @@
 
 | Campo              | Valor                                                             |
 |--------------------|-------------------------------------------------------------------|
-| Último sprint      | Sprint 11                                                         |
-| Último commit      | b069bdb — cert(sprint-11/CLI-C): certificación módulo Reportes   |
+| Último sprint      | Sprint 12                                                         |
+| Último commit      | 9bbf473 — cert(sprint-12/CLI-C): certificación módulo Finanzas   |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                 |
 | Build              | ✅ Limpio — verificar con `npm run build`                         |
-| Tests E2E          | ✅ 23/23 pasando — no regresiones                                 |
+| Tests E2E          | ✅ 28/28 pasando — no regresiones                                 |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
-Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ⏳ → Catálogo → Analytics
+Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ⏳ → Analytics
 ```
 
 | Módulo        | Estado               | Sprint | Evidencia                                          |
@@ -29,7 +29,8 @@ Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ⏳ → Cat
 | Catálogo      | ✅ CERTIFICADO        | 10     | C01-C04: stock + badges + on_request + hidden      |
 | Caja          | ✅ CERTIFICADO        | 11     | C01-C05: open/close/TOCTOU/DT-012/DT-013           |
 | Reportes      | ✅ CERTIFICADO        | 11     | R01-R05: daily, top products, PDF, mensual, token  |
-| Finanzas      | ⏳ PENDIENTE          | 12     |                                                    |
+| Finanzas      | ✅ CERTIFICADO        | 12     | F01-F05: P&L, PE, gastos, CxC, role guard cashier  |
+| Catálogo admin | ⏳ PENDIENTE         | 13     | Métricas, QR, toggle masivo                        |
 | Analytics     | ❌ NO INICIADO        | —      |                                                    |
 
 ---
@@ -124,13 +125,14 @@ PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
 | GET    | `/api/dashboard/charts`     | ✅ BUG-001 resuelto — DATE_FORMAT  |
 
 ### Finanzas
-| Método    | Endpoint                    | Notas                     |
-|-----------|-----------------------------|---------------------------|
-| GET       | `/api/finanzas/cxc`         | ✅ role guard cashier→403 |
-| GET\|POST | `/api/finanzas/cxp`         | ✅ role guard cashier→403 |
-| PATCH     | `/api/finanzas/cxp/[id]`    | ✅ role guard cashier→403 |
-| GET\|POST | `/api/finanzas/gastos`      | ✅ role guard cashier→403 |
-| GET       | `/api/finanzas/resumen`     | ✅ role guard cashier→403 |
+| Método    | Endpoint                             | Notas                            |
+|-----------|--------------------------------------|----------------------------------|
+| GET       | `/api/finanzas/cxc`                  | ✅ role guard + certificado F04  |
+| GET\|POST | `/api/finanzas/cxp`                  | ✅ role guard cashier→403        |
+| PATCH     | `/api/finanzas/cxp/[id]`             | ✅ role guard cashier→403        |
+| GET\|POST | `/api/finanzas/gastos`               | ✅ role guard + certificado F03  |
+| GET       | `/api/finanzas/resumen`              | ✅ role guard + certificado F01  |
+| GET       | `/api/finanzas/punto-equilibrio`     | ✅ PE con proyección — F02       |
 
 ### Inventario
 | Método    | Endpoint          |
@@ -280,21 +282,21 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 ## 5. ÚLTIMOS 15 COMMITS
 
 ```
+9bbf473  cert(sprint-12/CLI-C): certificación módulo Finanzas — 5/5 E2E verde
+3243cde  feat(sprint-12/CLI-B): rediseño completo /finanzas — P&L + PE + tablas
+c665f08  docs+test(sprint-11/CLI-D): suite 23 tests + n8n workflow + SYSTEM_MAP
+52188de  fix(security/CLI-C): middleware n8n routes → PUBLIC_EXACT
 b069bdb  cert(sprint-11/CLI-C): certificación módulo Reportes — 5/5 E2E verde
 42d01f6  feat(sprint-11/CLI-A): backend completo módulo Reportes
-39ca5db  feat(sprint-11/CLI-B): UI reportes rediseñada + MonthlyReportBanner + PDF profesional
+39ca5db  feat(sprint-11/CLI-B): UI reportes rediseñada + MonthlyReportBanner + PDF
 fac1f29  cert(sprint-11/CLI-C): certificación módulo Caja — DT-011 DT-012 DT-013
 2ccc4b9  fix(sprint-11/CLI-A): DT-011 DT-012 DT-013
-c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge Descontinuado
+c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 6acea5e  docs(sprint-10/cierre): SYSTEM_MAP v10 + HANDOFF Sprint 11
 26efc1a  audit(sprint-10/CLI-C): integración visibility system verificada
-6e916c2  feat(sprint-10/CLI-B): DT-006+DT-007+BLOQUE-2 — visibilidad catálogo, tokens RGB, badges
+6e916c2  feat(sprint-10/CLI-B): DT-006+DT-007+BLOQUE-2 — visibilidad catálogo
 e46c9ce  fix+feat(sprint-10/CLI-A): BUG-001 + P1 security + product visibility
-8a9e536  fix(sprint-10/CLI-B): DT-007 cerrado — 7 tokens RGB + sweep en 7 módulos CSS
-899bdd8  audit(sprint-10/CLI-C): security audit completo — 56 endpoints
 5a40e8e  fix(sprint-10/CLI-A): DT-001 DT-003 DT-005 — deuda técnica backend
-43e00f1  feat(sprint-10/CLI-D): servicios siempre disponibles + stock visible en catálogo
-7d31edc  test(sprint-10/CLI-D): certificación núcleo POS E2E — 6/6 tests
 ```
 
 ---
@@ -322,7 +324,9 @@ e46c9ce  fix+feat(sprint-10/CLI-A): BUG-001 + P1 security + product visibility
 | DT-017 | P3  | ❌ BACKLOG        | clients/[id]/abono raw rate query sin caché             | Backlog  |
 | DT-018 | P3  | ❌ BACKLOG        | orders precio $0 posible (sin validación min)           | Backlog  |
 | DT-019 | P3  | ❌ BACKLOG        | WhatsApp automático requiere Meta API oficial           | Sprint 13|
-| DT-020 | P3  | ❌ PENDIENTE      | Export Excel en reportes                                | 12       |
+| DT-020 | P3  | ❌ PENDIENTE      | Export Excel en reportes                                | 13       |
+| DT-021 | P2  | ❌ PENDIENTE      | Export Excel en finanzas                                | 13       |
+| DT-022 | P3  | ❌ BACKLOG        | Gastos recurrentes (definir una vez, pagar mensual)     | Backlog  |
 
 ---
 
@@ -397,4 +401,4 @@ src/
 
 ---
 
-*Generado: 2026-06-19 | HEAD: b069bdb | Sprint 11 cierre | CLI-D modo EJECUCIÓN*
+*Generado: 2026-06-19 | HEAD: 9bbf473 | Sprint 12 cierre | CLI-D modo EJECUCIÓN*

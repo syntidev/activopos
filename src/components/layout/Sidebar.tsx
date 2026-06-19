@@ -13,6 +13,7 @@ import {
   Calculator,
   BarChart2,
   TrendingUp,
+  Store,
   Sparkles,
   Settings,
   HelpCircle,
@@ -60,6 +61,13 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/caja',     icon: Calculator, label: 'Gestión de Caja' },
       { href: '/reportes', icon: BarChart2,  label: 'Reportes' },
+    ],
+  },
+  {
+    label: 'CATÁLOGO',
+    adminOnly: true,
+    items: [
+      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital' },
     ],
   },
   {

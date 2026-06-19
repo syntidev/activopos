@@ -8,6 +8,8 @@ const PUBLIC_PREFIXES = [
   '/catalogo/',
   '/api/catalog/',
   '/api/r/',                              // descarga pública de reportes por token
+  '/onboarding',
+  '/api/onboarding/',
 ]
 
 // Rutas exactas públicas — no usan startsWith

@@ -51,7 +51,7 @@ export function CierreConfirmModal({
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
-          <Button variant="danger" onClick={onConfirm} loading={loading}>
+          <Button variant="cta" onClick={onConfirm} loading={loading}>
             Confirmar Cierre
           </Button>
         </>

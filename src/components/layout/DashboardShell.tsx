@@ -17,7 +17,6 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
   const [bcvRate, setBcvRate]           = useState<number | null>(null)
   const [isCollapsed, setIsCollapsed]   = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [theme, setTheme]               = useState<'dark' | 'light'>('dark')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchBcvRate = useCallback(async () => {
@@ -30,14 +29,6 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
     } catch {
       /* keep previous rate on failure */
     }
-  }, [])
-
-  /* ── Restore persisted theme before first paint ── */
-  useEffect(() => {
-    const saved = localStorage.getItem('activopos_theme') as 'dark' | 'light' | null
-    const initial = saved === 'light' ? 'light' : 'dark'
-    setTheme(initial)
-    document.getElementById('dashboard-root')?.setAttribute('data-theme', initial)
   }, [])
 
   /* ── BCV polling every 5 min ── */
@@ -61,15 +52,6 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
   const handleToggleCollapse = useCallback(() => setIsCollapsed((v) => !v), [])
   const handleToggleMobile   = useCallback(() => setIsMobileOpen((v) => !v), [])
   const handleCloseMobile    = useCallback(() => setIsMobileOpen(false), [])
-
-  const handleToggleTheme = useCallback(() => {
-    setTheme((current) => {
-      const next = current === 'dark' ? 'light' : 'dark'
-      document.getElementById('dashboard-root')?.setAttribute('data-theme', next)
-      localStorage.setItem('activopos_theme', next)
-      return next
-    })
-  }, [])
 
   return (
     <ToastProvider>
@@ -95,10 +77,8 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
             session={session}
             bcvRate={bcvRate}
             isCollapsed={isCollapsed}
-            theme={theme}
             onToggleCollapse={handleToggleCollapse}
             onToggleMobile={handleToggleMobile}
-            onToggleTheme={handleToggleTheme}
           />
           <main className={styles.content}>
             {children}

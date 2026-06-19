@@ -1,6 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import { Menu, Sun, Moon } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { CajaToggle } from './CajaToggle'
@@ -10,10 +12,8 @@ interface HeaderProps {
   session: SessionUser | null
   bcvRate: number | null
   isCollapsed: boolean
-  theme: 'dark' | 'light'
   onToggleCollapse: () => void
   onToggleMobile: () => void
-  onToggleTheme: () => void
 }
 
 const PAGE_TITLES: Array<[string, string]> = [
@@ -47,12 +47,13 @@ export function Header({
   session,
   bcvRate,
   isCollapsed,
-  theme,
   onToggleCollapse,
   onToggleMobile,
-  onToggleTheme,
 }: HeaderProps) {
   const pathname = usePathname()
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const pageTitle =
     PAGE_TITLES.find(
@@ -117,11 +118,11 @@ export function Header({
         {/* Theme toggle */}
         <button
           className={styles.themeToggle}
-          onClick={onToggleTheme}
-          aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-          title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          aria-label={mounted && resolvedTheme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          title={mounted && resolvedTheme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
         >
-          {theme === 'dark' ? (
+          {mounted && resolvedTheme === 'dark' ? (
             <Sun size={18} strokeWidth={1.75} aria-hidden="true" />
           ) : (
             <Moon size={18} strokeWidth={1.75} aria-hidden="true" />

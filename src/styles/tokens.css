@@ -152,7 +152,7 @@
   --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.25);
 
   /* Sombras de color (para botones y estados activos) */
-  --shadow-brand:   0 0 0 3px rgba(37,99,235,0.25);
+  --shadow-brand:   0 0 0 3px rgba(13,148,136,0.25);
   --shadow-success: 0 0 0 3px rgba(29,158,117,0.25);
   --shadow-danger:  0 0 0 3px rgba(239,68,68,0.25);
   --shadow-warning: 0 0 0 3px rgba(217,119,6,0.25);
@@ -161,8 +161,14 @@
   --focus-ring: 0 0 0 2px var(--color-brand);
   --focus-ring-offset: 0 0 0 4px var(--color-bg), 0 0 0 6px var(--color-brand);
 
+  /* ── CTA (amber-600) — botones de cobro y cierre ── */
+  --cta:           #D97706;
+  --cta-hover:     #B45309;
+  --cta-active:    #92400E;
+  --cta-rgb:       217, 119, 6;
+
   /* ── Accent RGB + Card A+C Glow ── */
-  --accent-rgb:   37, 99, 235;
+  --accent-rgb:   13, 148, 136;
 
   /* ── Tokens RGB semánticos — Sprint 10 (DT-007) ── */
   --success-rgb:  29, 158, 117;
@@ -191,9 +197,9 @@
   );
 
   /* ── Card shadows ── */
-  --card-hero-shadow:       0 4px 16px rgba(37,99,235,0.35), 0 1px 4px rgba(37,99,235,0.5);
-  --card-glow-shadow-dark:  0 0 14px rgba(37,99,235,0.18);
-  --card-glow-shadow-light: 0 2px 12px rgba(37,99,235,0.1), 0 1px 3px rgba(0,0,0,0.04);
+  --card-hero-shadow:       0 4px 16px rgba(13,148,136,0.35), 0 1px 4px rgba(13,148,136,0.5);
+  --card-glow-shadow-dark:  0 0 14px rgba(13,148,136,0.18);
+  --card-glow-shadow-light: 0 2px 12px rgba(13,148,136,0.1), 0 1px 3px rgba(0,0,0,0.04);
 
   /* ── Surface hover (table rows, list items) ── */
   --color-surface-hover: var(--color-surface-2);
@@ -214,11 +220,11 @@
   --color-surface-4: #30363D;   /* separadores, bordes elevados */
 
   /* ── Marca / Acento ── */
-  --color-brand:        #2563EB;
-  --color-brand-hover:  #3B82F6;
-  --color-brand-active: #1D4ED8;
-  --color-brand-subtle: rgba(37,99,235,0.12);
-  --color-brand-border: rgba(37,99,235,0.35);
+  --color-brand:        #0D9488;
+  --color-brand-hover:  #14B8A6;
+  --color-brand-active: #0F766E;
+  --color-brand-subtle: rgba(13,148,136,0.12);
+  --color-brand-border: rgba(13,148,136,0.35);
 
   /* ── Texto ── */
   --color-text-primary:   #F0F6FC;
@@ -232,7 +238,7 @@
   --color-border:         #30363D;
   --color-border-subtle:  #21262D;
   --color-border-strong:  #484F58;
-  --color-border-focus:   #2563EB;
+  --color-border-focus:   #0D9488;
 
   /* ── Estados semánticos ── */
   --color-success:        #1D9E75;
@@ -267,9 +273,9 @@
   --sidebar-text-hover:    #C9D1D9;
   --sidebar-group-label:   #484F58;
   --sidebar-item-bg-hover: rgba(255,255,255,0.04);
-  --sidebar-item-bg-active:rgba(37,99,235,0.15);
-  --sidebar-item-border-active: #2563EB;
-  --sidebar-dot:           #2563EB;
+  --sidebar-item-bg-active:rgba(13,148,136,0.15);
+  --sidebar-item-border-active: #14B8A6;
+  --sidebar-dot:           #14B8A6;
   --sidebar-rate-text:     #1D9E75;
 
   /* ── Header ── */
@@ -282,11 +288,11 @@
   --pos-card-bg:       #161B22;
   --pos-card-hover:    #1C2128;
   --pos-card-border:   #30363D;
-  --pos-card-active:   rgba(37,99,235,0.15);
+  --pos-card-active:   rgba(13,148,136,0.15);
   --pos-ticket-bg:     #161B22;
   --pos-ticket-border: #30363D;
   --pos-category-bg:   #1C2128;
-  --pos-category-active: #2563EB;
+  --pos-category-active: #0D9488;
 
   /* ── Caja / Finanzas ── */
   --color-cash:        #1D9E75;   /* efectivo */
@@ -312,7 +318,7 @@
   /* ── Input / Form ── */
   --input-bg:          #0D1117;
   --input-border:      #30363D;
-  --input-border-focus:#2563EB;
+  --input-border-focus:#0D9488;
   --input-border-error:#EF4444;
   --input-text:        #F0F6FC;
   --input-placeholder: #484F58;
@@ -367,11 +373,11 @@
   --color-surface-4: #D0D7DE;
 
   /* ── Marca / Acento ── */
-  --color-brand:        #2563EB;
-  --color-brand-hover:  #1D4ED8;
-  --color-brand-active: #1E40AF;
-  --color-brand-subtle: rgba(37,99,235,0.08);
-  --color-brand-border: rgba(37,99,235,0.3);
+  --color-brand:        #0D9488;
+  --color-brand-hover:  #0F766E;
+  --color-brand-active: #115E59;
+  --color-brand-subtle: rgba(13,148,136,0.08);
+  --color-brand-border: rgba(13,148,136,0.3);
 
   /* ── Texto ── */
   --color-text-primary:   #1C2128;
@@ -385,7 +391,7 @@
   --color-border:         #D0D7DE;
   --color-border-subtle:  #EAEEF2;
   --color-border-strong:  #8C959F;
-  --color-border-focus:   #2563EB;
+  --color-border-focus:   #0D9488;
 
   /* ── Estados semánticos ── */
   --color-success:        #1A7F64;
@@ -420,9 +426,9 @@
   --sidebar-text-hover:    #C9D1D9;
   --sidebar-group-label:   #484F58;
   --sidebar-item-bg-hover: rgba(255,255,255,0.04);
-  --sidebar-item-bg-active:rgba(37,99,235,0.15);
-  --sidebar-item-border-active: #2563EB;
-  --sidebar-dot:           #2563EB;
+  --sidebar-item-bg-active:rgba(13,148,136,0.15);
+  --sidebar-item-border-active: #14B8A6;
+  --sidebar-dot:           #14B8A6;
   --sidebar-rate-text:     #1D9E75;
 
   /* ── Header ── */
@@ -435,11 +441,11 @@
   --pos-card-bg:       #FFFFFF;
   --pos-card-hover:    #F6F8FA;
   --pos-card-border:   #D0D7DE;
-  --pos-card-active:   rgba(37,99,235,0.08);
+  --pos-card-active:   rgba(13,148,136,0.08);
   --pos-ticket-bg:     #FFFFFF;
   --pos-ticket-border: #D0D7DE;
   --pos-category-bg:   #EAEEF2;
-  --pos-category-active: #2563EB;
+  --pos-category-active: #0D9488;
 
   /* ── Moneda ── */
   --color-usd:         #1C2128;
@@ -464,7 +470,7 @@
   /* ── Input / Form ── */
   --input-bg:          #FFFFFF;
   --input-border:      #D0D7DE;
-  --input-border-focus:#2563EB;
+  --input-border-focus:#0D9488;
   --input-border-error:#CF222E;
   --input-text:        #1C2128;
   --input-placeholder: #8C959F;
@@ -490,7 +496,7 @@
   --badge-low-stock-text: #CF222E;
 
   /* ── Accent RGB (para KpiCard y efectos de glow) ── */
-  --accent-rgb: 37, 99, 235;
+  --accent-rgb: 13, 148, 136;
 
   /* ── Shadows más suaves en light mode ── */
   --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.04);

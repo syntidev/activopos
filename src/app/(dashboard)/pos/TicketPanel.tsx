@@ -128,7 +128,7 @@ export function TicketPanel({
 
       {/* Actions */}
       <div className={styles.ticketActionArea}>
-        <Button variant="primary" fullWidth size="lg" onClick={onProcesarPago} disabled={isEmpty}>
+        <Button variant="cta" fullWidth size="lg" onClick={onProcesarPago} disabled={isEmpty}>
           Procesar Pago
         </Button>
         <Button variant="secondary" fullWidth onClick={onVenderCredito} disabled={isEmpty}>

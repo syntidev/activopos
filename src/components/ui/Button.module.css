@@ -143,6 +143,23 @@
   box-shadow: var(--shadow-success);
 }
 
+.variant-cta {
+  background-color: var(--cta);
+  color: #fff;
+  border-color: var(--cta);
+}
+.variant-cta:hover:not(:disabled) {
+  background-color: var(--cta-hover);
+  border-color: var(--cta-hover);
+}
+.variant-cta:active:not(:disabled) {
+  background-color: var(--cta-active);
+  border-color: var(--cta-active);
+}
+.variant-cta:focus-visible {
+  box-shadow: 0 0 0 3px rgba(var(--cta-rgb), 0.35);
+}
+
 /* ── Icons ── */
 .iconLeft,
 .iconRight {

@@ -1,0 +1,1883 @@
+
+> activopos@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 4.6s
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 1061ms (139 modules)
+ ○ Compiling /api/rates/bcv ...
+ ✓ Compiled /api/rates/bcv in 1356ms (229 modules)
+ GET /api/rates/bcv 200 in 41ms
+ ○ Compiling /api/finanzas/categorias ...
+ ✓ Compiled /api/finanzas/categorias in 865ms (310 modules)
+ GET /api/finanzas/categorias 200 in 1073ms
+ POST /api/finanzas/categorias 201 in 72ms
+prisma:error 
+Invalid `prisma.expenseCategory.create()` invocation:
+
+
+Unique constraint failed on the constraint: `expense_categories_business_id_name_key`
+ POST /api/finanzas/categorias 409 in 51ms
+ GET /api/finanzas/categorias 200 in 29ms
+ ✓ Compiled /api/finanzas/gastos in 169ms (313 modules)
+ POST /api/finanzas/gastos 201 in 292ms
+ POST /api/finanzas/categorias 201 in 35ms
+ ✓ Compiled /api/finanzas/categorias/[id] in 137ms (315 modules)
+ PATCH /api/finanzas/categorias/9 200 in 911ms
+ GET /api/finanzas/categorias 200 in 24ms
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 13.3s (2971 modules)
+ GET /analytics 200 in 13938ms
+ ○ Compiling /api/analytics/summary ...
+ ✓ Compiled /api/analytics/summary in 7.4s (2847 modules)
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 7589ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 7654ms
+ GET /api/cash/status 200 in 7727ms
+ GET / 307 in 7872ms
+ GET /login 200 in 7877ms
+ GET /api/rates/bcv 200 in 7753ms
+ ✓ Compiled /api/analytics/trends in 446ms (1580 modules)
+ GET /analytics 200 in 289ms
+ GET /login 200 in 169ms
+ GET / 307 in 177ms
+ GET /api/rates/bcv 200 in 91ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 135ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 145ms
+ GET /api/cash/status 200 in 181ms
+ GET /api/analytics/trends?period=month 200 in 145ms
+ GET /api/rates/bcv 200 in 52ms
+ GET /api/cash/status 200 in 54ms
+ GET /analytics 200 in 115ms
+ GET /login 200 in 138ms
+ GET / 307 in 150ms
+ GET /api/rates/bcv 200 in 74ms
+ GET /api/cash/status 200 in 136ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 128ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 135ms
+ GET /api/analytics/trends?period=month 200 in 125ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/cash/status 200 in 66ms
+ GET /api/analytics/top-products?from=2026-06-15&to=2026-06-22&limit=8 200 in 51ms
+ GET /api/analytics/summary?from=2026-06-15&to=2026-06-22 200 in 71ms
+ GET /api/analytics/trends?period=week 200 in 73ms
+ GET /analytics 200 in 105ms
+ GET /api/rates/bcv 200 in 47ms
+ GET /login 200 in 77ms
+ GET / 307 in 89ms
+ GET /api/rates/bcv 200 in 97ms
+ GET /api/cash/status 200 in 136ms
+ GET /api/analytics/trends?period=month 200 in 113ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 127ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 129ms
+ GET /api/rates/bcv 200 in 49ms
+ GET /api/cash/status 200 in 42ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 1080ms (1626 modules)
+ POST /api/auth/login 200 in 1654ms
+ ○ Compiling /pos ...
+ ✓ Compiled /pos in 1468ms (3102 modules)
+ GET /pos 200 in 1662ms
+ GET /login 200 in 132ms
+ GET / 307 in 148ms
+ GET /api/rates/bcv 200 in 116ms
+ ✓ Compiled /api/payment-methods in 439ms (1682 modules)
+ ✓ Compiled (1684 modules)
+ GET /api/cash/status 200 in 896ms
+ GET /api/payment-methods 200 in 903ms
+ GET /api/config/business 200 in 913ms
+ GET /api/rates/bcv 200 in 799ms
+ GET /api/payment-methods 200 in 67ms
+ GET /api/config/business 200 in 74ms
+ GET /api/cash/status 200 in 94ms
+ GET /api/rates/bcv 200 in 60ms
+ GET /api/rates/bcv 200 in 54ms
+ GET /api/cash/status 200 in 84ms
+ ✓ Compiled /api/products in 446ms (1686 modules)
+ ✓ Compiled in 1ms (1688 modules)
+ ✓ Compiled in 1ms (1688 modules)
+ ✓ Compiled in 1ms (1688 modules)
+ GET /api/rates/bcv 200 in 1474ms
+ GET /api/cash/status 200 in 39ms
+ ✓ Compiled /api/cash/close in 325ms (1690 modules)
+ POST /api/cash/close 200 in 409ms
+ ✓ Compiled /api/cash/open in 339ms (1692 modules)
+ POST /api/cash/open 201 in 443ms
+ GET /api/cash/status 200 in 41ms
+ POST /api/cash/open 409 in 19ms
+ POST /api/cash/close 200 in 55ms
+ GET /api/cash/status 200 in 37ms
+ POST /api/cash/close 400 in 32ms
+ GET /api/rates/bcv 200 in 20ms
+ GET /api/cash/status 200 in 27ms
+ GET /api/rates/bcv 200 in 18ms
+ POST /api/cash/open 201 in 38ms
+ GET /login 200 in 82ms
+ GET /login 200 in 97ms
+ GET / 307 in 106ms
+ ✓ Compiled /api/catalogo/metrics in 352ms (1694 modules)
+ GET /api/catalogo/metrics 200 in 424ms
+ ○ Compiling /catalogo-digital ...
+ ✓ Compiled /catalogo-digital in 648ms (3052 modules)
+ GET /catalogo-digital 200 in 797ms
+ GET /login 200 in 66ms
+ GET / 307 in 71ms
+ GET /api/catalogo/metrics 200 in 47ms
+ GET /api/cash/status 200 in 70ms
+ GET /api/rates/bcv 200 in 71ms
+ GET /api/catalogo/metrics 200 in 82ms
+ GET /api/cash/status 200 in 104ms
+ GET /api/rates/bcv 200 in 84ms
+ GET /catalogo-digital 200 in 86ms
+ GET /login 200 in 56ms
+ GET / 307 in 56ms
+ GET /api/rates/bcv 200 in 39ms
+ GET /api/catalogo/metrics 200 in 63ms
+ GET /api/cash/status 200 in 72ms
+ GET /api/rates/bcv 200 in 50ms
+ GET /api/catalogo/metrics 200 in 54ms
+ GET /api/cash/status 200 in 56ms
+ ○ Compiling /api/catalog/[slug] ...
+ ✓ Compiled /api/catalog/[slug] in 735ms (1706 modules)
+ GET /api/catalog/demo 200 in 1430ms
+ ✓ Compiled /api/products/bulk-visibility in 377ms (1702 modules)
+ PATCH /api/products/bulk-visibility 200 in 442ms
+ GET /api/catalog/demo 200 in 49ms
+ PATCH /api/products/bulk-visibility 200 in 23ms
+ GET /catalogo-digital 200 in 161ms
+ GET /login 200 in 92ms
+ GET / 307 in 113ms
+ GET /api/rates/bcv 200 in 50ms
+ GET /api/catalogo/metrics 200 in 85ms
+ GET /api/cash/status 200 in 109ms
+ GET /api/rates/bcv 200 in 65ms
+ GET /api/catalogo/metrics 200 in 57ms
+ GET /api/cash/status 200 in 69ms
+ GET /api/catalog/demo 200 in 36ms
+ ✓ Compiled /api/orders in 415ms (1704 modules)
+ POST /api/orders 201 in 564ms
+ GET /api/catalogo/metrics 200 in 35ms
+ ✓ Compiled /api/finanzas/categorias in 360ms (1706 modules)
+ GET /api/finanzas/categorias 200 in 450ms
+ POST /api/finanzas/categorias 201 in 32ms
+prisma:error 
+Invalid `prisma.expenseCategory.create()` invocation:
+
+
+Unique constraint failed on the constraint: `expense_categories_business_id_name_key`
+ POST /api/finanzas/categorias 409 in 27ms
+ GET /api/finanzas/categorias 200 in 24ms
+ ✓ Compiled /api/finanzas/gastos in 356ms (1708 modules)
+ POST /api/finanzas/gastos 201 in 445ms
+ POST /api/finanzas/categorias 201 in 26ms
+ ✓ Compiled /api/finanzas/categorias/[id] in 361ms (1710 modules)
+ PATCH /api/finanzas/categorias/12 200 in 452ms
+ GET /api/finanzas/categorias 200 in 24ms
+ GET /login 200 in 80ms
+ GET / 307 in 111ms
+ GET /login 200 in 113ms
+ ✓ Compiled /api/finanzas/resumen in 362ms (1712 modules)
+ GET /api/finanzas/resumen?period=2026-06 200 in 439ms
+ ○ Compiling /finanzas ...
+ ✓ Compiled /finanzas in 1808ms (3118 modules)
+ GET /finanzas 200 in 1965ms
+ GET /login 200 in 75ms
+ GET / 307 in 80ms
+ GET /api/rates/bcv 200 in 90ms
+ GET /api/cash/status 200 in 95ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 71ms
+ GET /api/rates/bcv 200 in 40ms
+ GET /api/cash/status 200 in 71ms
+ GET /api/rates/bcv 200 in 23ms
+ GET /api/rates/bcv 200 in 34ms
+ ○ Compiling /api/finanzas/punto-equilibrio ...
+ ✓ Compiled /api/finanzas/punto-equilibrio in 556ms (1733 modules)
+ GET /api/finanzas/punto-equilibrio?period=2026-06 200 in 650ms
+ GET /finanzas 200 in 114ms
+ GET /login 200 in 96ms
+ GET / 307 in 104ms
+ GET /api/rates/bcv 200 in 102ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 79ms
+ GET /api/cash/status 200 in 133ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 97ms
+ GET /api/rates/bcv 200 in 58ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 108ms
+ GET /api/cash/status 200 in 112ms
+ GET /api/rates/bcv 200 in 48ms
+ GET /api/rates/bcv 200 in 28ms
+ POST /api/finanzas/gastos 201 in 46ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 28ms
+ ✓ Compiled /api/finanzas/cxc in 377ms (1735 modules)
+ GET /api/finanzas/cxc 200 in 447ms
+ GET /finanzas 200 in 97ms
+ GET /login 200 in 82ms
+ GET / 307 in 87ms
+ GET /api/rates/bcv 200 in 143ms
+ GET /api/cash/status 200 in 147ms
+ GET /api/finanzas/cxc 200 in 105ms
+ GET /api/rates/bcv 200 in 53ms
+ GET /api/cash/status 200 in 99ms
+ GET /api/finanzas/cxc 200 in 90ms
+ GET /api/rates/bcv 200 in 51ms
+ GET /api/rates/bcv 200 in 22ms
+ POST /api/auth/login 200 in 498ms
+ GET /api/finanzas/resumen?period=2026-06 403 in 14ms
+ GET /api/rates/bcv 200 in 15ms
+ ○ Compiling /escritorio ...
+ ✓ Compiled /escritorio in 1789ms (3216 modules)
+ GET /escritorio 200 in 2125ms
+ GET /login 200 in 104ms
+ GET / 307 in 118ms
+ GET /api/rates/bcv 200 in 158ms
+ ○ Compiling /api/dashboard/charts ...
+ ✓ Compiled /api/dashboard/charts in 570ms (1793 modules)
+ GET /api/cash/status 200 in 1080ms
+ GET /api/dashboard/charts?period=7d 200 in 1105ms
+ GET /api/rates/bcv 200 in 922ms
+ GET /api/dashboard/charts?period=7d 200 in 75ms
+ GET /api/cash/status 200 in 87ms
+ GET /api/dashboard/charts?period=7d 200 in 46ms
+ GET /api/dashboard/charts?period=7d 200 in 38ms
+ GET /escritorio 200 in 186ms
+ GET /login 200 in 101ms
+ GET / 307 in 114ms
+ GET /api/rates/bcv 200 in 85ms
+ GET /api/dashboard/charts?period=7d 200 in 132ms
+ GET /api/cash/status 200 in 144ms
+ GET /api/rates/bcv 200 in 60ms
+ GET /api/dashboard/charts?period=7d 200 in 51ms
+ GET /api/cash/status 200 in 65ms
+ GET /api/dashboard/charts?period=7d 200 in 29ms
+ GET /api/dashboard/charts?period=7d 200 in 26ms
+ GET /pos 200 in 126ms
+ GET /login 200 in 86ms
+ GET / 307 in 96ms
+ GET /api/rates/bcv 200 in 58ms
+ GET /api/payment-methods 200 in 70ms
+ GET /api/config/business 200 in 83ms
+ GET /api/cash/status 200 in 104ms
+ GET /api/rates/bcv 200 in 52ms
+ GET /api/payment-methods 200 in 56ms
+ GET /api/config/business 200 in 69ms
+ GET /api/cash/status 200 in 83ms
+ GET /api/rates/bcv 200 in 41ms
+ GET /api/rates/bcv 200 in 61ms
+ GET /api/cash/status 200 in 81ms
+ GET /api/products/recent 200 in 71ms
+ GET /api/products?available=true 200 in 90ms
+ GET /api/cash/status 200 in 93ms
+ GET /api/products/recent 200 in 57ms
+ GET /api/products?available=true 200 in 75ms
+ ✓ Compiled /api/products/search in 512ms (1795 modules)
+ GET /api/products/search?q=are&limit=20 200 in 614ms
+ GET /pos 200 in 123ms
+ GET /login 200 in 101ms
+ GET / 307 in 107ms
+ GET /api/rates/bcv 200 in 71ms
+ GET /api/payment-methods 200 in 98ms
+ GET /api/config/business 200 in 111ms
+ GET /api/cash/status 200 in 125ms
+ GET /api/rates/bcv 200 in 75ms
+ GET /api/payment-methods 200 in 79ms
+ GET /api/config/business 200 in 108ms
+ GET /api/cash/status 200 in 107ms
+ GET /api/rates/bcv 200 in 47ms
+ GET /api/cash/status 200 in 68ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/products?available=true 200 in 80ms
+ GET /api/products/recent 200 in 95ms
+ GET /api/cash/status 200 in 101ms
+ GET /api/products?available=true 200 in 98ms
+ GET /api/products/recent 200 in 68ms
+ GET /pos 200 in 98ms
+ GET / 307 in 86ms
+ GET /login 200 in 103ms
+ GET /api/rates/bcv 200 in 73ms
+ GET /api/payment-methods 200 in 78ms
+ GET /api/config/business 200 in 85ms
+ GET /api/cash/status 200 in 119ms
+ GET /api/rates/bcv 200 in 57ms
+ GET /api/payment-methods 200 in 85ms
+ GET /api/config/business 200 in 79ms
+ GET /api/cash/status 200 in 102ms
+ GET /api/rates/bcv 200 in 55ms
+ GET /api/cash/status 200 in 71ms
+ GET /api/rates/bcv 200 in 47ms
+ GET /api/products/recent 200 in 42ms
+ GET /api/products?available=true 200 in 45ms
+ GET /api/cash/status 200 in 60ms
+ GET /api/products/recent 200 in 41ms
+ GET /api/products?available=true 200 in 54ms
+ ✓ Compiled /api/sales in 501ms (1798 modules)
+ POST /api/sales 201 in 655ms
+ GET /escritorio 200 in 115ms
+ GET /login 200 in 107ms
+ GET / 307 in 113ms
+ GET /api/rates/bcv 200 in 60ms
+ GET /api/dashboard/charts?period=7d 200 in 131ms
+ GET /api/cash/status 200 in 145ms
+ GET /api/rates/bcv 200 in 76ms
+ GET /api/dashboard/charts?period=7d 200 in 60ms
+ GET /api/cash/status 200 in 67ms
+ GET /api/dashboard/charts?period=7d 200 in 42ms
+ GET /api/dashboard/charts?period=7d 200 in 28ms
+ GET /login 200 in 86ms
+ GET / 307 in 107ms
+ GET /login 200 in 110ms
+ ✓ Compiled /api/reports/daily in 422ms (1794 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 500ms
+ GET /api/reports/daily?date=2026-06-19 200 in 23ms
+ GET /api/reports/daily?date=2026-06-19 200 in 32ms
+ GET /api/reports/daily?date=2026-06-19 200 in 29ms
+ GET /api/reports/daily?date=2026-06-19 200 in 28ms
+ ○ Compiling /reportes ...
+ ✓ Compiled /reportes in 3.1s (3701 modules)
+ GET /reportes 200 in 3252ms
+ GET /login 200 in 94ms
+ GET / 307 in 109ms
+ ○ Compiling /api/reports/monthly ...
+ ✓ Compiled /api/reports/monthly in 574ms (2075 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 1170ms
+ GET /api/cash/status 200 in 1187ms
+ GET /api/reports/monthly?period=2026-05 200 in 1196ms
+ GET /api/rates/bcv 200 in 1201ms
+ GET /api/cash/status 200 in 71ms
+ GET /api/reports/monthly?period=2026-05 200 in 75ms
+ GET /api/rates/bcv 200 in 64ms
+ GET /api/reports/monthly?period=2026-05 200 in 26ms
+ ○ Compiling /api/reports/monthly/generate ...
+ ✓ Compiled /api/reports/monthly/generate in 1514ms (2345 modules)
+ POST /api/reports/monthly/generate 200 in 1779ms
+ GET /api/reports/monthly?period=2026-05 200 in 22ms
+ POST /api/reports/monthly/generate 200 in 44ms
+ ✓ Compiled /api/r/[token] in 473ms (2343 modules)
+ GET /api/r/e0149365-6bb2-494f-b96d-cb9611578e43 200 in 1203ms
+ GET /pos 200 in 102ms
+ GET /login 200 in 74ms
+ GET / 307 in 75ms
+ GET /api/payment-methods 200 in 90ms
+ GET /api/config/business 200 in 86ms
+ GET /api/rates/bcv 200 in 115ms
+ GET /api/cash/status 200 in 119ms
+ GET /api/payment-methods 200 in 56ms
+ GET /api/rates/bcv 200 in 69ms
+ GET /api/config/business 200 in 82ms
+ GET /api/cash/status 200 in 88ms
+ GET /api/rates/bcv 200 in 44ms
+ GET /api/cash/status 200 in 70ms
+ GET /api/rates/bcv 200 in 61ms
+ GET /api/cash/status 200 in 81ms
+ GET /api/products?available=true 200 in 74ms
+ GET /api/products/recent 200 in 98ms
+ GET /api/products?available=true 200 in 50ms
+ GET /api/products/recent 200 in 66ms
+ GET /api/rates/bcv 200 in 26ms
+ GET /api/products/search?q=corte&limit=20 200 in 29ms
+ GET /pos 200 in 88ms
+ GET /login 200 in 87ms
+ GET / 307 in 92ms
+ GET /api/rates/bcv 200 in 70ms
+ GET /api/payment-methods 200 in 91ms
+ GET /api/config/business 200 in 100ms
+ GET /api/cash/status 200 in 111ms
+ GET /api/rates/bcv 200 in 85ms
+ GET /api/payment-methods 200 in 86ms
+ GET /api/config/business 200 in 98ms
+ GET /api/cash/status 200 in 113ms
+ GET /api/rates/bcv 200 in 44ms
+ GET /api/cash/status 200 in 82ms
+ GET /api/rates/bcv 200 in 71ms
+ GET /api/products?available=true 200 in 61ms
+ GET /api/products/recent 200 in 76ms
+ GET /api/cash/status 200 in 79ms
+ GET /api/products?available=true 200 in 69ms
+ GET /api/products/recent 200 in 67ms
+ GET /api/products/search?q=corte&limit=20 200 in 32ms
+ GET /pos 200 in 86ms
+ GET /login 200 in 69ms
+ GET / 307 in 74ms
+ GET /api/rates/bcv 200 in 59ms
+ GET /api/payment-methods 200 in 80ms
+ GET /api/config/business 200 in 98ms
+ GET /api/cash/status 200 in 116ms
+ GET /api/rates/bcv 200 in 67ms
+ GET /api/payment-methods 200 in 76ms
+ GET /api/config/business 200 in 94ms
+ GET /api/cash/status 200 in 103ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/cash/status 200 in 86ms
+ GET /api/rates/bcv 200 in 75ms
+ GET /api/products?available=true 200 in 65ms
+ GET /api/products/recent 200 in 75ms
+ GET /api/cash/status 200 in 99ms
+ GET /api/products?available=true 200 in 69ms
+ GET /api/products/recent 200 in 82ms
+ ○ Compiling /catalogo/[slug] ...
+ ✓ Compiled /catalogo/[slug] in 3.3s (4000 modules)
+ GET /catalogo/demo 200 in 4133ms
+ GET /login 200 in 124ms
+ GET / 307 in 132ms
+ GET /catalogo/demo 200 in 94ms
+ GET /login 200 in 85ms
+ GET / 307 in 94ms
+ GET /catalogo/demo 200 in 110ms
+ GET /login 200 in 80ms
+ GET / 307 in 83ms
+ GET /catalogo/demo 200 in 100ms
+ GET /login 200 in 112ms
+ GET / 307 in 114ms
+ ○ Compiling /cotizaciones ...
+ ✓ Compiled /cotizaciones in 846ms (3980 modules)
+ GET /cotizaciones 200 in 1053ms
+ GET /login 200 in 113ms
+ GET / 307 in 121ms
+ GET /api/cash/status 200 in 68ms
+ GET /api/rates/bcv 200 in 71ms
+ GET /api/rates/bcv 200 in 43ms
+ GET /api/cash/status 200 in 62ms
+ ✓ Compiled /api/quotations in 465ms (2348 modules)
+ POST /api/quotations 201 in 607ms
+ ○ Compiling /devoluciones ...
+ ✓ Compiled /devoluciones in 811ms (3991 modules)
+ GET /devoluciones 200 in 984ms
+ GET /login 200 in 97ms
+ GET / 307 in 102ms
+ GET /api/cash/status 200 in 71ms
+ GET /api/rates/bcv 200 in 78ms
+ GET /api/rates/bcv 200 in 65ms
+ GET /api/cash/status 200 in 77ms
+ ○ Compiling /api/returns ...
+ ✓ Compiled /api/returns in 542ms (2356 modules)
+ POST /api/returns 404 in 629ms
+ ○ Compiling /usuarios ...
+ ✓ Compiled /usuarios in 973ms (4008 modules)
+ GET /usuarios 200 in 1143ms
+ GET /login 200 in 93ms
+ GET / 307 in 99ms
+ ○ Compiling /api/users ...
+ ✓ Compiled /api/users in 556ms (2366 modules)
+ GET /api/rates/bcv 200 in 1253ms
+ GET /api/cash/status 200 in 1260ms
+ GET /api/users 200 in 1272ms
+ GET /api/rates/bcv 200 in 255ms
+ GET /api/users 200 in 273ms
+ GET /api/cash/status 200 in 288ms
+ GET /analytics 200 in 176ms
+ GET /login 200 in 109ms
+ GET / 307 in 131ms
+ GET /api/cash/status 200 in 218ms
+ ○ Compiling /api/analytics/trends ...
+ ✓ Compiled /api/analytics/trends in 848ms (2259 modules)
+ ✓ Compiled (2263 modules)
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 1782ms
+ GET /api/rates/bcv 200 in 1900ms
+ GET /api/analytics/trends?period=month 200 in 1801ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 1822ms
+ GET /api/cash/status 200 in 1629ms
+ GET /api/rates/bcv 200 in 32ms
+ GET /analytics 200 in 227ms
+ GET /login 200 in 87ms
+ GET / 307 in 97ms
+ GET /api/rates/bcv 200 in 105ms
+ GET /api/cash/status 200 in 157ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 119ms
+ GET /api/analytics/trends?period=month 200 in 136ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 161ms
+ GET /api/rates/bcv 200 in 47ms
+ GET /api/cash/status 200 in 70ms
+ GET /analytics 200 in 117ms
+ GET /login 200 in 63ms
+ GET / 307 in 66ms
+ GET /api/rates/bcv 200 in 102ms
+ GET /api/cash/status 200 in 130ms
+ GET /api/analytics/trends?period=month 200 in 121ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 127ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 141ms
+ GET /api/rates/bcv 200 in 46ms
+ GET /api/cash/status 200 in 67ms
+ GET /api/analytics/summary?from=2026-06-15&to=2026-06-22 200 in 62ms
+ GET /api/analytics/trends?period=week 200 in 71ms
+ GET /api/analytics/top-products?from=2026-06-15&to=2026-06-22&limit=8 200 in 74ms
+ GET /analytics 200 in 122ms
+ GET /login 200 in 70ms
+ GET / 307 in 72ms
+ GET /api/rates/bcv 200 in 69ms
+ GET /api/cash/status 200 in 171ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 143ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 172ms
+ GET /api/analytics/trends?period=month 200 in 189ms
+ GET /api/rates/bcv 200 in 107ms
+ GET /api/cash/status 200 in 59ms
+ ✓ Compiled /api/auth/login in 515ms (2306 modules)
+ POST /api/auth/login 200 in 1044ms
+ GET /pos 200 in 101ms
+ GET / 307 in 112ms
+ GET /login 200 in 161ms
+ GET /api/config/business 200 in 85ms
+ GET /api/payment-methods 200 in 102ms
+ GET /api/rates/bcv 200 in 111ms
+ GET /api/cash/status 200 in 119ms
+ GET /api/rates/bcv 200 in 38ms
+ GET /api/payment-methods 200 in 59ms
+ GET /api/config/business 200 in 66ms
+ GET /api/cash/status 200 in 76ms
+ GET /api/rates/bcv 200 in 38ms
+ GET /api/cash/status 200 in 71ms
+ GET /api/rates/bcv 200 in 68ms
+ GET /api/products/recent 200 in 79ms
+ GET /api/products?available=true 200 in 84ms
+ GET /api/cash/status 200 in 90ms
+ GET /api/products?available=true 200 in 58ms
+ GET /api/products/recent 200 in 73ms
+ GET /analytics 200 in 115ms
+ GET /login 200 in 87ms
+ GET / 307 in 96ms
+ GET /api/rates/bcv 200 in 75ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 92ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 96ms
+ GET /api/cash/status 200 in 126ms
+ GET /api/analytics/trends?period=month 200 in 134ms
+ GET /api/rates/bcv 200 in 73ms
+ GET /api/cash/status 200 in 61ms
+ GET /analytics 200 in 75ms
+ GET /login 200 in 77ms
+ GET / 307 in 80ms
+ GET /api/rates/bcv 200 in 57ms
+ GET /api/cash/status 200 in 128ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 93ms
+ GET /api/analytics/trends?period=month 200 in 126ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 128ms
+ GET /api/rates/bcv 200 in 70ms
+ GET /api/cash/status 200 in 49ms
+ GET /analytics 200 in 106ms
+ GET /login 200 in 90ms
+ GET / 307 in 95ms
+ GET /api/rates/bcv 200 in 93ms
+ GET /api/cash/status 200 in 128ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 135ms
+ GET /api/analytics/trends?period=month 200 in 137ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 147ms
+ GET /api/rates/bcv 200 in 65ms
+ GET /api/cash/status 200 in 61ms
+ GET /api/analytics/summary?from=2026-06-15&to=2026-06-22 200 in 48ms
+ GET /api/analytics/trends?period=week 200 in 52ms
+ GET /api/analytics/top-products?from=2026-06-15&to=2026-06-22&limit=8 200 in 54ms
+ GET /analytics 200 in 76ms
+ GET /login 200 in 98ms
+ GET / 307 in 102ms
+ GET /api/rates/bcv 200 in 59ms
+ GET /api/cash/status 200 in 119ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 117ms
+ GET /api/analytics/trends?period=month 200 in 125ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 135ms
+ GET /api/rates/bcv 200 in 79ms
+ GET /api/cash/status 200 in 51ms
+ POST /api/auth/login 200 in 455ms
+ GET /pos 200 in 78ms
+ GET /login 200 in 66ms
+ GET / 307 in 75ms
+ GET /api/rates/bcv 200 in 51ms
+ GET /api/payment-methods 200 in 67ms
+ GET /api/config/business 200 in 71ms
+ GET /api/cash/status 200 in 90ms
+ GET /api/rates/bcv 200 in 1182ms
+ GET /api/payment-methods 200 in 1419ms
+ GET /api/config/business 200 in 1419ms
+ GET /api/cash/status 200 in 1370ms
+ GET /api/rates/bcv 200 in 28ms
+ GET /login 200 in 51ms
+ GET /login 200 in 36ms
+ GET /login 200 in 61ms
+ GET /login 200 in 60ms
+ GET /login 200 in 74ms
+ GET /login 200 in 57ms
+ GET /login 200 in 63ms
+ ✓ Compiled /api/catalog/[slug] in 500ms (1983 modules)
+ GET /api/catalog/demo 200 in 668ms
+ PATCH /login 200 in 164ms
+ GET /login 200 in 75ms
+ GET /login 200 in 62ms
+ GET /login 200 in 76ms
+ GET /api/catalog/demo 200 in 35ms
+ POST /login 200 in 92ms
+ GET /login 200 in 64ms
+ POST /login 200 in 88ms
+ GET /login 200 in 35ms
+ POST /login 200 in 62ms
+ GET /login 200 in 50ms
+ GET /login 200 in 67ms
+ GET /login 200 in 58ms
+ GET /login 200 in 72ms
+ GET /login 200 in 60ms
+ GET /login 200 in 56ms
+ GET /login 200 in 74ms
+ GET /login 200 in 56ms
+ GET /login 200 in 69ms
+ POST /api/auth/login 200 in 489ms
+ ✓ Compiled /api/finanzas/resumen in 488ms (1982 modules)
+ GET /api/finanzas/resumen?period=2026-06 403 in 582ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /login 200 in 136ms
+ GET /api/rates/bcv 200 in 40ms
+ GET /login 200 in 58ms
+ GET /api/rates/bcv 200 in 23ms
+ GET /login 200 in 80ms
+ GET /api/rates/bcv 200 in 20ms
+ GET /login 200 in 97ms
+ GET /api/rates/bcv 200 in 14ms
+ GET /login 200 in 77ms
+ GET /api/rates/bcv 200 in 26ms
+ GET /login 200 in 62ms
+ GET /login 200 in 74ms
+ GET /login 200 in 88ms
+ GET /login 200 in 34ms
+ GET /login 200 in 96ms
+ GET /login 200 in 40ms
+ GET /login 200 in 46ms
+ GET /login 200 in 102ms
+ GET /login 200 in 60ms
+ GET /login 200 in 69ms
+ GET /login 200 in 60ms
+ GET /login 200 in 77ms
+ POST /login 200 in 64ms
+ GET /login 200 in 86ms
+ GET /api/rates/bcv 200 in 37ms
+ GET /login 200 in 92ms
+ POST /login 200 in 87ms
+ GET /login 200 in 78ms
+ GET /login 200 in 68ms
+ GET /login 200 in 65ms
+ ○ Compiling /catalogo/[slug] ...
+ ✓ Compiled /catalogo/[slug] in 978ms (1835 modules)
+ GET /catalogo/demo 200 in 1291ms
+ GET /catalogo/demo 200 in 104ms
+ GET /catalogo/demo 200 in 132ms
+ GET /catalogo/demo 200 in 100ms
+ GET /login 200 in 91ms
+ POST /login 200 in 100ms
+ GET /login 200 in 93ms
+ POST /login 200 in 68ms
+ GET /login 200 in 104ms
+ ○ Compiling /api/rates/bcv ...
+ ✓ Compiled /api/rates/bcv in 655ms (1861 modules)
+ GET /api/rates/bcv 200 in 810ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 929ms (1986 modules)
+ POST /api/auth/login 200 in 1503ms
+ GET /analytics 200 in 292ms
+ ○ Compiling /api/cash/status ...
+ ✓ Compiled /api/analytics/top-products in 816ms (1964 modules)
+ ✓ Compiled (1970 modules)
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 1376ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 1385ms
+ GET /login 200 in 1813ms
+ GET /api/cash/status 200 in 1595ms
+ GET / 307 in 1822ms
+ GET /api/rates/bcv 200 in 1416ms
+ ✓ Compiled /api/analytics/trends in 344ms (1972 modules)
+ GET /api/analytics/trends?period=month 200 in 818ms
+ GET /api/cash/status 200 in 817ms
+ GET /api/rates/bcv 200 in 806ms
+ GET /analytics 200 in 237ms
+ GET /login 200 in 102ms
+ GET / 307 in 109ms
+ GET /api/rates/bcv 200 in 54ms
+ GET /api/cash/status 200 in 129ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 132ms
+ GET /api/analytics/trends?period=month 200 in 143ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 149ms
+ GET /api/rates/bcv 200 in 49ms
+ GET /api/cash/status 200 in 50ms
+ GET /analytics 200 in 99ms
+ GET /login 200 in 86ms
+ GET / 307 in 92ms
+ GET /api/rates/bcv 200 in 66ms
+ GET /api/cash/status 200 in 121ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 88ms
+ GET /api/analytics/trends?period=month 200 in 101ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 119ms
+ GET /api/rates/bcv 200 in 49ms
+ GET /api/cash/status 200 in 41ms
+ GET /api/analytics/summary?from=2026-06-15&to=2026-06-22 200 in 60ms
+ GET /api/analytics/trends?period=week 200 in 81ms
+ GET /api/analytics/top-products?from=2026-06-15&to=2026-06-22&limit=8 200 in 82ms
+ GET /analytics 200 in 96ms
+ GET /login 200 in 64ms
+ GET / 307 in 74ms
+ GET /api/rates/bcv 200 in 85ms
+ GET /api/cash/status 200 in 126ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 108ms
+ GET /api/analytics/trends?period=month 200 in 167ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 170ms
+ GET /api/rates/bcv 200 in 60ms
+ GET /api/cash/status 200 in 52ms
+ POST /api/auth/login 200 in 510ms
+ GET /pos 200 in 86ms
+ GET /login 200 in 116ms
+ GET / 307 in 120ms
+ GET /api/rates/bcv 200 in 76ms
+ ✓ Compiled /api/config/business in 374ms (1974 modules)
+ ✓ Compiled (1976 modules)
+ GET /api/cash/status 200 in 881ms
+ GET /api/payment-methods 200 in 889ms
+ GET /api/config/business 200 in 891ms
+ GET /api/rates/bcv 200 in 797ms
+ GET /api/payment-methods 200 in 60ms
+ GET /api/config/business 200 in 65ms
+ GET /api/cash/status 200 in 91ms
+ GET /api/rates/bcv 200 in 58ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/cash/status 200 in 113ms
+ ✓ Compiled /api/products in 424ms (1978 modules)
+ ✓ Compiled in 0ms (1980 modules)
+ ✓ Compiled in 0ms (1980 modules)
+ ✓ Compiled in 0ms (1980 modules)
+ GET /api/rates/bcv 200 in 1546ms
+ GET /api/cash/status 200 in 55ms
+ ○ Compiling /api/cash/close ...
+ ✓ Compiled /api/cash/close in 522ms (1982 modules)
+ POST /api/cash/close 200 in 633ms
+ ✓ Compiled /api/cash/open in 348ms (1984 modules)
+ POST /api/cash/open 201 in 472ms
+ GET /api/cash/status 200 in 31ms
+ POST /api/cash/open 409 in 25ms
+ POST /api/cash/close 200 in 32ms
+ GET /api/cash/status 200 in 23ms
+ POST /api/cash/close 400 in 24ms
+ GET /api/rates/bcv 200 in 49ms
+ GET /api/cash/status 200 in 28ms
+ GET /api/rates/bcv 200 in 18ms
+ POST /api/cash/open 201 in 43ms
+ GET /login 200 in 68ms
+ GET / 307 in 106ms
+ GET /login 200 in 108ms
+ ✓ Compiled /api/catalogo/metrics in 339ms (1987 modules)
+ GET /api/catalogo/metrics 200 in 410ms
+ ✓ Compiled /catalogo-digital in 434ms (1995 modules)
+ GET /catalogo-digital 200 in 626ms
+ GET /login 200 in 87ms
+ GET / 307 in 89ms
+ GET /api/catalogo/metrics 200 in 60ms
+ GET /api/cash/status 200 in 86ms
+ GET /api/rates/bcv 200 in 94ms
+ GET /api/catalogo/metrics 200 in 78ms
+ GET /api/cash/status 200 in 86ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /catalogo-digital 200 in 82ms
+ GET /login 200 in 115ms
+ GET / 307 in 129ms
+ GET /api/rates/bcv 200 in 57ms
+ GET /api/catalogo/metrics 200 in 85ms
+ GET /api/cash/status 200 in 104ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/catalogo/metrics 200 in 78ms
+ GET /api/cash/status 200 in 75ms
+ ✓ Compiled /api/catalog/[slug] in 380ms (1998 modules)
+ GET /api/catalog/demo 200 in 482ms
+ ○ Compiling /api/products/bulk-visibility ...
+ ✓ Compiled /api/products/bulk-visibility in 538ms (2000 modules)
+ PATCH /api/products/bulk-visibility 200 in 627ms
+ GET /api/catalog/demo 200 in 52ms
+ PATCH /api/products/bulk-visibility 200 in 27ms
+ GET /catalogo-digital 200 in 109ms
+ GET /login 200 in 90ms
+ GET / 307 in 95ms
+ GET /api/rates/bcv 200 in 39ms
+ GET /api/catalogo/metrics 200 in 59ms
+ GET /api/cash/status 200 in 80ms
+ GET /api/rates/bcv 200 in 74ms
+ GET /api/catalogo/metrics 200 in 68ms
+ GET /api/cash/status 200 in 63ms
+ GET /api/catalog/demo 200 in 44ms
+ ○ Compiling /api/orders ...
+ ✓ Compiled /api/orders in 590ms (2002 modules)
+ POST /api/orders 201 in 724ms
+ GET /api/catalogo/metrics 200 in 23ms
+ ○ Compiling /api/finanzas/categorias ...
+ ✓ Compiled /api/finanzas/categorias in 721ms (2004 modules)
+ GET /api/finanzas/categorias 200 in 861ms
+ POST /api/finanzas/categorias 201 in 38ms
+prisma:error 
+Invalid `prisma.expenseCategory.create()` invocation:
+
+
+Unique constraint failed on the constraint: `expense_categories_business_id_name_key`
+ POST /api/finanzas/categorias 409 in 40ms
+ GET /api/finanzas/categorias 200 in 25ms
+ ✓ Compiled /api/finanzas/gastos in 459ms (2006 modules)
+ POST /api/finanzas/gastos 201 in 539ms
+ POST /api/finanzas/categorias 201 in 47ms
+ ✓ Compiled /api/finanzas/categorias/[id] in 466ms (2008 modules)
+ PATCH /api/finanzas/categorias/15 200 in 555ms
+ GET /api/finanzas/categorias 200 in 18ms
+ GET /login 200 in 80ms
+ GET / 307 in 78ms
+ GET /login 200 in 83ms
+ ✓ Compiled /api/finanzas/resumen in 452ms (2010 modules)
+ GET /api/finanzas/resumen?period=2026-06 200 in 541ms
+ GET /finanzas 200 in 132ms
+ GET /login 200 in 101ms
+ GET / 307 in 106ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/cash/status 200 in 95ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 80ms
+ GET /api/rates/bcv 200 in 57ms
+ GET /api/cash/status 200 in 57ms
+ GET /api/rates/bcv 200 in 37ms
+ GET /api/rates/bcv 200 in 32ms
+ ✓ Compiled /api/finanzas/punto-equilibrio in 403ms (2012 modules)
+ GET /api/finanzas/punto-equilibrio?period=2026-06 200 in 485ms
+ GET /finanzas 200 in 97ms
+ GET /login 200 in 85ms
+ GET / 307 in 97ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 39ms
+ GET /api/rates/bcv 200 in 133ms
+ GET /api/cash/status 200 in 147ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 104ms
+ GET /api/rates/bcv 200 in 74ms
+ GET /api/cash/status 200 in 106ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 72ms
+ GET /api/rates/bcv 200 in 39ms
+ GET /api/rates/bcv 200 in 21ms
+ POST /api/finanzas/gastos 201 in 43ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 27ms
+ ✓ Compiled /api/finanzas/cxc in 447ms (2014 modules)
+ GET /api/finanzas/cxc 200 in 522ms
+ GET /finanzas 200 in 123ms
+ GET /login 200 in 112ms
+ GET / 307 in 133ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 77ms
+ GET /api/rates/bcv 200 in 141ms
+ GET /api/cash/status 200 in 160ms
+ GET /api/finanzas/cxc 200 in 108ms
+ GET /api/rates/bcv 200 in 56ms
+ GET /api/cash/status 200 in 66ms
+ GET /api/finanzas/cxc 200 in 62ms
+ GET /api/rates/bcv 200 in 21ms
+ GET /api/rates/bcv 200 in 16ms
+ POST /api/auth/login 200 in 472ms
+ GET /api/finanzas/resumen?period=2026-06 403 in 18ms
+ GET /api/rates/bcv 200 in 22ms
+ ○ Compiling /escritorio ...
+ ✓ Compiled /escritorio in 568ms (2070 modules)
+ GET /escritorio 200 in 836ms
+ GET /login 200 in 118ms
+ GET / 307 in 121ms
+ ✓ Compiled /api/dashboard/charts in 503ms (2072 modules)
+ GET /api/cash/status 200 in 1405ms
+ GET /api/dashboard/charts?period=7d 200 in 1417ms
+ GET /api/rates/bcv 200 in 1419ms
+ GET /api/rates/bcv 200 in 60ms
+ GET /api/cash/status 200 in 85ms
+ GET /api/dashboard/charts?period=7d 200 in 83ms
+ GET /api/dashboard/charts?period=7d 200 in 47ms
+ GET /api/dashboard/charts?period=7d 200 in 46ms
+ GET /escritorio 200 in 173ms
+ GET /login 200 in 149ms
+ GET / 307 in 158ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/dashboard/charts?period=7d 200 in 112ms
+ GET /api/cash/status 200 in 130ms
+ GET /api/rates/bcv 200 in 67ms
+ GET /api/dashboard/charts?period=7d 200 in 66ms
+ GET /api/cash/status 200 in 73ms
+ GET /api/dashboard/charts?period=7d 200 in 42ms
+ GET /api/dashboard/charts?period=7d 200 in 41ms
+ GET /pos 200 in 103ms
+ GET /login 200 in 86ms
+ GET / 307 in 93ms
+ GET /api/rates/bcv 200 in 66ms
+ GET /api/payment-methods 200 in 97ms
+ GET /api/config/business 200 in 96ms
+ GET /api/cash/status 200 in 132ms
+ GET /api/rates/bcv 200 in 67ms
+ GET /api/payment-methods 200 in 80ms
+ GET /api/config/business 200 in 89ms
+ GET /api/cash/status 200 in 76ms
+ GET /api/rates/bcv 200 in 37ms
+ GET /api/rates/bcv 200 in 50ms
+ GET /api/cash/status 200 in 58ms
+ GET /api/products?available=true 200 in 52ms
+ GET /api/products/recent 200 in 59ms
+ GET /api/cash/status 200 in 70ms
+ GET /api/products?available=true 200 in 64ms
+ GET /api/products/recent 200 in 79ms
+ ○ Compiling /api/products/search ...
+ ✓ Compiled /api/products/search in 725ms (2074 modules)
+ GET /api/products/search?q=are&limit=20 200 in 1114ms
+ GET /pos 200 in 204ms
+ GET / 307 in 198ms
+ GET /login 200 in 232ms
+ GET /api/rates/bcv 200 in 164ms
+ GET /api/payment-methods 200 in 242ms
+ GET /api/config/business 200 in 245ms
+ GET /api/cash/status 200 in 284ms
+ GET /api/rates/bcv 200 in 120ms
+ GET /api/payment-methods 200 in 141ms
+ GET /api/config/business 200 in 172ms
+ GET /api/cash/status 200 in 198ms
+ GET /api/rates/bcv 200 in 100ms
+ GET /api/rates/bcv 200 in 137ms
+ GET /api/cash/status 200 in 166ms
+ GET /api/products/recent 200 in 151ms
+ GET /api/products?available=true 200 in 202ms
+ GET /api/cash/status 200 in 170ms
+ GET /api/products/recent 200 in 150ms
+ GET /api/products?available=true 200 in 158ms
+ GET /pos 200 in 128ms
+ GET /login 200 in 193ms
+ GET / 307 in 211ms
+ GET /api/rates/bcv 200 in 124ms
+ GET /api/payment-methods 200 in 161ms
+ GET /api/config/business 200 in 187ms
+ GET /api/cash/status 200 in 220ms
+ GET /api/rates/bcv 200 in 140ms
+ GET /api/payment-methods 200 in 165ms
+ GET /api/config/business 200 in 180ms
+ GET /api/cash/status 200 in 163ms
+ GET /api/rates/bcv 200 in 91ms
+ GET /api/cash/status 200 in 155ms
+ GET /api/rates/bcv 200 in 125ms
+ GET /api/products?available=true 200 in 181ms
+ GET /api/products/recent 200 in 186ms
+ GET /api/cash/status 200 in 132ms
+ GET /api/products/recent 200 in 124ms
+ GET /api/products?available=true 200 in 159ms
+ ○ Compiling /api/sales ...
+ ✓ Compiled /api/sales in 1123ms (2077 modules)
+ POST /api/sales 201 in 1397ms
+ GET /escritorio 200 in 247ms
+ GET /login 200 in 214ms
+ GET / 307 in 226ms
+ GET /api/rates/bcv 200 in 118ms
+ GET /api/dashboard/charts?period=7d 200 in 206ms
+ GET /api/cash/status 200 in 223ms
+ GET /api/rates/bcv 200 in 85ms
+ GET /api/dashboard/charts?period=7d 200 in 109ms
+ GET /api/cash/status 200 in 119ms
+ GET /api/dashboard/charts?period=7d 200 in 68ms
+ GET /api/dashboard/charts?period=7d 200 in 70ms
+ GET /login 200 in 81ms
+ GET /login 200 in 90ms
+ GET / 307 in 92ms
+ ○ Compiling /api/reports/daily ...
+ ✓ Compiled /api/reports/daily in 1012ms (2077 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 1167ms
+ GET /api/reports/daily?date=2026-06-19 200 in 66ms
+ GET /api/reports/daily?date=2026-06-19 200 in 61ms
+ GET /api/reports/daily?date=2026-06-19 200 in 56ms
+ GET /api/reports/daily?date=2026-06-19 200 in 38ms
+ GET /reportes 200 in 199ms
+ GET /login 200 in 232ms
+ GET / 307 in 245ms
+ ○ Compiling /api/reports/monthly ...
+ ✓ Compiled /api/reports/monthly in 1213ms (2079 modules)
+ ✓ Compiled (2075 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 2405ms
+ GET /api/cash/status 200 in 2434ms
+ GET /api/reports/monthly?period=2026-05 200 in 2445ms
+ GET /api/rates/bcv 200 in 2454ms
+ GET /api/rates/bcv 200 in 93ms
+ GET /api/reports/monthly?period=2026-05 200 in 109ms
+ GET /api/cash/status 200 in 116ms
+ GET /api/reports/monthly?period=2026-05 200 in 40ms
+ ○ Compiling /api/reports/monthly/generate ...
+ ✓ Compiled /api/reports/monthly/generate in 1706ms (2345 modules)
+ POST /api/reports/monthly/generate 200 in 2259ms
+ GET /api/reports/monthly?period=2026-05 200 in 38ms
+ POST /api/reports/monthly/generate 200 in 79ms
+ ○ Compiling /api/r/[token] ...
+ ✓ Compiled /api/r/[token] in 1005ms (2343 modules)
+ GET /api/r/5e49f602-52b5-4c9d-9a78-dd8e7b9d4a45 200 in 1157ms
+ GET /pos 200 in 285ms
+ GET /login 200 in 316ms
+ GET / 307 in 328ms
+ GET /api/payment-methods 200 in 309ms
+ GET /api/config/business 200 in 328ms
+ GET /api/rates/bcv 200 in 345ms
+ GET /api/cash/status 200 in 359ms
+ GET /api/payment-methods 200 in 110ms
+ GET /api/rates/bcv 200 in 117ms
+ GET /api/config/business 200 in 146ms
+ GET /api/cash/status 200 in 149ms
+ GET /api/rates/bcv 200 in 84ms
+ GET /api/cash/status 200 in 207ms
+ GET /api/products?available=true 200 in 184ms
+ GET /api/rates/bcv 200 in 212ms
+ GET /api/products/recent 200 in 271ms
+ GET /api/cash/status 200 in 161ms
+ GET /api/products?available=true 200 in 169ms
+ GET /api/products/recent 200 in 135ms
+ GET /api/products/search?q=corte&limit=20 200 in 43ms
+ GET /pos 200 in 109ms
+ GET /login 200 in 150ms
+ GET / 307 in 166ms
+ GET /api/rates/bcv 200 in 131ms
+ GET /api/payment-methods 200 in 169ms
+ GET /api/config/business 200 in 188ms
+ GET /api/cash/status 200 in 219ms
+ GET /api/rates/bcv 200 in 136ms
+ GET /api/payment-methods 200 in 147ms
+ GET /api/config/business 200 in 171ms
+ GET /api/cash/status 200 in 144ms
+ GET /api/rates/bcv 200 in 75ms
+ GET /api/rates/bcv 200 in 124ms
+ GET /api/cash/status 200 in 167ms
+ GET /api/products?available=true 200 in 156ms
+ GET /api/products/recent 200 in 171ms
+ GET /api/products?available=true 200 in 130ms
+ GET /api/cash/status 200 in 164ms
+ GET /api/products/recent 200 in 127ms
+ GET /api/products/search?q=corte&limit=20 200 in 44ms
+ GET /pos 200 in 106ms
+ GET /login 200 in 151ms
+ GET / 307 in 177ms
+ GET /api/rates/bcv 200 in 121ms
+ GET /api/payment-methods 200 in 176ms
+ GET /api/config/business 200 in 199ms
+ GET /api/cash/status 200 in 229ms
+ GET /api/rates/bcv 200 in 111ms
+ GET /api/payment-methods 200 in 126ms
+ GET /api/config/business 200 in 153ms
+ GET /api/cash/status 200 in 141ms
+ GET /api/rates/bcv 200 in 65ms
+ GET /api/rates/bcv 200 in 109ms
+ GET /api/cash/status 200 in 149ms
+ GET /api/products/recent 200 in 146ms
+ GET /api/products?available=true 200 in 169ms
+ GET /api/cash/status 200 in 150ms
+ GET /api/products/recent 200 in 132ms
+ GET /api/products?available=true 200 in 138ms
+ ○ Compiling /catalogo/[slug] ...
+ ✓ Compiled /catalogo/[slug] in 1099ms (2344 modules)
+ GET /catalogo/demo 200 in 1618ms
+ GET /login 200 in 161ms
+ GET / 307 in 173ms
+ GET /catalogo/demo 200 in 163ms
+ GET /login 200 in 121ms
+ GET / 307 in 125ms
+ GET /catalogo/demo 200 in 129ms
+ GET /login 200 in 125ms
+ GET / 307 in 130ms
+ GET /catalogo/demo 200 in 118ms
+ GET /login 200 in 144ms
+ GET / 307 in 148ms
+ ○ Compiling /cotizaciones ...
+ ✓ Compiled /cotizaciones in 1026ms (2346 modules)
+ GET /cotizaciones 200 in 1337ms
+ GET / 307 in 260ms
+ GET /login 200 in 300ms
+ GET /api/rates/bcv 200 in 233ms
+ GET /api/cash/status 200 in 243ms
+ GET /api/rates/bcv 200 in 83ms
+ GET /api/cash/status 200 in 86ms
+ ○ Compiling /api/quotations ...
+ ✓ Compiled /api/quotations in 917ms (2342 modules)
+ POST /api/quotations 201 in 1199ms
+ ○ Compiling /devoluciones ...
+ ✓ Compiled /devoluciones in 918ms (2348 modules)
+ GET /devoluciones 200 in 1205ms
+ GET /login 200 in 243ms
+ GET / 307 in 250ms
+ GET /api/rates/bcv 200 in 248ms
+ GET /api/cash/status 200 in 256ms
+ GET /api/rates/bcv 200 in 71ms
+ GET /api/cash/status 200 in 80ms
+ ○ Compiling /api/returns ...
+ ✓ Compiled /api/returns in 940ms (2301 modules)
+ POST /api/returns 404 in 1146ms
+ ○ Compiling /usuarios ...
+ ✓ Compiled /usuarios in 994ms (2309 modules)
+ GET /usuarios 200 in 1306ms
+ GET /login 200 in 207ms
+ GET / 307 in 215ms
+ ○ Compiling /api/users ...
+ ✓ Compiled /api/users in 1019ms (2312 modules)
+ GET /api/cash/status 200 in 2224ms
+ GET /api/users 200 in 2230ms
+ GET /api/rates/bcv 200 in 2248ms
+ GET /api/users 200 in 68ms
+ GET /api/rates/bcv 200 in 72ms
+ GET /api/cash/status 200 in 106ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/rates/bcv 200 in 983ms
+ GET /api/rates/bcv 200 in 31ms
+ GET /api/rates/bcv 200 in 61ms
+ GET /api/rates/bcv 200 in 26ms
+ GET /api/rates/bcv 200 in 46ms
+ ○ Compiling /api/finanzas/categorias ...
+ ✓ Compiled /api/finanzas/categorias in 2.1s (1450 modules)
+ GET /api/finanzas/categorias 200 in 2396ms
+ POST /api/finanzas/categorias 201 in 40ms
+prisma:error 
+Invalid `prisma.expenseCategory.create()` invocation:
+
+
+Unique constraint failed on the constraint: `expense_categories_business_id_name_key`
+ POST /api/finanzas/categorias 409 in 46ms
+ GET /api/finanzas/categorias 200 in 27ms
+ ○ Compiling /api/finanzas/gastos ...
+ ✓ Compiled /api/finanzas/gastos in 678ms (1453 modules)
+ POST /api/finanzas/gastos 201 in 885ms
+ POST /api/finanzas/categorias 201 in 52ms
+ ✓ Compiled /api/finanzas/categorias/[id] in 344ms (1455 modules)
+ PATCH /api/finanzas/categorias/18 200 in 443ms
+ GET /api/finanzas/categorias 200 in 42ms
+ GET /api/rates/bcv 200 in 72ms
+ GET /api/rates/bcv 200 in 34ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/rates/bcv 200 in 40ms
+ GET /api/rates/bcv 200 in 34ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/rates/bcv 200 in 29ms
+ GET /api/rates/bcv 200 in 34ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/rates/bcv 200 in 37ms
+ GET /api/rates/bcv 200 in 33ms
+ GET /api/rates/bcv 200 in 50ms
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 2.1s (1845 modules)
+ ○ Compiling /api/analytics/trends ...
+ ✓ Compiled /api/analytics/trends in 792ms (1847 modules)
+ ✓ Compiled (1851 modules)
+ GET /api/analytics/trends?period=month 200 in 1530ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 1545ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 1547ms
+ ○ Compiling /escritorio ...
+ ✓ Compiled /escritorio in 890ms (1907 modules)
+ ○ Compiling /api/dashboard/charts ...
+ ✓ Compiled /api/dashboard/charts in 567ms (1909 modules)
+ GET /api/dashboard/charts?period=7d 200 in 705ms
+ GET /api/dashboard/charts?period=7d 200 in 44ms
+ GET /api/dashboard/charts?period=7d 200 in 34ms
+ GET /api/dashboard/charts?period=7d 200 in 33ms
+ GET /api/rates/bcv 200 in 71ms
+ GET /api/rates/bcv 200 in 42ms
+ GET /api/rates/bcv 200 in 13ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/rates/bcv 200 in 31ms
+ GET /api/rates/bcv 200 in 29ms
+ GET /api/rates/bcv 200 in 31ms
+ GET /api/rates/bcv 200 in 37ms
+ GET /api/rates/bcv 200 in 33ms
+ GET /api/rates/bcv 200 in 211ms
+ ○ Compiling /pedidos ...
+ ✓ Compiled /pedidos in 3.7s (3016 modules)
+ ○ Compiling /api/orders ...
+ ✓ Compiled /api/orders in 1508ms (1459 modules)
+ GET /api/orders?limit=100 200 in 1809ms
+ GET /api/orders?limit=100 200 in 54ms
+ ○ Compiling /clientes ...
+ ✓ Compiled /clientes in 2.2s (3175 modules)
+ GET /api/orders?limit=100 200 in 80ms
+ GET /api/orders?limit=100 200 in 39ms
+ ✓ Compiled /api/cash/status in 403ms (1479 modules)
+ ✓ Compiled (1485 modules)
+ GET /api/payment-methods 200 in 1081ms
+ GET /api/config/business 200 in 1094ms
+ GET /api/cash/status 200 in 1113ms
+ GET /api/payment-methods 200 in 106ms
+ GET /api/config/business 200 in 139ms
+ GET /api/rates/bcv 200 in 83ms
+ GET /api/cash/status 200 in 183ms
+ GET /api/rates/bcv 200 in 1477ms
+ ✓ Compiled /api/products in 452ms (1487 modules)
+ ✓ Compiled (1489 modules)
+ GET /api/products?available=true 200 in 1281ms
+ GET /api/products/recent 200 in 1289ms
+ GET /api/products?available=true 200 in 46ms
+ GET /api/products/recent 200 in 55ms
+ ○ Compiling /productos ...
+ ✓ Compiled /productos in 2s (3282 modules)
+ ✓ Compiled /api/products/categories in 471ms (1524 modules)
+ GET /api/products/categories 200 in 1134ms
+ GET /api/products? 200 in 1148ms
+ GET /api/rates/bcv 200 in 1155ms
+ GET /api/products/categories 200 in 55ms
+ GET /api/rates/bcv 200 in 55ms
+ GET /api/products? 200 in 65ms
+ GET /api/rates/bcv 200 in 30ms
+ ○ Compiling /caja ...
+ ✓ Compiled /caja in 1206ms (3278 modules)
+ GET /api/payment-methods 200 in 51ms
+ GET /api/cash/status 200 in 62ms
+ GET /api/payment-methods 200 in 73ms
+ ✓ Compiled /api/reports/daily in 460ms (1540 modules)
+ ✓ Compiled (1542 modules)
+ GET /api/cash/status 200 in 947ms
+ GET /api/reports/daily?date=2026-06-19 200 in 952ms
+ GET /api/cash/movement 200 in 954ms
+ GET /api/cash/movement 200 in 42ms
+ GET /api/reports/daily?date=2026-06-19 200 in 64ms
+ ✓ Compiled /api/reports/monthly in 442ms (1544 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 946ms
+ GET /api/reports/monthly?period=2026-05 200 in 960ms
+ GET /api/reports/monthly?period=2026-05 200 in 41ms
+ ○ Compiling /catalogo-digital ...
+ ✓ Compiled /catalogo-digital in 726ms (1552 modules)
+ ✓ Compiled /api/catalogo/metrics in 404ms (1555 modules)
+ GET /api/catalogo/metrics 200 in 511ms
+ GET /api/catalogo/metrics 200 in 39ms
+ GET /api/rates/bcv 200 in 150ms
+ ○ Compiling /api/finanzas/resumen ...
+ ✓ Compiled /api/finanzas/resumen in 553ms (1557 modules)
+ GET /api/finanzas/resumen?month=2026-06 200 in 1091ms
+ GET /api/rates/bcv 200 in 930ms
+ GET /api/orders?limit=100 200 in 51ms
+ GET /api/orders?limit=100 200 in 35ms
+ GET /api/rates/bcv 200 in 34ms
+ GET /api/catalogo/metrics 200 in 50ms
+ GET /api/catalogo/metrics 200 in 38ms
+ GET /api/products/categories 200 in 77ms
+ GET /api/rates/bcv 200 in 77ms
+ GET /api/products? 200 in 116ms
+ GET /api/rates/bcv 200 in 56ms
+ GET /api/products/categories 200 in 72ms
+ GET /api/products? 200 in 68ms
+ GET /api/reports/monthly?period=2026-05 200 in 64ms
+ GET /api/reports/daily?date=2026-06-19 200 in 78ms
+ GET /api/reports/monthly?period=2026-05 200 in 38ms
+ ○ Compiling /analytics ...
+ ✓ Compiled /analytics in 1630ms (1977 modules)
+ ○ Compiling /api/analytics/top-products ...
+ ✓ Compiled /api/analytics/top-products in 691ms (1979 modules)
+ ✓ Compiled in 1ms (1983 modules)
+ ✓ Compiled in 0ms (1983 modules)
+ ✓ Compiled in 0ms (1983 modules)
+ GET /api/analytics/trends?period=month 200 in 2177ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 2605ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 2610ms
+ GET /api/rates/bcv 200 in 163ms
+ ○ Compiling /api/finanzas/resumen ...
+ ✓ Compiled /api/finanzas/resumen in 1016ms (1985 modules)
+ ✓ Compiled in 1ms (1985 modules)
+ ✓ Compiled in 1ms (1985 modules)
+ ✓ Compiled in 0ms (1985 modules)
+ GET /api/finanzas/resumen?month=2026-06 200 in 2435ms
+ GET /api/rates/bcv 200 in 2292ms
+ ✓ Compiled in 1ms (1985 modules)
+ GET /api/reports/monthly?period=2026-05 200 in 1053ms
+ GET /api/reports/daily?date=2026-06-19 200 in 1066ms
+ GET /api/reports/monthly?period=2026-05 200 in 41ms
+ ○ Compiling /caja ...
+ ✓ Compiled /caja in 1010ms (1999 modules)
+ ✓ Compiled /api/payment-methods in 468ms (2001 modules)
+ ✓ Compiled (2003 modules)
+ GET /api/payment-methods 200 in 1157ms
+ GET /api/cash/status 200 in 1178ms
+ GET /api/payment-methods 200 in 58ms
+ GET /api/cash/status 200 in 108ms
+ ✓ Compiled /api/cash/movement in 477ms (2005 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 1075ms
+ GET /api/cash/movement 200 in 1106ms
+ GET /api/reports/daily?date=2026-06-19 200 in 64ms
+ GET /api/cash/movement 200 in 62ms
+ GET /api/rates/bcv 200 in 75ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 80ms
+ GET /api/rates/bcv 200 in 29ms
+ ○ Compiling /pedidos ...
+ ✓ Compiled /pedidos in 778ms (2016 modules)
+ ○ Compiling /api/orders ...
+ ✓ Compiled /api/orders in 533ms (2018 modules)
+ GET /api/orders?limit=100 200 in 687ms
+ GET /api/orders?limit=100 200 in 38ms
+ GET /api/payment-methods 200 in 46ms
+ GET /api/cash/status 200 in 83ms
+ GET /api/payment-methods 200 in 64ms
+ GET /api/reports/daily?date=2026-06-19 200 in 117ms
+ GET /api/cash/status 200 in 123ms
+ GET /api/cash/movement 200 in 125ms
+ GET /api/cash/movement 200 in 68ms
+ GET /api/reports/daily?date=2026-06-19 200 in 76ms
+ GET /api/reports/monthly?period=2026-05 200 in 77ms
+ GET /api/reports/daily?date=2026-06-19 200 in 98ms
+ GET /api/reports/monthly?period=2026-05 200 in 39ms
+ GET /api/rates/bcv 200 in 220ms
+ ○ Compiling /api/config/business ...
+ ✓ Compiled /api/config/business in 814ms (2018 modules)
+ ✓ Compiled in 1ms (2018 modules)
+ GET /api/payment-methods 200 in 1606ms
+ GET /api/cash/status 200 in 1652ms
+ ✓ Compiled in 0ms (2018 modules)
+ ✓ Compiled in 1ms (2018 modules)
+ GET /api/config/business 200 in 2658ms
+ GET /api/rates/bcv 200 in 2452ms
+ ✓ Compiled in 1ms (2018 modules)
+ GET /api/orders?limit=100 200 in 2431ms
+ ✓ Compiled in 1ms (2018 modules)
+ GET /api/payment-methods 200 in 2044ms
+ GET /api/cash/status 200 in 2066ms
+ ✓ Compiled in 1ms (2018 modules)
+ ✓ Compiled in 1ms (2018 modules)
+ GET /api/config/business 200 in 2041ms
+ GET /api/orders?limit=100 200 in 1898ms
+ GET /api/products/categories 200 in 88ms
+ GET /api/rates/bcv 200 in 105ms
+ GET /api/products? 200 in 105ms
+ GET /api/products/categories 200 in 69ms
+ GET /api/rates/bcv 200 in 58ms
+ GET /api/products? 200 in 55ms
+ GET /api/rates/bcv 200 in 63ms
+ GET /api/payment-methods 200 in 68ms
+ GET /api/config/business 200 in 99ms
+ GET /api/cash/status 200 in 127ms
+ GET /api/rates/bcv 200 in 96ms
+ GET /api/payment-methods 200 in 92ms
+ GET /api/config/business 200 in 141ms
+ GET /api/cash/status 200 in 138ms
+ ○ Compiling /api/products/recent ...
+ ✓ Compiled /api/products/recent in 723ms (2020 modules)
+ GET /api/products?available=true 200 in 1458ms
+ GET /api/products/recent 200 in 1476ms
+ GET /api/products?available=true 200 in 54ms
+ GET /api/products/recent 200 in 55ms
+ GET /api/orders?limit=100 200 in 39ms
+ GET /api/orders?limit=100 200 in 25ms
+ ✓ Compiled /api/catalogo/metrics in 440ms (2022 modules)
+ GET /api/catalogo/metrics 200 in 517ms
+ GET /api/catalogo/metrics 200 in 36ms
+ GET /api/rates/bcv 200 in 97ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 103ms
+ GET /api/rates/bcv 200 in 32ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 80ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 98ms
+ GET /api/analytics/trends?period=month 200 in 103ms
+ GET /api/rates/bcv 200 in 74ms
+ GET /api/products/categories 200 in 128ms
+ GET /api/products? 200 in 127ms
+ GET /api/rates/bcv 200 in 76ms
+ GET /api/products/categories 200 in 81ms
+ GET /api/products? 200 in 90ms
+ ○ Compiling /clientes ...
+ ✓ Compiled /clientes in 764ms (2039 modules)
+ GET /api/payment-methods 200 in 67ms
+ GET /api/cash/status 200 in 95ms
+ GET /api/payment-methods 200 in 77ms
+ GET /api/reports/daily?date=2026-06-19 200 in 95ms
+ GET /api/cash/movement 200 in 98ms
+ GET /api/cash/status 200 in 114ms
+ GET /api/cash/movement 200 in 69ms
+ GET /api/reports/daily?date=2026-06-19 200 in 80ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 93ms
+ GET /api/rates/bcv 200 in 96ms
+ GET /api/rates/bcv 200 in 36ms
+ GET /api/payment-methods 200 in 61ms
+ GET /api/cash/status 200 in 79ms
+ GET /api/payment-methods 200 in 66ms
+ GET /api/reports/daily?date=2026-06-19 200 in 108ms
+ GET /api/cash/movement 200 in 112ms
+ GET /api/cash/status 200 in 130ms
+ GET /api/reports/daily?date=2026-06-19 200 in 72ms
+ GET /api/cash/movement 200 in 84ms
+ GET /api/reports/monthly?period=2026-05 200 in 70ms
+ GET /api/reports/daily?date=2026-06-19 200 in 82ms
+ GET /api/reports/monthly?period=2026-05 200 in 38ms
+ GET /api/payment-methods 200 in 59ms
+ GET /api/cash/status 200 in 72ms
+ GET /api/payment-methods 200 in 64ms
+ GET /api/reports/daily?date=2026-06-19 200 in 83ms
+ GET /api/cash/movement 200 in 92ms
+ GET /api/cash/status 200 in 110ms
+ GET /api/cash/movement 200 in 73ms
+ GET /api/reports/daily?date=2026-06-19 200 in 80ms
+ GET /api/products/categories 200 in 70ms
+ GET /api/rates/bcv 200 in 70ms
+ GET /api/products? 200 in 78ms
+ GET /api/rates/bcv 200 in 50ms
+ GET /api/products/categories 200 in 68ms
+ GET /api/products? 200 in 73ms
+ GET /api/payment-methods 200 in 68ms
+ GET /api/cash/status 200 in 76ms
+ GET /api/payment-methods 200 in 80ms
+ GET /api/reports/daily?date=2026-06-19 200 in 112ms
+ GET /api/cash/status 200 in 128ms
+ GET /api/cash/movement 200 in 118ms
+ GET /api/cash/movement 200 in 62ms
+ GET /api/reports/daily?date=2026-06-19 200 in 70ms
+ GET /api/rates/bcv 200 in 31ms
+ GET /api/payment-methods 200 in 49ms
+ GET /api/cash/status 200 in 75ms
+ GET /api/payment-methods 200 in 62ms
+ GET /api/cash/status 200 in 106ms
+ GET /api/reports/daily?date=2026-06-19 200 in 108ms
+ GET /api/cash/movement 200 in 110ms
+ GET /api/reports/daily?date=2026-06-19 200 in 68ms
+ GET /api/cash/movement 200 in 80ms
+ GET /api/orders?limit=100 200 in 54ms
+ GET /api/orders?limit=100 200 in 36ms
+ GET /api/orders?limit=100 200 in 45ms
+ GET /api/orders?limit=100 200 in 34ms
+ GET /api/orders?limit=100 200 in 16ms
+ GET /api/orders?limit=100 200 in 39ms
+ GET /api/orders?limit=100 200 in 27ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/orders?limit=100 200 in 49ms
+ GET /api/orders?limit=100 200 in 46ms
+ GET /api/orders?limit=100 200 in 60ms
+ GET /api/orders?limit=100 200 in 47ms
+ GET /api/rates/bcv 200 in 27ms
+ GET /api/orders?limit=100 200 in 24ms
+ GET /api/orders?limit=100 200 in 45ms
+ GET /api/orders?limit=100 200 in 39ms
+ GET /api/orders?limit=100 200 in 43ms
+ GET /api/orders?limit=100 200 in 36ms
+ GET /api/orders?limit=100 200 in 40ms
+ GET /api/rates/bcv 200 in 33ms
+ GET /api/orders?limit=100 200 in 40ms
+ GET /api/orders?limit=100 200 in 38ms
+ GET /api/orders?limit=100 200 in 42ms
+ GET /api/orders?limit=100 200 in 39ms
+ GET /api/rates/bcv 200 in 35ms
+ GET /api/orders?limit=100 200 in 40ms
+ GET /api/orders?limit=100 200 in 43ms
+ GET /api/orders?limit=100 200 in 44ms
+ GET /api/orders?limit=100 200 in 34ms
+ GET /api/orders?limit=100 200 in 42ms
+ GET /api/orders?limit=100 200 in 40ms
+ GET /api/rates/bcv 200 in 32ms
+ GET /api/orders?limit=100 200 in 47ms
+ GET /api/orders?limit=100 200 in 35ms
+ GET /api/orders?limit=100 200 in 39ms
+ GET /api/orders?limit=100 200 in 41ms
+ GET /api/rates/bcv 200 in 41ms
+ GET /api/orders?limit=100 200 in 36ms
+ GET /api/orders?limit=100 200 in 42ms
+ GET /api/orders?limit=100 200 in 29ms
+ GET /api/orders?limit=100 200 in 17ms
+ GET /api/orders?limit=100 200 in 41ms
+ GET /api/orders?limit=100 200 in 20ms
+ GET /api/rates/bcv 200 in 39ms
+ GET /api/orders?limit=100 200 in 43ms
+ GET /api/orders?limit=100 200 in 19ms
+ GET /api/orders?limit=100 200 in 44ms
+ GET /api/orders?limit=100 200 in 57ms
+ GET /api/rates/bcv 200 in 23ms
+ GET /api/orders?limit=100 200 in 44ms
+ GET /api/orders?limit=100 200 in 23ms
+ GET /analytics 200 in 359ms
+ ○ Compiling / ...
+ ✓ Compiled /api/analytics/summary in 854ms (1928 modules)
+ ✓ Compiled (1934 modules)
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 932ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 947ms
+ GET /login 200 in 1505ms
+ GET /api/cash/status 200 in 1173ms
+ GET / 307 in 1519ms
+ GET /api/rates/bcv 200 in 968ms
+ ✓ Compiled /api/analytics/trends in 260ms (1936 modules)
+ GET /api/analytics/trends?period=month 200 in 558ms
+ GET /api/cash/status 200 in 549ms
+ GET /api/rates/bcv 200 in 533ms
+ GET /analytics 200 in 184ms
+ GET /login 200 in 94ms
+ GET / 307 in 101ms
+ GET /api/rates/bcv 200 in 66ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 82ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 86ms
+ GET /api/cash/status 200 in 104ms
+ GET /api/analytics/trends?period=month 200 in 36ms
+ GET /api/rates/bcv 200 in 31ms
+ GET /api/cash/status 200 in 31ms
+ GET /analytics 200 in 71ms
+ GET /login 200 in 110ms
+ GET / 307 in 115ms
+ GET /api/rates/bcv 200 in 62ms
+ GET /api/cash/status 200 in 95ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 99ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 102ms
+ GET /api/analytics/trends?period=month 200 in 61ms
+ GET /api/rates/bcv 200 in 37ms
+ GET /api/cash/status 200 in 53ms
+ GET /api/analytics/summary?from=2026-06-15&to=2026-06-22 200 in 40ms
+ GET /api/analytics/trends?period=week 200 in 46ms
+ GET /api/analytics/top-products?from=2026-06-15&to=2026-06-22&limit=8 200 in 48ms
+ GET /api/orders?limit=100 200 in 37ms
+ GET /analytics 200 in 121ms
+ GET /login 200 in 89ms
+ GET / 307 in 92ms
+ GET /api/rates/bcv 200 in 32ms
+ GET /api/cash/status 200 in 84ms
+ GET /api/analytics/summary?from=2026-06-01&to=2026-07-01 200 in 61ms
+ GET /api/analytics/top-products?from=2026-06-01&to=2026-07-01&limit=8 200 in 63ms
+ GET /api/analytics/trends?period=month 200 in 53ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/cash/status 200 in 35ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 556ms (1982 modules)
+ POST /api/auth/login 200 in 885ms
+ GET /pos 200 in 91ms
+ GET /login 200 in 126ms
+ GET / 307 in 129ms
+ ✓ Compiled /api/config/business in 508ms (1965 modules)
+ ✓ Compiled (1967 modules)
+ GET /api/cash/status 200 in 997ms
+ GET /api/payment-methods 200 in 1019ms
+ GET /api/rates/bcv 200 in 1023ms
+ GET /api/config/business 200 in 1027ms
+ GET /api/payment-methods 200 in 29ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/cash/status 200 in 50ms
+ GET /api/config/business 200 in 43ms
+ GET /api/rates/bcv 200 in 28ms
+ GET /api/cash/status 200 in 78ms
+ ✓ Compiled /api/products in 293ms (1969 modules)
+ ✓ Compiled (1971 modules)
+ GET /api/rates/bcv 200 in 71ms
+ GET /api/cash/status 200 in 17ms
+ ✓ Compiled /api/cash/close in 217ms (1973 modules)
+ POST /api/cash/close 200 in 301ms
+ ✓ Compiled /api/cash/open in 275ms (1975 modules)
+ POST /api/cash/open 201 in 370ms
+ GET /api/cash/status 200 in 18ms
+ POST /api/cash/open 409 in 15ms
+ POST /api/cash/close 200 in 29ms
+ GET /api/cash/status 200 in 14ms
+ POST /api/cash/close 400 in 14ms
+ GET /api/rates/bcv 200 in 13ms
+ GET /api/cash/status 200 in 22ms
+ GET /api/rates/bcv 200 in 15ms
+ POST /api/cash/open 201 in 24ms
+ GET /login 200 in 66ms
+ GET /login 200 in 51ms
+ GET / 307 in 51ms
+ ✓ Compiled /api/catalogo/metrics in 319ms (1978 modules)
+ GET /api/catalogo/metrics 200 in 367ms
+ ✓ Compiled /catalogo-digital in 334ms (1986 modules)
+ GET /catalogo-digital 200 in 496ms
+ GET / 307 in 103ms
+ GET /login 200 in 132ms
+ GET /api/catalogo/metrics 200 in 103ms
+ GET /api/cash/status 200 in 117ms
+ GET /api/rates/bcv 200 in 125ms
+ GET /api/catalogo/metrics 200 in 46ms
+ GET /api/cash/status 200 in 50ms
+ GET /api/rates/bcv 200 in 32ms
+ GET /catalogo-digital 200 in 80ms
+ GET /api/rates/bcv 200 in 109ms
+ GET /login 200 in 140ms
+ GET / 307 in 146ms
+ GET /api/catalogo/metrics 200 in 119ms
+ GET /api/cash/status 200 in 135ms
+ GET /api/rates/bcv 200 in 52ms
+ GET /api/catalogo/metrics 200 in 63ms
+ GET /api/cash/status 200 in 74ms
+ ✓ Compiled /api/catalog/[slug] in 441ms (1989 modules)
+ GET /api/catalog/demo 200 in 708ms
+ ✓ Compiled /api/products/bulk-visibility in 394ms (1991 modules)
+ PATCH /api/products/bulk-visibility 200 in 466ms
+ GET /api/catalog/demo 200 in 49ms
+ PATCH /api/products/bulk-visibility 200 in 23ms
+ GET /catalogo-digital 200 in 123ms
+ GET /login 200 in 98ms
+ GET /api/rates/bcv 200 in 69ms
+ GET / 307 in 108ms
+ GET /api/catalogo/metrics 200 in 97ms
+ GET /api/cash/status 200 in 109ms
+ GET /api/rates/bcv 200 in 48ms
+ GET /api/catalogo/metrics 200 in 39ms
+ GET /api/cash/status 200 in 51ms
+ GET /api/catalog/demo 200 in 32ms
+ POST /api/orders 201 in 36ms
+ GET /api/catalogo/metrics 200 in 21ms
+ ✓ Compiled /api/finanzas/categorias in 346ms (1993 modules)
+ GET /api/finanzas/categorias 200 in 396ms
+ POST /api/finanzas/categorias 201 in 28ms
+prisma:error 
+Invalid `prisma.expenseCategory.create()` invocation:
+
+
+Unique constraint failed on the constraint: `expense_categories_business_id_name_key`
+ POST /api/finanzas/categorias 409 in 30ms
+ GET /api/finanzas/categorias 200 in 17ms
+ ○ Compiling /api/finanzas/gastos ...
+ ✓ Compiled /api/finanzas/gastos in 628ms (1995 modules)
+ POST /api/finanzas/gastos 201 in 699ms
+ POST /api/finanzas/categorias 201 in 25ms
+ ✓ Compiled /api/finanzas/categorias/[id] in 392ms (1997 modules)
+ PATCH /api/finanzas/categorias/21 200 in 463ms
+ GET /api/finanzas/categorias 200 in 20ms
+ GET /login 200 in 99ms
+ GET /login 200 in 59ms
+ GET / 200 in 61ms
+ ✓ Compiled /api/finanzas/resumen in 373ms (1999 modules)
+ GET /api/finanzas/resumen?period=2026-06 200 in 462ms
+ ○ Compiling /finanzas ...
+ ✓ Compiled /finanzas in 578ms (2018 modules)
+ GET /finanzas 200 in 734ms
+ GET /login 200 in 87ms
+ GET / 307 in 92ms
+ GET /api/rates/bcv 200 in 73ms
+ GET /api/finanzas/resumen?month=2026-06 200 in 61ms
+ GET /api/cash/status 200 in 78ms
+ GET /api/rates/bcv 200 in 22ms
+ GET /api/cash/status 200 in 39ms
+ GET /api/rates/bcv 200 in 17ms
+ GET /api/rates/bcv 200 in 19ms
+ ✓ Compiled /api/finanzas/punto-equilibrio in 403ms (2020 modules)
+ GET /api/finanzas/punto-equilibrio?period=2026-06 200 in 459ms
+ GET /finanzas 200 in 115ms
+ GET /login 200 in 82ms
+ GET / 307 in 87ms
+ GET /api/rates/bcv 200 in 88ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 65ms
+ GET /api/cash/status 200 in 92ms
+ GET /api/rates/bcv 200 in 29ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 45ms
+ GET /api/cash/status 200 in 52ms
+ GET /api/rates/bcv 200 in 28ms
+ GET /api/rates/bcv 200 in 15ms
+ POST /api/finanzas/gastos 201 in 24ms
+ GET /api/finanzas/gastos?month=2026-06 200 in 19ms
+ ✓ Compiled /api/finanzas/cxc in 351ms (2022 modules)
+ GET /api/finanzas/cxc 200 in 415ms
+ GET /finanzas 200 in 88ms
+ GET /login 200 in 128ms
+ GET / 307 in 134ms
+ GET /api/rates/bcv 200 in 73ms
+ GET /api/finanzas/cxc 200 in 66ms
+ GET /api/cash/status 200 in 83ms
+ GET /api/rates/bcv 200 in 34ms
+ GET /api/finanzas/cxc 200 in 55ms
+ GET /api/cash/status 200 in 66ms
+ GET /api/rates/bcv 200 in 21ms
+ GET /api/rates/bcv 200 in 16ms
+ POST /api/auth/login 200 in 269ms
+ GET /api/finanzas/resumen?period=2026-06 403 in 15ms
+ GET /api/rates/bcv 200 in 12ms
+ ○ Compiling /escritorio ...
+ ✓ Compiled /escritorio in 774ms (2078 modules)
+ GET /escritorio 200 in 1048ms
+ GET / 307 in 98ms
+ GET /login 200 in 110ms
+ ✓ Compiled /api/dashboard/charts in 382ms (2080 modules)
+ GET /api/cash/status 200 in 904ms
+ GET /api/rates/bcv 200 in 910ms
+ GET /api/dashboard/charts?period=7d 200 in 921ms
+ GET /api/rates/bcv 200 in 35ms
+ GET /api/dashboard/charts?period=7d 200 in 48ms
+ GET /api/cash/status 200 in 63ms
+ GET /api/dashboard/charts?period=7d 200 in 27ms
+ GET /api/dashboard/charts?period=7d 200 in 26ms
+ GET /escritorio 200 in 166ms
+ GET /login 200 in 107ms
+ GET / 307 in 113ms
+ GET /api/rates/bcv 200 in 48ms
+ GET /api/dashboard/charts?period=7d 200 in 81ms
+ GET /api/cash/status 200 in 91ms
+ GET /api/rates/bcv 200 in 49ms
+ GET /api/dashboard/charts?period=7d 200 in 64ms
+ GET /api/cash/status 200 in 73ms
+ GET /api/dashboard/charts?period=7d 200 in 30ms
+ GET /api/dashboard/charts?period=7d 200 in 76ms
+ GET /pos 200 in 98ms
+ GET /login 200 in 54ms
+ GET / 307 in 56ms
+ GET /api/rates/bcv 200 in 32ms
+ GET /api/payment-methods 200 in 51ms
+ GET /api/config/business 200 in 57ms
+ GET /api/cash/status 200 in 63ms
+ GET /api/rates/bcv 200 in 31ms
+ GET /api/payment-methods 200 in 51ms
+ GET /api/config/business 200 in 78ms
+ GET /api/cash/status 200 in 76ms
+ GET /api/rates/bcv 200 in 45ms
+ GET /api/rates/bcv 200 in 52ms
+ GET /api/cash/status 200 in 66ms
+ GET /api/products/recent 200 in 43ms
+ GET /api/products?available=true 200 in 54ms
+ GET /api/cash/status 200 in 56ms
+ GET /api/products/recent 200 in 34ms
+ GET /api/products?available=true 200 in 34ms
+ ○ Compiling /api/products/search ...
+ ✓ Compiled /api/products/search in 759ms (2082 modules)
+ GET /api/products/search?q=are&limit=20 200 in 842ms
+ GET /pos 200 in 118ms
+ GET /login 200 in 66ms
+ GET / 307 in 68ms
+ GET /api/rates/bcv 200 in 28ms
+ GET /api/payment-methods 200 in 43ms
+ GET /api/config/business 200 in 49ms
+ GET /api/cash/status 200 in 55ms
+ GET /api/rates/bcv 200 in 25ms
+ GET /api/payment-methods 200 in 29ms
+ GET /api/config/business 200 in 38ms
+ GET /api/cash/status 200 in 42ms
+ GET /api/rates/bcv 200 in 20ms
+ GET /api/rates/bcv 200 in 28ms
+ GET /api/cash/status 200 in 37ms
+ GET /api/products?available=true 200 in 39ms
+ GET /api/products/recent 200 in 51ms
+ GET /api/cash/status 200 in 53ms
+ GET /api/products?available=true 200 in 33ms
+ GET /api/products/recent 200 in 30ms
+ GET /pos 200 in 77ms
+ GET /login 200 in 69ms
+ GET / 307 in 78ms
+ GET /api/rates/bcv 200 in 39ms
+ GET /api/payment-methods 200 in 56ms
+ GET /api/config/business 200 in 63ms
+ GET /api/cash/status 200 in 72ms
+ GET /api/rates/bcv 200 in 40ms
+ GET /api/config/business 200 in 45ms
+ GET /api/payment-methods 200 in 54ms
+ GET /api/cash/status 200 in 56ms
+ GET /api/rates/bcv 200 in 24ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/cash/status 200 in 41ms
+ GET /api/products/recent 200 in 31ms
+ GET /api/products?available=true 200 in 38ms
+ GET /api/cash/status 200 in 51ms
+ GET /api/products/recent 200 in 45ms
+ GET /api/products?available=true 200 in 47ms
+ ✓ Compiled /api/sales in 271ms (2085 modules)
+ POST /api/sales 201 in 385ms
+ GET /escritorio 200 in 60ms
+ GET /login 200 in 74ms
+ GET / 307 in 83ms
+ GET /api/rates/bcv 200 in 34ms
+ GET /api/dashboard/charts?period=7d 200 in 51ms
+ GET /api/cash/status 200 in 58ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/dashboard/charts?period=7d 200 in 38ms
+ GET /api/cash/status 200 in 49ms
+ GET /api/dashboard/charts?period=7d 200 in 20ms
+ GET /api/dashboard/charts?period=7d 200 in 20ms
+ GET /login 200 in 46ms
+ GET /login 200 in 36ms
+ GET / 307 in 38ms
+ ✓ Compiled /api/reports/daily in 260ms (2087 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 308ms
+ GET /api/reports/daily?date=2026-06-19 200 in 14ms
+ GET /api/reports/daily?date=2026-06-19 200 in 19ms
+ GET /api/reports/daily?date=2026-06-19 200 in 16ms
+ GET /api/reports/daily?date=2026-06-19 200 in 12ms
+ GET /reportes 200 in 57ms
+ GET /login 200 in 60ms
+ GET / 307 in 71ms
+ GET /api/rates/bcv 200 in 85ms
+ ✓ Compiled /api/reports/monthly in 339ms (2089 modules)
+ GET /api/reports/daily?date=2026-06-19 200 in 687ms
+ GET /api/cash/status 200 in 691ms
+ GET /api/reports/monthly?period=2026-05 200 in 703ms
+ GET /api/rates/bcv 200 in 611ms
+ GET /api/reports/monthly?period=2026-05 200 in 20ms
+ GET /api/cash/status 200 in 30ms
+ GET /api/reports/monthly?period=2026-05 200 in 15ms
+ ✓ Compiled /api/reports/monthly/generate in 480ms (2359 modules)
+ POST /api/reports/monthly/generate 200 in 626ms
+ GET /api/reports/monthly?period=2026-05 200 in 13ms
+ POST /api/reports/monthly/generate 200 in 28ms
+ ✓ Compiled /api/r/[token] in 270ms (2361 modules)
+ GET /api/r/4c3ce439-92f7-422e-8efc-6bdf6e3f1b2b 200 in 319ms
+ GET /pos 200 in 78ms
+ GET /login 200 in 58ms
+ GET / 307 in 62ms
+ GET /api/payment-methods 200 in 48ms
+ GET /api/config/business 200 in 52ms
+ GET /api/cash/status 200 in 59ms
+ GET /api/rates/bcv 200 in 63ms
+ GET /api/payment-methods 200 in 32ms
+ GET /api/config/business 200 in 44ms
+ GET /api/rates/bcv 200 in 36ms
+ GET /api/cash/status 200 in 51ms
+ GET /api/rates/bcv 200 in 22ms
+ GET /api/cash/status 200 in 35ms
+ GET /api/rates/bcv 200 in 30ms
+ GET /api/products?available=true 200 in 33ms
+ GET /api/products/recent 200 in 45ms
+ GET /api/cash/status 200 in 46ms
+ GET /api/products?available=true 200 in 33ms
+ GET /api/products/recent 200 in 36ms
+ GET /api/products/search?q=corte&limit=20 200 in 22ms
+ GET /pos 200 in 100ms
+ GET /login 200 in 48ms
+ GET / 307 in 52ms
+ GET /api/rates/bcv 200 in 26ms
+ GET /api/payment-methods 200 in 37ms
+ GET /api/config/business 200 in 42ms
+ GET /api/cash/status 200 in 46ms
+ GET /api/rates/bcv 200 in 25ms
+ GET /api/payment-methods 200 in 26ms
+ GET /api/config/business 200 in 33ms
+ GET /api/cash/status 200 in 38ms
+ GET /api/rates/bcv 200 in 25ms
+ GET /api/cash/status 200 in 37ms
+ GET /api/rates/bcv 200 in 32ms
+ GET /api/products?available=true 200 in 40ms
+ GET /api/products/recent 200 in 44ms
+ GET /api/cash/status 200 in 40ms
+ GET /api/products?available=true 200 in 36ms
+ GET /api/products/recent 200 in 42ms
+ GET /api/products/search?q=corte&limit=20 200 in 15ms
+ GET /pos 200 in 93ms
+ GET /login 200 in 52ms
+ GET / 307 in 57ms
+ GET /api/rates/bcv 200 in 27ms
+ GET /api/payment-methods 200 in 38ms
+ GET /api/config/business 200 in 41ms
+ GET /api/cash/status 200 in 48ms
+ GET /api/rates/bcv 200 in 26ms
+ GET /api/payment-methods 200 in 25ms
+ GET /api/config/business 200 in 36ms
+ GET /api/cash/status 200 in 40ms
+ GET /api/rates/bcv 200 in 26ms
+ GET /api/cash/status 200 in 36ms
+ GET /api/products?available=true 200 in 34ms
+ GET /api/rates/bcv 200 in 36ms
+ GET /api/products/recent 200 in 42ms
+ GET /api/cash/status 200 in 50ms
+ GET /api/products?available=true 200 in 43ms
+ GET /api/products/recent 200 in 45ms
+ ○ Compiling /catalogo/[slug] ...
+ ✓ Compiled /catalogo/[slug] in 655ms (2378 modules)
+ GET /catalogo/demo 200 in 879ms
+ GET /login 200 in 59ms
+ GET / 307 in 61ms
+ GET /catalogo/demo 200 in 68ms
+ GET /login 200 in 31ms
+ GET / 307 in 35ms
+ GET /catalogo/demo 200 in 77ms
+ GET /login 200 in 59ms
+ GET / 307 in 60ms
+ GET /catalogo/demo 200 in 103ms
+ GET /login 200 in 59ms
+ GET / 307 in 63ms
+ ✓ Compiled /cotizaciones in 401ms (2378 modules)
+ GET /api/orders?limit=100 200 in 176ms
+ GET /cotizaciones 200 in 567ms
+ GET /login 200 in 92ms
+ GET / 307 in 98ms
+ GET /api/cash/status 200 in 63ms
+ GET /api/rates/bcv 200 in 68ms
+ GET /api/rates/bcv 200 in 25ms
+ GET /api/cash/status 200 in 33ms
+ ✓ Compiled /api/quotations in 279ms (2380 modules)
+ POST /api/quotations 201 in 349ms
+ ✓ Compiled /devoluciones in 291ms (2386 modules)
+ GET /devoluciones 200 in 419ms
+ GET /login 200 in 54ms
+ GET / 307 in 62ms
+ GET /api/cash/status 200 in 33ms
+ GET /api/rates/bcv 200 in 39ms
+ GET /api/rates/bcv 200 in 21ms
+ GET /api/cash/status 200 in 29ms
+ ✓ Compiled /api/returns in 286ms (2388 modules)
+ POST /api/returns 404 in 331ms
+ GET /usuarios 200 in 113ms
+ GET /login 200 in 53ms
+ GET / 307 in 61ms
+ ✓ Compiled /api/users in 330ms (2390 modules)
+ GET /api/cash/status 200 in 730ms
+ GET /api/users 200 in 731ms
+ GET /api/rates/bcv 200 in 735ms
+ GET /api/rates/bcv 200 in 24ms
+ GET /api/users 200 in 33ms
+ GET /api/cash/status 200 in 40ms
+ ✓ Compiled in 1208ms (1727 modules)
+ GET /api/rates/bcv 200 in 25ms
+ GET /api/orders?limit=100 200 in 42ms
+ GET /api/orders?limit=100 200 in 25ms

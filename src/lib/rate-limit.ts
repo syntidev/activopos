@@ -17,6 +17,11 @@ export const catalogLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+export const onboardingLimiter = new RateLimiterMemory({
+  points:   3,    // 3 registros por IP
+  duration: 3600, // en 1 hora
+})
+
 // Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
 // antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
 export const getClientIp = (req: Request): string =>

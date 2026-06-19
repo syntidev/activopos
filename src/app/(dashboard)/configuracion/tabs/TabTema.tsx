@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
+import { useTheme } from 'next-themes'
 import { Moon, Sun } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
@@ -10,10 +11,6 @@ interface Props { businessId: number }
 
 type ThemeMode = 'dark' | 'light'
 
-function isValidMode(t: string | null): t is ThemeMode {
-  return t === 'dark' || t === 'light'
-}
-
 const MODES: Array<{ key: ThemeMode; label: string; Icon: typeof Moon; mainClass: string }> = [
   { key: 'dark',  label: 'Oscuro', Icon: Moon, mainClass: styles.themeCardMainDark  },
   { key: 'light', label: 'Claro',  Icon: Sun,  mainClass: styles.themeCardMainLight },
@@ -21,40 +18,13 @@ const MODES: Array<{ key: ThemeMode; label: string; Icon: typeof Moon; mainClass
 
 export function TabTema({ businessId: _b }: Props) {
   const { toast } = useToast()
+  const { resolvedTheme, setTheme } = useTheme()
+  const selected: ThemeMode = resolvedTheme === 'light' ? 'light' : 'dark'
 
-  const [selected, setSelected] = useState<ThemeMode>('dark')
-  const [saving,   setSaving]   = useState(false)
-
-  useEffect(() => {
-    const saved   = localStorage.getItem('activopos_theme')
-    const current = document.documentElement.getAttribute('data-theme')
-    const active  = isValidMode(saved) ? saved : isValidMode(current) ? current : 'dark'
-    setSelected(active)
-    document.documentElement.setAttribute('data-theme', active)
-  }, [])
-
-  const fetchConfig = useCallback(async () => {
-    try {
-      const res  = await fetch('/api/config/business')
-      if (!res.ok) return
-      const body = await res.json() as { ok: boolean; business: { theme: string } }
-      const t    = body.business.theme
-      if (isValidMode(t)) {
-        setSelected(t)
-        document.documentElement.setAttribute('data-theme', t)
-        localStorage.setItem('activopos_theme', t)
-      }
-    } catch {
-      // localStorage already applied — silent fallback
-    }
-  }, [])
-
-  useEffect(() => { void fetchConfig() }, [fetchConfig])
+  const [saving, setSaving] = useState(false)
 
   const selectTheme = (mode: ThemeMode) => {
-    setSelected(mode)
-    document.documentElement.setAttribute('data-theme', mode)
-    localStorage.setItem('activopos_theme', mode)
+    setTheme(mode)
   }
 
   const handleSave = async () => {

@@ -6,26 +6,28 @@
 
 ## Resumen ejecutivo
 
-| Estado         | Tests  | Seguridad              | Code Review |
-|----------------|--------|------------------------|-------------|
-| NO CERTIFICADO | 5/5 ✓  | 2 P1 activos (API)     | 6 hallazgos (2 P1, 2 P2, 2 P3) |
-
-**Bloqueantes:** 2 P1 de seguridad requieren fix de CLI-A antes de certificar.
+| Estado         | Tests  | Seguridad                        | Code Review |
+|----------------|--------|----------------------------------|-------------|
+| ✅ CERTIFICADO | 5/5 ✓  | P1 resueltos — commit 82ef219    | 6 hallazgos (0 P1, 2 P2, 2 P3) |
 
 ---
 
-## ESTADO PREVIO VERIFICADO
+## ESTADO VERIFICADO (re-cert 2026-06-19)
 
 ```
 git log --oneline -5:
+  82ef219 fix(sprint-15/CLI-A): P1 security — returns cashier guard + users IDOR + middleware
+  9b12bf2 redesign(sprint-15/CLI-B): catálogo público rediseñado mobile-first 2026
+  8336d1d test(sprint-15/CLI-C): certificación Sprint 15 — cotizaciones + devoluciones + usuarios
   f0e32a6 feat(sprint-15/CLI-A): cotizaciones + devoluciones + usuarios backend
   7aa55be feat(sprint-15/CLI-B): layout sweep + UI Usuarios completa
-  f7823df fix: gitignore storage reports + playwright-mcp logs + uploads
-  f2acfa7 docs+test+feat(sprint-14/CLI-D): 38 tests + PWA + SYSTEM_MAP v14 + HANDOFF15
-  369056b cert(sprint-14/CLI-C): Analytics CERTIFICADO 5/5 — AN05 fix middleware
 ```
 
 - ✓ TypeScript strict: `npx tsc --noEmit` → 0 errores
+- ✓ P1-1 resuelto: `returns/route.ts:71` cashier 403 en POST — commit 82ef219
+- ✓ P1-2 resuelto: `users/[id]/route.ts:57+79` business_id en where del update y delete — commit 82ef219
+- ✓ P2 resuelto: middleware ADMIN_ONLY con 5 rutas nuevas — commit 82ef219
+- ✓ P2 resuelto: `usuarios/page.tsx` page-container en raíz — commit 82ef219
 
 ---
 
@@ -239,30 +241,26 @@ Dos POSTs concurrentes obtienen el mismo `count` dentro de la misma transacción
 - [x] Anti-escalada en reset-pin (admin no puede resetear a admin)
 - [x] TypeScript strict: 0 errores
 - [x] 5/5 tests E2E verde
-- [ ] **P1 — `returns/route.ts:68` falta cashier guard en POST** (CLI-A)
-- [ ] **P1 — `users/[id]/route.ts:56` IDOR check-then-act en PATCH** (CLI-A)
+- [x] **P1 — `returns/route.ts:71` cashier guard en POST** — resuelto 82ef219
+- [x] **P1 — `users/[id]/route.ts:57+79` business_id en update/delete** — resuelto 82ef219
 
 ---
 
 ## Hallazgos pendientes por agente
 
-### Para CLI-A — BLOQUEANTES:
-| Severidad | Archivo | Acción |
+### Para CLI-A — RESUELTOS (commit 82ef219):
+| Severidad | Archivo | Estado |
 |-----------|---------|--------|
-| **P1** | returns/route.ts:68 | Añadir `if (session.role === 'cashier') return 403` en POST |
-| **P1** | users/[id]/route.ts:56 | `where: { id, business_id: session.businessId }` en update |
+| ~~P1~~ | returns/route.ts:71 | ✅ Cashier 403 en POST añadido |
+| ~~P1~~ | users/[id]/route.ts:57+79 | ✅ business_id en where de update y delete |
+| ~~P2~~ | middleware.ts:21 | ✅ 5 rutas nuevas en ADMIN_ONLY |
+| ~~P2~~ | usuarios/page.tsx:171 | ✅ page-container en raíz |
 
-### Para CLI-A — No bloqueantes:
+### Para CLI-A — Pendientes (no bloqueantes):
 | Severidad | Archivo | Acción |
 |-----------|---------|--------|
-| P2 | middleware.ts:21 | Añadir `/cotizaciones`, `/devoluciones`, `/usuarios`, `/api/returns`, `/api/users` a ADMIN_ONLY |
 | P3 | quotations/route.ts:108 | Añadir UNIQUE constraint en `(business_id, number)` para evitar duplicados race condition |
 | P3 | quotations/route.ts:22 | `expireStale()` debería ser lazy o job periódico |
-
-### Para CLI-B:
-| Severidad | Archivo | Acción |
-|-----------|---------|--------|
-| P2 | usuarios/page.tsx:171 | Añadir `page-container` a className raíz |
 
 ---
 

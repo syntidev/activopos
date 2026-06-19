@@ -162,7 +162,16 @@
   --focus-ring-offset: 0 0 0 4px var(--color-bg), 0 0 0 6px var(--color-brand);
 
   /* ── Accent RGB + Card A+C Glow ── */
-  --accent-rgb: 37, 99, 235;
+  --accent-rgb:   37, 99, 235;
+
+  /* ── Tokens RGB semánticos — Sprint 10 (DT-007) ── */
+  --success-rgb:  29, 158, 117;
+  --danger-rgb:   239, 68, 68;
+  --whatsapp-rgb: 37, 211, 102;
+  --violet-rgb:   124, 58, 237;
+  --pink-rgb:     236, 72, 153;
+  --cyan-rgb:     8, 145, 178;
+  --purple-rgb:   109, 40, 217;
   --card-glow-outline: rgba(var(--accent-rgb), 0.22);
 
   /* Subtle gradient — section cards, secondary panels */

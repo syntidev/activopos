@@ -816,7 +816,7 @@
   display:         flex;
   align-items:     center;
   gap:             var(--space-2);
-  box-shadow:      0 4px 16px rgba(37, 211, 102, 0.4);
+  box-shadow:      0 4px 16px rgba(var(--whatsapp-rgb), 0.4);
   text-decoration: none;
   transition:      transform var(--transition-fast), box-shadow var(--transition-fast);
   z-index:         var(--z-sticky);
@@ -827,7 +827,7 @@
 
 .waFab:hover {
   transform:  translateY(-3px) scale(1.03);
-  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.5);
+  box-shadow: 0 8px 24px rgba(var(--whatsapp-rgb), 0.5);
 }
 
 @media (max-width: 479px) {

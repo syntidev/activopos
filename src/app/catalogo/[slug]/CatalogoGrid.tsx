@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search, CheckCircle } from 'lucide-react'
+import { Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search, CheckCircle, Star } from 'lucide-react'
 import styles from './catalogo.module.css'
 
 export interface CatalogProduct {
@@ -13,6 +13,8 @@ export interface CatalogProduct {
   priceUsd:     number
   priceBs:      number | null
   outOfStock:   boolean
+  isService:    boolean
+  stockQty:     number | null
   badge:        string | null
   subcategory:  string | null
   isFeatured:   boolean
@@ -296,7 +298,7 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                 className={`${styles.tab} ${active === FEATURED_KEY ? styles.tabActive : ''}`}
                 onClick={() => setActive(FEATURED_KEY)}
               >
-                ⭐ Destacados
+                <Star size={14} aria-hidden="true" className={styles.tabIcon} /> Destacados
               </button>
             )}
             <button
@@ -357,7 +359,7 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                   className={`${styles.categoryItem} ${active === FEATURED_KEY ? styles.categoryItemActive : ''}`}
                   onClick={() => setActive(FEATURED_KEY)}
                 >
-                  <span className={styles.categoryName}>⭐ Destacados</span>
+                  <span className={styles.categoryName}><Star size={14} aria-hidden="true" className={styles.categoryIcon} /> Destacados</span>
                   <span className={styles.categoryCount}>{products.filter(p => p.isFeatured).length}</span>
                 </button>
               )}
@@ -450,7 +452,15 @@ export function CatalogoGrid({ products, categories, slug, rate, paymentMethods 
                       </div>
                     )}
                     {p.outOfStock && <span className={styles.badgeSinStock}>Sin stock</span>}
-                    {!p.outOfStock && p.badge && p.badge !== 'none' && getBadgeClass(p.badge) && (
+                    {!p.outOfStock && p.isService && (
+                      <span className={styles.badgeDisponible}>Disponible</span>
+                    )}
+                    {!p.outOfStock && !p.isService && p.stockQty !== null && p.stockQty > 0 && (
+                      <span className={styles.badgeStock}>
+                        {p.stockQty <= 5 ? `Últimas ${p.stockQty}` : `${p.stockQty} disponibles`}
+                      </span>
+                    )}
+                    {!p.outOfStock && !p.isService && p.badge && p.badge !== 'none' && getBadgeClass(p.badge) && (
                       <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
                         {BADGE_LABEL[p.badge]}
                       </span>

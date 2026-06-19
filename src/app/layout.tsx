@@ -44,7 +44,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" data-theme="dark" suppressHydrationWarning>
-      <body className={inter.variable}>{children}</body>
+      <body className={inter.variable}>
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}`
+          }}
+        />
+      </body>
     </html>
   )
 }

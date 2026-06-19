@@ -9,17 +9,19 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 13                                                              |
-| Último commit      | 707b27c — cert(sprint-13/CLI-C): certificación catálogo admin CA01-CA05|
+| Último sprint      | Sprint 14                                                              |
+| Último commit      | (ver git log — post Sprint 14)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 33/33 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 38/38 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
-Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ⏳
+Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅
 ```
+
+**CORE COMPLETADO — todos los módulos del roadmap v1 certificados.**
 
 | Módulo          | Estado               | Sprint | Evidencia                                                      |
 |-----------------|----------------------|--------|----------------------------------------------------------------|
@@ -31,7 +33,8 @@ Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Cat
 | Reportes        | ✅ CERTIFICADO        | 11     | R01-R05: daily, top products, PDF, mensual, token              |
 | Finanzas        | ✅ CERTIFICADO        | 12     | F01-F05: P&L, PE, gastos, CxC, role guard cashier              |
 | Catálogo admin  | ✅ CERTIFICADO        | 13     | CA01-CA05: métricas, QR, bulk toggle, link, orders             |
-| Analytics       | ⏳ DESBLOQUEADO       | 14     | Siguiente sprint — catálogo completado                         |
+| Analytics       | ✅ CERTIFICADO        | 14     | AN01-AN05: page load, no NaN, período, chart, role guard       |
+| PWA             | ✅ IMPLEMENTADO       | 14     | DT-004: sw.js + offline.html + manifest.json + íconos          |
 
 ---
 
@@ -51,6 +54,7 @@ Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Cat
 | `/caja/historial`     | `src/app/(dashboard)/caja/historial/page.tsx`    | JWT      |                                |
 | `/reportes`           | `src/app/(dashboard)/reportes/page.tsx`          | JWT      | Certificado ✅ Sprint 11       |
 | `/finanzas`           | `src/app/(dashboard)/finanzas/page.tsx`          | JWT      | CxC, CxP, Gastos, Resumen      |
+| `/analytics`          | `src/app/(dashboard)/analytics/page.tsx`         | JWT admin| Pulso del Negocio ✅ Sprint 14 |
 | `/catalogo-digital`   | `src/app/(dashboard)/catalogo-digital/page.tsx`  | JWT admin| Métricas QR + bulk toggle ✅ 13|
 | `/configuracion`      | `src/app/(dashboard)/configuracion/page.tsx`     | JWT      |                                |
 | `/devoluciones`       | `src/app/(dashboard)/devoluciones/page.tsx`      | JWT      |                                |
@@ -86,6 +90,13 @@ PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
 | GET      | `/api/cash/status`       | Stats del turno activo             |
 | GET\|POST| `/api/cash/movement`     | Entradas/salidas de efectivo       |
 | GET      | `/api/cash/history`      | Historial de registros             |
+
+### Analytics (JWT, admin/super_admin — cashier → 403)
+| Método | Endpoint                              | Notas                                             |
+|--------|---------------------------------------|---------------------------------------------------|
+| GET    | `/api/analytics/summary`              | ✅ Sprint 14 — KPIs, vs_anterior, por método, insights|
+| GET    | `/api/analytics/top-products`         | ✅ Sprint 14 — ORDER BY qty DESC, tendencia up/down|
+| GET    | `/api/analytics/trends`               | ✅ Sprint 14 — week/month/quarter, 12 períodos     |
 
 ### Catálogo admin (JWT, admin/super_admin)
 | Método | Endpoint                           | Notas                                              |
@@ -290,7 +301,13 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 ## 5. ÚLTIMOS 15 COMMITS
 
 ```
-[ver luego vía git log --oneline -15]   ← Sprint 13 commits añadidos
+[ver luego vía git log --oneline -15]   ← Sprint 14 commits añadidos
+(Sprint 14 commit)  docs+test+feat(sprint-14/CLI-D): 38 tests + PWA + SYSTEM_MAP v14 + HANDOFF15
+2f6d021  feat(sprint-14/CLI-B): Analytics UI — Pulso del Negocio
+f4127a1  fix: tsconfig.json excluye playwright y tests del build de produccion
+7357fd3  fix+feat(sprint-14/CLI-A): P1/P2/P3 fixes catálogo+finanzas + analytics backend
+0140a4d  fix(sprint-14/CLI-B): P1/P2 catálogo — quickToggle, bulkUpdate, label, token CSS
+ed34ee9  docs+test(sprint-13/CLI-D): 33 tests + DT-023 spec + SYSTEM_MAP v13 + HANDOFF Sprint 14
 707b27c  cert(sprint-13/CLI-C): certificación catálogo admin — CA01-CA05
 9a359f6  feat(sprint-13/CLI-B): UI catálogo digital admin — métricas + QR + visibilidad bulk
 ed83ba7  fix+feat(sprint-13/CLI-A): DT-025/027/028/029/031 + catálogo admin API
@@ -317,7 +334,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-001 | P1  | ✅ RESUELTO       | dollarRate sin business_id — datos cross-tenant         | 10       |
 | DT-002 | P1  | ✅ CONFIRMADO     | sold_at correcto en todos los paths                     | 10       |
 | DT-003 | P1  | ✅ RESUELTO       | SaleAbono sin cash_register_id                          | 10       |
-| DT-004 | P2  | ❌ PENDIENTE      | Service Worker / PWA ausente                            | 12       |
+| DT-004 | P2  | ✅ RESUELTO       | Service Worker PWA — sw.js + offline.html + manifest   | 14       |
 | DT-005 | P1  | ✅ RESUELTO       | CashMovement sin business_id — filtro cross-tenant      | 10       |
 | DT-006 | P2  | ✅ RESUELTO       | Emojis en UI → Lucide icons en CatalogoGrid             | 10       |
 | DT-007 | P2  | ✅ RESUELTO       | 7 tokens RGB faltantes + sweep 9 módulos CSS            | 10       |
@@ -344,6 +361,11 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-028 | P2  | ✅ RESUELTO       | egresos.total_usd excluía cuentas_pagadas              | 13       |
 | DT-029 | P2  | ✅ RESUELTO       | gastos/resumen raw SQL para rate → readCachedBcvRate() | 13       |
 | DT-031 | P2  | ✅ RESUELTO       | parsePeriod() DRY en lib/finanzas.ts (3 copias → 1)    | 13       |
+| DT-032 | P1  | ✅ RESUELTO       | quickToggle catálogo sin try/catch — crash silencioso   | 14       |
+| DT-033 | P1  | ✅ RESUELTO       | bulkUpdate catálogo sin await load() post-update        | 14       |
+| DT-034 | P2  | ✅ RESUELTO       | metrics ?? 'visible' — valor default incorrecto         | 14       |
+| DT-035 | P2  | ✅ RESUELTO       | ingresos double-count incluía abonos duplicados         | 14       |
+| DT-036 | P3  | ✅ RESUELTO       | catalog_url hardcodeada — ahora usa NEXT_PUBLIC_APP_URL | 14       |
 
 ---
 
@@ -360,6 +382,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | Slug validado con regex                  | `/^[a-z0-9-]{3,50}$/` antes de cualquier query             | ✅            |
 | Stock descuenta solo en paid             | `sales/route.ts` — status check explícito                   | ✅            |
 | Role guard cashier en finanzas           | 5 endpoints — 403 si role === 'cashier'                     | ✅ Sprint 10  |
+| Role guard cashier en analytics          | 3 endpoints + middleware ADMIN_ONLY — 403/redirect          | ✅ Sprint 14  |
 | Import limit 5MB                         | `products/import/route.ts` — Content-Length check           | ✅ Sprint 10  |
 | dollarRate con business_id               | migration 20260619051022                                    | ✅ Sprint 10  |
 | SaleAbono con cash_register_id           | migration 20260619051109                                    | ✅ Sprint 10  |
@@ -385,6 +408,7 @@ src/
 │   │   ├── caja/page.tsx + historial/    ← pendiente certificación
 │   │   ├── reportes/page.tsx
 │   │   ├── finanzas/page.tsx
+│   │   ├── analytics/page.tsx              ← Pulso del Negocio ✅ Sprint 14
 │   │   ├── configuracion/page.tsx
 │   │   ├── devoluciones/page.tsx
 │   │   ├── tu-dia/page.tsx
@@ -416,10 +440,35 @@ src/
     ├── finanzas-core.spec.ts             ← 5/5 ✅
     ├── services-and-catalog.spec.ts      ← 7/7 ✅ timeout 6s anti-flaky
     ├── catalogo-admin.spec.ts            ← 5/5 ✅ Sprint 13 CA01-CA05
+    ├── analytics-core.spec.ts            ← 5/5 ✅ Sprint 14 AN01-AN05
     ├── auth.setup.ts
     └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
 
 ---
 
-*Generado: 2026-06-19 | HEAD: 9bbf473 | Sprint 12 cierre | CLI-D modo EJECUCIÓN*
+---
+
+## 9. TESTS E2E — 38/38
+
+| Archivo                          | Tests | Estado |
+|----------------------------------|-------|--------|
+| `pos-core.spec.ts`               | 6     | ✅     |
+| `caja-core.spec.ts`              | 5     | ✅     |
+| `reportes-core.spec.ts`          | 5     | ✅     |
+| `finanzas-core.spec.ts`          | 5     | ✅ F05 usa playwright.request (rate limit fix) |
+| `services-and-catalog.spec.ts`   | 7     | ✅     |
+| `catalogo-admin.spec.ts`         | 5     | ✅     |
+| `analytics-core.spec.ts`         | 5     | ✅ AN05 usa playwright.request + cookie transfer |
+| **TOTAL**                        | **38**| ✅     |
+
+**Notas de infraestructura:**
+- `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
+- `afterAll` en caja-core.spec.ts usa `storageState` para reabrir caja con auth
+- F05 y AN05 usan `playwright.request.newContext()` para evitar rate limiter del login form
+- AN05 transfiere cookie via `apiCtx.storageState()` → `browser.newContext({ storageState })`
+
+---
+
+*Generado: 2026-06-19 | Sprint 14 cierre | CLI-D modo EJECUCIÓN*
+*Core completado: todos los módulos del roadmap v1 certificados con 38/38 E2E*

@@ -8,7 +8,6 @@ const PUBLIC_PREFIXES = [
   '/catalogo/',
   '/api/catalog/',
   '/api/r/',                              // descarga pública de reportes por token
-  '/onboarding/',
   '/api/onboarding/',
 ]
 
@@ -21,6 +20,7 @@ const PUBLIC_EXACT = new Set([
 ])
 
 const ADMIN_ONLY = [
+  '/onboarding',
   '/configuracion',
   '/finanzas',
   '/api/reports',

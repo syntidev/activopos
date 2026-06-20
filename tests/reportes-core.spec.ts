@@ -120,17 +120,17 @@ test.describe('Reportes Core — Certificación Sprint 11', () => {
     }
 
     await page.goto(`${BASE}/reportes`)
-    await page.waitForLoadState('domcontentloaded')
+    // Wait for initial fetch (today's date) to complete before changing date,
+    // otherwise both fetches race and the wrong one may win.
+    await page.waitForLoadState('networkidle')
 
-    // Establecer fecha con datos conocidos ANTES de esperar KPIs
     const dateInput = page.locator('input[type="date"]')
     await expect(dateInput).toBeVisible({ timeout: 8_000 })
     await dateInput.fill('2026-06-19')
-    // Disparar change event
     await dateInput.dispatchEvent('change')
 
-    // Esperar que el spinner desaparezca y aparezcan datos
-    await page.waitForTimeout(3_000)
+    // Wait for the June-19 fetch to complete
+    await page.waitForLoadState('networkidle')
 
     // Verificar que el botón exportar está habilitado (implica que data.salesCount > 0)
     const exportBtn = page.getByRole('button', { name: /Exportar PDF/i })

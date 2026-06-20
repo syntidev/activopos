@@ -1,5 +1,5 @@
 # SYSTEM_MAP — ActivoPOS
-# Generado desde código real — 2026-06-19
+# Generado desde código real — 2026-06-20
 # Fuente: find, grep, prisma/schema.prisma, git log
 # NO editar a mano — regenerar con el prompt CLI-C
 
@@ -9,16 +9,16 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 15                                                              |
-| Último commit      | (ver git log — post Sprint 15)                                         |
+| Último sprint      | Sprint 16                                                              |
+| Último commit      | (ver git log — post Sprint 16)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 47/47 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 52/52 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
-Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ → Sprint 15 ✅
+Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ → Sprint 15 ✅ → Onboarding ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados.**
@@ -39,6 +39,8 @@ Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Cat
 | Devoluciones        | ✅ CERTIFICADO        | 15     | R01-R02: page load, 404 venta inexistente                      |
 | Usuarios            | ✅ CERTIFICADO        | 15     | U01: page load, CRUD UI completa                               |
 | Expense Categories  | ✅ CERTIFICADO        | 15     | EX01-EX04: CRUD categorías, 409 dup, category_id en gasto      |
+| DT-023 UI           | ✅ CERTIFICADO        | 16     | select gastos en /finanzas + gestión en /configuracion         |
+| Onboarding          | ✅ CERTIFICADO        | 16     | ON01-ON05: wizard UI, check-slug, setup 201, cajero bloqueado  |
 
 ---
 
@@ -65,13 +67,16 @@ Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Cat
 | `/tu-dia`             | `src/app/(dashboard)/tu-dia/page.tsx`            | JWT      |                                |
 | `/usuarios`           | `src/app/(dashboard)/usuarios/page.tsx`          | JWT      |                                |
 | `/ayuda`              | `src/app/(dashboard)/ayuda/page.tsx`             | JWT      |                                |
-| `/onboarding`         | `src/app/(dashboard)/onboarding/page.tsx`        | JWT      |                                |
+| `/onboarding`         | `src/app/(dashboard)/onboarding/page.tsx`        | JWT admin| Wizard 4 pasos ✅ Sprint 16 — cajero bloqueado |
 | `/catalogo-digital`   | `src/app/(dashboard)/catalogo-digital/page.tsx`  | JWT admin| Métricas + QR + bulk toggle ✅ |
 | `/catalogo/[slug]`    | `src/app/catalogo/[slug]/page.tsx`               | pública  | SSR + CatalogoGrid client      |
 
 **Middleware público** (`src/middleware.ts`):
 ```
-PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
+PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/', '/api/onboarding/']
+ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', '/api/analytics',
+                   '/api/quotations', '/cotizaciones', '/devoluciones', '/usuarios',
+                   '/api/returns', '/api/users', '/onboarding/']
 ```
 
 ---
@@ -218,11 +223,22 @@ PUBLIC_PREFIXES = ['/login', '/api/auth/', '/catalogo/', '/api/catalog/']
 | GET\|POST     | `/api/users`      |
 | PATCH\|DELETE | `/api/users/[id]` |
 
+### Onboarding (público — con rate limit, sin JWT)
+| Método | Endpoint                        | Notas                                                              |
+|--------|---------------------------------|--------------------------------------------------------------------|
+| GET    | `/api/onboarding/check-slug`    | ✅ Sprint 16 — devuelve `{ available: boolean }`, rate-limited     |
+| POST   | `/api/onboarding/setup`         | ✅ Sprint 16 — crea business + admin en transaction, 409 slug dup  |
+
+**Reglas de seguridad onboarding:**
+- `business_slug` único globalmente (409 si ya existe)
+- Password hasheada con bcrypt antes de almacenar
+- Rate limiter activo — retorna 429 si se excede
+- Token JWT emitido como cookie HTTP-only (NO en el body de respuesta)
+
 ### Misc
 | Método        | Endpoint                   | Notas                            |
 |---------------|----------------------------|----------------------------------|
 | POST          | `/api/upload/image`        | ⚠️ DT-016 MIME spoofing backlog  |
-| PATCH\|DELETE | `/api/onboarding/complete` |                                  |
 
 ---
 
@@ -306,8 +322,9 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 | 9  | 20260619051022_add_business_id_to_dollar_rates          | 2026-06-19  |
 | 10 | 20260619051109_add_cash_register_id_to_sale_abonos      | 2026-06-19  |
 | 11 | 20260619055722_add_product_visibility                   | 2026-06-19  |
-| 12 | 20260619_quotations_returns_users (Sprint 15)           | 2026-06-19  |
-| 13 | 20260619174857_expense_categories                       | 2026-06-19  |
+| 12 | 20260619075145_add_monthly_reports                      | 2026-06-19  |
+| 13 | 20260619162814_add_quotations_returns                   | 2026-06-19  |
+| 14 | 20260619174857_expense_categories                       | 2026-06-19  |
 
 ---
 
@@ -366,7 +383,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-020 | P3  | ❌ PENDIENTE      | Export Excel en reportes                                | 13       |
 | DT-021 | P2  | ❌ PENDIENTE      | Export Excel en finanzas                                | 13       |
 | DT-022 | P3  | ❌ BACKLOG        | Gastos recurrentes (definir una vez, pagar mensual)     | Backlog  |
-| DT-023 | P3  | ✅ RESUELTO       | Expense Categories — schema + API + seed + tests EX01-04| 15       |
+| DT-023 | P3  | ✅ RESUELTO       | Expense Categories — backend Sprint 15 + UI Sprint 16   | 15+16    |
 | DT-024 | P1  | ✅ RESUELTO       | Infinity% en ResumenSection — safePct() + sin_margen   | 13       |
 | DT-025 | P2  | ✅ RESUELTO       | punto-equilibrio PE=0 con gastos=0 — early return      | 13       |
 | DT-026 | P3  | ❌ PENDIENTE      | regex diacríticos en r/[token]/route.ts                | Backlog  |
@@ -443,18 +460,21 @@ src/
 │   ├── pos.ts                            ← Motor de cálculo POS
 │   └── rate-limit.ts                     ← IP rate limiting
 ├── styles/
-│   ├── tokens.css                        ← Design tokens + 10 temas por segmento
+│   ├── tokens.css                        ← Design tokens v2.0 — teal #0D9488 + amber #D97706 añadidos Sprint 16
 │   └── globals.css
 ├── types/
 └── tests/
     ├── pos-core.spec.ts                  ← 6/6 ✅ POS certificado
     ├── caja-core.spec.ts                 ← 5/5 ✅ afterAll fix: storageState
-    ├── reportes-core.spec.ts             ← 5/5 ✅
+    ├── reportes-core.spec.ts             ← 5/5 ✅ R03: networkidle fix
     ├── finanzas-core.spec.ts             ← 5/5 ✅
     ├── services-and-catalog.spec.ts      ← 7/7 ✅ timeout 6s anti-flaky
     ├── catalogo-admin.spec.ts            ← 5/5 ✅ Sprint 13 CA01-CA05
     ├── analytics-core.spec.ts            ← 5/5 ✅ Sprint 14 AN01-AN05
-    ├── auth.setup.ts
+    ├── sprint15-core.spec.ts             ← 5/5 ✅ Sprint 15 Q01-Q02 R01-R02 U01
+    ├── expense-categories.spec.ts        ← 4/4 ✅ Sprint 15 DT-023 EX01-EX04
+    ├── onboarding.spec.ts                ← 5/5 ✅ Sprint 16 ON01-ON05
+    ├── .auth-state.json                  ← JWT admin — expira cada 8h, refrescar antes de tests
     └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
 
@@ -462,26 +482,38 @@ src/
 
 ---
 
-## 9. TESTS E2E — 38/38
+## 9. TESTS E2E — 52/52
 
 | Archivo                          | Tests | Estado |
 |----------------------------------|-------|--------|
 | `pos-core.spec.ts`               | 6     | ✅     |
 | `caja-core.spec.ts`              | 5     | ✅     |
-| `reportes-core.spec.ts`          | 5     | ✅     |
+| `reportes-core.spec.ts`          | 5     | ✅ R03: networkidle fix (race condition fecha default vs fill) |
 | `finanzas-core.spec.ts`          | 5     | ✅ F05 usa playwright.request (rate limit fix) |
 | `services-and-catalog.spec.ts`   | 7     | ✅     |
 | `catalogo-admin.spec.ts`         | 5     | ✅     |
 | `analytics-core.spec.ts`         | 5     | ✅ AN05 usa playwright.request + cookie transfer |
-| **TOTAL**                        | **38**| ✅     |
+| `sprint15-core.spec.ts`          | 5     | ✅ Q01-Q02, R01-R02, U01 |
+| `expense-categories.spec.ts`     | 4     | ✅ EX01-EX04 — DT-023 backend |
+| `onboarding.spec.ts`             | 5     | ✅ ON01-ON05 — Sprint 16 |
+| **TOTAL**                        | **52**| ✅     |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
 - `afterAll` en caja-core.spec.ts usa `storageState` para reabrir caja con auth
-- F05 y AN05 usan `playwright.request.newContext()` para evitar rate limiter del login form
-- AN05 transfiere cookie via `apiCtx.storageState()` → `browser.newContext({ storageState })`
+- F05, AN05, ON05 usan `playwright.request.newContext()` para evitar rate limiter del login form
+- AN05/ON05 transfieren cookie via `apiCtx.storageState()` → `browser.newContext({ storageState })`
+- R03: usa `waitForLoadState('networkidle')` dos veces para eliminar race condition entre fetch inicial (todayStr) y fill de fecha fija
+
+**JWT auth-state — gestión:**
+- `tests/.auth-state.json` expira cada 8h — si los tests fallan en masa, refrescar con:
+  ```powershell
+  $r = Invoke-WebRequest -Uri "http://localhost:3000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"email":"admin@activopos.com","password":"admin123"}' -UseBasicParsing
+  # Copiar token del header Set-Cookie → actualizar tests/.auth-state.json (ver HANDOFF_Sprint17.md)
+  ```
+- Síntoma de JWT expirado: pruebas que esperan HTML (`<!DOCTYPE`) en respuestas API, o páginas que redirigen a `/login`
 
 ---
 
-*Generado: 2026-06-19 | Sprint 14 cierre | CLI-D modo EJECUCIÓN*
-*Core completado: todos los módulos del roadmap v1 certificados con 38/38 E2E*
+*Generado: 2026-06-20 | Sprint 16 cierre | CLI-D modo EJECUCIÓN*
+*Core + Onboarding certificados: 52/52 E2E — next-themes, DT-023 UI, wizard 4 pasos, tokens v2.0*

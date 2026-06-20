@@ -6,12 +6,22 @@
 
 ## Resumen ejecutivo
 
-| Estado              | Tests  | Seguridad                              | Code Review |
-|---------------------|--------|----------------------------------------|-------------|
-| ⚠️ NOT CERTIFICADO | 4/5 ✗  | P2 pendiente → ON05 falla (CLI-A)     | 1 P2, 1 P3  |
+| Estado          | Tests  | Seguridad                         | Code Review |
+|-----------------|--------|-----------------------------------|-------------|
+| ✅ CERTIFICADO  | 5/5 ✓  | P2 resuelto — middleware.ts:23    | 0 P1, 0 P2, 1 P3 |
 
-**Bloqueante:** `/onboarding` no está en `ADMIN_ONLY` → cajero puede acceder al wizard.
-**No bloqueante:** next-themes integrado correctamente, page-container sweep limpio.
+## ESTADO VERIFICADO (re-cert 2026-06-19)
+
+```
+git log --oneline -3:
+  c8dcbdd test(sprint-16/CLI-C): certificación Sprint 16 — onboarding wizard + next-themes + layout sweep
+  12bcda0 fix(sprint-16): segment en PATCH /api/config/business + race condition wizard
+  c822733 fix(onboarding): rate limit check-slug + corrige prefix /onboarding/ en middleware
+```
+
+- ✓ TypeScript strict: `npx tsc --noEmit` → 0 errores
+- ✓ P2 resuelto: `/onboarding` en ADMIN_ONLY (middleware.ts:23) — commit c822733
+- ✓ 5/5 ON01-ON05 en 10.0s
 
 ---
 
@@ -185,9 +195,9 @@ Búsqueda en `src/app/(dashboard)/**/*.tsx`:
 | ON02 | ✓   | GET check-slug slug válido → 200 `{ available: boolean }`            | PASS   |
 | ON03 | ✓   | POST setup slug duplicado → 409 `{ field: 'business_slug' }`         | PASS   |
 | ON04 | ✓   | POST setup válido → 201 `{ ok, business_id }` — token en cookie, no body | PASS |
-| ON05 | ✗   | Cajero en /onboarding → redirigido (FALLA — P2 pendiente)            | FAIL   |
+| ON05 | ✓   | Cajero en /onboarding → redirigido a /pos                            | PASS   |
 
-**4/5 en 24.1s** — chromium headless. ON05 falla confirmando P2.
+**5/5 en 10.0s** — chromium headless.
 
 ---
 
@@ -204,16 +214,16 @@ Búsqueda en `src/app/(dashboard)/**/*.tsx`:
 - [x] `suppressHydrationWarning` en `<html>`
 - [x] Layout sweep: todos los módulos dashboard con `page-container` ✓
 - [x] TypeScript strict: 0 errores
-- [ ] **P2 — `/onboarding` no en ADMIN_ONLY** → cajero accede al wizard (ON05 falla)
+- [x] **P2 — `/onboarding` en ADMIN_ONLY** → cajero redirigido a /pos (commit c822733) ✓
 
 ---
 
 ## Hallazgos pendientes por agente
 
-### Para CLI-A — P2 BLOQUEANTE:
-| Severidad | Archivo | Acción |
+### Para CLI-A — RESUELTOS:
+| Severidad | Archivo | Estado |
 |-----------|---------|--------|
-| **P2** | `middleware.ts:23` | Añadir `/onboarding` a ADMIN_ONLY → cajero redirigido a /pos |
+| ~~P2~~ | `middleware.ts:23` | ✅ `/onboarding` en ADMIN_ONLY — commit c822733 |
 
 ### Para CLI-A — No bloqueante:
 | Severidad | Archivo | Acción |

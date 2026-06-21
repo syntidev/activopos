@@ -188,7 +188,7 @@
   letter-spacing: 0.05em;
   padding:        0 0 var(--space-3);
   text-align:     left;
-  border-bottom:  1px solid var(--color-border-subtle);
+  border-bottom:  2px solid rgba(var(--brand-rgb), 0.20);
 }
 
 .right  { text-align: right; }
@@ -198,7 +198,8 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.topTr:hover { background: rgba(var(--accent-rgb), 0.04); }
+.topTr:nth-child(even) td { background: rgba(var(--brand-rgb), 0.03); }
+.topTr:hover             { background: rgba(var(--brand-rgb), 0.04); }
 
 .topTd {
   padding:        var(--space-2-5) 0;

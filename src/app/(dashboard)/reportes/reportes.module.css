@@ -242,7 +242,7 @@
   color:          var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-bottom:  1px solid var(--color-border);
+  border-bottom:  2px solid rgba(var(--brand-rgb), 0.20);
   text-align:     left;
   white-space:    nowrap;
 }
@@ -263,9 +263,8 @@
   background: rgba(var(--accent-rgb), 0.03);
 }
 
-.reportTable tbody tr:hover {
-  background: rgba(var(--accent-rgb), 0.06);
-}
+.reportTable tbody tr:hover            { background: rgba(var(--brand-rgb), 0.04); }
+.reportTable tbody tr:last-child .td   { border-bottom: none; }
 
 .totalBold {
   font-weight:          var(--weight-semibold);

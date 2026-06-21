@@ -203,7 +203,7 @@
   color: var(--color-text-muted);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 2px solid rgba(var(--brand-rgb), 0.20);
   white-space: nowrap;
   background: var(--color-surface);
 }
@@ -222,9 +222,8 @@
   border-bottom: none;
 }
 
-.tr:hover {
-  background-color: var(--color-surface-2);
-}
+.tr:nth-child(even) { background: rgba(var(--brand-rgb), 0.03); }
+.tr:hover           { background-color: rgba(var(--brand-rgb), 0.04); }
 
 .tr:hover .rowActions {
   opacity: 1;

@@ -91,7 +91,7 @@
 
 .thead {
   background-color: var(--color-surface-2);
-  border-bottom: var(--border-width-thin) solid var(--color-border);
+  border-bottom: 2px solid rgba(var(--brand-rgb), 0.20);
 }
 
 .th {
@@ -111,8 +111,9 @@
   border-bottom: var(--border-width-thin) solid var(--color-border-subtle);
   transition: background-color var(--transition-fast);
 }
-.row:last-child { border-bottom: none; }
-.row:hover { background-color: var(--color-surface-2); }
+.row:last-child       { border-bottom: none; }
+.row:nth-child(even)  { background: rgba(var(--brand-rgb), 0.03); }
+.row:hover            { background-color: rgba(var(--brand-rgb), 0.04); }
 
 .td {
   padding: var(--space-3-5) var(--space-4);

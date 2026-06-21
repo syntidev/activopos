@@ -116,7 +116,7 @@
 
 .variant-danger {
   background-color: var(--color-danger);
-  color: #fff;
+  color: var(--color-text-on-brand);
   border-color: var(--color-danger);
 }
 .variant-danger:hover:not(:disabled) {
@@ -132,7 +132,7 @@
 
 .variant-success {
   background-color: var(--color-success);
-  color: #fff;
+  color: var(--color-text-on-brand);
   border-color: var(--color-success);
 }
 .variant-success:hover:not(:disabled) {
@@ -145,7 +145,7 @@
 
 .variant-cta {
   background-color: var(--cta);
-  color: #fff;
+  color: var(--cta-on);
   border-color: var(--cta);
 }
 .variant-cta:hover:not(:disabled) {

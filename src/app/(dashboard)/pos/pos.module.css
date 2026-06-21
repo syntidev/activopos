@@ -776,8 +776,8 @@
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
-  background: var(--color-danger, #ef4444);
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--color-text-on-brand);
   font-size: var(--text-2xs);
   font-weight: var(--weight-bold);
   border-radius: var(--radius-full);

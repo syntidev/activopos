@@ -131,7 +131,7 @@
 
 .toggleInput:checked ~ .toggleThumb {
   transform: translateX(18px);
-  background: #fff;
+  background: var(--toggle-thumb);
 }
 
 .toggle:focus-within .toggleTrack {
@@ -373,7 +373,7 @@
   width: 20px;
   height: 20px;
   background: rgba(0, 0, 0, 0.6);
-  color: #fff;
+  color: var(--color-text-on-brand);
   border: none;
   border-radius: var(--radius-full);
   display: flex;
@@ -502,7 +502,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-brand);
-  color: #fff;
+  color: var(--color-text-on-brand);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;

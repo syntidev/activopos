@@ -339,9 +339,9 @@
 }
 
 .stockLow {
-  background: var(--color-warning-subtle);
-  color: var(--color-warning-text);
-  border-color: var(--color-warning-border);
+  background: var(--cta-soft);
+  color: var(--cta);
+  border-color: var(--cta-border);
 }
 
 .stockOut {

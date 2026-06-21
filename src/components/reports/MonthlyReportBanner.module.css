@@ -77,7 +77,7 @@
   height:      34px;
   padding:     0 var(--space-4);
   background:  var(--color-brand);
-  color:       #fff;
+  color:       var(--color-text-on-brand);
   border:      none;
   border-radius: var(--radius-md);
   font-size:   var(--text-sm);

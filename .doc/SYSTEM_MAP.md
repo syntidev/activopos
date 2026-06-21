@@ -9,17 +9,18 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 17                                                              |
-| Último commit      | (ver git log — post Sprint 17)                                         |
+| Último sprint      | Sprint 18                                                              |
+| Último commit      | c5743a8 (ver git log)                                                  |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 57/57 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 62/62 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
 Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ →
-Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅
+Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅ →
+Mobile POS ✅ → Export Excel ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados.**
@@ -44,6 +45,8 @@ Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅
 | Onboarding          | ✅ CERTIFICADO        | 16     | ON01-ON05: wizard UI, check-slug, setup 201, cajero bloqueado  |
 | Tokens v3.0         | ✅ CERTIFICADO        | 17     | ES01: sin #2563EB/#1E3A5F, light/dark light por defecto        |
 | Escritorio v3.0     | ✅ CERTIFICADO        | 17     | ES01-ES05: teal KPIs, theme toggle, 0 hydration errors         |
+| Mobile POS          | ✅ CERTIFICADO        | 18     | MO01-MO04: drawer, FAB carrito, badge, responsive sin overflow |
+| Export Excel        | ✅ CERTIFICADO        | 18     | MO05: botón visible + GET /api/reports/export-excel 200 xlsx   |
 
 ---
 
@@ -166,6 +169,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | GET       | `/api/finanzas/punto-equilibrio`     | ✅ PE con proyección — F02                           |
 | GET\|POST | `/api/finanzas/categorias`           | ✅ DT-023 Sprint 15 — CRUD categorías de gastos      |
 | PATCH     | `/api/finanzas/categorias/[id]`      | ✅ DT-023 Sprint 15 — editar/desactivar              |
+| GET       | `/api/finanzas/export-excel`         | ✅ DT-021 Sprint 18 — xlsx gastos/CxP export         |
 
 ### Inventario
 | Método    | Endpoint          |
@@ -208,6 +212,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | GET       | `/api/reports/sales`                   |                                       |
 | POST      | `/api/reports/monthly/generate`        | ✅ lazy gen, token 30 días — R04      |
 | GET       | `/api/r/[token]`                       | ✅ descarga PDF sin auth — R05        |
+| GET       | `/api/reports/export-excel`            | ✅ DT-020 Sprint 18 — xlsx, content-type spreadsheetml |
 | POST      | `/api/reports/monthly/mark-pending`    | ❌ Pendiente Sprint 13 (n8n trigger)  |
 | GET       | `/api/reports/monthly/pending`         | ❌ Pendiente Sprint 13 (n8n query)    |
 | POST      | `/api/reports/monthly/mark-notified`   | ❌ Pendiente Sprint 13 (n8n callback) |
@@ -328,6 +333,7 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 | 12 | 20260619075145_add_monthly_reports                      | 2026-06-19  |
 | 13 | 20260619162814_add_quotations_returns                   | 2026-06-19  |
 | 14 | 20260619174857_expense_categories                       | 2026-06-19  |
+| 15 | 20260621000001_add_unique_catalog_slug_business         | 2026-06-21  |
 
 ---
 
@@ -377,14 +383,14 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-011 | P2  | ✅ RESUELTO       | ventas/[id]/abono — amount_bs calculado server-side     | 11       |
 | DT-012 | P2  | ✅ RESUELTO       | cash/close — TOCTOU en $transaction con findFirst       | 11       |
 | DT-013 | P2  | ✅ RESUELTO       | rates/bcv protegido con auth + ruta pública /api/r/     | 11       |
-| DT-014 | P2  | ❌ PENDIENTE      | lib/bcv.ts cache no cluster-safe (PM2 multi-process)    | 12       |
+| DT-014 | P2  | ✅ RESUELTO       | lib/bcv.ts cache → DB-based via dollar_rates (cluster-safe) | 18   |
 | DT-015 | P3  | ❌ BACKLOG        | TOCTOU updates sin business_id doble filtro             | Backlog  |
 | DT-016 | P3  | ❌ BACKLOG        | upload MIME spoofing — magic bytes sin validar          | Backlog  |
 | DT-017 | P3  | ❌ BACKLOG        | clients/[id]/abono raw rate query sin caché             | Backlog  |
 | DT-018 | P3  | ❌ BACKLOG        | orders precio $0 posible (sin validación min)           | Backlog  |
 | DT-019 | P3  | ❌ BACKLOG        | WhatsApp automático requiere Meta API oficial           | Sprint 13|
-| DT-020 | P3  | ❌ PENDIENTE      | Export Excel en reportes                                | 13       |
-| DT-021 | P2  | ❌ PENDIENTE      | Export Excel en finanzas                                | 13       |
+| DT-020 | P3  | ✅ RESUELTO       | Export Excel en reportes — GET /api/reports/export-excel | 18      |
+| DT-021 | P2  | ✅ RESUELTO       | Export Excel en finanzas — GET /api/finanzas/export-excel | 18     |
 | DT-022 | P3  | ❌ BACKLOG        | Gastos recurrentes (definir una vez, pagar mensual)     | Backlog  |
 | DT-023 | P3  | ✅ RESUELTO       | Expense Categories — backend Sprint 15 + UI Sprint 16   | 15+16    |
 | DT-024 | P1  | ✅ RESUELTO       | Infinity% en ResumenSection — safePct() + sin_margen   | 13       |
@@ -400,7 +406,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-035 | P2  | ✅ RESUELTO       | ingresos double-count incluía abonos duplicados         | 14       |
 | DT-036 | P3  | ✅ RESUELTO       | catalog_url hardcodeada — ahora usa NEXT_PUBLIC_APP_URL | 14       |
 | DT-037 | P2  | ✅ RESUELTO       | business.theme cross-device — next-themes gestiona sync | 17       |
-| DT-038 | P2  | ❌ PENDIENTE      | TOCTOU slug — falta @unique constraint en DB            | Sprint 18|
+| DT-038 | P2  | ✅ RESUELTO       | slug @unique — migración 20260621000001 aplicada        | 18       |
 | DT-039 | P1  | ✅ RESUELTO       | Header onClick sin mounted guard — crash SSR corregido  | 17       |
 | DT-040 | P2  | ✅ RESUELTO       | Button.module.css #fff hardcodeado — reemplazado token  | 17       |
 | DT-041 | P2  | ✅ RESUELTO       | TabTema sin mounted guard — eliminado, toggle en header | 17       |
@@ -482,6 +488,8 @@ src/
     ├── sprint15-core.spec.ts             ← 5/5 ✅ Sprint 15 Q01-Q02 R01-R02 U01
     ├── expense-categories.spec.ts        ← 4/4 ✅ Sprint 15 DT-023 EX01-EX04
     ├── onboarding.spec.ts                ← 5/5 ✅ Sprint 16 ON01-ON05
+    ├── sprint17-visual.spec.ts           ← 5/5 ✅ Sprint 17 ES01-ES05
+    ├── sprint18-mobile.spec.ts           ← 5/5 ✅ Sprint 18 MO01-MO05
     ├── .auth-state.json                  ← JWT admin — expira cada 8h, refrescar antes de tests
     └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
@@ -490,7 +498,7 @@ src/
 
 ---
 
-## 9. TESTS E2E — 57/57
+## 9. TESTS E2E — 62/62
 
 | Archivo                          | Tests | Estado |
 |----------------------------------|-------|--------|
@@ -504,8 +512,9 @@ src/
 | `sprint15-core.spec.ts`          | 5     | ✅ Q01-Q02, R01-R02, U01 |
 | `expense-categories.spec.ts`     | 4     | ✅ EX01-EX04 — DT-023 backend |
 | `onboarding.spec.ts`             | 5     | ✅ ON01-ON05 — Sprint 16 |
-| `sprint17-visual.spec.ts`        | 5     | ✅ ES01-ES05 — Tokens v3.0 + Escritorio v3.0 |
-| **TOTAL**                        | **57**| ✅     |
+| `sprint17-visual.spec.ts`        | 5     | ✅ ES02 corregido: "Ítems vendidos" → "Utilidad neta" (CLI-C rename) |
+| `sprint18-mobile.spec.ts`        | 5     | ✅ MO01-MO05 — Mobile POS + Export Excel |
+| **TOTAL**                        | **62**| ✅     |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
@@ -527,5 +536,5 @@ src/
 **Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
 `locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
 
-*Generado: 2026-06-21 | Sprint 17 cierre | CLI-D modo EJECUCIÓN*
-*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 certificados: 57/57 E2E*
+*Generado: 2026-06-21 | Sprint 18 cierre | CLI-D modo EJECUCIÓN*
+*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel certificados: 62/62 E2E*

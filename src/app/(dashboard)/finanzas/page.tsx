@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { FileSpreadsheet } from 'lucide-react'
+import { Button }          from '@/components/ui/Button'
 import { CxCSection }      from './CxCSection'
 import { CxPSection }      from './CxPSection'
 import { GastosSection }   from './GastosSection'
@@ -34,13 +36,24 @@ export default function FinanzasPage() {
     <div className={`${styles.page} page-container`}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Finanzas</h1>
-        <input
-          type="month"
-          className={styles.monthInput}
-          value={month}
-          onChange={e => setMonth(e.target.value)}
-          aria-label="Seleccionar mes"
-        />
+        <div className={styles.headerActions}>
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<FileSpreadsheet size={14} aria-hidden="true" />}
+            disabled
+            title="Exportar Excel — próximamente"
+          >
+            Excel
+          </Button>
+          <input
+            type="month"
+            className={styles.monthInput}
+            value={month}
+            onChange={e => setMonth(e.target.value)}
+            aria-label="Seleccionar mes"
+          />
+        </div>
       </div>
 
       <div className={styles.tabsRow} role="tablist">

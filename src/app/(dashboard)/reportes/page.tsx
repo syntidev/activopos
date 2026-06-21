@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Download, BarChart2, CreditCard, Package, ChevronUp, ChevronDown } from 'lucide-react'
+import { Download, FileSpreadsheet, BarChart2, CreditCard, Package, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { MonthlyReportBanner } from '@/components/reports/MonthlyReportBanner'
@@ -224,6 +224,15 @@ function ReportesContent() {
             className={styles.dateInput}
             aria-label="Seleccionar fecha"
           />
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<FileSpreadsheet size={14} aria-hidden="true" />}
+            disabled
+            title="Exportar Excel — próximamente"
+          >
+            Excel
+          </Button>
           <Button
             variant="ghost"
             size="sm"

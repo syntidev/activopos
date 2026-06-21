@@ -24,6 +24,12 @@
   letter-spacing: var(--tracking-tight);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .monthInput {
   min-height: 44px;
   padding: 0 var(--space-3);

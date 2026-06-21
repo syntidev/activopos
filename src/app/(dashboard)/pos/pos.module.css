@@ -32,6 +32,11 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* ── Left Panel ── */
 
 .leftPanel {
@@ -749,25 +754,99 @@
   pointer-events: none;
 }
 
-/* ── Mobile: bottom sheet ── */
+/* ── Cart slot (desktop: transparent grid wrapper) ── */
 
-@media (max-width: 1023px) {
+.cartSlot {
+  height: 100%;
+}
+
+/* ── Cart toggle button (mobile only, visible ≤767px) ── */
+
+.cartToggle {
+  display: none;
+  position: relative; /* anchor for .cartBadge */
+}
+
+/* ── Cart badge ── */
+
+.cartBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: var(--color-danger, #ef4444);
+  color: #fff;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* ── Drawer overlay backdrop (mobile only, rendered when cartOpen) ── */
+
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 160;
+  animation: fadeInOverlay 0.2s ease;
+}
+
+/* ── Mobile: side drawer ── */
+
+@media (max-width: 767px) {
   .posContainer {
     grid-template-columns: 1fr;
-    position: relative;
   }
 
-  .rightPanel {
+  .cartToggle {
+    display: flex;
     position: fixed;
-    bottom: 0;
-    left: 0;
+    bottom: var(--space-6);
+    right: var(--space-5);
+    z-index: 155;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-full);
+    background: var(--brand-dark);
+    color: var(--kpi-on-primary);
+    border: none;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(var(--brand-rgb), 0.45);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .cartToggle:active { transform: scale(0.9); }
+
+  .cartSlot {
+    position: fixed;
+    top: 0;
     right: 0;
-    max-height: 72dvh;
+    height: 100dvh;
+    width: 88vw;
+    max-width: 360px;
+    z-index: 170;
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .cartSlotOpen { transform: translateX(0); }
+
+  .cartSlot .rightPanel {
+    height: 100%;
+    max-height: none;
     border-left: none;
-    border-top: 1px solid var(--color-border);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    z-index: var(--z-overlay);
-    box-shadow: var(--shadow-2xl);
+    border-top: none;
+    border-radius: 0;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.22);
   }
 }
 

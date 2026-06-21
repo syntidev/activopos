@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ShoppingCart, X } from 'lucide-react'
 import { usePOS } from '@/hooks/usePOS'
 import { calcularTotales, ticketVacio } from '@/lib/pos'
 import { LeftPanel } from './LeftPanel'
@@ -21,8 +22,10 @@ export default function POSPage() {
   const pos = usePOS()
   const { toast } = useToast()
   const [weightProduct, setWeightProduct] = useState<ProductForPOS | null>(null)
+  const [cartOpen, setCartOpen] = useState(false)
   const totals = calcularTotales(pos.ticket)
   const isEmpty = ticketVacio(pos.ticket)
+  const itemCount = pos.ticket.items.length
 
   if (pos.cajaStatus === 'loading') {
     return (
@@ -61,26 +64,51 @@ export default function POSPage() {
         rate={pos.rate}
         onProductClick={handleProductClick}
       />
-      <TicketPanel
-        ticket={pos.ticket}
-        totals={totals}
-        isEmpty={isEmpty}
-        onUpdateQty={pos.updateQty}
-        onRemove={pos.removeItem}
-        onClear={pos.clearTicket}
-        onSelectClient={() => pos.setShowCliente(true)}
-        onProcesarPago={() => {
-          if (isEmpty) { toast('Agrega productos antes de cobrar', 'warning'); return }
-          pos.setShowCobro(true)
-        }}
-        onVenderCredito={handleVenderCredito}
-        onCotizar={() => {
-          if (isEmpty) { toast('Agrega productos primero', 'warning'); return }
-          pos.setShowCotizacion(true)
-        }}
-        onDescuento={() => pos.setShowDescuento(true)}
-        onCargo={() => pos.setShowCargo(true)}
-      />
+
+      {/* Mobile: floating cart toggle */}
+      <button
+        className={styles.cartToggle}
+        onClick={() => setCartOpen(o => !o)}
+        aria-label={cartOpen ? 'Cerrar carrito' : `Ver carrito (${itemCount} ítems)`}
+      >
+        {cartOpen ? <X size={22} /> : <ShoppingCart size={22} />}
+        {!cartOpen && itemCount > 0 && (
+          <span className={styles.cartBadge}>{itemCount}</span>
+        )}
+      </button>
+
+      {/* Mobile: overlay backdrop */}
+      {cartOpen && (
+        <div
+          className={styles.drawerOverlay}
+          onClick={() => setCartOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Cart slot — side drawer on mobile, grid panel on desktop */}
+      <div className={`${styles.cartSlot}${cartOpen ? ` ${styles.cartSlotOpen}` : ''}`}>
+        <TicketPanel
+          ticket={pos.ticket}
+          totals={totals}
+          isEmpty={isEmpty}
+          onUpdateQty={pos.updateQty}
+          onRemove={pos.removeItem}
+          onClear={pos.clearTicket}
+          onSelectClient={() => pos.setShowCliente(true)}
+          onProcesarPago={() => {
+            if (isEmpty) { toast('Agrega productos antes de cobrar', 'warning'); return }
+            pos.setShowCobro(true)
+          }}
+          onVenderCredito={handleVenderCredito}
+          onCotizar={() => {
+            if (isEmpty) { toast('Agrega productos primero', 'warning'); return }
+            pos.setShowCotizacion(true)
+          }}
+          onDescuento={() => pos.setShowDescuento(true)}
+          onCargo={() => pos.setShowCargo(true)}
+        />
+      </div>
 
       {weightProduct && (
         <QtyInput

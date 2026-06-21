@@ -1,22 +1,22 @@
 /* ============================================================
-   ActivoPOS — Design Tokens v3.0
-   Fecha: 2026-06-21
-   Diseño aprobado: patrón Fina — variabilidad por jerarquía
-   Cards KPI con fondo color completo + bordes laterales semánticos
-   Light default · Dark opcional · Sidebar blanco en light / navy en dark
+   ActivoPOS — Design Tokens v4.0
+   Diagnóstico: ChatGPT + Carlos Bolívar, 2026-06-21
+   Resuelto: ADN visual — brand teal único, success verde diferenciado,
+   sombras con jerarquía real, tablas sin tinte de marca
    ============================================================ */
 
 /* ─── INVARIANT — BRAND + SEMÁNTICO + ESTRUCTURA ────────────── */
 :root {
-  /* ── Brand — Teal ── */
-  --brand:              #14B8A6;
+  /* ── Brand — Teal único (#0EA5A4 más puro que #14B8A6) ── */
+  --brand:              #0EA5A4;
   --brand-dark:         #0D9488;
+  --brand-hover:        #0F766E;
   --brand-darker:       #0F766E;
-  --brand-soft:         #F0FDF9;
-  --brand-soft-hover:   #E0FBF5;
+  --brand-soft:         #CCFBF1;
+  --brand-soft-hover:   #99F6E4;
   --brand-on:           #FFFFFF;
   --brand-on-soft:      #0D9488;
-  --brand-rgb:          20, 184, 166;
+  --brand-rgb:          14, 165, 164;
 
   /* ── On-color text — KPI cards con fondo teal — WCAG AA ── */
   --kpi-on-primary:     #FFFFFF;                   /* 4.75:1 on --brand-dark */
@@ -41,10 +41,11 @@
   --border-warning:     #FBBF24;
 
   /* ── Semántico — irrompible ── */
-  --success:            #22C55E;
+  /* SUCCESS = verde real (#16A34A) — diferente al brand teal — WCAG AA */
+  --success:            #16A34A;
   --success-soft:       #F0FDF4;
-  --success-text:       #16A34A;
-  --success-rgb:        34, 197, 94;
+  --success-text:       #15803D;
+  --success-rgb:        22, 163, 74;
 
   --danger:             #EF4444;
   --danger-soft:        #FEF2F2;
@@ -180,13 +181,13 @@
   --transition-normal: var(--duration-normal) var(--ease-out);
   --transition-spring: var(--duration-slow) var(--ease-spring);
 
-  /* Sombras v1 (usadas en CSS modules) */
-  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.05);
-  --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
-  --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-  --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
-  --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
-  --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.25);
+  /* Sombras v4 — sistema Z jerárquico (5 niveles diferenciados) */
+  --shadow-xs:  0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:  0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg:  0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.05);
+  --shadow-xl:  0 20px 25px rgba(0,0,0,0.10), 0 10px 10px rgba(0,0,0,0.04);
+  --shadow-2xl: 0 25px 50px rgba(0,0,0,0.18);
   --shadow-brand:   0 0 0 3px rgba(var(--brand-rgb), 0.25);
   --shadow-success: 0 0 0 3px rgba(var(--success-rgb), 0.25);
   --shadow-danger:  0 0 0 3px rgba(var(--danger-rgb), 0.25);
@@ -221,16 +222,16 @@
 [data-theme="light"] {
 
   /* Fondos */
-  --bg-base:        #E8EFF8;
+  --bg-base:        #E8EEF4;
   --bg-card:        #FFFFFF;
   --bg-card-hover:  #F8FAFC;
   --bg-input:       #FFFFFF;
-  --bg-overlay:     rgba(0, 0, 0, 0.35);
+  --bg-overlay:     rgba(0, 0, 0, 0.40);
   --bg-banner:      #FFFFFF;
 
-  /* Sidebar — BLANCO en light */
-  --sidebar-bg:             #FFFFFF;
-  --sidebar-border:         #EAEFF6;
+  /* Sidebar — con autoridad (border derecho más marcado) */
+  --sidebar-bg:             #FAFBFC;
+  --sidebar-border:         #E2E8F0;
   --sidebar-text:           #64748B;
   --sidebar-text-hover:     #1E293B;
   --sidebar-section-label:  #CBD5E1;
@@ -259,11 +260,11 @@
   --border-input-focus: #14B8A6;
   --border-divider:     #F1F5F9;
 
-  /* Tabla */
-  --table-header-bg:   #F0FDF9;
-  --table-header-text: #0D9488;
-  --table-row-hover:   #F8FAFC;
-  --table-border:      #F1F5F9;
+  /* Tabla — cabecera neutral, no tinte de marca */
+  --table-header-bg:   #F9FAFB;
+  --table-header-text: #374151;
+  --table-row-hover:   #EFF6FF;
+  --table-border:      #E5E7EB;
 
   /* Badge genérico */
   --badge-bg:   #F1F5F9;
@@ -290,23 +291,23 @@
   --shadow-lg: 0 8px 24px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06);
   --shadow-brand: 0 0 0 1px rgba(var(--brand-rgb), 0.15), 0 2px 12px rgba(var(--brand-rgb), 0.1);
 
-  /* ── COMPAT: aliasas v1 → v3 (light) ── */
+  /* ── COMPAT: aliasas v1 → v4 (light) ── */
   --accent-rgb: var(--brand-rgb);
 
   /* Color de fondo */
   --color-bg:          var(--bg-base);
   --color-surface:     var(--bg-card);
-  --color-surface-2:   #f0f4f8;
+  --color-surface-2:   #F1F5F9;
   --color-surface-3:   var(--bg-input);
   --color-surface-4:   var(--border-card);
   --color-surface-hover: var(--bg-card-hover);
 
   /* Brand */
   --color-brand:        var(--brand);
-  --color-brand-hover:  var(--brand-dark);
+  --color-brand-hover:  var(--brand-hover);
   --color-brand-active: var(--brand-darker);
   --color-brand-subtle: var(--brand-soft);
-  --color-brand-border: rgba(var(--brand-rgb), 0.3);
+  --color-brand-border: rgba(var(--brand-rgb), 0.28);
 
   /* Texto */
   --color-text-primary:   var(--text-primary);
@@ -468,10 +469,10 @@
   --border-input-focus: #14B8A6;
   --border-divider:     #1E293B;
 
-  /* Tabla */
-  --table-header-bg:   rgba(20, 184, 166, 0.08);
+  /* Tabla dark — usa brand-rgb correcto */
+  --table-header-bg:   rgba(var(--brand-rgb), 0.08);
   --table-header-text: #5EEAD4;
-  --table-row-hover:   rgba(20, 184, 166, 0.04);
+  --table-row-hover:   rgba(var(--brand-rgb), 0.04);
   --table-border:      #1E2E42;
 
   /* Badge genérico */
@@ -492,10 +493,11 @@
   --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
 
-  /* Semántico dark — más luminoso para contraste */
+  /* Semántico dark — verde real, diferente al brand teal */
   --success:      #4ADE80;
-  --success-soft: rgba(34, 197, 94, 0.12);
+  --success-soft: rgba(22, 163, 74, 0.14);
   --success-text: #4ADE80;
+  --success-rgb:  22, 163, 74;
 
   --danger:      #F87171;
   --danger-soft: rgba(239, 68, 68, 0.12);
@@ -509,13 +511,13 @@
   --info-soft: rgba(56, 189, 248, 0.12);
   --info-text: #7DD3FC;
 
-  /* ── COMPAT: aliasas v1 → v3 (dark) ── */
+  /* ── COMPAT: aliasas v1 → v4 (dark) ── */
   --accent-rgb: var(--brand-rgb);
 
   /* Color de fondo */
   --color-bg:          var(--bg-base);
   --color-surface:     var(--bg-card);
-  --color-surface-2:   #f0f4f8;
+  --color-surface-2:   var(--bg-card-hover);
   --color-surface-3:   var(--bg-input);
   --color-surface-4:   var(--border-card);
   --color-surface-hover: var(--bg-card-hover);

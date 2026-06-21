@@ -212,22 +212,16 @@
   text-align: right;
 }
 
-/* ── Table body ── */
-.tr {
+/* ── Table body — native selectors for all rows (incl. skeleton) ── */
+.table tbody tr {
   border-bottom: 1px solid var(--color-border-subtle);
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition: background 0.12s;
 }
-
-.tr:last-child {
-  border-bottom: none;
-}
-
-.tr:nth-child(even) { background: rgba(var(--brand-rgb), 0.03); }
-.tr:hover           { background-color: rgba(var(--brand-rgb), 0.04); }
-
-.tr:hover .rowActions {
-  opacity: 1;
-}
+.table tbody tr:last-child               { border-bottom: none; }
+.table tbody tr:nth-child(even)          { background: rgba(var(--brand-rgb), 0.03); }
+.table tbody tr:hover                    { background: rgba(var(--brand-rgb), 0.04); }
+.table tbody tr:hover td:first-child     { box-shadow: inset 3px 0 0 0 var(--color-brand); }
+.table tbody tr:hover .rowActions        { opacity: 1; }
 
 .td {
   padding: var(--space-3) var(--space-4);

@@ -659,9 +659,10 @@
 
 .finTd:first-child, .finTh:first-child { white-space: normal; }
 
-.finTable tbody tr:nth-child(even)         { background: rgba(var(--brand-rgb), 0.03); }
-.finTable tbody tr:hover                   { background: rgba(var(--brand-rgb), 0.04); }
-.finTable tbody tr:last-child .finTd       { border-bottom: none; }
+.finTable tbody tr:nth-child(even)              { background: rgba(var(--brand-rgb), 0.03); }
+.finTable tbody tr:hover                        { background: rgba(var(--brand-rgb), 0.04); }
+.finTable tbody tr:hover td:first-child         { box-shadow: inset 3px 0 0 0 var(--color-brand); }
+.finTable tbody tr:last-child .finTd            { border-bottom: none; }
 
 .colRight { text-align: right; }
 .colCenter { text-align: center; }

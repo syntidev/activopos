@@ -194,12 +194,10 @@
 .right  { text-align: right; }
 .center { text-align: center; }
 
-.topTr:not(:last-child) td {
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.topTr:nth-child(even) td { background: rgba(var(--brand-rgb), 0.03); }
-.topTr:hover             { background: rgba(var(--brand-rgb), 0.04); }
+.topTable tbody tr:not(:last-child)          { border-bottom: 1px solid var(--color-border-subtle); }
+.topTable tbody tr:nth-child(even)           { background: rgba(var(--brand-rgb), 0.03); }
+.topTable tbody tr:hover                     { background: rgba(var(--brand-rgb), 0.04); }
+.topTable tbody tr:hover td:first-child      { box-shadow: inset 3px 0 0 0 var(--color-brand); }
 
 .topTd {
   padding:        var(--space-2-5) 0;

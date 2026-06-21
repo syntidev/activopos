@@ -275,17 +275,17 @@
   text-align: right;
 }
 
-.pmRow td {
-  padding: var(--space-3) var(--space-5);
-  font-size: var(--text-sm);
-  color: var(--color-text-primary);
-  border-bottom: 1px solid var(--color-border-subtle);
+.pmTable tbody tr td {
+  padding:              var(--space-3) var(--space-5);
+  font-size:            var(--text-sm);
+  color:                var(--color-text-primary);
+  border-bottom:        1px solid var(--color-border-subtle);
   font-variant-numeric: tabular-nums;
 }
-
-.pmRow:last-child td          { border-bottom: none; }
-.pmRow:nth-child(even) td    { background: rgba(var(--brand-rgb), 0.03); }
-.pmRow:hover td               { background: rgba(var(--brand-rgb), 0.04); }
+.pmTable tbody tr:last-child td          { border-bottom: none; }
+.pmTable tbody tr:nth-child(even) td     { background: rgba(var(--brand-rgb), 0.03); }
+.pmTable tbody tr:hover td               { background: rgba(var(--brand-rgb), 0.04); }
+.pmTable tbody tr:hover td:first-child   { box-shadow: inset 3px 0 0 0 var(--color-brand); }
 
 .pmRow td:not(:first-child) {
   text-align: right;

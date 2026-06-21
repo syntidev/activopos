@@ -263,8 +263,10 @@
   background: rgba(var(--accent-rgb), 0.03);
 }
 
-.reportTable tbody tr:hover            { background: rgba(var(--brand-rgb), 0.04); }
-.reportTable tbody tr:last-child .td   { border-bottom: none; }
+.reportTable tbody tr:nth-child(even)          { background: rgba(var(--brand-rgb), 0.03); }
+.reportTable tbody tr:hover                    { background: rgba(var(--brand-rgb), 0.04); }
+.reportTable tbody tr:hover td:first-child     { box-shadow: inset 3px 0 0 0 var(--color-brand); }
+.reportTable tbody tr:last-child .td           { border-bottom: none; }
 
 .totalBold {
   font-weight:          var(--weight-semibold);

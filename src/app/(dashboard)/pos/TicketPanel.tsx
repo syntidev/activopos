@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -190,8 +190,8 @@ function TicketItemRow({ item, onUpdateQty, onRemove }: RowProps) {
           </button>
           <span className={styles.qtyValue}>
             {item.sale_mode === 'weight'
-              ? item.quantity.toFixed(3) + ' kg'
-              : item.quantity + ' und'}
+              ? item.quantity.toFixed(3) + ' ' + item.unit_label
+              : item.quantity + ' ' + item.unit_label}
           </span>
           <button
             className={styles.qtyBtn}
@@ -217,6 +217,13 @@ function TicketItemRow({ item, onUpdateQty, onRemove }: RowProps) {
           <Trash2 size={14} aria-hidden="true" />
         </button>
       </div>
+      {item.sale_mode === 'weight' && (
+        <div className={styles.weightPreview}>
+          {item.quantity.toFixed(3)}&nbsp;{item.unit_label}&nbsp;&times;&nbsp;
+          ${item.price_per_unit_usd.toFixed(2)}/{item.unit_label}
+          &nbsp;=&nbsp;<strong>${(item.quantity * item.price_per_unit_usd).toFixed(2)}</strong>
+        </div>
+      )}
     </motion.div>
   )
 }

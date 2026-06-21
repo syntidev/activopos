@@ -53,6 +53,10 @@ interface Product {
   badge?: string | null
   subcategory?: string | null
   is_featured?: boolean
+  product_type?: 'simple' | 'combo' | 'fabricable'
+  unit_type?: 'unit' | 'weight' | 'volume' | 'length'
+  unit_label?: string
+  unit_step?: number
 }
 
 /* ── Helpers ── */
@@ -225,6 +229,11 @@ export default function ProductosPage() {
         name:               data.name,
         barcode:            data.barcode || null,
         sale_mode:          data.saleMode,
+        product_type:       data.productType,
+        unit_type:          data.unitType,
+        unit_label:         data.unitLabel,
+        unit_step:          data.unitStep,
+        components:         data.components,
         category_id:        data.categoryId,
         cost_per_unit_usd:  data.costPerUnitUsd,
         price_per_unit_usd: data.pricePerUnitUsd,
@@ -333,6 +342,10 @@ export default function ProductosPage() {
       badge:              product.badge,
       subcategory:        product.subcategory,
       is_featured:        product.is_featured,
+      product_type:       product.product_type,
+      unit_type:          product.unit_type,
+      unit_label:         product.unit_label,
+      unit_step:          product.unit_step,
     })
     setShowProductModal(true)
   }, [])

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star } from 'lucide-react'
+import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search } from 'lucide-react'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
 import styles from './ProductModal.module.css'
@@ -35,6 +35,11 @@ export interface ProductFormData {
   badge: string
   subcategory: string
   isFeatured: boolean
+  productType: 'simple' | 'combo' | 'fabricable'
+  unitType: 'unit' | 'weight' | 'volume' | 'length'
+  unitLabel: string
+  unitStep: number
+  components: Array<{ component_id: number; quantity: number }>
 }
 
 export interface ModalCategory {
@@ -60,6 +65,10 @@ export interface EditableProduct {
   badge?: string | null
   subcategory?: string | null
   is_featured?: boolean
+  product_type?: 'simple' | 'combo' | 'fabricable'
+  unit_type?: 'unit' | 'weight' | 'volume' | 'length'
+  unit_label?: string
+  unit_step?: number
 }
 
 interface ProductModalProps {
@@ -74,11 +83,64 @@ interface ProductModalProps {
 
 /* ── Constants ── */
 
-const SALE_MODES: Array<{ key: 'unit' | 'weight' | 'service'; label: string }> = [
-  { key: 'unit',    label: 'Unidad'   },
-  { key: 'weight',  label: 'Kg'       },
-  { key: 'service', label: 'Servicio' },
+type ProductKind = 'simple' | 'weight' | 'service' | 'combo'
+
+interface ComponentEntry {
+  component_id: number
+  component_name: string
+  quantity: number
+  unit_label: string
+}
+
+interface CompProduct {
+  id: number
+  name: string
+  unit_label: string
+}
+
+interface ApiProduct {
+  id: number
+  name: string
+  unit_label?: string
+  base_unit_label?: string
+}
+
+const TIPO_DEFS: Array<{
+  value: ProductKind
+  Icon: React.ElementType
+  name: string
+  desc: string
+}> = [
+  { value: 'simple',  Icon: Box,    name: 'Por unidad',    desc: 'Botellas, piezas, cajas' },
+  { value: 'weight',  Icon: Scale,  name: 'Por medida',    desc: 'Peso, volumen, longitud' },
+  { value: 'service', Icon: Wrench, name: 'Servicio',      desc: 'Sin inventario físico'   },
+  { value: 'combo',   Icon: Boxes,  name: 'Combo',         desc: 'Descuenta ingredientes'  },
 ]
+
+const UNIDADES: Record<'weight' | 'volume' | 'length', Array<{ value: string; label: string; step: number }>> = {
+  weight: [
+    { value: 'kg', label: 'Kilogramo (kg)', step: 0.001 },
+    { value: 'g',  label: 'Gramo (g)',      step: 1     },
+    { value: 'lb', label: 'Libra (lb)',      step: 0.001 },
+  ],
+  volume: [
+    { value: 'L',  label: 'Litro (L)',       step: 0.01  },
+    { value: 'ml', label: 'Mililitro (ml)',   step: 1     },
+  ],
+  length: [
+    { value: 'm',  label: 'Metro (m)',        step: 0.01  },
+    { value: 'cm', label: 'Centímetro (cm)',  step: 1     },
+  ],
+}
+
+function getHint(kind: ProductKind): { title: string; examples: string } {
+  switch (kind) {
+    case 'simple':  return { title: 'Precio fijo por unidad', examples: 'Ej: botellas, piezas, cajas, paquetes, pares de zapatos' }
+    case 'weight':  return { title: 'Precio por unidad de medida', examples: 'Ej: queso (kg), pollo (kg), jugo (L), tela (m), café (g)' }
+    case 'service': return { title: 'Sin inventario físico', examples: 'Ej: instalación eléctrica, corte de cabello, consulta, envío' }
+    case 'combo':   return { title: 'Descuenta componentes del inventario al vender', examples: 'Ej: combo de hamburguesa, kit de papelería, caja de maternidad' }
+  }
+}
 
 const AVAIL_LABEL: Record<string, string> = {
   in_stock:     'En stock',
@@ -106,7 +168,10 @@ export function ProductModal({
   /* ── Core form state ── */
   const [name, setName]           = useState('')
   const [barcode, setBarcode]     = useState('')
-  const [saleMode, setSaleMode]   = useState<'unit' | 'weight' | 'service'>('unit')
+  const [productKind, setProductKind] = useState<ProductKind>('simple')
+  const [measuredBy, setMeasuredBy]   = useState<'weight' | 'volume' | 'length'>('weight')
+  const [unitLabel, setUnitLabel]     = useState('kg')
+  const [unitStep, setUnitStep]       = useState(0.001)
   const [categoryId, setCategoryId] = useState<number | null>(null)
   const [costMode, setCostMode]   = useState<'unit' | 'bulk'>('unit')
   const [bulkSize, setBulkSize]   = useState('12')
@@ -133,6 +198,22 @@ export function ProductModal({
   const [subcategory, setSubcategory] = useState('')
   const [isFeatured, setIsFeatured]   = useState(false)
 
+  /* ── Component editor state ── */
+  const [components, setComponents]       = useState<ComponentEntry[]>([])
+  const [compSearch, setCompSearch]       = useState('')
+  const [compResults, setCompResults]     = useState<CompProduct[]>([])
+  const [compQty, setCompQty]             = useState('1')
+  const [selectedComp, setSelectedComp]   = useState<CompProduct | null>(null)
+
+  /* ── Derived from productKind ── */
+  const saleMode: 'unit' | 'weight' | 'service' =
+    productKind === 'service' ? 'service' :
+    productKind === 'weight'  ? 'weight'  : 'unit'
+  const productType: 'simple' | 'combo' | 'fabricable' =
+    productKind === 'combo' ? 'combo' : 'simple'
+  const unitType: 'unit' | 'weight' | 'volume' | 'length' =
+    productKind === 'weight' ? measuredBy : 'unit'
+
   const imgRef0 = useRef<HTMLInputElement>(null)
   const imgRef1 = useRef<HTMLInputElement>(null)
   const imgRef2 = useRef<HTMLInputElement>(null)
@@ -141,7 +222,9 @@ export function ProductModal({
   /* ── Initialize / reset ── */
   useEffect(() => {
     if (!isOpen) {
-      setName(''); setBarcode(''); setSaleMode('unit'); setCategoryId(null)
+      setName(''); setBarcode(''); setCategoryId(null)
+      setProductKind('simple'); setMeasuredBy('weight'); setUnitLabel('kg'); setUnitStep(0.001)
+      setComponents([]); setCompSearch(''); setCompResults([]); setCompQty('1'); setSelectedComp(null)
       setCostMode('unit'); setBulkSize('12'); setCost(''); setIsFixedPrice(false)
       setMargin('30'); setPrice(''); setStockInitial('0'); setErrors({})
       setIsSaving(false); setImages([null, null, null]); setIsAvailable(true)
@@ -155,7 +238,26 @@ export function ProductModal({
     if (editProduct) {
       setName(editProduct.name)
       setBarcode(editProduct.barcode ?? '')
-      setSaleMode(editProduct.sale_mode)
+
+      // Derive productKind from stored product_type + sale_mode
+      if (editProduct.product_type === 'combo' || editProduct.product_type === 'fabricable') {
+        setProductKind('combo')
+      } else if (editProduct.sale_mode === 'service') {
+        setProductKind('service')
+      } else if (editProduct.sale_mode === 'weight') {
+        setProductKind('weight')
+        const ut = editProduct.unit_type
+        const mb: 'weight' | 'volume' | 'length' =
+          ut === 'volume' ? 'volume' : ut === 'length' ? 'length' : 'weight'
+        setMeasuredBy(mb)
+        const lbl = editProduct.unit_label ?? 'kg'
+        setUnitLabel(lbl)
+        const found = UNIDADES[mb].find(u => u.value === lbl)
+        setUnitStep(found ? found.step : UNIDADES[mb][0].step)
+      } else {
+        setProductKind('simple')
+      }
+
       setCategoryId(editProduct.category_id)
       setIsAvailable(editProduct.is_available ?? true)
       setCatalogVisibility(editProduct.catalog_visibility ?? 'hidden')
@@ -253,6 +355,40 @@ export function ProductModal({
     setVariants(prev => [...prev, { name, price_extra_usd: 0 }])
   }
 
+  /* ── Component search ── */
+  const searchComponents = async (q: string) => {
+    setCompSearch(q)
+    setSelectedComp(null)
+    if (!q.trim()) { setCompResults([]); return }
+    try {
+      const res = await fetch(`/api/products?search=${encodeURIComponent(q)}&limit=6`)
+      if (res.ok) {
+        const data = await res.json()
+        setCompResults(
+          (data.products as ApiProduct[] ?? []).map(p => ({
+            id: p.id,
+            name: p.name,
+            unit_label: p.unit_label ?? p.base_unit_label ?? 'und',
+          }))
+        )
+      }
+    } catch { /* silent */ }
+  }
+
+  const addComponent = () => {
+    if (!selectedComp) return
+    const qty = parseFloat(compQty)
+    if (!qty || qty <= 0) return
+    setComponents(prev => [
+      ...prev,
+      { component_id: selectedComp.id, component_name: selectedComp.name, quantity: qty, unit_label: selectedComp.unit_label },
+    ])
+    setSelectedComp(null); setCompSearch(''); setCompResults([]); setCompQty('1')
+  }
+
+  const removeComponent = (i: number) =>
+    setComponents(prev => prev.filter((_, idx) => idx !== i))
+
   /* ── Submit ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -263,6 +399,11 @@ export function ProductModal({
         name:            name.trim(),
         barcode:         barcode.trim(),
         saleMode,
+        productType,
+        unitType,
+        unitLabel:       productKind === 'weight' ? unitLabel : 'und',
+        unitStep:        productKind === 'weight' ? unitStep  : 1,
+        components:      components.map(c => ({ component_id: c.component_id, quantity: c.quantity })),
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
         pricePerUnitUsd: computed.displayPrice,
@@ -347,37 +488,165 @@ export function ProductModal({
                     {errors.name && <p className={mStyles.errorMsg}>{errors.name}</p>}
                   </div>
 
-                  {/* ── Barcode + Vendido por ── */}
-                  <div className={styles.inlineRow2}>
-                    <div className={mStyles.formGroup}>
-                      <label className={mStyles.label} htmlFor="pm-barcode">Código de Barras</label>
-                      <input
-                        id="pm-barcode"
-                        type="text"
-                        className={mStyles.input}
-                        placeholder="EAN-13, QR, SKU..."
-                        value={barcode}
-                        onChange={(e) => setBarcode(e.target.value)}
-                        maxLength={60}
-                      />
+                  {/* ── Tipo de producto ── */}
+                  <div className={mStyles.formGroup}>
+                    <p className={mStyles.label}>¿Cómo vendes este producto?</p>
+                    <div className={styles.tipoGrid}>
+                      {TIPO_DEFS.map(({ value, Icon, name: tipName, desc }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={productKind === value}
+                          className={`${styles.tipoCard} ${productKind === value ? styles.tipoCardActive : ''}`}
+                          onClick={() => setProductKind(value)}
+                        >
+                          <Icon size={18} className={styles.tipoIcon} aria-hidden="true" />
+                          <span className={styles.tipoName}>{tipName}</span>
+                          <span className={styles.tipoDesc}>{desc}</span>
+                        </button>
+                      ))}
                     </div>
-                    <div className={mStyles.formGroup}>
-                      <p className={mStyles.label}>Vendido por</p>
-                      <div className={styles.pillGroup} role="radiogroup" aria-label="Modo de venta">
-                        {SALE_MODES.map((m) => (
+                    {!name.trim() && (
+                      <div className={styles.hintBox}>
+                        <span className={styles.hintTitle}>{getHint(productKind).title}</span>
+                        <span className={styles.hintExamples}>{getHint(productKind).examples}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Unidad de medida (solo tipo peso/volumen/longitud) ── */}
+                  {productKind === 'weight' && (
+                    <div className={styles.unidadSection}>
+                      <div className={styles.pillGroup} role="radiogroup" aria-label="Tipo de medida">
+                        {(['weight', 'volume', 'length'] as const).map(t => (
                           <button
-                            key={m.key}
+                            key={t}
                             type="button"
                             role="radio"
-                            aria-checked={saleMode === m.key}
-                            className={`${styles.pill} ${saleMode === m.key ? styles.pillActive : ''}`}
-                            onClick={() => setSaleMode(m.key)}
+                            aria-checked={measuredBy === t}
+                            className={`${styles.pill} ${measuredBy === t ? styles.pillActive : ''}`}
+                            onClick={() => {
+                              setMeasuredBy(t)
+                              const first = UNIDADES[t][0]
+                              setUnitLabel(first.value)
+                              setUnitStep(first.step)
+                            }}
                           >
-                            {m.label}
+                            {{ weight: 'Peso', volume: 'Volumen', length: 'Longitud' }[t]}
                           </button>
                         ))}
                       </div>
+                      <select
+                        className={mStyles.select}
+                        value={unitLabel}
+                        onChange={e => {
+                          const u = UNIDADES[measuredBy].find(u => u.value === e.target.value)
+                          if (u) { setUnitLabel(u.value); setUnitStep(u.step) }
+                        }}
+                        aria-label="Unidad de medida"
+                      >
+                        {UNIDADES[measuredBy].map(u => (
+                          <option key={u.value} value={u.value}>{u.label}</option>
+                        ))}
+                      </select>
                     </div>
+                  )}
+
+                  {/* ── Editor de componentes (solo tipo combo) ── */}
+                  {productKind === 'combo' && (
+                    <div className={styles.componentesSection}>
+                      <p className={mStyles.label}>Productos que incluye</p>
+
+                      {components.map((comp, i) => (
+                        <div key={i} className={styles.componentRow}>
+                          <span className={styles.componentName}>{comp.component_name}</span>
+                          <span className={styles.componentQtyLabel}>
+                            {comp.quantity}&nbsp;{comp.unit_label}
+                          </span>
+                          <button
+                            type="button"
+                            className={styles.componentRemove}
+                            onClick={() => removeComponent(i)}
+                            aria-label={`Eliminar ${comp.component_name}`}
+                          >
+                            <X size={13} aria-hidden="true" />
+                          </button>
+                        </div>
+                      ))}
+
+                      <div className={styles.compAddRow}>
+                        <div className={styles.compSearchWrap}>
+                          <Search size={13} className={styles.compSearchIcon} aria-hidden="true" />
+                          <input
+                            type="text"
+                            className={styles.compSearchInput}
+                            placeholder="Buscar producto..."
+                            value={compSearch}
+                            onChange={e => searchComponents(e.target.value)}
+                            aria-label="Buscar componente"
+                            autoComplete="off"
+                          />
+                        </div>
+                        <input
+                          type="number"
+                          className={styles.compQtyInput}
+                          placeholder="Cant."
+                          min="0.001"
+                          step="0.001"
+                          value={compQty}
+                          onChange={e => setCompQty(e.target.value)}
+                          aria-label="Cantidad del componente"
+                        />
+                        <button
+                          type="button"
+                          className={styles.compAddBtn}
+                          onClick={addComponent}
+                          disabled={!selectedComp || !compQty || parseFloat(compQty) <= 0}
+                          aria-label="Agregar componente"
+                        >
+                          <Plus size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+
+                      {compResults.filter(r => !components.some(c => c.component_id === r.id)).length > 0 && (
+                        <div className={styles.compResults}>
+                          {compResults
+                            .filter(r => !components.some(c => c.component_id === r.id))
+                            .map(p => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className={`${styles.compResult} ${selectedComp?.id === p.id ? styles.compResultActive : ''}`}
+                                onClick={() => { setSelectedComp(p); setCompSearch(p.name); setCompResults([]) }}
+                              >
+                                <span>{p.name}</span>
+                                <span className={styles.compResultUnit}>{p.unit_label}</span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+
+                      {components.length > 0 && (
+                        <p className={styles.componentPreview}>
+                          Al vender 1 unidad se descuentan automáticamente{' '}
+                          {components.length} {components.length === 1 ? 'producto' : 'productos'} del inventario.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Barcode ── */}
+                  <div className={mStyles.formGroup}>
+                    <label className={mStyles.label} htmlFor="pm-barcode">Código de Barras</label>
+                    <input
+                      id="pm-barcode"
+                      type="text"
+                      className={mStyles.input}
+                      placeholder="EAN-13, QR, SKU..."
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      maxLength={60}
+                    />
                   </div>
 
                   {/* ── Imágenes ── */}

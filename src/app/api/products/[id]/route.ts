@@ -10,9 +10,12 @@ const patchSchema = z.object({
   barcode:            z.string().max(50).nullable().optional(),
   sku:                z.string().max(50).nullable().optional(),
   description:        z.string().nullable().optional(),
-  sale_mode:          z.enum(['weight', 'unit', 'service']).optional(),
-  product_type:       z.string().optional(),
-  base_unit_label:    z.string().max(10).optional(),
+  sale_mode:          z.enum(['weight', 'unit', 'service', 'length', 'volume', 'package']).optional(),
+  product_type:       z.enum(['simple', 'combo', 'fabricable']).optional(),
+  unit_type:          z.enum(['unit', 'weight', 'volume', 'length']).optional(),
+  unit_label:         z.string().max(20).optional(),
+  unit_step:          z.number().positive().optional(),
+  base_unit_label:    z.string().max(20).optional(),
   cost_per_unit_usd:  z.number().min(0).nullable().optional(),
   margin:             z.number().min(0).max(99.99).optional(),
   price_per_unit_usd: z.number().min(0).nullable().optional(),
@@ -98,9 +101,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-    // service type always inherits service sale_mode — single discriminator downstream
-    if (data.product_type === 'service') {
-      data.sale_mode    = 'service'
+    // service sale_mode always available in_stock
+    if (data.sale_mode === 'service') {
       data.availability = 'in_stock'
     }
 

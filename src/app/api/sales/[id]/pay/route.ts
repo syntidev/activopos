@@ -32,7 +32,20 @@ export async function PATCH(
 
     const sale = await prisma.sale.findFirst({
       where: { id: saleId, business_id: session.businessId },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                product_type: true,
+                components: {
+                  select: { component_id: true, quantity: true },
+                },
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!sale) {
@@ -85,16 +98,41 @@ export async function PATCH(
         },
       })
 
-      await tx.inventoryEntry.createMany({
-        data: sale.items.map(item => ({
-          business_id: session.businessId,
-          product_id: item.product_id,
-          quantity: -Number(item.quantity),
-          waste: 0,
-          notes: `VENTA #${sale.ticket_number}`,
-          created_by: session.userId,
-        })),
-      })
+      const inventoryDeductions: {
+        business_id: number
+        product_id:  number
+        quantity:    number
+        waste:       number
+        notes:       string
+        created_by:  number
+      }[] = []
+
+      for (const item of sale.items) {
+        const productType = item.product.product_type
+        if (productType === 'simple') {
+          inventoryDeductions.push({
+            business_id: session.businessId,
+            product_id:  item.product_id,
+            quantity:    -Number(item.quantity),
+            waste:       0,
+            notes:       `VENTA #${sale.ticket_number}`,
+            created_by:  session.userId,
+          })
+        } else {
+          for (const comp of item.product.components) {
+            inventoryDeductions.push({
+              business_id: session.businessId,
+              product_id:  comp.component_id,
+              quantity:    -(Number(item.quantity) * comp.quantity),
+              waste:       0,
+              notes:       `VENTA #${sale.ticket_number} (componente)`,
+              created_by:  session.userId,
+            })
+          }
+        }
+      }
+
+      await tx.inventoryEntry.createMany({ data: inventoryDeductions })
 
       await tx.activityLog.create({
         data: {

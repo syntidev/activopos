@@ -11,7 +11,10 @@ const productSchema = z.object({
   sku:                z.string().max(50).nullable().optional(),
   description:        z.string().nullable().optional(),
   sale_mode:          z.enum(['weight', 'unit', 'service', 'length', 'volume', 'package']).default('unit'),
-  product_type:       z.string().default('physical'),
+  product_type:       z.enum(['simple', 'combo', 'fabricable']).default('simple'),
+  unit_type:          z.enum(['unit', 'weight', 'volume', 'length']).default('unit'),
+  unit_label:         z.string().max(20).default('und'),
+  unit_step:          z.number().positive().default(1),
   base_unit_label:    z.string().max(20).default('und'),
   cost_per_unit_usd:  z.number().min(0).nullable().optional(),
   margin:             z.number().min(0).max(99.99).optional(),
@@ -48,12 +51,12 @@ function parseImages(raw: string | null): string[] | null {
 
 function computeAvailability(
   dbAvailability: string,
-  productType: string,
+  saleMode: string,
   netStock: number,
   minStock: number
 ): string {
   if (dbAvailability === 'discontinued') return 'discontinued'
-  if (productType === 'service') return 'in_stock'
+  if (saleMode === 'service') return 'in_stock'
   if (netStock <= 0) return 'out_of_stock'
   if (netStock <= minStock) return 'low_stock'
   return 'in_stock'
@@ -138,7 +141,7 @@ export async function GET(req: NextRequest) {
           : null,
         iva_pct:            ivaEnabled ? ivaPct : null,
         is_low_stock:       stock.net_qty < Number(p.min_stock),
-        availability:       computeAvailability(p.availability, p.product_type, stock.net_qty, Number(p.min_stock)),
+        availability:       computeAvailability(p.availability, p.sale_mode, stock.net_qty, Number(p.min_stock)),
         catalog_visibility: p.catalog_visibility,
       }
     })
@@ -162,9 +165,8 @@ export async function POST(req: NextRequest) {
     const body                = await req.json()
     const { margin, ...data } = productSchema.parse(body)
 
-    // service type always inherits service sale_mode and is always in_stock
-    if (data.product_type === 'service') {
-      data.sale_mode    = 'service'
+    // service sale_mode always available in_stock
+    if (data.sale_mode === 'service') {
       data.availability = 'in_stock'
     }
 
@@ -178,6 +180,9 @@ export async function POST(req: NextRequest) {
         description:        data.description        ?? null,
         sale_mode:          data.sale_mode,
         product_type:       data.product_type,
+        unit_type:          data.unit_type,
+        unit_label:         data.unit_label,
+        unit_step:          data.unit_step,
         base_unit_label:    data.base_unit_label,
         cost_per_unit_usd:  data.cost_per_unit_usd  ?? null,
         price_per_unit_usd: calcPrice(data.cost_per_unit_usd, margin, data.price_per_unit_usd),

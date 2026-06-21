@@ -202,7 +202,7 @@ async function main() {
           name:               p.name,
           description:        p.desc,
           sale_mode:          p.svc ? 'service' : 'unit',
-          product_type:       p.svc ? 'service'  : 'physical',
+          product_type:       'simple',
           price_per_unit_usd: p.price,
           cost_per_unit_usd:  p.cost,
           is_available:       true,

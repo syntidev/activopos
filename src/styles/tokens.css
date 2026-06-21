@@ -296,7 +296,7 @@
   /* Color de fondo */
   --color-bg:          var(--bg-base);
   --color-surface:     var(--bg-card);
-  --color-surface-2:   var(--bg-card-hover);
+  --color-surface-2:   #f0f4f8;
   --color-surface-3:   var(--bg-input);
   --color-surface-4:   var(--border-card);
   --color-surface-hover: var(--bg-card-hover);
@@ -515,7 +515,7 @@
   /* Color de fondo */
   --color-bg:          var(--bg-base);
   --color-surface:     var(--bg-card);
-  --color-surface-2:   var(--bg-card-hover);
+  --color-surface-2:   #f0f4f8;
   --color-surface-3:   var(--bg-input);
   --color-surface-4:   var(--border-card);
   --color-surface-hover: var(--bg-card-hover);

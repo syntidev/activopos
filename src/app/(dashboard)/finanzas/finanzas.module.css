@@ -246,7 +246,7 @@
   white-space: nowrap;
 }
 
-.abonarBtn:hover { background: var(--color-brand); color: #fff; }
+.abonarBtn:hover { background: var(--color-brand); color: var(--brand-on); }
 
 /* ── Estado de Resultados ── */
 .erCard {
@@ -734,7 +734,7 @@
   white-space: nowrap;
 }
 
-.actionBtn:hover { background: var(--color-brand); color: #fff; }
+.actionBtn:hover { background: var(--color-brand); color: var(--brand-on); }
 
 /* ── CxC/CxP KPI mini row ────────────────────────────── */
 

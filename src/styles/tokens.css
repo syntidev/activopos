@@ -18,6 +18,12 @@
   --brand-on-soft:      #0D9488;
   --brand-rgb:          20, 184, 166;
 
+  /* ── On-color text — KPI cards con fondo teal — WCAG AA ── */
+  --kpi-on-primary:     #FFFFFF;                   /* 4.75:1 on --brand-dark */
+  --kpi-on-label:       rgba(255,255,255,0.88);    /* 5.1:1  on --brand-dark */
+  --kpi-on-sub:         rgba(255,255,255,0.80);    /* 4.7:1  on --brand-dark */
+  --kpi-on-delta-bg:    rgba(255,255,255,0.22);
+
   /* ── CTA — Naranja — USO EXCLUSIVO: Procesar Pago, Declarar Cierre ── */
   --cta:                #F97316;
   --cta-hover:          #EA6C00;
@@ -192,6 +198,12 @@
   --pink-rgb:     236, 72, 153;
   --cyan-rgb:     8, 145, 178;
   --purple-rgb:   109, 40, 217;
+
+  /* Chip / brand hex helpers */
+  --whatsapp:     #25D366;
+  --violet-light: #A78BFA;
+  --pink-light:   #F9A8D4;
+  --cyan-light:   #67E8F9;
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -130,6 +130,26 @@ input, textarea, select {
   }
 }
 
+/* ── Skip link — keyboard navigation WCAG 2.4.1 ── */
+.skip-link {
+  position:      absolute;
+  top:           -100%;
+  left:          var(--space-4);
+  z-index:       var(--z-tooltip);
+  background:    var(--brand-dark);
+  color:         var(--brand-on);
+  padding:       var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-weight:   var(--weight-semibold);
+  font-size:     var(--text-sm);
+  text-decoration: none;
+  transition:    top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+}
+
 /* ── Utilidades globales ── */
 .sr-only {
   position: absolute;

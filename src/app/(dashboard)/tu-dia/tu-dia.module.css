@@ -35,7 +35,7 @@
 .iconWrapperNight {
   background:   rgba(var(--purple-rgb), 0.12);
   border-color: rgba(var(--purple-rgb), 0.30);
-  color: #A78BFA;
+  color: var(--violet-light);
 }
 
 .headerMeta {

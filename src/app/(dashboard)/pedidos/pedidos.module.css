@@ -267,7 +267,7 @@
   background: rgba(var(--whatsapp-rgb), 0.12);
   border: 1px solid rgba(var(--whatsapp-rgb), 0.3);
   border-radius: var(--radius-sm);
-  color: #25D366;
+  color: var(--whatsapp);
   cursor: pointer;
   flex-shrink: 0;
   transition: background var(--transition-fast);

@@ -294,9 +294,9 @@
 .catGreen  { background: var(--color-success-subtle); color: var(--color-success-text); border-color: var(--color-success-border); }
 .catOrange { background: var(--color-warning-subtle); color: var(--color-warning-text); border-color: var(--color-warning-border); }
 .catRed    { background: var(--color-danger-subtle);  color: var(--color-danger-text);  border-color: var(--color-danger-border);  }
-.catViolet { background: rgba(var(--violet-rgb), 0.12); color: #A78BFA; border-color: rgba(var(--violet-rgb), 0.3); }
-.catPink   { background: rgba(var(--pink-rgb),   0.12); color: #F9A8D4; border-color: rgba(var(--pink-rgb),   0.3); }
-.catCyan   { background: rgba(var(--cyan-rgb),   0.12); color: #67E8F9; border-color: rgba(var(--cyan-rgb),   0.3); }
+.catViolet { background: rgba(var(--violet-rgb), 0.12); color: var(--violet-light); border-color: rgba(var(--violet-rgb), 0.3); }
+.catPink   { background: rgba(var(--pink-rgb),   0.12); color: var(--pink-light);   border-color: rgba(var(--pink-rgb),   0.3); }
+.catCyan   { background: rgba(var(--cyan-rgb),   0.12); color: var(--cyan-light);   border-color: rgba(var(--cyan-rgb),   0.3); }
 .catGray   { background: var(--color-surface-3); color: var(--color-text-secondary); border-color: var(--color-border); }
 
 /* ── Sale mode tag ── */

@@ -55,6 +55,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
 
   return (
     <ToastProvider>
+      <a href="#main-content" className="skip-link">Saltar al contenido</a>
       <div className={styles.root}>
         <Sidebar
           session={session}
@@ -80,7 +81,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
             onToggleCollapse={handleToggleCollapse}
             onToggleMobile={handleToggleMobile}
           />
-          <main className={styles.content}>
+          <main id="main-content" className={styles.content}>
             {children}
           </main>
         </div>

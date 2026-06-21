@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { signToken, setSessionCookie } from '@/lib/auth'
 import { onboardingLimiter, getClientIp } from '@/lib/rate-limit'
@@ -86,53 +87,69 @@ export async function POST(req: NextRequest) {
 
   const hashed = await bcrypt.hash(data.password, 10)
 
-  const { business, user } = await prisma.$transaction(async (tx) => {
-    const biz = await tx.business.create({
-      data: {
-        name:                 data.business_name,
-        catalog_slug:         data.business_slug,
-        catalog_active:       false,
-        catalog_title:        data.business_name,
-        city:                 data.city,
-        catalog_desc:         data.description,
-        onboarding_completed: true,
-      },
-    })
+  let business!: { id: number }
+  let user!: { id: number; name: string }
 
-    const usr = await tx.user.create({
-      data: {
-        business_id: biz.id,
-        name:        data.owner_name,
-        email:       data.email,
-        password:    hashed,
-        role:        'admin',
-      },
-    })
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const biz = await tx.business.create({
+        data: {
+          name:                 data.business_name,
+          catalog_slug:         data.business_slug,
+          catalog_active:       false,
+          catalog_title:        data.business_name,
+          city:                 data.city,
+          catalog_desc:         data.description,
+          onboarding_completed: true,
+        },
+      })
 
-    // Seed expense categories
-    await tx.expenseCategory.createMany({
-      data: EXPENSE_CATEGORIES.map(c => ({ ...c, business_id: biz.id })),
-    })
+      const usr = await tx.user.create({
+        data: {
+          business_id: biz.id,
+          name:        data.owner_name,
+          email:       data.email,
+          password:    hashed,
+          role:        'admin',
+        },
+      })
 
-    // Seed payment methods
-    await tx.paymentMethod.createMany({
-      data: PAYMENT_METHODS.map(pm => ({ ...pm, business_id: biz.id })),
-    })
+      // Seed expense categories
+      await tx.expenseCategory.createMany({
+        data: EXPENSE_CATEGORIES.map(c => ({ ...c, business_id: biz.id })),
+      })
 
-    // Seed sample product
-    const sample = getSampleProduct(data.business_type)
-    await tx.product.create({
-      data: {
-        business_id:        biz.id,
-        name:               sample.name,
-        price_per_unit_usd: sample.price_per_unit_usd,
-        available_in_pos:   true,
-        active:             true,
-      },
-    })
+      // Seed payment methods
+      await tx.paymentMethod.createMany({
+        data: PAYMENT_METHODS.map(pm => ({ ...pm, business_id: biz.id })),
+      })
 
-    return { business: biz, user: usr }
-  })
+      // Seed sample product
+      const sample = getSampleProduct(data.business_type)
+      await tx.product.create({
+        data: {
+          business_id:        biz.id,
+          name:               sample.name,
+          price_per_unit_usd: sample.price_per_unit_usd,
+          available_in_pos:   true,
+          active:             true,
+        },
+      })
+
+      return { business: biz, user: usr }
+    })
+    business = result.business
+    user = result.user
+  } catch (e) {
+    // Slug duplicado en race condition (TOCTOU entre check y insert)
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      const target = (e.meta?.target as string[] | undefined) ?? []
+      if (target.includes('catalog_slug')) {
+        return NextResponse.json({ error: 'El slug ya está en uso', field: 'business_slug' }, { status: 409 })
+      }
+    }
+    throw e
+  }
 
   const token = await signToken({
     userId:               user.id,

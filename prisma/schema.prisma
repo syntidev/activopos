@@ -126,7 +126,7 @@ model Business {
   iva_enabled          Boolean  @default(false)
   iva_pct              Decimal  @default(16) @db.Decimal(5, 2)
   catalog_plan         String?  @db.VarChar(30)
-  catalog_slug         String?  @db.VarChar(80)
+  catalog_slug         String?  @unique @db.VarChar(80)
   catalog_active       Boolean  @default(false)
   catalog_title        String?  @db.VarChar(150)
   catalog_desc         String?  @db.Text

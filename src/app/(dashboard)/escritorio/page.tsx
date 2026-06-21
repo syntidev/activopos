@@ -6,7 +6,6 @@ import {
   DollarSign,
   ShoppingCart,
   TrendingUp,
-  Package,
   AlertTriangle,
   ArrowUp,
   ArrowDown,
@@ -28,11 +27,16 @@ const PERIODS: { key: Period; label: string }[] = [
 interface AnalyticsSummary {
   ok: boolean
   ventas: {
-    total_usd:     number
-    total_bs:      number
-    count:         number
+    total_usd:      number
+    total_bs:       number
+    count:          number
     avg_ticket_usd: number
-    items_sold:    number
+    items_sold:     number
+  }
+  resultado?: {
+    utilidad_neta_usd:  number
+    utilidad_bruta_usd: number
+    costo_ventas_usd:   number
   }
   vs_anterior: {
     variacion_pct: number
@@ -239,20 +243,26 @@ export default function EscritorioPage() {
           )}
         </div>
 
-        {/* KPI 4 — Ítems vendidos (teal secondary) */}
+        {/* KPI 4 — Utilidad neta (teal secondary) */}
         <div
           className={`${styles.kpiCardColor} ${styles.kpiSecondary}`}
           aria-busy={loading}
-          aria-label="Ítems vendidos"
+          aria-label="Utilidad neta"
         >
-          <Package size={48} className={styles.kpiBgIcon} aria-hidden="true" />
-          <span className={styles.kpiColorLabel}>Ítems</span>
+          <TrendingUp size={48} className={styles.kpiBgIcon} aria-hidden="true" />
+          <span className={styles.kpiColorLabel}>Utilidad neta</span>
           {loading ? (
             <div className={`${styles.skeletonKpiVal} ${styles.skeletonOnColor}`} />
           ) : (
             <>
-              <span className={styles.kpiColorValue}>{fmtNum(v?.items_sold ?? 0)}</span>
-              <span className={styles.kpiColorSub}>unidades vendidas</span>
+              <span className={styles.kpiColorValue}>
+                {fmtUsd(summary?.resultado?.utilidad_neta_usd ?? 0)}
+              </span>
+              <span className={styles.kpiColorSub}>
+                {v && v.total_usd > 0
+                  ? `${(((summary?.resultado?.utilidad_neta_usd ?? 0) / v.total_usd) * 100).toFixed(1)}% margen`
+                  : 'sin ventas'}
+              </span>
             </>
           )}
         </div>

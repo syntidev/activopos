@@ -13,18 +13,12 @@
   box-shadow: var(--card-hero-shadow);
 }
 
-/* ── Glow: borde degradado (dark mode base) ── */
+/* ── Glow: uniform teal border ── */
 .cardGlow {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    linear-gradient(135deg,
-      rgba(var(--accent-rgb), 0.9),
-      rgba(255,255,255,0.18),
-      rgba(var(--accent-rgb), 0.3)
-    ) border-box;
-  border: 1px solid transparent;
+  background:    var(--color-surface);
+  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.18);
+  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
 }
 
 /* ── Card top row: icon + badge ── */
@@ -85,16 +79,3 @@
 
 .cardBsHero { color: rgba(255, 255, 255, 0.65); }
 
-/* ── Glow: light mode ── */
-[data-theme="light"] .cardGlow,
-.light .cardGlow {
-  background:
-    linear-gradient(#ffffff, #ffffff) padding-box,
-    linear-gradient(135deg,
-      rgba(var(--accent-rgb), 0.7),
-      rgba(255,255,255,0.3),
-      rgba(var(--accent-rgb), 0.15)
-    ) border-box;
-  box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.1),
-              0 1px 3px rgba(0,0,0,0.04);
-}

@@ -79,24 +79,14 @@
 }
 
 .kpiCard {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    var(--card-glow-border) border-box;
-  border: 1px solid transparent;
+  background:    var(--color-surface);
+  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  display: flex;
+  padding:       var(--space-5);
+  display:       flex;
   flex-direction: column;
-  gap: var(--space-1);
-  box-shadow: var(--card-glow-shadow-dark);
-}
-
-[data-theme="light"] .kpiCard,
-.light .kpiCard {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    var(--card-glow-border-light) border-box;
-  box-shadow: var(--card-glow-shadow-light);
+  gap:           var(--space-1);
+  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
 }
 
 .kpiCardExpected {
@@ -147,27 +137,13 @@
   align-items: start;
 }
 
-/* ── Cards — A+C Glow ── */
+/* ── Cards ── */
 .card {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    var(--card-glow-gradient) border-box;
-  border: 1px solid transparent;
+  background:    var(--color-surface);
+  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--card-glow-shadow-dark);
-}
-
-[data-theme="light"] .card,
-.light .card {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    linear-gradient(135deg,
-      rgba(var(--accent-rgb), 0.4),
-      rgba(255,255,255,0.2),
-      rgba(var(--accent-rgb), 0.1)
-    ) border-box;
-  box-shadow: var(--card-glow-shadow-light);
+  overflow:      hidden;
+  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
 }
 
 .cardDangerBorder {

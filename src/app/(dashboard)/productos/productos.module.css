@@ -174,27 +174,13 @@
   outline-offset: 2px;
 }
 
-/* ── Table wrapper — A+C Glow ── */
+/* ── Table wrapper ── */
 .tableWrapper {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    var(--card-glow-gradient) border-box;
-  border: 1px solid transparent;
+  background:    var(--color-surface);
+  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--card-glow-shadow-dark);
-}
-
-[data-theme="light"] .tableWrapper,
-.light .tableWrapper {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    linear-gradient(135deg,
-      rgba(var(--accent-rgb), 0.4),
-      rgba(255,255,255,0.2),
-      rgba(var(--accent-rgb), 0.1)
-    ) border-box;
-  box-shadow: var(--card-glow-shadow-light);
+  overflow:      hidden;
+  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
 }
 
 .tableScroll {

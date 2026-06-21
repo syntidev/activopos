@@ -10,29 +10,19 @@
   padding: 16px;
 }
 
-/* ── Modal box — A+C Glow ── */
+/* ── Modal box ── */
 .modal {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    var(--card-glow-border) border-box;
-  border: 1px solid transparent;
+  background:    var(--color-surface);
+  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-2xl), var(--card-glow-shadow-dark);
-  width: 100%;
-  max-width: 560px;
-  max-height: calc(100vh - 32px);
-  display: flex;
+  box-shadow:    var(--shadow-2xl), 0 0 0 1px rgba(var(--brand-rgb), 0.12);
+  width:         100%;
+  max-width:     560px;
+  max-height:    calc(100vh - 32px);
+  display:       flex;
   flex-direction: column;
-  overflow: hidden;
-  will-change: opacity, transform;
-}
-
-[data-theme="light"] .modal,
-.light .modal {
-  background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-    var(--card-glow-border-light) border-box;
-  box-shadow: var(--shadow-2xl), var(--card-glow-shadow-light);
+  overflow:      hidden;
+  will-change:   opacity, transform;
 }
 
 /* ── Size variants ── */

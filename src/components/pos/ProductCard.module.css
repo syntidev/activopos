@@ -1,16 +1,14 @@
 .card {
-  display: flex;
+  display:       flex;
   flex-direction: column;
-  width: 100%;
-  background:
-    linear-gradient(var(--pos-card-bg), var(--pos-card-bg)) padding-box,
-    var(--card-glow-border-light) border-box;
-  border: 1px solid transparent;
+  width:         100%;
+  background:    var(--pos-card-bg);
+  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-lg);
-  cursor: pointer;
-  overflow: hidden;
-  text-align: left;
-  box-shadow: var(--shadow-card-brand);
+  cursor:        pointer;
+  overflow:      hidden;
+  text-align:    left;
+  box-shadow:    var(--shadow-card-brand);
   transition:
     box-shadow var(--transition-normal),
     transform var(--transition-normal);

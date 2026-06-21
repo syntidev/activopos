@@ -4,17 +4,15 @@
    ============================================================ */
 
 .row {
-  display: grid;
+  display:               grid;
   grid-template-columns: 40px 1fr auto auto var(--touch-min);
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  background:
-    linear-gradient(var(--pos-card-bg), var(--pos-card-bg)) padding-box,
-    var(--card-glow-border-light) border-box;
-  border: var(--border-width-thin) solid transparent;
-  border-radius: var(--radius-md);
-  min-height: var(--touch-comfy);
+  align-items:           center;
+  gap:                   var(--space-3);
+  padding:               var(--space-2) var(--space-3);
+  background:            var(--pos-card-bg);
+  border:                var(--border-width-thin) solid rgba(var(--brand-rgb), 0.20);
+  border-radius:         var(--radius-md);
+  min-height:            var(--touch-comfy);
   transition:
     box-shadow var(--transition-fast),
     transform var(--transition-fast);

@@ -659,8 +659,11 @@
 
 .finTd:first-child, .finTh:first-child { white-space: normal; }
 
-.finTable tbody tr:nth-child(even)              { background: rgba(var(--brand-rgb), 0.03); }
-.finTable tbody tr:hover                        { background: rgba(var(--brand-rgb), 0.04); }
+.finTable thead tr                              { background: var(--color-surface-2); }
+.finTable tbody tr                              { cursor: pointer; transition: background 0.12s; }
+.finTable tbody tr:nth-child(odd)               { background: var(--color-surface); }
+.finTable tbody tr:nth-child(even)              { background: var(--color-surface-2); }
+.finTable tbody tr:hover                        { background: rgba(var(--brand-rgb), 0.08); }
 .finTable tbody tr:hover td:first-child         { box-shadow: inset 3px 0 0 0 var(--color-brand); }
 .finTable tbody tr:last-child .finTd            { border-bottom: none; }
 

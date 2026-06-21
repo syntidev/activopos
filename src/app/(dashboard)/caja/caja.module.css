@@ -275,6 +275,8 @@
   text-align: right;
 }
 
+.pmTable thead tr { background: var(--color-surface-2); }
+.pmTable tbody tr { cursor: pointer; transition: background 0.12s; }
 .pmTable tbody tr td {
   padding:              var(--space-3) var(--space-5);
   font-size:            var(--text-sm);
@@ -283,8 +285,9 @@
   font-variant-numeric: tabular-nums;
 }
 .pmTable tbody tr:last-child td          { border-bottom: none; }
-.pmTable tbody tr:nth-child(even) td     { background: rgba(var(--brand-rgb), 0.03); }
-.pmTable tbody tr:hover td               { background: rgba(var(--brand-rgb), 0.04); }
+.pmTable tbody tr:nth-child(odd) td      { background: var(--color-surface); }
+.pmTable tbody tr:nth-child(even) td     { background: var(--color-surface-2); }
+.pmTable tbody tr:hover td               { background: rgba(var(--brand-rgb), 0.08); }
 .pmTable tbody tr:hover td:first-child   { box-shadow: inset 3px 0 0 0 var(--color-brand); }
 
 .pmRow td:not(:first-child) {

@@ -194,10 +194,13 @@
 .right  { text-align: right; }
 .center { text-align: center; }
 
-.topTable tbody tr:not(:last-child)          { border-bottom: 1px solid var(--color-border-subtle); }
-.topTable tbody tr:nth-child(even)           { background: rgba(var(--brand-rgb), 0.03); }
-.topTable tbody tr:hover                     { background: rgba(var(--brand-rgb), 0.04); }
-.topTable tbody tr:hover td:first-child      { box-shadow: inset 3px 0 0 0 var(--color-brand); }
+.topTable thead tr                           { background: var(--color-surface-2); }
+.topTable tbody tr { border-bottom: 1px solid var(--color-border-subtle); cursor: pointer; transition: background 0.12s; }
+.topTable tbody tr:last-child               { border-bottom: none; }
+.topTable tbody tr:nth-child(odd)           { background: var(--color-surface); }
+.topTable tbody tr:nth-child(even)          { background: var(--color-surface-2); }
+.topTable tbody tr:hover                    { background: rgba(var(--brand-rgb), 0.08); }
+.topTable tbody tr:hover td:first-child     { box-shadow: inset 3px 0 0 0 var(--color-brand); }
 
 .topTd {
   padding:        var(--space-2-5) 0;

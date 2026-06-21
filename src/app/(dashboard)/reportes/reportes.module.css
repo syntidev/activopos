@@ -263,8 +263,11 @@
   background: rgba(var(--accent-rgb), 0.03);
 }
 
-.reportTable tbody tr:nth-child(even)          { background: rgba(var(--brand-rgb), 0.03); }
-.reportTable tbody tr:hover                    { background: rgba(var(--brand-rgb), 0.04); }
+.reportTable thead tr                          { background: var(--color-surface-2); }
+.reportTable tbody tr                          { cursor: pointer; transition: background 0.12s; }
+.reportTable tbody tr:nth-child(odd)           { background: var(--color-surface); }
+.reportTable tbody tr:nth-child(even)          { background: var(--color-surface-2); }
+.reportTable tbody tr:hover                    { background: rgba(var(--brand-rgb), 0.08); }
 .reportTable tbody tr:hover td:first-child     { box-shadow: inset 3px 0 0 0 var(--color-brand); }
 .reportTable tbody tr:last-child .td           { border-bottom: none; }
 

@@ -38,8 +38,8 @@ test.describe('Sprint 17 — Tokens v3.0 + Escritorio v3.0', () => {
     // KPI primary — Facturación (teal primary bg)
     const primary = page.locator('[aria-label="Facturación total"]')
     await expect(primary).toBeVisible({ timeout: 6_000 })
-    // KPI secondary — Ítems vendidos (teal secondary bg)
-    const secondary = page.locator('[aria-label="Ítems vendidos"]')
+    // KPI secondary — Utilidad neta (teal secondary bg)
+    const secondary = page.locator('[aria-label="Utilidad neta"]')
     await expect(secondary).toBeVisible({ timeout: 6_000 })
   })
 

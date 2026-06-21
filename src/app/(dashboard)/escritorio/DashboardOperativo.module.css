@@ -12,14 +12,17 @@
 }
 
 .counterCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border-light) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  transition: border-color var(--transition-fast);
+  box-shadow: var(--shadow-card-brand);
+  transition: box-shadow var(--transition-fast);
 }
 
 .counterWarning { border-color: var(--color-warning-border); }
@@ -58,10 +61,13 @@
 
 /* ── CxC Alert card ── */
 .alertCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-border-light) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-card-brand);
 }
 
 .alertHeader {

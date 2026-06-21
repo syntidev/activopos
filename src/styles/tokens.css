@@ -192,6 +192,12 @@
   --shadow-danger:  0 0 0 3px rgba(var(--danger-rgb), 0.25);
   --shadow-warning: 0 0 0 3px rgba(var(--warning-rgb), 0.25);
 
+  /* Card depth — sistema A+C (aprobado sesión anterior) */
+  --shadow-card-brand:       0 2px 12px rgba(var(--brand-rgb), 0.08);
+  --shadow-card-brand-hover: 0 4px 20px rgba(var(--brand-rgb), 0.15);
+  --shadow-card-color:       0 4px 20px rgba(var(--brand-rgb), 0.35);
+  --shadow-card-alert:       0 2px 8px  rgba(var(--cta-rgb),   0.10);
+
   /* RGB extras v1 */
   --whatsapp-rgb: 37, 211, 102;
   --violet-rgb:   124, 58, 237;

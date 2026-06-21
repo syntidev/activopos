@@ -81,8 +81,8 @@
   flex-direction: column;
 }
 
-.kpiPrimary   { background: var(--brand-dark); }
-.kpiSecondary { background: var(--brand-darker); }
+.kpiPrimary   { background: var(--brand-dark);   box-shadow: 0 4px 20px rgba(var(--brand-rgb), 0.35); }
+.kpiSecondary { background: var(--brand-darker);  box-shadow: 0 4px 20px rgba(var(--brand-rgb), 0.35); }
 
 .kpiBgIcon {
   position: absolute;
@@ -133,12 +133,20 @@
 
 /* ── KPI card — white ── */
 .kpiCardWhite {
-  background: var(--bg-card);
-  border: 1px solid var(--border-card);
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    var(--card-glow-border) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow-card-brand);
+  transition: box-shadow var(--transition-base);
+}
+
+.kpiCardWhite:hover {
+  box-shadow: var(--shadow-card-brand-hover);
 }
 
 .kpiWhiteHead {
@@ -198,11 +206,14 @@
 
 /* ── Section card base ── */
 .sectionCard {
-  background: var(--bg-card);
-  border: 1px solid var(--border-card);
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    var(--card-glow-border-light) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(var(--brand-rgb), 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 /* Patrón Fina — aprobado por Carlos */
@@ -216,6 +227,30 @@
   border-left: 4px solid var(--border-positive);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+}
+
+/* Compound: glow semántico naranja para alertas de inventario */
+.sectionCard.alertBorder {
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--cta-rgb), 0.50) 0%,
+      rgba(255,255,255,0.10) 45%,
+      rgba(var(--cta-rgb), 0.10) 100%
+    ) border-box;
+  box-shadow: var(--shadow-card-alert);
+}
+
+/* Compound: glow semántico teal para top productos */
+.sectionCard.positiveBorder {
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--brand-rgb), 0.55) 0%,
+      rgba(255,255,255,0.12) 45%,
+      rgba(var(--brand-rgb), 0.12) 100%
+    ) border-box;
+  box-shadow: var(--shadow-card-brand);
 }
 
 /* ── Section header ── */
@@ -349,6 +384,8 @@
 /* ── Tabla — cabecera teal ── */
 .tableWrap {
   overflow-x: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px rgba(var(--brand-rgb), 0.08);
 }
 
 .tabla {

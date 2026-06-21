@@ -9,19 +9,21 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: var(--pos-card-bg);
-  border: var(--border-width-thin) solid var(--pos-card-border);
+  background:
+    linear-gradient(var(--pos-card-bg), var(--pos-card-bg)) padding-box,
+    var(--card-glow-border-light) border-box;
+  border: var(--border-width-thin) solid transparent;
   border-radius: var(--radius-md);
   min-height: var(--touch-comfy);
   transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast);
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .row:not(.rowDisabled):hover {
-    background: var(--pos-card-hover);
-    border-color: var(--color-brand-border);
+    box-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.12);
+    transform: translateY(-1px);
   }
 }
 

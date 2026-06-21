@@ -2,22 +2,23 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  background: var(--pos-card-bg);
-  border: 1px solid var(--pos-card-border);
+  background:
+    linear-gradient(var(--pos-card-bg), var(--pos-card-bg)) padding-box,
+    var(--card-glow-border-light) border-box;
+  border: 1px solid transparent;
   border-radius: var(--radius-lg);
   cursor: pointer;
   overflow: hidden;
   text-align: left;
+  box-shadow: var(--shadow-card-brand);
   transition:
-    border-color var(--transition-normal),
-    background var(--transition-normal),
-    box-shadow var(--transition-normal);
+    box-shadow var(--transition-normal),
+    transform var(--transition-normal);
 }
 
 .card:hover:not(:disabled) {
-  border-color: var(--color-brand-border);
-  background: var(--pos-card-hover);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-card-brand-hover);
+  transform: translateY(-2px);
 }
 
 .card:disabled {

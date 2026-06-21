@@ -30,6 +30,8 @@
   justify-content:  center;
   color:            var(--color-brand);
   flex-shrink:      0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05),
+              0 0 0 0.5px rgba(20, 184, 166, 0.08);
 }
 
 .iconWrapperNight {

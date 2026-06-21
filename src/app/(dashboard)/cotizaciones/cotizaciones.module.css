@@ -49,6 +49,8 @@
   border-radius: var(--radius-2xl);
   color: var(--color-text-muted);
   margin-bottom: var(--space-2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05),
+              0 0 0 0.5px rgba(20, 184, 166, 0.08);
 }
 
 .badge {

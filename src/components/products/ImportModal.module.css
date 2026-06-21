@@ -85,8 +85,10 @@
   text-align: center;
   transition:
     border-color var(--transition-fast),
-    background-color var(--transition-fast);
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   min-height: 140px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .dropZone:hover,

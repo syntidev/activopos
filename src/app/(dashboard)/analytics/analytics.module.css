@@ -137,10 +137,25 @@
 /* ── Chart section ───────────────────────────────────────── */
 
 .chartSection {
-  background:    var(--color-surface);
-  border:        1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border:        1px solid transparent;
   border-radius: var(--radius-xl);
   padding:       var(--space-5);
+  box-shadow:    var(--card-glow-shadow-dark);
+}
+
+[data-theme="light"] .chartSection,
+.light .chartSection {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.4),
+      rgba(255,255,255,0.2),
+      rgba(var(--accent-rgb), 0.1)
+    ) border-box;
+  box-shadow: var(--card-glow-shadow-light);
 }
 
 .sectionTitle {
@@ -171,10 +186,25 @@
 }
 
 .section {
-  background:    var(--color-surface);
-  border:        1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border:        1px solid transparent;
   border-radius: var(--radius-xl);
   padding:       var(--space-5);
+  box-shadow:    var(--card-glow-shadow-dark);
+}
+
+[data-theme="light"] .section,
+.light .section {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.4),
+      rgba(255,255,255,0.2),
+      rgba(var(--accent-rgb), 0.1)
+    ) border-box;
+  box-shadow: var(--card-glow-shadow-light);
 }
 
 /* ── Top productos table ─────────────────────────────────── */
@@ -286,10 +316,25 @@
   display:       flex;
   gap:           var(--space-5);
   padding:       var(--space-4) var(--space-5);
-  background:    var(--color-surface);
-  border:        1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border:        1px solid transparent;
   border-radius: var(--radius-xl);
   flex-wrap:     wrap;
+  box-shadow:    var(--card-glow-shadow-dark);
+}
+
+[data-theme="light"] .insights,
+.light .insights {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.4),
+      rgba(255,255,255,0.2),
+      rgba(var(--accent-rgb), 0.1)
+    ) border-box;
+  box-shadow: var(--card-glow-shadow-light);
 }
 
 .insightItem {

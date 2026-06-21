@@ -147,10 +147,25 @@
 /* ── Section card ────────────────────────────────────── */
 
 .sectionCard {
-  background:    var(--color-surface);
-  border:        1px solid var(--color-border);
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    var(--card-glow-gradient) border-box;
+  border:        1px solid transparent;
   border-radius: var(--radius-xl);
   overflow:      hidden;
+  box-shadow:    var(--card-glow-shadow-dark);
+}
+
+[data-theme="light"] .sectionCard,
+.light .sectionCard {
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(135deg,
+      rgba(var(--accent-rgb), 0.4),
+      rgba(255,255,255,0.2),
+      rgba(var(--accent-rgb), 0.1)
+    ) border-box;
+  box-shadow: var(--card-glow-shadow-light);
 }
 
 .sectionTitle {

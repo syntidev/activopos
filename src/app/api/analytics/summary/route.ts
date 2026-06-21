@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 type DailyRow = { date: string; total_usd: string | number }
 type HourRow  = { hour: string | number; avg_usd: string | number }
+type CostRow  = { costo: string | null }
 
 function parseDate(str: string | null, fallback: Date): Date {
   if (!str || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return fallback
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
   const prevFrom = new Date(from.getTime() - days * 86_400_000)
   const prevTo   = from
 
-  const [salesAgg, itemsAgg, payments, dailyRaw, hourlyRaw, prevAgg] = await Promise.all([
+  const [salesAgg, itemsAgg, payments, dailyRaw, hourlyRaw, prevAgg, costosRow, gastosOpAgg] = await Promise.all([
     prisma.sale.aggregate({
       where: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } },
       _sum:   { total_usd: true, total_bs: true },
@@ -76,15 +77,34 @@ export async function GET(req: NextRequest) {
       _sum:   { total_usd: true },
       _count: { id: true },
     }),
+
+    prisma.$queryRaw<CostRow[]>`
+      SELECT SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS costo
+      FROM sale_items si
+      JOIN sales s ON s.id = si.sale_id
+      JOIN products p ON p.id = si.product_id
+      WHERE s.business_id = ${bid}
+        AND s.status = 'paid'
+        AND s.sold_at >= ${from}
+        AND s.sold_at <  ${to}`,
+
+    prisma.gasto.aggregate({
+      where: { business_id: bid, fecha: { gte: from, lt: to } },
+      _sum:  { monto_usd: true },
+    }),
   ])
 
   const r2 = (x: number) => Math.round(x * 100) / 100
 
-  const totalUsd  = Number(salesAgg._sum.total_usd ?? 0)
-  const totalBs   = Number(salesAgg._sum.total_bs  ?? 0)
-  const count     = salesAgg._count.id
-  const prevUsd   = Number(prevAgg._sum.total_usd ?? 0)
-  const itemsSold = Number(itemsAgg._sum.quantity  ?? 0)
+  const totalUsd      = Number(salesAgg._sum.total_usd ?? 0)
+  const totalBs       = Number(salesAgg._sum.total_bs  ?? 0)
+  const count         = salesAgg._count.id
+  const prevUsd       = Number(prevAgg._sum.total_usd ?? 0)
+  const itemsSold     = Number(itemsAgg._sum.quantity  ?? 0)
+  const costoVentas   = Number(costosRow[0]?.costo ?? 0)
+  const gastosOp      = Number(gastosOpAgg._sum.monto_usd ?? 0)
+  const utilidadBruta = r2(totalUsd - costoVentas)
+  const utilidadNeta  = r2(totalUsd - costoVentas - gastosOp)
 
   const variacionPct: number =
     prevUsd > 0 ? r2(((totalUsd - prevUsd) / prevUsd) * 100) : 0
@@ -150,6 +170,12 @@ export async function GET(req: NextRequest) {
     mejor_hora: hourlyRaw[0]
       ? { hour: Number(hourlyRaw[0].hour), avg_usd: r2(Number(hourlyRaw[0].avg_usd)) }
       : null,
+    resultado: {
+      costo_ventas_usd:      r2(costoVentas),
+      gastos_operativos_usd: r2(gastosOp),
+      utilidad_bruta_usd:    utilidadBruta,
+      utilidad_neta_usd:     utilidadNeta,
+    },
     por_metodo:     porMetodo,
     dias_activos:   dailyRaw.length,
     dias_sin_venta: Math.max(0, days - dailyRaw.length),

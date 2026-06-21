@@ -131,6 +131,11 @@ En Escritorio v3.0, el KPI principal fue renombrado de "Ventas hoy" a "Facturaci
 Los tests T01/T06 fueron actualizados en Sprint 17 para usar `aria-label="Facturación total"`.
 Si en Sprint 18 el label vuelve a cambiar, actualizar el selector en los tests.
 
+### ES02 en sprint17-visual.spec.ts — corrección post-Sprint 17
+CLI-C cambió el KPI 4 de "Ítems vendidos" a "Utilidad neta" en Sprint 17 (commits CLI-C post-badbab7).
+ES02 fue corregido al inicio de Sprint 18 (commit 15b2a04): selector actualizado a `aria-label="Utilidad neta"`.
+Resultado: 57/57 pasando tras la corrección.
+
 ### Sistema A+C glow — restaurado (referencia)
 Sprint 17 CLI-B inicialmente eliminó el glow en algunas cards (commit 6e5b86d).
 CLI-C lo detectó como regresión y CLI-B lo restauró en 2cc3fd6.

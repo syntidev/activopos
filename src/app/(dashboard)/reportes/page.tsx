@@ -117,7 +117,8 @@ function ReportesContent() {
   const [date,      setDate]      = useState<string>(todayStr)
   const [data,      setData]      = useState<DailyData | null>(null)
   const [loading,   setLoading]   = useState(false)
-  const [exporting, setExporting] = useState(false)
+  const [exporting,        setExporting]        = useState(false)
+  const [exportingExcel,   setExportingExcel]   = useState(false)
   const initRef = useRef(false)
 
   const fetchDaily = useCallback(async (d: string) => {
@@ -193,6 +194,25 @@ function ReportesContent() {
     }
   }, [data, toast])
 
+  const handleExportExcel = useCallback(async () => {
+    setExportingExcel(true)
+    try {
+      const res = await fetch(`/api/reports/export-excel?date=${date}`)
+      if (!res.ok) { toast('Error al exportar', 'error'); return }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `reporte-${date}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast('Error al exportar', 'error')
+    } finally {
+      setExportingExcel(false)
+    }
+  }, [date, toast])
+
   const { period, label: periodLabel } = prevMonthPeriod()
 
   const totalPayments = data?.byPaymentMethod.reduce((s, p) => s + p.totalUsd, 0) ?? 0
@@ -228,8 +248,10 @@ function ReportesContent() {
             variant="ghost"
             size="sm"
             leftIcon={<FileSpreadsheet size={14} aria-hidden="true" />}
-            disabled
-            title="Exportar Excel — próximamente"
+            onClick={handleExportExcel}
+            loading={exportingExcel}
+            disabled={!data || loading}
+            aria-label="Exportar Excel"
           >
             Excel
           </Button>

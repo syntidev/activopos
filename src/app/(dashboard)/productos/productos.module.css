@@ -205,7 +205,7 @@
   text-transform: uppercase;
   border-bottom: 2px solid rgba(var(--brand-rgb), 0.20);
   white-space: nowrap;
-  background: var(--color-surface-2);
+  background: #e8f0fb;
 }
 
 .th:last-child {
@@ -213,15 +213,15 @@
 }
 
 /* ── Table body — native selectors for all rows (incl. skeleton) ── */
-.table thead tr                          { background: var(--color-surface-2); }
+.table thead tr                          { background: #e8f0fb; }
 .table tbody tr {
   border-bottom: 1px solid var(--color-border-subtle);
   cursor: pointer;
   transition: background 0.12s;
 }
 .table tbody tr:last-child               { border-bottom: none; }
-.table tbody tr:nth-child(odd)           { background: var(--color-surface); }
-.table tbody tr:nth-child(even)          { background: var(--color-surface-2); }
+.table tbody tr:nth-child(odd)           { background: #ffffff; }
+.table tbody tr:nth-child(even)          { background: #e8f0fb; }
 .table tbody tr:hover                    { background: rgba(var(--brand-rgb), 0.08); }
 .table tbody tr:hover td:first-child     { box-shadow: inset 3px 0 0 0 var(--color-brand); }
 .table tbody tr:hover .rowActions        { opacity: 1; }
@@ -425,7 +425,7 @@
   width: 56px;
   height: 56px;
   border-radius: var(--radius-xl);
-  background: var(--color-surface-2);
+  background: #e8f0fb;
   border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -520,7 +520,7 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  background: var(--color-surface-2);
+  background: #e8f0fb;
   border: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;

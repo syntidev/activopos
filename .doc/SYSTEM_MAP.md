@@ -1,5 +1,5 @@
 # SYSTEM_MAP — ActivoPOS
-# Generado desde código real — 2026-06-20
+# Generado desde código real — 2026-06-21
 # Fuente: find, grep, prisma/schema.prisma, git log
 # NO editar a mano — regenerar con el prompt CLI-C
 
@@ -9,16 +9,17 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 16                                                              |
-| Último commit      | (ver git log — post Sprint 16)                                         |
+| Último sprint      | Sprint 17                                                              |
+| Último commit      | (ver git log — post Sprint 17)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 52/52 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 57/57 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
-Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ → Sprint 15 ✅ → Onboarding ✅
+Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ →
+Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados.**
@@ -41,6 +42,8 @@ Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Cat
 | Expense Categories  | ✅ CERTIFICADO        | 15     | EX01-EX04: CRUD categorías, 409 dup, category_id en gasto      |
 | DT-023 UI           | ✅ CERTIFICADO        | 16     | select gastos en /finanzas + gestión en /configuracion         |
 | Onboarding          | ✅ CERTIFICADO        | 16     | ON01-ON05: wizard UI, check-slug, setup 201, cajero bloqueado  |
+| Tokens v3.0         | ✅ CERTIFICADO        | 17     | ES01: sin #2563EB/#1E3A5F, light/dark light por defecto        |
+| Escritorio v3.0     | ✅ CERTIFICADO        | 17     | ES01-ES05: teal KPIs, theme toggle, 0 hydration errors         |
 
 ---
 
@@ -396,6 +399,11 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-034 | P2  | ✅ RESUELTO       | metrics ?? 'visible' — valor default incorrecto         | 14       |
 | DT-035 | P2  | ✅ RESUELTO       | ingresos double-count incluía abonos duplicados         | 14       |
 | DT-036 | P3  | ✅ RESUELTO       | catalog_url hardcodeada — ahora usa NEXT_PUBLIC_APP_URL | 14       |
+| DT-037 | P2  | ✅ RESUELTO       | business.theme cross-device — next-themes gestiona sync | 17       |
+| DT-038 | P2  | ❌ PENDIENTE      | TOCTOU slug — falta @unique constraint en DB            | Sprint 18|
+| DT-039 | P1  | ✅ RESUELTO       | Header onClick sin mounted guard — crash SSR corregido  | 17       |
+| DT-040 | P2  | ✅ RESUELTO       | Button.module.css #fff hardcodeado — reemplazado token  | 17       |
+| DT-041 | P2  | ✅ RESUELTO       | TabTema sin mounted guard — eliminado, toggle en header | 17       |
 
 ---
 
@@ -460,7 +468,7 @@ src/
 │   ├── pos.ts                            ← Motor de cálculo POS
 │   └── rate-limit.ts                     ← IP rate limiting
 ├── styles/
-│   ├── tokens.css                        ← Design tokens v2.0 — teal #0D9488 + amber #D97706 añadidos Sprint 16
+│   ├── tokens.css                        ← Design tokens v3.0 Sprint 17 — light default, navy dark, 5 bordes semánticos
 │   └── globals.css
 ├── types/
 └── tests/
@@ -482,11 +490,11 @@ src/
 
 ---
 
-## 9. TESTS E2E — 52/52
+## 9. TESTS E2E — 57/57
 
 | Archivo                          | Tests | Estado |
 |----------------------------------|-------|--------|
-| `pos-core.spec.ts`               | 6     | ✅     |
+| `pos-core.spec.ts`               | 6     | ✅ T01/T06: actualizados aria-label="Facturación total" (Escritorio v3.0) |
 | `caja-core.spec.ts`              | 5     | ✅     |
 | `reportes-core.spec.ts`          | 5     | ✅ R03: networkidle fix (race condition fecha default vs fill) |
 | `finanzas-core.spec.ts`          | 5     | ✅ F05 usa playwright.request (rate limit fix) |
@@ -496,7 +504,8 @@ src/
 | `sprint15-core.spec.ts`          | 5     | ✅ Q01-Q02, R01-R02, U01 |
 | `expense-categories.spec.ts`     | 4     | ✅ EX01-EX04 — DT-023 backend |
 | `onboarding.spec.ts`             | 5     | ✅ ON01-ON05 — Sprint 16 |
-| **TOTAL**                        | **52**| ✅     |
+| `sprint17-visual.spec.ts`        | 5     | ✅ ES01-ES05 — Tokens v3.0 + Escritorio v3.0 |
+| **TOTAL**                        | **57**| ✅     |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
@@ -515,5 +524,8 @@ src/
 
 ---
 
-*Generado: 2026-06-20 | Sprint 16 cierre | CLI-D modo EJECUCIÓN*
-*Core + Onboarding certificados: 52/52 E2E — next-themes, DT-023 UI, wizard 4 pasos, tokens v2.0*
+**Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
+`locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
+
+*Generado: 2026-06-21 | Sprint 17 cierre | CLI-D modo EJECUCIÓN*
+*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 certificados: 57/57 E2E*

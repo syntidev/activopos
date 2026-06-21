@@ -35,8 +35,8 @@ test.describe('POS Core Flow — Certificación Sprint 10', () => {
     await page.goto(`${BASE_URL}/escritorio`)
     await page.waitForLoadState('networkidle')
     await expect(page).toHaveURL(/\/escritorio/)
-    // KPI "Ventas hoy"
-    await expect(page.getByText('Ventas hoy', { exact: false })).toBeVisible()
+    // KPI principal (Escritorio v3.0 — "Facturación total")
+    await expect(page.locator('[aria-label="Facturación total"]')).toBeVisible({ timeout: 8_000 })
     // Tasa BCV en header
     await expect(page.getByText('USD/VES', { exact: false }).first()).toBeVisible()
   })
@@ -121,11 +121,11 @@ test.describe('POS Core Flow — Certificación Sprint 10', () => {
     await page.goto(`${BASE_URL}/escritorio`)
     await page.waitForLoadState('networkidle')
 
-    await expect(page.getByText('Ventas hoy', { exact: false })).toBeVisible()
-    // El card de "Ventas hoy" no debe mostrar $0.00
-    const kpiParent = page.getByText('Ventas hoy', { exact: false }).locator('../..')
-    const kpiText = await kpiParent.textContent().catch(() => '')
-    console.log('  Ventas hoy card:', kpiText?.slice(0, 80))
+    // KPI principal (Escritorio v3.0 — "Facturación total")
+    await expect(page.locator('[aria-label="Facturación total"]')).toBeVisible({ timeout: 8_000 })
+    const kpiCard = page.locator('[aria-label="Facturación total"]')
+    const kpiText = await kpiCard.textContent().catch(() => '')
+    console.log('  Facturación card:', kpiText?.slice(0, 100))
     expect(kpiText).not.toContain('$0.00')
   })
 })

@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
       ) si_t ON si_t.product_id = p.id
       WHERE p.business_id = ${bid}
         AND p.active = true
-        AND p.product_type = 'physical'`,
+        AND p.product_type IN ('simple', 'combo', 'fabricable')`,
 
   ])
 

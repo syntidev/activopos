@@ -6,11 +6,11 @@ import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 
 const saleItemSchema = z.object({
-  product_id: z.number().int().positive(),
-  quantity: z.number().positive(),
+  product_id:         z.number().int().positive(),
+  quantity:           z.number().positive(),
   price_per_unit_usd: z.number().positive(),
-  sale_mode: z.enum(['unit', 'weight', 'service']),
-  discount_usd: z.number().min(0).default(0),
+  sale_mode:          z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
+  discount_usd:       z.number().min(0).default(0),
 })
 
 const paymentSchema = z.object({
@@ -97,7 +97,16 @@ export async function POST(req: NextRequest) {
           business_id: session.businessId,
           active: true,
         },
-        select: { id: true, name: true, base_unit_label: true },
+        select: {
+          id: true, name: true, base_unit_label: true,
+          product_type: true, unit_type: true, unit_step: true,
+          components: {
+            select: {
+              id: true, component_id: true, quantity: true, unit_label: true,
+              component: { select: { id: true, name: true } },
+            },
+          },
+        },
       })
 
       if (products.length !== new Set(productIds).size) {
@@ -106,22 +115,51 @@ export async function POST(req: NextRequest) {
 
       const productMap = new Map(products.map(p => [p.id, p]))
 
+      // Validate quantities
+      for (const item of body.items) {
+        const product = productMap.get(item.product_id)!
+        if (product.unit_type === 'unit') {
+          if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+            throw new Error(`Cantidad inválida para "${product.name}": debe ser entero positivo`)
+          }
+        } else {
+          const step = product.unit_step ?? 0.001
+          if (item.quantity < step) {
+            throw new Error(`Cantidad inválida para "${product.name}": mínimo ${step}`)
+          }
+        }
+      }
+
       const saleItems = body.items.map(item => {
         const product = productMap.get(item.product_id)!
         const subtotal_usd =
           item.quantity * item.price_per_unit_usd - item.discount_usd
         const subtotal_bs = subtotal_usd * rate
+
+        const recipe_snapshot =
+          product.product_type !== 'simple' && product.components.length > 0
+            ? JSON.stringify(
+                product.components.map(c => ({
+                  component_id:   c.component_id,
+                  component_name: c.component.name,
+                  quantity:       c.quantity,
+                  unit_label:     c.unit_label,
+                }))
+              )
+            : null
+
         return {
-          product_id: item.product_id,
-          product_name: product.name,
-          sale_mode: item.sale_mode,
-          unit_label: product.base_unit_label,
-          quantity: item.quantity,
+          product_id:         item.product_id,
+          product_name:       product.name,
+          sale_mode:          item.sale_mode,
+          unit_label:         product.base_unit_label,
+          quantity:           item.quantity,
           price_per_unit_usd: item.price_per_unit_usd,
-          subtotal_usd: Math.round(subtotal_usd * 10000) / 10000,
-          subtotal_bs: Math.round(subtotal_bs * 100) / 100,
-          rate_used: rate,
-          discount_usd: item.discount_usd,
+          subtotal_usd:       Math.round(subtotal_usd * 10000) / 10000,
+          subtotal_bs:        Math.round(subtotal_bs * 100) / 100,
+          rate_used:          rate,
+          discount_usd:       item.discount_usd,
+          recipe_snapshot,
         }
       })
 
@@ -182,16 +220,42 @@ export async function POST(req: NextRequest) {
       })
 
       if (body.status === 'paid') {
-        await tx.inventoryEntry.createMany({
-          data: body.items.map(item => ({
-            business_id: session.businessId,
-            product_id: item.product_id,
-            quantity: -item.quantity,
-            waste: 0,
-            notes: `VENTA #${ticket_number}`,
-            created_by: session.userId,
-          })),
-        })
+        const inventoryDeductions: {
+          business_id: number
+          product_id:  number
+          quantity:    number
+          waste:       number
+          notes:       string
+          created_by:  number
+        }[] = []
+
+        for (const item of body.items) {
+          const product = productMap.get(item.product_id)!
+          if (product.product_type === 'simple') {
+            inventoryDeductions.push({
+              business_id: session.businessId,
+              product_id:  item.product_id,
+              quantity:    -item.quantity,
+              waste:       0,
+              notes:       `VENTA #${ticket_number}`,
+              created_by:  session.userId,
+            })
+          } else {
+            // combo or fabricable: deduct each component's stock
+            for (const comp of product.components) {
+              inventoryDeductions.push({
+                business_id: session.businessId,
+                product_id:  comp.component_id,
+                quantity:    -(item.quantity * comp.quantity),
+                waste:       0,
+                notes:       `VENTA #${ticket_number} (componente de ${product.name})`,
+                created_by:  session.userId,
+              })
+            }
+          }
+        }
+
+        await tx.inventoryEntry.createMany({ data: inventoryDeductions })
 
         await tx.activityLog.create({
           data: {
@@ -217,7 +281,7 @@ export async function POST(req: NextRequest) {
       )
     }
     if (err instanceof Error) {
-      const knownErrors = ['Pago insuficiente', 'productos no encontrados']
+      const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida']
       if (knownErrors.some(e => err.message.includes(e))) {
         return NextResponse.json({ error: err.message }, { status: 400 })
       }

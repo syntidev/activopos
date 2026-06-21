@@ -104,7 +104,7 @@ export default function DashboardCharts() {
                 <YAxis tick={{ fontSize: 10, fill: 'currentColor' }} tickLine={false} axisLine={false}
                   tickFormatter={(v: number) => `$${v}`} />
                 <Tooltip contentStyle={TT_STYLE} formatter={(v) => [`$${(v as number).toFixed(2)}`, 'Ventas']} />
-                <Line type="monotone" dataKey="usd" stroke="#0D9488" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="usd" stroke="#14B8A6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           )}

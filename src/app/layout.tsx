@@ -48,10 +48,11 @@ export default function RootLayout({
       <body className={inter.variable}>
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={false}
           storageKey="activopos-theme"
           themes={['light', 'dark']}
+          disableTransitionOnChange={false}
         >
           {children}
         </ThemeProvider>

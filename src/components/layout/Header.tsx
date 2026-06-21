@@ -118,7 +118,7 @@ export function Header({
         {/* Theme toggle */}
         <button
           className={styles.themeToggle}
-          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          onClick={() => { if (mounted) setTheme(resolvedTheme === 'dark' ? 'light' : 'dark') }}
           aria-label={mounted && resolvedTheme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           title={mounted && resolvedTheme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
         >

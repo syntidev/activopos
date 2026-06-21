@@ -1,126 +1,110 @@
 /* ============================================================
-   ACTIVOPOS — DESIGN TOKENS
-   src/styles/tokens.css
-   Fuente de verdad visual — 100% tokenizado
-   Versión: 1.0 | Junio 2026 | Carlos Bolívar — SYNTIdev
+   ActivoPOS — Design Tokens v3.0
+   Fecha: 2026-06-21
+   Diseño aprobado: patrón Fina — variabilidad por jerarquía
+   Cards KPI con fondo color completo + bordes laterales semánticos
+   Light default · Dark opcional · Sidebar blanco en light / navy en dark
    ============================================================ */
 
-/* ────────────────────────────────────────────────────────────
-   TIPOGRAFÍA
-   ──────────────────────────────────────────────────────────── */
+/* ─── INVARIANT — BRAND + SEMÁNTICO + ESTRUCTURA ────────────── */
 :root {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  /* ── Brand — Teal ── */
+  --brand:              #14B8A6;
+  --brand-dark:         #0D9488;
+  --brand-darker:       #0F766E;
+  --brand-soft:         #F0FDF9;
+  --brand-soft-hover:   #E0FBF5;
+  --brand-on:           #FFFFFF;
+  --brand-on-soft:      #0D9488;
+  --brand-rgb:          20, 184, 166;
 
-  /* Escala tipográfica */
-  --text-2xs:  0.625rem;   /* 10px */
-  --text-xs:   0.75rem;    /* 12px */
-  --text-sm:   0.875rem;   /* 14px */
-  --text-base: 1rem;       /* 16px */
-  --text-lg:   1.125rem;   /* 18px */
-  --text-xl:   1.25rem;    /* 20px */
-  --text-2xl:  1.5rem;     /* 24px */
-  --text-3xl:  1.875rem;   /* 30px */
-  --text-4xl:  2.25rem;    /* 36px */
-  --text-5xl:  3rem;       /* 48px */
+  /* ── CTA — Naranja — USO EXCLUSIVO: Procesar Pago, Declarar Cierre ── */
+  --cta:                #F97316;
+  --cta-hover:          #EA6C00;
+  --cta-active:         #C2500A;
+  --cta-soft:           #FFF7ED;
+  --cta-border:         #FED7AA;
+  --cta-on:             #FFFFFF;
+  --cta-rgb:            249, 115, 22;
 
-  /* Pesos */
-  --weight-normal:   400;
-  --weight-medium:   500;
-  --weight-semibold: 600;
-  --weight-bold:     700;
-  --weight-extrabold:800;
+  /* ── Bordes laterales semánticos — patrón Fina ── */
+  --border-alert:       #F97316;
+  --border-positive:    #14B8A6;
+  --border-info:        #38BDF8;
+  --border-success:     #22C55E;
+  --border-warning:     #FBBF24;
 
-  /* Line heights */
-  --leading-tight:  1.25;
-  --leading-snug:   1.375;
-  --leading-normal: 1.5;
-  --leading-relaxed:1.625;
+  /* ── Semántico — irrompible ── */
+  --success:            #22C55E;
+  --success-soft:       #F0FDF4;
+  --success-text:       #16A34A;
+  --success-rgb:        34, 197, 94;
 
-  /* Letter spacing */
-  --tracking-tight:  -0.025em;
-  --tracking-normal:  0em;
-  --tracking-wide:    0.025em;
-  --tracking-wider:   0.05em;
-  --tracking-widest:  0.1em;
+  --danger:             #EF4444;
+  --danger-soft:        #FEF2F2;
+  --danger-text:        #DC2626;
+  --danger-rgb:         239, 68, 68;
 
-  /* ────────────────────────────────────────────────────────────
-     ESPACIADO — Escala 4px base
-     ──────────────────────────────────────────────────────────── */
-  --space-0:   0;
-  --space-px:  1px;
-  --space-0-5: 0.125rem;  /* 2px  */
-  --space-1:   0.25rem;   /* 4px  */
-  --space-1-5: 0.375rem;  /* 6px  */
-  --space-2:   0.5rem;    /* 8px  */
-  --space-2-5: 0.625rem;  /* 10px */
-  --space-3:   0.75rem;   /* 12px */
-  --space-3-5: 0.875rem;  /* 14px */
-  --space-4:   1rem;      /* 16px */
-  --space-5:   1.25rem;   /* 20px */
-  --space-6:   1.5rem;    /* 24px */
-  --space-7:   1.75rem;   /* 28px */
-  --space-8:   2rem;      /* 32px */
-  --space-9:   2.25rem;   /* 36px */
-  --space-10:  2.5rem;    /* 40px */
-  --space-11:  2.75rem;   /* 44px */
-  --space-12:  3rem;      /* 48px */
-  --space-14:  3.5rem;    /* 56px */
-  --space-16:  4rem;      /* 64px */
-  --space-20:  5rem;      /* 80px */
-  --space-24:  6rem;      /* 96px */
-  --space-32:  8rem;      /* 128px */
+  --warning:            #FBBF24;
+  --warning-soft:       #FFFBEB;
+  --warning-text:       #D97706;
+  --warning-rgb:        251, 191, 36;
 
-  /* ────────────────────────────────────────────────────────────
-     BORDES Y RADIOS
-     ──────────────────────────────────────────────────────────── */
-  --radius-none: 0;
-  --radius-xs:   2px;
-  --radius-sm:   4px;
+  --info:               #38BDF8;
+  --info-soft:          #F0F9FF;
+  --info-text:          #0284C7;
+  --info-rgb:           56, 189, 248;
+
+  /* ── Tipografía ── */
+  --font-display:       'Fraunces', Georgia, serif;
+  --font-body:          system-ui, -apple-system, sans-serif;
+  --font-mono:          'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-xs:    0.75rem;
+  --text-sm:    0.875rem;
+  --text-base:  1rem;
+  --text-lg:    1.125rem;
+  --text-xl:    1.25rem;
+  --text-2xl:   1.5rem;
+  --text-3xl:   1.875rem;
+  --text-4xl:   2.25rem;
+
+  /* ── Espaciado ── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ── Radios ── */
+  --radius-sm:   6px;
   --radius-md:   8px;
   --radius-lg:   12px;
   --radius-xl:   16px;
-  --radius-2xl:  20px;
-  --radius-3xl:  24px;
   --radius-full: 9999px;
 
-  --border-width-thin:   1px;
-  --border-width-normal: 1.5px;
-  --border-width-thick:  2px;
+  /* ── Transiciones ── */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
 
-  /* ────────────────────────────────────────────────────────────
-     TRANSICIONES Y ANIMACIONES
-     ──────────────────────────────────────────────────────────── */
-  --duration-instant: 50ms;
-  --duration-fast:    100ms;
-  --duration-normal:  200ms;
-  --duration-slow:    300ms;
-  --duration-slower:  500ms;
+  /* ═══════════════════════════════════════════════════════
+     COMPAT LAYER — tokens v1 invariantes
+     Mantenidos para que los CSS modules existentes no rompan
+     ═══════════════════════════════════════════════════════ */
 
-  --ease-default:     cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-in:          cubic-bezier(0.4, 0, 1, 1);
-  --ease-out:         cubic-bezier(0, 0, 0.2, 1);
-  --ease-in-out:      cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring:      cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-bounce:      cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-  --transition-fast:   var(--duration-fast)   var(--ease-out);
-  --transition-normal: var(--duration-normal) var(--ease-out);
-  --transition-slow:   var(--duration-slow)   var(--ease-out);
-  --transition-spring: var(--duration-slow)   var(--ease-spring);
-
-  /* ────────────────────────────────────────────────────────────
-     LAYOUT
-     ──────────────────────────────────────────────────────────── */
-  --sidebar-width:     220px;
-  --sidebar-collapsed: 64px;
-  --header-height:     56px;
-  --pos-ticket-width:  340px;
-
-  /* Touch targets — NUNCA menos de 44px */
-  --touch-min:   44px;
-  --touch-comfy: 48px;
-  --touch-large: 56px;
+  /* Layout */
+  --sidebar-width:      220px;
+  --sidebar-collapsed:  64px;
+  --header-height:      56px;
+  --pos-ticket-width:   340px;
+  --touch-min:          44px;
+  --touch-comfy:        48px;
+  --touch-large:        56px;
 
   /* Z-index */
   --z-base:    0;
@@ -132,396 +116,586 @@
   --z-toast:   500;
   --z-tooltip: 600;
 
-  /* ────────────────────────────────────────────────────────────
-     BREAKPOINTS (referencia — usar en CSS con @media)
-     ──────────────────────────────────────────────────────────── */
-  /* sm:  640px  — móvil grande */
-  /* md:  768px  — tablet       */
-  /* lg:  1024px — desktop      */
-  /* xl:  1280px — wide         */
-  /* 2xl: 1536px — ultrawide    */
+  /* Tipografía v1 (no renombrados en v3) */
+  --text-2xs:  0.625rem;
+  --text-5xl:  3rem;
+  --weight-normal:    400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+  --leading-tight:    1.25;
+  --leading-snug:     1.375;
+  --leading-normal:   1.5;
+  --leading-relaxed:  1.625;
+  --tracking-tight:  -0.025em;
+  --tracking-normal:  0em;
+  --tracking-wide:    0.025em;
+  --tracking-wider:   0.05em;
+  --tracking-widest:  0.1em;
 
-  /* ────────────────────────────────────────────────────────────
-     SOMBRAS
-     ──────────────────────────────────────────────────────────── */
+  /* Espaciado v1 (extras no en v3) */
+  --space-0:   0;
+  --space-px:  1px;
+  --space-0-5: 0.125rem;
+  --space-1-5: 0.375rem;
+  --space-2-5: 0.625rem;
+  --space-3-5: 0.875rem;
+  --space-7:   1.75rem;
+  --space-9:   2.25rem;
+  --space-11:  2.75rem;
+  --space-14:  3.5rem;
+  --space-16:  4rem;
+  --space-20:  5rem;
+  --space-24:  6rem;
+  --space-32:  8rem;
+
+  /* Radios v1 (extras no en v3) */
+  --radius-none:  0;
+  --radius-xs:    2px;
+  --radius-2xl:   20px;
+  --radius-3xl:   24px;
+  --border-width-thin:   1px;
+  --border-width-normal: 1.5px;
+  --border-width-thick:  2px;
+
+  /* Duration / easing v1 */
+  --duration-instant: 50ms;
+  --duration-fast:    100ms;
+  --duration-normal:  200ms;
+  --duration-slow:    300ms;
+  --duration-slower:  500ms;
+  --ease-default:  cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce:   cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --transition-normal: var(--duration-normal) var(--ease-out);
+  --transition-spring: var(--duration-slow) var(--ease-spring);
+
+  /* Sombras v1 (usadas en CSS modules) */
   --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.05);
   --shadow-sm:  0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
   --shadow-md:  0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
   --shadow-lg:  0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
   --shadow-xl:  0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
   --shadow-2xl: 0 25px 50px -12px rgba(0,0,0,0.25);
+  --shadow-brand:   0 0 0 3px rgba(var(--brand-rgb), 0.25);
+  --shadow-success: 0 0 0 3px rgba(var(--success-rgb), 0.25);
+  --shadow-danger:  0 0 0 3px rgba(var(--danger-rgb), 0.25);
+  --shadow-warning: 0 0 0 3px rgba(var(--warning-rgb), 0.25);
 
-  /* Sombras de color (para botones y estados activos) */
-  --shadow-brand:   0 0 0 3px rgba(13,148,136,0.25);
-  --shadow-success: 0 0 0 3px rgba(29,158,117,0.25);
-  --shadow-danger:  0 0 0 3px rgba(239,68,68,0.25);
-  --shadow-warning: 0 0 0 3px rgba(217,119,6,0.25);
-
-  /* Focus ring */
-  --focus-ring: 0 0 0 2px var(--color-brand);
-  --focus-ring-offset: 0 0 0 4px var(--color-bg), 0 0 0 6px var(--color-brand);
-
-  /* ── CTA (amber-600) — botones de cobro y cierre ── */
-  --cta:           #D97706;
-  --cta-hover:     #B45309;
-  --cta-active:    #92400E;
-  --cta-rgb:       217, 119, 6;
-
-  /* ── Accent RGB + Card A+C Glow ── */
-  --accent-rgb:   13, 148, 136;
-
-  /* ── Tokens RGB semánticos — Sprint 10 (DT-007) ── */
-  --success-rgb:  29, 158, 117;
-  --danger-rgb:   239, 68, 68;
+  /* RGB extras v1 */
   --whatsapp-rgb: 37, 211, 102;
   --violet-rgb:   124, 58, 237;
   --pink-rgb:     236, 72, 153;
   --cyan-rgb:     8, 145, 178;
   --purple-rgb:   109, 40, 217;
-  --card-glow-outline: rgba(var(--accent-rgb), 0.22);
+}
 
-  /* Subtle gradient — section cards, secondary panels */
+/* ══════════════════════════════════════════════════════════════
+   LIGHT MODE — DEFAULT para todos los usuarios
+   Sidebar: BLANCO — Fondo: azul-gris suave #F1F5FB
+   Cards: blancas — toggle dark/light solo en header
+══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="light"] {
+
+  /* Fondos */
+  --bg-base:        #F1F5FB;
+  --bg-card:        #FFFFFF;
+  --bg-card-hover:  #F8FAFC;
+  --bg-input:       #FFFFFF;
+  --bg-overlay:     rgba(0, 0, 0, 0.35);
+  --bg-banner:      #FFFFFF;
+
+  /* Sidebar — BLANCO en light */
+  --sidebar-bg:             #FFFFFF;
+  --sidebar-border:         #EAEFF6;
+  --sidebar-text:           #64748B;
+  --sidebar-text-hover:     #1E293B;
+  --sidebar-section-label:  #CBD5E1;
+  --sidebar-active-bg:      #F0FDF9;
+  --sidebar-active-text:    #0D9488;
+  --sidebar-active-border:  #14B8A6;
+  --sidebar-hover-bg:       #F8FAFC;
+  --sidebar-dot:            #14B8A6;
+
+  /* Toggle de caja en sidebar */
+  --toggle-on-bg:   #14B8A6;
+  --toggle-off-bg:  #E2E8F0;
+  --toggle-thumb:   #FFFFFF;
+
+  /* Texto */
+  --text-primary:   #1E293B;
+  --text-secondary: #64748B;
+  --text-tertiary:  #94A3B8;
+  --text-disabled:  #CBD5E1;
+  --text-inverse:   #FFFFFF;
+
+  /* Bordes de cards */
+  --border-card:        #E8EEF6;
+  --border-card-hover:  #D0DCF0;
+  --border-input:       #E2E8F0;
+  --border-input-focus: #14B8A6;
+  --border-divider:     #F1F5F9;
+
+  /* Tabla */
+  --table-header-bg:   #F0FDF9;
+  --table-header-text: #0D9488;
+  --table-row-hover:   #F8FAFC;
+  --table-border:      #F1F5F9;
+
+  /* Badge genérico */
+  --badge-bg:   #F1F5F9;
+  --badge-text: #64748B;
+
+  /* BCV ticker */
+  --bcv-bg:   #F0FDF9;
+  --bcv-text: #0D9488;
+  --bcv-sub:  #94A3B8;
+
+  /* Scrollbar */
+  --scrollbar-track:       #F1F5F9;
+  --scrollbar-thumb:       #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+
+  /* Sombras */
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* Sombras v1 light overrides */
+  --shadow-xs: 0 1px 2px 0 rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06);
+  --shadow-brand: 0 0 0 1px rgba(var(--brand-rgb), 0.15), 0 2px 12px rgba(var(--brand-rgb), 0.1);
+
+  /* ── COMPAT: aliasas v1 → v3 (light) ── */
+  --accent-rgb: var(--brand-rgb);
+
+  /* Color de fondo */
+  --color-bg:          var(--bg-base);
+  --color-surface:     var(--bg-card);
+  --color-surface-2:   var(--bg-card-hover);
+  --color-surface-3:   var(--bg-input);
+  --color-surface-4:   var(--border-card);
+  --color-surface-hover: var(--bg-card-hover);
+
+  /* Brand */
+  --color-brand:        var(--brand);
+  --color-brand-hover:  var(--brand-dark);
+  --color-brand-active: var(--brand-darker);
+  --color-brand-subtle: var(--brand-soft);
+  --color-brand-border: rgba(var(--brand-rgb), 0.3);
+
+  /* Texto */
+  --color-text-primary:   var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted:     var(--text-tertiary);
+  --color-text-disabled:  var(--text-disabled);
+  --color-text-inverse:   var(--text-inverse);
+  --color-text-on-brand:  var(--brand-on);
+
+  /* Bordes */
+  --color-border:        var(--border-card);
+  --color-border-subtle: var(--border-divider);
+  --color-border-strong: var(--border-card-hover);
+  --color-border-focus:  var(--border-input-focus);
+
+  /* Semántico light */
+  --color-success:        var(--success-text);
+  --color-success-hover:  var(--success);
+  --color-success-subtle: var(--success-soft);
+  --color-success-border: rgba(var(--success-rgb), 0.3);
+  --color-success-text:   var(--success-text);
+
+  --color-warning:        var(--warning-text);
+  --color-warning-hover:  var(--warning);
+  --color-warning-subtle: var(--warning-soft);
+  --color-warning-border: rgba(var(--warning-rgb), 0.3);
+  --color-warning-text:   var(--warning-text);
+
+  --color-danger:         var(--danger);
+  --color-danger-hover:   var(--danger);
+  --color-danger-active:  var(--danger-text);
+  --color-danger-subtle:  var(--danger-soft);
+  --color-danger-border:  rgba(var(--danger-rgb), 0.3);
+  --color-danger-text:    var(--danger-text);
+
+  --color-info:           var(--info-text);
+  --color-info-subtle:    var(--info-soft);
+  --color-info-border:    rgba(var(--info-rgb), 0.3);
+  --color-info-text:      var(--info-text);
+
+  /* Métodos de pago — colores para light */
+  --color-cash:     #15803D;
+  --color-transfer: #1D4ED8;
+  --color-zelle:    #4C1D95;
+  --color-binance:  #92400E;
+  --color-usd:      var(--text-primary);
+  --color-bs:       var(--text-secondary);
+
+  /* Sidebar v1 alias */
+  --sidebar-text-active:        var(--sidebar-active-text);
+  --sidebar-group-label:        var(--sidebar-section-label);
+  --sidebar-item-bg-hover:      var(--sidebar-hover-bg);
+  --sidebar-item-bg-active:     var(--sidebar-active-bg);
+  --sidebar-item-border-active: var(--sidebar-active-border);
+  --sidebar-rate-text:          var(--success-text);
+
+  /* Input v1 alias */
+  --input-bg:           var(--bg-input);
+  --input-border:       var(--border-input);
+  --input-border-error: var(--danger);
+  --input-border-focus: var(--border-input-focus);
+  --input-placeholder:  var(--text-tertiary);
+  --input-text:         var(--text-primary);
+
+  /* Header v1 alias */
+  --header-bg:     rgba(255, 255, 255, 0.9);
+  --header-border: var(--border-card);
+  --header-blur:   12px;
+
+  /* Overlay v1 alias */
+  --overlay-bg:   var(--bg-overlay);
+  --overlay-blur: 4px;
+
+  /* POS v1 alias */
+  --pos-grid-bg:         var(--bg-base);
+  --pos-card-bg:         var(--bg-card);
+  --pos-card-hover:      var(--bg-card-hover);
+  --pos-card-border:     var(--border-card);
+  --pos-ticket-bg:       var(--bg-card);
+  --pos-category-active: var(--brand);
+
+  /* Badge quote v1 alias */
+  --badge-quote-bg:     var(--info-soft);
+  --badge-quote-text:   var(--info-text);
+  --badge-quote-border: rgba(var(--info-rgb), 0.3);
+
+  /* Stock v1 alias */
+  --stock-ok:  var(--success-text);
+  --stock-low: var(--warning-text);
+  --stock-out: var(--danger-text);
+
+  /* Card glow light — gradientes para patrón A+C */
+  --card-glow-outline: rgba(var(--brand-rgb), 0.22);
   --card-glow-gradient: linear-gradient(
     135deg,
-    rgba(var(--accent-rgb), 0.45) 0%,
+    rgba(var(--brand-rgb), 0.45) 0%,
     rgba(255, 255, 255, 0.06) 45%,
-    rgba(var(--accent-rgb), 0.18) 100%
+    rgba(var(--brand-rgb), 0.18) 100%
   );
-
-  /* Strong gradient — KPI cards, hero cards */
   --card-glow-border: linear-gradient(
     135deg,
-    rgba(var(--accent-rgb), 0.85) 0%,
-    rgba(255, 255, 255, 0.18) 45%,
-    rgba(var(--accent-rgb), 0.25) 100%
+    rgba(var(--brand-rgb), 0.6) 0%,
+    rgba(255, 255, 255, 0.2) 45%,
+    rgba(var(--brand-rgb), 0.15) 100%
   );
-
-  /* ── Card shadows ── */
-  --card-hero-shadow:       0 4px 16px rgba(13,148,136,0.35), 0 1px 4px rgba(13,148,136,0.5);
-  --card-glow-shadow-dark:  0 0 14px rgba(13,148,136,0.18);
-  --card-glow-shadow-light: 0 2px 12px rgba(13,148,136,0.1), 0 1px 3px rgba(0,0,0,0.04);
-
-  /* ── Surface hover (table rows, list items) ── */
-  --color-surface-hover: var(--color-surface-2);
-}
-
-/* ============================================================
-   TEMA DARK — Por defecto
-   ============================================================ */
-:root,
-[data-theme="dark"],
-.dark {
-
-  /* ── Fondos (capas de profundidad) ── */
-  --color-bg:        #0D1117;   /* fondo base — más oscuro */
-  --color-surface:   #161B22;   /* cards, panels */
-  --color-surface-2: #1C2128;   /* hover states, input bg */
-  --color-surface-3: #21262D;   /* dropdowns, tooltips */
-  --color-surface-4: #30363D;   /* separadores, bordes elevados */
-
-  /* ── Marca / Acento ── */
-  --color-brand:        #0D9488;
-  --color-brand-hover:  #14B8A6;
-  --color-brand-active: #0F766E;
-  --color-brand-subtle: rgba(13,148,136,0.12);
-  --color-brand-border: rgba(13,148,136,0.35);
-
-  /* ── Texto ── */
-  --color-text-primary:   #F0F6FC;
-  --color-text-secondary: #8B949E;
-  --color-text-muted:     #484F58;
-  --color-text-disabled:  #30363D;
-  --color-text-inverse:   #0D1117;
-  --color-text-on-brand:  #FFFFFF;
-
-  /* ── Bordes ── */
-  --color-border:         #30363D;
-  --color-border-subtle:  #21262D;
-  --color-border-strong:  #484F58;
-  --color-border-focus:   #0D9488;
-
-  /* ── Estados semánticos ── */
-  --color-success:        #1D9E75;
-  --color-success-hover:  #22C55E;
-  --color-success-subtle: rgba(29,158,117,0.12);
-  --color-success-border: rgba(29,158,117,0.35);
-  --color-success-text:   #4ADE80;
-
-  --color-warning:        #D97706;
-  --color-warning-hover:  #F59E0B;
-  --color-warning-subtle: rgba(217,119,6,0.12);
-  --color-warning-border: rgba(217,119,6,0.35);
-  --color-warning-text:   #FCD34D;
-
-  --color-danger:         #EF4444;
-  --color-danger-hover:   #F87171;
-  --color-danger-active:  #DC2626;
-  --color-danger-subtle:  rgba(239,68,68,0.12);
-  --color-danger-border:  rgba(239,68,68,0.35);
-  --color-danger-text:    #FCA5A5;
-
-  --color-info:           #3B82F6;
-  --color-info-subtle:    rgba(59,130,246,0.12);
-  --color-info-border:    rgba(59,130,246,0.35);
-  --color-info-text:      #93C5FD;
-
-  /* ── Sidebar (siempre oscuro en ambos temas) ── */
-  --sidebar-bg:            #0D1117;
-  --sidebar-border:        #21262D;
-  --sidebar-text:          #8B949E;
-  --sidebar-text-active:   #F0F6FC;
-  --sidebar-text-hover:    #C9D1D9;
-  --sidebar-group-label:   #484F58;
-  --sidebar-item-bg-hover: rgba(255,255,255,0.04);
-  --sidebar-item-bg-active:rgba(13,148,136,0.15);
-  --sidebar-item-border-active: #14B8A6;
-  --sidebar-dot:           #14B8A6;
-  --sidebar-rate-text:     #1D9E75;
-
-  /* ── Header ── */
-  --header-bg:     rgba(13,17,23,0.85);
-  --header-border: #21262D;
-  --header-blur:   12px;
-
-  /* ── POS específico ── */
-  --pos-grid-bg:       #0D1117;
-  --pos-card-bg:       #161B22;
-  --pos-card-hover:    #1C2128;
-  --pos-card-border:   #30363D;
-  --pos-card-active:   rgba(13,148,136,0.15);
-  --pos-ticket-bg:     #161B22;
-  --pos-ticket-border: #30363D;
-  --pos-category-bg:   #1C2128;
-  --pos-category-active: #0D9488;
-
-  /* ── Caja / Finanzas ── */
-  --color-cash:        #1D9E75;   /* efectivo */
-  --color-transfer:    #3B82F6;   /* pago móvil / transferencia */
-  --color-zelle:       #6C2BD9;   /* zelle */
-  --color-binance:     #F0B90B;   /* binance */
-  --color-credit:      #D97706;   /* crédito pendiente */
-
-  /* ── Moneda ── */
-  --color-usd:         #F0F6FC;
-  --color-bs:          #8B949E;
-  --color-rate-live:   #1D9E75;
-  --color-rate-stale:  #D97706;
-
-  /* ── KPI Cards ── */
-  --kpi-bg:            #161B22;
-  --kpi-border:        #30363D;
-  --kpi-value-sales:   #F0F6FC;
-  --kpi-value-profit:  #1D9E75;
-  --kpi-value-pending: #D97706;
-  --kpi-value-danger:  #EF4444;
-
-  /* ── Input / Form ── */
-  --input-bg:          #0D1117;
-  --input-border:      #30363D;
-  --input-border-focus:#0D9488;
-  --input-border-error:#EF4444;
-  --input-text:        #F0F6FC;
-  --input-placeholder: #484F58;
-
-  /* ── Badge ── */
-  --badge-paid-bg:      rgba(29,158,117,0.15);
-  --badge-paid-text:    #4ADE80;
-  --badge-paid-border:  rgba(29,158,117,0.3);
-
-  --badge-pending-bg:   rgba(217,119,6,0.15);
-  --badge-pending-text: #FCD34D;
-  --badge-pending-border:rgba(217,119,6,0.3);
-
-  --badge-quote-bg:     rgba(59,130,246,0.15);
-  --badge-quote-text:   #93C5FD;
-  --badge-quote-border: rgba(59,130,246,0.3);
-
-  --badge-cancelled-bg:  rgba(239,68,68,0.15);
-  --badge-cancelled-text:#FCA5A5;
-  --badge-cancelled-border:rgba(239,68,68,0.3);
-
-  --badge-low-stock-bg:  rgba(239,68,68,0.15);
-  --badge-low-stock-text:#FCA5A5;
-
-  /* ── Stock status ── */
-  --stock-ok:      #1D9E75;
-  --stock-low:     #D97706;
-  --stock-out:     #EF4444;
-
-  /* ── Scrollbar ── */
-  --scrollbar-track: #161B22;
-  --scrollbar-thumb: #30363D;
-  --scrollbar-thumb-hover: #484F58;
-
-  /* ── Overlay ── */
-  --overlay-bg: rgba(0,0,0,0.65);
-  --overlay-blur: 4px;
-}
-
-/* ============================================================
-   TEMA LIGHT
-   ============================================================ */
-[data-theme="light"],
-.light {
-
-  /* ── Fondos ── */
-  --color-bg:          #F4F6F8;
-  --color-bg-primary:  #F4F6F8;
-  --color-surface:     #FFFFFF;
-  --color-surface-2: #F6F8FA;
-  --color-surface-3: #EAEEF2;
-  --color-surface-4: #D0D7DE;
-
-  /* ── Marca / Acento ── */
-  --color-brand:        #0D9488;
-  --color-brand-hover:  #0F766E;
-  --color-brand-active: #115E59;
-  --color-brand-subtle: rgba(13,148,136,0.08);
-  --color-brand-border: rgba(13,148,136,0.3);
-
-  /* ── Texto ── */
-  --color-text-primary:   #1C2128;
-  --color-text-secondary: #57606A;
-  --color-text-muted:     #8C959F;
-  --color-text-disabled:  #CFD3D8;
-  --color-text-inverse:   #F0F6FC;
-  --color-text-on-brand:  #FFFFFF;
-
-  /* ── Bordes ── */
-  --color-border:         #D0D7DE;
-  --color-border-subtle:  #EAEEF2;
-  --color-border-strong:  #8C959F;
-  --color-border-focus:   #0D9488;
-
-  /* ── Estados semánticos ── */
-  --color-success:        #1A7F64;
-  --color-success-hover:  #16A34A;
-  --color-success-subtle: rgba(26,127,100,0.08);
-  --color-success-border: rgba(26,127,100,0.3);
-  --color-success-text:   #1A7F64;
-
-  --color-warning:        #B45309;
-  --color-warning-hover:  #D97706;
-  --color-warning-subtle: rgba(180,83,9,0.08);
-  --color-warning-border: rgba(180,83,9,0.3);
-  --color-warning-text:   #B45309;
-
-  --color-danger:         #CF222E;
-  --color-danger-hover:   #EF4444;
-  --color-danger-active:  #B91C1C;
-  --color-danger-subtle:  rgba(207,34,46,0.08);
-  --color-danger-border:  rgba(207,34,46,0.3);
-  --color-danger-text:    #CF222E;
-
-  --color-info:           #2563EB;
-  --color-info-subtle:    rgba(37,99,235,0.08);
-  --color-info-border:    rgba(37,99,235,0.3);
-  --color-info-text:      #2563EB;
-
-  /* ── Sidebar (SIEMPRE oscuro, incluso en light mode) ── */
-  --sidebar-bg:            #0D1117;
-  --sidebar-border:        #21262D;
-  --sidebar-text:          #8B949E;
-  --sidebar-text-active:   #F0F6FC;
-  --sidebar-text-hover:    #C9D1D9;
-  --sidebar-group-label:   #484F58;
-  --sidebar-item-bg-hover: rgba(255,255,255,0.04);
-  --sidebar-item-bg-active:rgba(13,148,136,0.15);
-  --sidebar-item-border-active: #14B8A6;
-  --sidebar-dot:           #14B8A6;
-  --sidebar-rate-text:     #1D9E75;
-
-  /* ── Header ── */
-  --header-bg:     rgba(255,255,255,0.9);
-  --header-border: #D0D7DE;
-  --header-blur:   12px;
-
-  /* ── POS específico ── */
-  --pos-grid-bg:       #F6F8FA;
-  --pos-card-bg:       #FFFFFF;
-  --pos-card-hover:    #F6F8FA;
-  --pos-card-border:   #D0D7DE;
-  --pos-card-active:   rgba(13,148,136,0.08);
-  --pos-ticket-bg:     #FFFFFF;
-  --pos-ticket-border: #D0D7DE;
-  --pos-category-bg:   #EAEEF2;
-  --pos-category-active: #0D9488;
-
-  /* ── Moneda ── */
-  --color-usd:         #1C2128;
-  --color-bs:          #57606A;
-  --color-rate-live:   #1A7F64;
-  --color-rate-stale:  #B45309;
-
-  /* ── Caja / Finanzas ── */
-  --color-cash:        #15803D;
-  --color-transfer:    #1D4ED8;
-  --color-zelle:       #4C1D95;
-  --color-binance:     #92400E;
-
-  /* ── KPI Cards ── */
-  --kpi-bg:            #FFFFFF;
-  --kpi-border:        #D0D7DE;
-  --kpi-value-sales:   #1C2128;
-  --kpi-value-profit:  #1A7F64;
-  --kpi-value-pending: #B45309;
-  --kpi-value-danger:  #CF222E;
-
-  /* ── Input / Form ── */
-  --input-bg:          #FFFFFF;
-  --input-border:      #D0D7DE;
-  --input-border-focus:#0D9488;
-  --input-border-error:#CF222E;
-  --input-text:        #1C2128;
-  --input-placeholder: #8C959F;
-
-  /* ── Badge ── */
-  --badge-paid-bg:       rgba(26,127,100,0.08);
-  --badge-paid-text:     #1A7F64;
-  --badge-paid-border:   rgba(26,127,100,0.3);
-
-  --badge-pending-bg:    rgba(180,83,9,0.08);
-  --badge-pending-text:  #B45309;
-  --badge-pending-border:rgba(180,83,9,0.3);
-
-  --badge-quote-bg:      rgba(37,99,235,0.08);
-  --badge-quote-text:    #1D4ED8;
-  --badge-quote-border:  rgba(37,99,235,0.3);
-
-  --badge-cancelled-bg:   rgba(207,34,46,0.08);
-  --badge-cancelled-text: #CF222E;
-  --badge-cancelled-border:rgba(207,34,46,0.3);
-
-  --badge-low-stock-bg:   rgba(207,34,46,0.08);
-  --badge-low-stock-text: #CF222E;
-
-  /* ── Accent RGB (para KpiCard y efectos de glow) ── */
-  --accent-rgb: 13, 148, 136;
-
-  /* ── Shadows más suaves en light mode ── */
-  --shadow-xs:  0 1px 2px 0 rgba(0,0,0,0.04);
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-lg:  0 8px 24px rgba(0,0,0,0.1),  0 4px 8px rgba(0,0,0,0.06);
-  --shadow-brand: 0 0 0 1px rgba(var(--accent-rgb), 0.15), 0 2px 12px rgba(var(--accent-rgb), 0.1);
-
-  /* ── Card glow light-mode (más suave, no distrae) ── */
   --card-glow-border-light: linear-gradient(
     135deg,
-    rgba(var(--accent-rgb), 0.55) 0%,
+    rgba(var(--brand-rgb), 0.55) 0%,
     rgba(255, 255, 255, 0.25) 45%,
-    rgba(var(--accent-rgb), 0.15) 100%
+    rgba(var(--brand-rgb), 0.15) 100%
   );
+  --card-glow-shadow-dark:  0 0 14px rgba(var(--brand-rgb), 0.18);
+  --card-glow-shadow-light: 0 2px 12px rgba(var(--brand-rgb), 0.1), 0 1px 3px rgba(0,0,0,0.04);
+  --card-hero-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.35), 0 1px 4px rgba(var(--brand-rgb), 0.5);
+}
 
-  /* ── Surface hover ── */
-  --color-surface-hover: var(--color-surface-2);
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE — Opcional, activado por toggle en header
+   Sidebar: DARK NAVY — Fondo: navy profundo — Cards: navy medio
+══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
 
-  /* ── Scrollbar ── */
-  --scrollbar-track: #F6F8FA;
-  --scrollbar-thumb: #D0D7DE;
-  --scrollbar-thumb-hover: #8C959F;
+  /* Fondos */
+  --bg-base:        #0D1B2E;
+  --bg-card:        #132035;
+  --bg-card-hover:  #1A2D47;
+  --bg-input:       #1A2D47;
+  --bg-overlay:     rgba(0, 0, 0, 0.60);
+  --bg-banner:      #132035;
 
-  /* ── Overlay ── */
-  --overlay-bg: rgba(0,0,0,0.5);
+  /* Sidebar — NAVY en dark */
+  --sidebar-bg:             #0F172A;
+  --sidebar-border:         #1E293B;
+  --sidebar-text:           #94A3B8;
+  --sidebar-text-hover:     #F1F5F9;
+  --sidebar-section-label:  rgba(255, 255, 255, 0.2);
+  --sidebar-active-bg:      rgba(20, 184, 166, 0.14);
+  --sidebar-active-text:    #5EEAD4;
+  --sidebar-active-border:  #14B8A6;
+  --sidebar-hover-bg:       rgba(255, 255, 255, 0.05);
+  --sidebar-dot:            #5EEAD4;
+
+  /* Toggle de caja en sidebar */
+  --toggle-on-bg:  #14B8A6;
+  --toggle-off-bg: #1E293B;
+  --toggle-thumb:  #FFFFFF;
+
+  /* Texto */
+  --text-primary:   #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-tertiary:  #64748B;
+  --text-disabled:  #475569;
+  --text-inverse:   #0F172A;
+
+  /* Bordes de cards */
+  --border-card:        #1E2E42;
+  --border-card-hover:  #2A3F5A;
+  --border-input:       #1E293B;
+  --border-input-focus: #14B8A6;
+  --border-divider:     #1E293B;
+
+  /* Tabla */
+  --table-header-bg:   rgba(20, 184, 166, 0.08);
+  --table-header-text: #5EEAD4;
+  --table-row-hover:   rgba(20, 184, 166, 0.04);
+  --table-border:      #1E2E42;
+
+  /* Badge genérico */
+  --badge-bg:   rgba(255, 255, 255, 0.07);
+  --badge-text: #94A3B8;
+
+  /* BCV ticker */
+  --bcv-bg:   rgba(20, 184, 166, 0.10);
+  --bcv-text: #5EEAD4;
+  --bcv-sub:  #64748B;
+
+  /* Scrollbar */
+  --scrollbar-track:       #0D1B2E;
+  --scrollbar-thumb:       #1E293B;
+  --scrollbar-thumb-hover: #64748B;
+
+  /* Sombras */
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  /* Semántico dark — más luminoso para contraste */
+  --success:      #4ADE80;
+  --success-soft: rgba(34, 197, 94, 0.12);
+  --success-text: #4ADE80;
+
+  --danger:      #F87171;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --danger-text: #F87171;
+
+  --warning:      #FCD34D;
+  --warning-soft: rgba(251, 191, 36, 0.12);
+  --warning-text: #FCD34D;
+
+  --info:      #7DD3FC;
+  --info-soft: rgba(56, 189, 248, 0.12);
+  --info-text: #7DD3FC;
+
+  /* ── COMPAT: aliasas v1 → v3 (dark) ── */
+  --accent-rgb: var(--brand-rgb);
+
+  /* Color de fondo */
+  --color-bg:          var(--bg-base);
+  --color-surface:     var(--bg-card);
+  --color-surface-2:   var(--bg-card-hover);
+  --color-surface-3:   var(--bg-input);
+  --color-surface-4:   var(--border-card);
+  --color-surface-hover: var(--bg-card-hover);
+
+  /* Brand */
+  --color-brand:        var(--brand);
+  --color-brand-hover:  var(--brand-dark);
+  --color-brand-active: var(--brand-darker);
+  --color-brand-subtle: rgba(var(--brand-rgb), 0.12);
+  --color-brand-border: rgba(var(--brand-rgb), 0.35);
+
+  /* Texto */
+  --color-text-primary:   var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted:     var(--text-tertiary);
+  --color-text-disabled:  var(--text-disabled);
+  --color-text-inverse:   var(--text-inverse);
+  --color-text-on-brand:  var(--brand-on);
+
+  /* Bordes */
+  --color-border:        var(--border-card);
+  --color-border-subtle: var(--border-divider);
+  --color-border-strong: var(--border-card-hover);
+  --color-border-focus:  var(--border-input-focus);
+
+  /* Semántico dark */
+  --color-success:        var(--success);
+  --color-success-hover:  var(--success-text);
+  --color-success-subtle: var(--success-soft);
+  --color-success-border: rgba(var(--success-rgb), 0.35);
+  --color-success-text:   var(--success-text);
+
+  --color-warning:        var(--warning);
+  --color-warning-hover:  var(--warning-text);
+  --color-warning-subtle: var(--warning-soft);
+  --color-warning-border: rgba(var(--warning-rgb), 0.35);
+  --color-warning-text:   var(--warning-text);
+
+  --color-danger:         var(--danger);
+  --color-danger-hover:   var(--danger);
+  --color-danger-active:  var(--danger-text);
+  --color-danger-subtle:  var(--danger-soft);
+  --color-danger-border:  rgba(var(--danger-rgb), 0.35);
+  --color-danger-text:    var(--danger-text);
+
+  --color-info:           var(--info);
+  --color-info-subtle:    var(--info-soft);
+  --color-info-border:    rgba(var(--info-rgb), 0.3);
+  --color-info-text:      var(--info-text);
+
+  /* Métodos de pago — dark */
+  --color-cash:     var(--success);
+  --color-transfer: var(--info);
+  --color-zelle:    #6C2BD9;
+  --color-binance:  #F0B90B;
+  --color-usd:      var(--text-primary);
+  --color-bs:       var(--text-secondary);
+
+  /* Sidebar v1 alias */
+  --sidebar-text-active:        var(--sidebar-active-text);
+  --sidebar-group-label:        var(--sidebar-section-label);
+  --sidebar-item-bg-hover:      var(--sidebar-hover-bg);
+  --sidebar-item-bg-active:     var(--sidebar-active-bg);
+  --sidebar-item-border-active: var(--sidebar-active-border);
+  --sidebar-rate-text:          var(--success-text);
+
+  /* Input v1 alias */
+  --input-bg:           var(--bg-input);
+  --input-border:       var(--border-input);
+  --input-border-error: var(--danger);
+  --input-border-focus: var(--border-input-focus);
+  --input-placeholder:  var(--text-tertiary);
+  --input-text:         var(--text-primary);
+
+  /* Header v1 alias */
+  --header-bg:     rgba(13, 17, 23, 0.85);
+  --header-border: var(--border-card);
+  --header-blur:   12px;
+
+  /* Overlay v1 alias */
+  --overlay-bg:   var(--bg-overlay);
   --overlay-blur: 4px;
+
+  /* POS v1 alias */
+  --pos-grid-bg:         var(--bg-base);
+  --pos-card-bg:         var(--bg-card);
+  --pos-card-hover:      var(--bg-card-hover);
+  --pos-card-border:     var(--border-card);
+  --pos-ticket-bg:       var(--bg-card);
+  --pos-category-active: var(--brand);
+
+  /* Badge quote v1 alias */
+  --badge-quote-bg:     var(--info-soft);
+  --badge-quote-text:   var(--info-text);
+  --badge-quote-border: rgba(var(--info-rgb), 0.3);
+
+  /* Stock v1 alias */
+  --stock-ok:  var(--success);
+  --stock-low: var(--warning);
+  --stock-out: var(--danger);
+
+  /* Card glow dark — gradientes para patrón A+C */
+  --card-glow-outline: rgba(var(--brand-rgb), 0.22);
+  --card-glow-gradient: linear-gradient(
+    135deg,
+    rgba(var(--brand-rgb), 0.45) 0%,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(var(--brand-rgb), 0.18) 100%
+  );
+  --card-glow-border: linear-gradient(
+    135deg,
+    rgba(var(--brand-rgb), 0.85) 0%,
+    rgba(255, 255, 255, 0.18) 45%,
+    rgba(var(--brand-rgb), 0.25) 100%
+  );
+  --card-glow-border-light: linear-gradient(
+    135deg,
+    rgba(var(--brand-rgb), 0.55) 0%,
+    rgba(255, 255, 255, 0.25) 45%,
+    rgba(var(--brand-rgb), 0.15) 100%
+  );
+  --card-glow-shadow-dark:  0 0 14px rgba(var(--brand-rgb), 0.18);
+  --card-glow-shadow-light: 0 2px 12px rgba(var(--brand-rgb), 0.1), 0 1px 3px rgba(0,0,0,0.04);
+  --card-hero-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.35), 0 1px 4px rgba(var(--brand-rgb), 0.5);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TEMAS DE COLOR — 10 segmentos venezolanos
+   Solo cambia --brand, --brand-dark y derivados
+   Aplica SOLO dentro de #dashboard-root[data-color="X"]
+══════════════════════════════════════════════════════════════ */
+#dashboard-root[data-color="azul-sereno"] {
+  --brand: #60A5FA; --brand-dark: #3B82F6; --brand-rgb: 96,165,250;
+  --sidebar-active-text: #60A5FA; --sidebar-dot: #60A5FA;
+  --table-header-text: #3B82F6; --table-header-bg: rgba(59,130,246,.06);
+  --border-positive: #60A5FA;
+  --color-brand: #60A5FA;
+}
+#dashboard-root[data-color="amanecer"] {
+  --brand: #FB923C; --brand-dark: #EA580C; --brand-rgb: 251,146,60;
+  --sidebar-active-text: #FB923C; --sidebar-dot: #FB923C;
+  --table-header-text: #EA580C; --table-header-bg: rgba(234,88,12,.06);
+  --border-positive: #FB923C;
+  --color-brand: #FB923C;
+}
+#dashboard-root[data-color="aguamarina"] {
+  --brand: #34D399; --brand-dark: #10B981; --brand-rgb: 52,211,153;
+  --sidebar-active-text: #34D399; --sidebar-dot: #34D399;
+  --table-header-text: #10B981; --table-header-bg: rgba(16,185,129,.06);
+  --border-positive: #34D399;
+  --color-brand: #34D399;
+}
+#dashboard-root[data-color="medianoche"] {
+  --brand: #818CF8; --brand-dark: #6366F1; --brand-rgb: 129,140,248;
+  --sidebar-active-text: #818CF8; --sidebar-dot: #818CF8;
+  --table-header-text: #6366F1; --table-header-bg: rgba(99,102,241,.06);
+  --border-positive: #818CF8;
+  --color-brand: #818CF8;
+}
+#dashboard-root[data-color="tierra-dorada"] {
+  --brand: #FCD34D; --brand-dark: #F59E0B; --brand-rgb: 252,211,77;
+  --sidebar-active-text: #F59E0B; --sidebar-dot: #FCD34D;
+  --table-header-text: #B45309; --table-header-bg: rgba(245,158,11,.06);
+  --border-positive: #FCD34D;
+  --color-brand: #FCD34D;
+}
+#dashboard-root[data-color="brasa-viva"] {
+  --brand: #FB7185; --brand-dark: #F43F5E; --brand-rgb: 251,113,133;
+  --sidebar-active-text: #FB7185; --sidebar-dot: #FB7185;
+  --table-header-text: #E11D48; --table-header-bg: rgba(244,63,94,.06);
+  --border-positive: #FB7185;
+  --color-brand: #FB7185;
+}
+#dashboard-root[data-color="cielo-abierto"] {
+  --brand: #7DD3FC; --brand-dark: #0EA5E9; --brand-rgb: 125,211,252;
+  --sidebar-active-text: #7DD3FC; --sidebar-dot: #7DD3FC;
+  --table-header-text: #0284C7; --table-header-bg: rgba(14,165,233,.06);
+  --border-positive: #7DD3FC;
+  --color-brand: #7DD3FC;
+}
+#dashboard-root[data-color="menta-fresca"] {
+  --brand: #6EE7B7; --brand-dark: #34D399; --brand-rgb: 110,231,183;
+  --sidebar-active-text: #6EE7B7; --sidebar-dot: #6EE7B7;
+  --table-header-text: #059669; --table-header-bg: rgba(52,211,153,.06);
+  --border-positive: #6EE7B7;
+  --color-brand: #6EE7B7;
+}
+#dashboard-root[data-color="champan"] {
+  --brand: #E9D5A1; --brand-dark: #D4A853; --brand-rgb: 233,213,161;
+  --sidebar-active-text: #D4A853; --sidebar-dot: #E9D5A1;
+  --table-header-text: #92400E; --table-header-bg: rgba(212,168,83,.06);
+  --border-positive: #E9D5A1;
+  --color-brand: #E9D5A1;
+}
+#dashboard-root[data-color="jardin"] {
+  --brand: #86EFAC; --brand-dark: #22C55E; --brand-rgb: 134,239,172;
+  --sidebar-active-text: #86EFAC; --sidebar-dot: #86EFAC;
+  --table-header-text: #15803D; --table-header-bg: rgba(34,197,94,.06);
+  --border-positive: #86EFAC;
+  --color-brand: #86EFAC;
 }

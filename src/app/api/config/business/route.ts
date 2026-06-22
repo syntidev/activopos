@@ -16,9 +16,10 @@ const PatchSchema = z.object({
     .refine(v => v === null || v.startsWith('/uploads/'), 'Path inválido')
     .nullable()
     .optional(),
-  rate_source: z.enum(['bcv', 'manual']).optional(),
-  rate: z.number().positive().optional(),
-  segment: z.string().max(50).optional(),
+  rate_source:      z.enum(['bcv', 'manual']).optional(),
+  rate:             z.number().positive().optional(),
+  segment:          z.string().max(50).optional(),
+  max_discount_pct: z.number().min(0).max(100).optional(),
 })
 
 export async function GET() {
@@ -42,6 +43,7 @@ export async function GET() {
       theme_color: true,
       rate_source: true,
       segment: true,
+      max_discount_pct: true,
     },
   })
 
@@ -100,6 +102,7 @@ export async function PATCH(request: Request) {
       theme_color: true,
       rate_source: true,
       segment: true,
+      max_discount_pct: true,
     },
   })
 

@@ -68,11 +68,19 @@ export function CobroModal({
   const isCovered  = !hasInput || receivedNum >= totalBs - 0.01
 
   /* ── Mixed derived ── */
-  const mixedTotal = mixedEntries.reduce((s, e) => s + (parseFloat(e.amountBs) || 0), 0)
-  const mixedDiff  = totalBs - mixedTotal
-  const mixedOk    = mixedTotal >= totalBs
+  const mixedTotal  = mixedEntries.reduce((s, e) => s + (parseFloat(e.amountBs) || 0), 0)
+  const mixedDiff   = totalBs - mixedTotal
+  const mixedOk     = mixedTotal >= totalBs
+  const mixedRefOk  = !mixedEntries.some(
+    e => REFERENCE_TYPES.has(e.method.type) && !e.reference.trim()
+  )
 
-  const canConfirm = isMixed ? mixedOk : !!selectedMethod
+  const singleRefRequired = !isMixed && selectedMethod != null && REFERENCE_TYPES.has(selectedMethod.type)
+  const singleRefOk       = !singleRefRequired || reference.trim() !== ''
+
+  const canConfirm = isMixed
+    ? mixedOk && mixedRefOk
+    : !!selectedMethod && singleRefOk
 
   /* ── Handlers ── */
 
@@ -152,6 +160,15 @@ export function CobroModal({
       if (!clientId) { toast('Selecciona un cliente antes de vender a crédito', 'warning'); return }
       setShowCreditoModal(true)
       return
+    }
+    if (isMixed) {
+      const missingRef = mixedEntries.find(
+        (e) => parseFloat(e.amountBs) > 0 && REFERENCE_TYPES.has(e.method.type) && !e.reference.trim()
+      )
+      if (missingRef) {
+        toast(`Ingresa la referencia para ${missingRef.method.name}`, 'warning')
+        return
+      }
     }
     const payments = isMixed ? buildMixed() : buildSingle()
     if (!payments.length) { toast('Selecciona un método de pago', 'warning'); return }
@@ -343,17 +360,21 @@ export function CobroModal({
                 </div>
               )}
 
-              {/* Reference field */}
+              {/* Reference field — obligatoria para REFERENCE_TYPES */}
               {selectedMethod && REFERENCE_TYPES.has(selectedMethod.type) && (
                 <div className={styles.referenceField}>
-                  <label className={styles.fieldLabel}>Referencia</label>
+                  <label className={styles.fieldLabel}>
+                    Referencia <span className={styles.requiredMark} aria-hidden="true">*</span>
+                  </label>
                   <input
                     type="text"
-                    className={styles.textInput}
+                    className={`${styles.textInput} ${!reference.trim() ? styles.inputRequired : ''}`}
                     placeholder="Número de confirmación o referencia"
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
                     maxLength={60}
+                    required
+                    aria-required="true"
                   />
                 </div>
               )}

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
 import styles from './pedidos.module.css'
@@ -371,35 +372,35 @@ function PedidosContent() {
           </button>
         </div>
       ) : (
-        <div className={styles.kanban} role="region" aria-label="Tablero Kanban de pedidos">
-          {KANBAN_COLS.map(({ status, label, color }) => (
-            <KanbanColumn
-              key={status}
-              status={status}
-              label={label}
-              colorClass={color}
-              orders={byStatus(status)}
-              isDragOver={dragOverCol === status}
-              onDragOver={(e) => handleDragOver(e, status)}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onDragStart={handleDragStart}
-              onAdvance={handleAdvance}
-              onWhatsApp={handleWhatsApp}
-            />
-          ))}
-        </div>
+        <ErrorBoundary>
+          <div className={styles.kanban} role="region" aria-label="Tablero Kanban de pedidos">
+            {KANBAN_COLS.map(({ status, label, color }) => (
+              <KanbanColumn
+                key={status}
+                status={status}
+                label={label}
+                colorClass={color}
+                orders={byStatus(status)}
+                isDragOver={dragOverCol === status}
+                onDragOver={(e) => handleDragOver(e, status)}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onDragStart={handleDragStart}
+                onAdvance={handleAdvance}
+                onWhatsApp={handleWhatsApp}
+              />
+            ))}
+          </div>
+        </ErrorBoundary>
       )}
 
       {/* Empty state */}
       {!loading && !fetchError && orders.length === 0 && (
-        <div className={styles.emptyState}>
-          <ShoppingBag size={36} aria-hidden="true" className={styles.emptyIcon} />
-          <p className={styles.emptyTitle}>No hay pedidos activos</p>
-          <p className={styles.emptyDesc}>
-            Los pedidos que recibas aparecerán aquí en el tablero.
-          </p>
-        </div>
+        <EmptyState
+          icon={ShoppingBag}
+          title="No hay pedidos activos"
+          description="Los pedidos que recibas aparecerán aquí en el tablero."
+        />
       )}
 
       {/* Modal: Nuevo Pedido */}

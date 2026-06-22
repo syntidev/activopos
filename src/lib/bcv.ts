@@ -1,6 +1,8 @@
 import { prisma } from './prisma'
 
-const BCV_API = process.env.BCV_API_URL ?? 'https://ve.dolarapi.com/v1/dolares/oficial'
+const BCV_API      = process.env.BCV_API_URL ?? 'https://ve.dolarapi.com/v1/dolares/oficial'
+const PARALLEL_API = 'https://ve.dolarapi.com/v1/dolares/paralelo'
+const USDT_API     = 'https://ve.dolarapi.com/v1/dolares/cripto'
 const FALLBACK_RATE = parseFloat(process.env.BCV_FALLBACK_RATE ?? '36.50')
 const CACHE_TTL = 60 * 60 * 1000 // 1 hora en ms
 
@@ -53,6 +55,42 @@ export async function getBcvRate(businessId?: number): Promise<number> {
     })
     if (last) return parseFloat(last.rate.toString())
     return FALLBACK_RATE
+  }
+}
+
+// Fetch + cache de tasa paralelo o usdt (1h TTL en DB, igual que BCV).
+// Retorna null si no se puede obtener (nunca bloquea flujo de venta).
+export async function getOtherRate(source: 'paralelo' | 'usdt'): Promise<number | null> {
+  const apiUrl = source === 'paralelo' ? PARALLEL_API : USDT_API
+
+  const cached = await prisma.dollarRate.findFirst({
+    where: {
+      source,
+      is_active:  true,
+      fetched_at: { gte: new Date(Date.now() - CACHE_TTL) },
+    },
+    orderBy: { fetched_at: 'desc' },
+    select:  { rate: true },
+  })
+  if (cached) return parseFloat(cached.rate.toString())
+
+  try {
+    const res = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) })
+    if (!res.ok) throw new Error(`${source} API error: ${res.status}`)
+    const data = await res.json()
+    const rate = parseFloat(data.promedio ?? data.price ?? data.dolar)
+    if (!rate || isNaN(rate)) throw new Error(`${source}: tasa inválida`)
+
+    await prisma.dollarRate.updateMany({ where: { is_active: true, source }, data: { is_active: false } })
+    await prisma.dollarRate.create({ data: { rate, source, is_active: true, business_id: null } })
+    return rate
+  } catch {
+    const last = await prisma.dollarRate.findFirst({
+      where:   { source },
+      orderBy: { fetched_at: 'desc' },
+      select:  { rate: true },
+    })
+    return last ? parseFloat(last.rate.toString()) : null
   }
 }
 

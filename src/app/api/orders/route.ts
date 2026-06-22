@@ -17,11 +17,11 @@ const querySchema = z.object({
 /* ── Item schema ── */
 
 const orderItemSchema = z.object({
-  product_id:         z.number().int().positive(),
-  product_name:       z.string().min(1).max(120),
-  variant_label:      z.string().max(100).optional(),
-  quantity:           z.number().positive(),
-  price_per_unit_usd: z.number().nonnegative(),
+  product_id:    z.number().int().positive(),
+  product_name:  z.string().min(1).max(120),
+  variant_label: z.string().max(100).optional(),
+  quantity:      z.number().positive(),
+  // price_per_unit_usd NOT accepted from client — A5-1: always fetched from DB
 })
 
 /* ── Create schema ── */
@@ -96,6 +96,12 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/orders ── */
 
+// Errors thrown inside the transaction that map to 400
+const ORDER_400_ERRORS = [
+  'Producto no encontrado',
+  'Precio no configurado',
+]
+
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -104,54 +110,82 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createSchema.parse(body)
 
+    // Fetch BCV rate outside the transaction — avoids holding the tx open during a network call
     const rate = await getBcvRate()
 
-    // Calculate totals
-    const itemsTotal = data.items.reduce(
-      (acc, item) => acc + item.quantity * item.price_per_unit_usd,
-      0
-    )
-    const total_usd = Number((itemsTotal + data.delivery_fee).toFixed(2))
-    const total_bs  = Number((total_usd * rate).toFixed(2))
+    const order = await prisma.$transaction(async (tx) => {
+      // A5-1: prices from DB — anti price-tampering (never trust client-supplied prices)
+      const productIds = Array.from(new Set(data.items.map((i) => i.product_id)))
+      const products   = await tx.product.findMany({
+        where:  { id: { in: productIds }, business_id: session.businessId, active: true },
+        select: { id: true, price_per_unit_usd: true, price_per_kg_usd: true },
+      })
+      if (products.length !== productIds.length) {
+        throw new Error('Producto no encontrado o inactivo')
+      }
+      const productMap = new Map(products.map((p) => [p.id, p]))
 
-    // Generate order number
-    const count = await prisma.order.count({ where: { business_id: session.businessId } })
-    const order_number = `PED-${String(count + 1).padStart(5, '0')}`
+      const itemsWithPrices = data.items.map((item) => {
+        const product  = productMap.get(item.product_id)!
+        const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        if (priceUsd <= 0) {
+          throw new Error(`Precio no configurado para el producto ${item.product_id}`)
+        }
+        const subtotal_usd = Number((item.quantity * priceUsd).toFixed(2))
+        return { ...item, price_per_unit_usd: priceUsd, subtotal_usd }
+      })
 
-    const order = await prisma.order.create({
-      data: {
-        business_id:    session.businessId,
-        order_number,
-        status:         'received',
-        origin:         data.origin,
-        client_id:      data.client_id,
-        client_name:    data.client_name,
-        client_phone:   data.client_phone,
-        client_address: data.client_address,
-        notes:          data.notes,
-        delivery_fee:   data.delivery_fee,
-        total_usd,
-        total_bs,
-        rate_used:      rate,
-        estimated_time: data.estimated_time,
-        items: {
-          create: data.items.map((item) => ({
-            product_id:         item.product_id,
-            product_name:       item.product_name,
-            variant_label:      item.variant_label,
-            quantity:           item.quantity,
-            price_per_unit_usd: item.price_per_unit_usd,
-            subtotal_usd:       Number((item.quantity * item.price_per_unit_usd).toFixed(2)),
-          })),
+      const itemsTotal = itemsWithPrices.reduce((acc, item) => acc + item.subtotal_usd, 0)
+      const total_usd  = Number((itemsTotal + data.delivery_fee).toFixed(2))
+      const total_bs   = Number((total_usd * rate).toFixed(2))
+
+      // A3-1: atomic order_number — no race with concurrent POSTs
+      const last = await tx.order.findFirst({
+        where:   { business_id: session.businessId },
+        orderBy: { id: 'desc' },
+        select:  { id: true },
+      })
+      const next         = (last?.id ?? 0) + 1
+      const order_number = `PED-${String(next).padStart(5, '0')}`
+
+      return tx.order.create({
+        data: {
+          business_id:    session.businessId,
+          order_number,
+          status:         'received',
+          origin:         data.origin,
+          client_id:      data.client_id,
+          client_name:    data.client_name,
+          client_phone:   data.client_phone,
+          client_address: data.client_address,
+          notes:          data.notes,
+          delivery_fee:   data.delivery_fee,
+          total_usd,
+          total_bs,
+          rate_used:      rate,
+          estimated_time: data.estimated_time,
+          items: {
+            create: itemsWithPrices.map((item) => ({
+              product_id:         item.product_id,
+              product_name:       item.product_name,
+              variant_label:      item.variant_label,
+              quantity:           item.quantity,
+              price_per_unit_usd: item.price_per_unit_usd,
+              subtotal_usd:       item.subtotal_usd,
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      })
     })
 
     return NextResponse.json({ ok: true, order }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
+    }
+    if (err instanceof Error && ORDER_400_ERRORS.some((e) => err.message.startsWith(e))) {
+      return NextResponse.json({ error: err.message }, { status: 400 })
     }
     console.error('orders POST error:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

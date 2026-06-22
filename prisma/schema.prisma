@@ -167,6 +167,7 @@ model Business {
   returns              Return[]
   expense_categories   ExpenseCategory[]
   product_components   ProductComponent[]
+  notifications        Notification[]
 
   @@map("businesses")
 }
@@ -328,12 +329,17 @@ model Sale {
   client_name     String?    @db.VarChar(120)
   client_phone    String?    @db.VarChar(20)
   notes           String?    @db.Text
-  accounting_date  DateTime?  @db.Date
-  sold_at          DateTime?
-  discount_pct     Float      @default(0)
-  discount_auth_by Int?
-  created_at       DateTime   @default(now())
-  updated_at       DateTime   @updatedAt
+  accounting_date     DateTime?  @db.Date
+  sold_at             DateTime?
+  discount_pct        Float      @default(0)
+  discount_auth_by    Int?
+  monto_recibido_usd  Float?
+  vuelto_usd          Float?
+  due_date            DateTime?
+  credit_days         Int?
+  credit_notes        String?    @db.Text
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
 
   business       Business      @relation(fields: [business_id], references: [id])
   cashier        User          @relation("SaleCashier", fields: [cashier_id], references: [id])
@@ -562,6 +568,7 @@ model Order {
   client    Client?     @relation(fields: [client_id], references: [id])
   items     OrderItem[]
 
+  @@unique([business_id, order_number])
   @@map("orders")
 }
 
@@ -691,6 +698,26 @@ model ProductComponent {
   @@index([parent_id])
   @@index([component_id])
   @@map("product_components")
+}
+
+model Notification {
+  id          Int       @id @default(autoincrement())
+  business_id Int
+  type        String    @db.VarChar(60)
+  title       String    @db.VarChar(150)
+  body        String    @db.Text
+  entity_type String?   @db.VarChar(60)
+  entity_id   Int?
+  channel     String    @default("in_app") @db.VarChar(20)
+  status      String    @default("pending") @db.VarChar(20)
+  created_at  DateTime  @default(now())
+  read_at     DateTime?
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id, status])
+  @@index([created_at])
+  @@map("notifications")
 }
 
 model PinRateLimit {

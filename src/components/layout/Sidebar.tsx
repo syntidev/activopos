@@ -32,6 +32,7 @@ interface NavItem {
   href: string
   icon: LucideIcon
   label: string
+  moduleKey?: string
 }
 
 interface NavGroup {
@@ -50,37 +51,37 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'VENTAS',
     items: [
-      { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta' },
-      { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos' },
-      { href: '/clientes', icon: Users,         label: 'Clientes' },
+      { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta', moduleKey: 'pos'     },
+      { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos',        moduleKey: 'pedidos' },
+      { href: '/clientes', icon: Users,         label: 'Clientes'                            },
     ],
   },
   {
     label: 'INVENTARIO',
     items: [
-      { href: '/productos', icon: Package, label: 'Productos' },
+      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventario' },
     ],
   },
   {
     label: 'CAJA',
     items: [
-      { href: '/caja',     icon: Calculator, label: 'Gestión de Caja' },
-      { href: '/reportes', icon: BarChart2,  label: 'Reportes' },
+      { href: '/caja',     icon: Calculator, label: 'Gestión de Caja', moduleKey: 'caja'     },
+      { href: '/reportes', icon: BarChart2,  label: 'Reportes',        moduleKey: 'reportes' },
     ],
   },
   {
     label: 'CATÁLOGO',
     adminOnly: true,
     items: [
-      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital' },
+      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalogo' },
     ],
   },
   {
     label: 'FINANZAS',
     adminOnly: true,
     items: [
-      { href: '/finanzas',   icon: TrendingUp, label: 'Finanzas' },
-      { href: '/analytics',  icon: Activity,   label: 'Pulso del Negocio' },
+      { href: '/finanzas',  icon: TrendingUp, label: 'Finanzas',          moduleKey: 'finanzas'  },
+      { href: '/analytics', icon: Activity,   label: 'Pulso del Negocio', moduleKey: 'analytics' },
     ],
   },
   {
@@ -124,6 +125,7 @@ interface NavContentProps {
   onCloseNotifications?: () => void
   onOpenNotifications?: () => void
   notifUnread?: number
+  enabledModules?: string[] | null
 }
 
 function NavContent({
@@ -137,6 +139,7 @@ function NavContent({
   onCloseNotifications,
   onOpenNotifications,
   notifUnread = 0,
+  enabledModules,
 }: NavContentProps) {
   return (
     <div className={styles.inner}>
@@ -174,7 +177,9 @@ function NavContent({
             </AnimatePresence>
 
             <ul className={styles.groupList} role="list">
-              {group.items.map((item) => {
+              {group.items.filter(item =>
+                !item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)
+              ).map((item) => {
                 const Icon = item.icon
                 const isActive =
                   pathname === item.href ||
@@ -291,6 +296,7 @@ interface SidebarProps {
   isCollapsed: boolean
   isMobileOpen: boolean
   onCloseMobile: () => void
+  enabledModules?: string[] | null
 }
 
 export function Sidebar({
@@ -299,6 +305,7 @@ export function Sidebar({
   isCollapsed,
   isMobileOpen,
   onCloseMobile,
+  enabledModules,
 }: SidebarProps) {
   useScrollLock(isMobileOpen)
 
@@ -339,6 +346,7 @@ export function Sidebar({
     onCloseNotifications: () => setShowNotif(false),
     onOpenNotifications: () => setShowNotif(true),
     notifUnread,
+    enabledModules,
   }
 
   return (

@@ -247,6 +247,7 @@ export default function ProductosPage() {
         subcategory:        data.subcategory || null,
         is_featured:        data.isFeatured,
         ...(isEdit ? {} : { stock_quantity: data.stockInitial }),
+        stock_alert_threshold: data.stockAlertThreshold,
       }),
     })
 

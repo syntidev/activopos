@@ -1,0 +1,112 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.bar::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: 0 var(--space-2-5);
+  height: 30px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.tab:hover:not(.tabActive) {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+.tabActive {
+  border-color: var(--brand);
+  background: rgba(var(--brand-rgb), 0.08);
+  color: var(--brand);
+  font-weight: var(--weight-semibold);
+  cursor: default;
+}
+
+.tabLabel {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.closeBtn:hover {
+  color: var(--danger);
+  background: rgba(var(--danger-rgb), 0.1);
+}
+
+.tabActive .closeBtn {
+  color: rgba(var(--brand-rgb), 0.6);
+}
+
+.tabActive .closeBtn:hover {
+  color: var(--danger);
+}
+
+.newTab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2-5);
+  height: 30px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border-strong);
+  background: none;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--brand);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.newTab:hover {
+  background: rgba(var(--brand-rgb), 0.05);
+  border-color: var(--brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab, .closeBtn, .newTab { transition: none; }
+}

@@ -23,6 +23,7 @@ interface ClienteHistorialModalProps {
 }
 
 const STATUS_LABELS: Record<SaleHistoryItem['status'], string> = {
+  draft:     'Borrador',
   quote:     'Cotización',
   pending:   'Pendiente',
   paid:      'Pagado',
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<SaleHistoryItem['status'], string> = {
 }
 
 const STATUS_VARIANT: Record<SaleHistoryItem['status'], BadgeVariant> = {
+  draft:     'info',
   quote:     'info',
   pending:   'warning',
   paid:      'success',

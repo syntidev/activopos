@@ -14,9 +14,10 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ session, children }: DashboardShellProps) {
-  const [bcvRate, setBcvRate]           = useState<number | null>(null)
-  const [isCollapsed, setIsCollapsed]   = useState(false)
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [bcvRate, setBcvRate]               = useState<number | null>(null)
+  const [isCollapsed, setIsCollapsed]       = useState(false)
+  const [isMobileOpen, setIsMobileOpen]     = useState(false)
+  const [enabledModules, setEnabledModules] = useState<string[] | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchBcvRate = useCallback(async () => {
@@ -29,6 +30,16 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
     } catch {
       /* keep previous rate on failure */
     }
+  }, [])
+
+  /* ── Fetch enabled modules once on mount ── */
+  useEffect(() => {
+    fetch('/api/config/business/modules')
+      .then(r => r.ok ? r.json() : null)
+      .then((j: { modules_enabled?: string[] } | null) => {
+        if (Array.isArray(j?.modules_enabled)) setEnabledModules(j!.modules_enabled)
+      })
+      .catch(() => {})
   }, [])
 
   /* ── BCV polling every 5 min ── */
@@ -63,6 +74,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
           isCollapsed={isCollapsed}
           isMobileOpen={isMobileOpen}
           onCloseMobile={handleCloseMobile}
+          enabledModules={enabledModules}
         />
 
         {isMobileOpen && (

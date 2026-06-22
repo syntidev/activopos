@@ -3,6 +3,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkAndIncrementPinAttempts, clearPinAttempts } from '@/lib/pin-rate-limit'
 
 const schema = z.object({
   pin:          z.string().min(1).max(20),
@@ -11,28 +12,6 @@ const schema = z.object({
 
 type RouteContext = { params: { id: string } }
 
-// In-memory rate limiter: max 5 PIN attempts per sale per 5 minutes
-const attempts = new Map<string, { count: number; resetAt: number }>()
-
-const WINDOW_MS    = 5 * 60 * 1000
-const MAX_ATTEMPTS = 5
-
-function isRateLimited(key: string): boolean {
-  const now  = Date.now()
-  const slot = attempts.get(key)
-  if (!slot || now > slot.resetAt) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS })
-    return false
-  }
-  if (slot.count >= MAX_ATTEMPTS) return true
-  slot.count++
-  return false
-}
-
-function clearAttempts(key: string) {
-  attempts.delete(key)
-}
-
 export async function POST(req: NextRequest, { params }: RouteContext) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -40,9 +19,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const saleId = parseInt(params.id, 10)
   if (isNaN(saleId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  // Rate limit keyed to this business + sale so different businesses can't interfere
-  const rlKey = `${session.businessId}:${saleId}`
-  if (isRateLimited(rlKey)) {
+  // DB-backed rate limit — survives PM2 restarts
+  const limited = await checkAndIncrementPinAttempts(session.businessId, saleId)
+  if (limited) {
     return NextResponse.json(
       { error: 'Demasiados intentos. Espere 5 minutos.' },
       { status: 429 }
@@ -77,7 +56,6 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     if (sale.status === 'cancelled') {
       return NextResponse.json({ error: 'La venta está anulada' }, { status: 409 })
     }
-    // Anti-compounding: reject if discount was already applied
     if (sale.discount_pct > 0) {
       return NextResponse.json(
         { error: 'Esta venta ya tiene un descuento aplicado' },
@@ -85,7 +63,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       )
     }
 
-    // Verify PIN — compare against all active users (POS flow: manager walks up and types PIN)
+    // Verify PIN against all active users
     let authorizer: { id: number; role: string } | null = null
     for (const user of users) {
       if (await bcrypt.compare(body.pin, user.password)) {
@@ -95,12 +73,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     if (!authorizer) {
-      // Do NOT clear rate limit on failure — that's the point
       return NextResponse.json({ error: 'PIN incorrecto' }, { status: 401 })
     }
 
-    // PIN matched — clear rate limit counter for this sale
-    clearAttempts(rlKey)
+    // PIN matched — reset rate limit counter
+    await clearPinAttempts(session.businessId, saleId)
 
     const maxPct  = business?.max_discount_pct ?? 0
     const isAdmin = authorizer.role === 'admin' || authorizer.role === 'super_admin'
@@ -113,10 +90,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     // Compute original total from item subtotals — immune to prior total_usd mutations
-    const originalTotalUsd = sale.items.reduce(
-      (sum, i) => sum + Number(i.subtotal_usd),
-      0
-    )
+    const originalTotalUsd = sale.items.reduce((sum, i) => sum + Number(i.subtotal_usd), 0)
     const newTotalUsd = Math.round(originalTotalUsd * (1 - body.discount_pct / 100) * 100) / 100
     const newTotalBs  = Math.round(newTotalUsd * Number(sale.rate_used) * 100) / 100
 

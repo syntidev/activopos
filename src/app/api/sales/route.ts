@@ -10,6 +10,7 @@ const saleItemSchema = z.object({
   quantity:     z.number().positive(),
   sale_mode:    z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
   discount_usd: z.number().min(0).default(0),
+  variant_id:   z.number().int().positive().optional(),
   // price_per_unit_usd NOT accepted from client — SEC-01: always fetched from DB
 })
 
@@ -116,6 +117,18 @@ export async function POST(req: NextRequest) {
 
       const productMap = new Map(products.map(p => [p.id, p]))
 
+      // Fetch variants for items that specify one
+      const variantIds = body.items
+        .map(i => i.variant_id)
+        .filter((v): v is number => v !== undefined)
+      const variants = variantIds.length > 0
+        ? await tx.productVariant.findMany({
+            where: { id: { in: variantIds }, is_active: true },
+            select: { id: true, product_id: true, price_usd: true, stock: true },
+          })
+        : []
+      const variantMap = new Map(variants.map(v => [v.id, v]))
+
       // Validate quantities
       for (const item of body.items) {
         const product = productMap.get(item.product_id)!
@@ -133,8 +146,17 @@ export async function POST(req: NextRequest) {
 
       const saleItems = body.items.map(item => {
         const product = productMap.get(item.product_id)!
-        // SEC-01: price always from DB — never from client body
-        const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        const variant = item.variant_id != null ? variantMap.get(item.variant_id) : undefined
+
+        // Validate variant belongs to this product
+        if (variant && variant.product_id !== product.id) {
+          throw new Error(`Variante no corresponde al producto "${product.name}"`)
+        }
+
+        // SEC-01: price always from DB — variant price_usd takes priority over product price
+        const priceUsd = variant?.price_usd != null
+          ? Number(variant.price_usd)
+          : Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
         if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
 
         const subtotal_usd =
@@ -165,6 +187,7 @@ export async function POST(req: NextRequest) {
           rate_used:          rate,
           discount_usd:       item.discount_usd,
           recipe_snapshot,
+          variant_id:         item.variant_id ?? null,
         }
       })
 
@@ -237,14 +260,22 @@ export async function POST(req: NextRequest) {
         for (const item of body.items) {
           const product = productMap.get(item.product_id)!
           if (product.product_type === 'simple') {
-            inventoryDeductions.push({
-              business_id: session.businessId,
-              product_id:  item.product_id,
-              quantity:    -item.quantity,
-              waste:       0,
-              notes:       `VENTA #${ticket_number}`,
-              created_by:  session.userId,
-            })
+            if (item.variant_id != null) {
+              // Variant stock tracked on ProductVariant row
+              await tx.productVariant.update({
+                where: { id: item.variant_id },
+                data:  { stock: { decrement: item.quantity } },
+              })
+            } else {
+              inventoryDeductions.push({
+                business_id: session.businessId,
+                product_id:  item.product_id,
+                quantity:    -item.quantity,
+                waste:       0,
+                notes:       `VENTA #${ticket_number}`,
+                created_by:  session.userId,
+              })
+            }
           } else {
             // combo or fabricable: deduct each component's stock
             for (const comp of product.components) {
@@ -260,7 +291,9 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        await tx.inventoryEntry.createMany({ data: inventoryDeductions })
+        if (inventoryDeductions.length > 0) {
+          await tx.inventoryEntry.createMany({ data: inventoryDeductions })
+        }
 
         await tx.activityLog.create({
           data: {

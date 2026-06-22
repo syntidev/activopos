@@ -11,6 +11,8 @@ const patchSchema = z.object({
   color_hex:    z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
   is_active:    z.boolean().optional(),
   sort_order:   z.number().int().optional(),
+  price_usd:    z.number().min(0).nullable().optional(),
+  cost_usd:     z.number().min(0).nullable().optional(),
 })
 
 type RouteContext = { params: { id: string; variantId: string } }

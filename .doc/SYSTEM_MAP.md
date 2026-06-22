@@ -9,18 +9,19 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 20                                                              |
-| Último commit      | (ver git log — post Sprint 20)                                         |
+| Último sprint      | Sprint 21                                                              |
+| Último commit      | (ver git log — post Sprint 21)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 72/72 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 80/80 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
 Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ →
 Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅ →
-Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso ✅ → Seguridad SEC-01/SEC-02 ✅
+Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso ✅ → Seguridad SEC-01/SEC-02 ✅ →
+SEC-04 ✅ → Import Excel ✅ → Variantes ✅ → Modal PIN ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados + seguridad auditada.**
@@ -53,6 +54,10 @@ Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso 
 | SEC-02 snapshot     | ✅ CERTIFICADO        | 20     | SD02: recipe_snapshot usado en cobro diferido (no receta live) |
 | Descuentos PIN      | ✅ CERTIFICADO        | 20     | SD03-SD05: PIN incorrecto 401, límite cajero 403, admin bypass |
 | Overlay management  | ✅ IMPLEMENTADO       | 20     | useScrollLock, z-modal-top token, todos los modales corregidos |
+| SEC-04 rate limit DB| ✅ CERTIFICADO        | 21     | IM01-IM03: rate limit almacenado en DB, cluster-safe           |
+| Import Excel        | ✅ CERTIFICADO        | 21     | IM01-IM03: POST /api/products/import-excel — xlsx + dry-run    |
+| Variantes UI        | ✅ CERTIFICADO        | 21     | VA01-VA03: picker variante en ProductModal + POS               |
+| Modal PIN descuento | ✅ CERTIFICADO        | 21     | PI01-PI02: PinDescuentoModal conectado desde TicketPanel       |
 
 ---
 
@@ -206,6 +211,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | GET              | `/api/products/recent`                      | normaliza sale_mode en lectura    |
 | GET              | `/api/products/search`                      | normaliza sale_mode en lectura    |
 | POST             | `/api/products/import`                      | ✅ size limit 5MB aplicado        |
+| POST             | `/api/products/import-excel`                | ✅ Sprint 21 — xlsx import masivo + dry-run |
 | —                | `/api/products/categories`                  |                                   |
 
 ### Tasas
@@ -423,7 +429,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-039 | P1  | ✅ RESUELTO       | Header onClick sin mounted guard — crash SSR corregido  | 17       |
 | DT-040 | P2  | ✅ RESUELTO       | Button.module.css #fff hardcodeado — reemplazado token  | 17       |
 | DT-041 | P2  | ✅ RESUELTO       | TabTema sin mounted guard — eliminado, toggle en header | 17       |
-| DT-042 | P3  | ❌ BACKLOG        | Import masivo productos Excel — POST /api/products/import-excel | Sprint 21 |
+| DT-042 | P3  | ✅ RESUELTO       | Import masivo productos Excel — POST /api/products/import-excel | 21        |
 
 ---
 
@@ -452,6 +458,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | rates/bcv con auth                       | ✅ DT-013 resuelto Sprint 11                                | Sprint 11     |
 | cash/close TOCTOU                        | ✅ DT-012 resuelto — $transaction + findFirst               | Sprint 11     |
 | amount_bs server-side                    | ✅ DT-011 resuelto — amount_bs = usd × rate                 | Sprint 11     |
+| Rate limit DB (SEC-04)                   | `lib/rate-limit.ts` — limiter almacenado en DB, cluster-safe| ✅ Sprint 21  |
 
 ---
 
@@ -510,6 +517,8 @@ src/
     ├── sprint17-visual.spec.ts           ← 5/5 ✅ Sprint 17 ES01-ES05
     ├── sprint18-mobile.spec.ts           ← 5/5 ✅ Sprint 18 MO01-MO05
     ├── sprint19-fabrica.spec.ts          ← 5/5 ✅ Sprint 19 FA01-FA05
+    ├── sprint20-security.spec.ts         ← 5/5 ✅ Sprint 20 SD01-SD05
+    ├── sprint21-import-variantes.spec.ts ← 8/8 ✅ Sprint 21 IM01-IM03 VA01-VA03 PI01-PI02
     ├── .auth-state.json                  ← JWT admin — expira cada 8h, refrescar antes de tests
     └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
@@ -518,7 +527,7 @@ src/
 
 ---
 
-## 9. TESTS E2E — 62/62
+## 9. TESTS E2E — 80/80
 
 | Archivo                          | Tests | Estado |
 |----------------------------------|-------|--------|
@@ -535,7 +544,9 @@ src/
 | `sprint17-visual.spec.ts`        | 5     | ✅ ES02 corregido: "Ítems vendidos" → "Utilidad neta" (CLI-C rename) |
 | `sprint18-mobile.spec.ts`        | 5     | ✅ MO01-MO05 — Mobile POS + Export Excel |
 | `sprint19-fabrica.spec.ts`       | 5     | ✅ FA01-FA05 — Módulo Fábrica + Venta por Peso |
-| **TOTAL**                        | **67**| ✅     |
+| `sprint20-security.spec.ts`      | 5     | ✅ SD01-SD05 — Seguridad SEC-01/SEC-02 + descuentos PIN |
+| `sprint21-import-variantes.spec.ts` | 8  | ✅ IM01-IM03 + VA01-VA03 + PI01-PI02 — Import Excel + Variantes + Modal PIN |
+| **TOTAL**                        | **80**| ✅     |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
@@ -558,5 +569,5 @@ src/
 **Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
 `locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
 
-*Generado: 2026-06-21 | Sprint 19 cierre | CLI-D modo EJECUCIÓN*
-*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel + Fábrica + Peso certificados: 67/67 E2E*
+*Generado: 2026-06-22 | Sprint 21 cierre | CLI-D modo EJECUCIÓN*
+*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel + Fábrica + Peso + Sprint 21 certificados: 80/80 E2E*

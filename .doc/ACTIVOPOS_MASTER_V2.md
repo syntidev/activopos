@@ -433,7 +433,7 @@ Cada segmento tiene su data-theme propio con variables completas:
 
 ---
 
-## 12. LANDING SEO POR SEGMENTO — Fase futura
+## 12. LANDING SEO POR SEGMENTO — Aprobada post-lanzamiento
 
 ### Estrategia
 Una página de aterrizaje por segmento para captura orgánica.
@@ -463,6 +463,7 @@ Modelo: Pulpos tiene `/pos-para-carniceria`, `/pos-para-ferreterias`, etc.
 - Stack: Next.js (mismo repo) o sitio estático separado
 - No tiene dependencia con el dashboard
 - Se construye cuando haya al menos 2-3 clientes reales por segmento
+- **Estrategia aprobada Sprint 21 — ejecutar post-lanzamiento con clientes reales**
 
 ---
 
@@ -491,4 +492,31 @@ Modelo: Pulpos tiene `/pos-para-carniceria`, `/pos-para-ferreterias`, etc.
 - Carrito completo empaquetado en WhatsApp (ellos solo producto individual)
 - Precio en Bs calculado con BCV en tiempo real al momento del envío
 - Pedido registrado en DB automáticamente sin intervención del negocio
+
+---
+
+## 14. DECISIONES SPRINT 21 — SELLADAS
+
+### Frase de posicionamiento (aprobada Sprint 21)
+
+> "ActivoPOS es tu sistema de control de ventas e inventario. No reemplaza tu facturación SENIAT — la complementa."
+
+- Usar en landing, onboarding, materiales de venta, y documentación pública
+- No mezclar con terminología SENIAT/fiscal — ActivoPOS NO es un sistema de facturación
+- Contexto: el venezolano tiende a confundir POS con sistema de facturación tributaria; esta frase destruye esa confusión de entrada
+
+### Estándar de reportería (aprobado Sprint 21)
+
+- **Header:** teal (`var(--color-brand)`) en todos los reportes exportados
+- **Print:** `@media print` implementado — reportes renderizan correctamente al imprimir/PDF
+- **Colorimetría sellada:** los reportes usan únicamente tokens del sistema visual; cero hex hardcodeados
+- Este estándar aplica a: `/reportes`, `/finanzas`, y cualquier módulo futuro con exportación
+
+### SEO por segmento (estrategia aprobada Sprint 21)
+
+- Estrategia de landing pages por segmento documentada en §12 de este documento
+- **Decisión:** ejecutar post-lanzamiento, cuando haya al menos 2-3 clientes reales por segmento
+- No bloquear desarrollo del POS por esta estrategia — son caminos paralelos
+
+*Decisiones registradas: 2026-06-22 | Sprint 21 | CLI-D*
 

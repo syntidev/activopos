@@ -88,7 +88,7 @@ Finanzas ✅ → Catálogo ✅ → Analytics ✅
 
 ---
 
-## SPRINT 15 — PREPARACIÓN PARA PRIMER CLIENTE (Daniel)
+## SPRINT 15 — PREPARACIÓN PARA PRIMER CLIENTE
 
 ### Prioridad 1: DT-023 — Expense Categories
 
@@ -184,4 +184,4 @@ tests/onboarding.spec.ts                    ← certificación onboarding (CLI-D
 ---
 
 *Generado: 2026-06-19 | HEAD: post Sprint 14 | Entregado por: CLI-D Sprint 14*
-*Regla del Policía: CORE COMPLETADO — siguiente fase: producción con Daniel*
+*Regla del Policía: CORE COMPLETADO — siguiente fase: producción con primer cliente*

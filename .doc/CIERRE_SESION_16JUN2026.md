@@ -12,7 +12,7 @@
 - middleware.ts excluye '/' y '/landing.html' de auth
 - BCV llama primero a /api/rates/bcv propio, fallback a ve.dolarapi.com
 - Font switcher eliminado — Fraunces fija en producción
-- Testimonios: Daniel A. (real), María R., Luisana V. (composites)
+- Testimonios: María R., Luisana V. (composites)
 - Plan 3 "Pulso del Negocio" — QR analytics independiente de LLEVA.app
 - Sin precios en planes — consultar por WhatsApp (estrategia de calificación)
 

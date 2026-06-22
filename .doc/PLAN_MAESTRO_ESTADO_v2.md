@@ -116,7 +116,7 @@
 
 ### Sprint 11 — Primer Cliente
 - /launch-ready checklist
-- Demo con Daniel (Margarita)
+- Demo con primer cliente
 - Onboarding negocio real
 
 ### Sprint 12 — Fiscal (futuro, si cliente lo pide)

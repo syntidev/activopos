@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
+import { createNotification } from '@/lib/notifications'
 
 const saleItemSchema = z.object({
   product_id:   z.number().int().positive(),
@@ -75,6 +76,34 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json({ ok: true, sales })
+}
+
+async function checkStockAlerts(businessId: number, productIds: number[], ticketNumber: string) {
+  const products = await prisma.product.findMany({
+    where:  { id: { in: productIds } },
+    select: { id: true, name: true, stock_alert_threshold: true },
+  })
+  const aggs = await Promise.all(
+    products.map(p =>
+      prisma.inventoryEntry
+        .aggregate({ where: { product_id: p.id, business_id: businessId }, _sum: { quantity: true, waste: true } })
+        .then(a => ({ id: p.id, net: Number(a._sum.quantity ?? 0) - Number(a._sum.waste ?? 0) }))
+    )
+  )
+  const stockMap = new Map(aggs.map(a => [a.id, a.net]))
+  for (const p of products) {
+    const net = stockMap.get(p.id) ?? 0
+    if (net <= p.stock_alert_threshold) {
+      await createNotification(
+        businessId,
+        'stock_low',
+        'Stock bajo',
+        `${p.name}: ${net} unidades disponibles (umbral: ${p.stock_alert_threshold}). Venta: ${ticketNumber}.`,
+        'product',
+        p.id
+      )
+    }
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -331,6 +360,16 @@ export async function POST(req: NextRequest) {
 
       return newSale
     })
+
+    // Fire-and-forget: check stock_alert_threshold for products deducted in this sale
+    if (body.status === 'paid') {
+      const simpleProductIds = sale.items
+        .filter(i => i.variant_id == null)
+        .map(i => i.product_id)
+      if (simpleProductIds.length > 0) {
+        void checkStockAlerts(session.businessId, simpleProductIds, sale.ticket_number).catch(() => {})
+      }
+    }
 
     return NextResponse.json({ ok: true, sale }, { status: 201 })
   } catch (err) {

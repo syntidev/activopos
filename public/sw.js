@@ -44,7 +44,9 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      const url = event.notification.data?.url ?? '/'
+      const raw = event.notification.data?.url ?? '/'
+      // Only allow relative paths — reject protocol-relative and external URLs
+      const url = (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) ? raw : '/'
       const existing = list.find(c => c.url.includes(url) && 'focus' in c)
       if (existing) return existing.focus()
       return clients.openWindow(url)

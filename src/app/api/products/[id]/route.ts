@@ -30,9 +30,10 @@ const patchSchema = z.object({
   subcategory:        z.string().max(60).nullable().optional(),
   is_featured:        z.boolean().optional(),
   active:             z.boolean().optional(),
-  sort_order:         z.number().int().optional(),
-  availability:       z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).optional(),
-  catalog_visibility: z.enum(['visible', 'hidden', 'on_request']).optional(),
+  sort_order:             z.number().int().optional(),
+  availability:           z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).optional(),
+  catalog_visibility:     z.enum(['visible', 'hidden', 'on_request']).optional(),
+  stock_alert_threshold:  z.number().int().min(0).optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -76,6 +77,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       price_per_kg_usd: product.price_per_kg_usd ? Number(product.price_per_kg_usd) : null,
       cost_per_unit_usd: costUsd,
       min_stock: Number(product.min_stock),
+      stock_alert_threshold: product.stock_alert_threshold,
       stock: { quantity: qty, waste, net_qty: qty - waste },
       price_bs: priceUsd ? priceUsd * rate : null,
       profit_usd: priceUsd && costUsd ? priceUsd - costUsd : null,

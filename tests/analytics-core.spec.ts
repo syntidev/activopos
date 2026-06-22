@@ -29,10 +29,9 @@ test.describe('Analytics — Certificación Sprint 14', () => {
     // En el primer cold-call la API puede devolver vacío; AN02–AN04 verifican contenido real.
     const titleLocator  = page.locator('h1').filter({ hasText: 'Pulso del Negocio' })
     const noDataLocator = page.getByText('Sin datos disponibles', { exact: false })
-    await page.waitForLoadState('networkidle')
-    const titleVisible  = await titleLocator.isVisible()
-    const noDataVisible = await noDataLocator.isVisible()
-    expect(titleVisible || noDataVisible, 'Página debería mostrar título o estado vacío').toBe(true)
+    // isVisible() es instantáneo — falla en cold-start antes de que React renderice datos.
+    // toBeVisible con timeout espera el render post-networkidle (datos de useEffect).
+    await expect(titleLocator.or(noDataLocator)).toBeVisible({ timeout: 8_000 })
   })
 
   // ── AN02 ────────────────────────────────────────────────────────────────

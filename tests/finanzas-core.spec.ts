@@ -122,29 +122,31 @@ test.describe('Finanzas — Certificación Sprint 12', () => {
   // ── F04 ────────────────────────────────────────────────────────────────
   test('F04 — CxC muestra pendientes con días restantes', async ({ page }) => {
     // Verificar API CxC tiene data (creada en setup)
+    // Sprint 23 CLI-A rediseñó CxC: { ok, items[], total, pagination, vigente_usd, ... }
     const res  = await page.request.get(`${BASE}/api/finanzas/cxc`)
     const body = await res.json() as {
-      ok: boolean
-      cxc: Array<{
-        sale_id: number
+      ok:          boolean
+      items:       Array<{
+        sale_id:   number
         client_name: string
         saldo_usd: number
-        vencimiento: string
-        vencido: boolean
+        due_date:  string | null
+        bucket:    string
       }>
-      totals: { count: number }
+      total:       number
+      vigente_usd: number
     }
 
     expect(res.status()).toBe(200)
     expect(body.ok).toBe(true)
-    expect(body.totals.count).toBeGreaterThanOrEqual(1)
+    expect(body.total).toBeGreaterThanOrEqual(1)
 
-    const item = body.cxc[0]
+    const item = body.items[0]
     expect(item.sale_id).toBeGreaterThan(0)
     expect(item.client_name.length).toBeGreaterThan(0)
     expect(item.saldo_usd).toBeGreaterThan(0)
-    // vencimiento es fecha válida YYYY-MM-DD
-    expect(item.vencimiento).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    // bucket es uno de los 3 valores válidos
+    expect(['vencido', 'por_vencer', 'vigente']).toContain(item.bucket)
 
     // Navegar a /finanzas y tab CxC
     await page.goto(`${BASE}/finanzas`)
@@ -158,8 +160,10 @@ test.describe('Finanzas — Certificación Sprint 12', () => {
     await page.waitForTimeout(2_000)
 
     // Algún item de CxC visible (el cliente o el monto)
-    const clientVisible = page.getByText(item.client_name)
-    await expect(clientVisible).toBeVisible({ timeout: 6_000 })
+    // El cliente puede aparecer como "Sin nombre" si no tiene client_id
+    const searchFor = item.client_name === 'Sin nombre' ? item.sale_id.toString() : item.client_name
+    const itemVisible = page.getByText(searchFor.toString())
+    await expect(itemVisible).toBeVisible({ timeout: 6_000 })
   })
 
   // ── F05 ────────────────────────────────────────────────────────────────

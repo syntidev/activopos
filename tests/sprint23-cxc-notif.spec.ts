@@ -347,7 +347,8 @@ test('DU01 — due_date persistido en venta a crédito (Sprint 22 P1 resuelto)',
   expect(body.sale.origin).toBe('credit')
 
   // The sale should now appear in CxC (not as 'vencido' since due date is 14 days away)
-  const cxcRes  = await request.get(`${BASE}/api/finanzas/cxc?status=vigente`)
+  // limit=100 evita que la venta recién creada quede en página 2 (default limit=20)
+  const cxcRes  = await request.get(`${BASE}/api/finanzas/cxc?status=vigente&limit=100`)
   const cxcBody = await cxcRes.json() as { items: { sale_id: number; bucket: string }[] }
   const inCxC = cxcBody.items.find(i => i.sale_id === body.sale.id)
   expect(inCxC).toBeDefined()

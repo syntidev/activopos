@@ -59,8 +59,8 @@ export default function POSPage() {
     pos.setTicketDirect(newTicket)
   }
 
-  const handleNewTab = () => {
-    const newTicket = drafts.addTab(pos.ticket)
+  const handleNewTab = async () => {
+    const newTicket = await drafts.addTab(pos.ticket)
     if (!newTicket) { toast('Máximo 5 tickets simultáneos', 'warning'); return }
     pos.setTicketDirect(newTicket)
   }
@@ -71,12 +71,18 @@ export default function POSPage() {
     if (result.switched) pos.setTicketDirect(result.newTicket)
   }
 
+  const handlePaymentComplete = async () => {
+    const nextTicket = await drafts.paymentComplete()
+    pos.setTicketDirect(nextTicket)
+  }
+
   return (
     <div className={styles.posContainer}>
       <div className={styles.leftArea}>
         <DraftTabs
           tabs={drafts.tabs}
           activeId={drafts.activeId}
+          loading={drafts.loading}
           onSwitch={handleSwitchTab}
           onNew={handleNewTab}
           onClose={handleCloseTab}
@@ -150,7 +156,11 @@ export default function POSPage() {
         onClose={() => pos.setShowCobro(false)}
         totals={totals}
         paymentMethods={pos.paymentMethods}
-        onConfirm={pos.procesarPago}
+        onConfirm={async (payments) => {
+          const result = await pos.procesarPago(payments)
+          await handlePaymentComplete()
+          return result
+        }}
         rate={pos.rate}
         clientId={pos.ticket.client_id}
       />
@@ -190,6 +200,7 @@ export default function POSPage() {
           pos.setShowCreditoModal(false)
           try {
             const result = await pos.venderACredito(terms)
+            await handlePaymentComplete()
             toast(`Crédito #${result.ticket_number} registrado`, 'success')
           } catch (e) {
             toast(e instanceof Error ? e.message : 'Error al registrar venta', 'error')

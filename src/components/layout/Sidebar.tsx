@@ -23,6 +23,7 @@ import {
   HelpCircle,
   LogOut,
   Bell,
+  ChefHat,
   type LucideIcon,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
@@ -82,6 +83,13 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/finanzas',  icon: TrendingUp, label: 'Finanzas',          moduleKey: 'finanzas'  },
       { href: '/analytics', icon: Activity,   label: 'Pulso del Negocio', moduleKey: 'analytics' },
+    ],
+  },
+  {
+    label: 'RESTAURANTE',
+    adminOnly: true,
+    items: [
+      { href: '/kds', icon: ChefHat, label: 'Cocina (KDS)', moduleKey: 'kds' },
     ],
   },
   {
@@ -162,7 +170,12 @@ function NavContent({
 
       {/* Navigation */}
       <nav className={styles.nav} aria-label="Menú principal">
-        {visibleGroups.map((group) => (
+        {visibleGroups.map((group) => {
+          const visibleItems = group.items.filter(item =>
+            !item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)
+          )
+          if (visibleItems.length === 0) return null
+          return (
           <div key={group.label} className={styles.group}>
             <AnimatePresence initial={false}>
               {!collapsed && (
@@ -177,9 +190,7 @@ function NavContent({
             </AnimatePresence>
 
             <ul className={styles.groupList} role="list">
-              {group.items.filter(item =>
-                !item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)
-              ).map((item) => {
+              {visibleItems.map((item) => {
                 const Icon = item.icon
                 const isActive =
                   pathname === item.href ||
@@ -218,7 +229,8 @@ function NavContent({
               })}
             </ul>
           </div>
-        ))}
+          )
+        })}
       </nav>
 
       {/* Footer */}

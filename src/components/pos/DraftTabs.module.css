@@ -107,6 +107,27 @@
   border-color: var(--brand);
 }
 
+/* ── Loading skeleton ── */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1;   }
+}
+
+.tabSkeleton {
+  width: 88px;
+  background: var(--color-surface);
+  border-color: transparent;
+  cursor: default;
+  pointer-events: none;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.tabSkeletonSm {
+  width: 56px;
+  animation-delay: 0.3s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tab, .closeBtn, .newTab { transition: none; }
+  .tabSkeleton, .tabSkeletonSm { animation: none; opacity: 0.6; }
 }

@@ -5,14 +5,24 @@ import type { DraftTab } from '@/hooks/useDraftTabs'
 import styles from './DraftTabs.module.css'
 
 interface DraftTabsProps {
-  tabs: DraftTab[]
+  tabs:     DraftTab[]
   activeId: string
+  loading?: boolean
   onSwitch: (id: string) => void
-  onNew: () => void
-  onClose: (id: string) => void
+  onNew:    () => void
+  onClose:  (id: string) => void
 }
 
-export function DraftTabs({ tabs, activeId, onSwitch, onNew, onClose }: DraftTabsProps) {
+export function DraftTabs({ tabs, activeId, loading, onSwitch, onNew, onClose }: DraftTabsProps) {
+  if (loading) {
+    return (
+      <div className={styles.bar} aria-busy="true" aria-label="Cargando tickets">
+        <div className={`${styles.tab} ${styles.tabSkeleton}`} aria-hidden="true" />
+        <div className={`${styles.tab} ${styles.tabSkeleton} ${styles.tabSkeletonSm}`} aria-hidden="true" />
+      </div>
+    )
+  }
+
   return (
     <div className={styles.bar} role="tablist" aria-label="Tickets abiertos">
       {tabs.map(tab => {

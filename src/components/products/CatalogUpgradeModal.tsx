@@ -2,6 +2,7 @@
 
 import { Globe, Check, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import styles from './CatalogUpgradeModal.module.css'
 
 interface CatalogUpgradeModalProps {
@@ -17,6 +18,8 @@ const BENEFITS = [
 ]
 
 export function CatalogUpgradeModal({ open, onClose }: CatalogUpgradeModalProps) {
+  useScrollLock(open)
+
   const handleCTA = () => {
     const text = encodeURIComponent(
       'Hola SYNTIdev, quiero activar el Catálogo Digital de ActivoPOS.'

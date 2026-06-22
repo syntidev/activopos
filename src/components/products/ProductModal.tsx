@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search } from 'lucide-react'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
@@ -163,6 +164,8 @@ export function ProductModal({
   onSave,
   onNewCategory,
 }: ProductModalProps) {
+  useScrollLock(isOpen)
+
   const isEdit = !!editProduct
 
   /* ── Core form state ── */

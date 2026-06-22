@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Store, X } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import styles from './CajaToggle.module.css'
 
 interface RegisterInfo {
@@ -38,6 +39,8 @@ export function CajaToggle() {
   const [opening, setOpening] = useState(false)
   const [elapsed, setElapsed] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useScrollLock(modalOpen)
 
   const fetchStatus = useCallback(async () => {
     try {

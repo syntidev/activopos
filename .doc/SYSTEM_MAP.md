@@ -1,5 +1,5 @@
 # SYSTEM_MAP — ActivoPOS
-# Generado desde código real — 2026-06-21
+# Generado desde código real — 2026-06-22
 # Fuente: find, grep, prisma/schema.prisma, git log
 # NO editar a mano — regenerar con el prompt CLI-C
 
@@ -9,11 +9,11 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 21                                                              |
-| Último commit      | (ver git log — post Sprint 21)                                         |
+| Último sprint      | Sprint 22                                                              |
+| Último commit      | (ver git log — post Sprint 22)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 80/80 pasando — no regresiones                                      |
+| Tests E2E          | ⚠️ 85/88 pasando — 3 fallos conocidos (ver §9)                        |
 
 ### Certificación de módulos (Regla del Policía)
 
@@ -21,7 +21,9 @@
 Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ →
 Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅ →
 Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso ✅ → Seguridad SEC-01/SEC-02 ✅ →
-SEC-04 ✅ → Import Excel ✅ → Variantes ✅ → Modal PIN ✅
+SEC-04 ✅ → Import Excel ✅ → Variantes ✅ → Modal PIN ✅ →
+Sprint 22: vuelto_usd ✅ → due_date schema ✅ → orders precio DB ✅ → pedidos skeleton ✅ →
+rates BCV+paralelo+USDT ✅ | ⚠️ order_number race (gap) | ⚠️ CobroModal selector (pendiente)
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados + seguridad auditada.**
@@ -58,6 +60,13 @@ SEC-04 ✅ → Import Excel ✅ → Variantes ✅ → Modal PIN ✅
 | Import Excel        | ✅ CERTIFICADO        | 21     | IM01-IM03: POST /api/products/import-excel — xlsx + dry-run    |
 | Variantes UI        | ✅ CERTIFICADO        | 21     | VA01-VA03: picker variante en ProductModal + POS               |
 | Modal PIN descuento | ✅ CERTIFICADO        | 21     | PI01-PI02: PinDescuentoModal conectado desde TicketPanel       |
+| BUG-01 vuelto_usd   | ✅ CERTIFICADO        | 22     | SP22-03: monto_recibido_usd + vuelto_usd calculado en POST /api/sales |
+| BUG-03 due_date     | ✅ CERTIFICADO        | 22     | SP22-04: finanzas/resumen expone cxc.vencidas + cxc.por_vencer |
+| A5-1 orders precio  | ✅ CERTIFICADO        | 22     | SP22-01: POST /api/orders ignora precio body, usa precio DB     |
+| A3-2/A3-3 pedidos   | ✅ CERTIFICADO        | 22     | SP22-06: skeleton aria-busy + EmptyState único (no duplicado)  |
+| rates BCV extended  | ✅ CERTIFICADO        | 22     | SP22-08: /api/rates/bcv devuelve bcv, paralelo, usdt, source   |
+| A3-1 order_number   | ⚠️ GAP DOCUMENTADO   | 22     | SP22-02: race condition sin @@unique (pendiente CLI-A)          |
+| A1-2 CobroModal ref | ⚠️ PENDIENTE         | 22     | SP22-05: selector [class*="productCard"] case mismatch CSS Modules |
 
 ---
 
@@ -217,7 +226,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 ### Tasas
 | Método | Endpoint         | Notas                                   |
 |--------|------------------|-----------------------------------------|
-| GET    | `/api/rates/bcv` | ✅ DT-013 resuelto Sprint 11 — con auth |
+| GET    | `/api/rates/bcv` | ✅ Sprint 22 — respuesta extendida `{ok, bcv, paralelo, usdt, rate, source}` |
 
 ### Reportes
 | Método    | Endpoint                               | Notas                                 |
@@ -267,7 +276,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 
 ## 3. MODELOS PRISMA
 
-**21 modelos** · **21 tablas** · **240+ campos** en total
+**22 modelos** · **22 tablas** · **250+ campos** en total
 
 | Modelo          | Tabla                | Descripción                                                     |
 |-----------------|----------------------|-----------------------------------------------------------------|
@@ -279,7 +288,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | InventoryEntry  | inventory_entries    | Entradas de inventario                                          |
 | Client          | clients              | Clientes del negocio                                            |
 | PaymentMethod   | payment_methods      | Métodos de pago configurables                                   |
-| Sale            | sales                | Ventas (quote/pending/paid/cancelled)                           |
+| Sale            | sales                | Ventas (quote/pending/paid/cancelled) — Sprint 22: +vuelto, +due_date |
 | SaleItem        | sale_items           | Líneas de cada venta                                            |
 | SalePayment     | sale_payments        | Pagos de una venta                                              |
 | SaleAbono       | sale_abonos          | Abonos — con cash_register_id ✅ DT-003                         |
@@ -296,6 +305,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | Return          | returns              | Devoluciones ✅ Sprint 15                                        |
 | ReturnItem      | return_items         | Líneas de devolución ✅ Sprint 15                                |
 | ProductComponent| product_components   | Componentes de combo/fabricable ✅ Sprint 19                    |
+| Notification    | notifications        | Notificaciones sistema ✅ Sprint 22 — tipo, leído, business_id  |
 
 ### Enums
 
@@ -322,6 +332,16 @@ is_featured         Boolean           @default(false)
 availability        Availability      @default(in_stock) // calculado dinámico en GET /api/products
 catalog_visibility  CatalogVisibility @default(visible)  // controla SSR del catálogo + API
 ```
+
+### Campos nuevos en Sale (Sprint 22 — migración #17)
+```
+monto_recibido_usd  Decimal?          // suma de payments[].amount_usd — null si no pagado
+vuelto_usd          Decimal?          // max(0, monto_recibido - total) — null si no pagado
+due_date            DateTime?         // fecha límite crédito — null si no es crédito o no se pasó
+credit_days         Int?              // días de crédito acordados
+credit_notes        String?           // notas adicionales del crédito
+```
+⚠️ Gap Sprint 22: `saleSchema` NO acepta `due_date` aún — campo nunca se escribe en ventas a crédito (pendiente CLI-A Sprint 23).
 
 ### Invariantes de Product type → sale_mode
 ```
@@ -353,6 +373,7 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 | 14 | 20260619174857_expense_categories                       | 2026-06-19  |
 | 15 | 20260621000001_add_unique_catalog_slug_business         | 2026-06-21  |
 | 16 | 20260621000002_add_fabrica_unit_type                   | 2026-06-21  |
+| 17 | 20260622000001_sprint22_sale_fields_notifications      | 2026-06-22  |
 
 ---
 
@@ -459,6 +480,8 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | cash/close TOCTOU                        | ✅ DT-012 resuelto — $transaction + findFirst               | Sprint 11     |
 | amount_bs server-side                    | ✅ DT-011 resuelto — amount_bs = usd × rate                 | Sprint 11     |
 | Rate limit DB (SEC-04)                   | `lib/rate-limit.ts` — limiter almacenado en DB, cluster-safe| ✅ Sprint 21  |
+| Precio en orders solo del DB (A5-1)      | `orders/route.ts` — price_per_unit_usd del product, no body | ✅ Sprint 22  |
+| vuelto_usd calculado server-side         | `sales/route.ts` — max(0, recibido - total), nunca del body | ✅ Sprint 22  |
 
 ---
 
@@ -519,6 +542,7 @@ src/
     ├── sprint19-fabrica.spec.ts          ← 5/5 ✅ Sprint 19 FA01-FA05
     ├── sprint20-security.spec.ts         ← 5/5 ✅ Sprint 20 SD01-SD05
     ├── sprint21-import-variantes.spec.ts ← 8/8 ✅ Sprint 21 IM01-IM03 VA01-VA03 PI01-PI02
+    ├── sprint22-fixes.spec.ts            ← 6/8 ⚠️ Sprint 22 SP22-01..SP22-08 (SP22-02/05 fail)
     ├── .auth-state.json                  ← JWT admin — expira cada 8h, refrescar antes de tests
     └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
@@ -527,26 +551,35 @@ src/
 
 ---
 
-## 9. TESTS E2E — 80/80
+## 9. TESTS E2E — 85/88
 
-| Archivo                          | Tests | Estado |
-|----------------------------------|-------|--------|
-| `pos-core.spec.ts`               | 6     | ✅ T01/T06: actualizados aria-label="Facturación total" (Escritorio v3.0) |
-| `caja-core.spec.ts`              | 5     | ✅     |
-| `reportes-core.spec.ts`          | 5     | ✅ R03: networkidle fix (race condition fecha default vs fill) |
-| `finanzas-core.spec.ts`          | 5     | ✅ F05 usa playwright.request (rate limit fix) |
-| `services-and-catalog.spec.ts`   | 7     | ✅     |
-| `catalogo-admin.spec.ts`         | 5     | ✅     |
-| `analytics-core.spec.ts`         | 5     | ✅ AN05 usa playwright.request + cookie transfer |
-| `sprint15-core.spec.ts`          | 5     | ✅ Q01-Q02, R01-R02, U01 |
-| `expense-categories.spec.ts`     | 4     | ✅ EX01-EX04 — DT-023 backend |
-| `onboarding.spec.ts`             | 5     | ✅ ON01-ON05 — Sprint 16 |
-| `sprint17-visual.spec.ts`        | 5     | ✅ ES02 corregido: "Ítems vendidos" → "Utilidad neta" (CLI-C rename) |
-| `sprint18-mobile.spec.ts`        | 5     | ✅ MO01-MO05 — Mobile POS + Export Excel |
-| `sprint19-fabrica.spec.ts`       | 5     | ✅ FA01-FA05 — Módulo Fábrica + Venta por Peso |
-| `sprint20-security.spec.ts`      | 5     | ✅ SD01-SD05 — Seguridad SEC-01/SEC-02 + descuentos PIN |
-| `sprint21-import-variantes.spec.ts` | 8  | ✅ IM01-IM03 + VA01-VA03 + PI01-PI02 — Import Excel + Variantes + Modal PIN |
-| **TOTAL**                        | **80**| ✅     |
+| Archivo                             | Tests | Estado |
+|-------------------------------------|-------|--------|
+| `pos-core.spec.ts`                  | 6     | ✅ T01/T06: actualizados aria-label="Facturación total" (Escritorio v3.0) |
+| `caja-core.spec.ts`                 | 5     | ✅     |
+| `reportes-core.spec.ts`             | 5     | ✅ R03: networkidle fix (race condition fecha default vs fill) |
+| `finanzas-core.spec.ts`             | 5     | ✅ F05 usa playwright.request (rate limit fix) |
+| `services-and-catalog.spec.ts`      | 7     | ✅     |
+| `catalogo-admin.spec.ts`            | 5     | ✅     |
+| `analytics-core.spec.ts`            | 5     | ⚠️ AN02-AN05 ✅ · AN01 ✘ cold-start timing (isVisible sans timeout) |
+| `sprint15-core.spec.ts`             | 5     | ✅ Q01-Q02, R01-R02, U01 |
+| `expense-categories.spec.ts`        | 4     | ✅ EX01-EX04 — DT-023 backend |
+| `onboarding.spec.ts`                | 5     | ✅ ON01-ON05 — Sprint 16 |
+| `sprint17-visual.spec.ts`           | 5     | ✅ ES02 corregido: "Ítems vendidos" → "Utilidad neta" (CLI-C rename) |
+| `sprint18-mobile.spec.ts`           | 5     | ✅ MO01-MO05 — Mobile POS + Export Excel |
+| `sprint19-fabrica.spec.ts`          | 5     | ✅ FA01-FA05 — Módulo Fábrica + Venta por Peso |
+| `sprint20-security.spec.ts`         | 5     | ✅ SD01-SD05 — Seguridad SEC-01/SEC-02 + descuentos PIN |
+| `sprint21-import-variantes.spec.ts` | 8     | ✅ IM01-IM03 + VA01-VA03 + PI01-PI02 — Import Excel + Variantes + Modal PIN |
+| `sprint22-fixes.spec.ts`            | 8     | ⚠️ SP22-01/03/04/06/07/08 ✅ · SP22-02 ✘ race · SP22-05 ✘ selector |
+| **TOTAL**                           | **88**| ⚠️ **85/88** — 3 fallos conocidos (ver abajo) |
+
+### Fallos Sprint 22 — diagnóstico y estado
+
+| Test   | Fallo                             | Causa raíz                                                                 | Responsable |
+|--------|-----------------------------------|----------------------------------------------------------------------------|-------------|
+| AN01   | `h1 'Pulso del Negocio'` no visible | `isVisible()` sin timeout; pasa en servidor caliente (AN02-AN04 verifican misma página ✅) | CLI-D Sprint 23 |
+| SP22-02 | `unique.size === 1` (esperado 3) | Race condition en `order_number`: `findFirst(id desc)+1` sin `@@unique` ni `SELECT FOR UPDATE` | CLI-A Sprint 23 |
+| SP22-05 | `[class*="productCard"]` timeout | CSS Modules genera `ProductCard_card__HASH` — selector case-mismatch (minúscula vs Capital) | CLI-D Sprint 23 |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
@@ -554,7 +587,7 @@ src/
 - F05, AN05, ON05 usan `playwright.request.newContext()` para evitar rate limiter del login form
 - AN05/ON05 transfieren cookie via `apiCtx.storageState()` → `browser.newContext({ storageState })`
 - R03: usa `waitForLoadState('networkidle')` dos veces para eliminar race condition entre fetch inicial (todayStr) y fill de fecha fija
-- AN01: acepta tanto `h1` visible (datos cargados) como "Sin datos disponibles" (período vacío) — ambos son cargas válidas; cold-start puede devolver vacío en primer request
+- AN01: acepta tanto `h1` visible (datos cargados) como "Sin datos disponibles" (período vacío) — ambos son cargas válidas; falla en cold-start porque usa `isVisible()` sin timeout (Sprint 23: agregar `await expect(...).toBeVisible({ timeout: 8_000 })`)
 
 **JWT auth-state — gestión:**
 - `tests/.auth-state.json` expira cada 8h — si los tests fallan en masa, refrescar con:
@@ -569,5 +602,5 @@ src/
 **Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
 `locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
 
-*Generado: 2026-06-22 | Sprint 21 cierre | CLI-D modo EJECUCIÓN*
-*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel + Fábrica + Peso + Sprint 21 certificados: 80/80 E2E*
+*Generado: 2026-06-22 | Sprint 22 cierre | CLI-D modo EJECUCIÓN*
+*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel + Fábrica + Peso + Sprint 21 + Sprint 22 parcial: 85/88 E2E · 3 fallos documentados para Sprint 23*

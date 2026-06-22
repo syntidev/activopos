@@ -96,7 +96,7 @@ test('MT01 — crear draft via API → status=draft, ticket_number=DRF-{5d}', as
 })
 
 // ── MT02 ─────────────────────────────────────────────────────────────────────
-test('MT02 — 6to draft retorna 409 Conflict (gap: spec dice 400)', async ({ request }) => {
+test('MT02 — 6to draft retorna 400 Bad Request (S25-FIX8: era 409 Conflict)', async ({ request }) => {
   await cleanDrafts(request)
   const productId = await createProduct(request, 'SP24_MT02_Prod', 5.00)
   const item = { product_id: productId, quantity: 1, discount_usd: 0 }
@@ -109,10 +109,9 @@ test('MT02 — 6to draft retorna 409 Conflict (gap: spec dice 400)', async ({ re
     created.push(b.draft.id)
   }
 
-  // 6th draft must be rejected
+  // 6th draft must be rejected — S25 CLI-A FIX8 changed 409 Conflict → 400 Bad Request
   const sixthRes = await request.post(`${BASE}/api/pos/drafts`, { data: { items: [item] } })
-  // gap: spec dice 400 Bad Request; implementación retorna 409 Conflict
-  expect(sixthRes.status()).toBe(409)
+  expect(sixthRes.status()).toBe(400)
   const sixthBody = await sixthRes.json() as { error: string }
   expect(sixthBody.error).toMatch(/[Mm]áximo/)
 

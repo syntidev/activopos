@@ -1,18 +1,27 @@
 import { NextResponse } from 'next/server'
-import { getBcvRate, readCachedBcvRate } from '@/lib/bcv'
+import { getBcvRate, readCachedBcvRate, getOtherRate } from '@/lib/bcv'
 import { getSession } from '@/lib/auth'
 
 export async function GET() {
   const session = await getSession() // puede ser null — endpoint semi-público
 
   try {
-    // Con sesión: escribe en dollar_rates con business_id (comportamiento completo)
-    // Sin sesión: lee del cache o DB sin escribir nuevos registros con business_id null
-    const rate = session?.businessId
-      ? await getBcvRate(session.businessId)
-      : await readCachedBcvRate()
+    const [bcv, paralelo, usdt] = await Promise.all([
+      session?.businessId
+        ? getBcvRate(session.businessId)
+        : readCachedBcvRate(),
+      getOtherRate('paralelo'),
+      getOtherRate('usdt'),
+    ])
 
-    return NextResponse.json({ rate, source: 'bcv', ok: true })
+    return NextResponse.json({
+      ok:       true,
+      bcv,
+      paralelo,
+      usdt,
+      rate:     bcv,    // backward compat
+      source:   'bcv',
+    })
   } catch {
     return NextResponse.json(
       { error: 'No se pudo obtener la tasa BCV', ok: false },

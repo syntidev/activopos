@@ -196,30 +196,38 @@ export async function POST(req: NextRequest) {
       const total_bs =
         Math.round(saleItems.reduce((acc, i) => acc + i.subtotal_bs, 0) * 100) / 100
 
+      let montoRecibidoUsd: number | null = null
+      let vueltoUsd: number | null = null
+
       if (body.status === 'paid' && body.payments) {
-        const payTotal = body.payments.reduce((acc, p) => acc + p.amount_bs, 0)
-        if (payTotal < total_bs - 0.01) {
+        const payTotalBs  = body.payments.reduce((acc, p) => acc + p.amount_bs,  0)
+        const payTotalUsd = body.payments.reduce((acc, p) => acc + p.amount_usd, 0)
+        if (payTotalBs < total_bs - 0.01) {
           throw new Error(
-            `Pago insuficiente. Total: ${total_bs.toFixed(2)} Bs. Recibido: ${payTotal.toFixed(2)} Bs`
+            `Pago insuficiente. Total: ${total_bs.toFixed(2)} Bs. Recibido: ${payTotalBs.toFixed(2)} Bs`
           )
         }
+        montoRecibidoUsd = Math.round(payTotalUsd * 100) / 100
+        vueltoUsd        = Math.max(0, Math.round((payTotalUsd - total_usd) * 100) / 100)
       }
 
       const ticket_number = await generateTicketNumber(session.businessId, tx)
 
       const newSale = await tx.sale.create({
         data: {
-          business_id: session.businessId,
-          cashier_id: session.userId,
+          business_id:        session.businessId,
+          cashier_id:         session.userId,
           ticket_number,
-          status: body.status,
-          origin: body.origin,
+          status:             body.status,
+          origin:             body.origin,
           total_usd,
           total_bs,
-          rate_used: rate,
-          client_id: body.client_id,
-          client_name: body.client_name,
-          notes: body.notes,
+          rate_used:          rate,
+          client_id:          body.client_id,
+          client_name:        body.client_name,
+          notes:              body.notes,
+          monto_recibido_usd: montoRecibidoUsd,
+          vuelto_usd:         vueltoUsd,
           sold_at: body.status === 'paid' ? new Date() : null,
           items: { create: saleItems },
           ...(body.status === 'paid' && body.payments

@@ -58,26 +58,33 @@ export async function PATCH(
       return NextResponse.json({ error: 'La venta está anulada' }, { status: 409 })
     }
 
-    const rate = await getBcvRate()
-    const totalBs = Number(sale.total_bs)
-    const payTotal = body.payments.reduce((acc, p) => acc + p.amount_bs, 0)
+    const rate         = await getBcvRate()
+    const totalBs      = Number(sale.total_bs)
+    const totalUsd     = Number(sale.total_usd)
+    const payTotalBs   = body.payments.reduce((acc, p) => acc + p.amount_bs,  0)
+    const payTotalUsd  = body.payments.reduce((acc, p) => acc + p.amount_usd, 0)
 
-    if (payTotal < totalBs - 0.01) {
+    if (payTotalBs < totalBs - 0.01) {
       return NextResponse.json(
         {
-          error: `Pago insuficiente. Total: ${totalBs.toFixed(2)} Bs. Recibido: ${payTotal.toFixed(2)} Bs`,
+          error: `Pago insuficiente. Total: ${totalBs.toFixed(2)} Bs. Recibido: ${payTotalBs.toFixed(2)} Bs`,
         },
         { status: 400 }
       )
     }
 
+    const montoRecibidoUsd = Math.round(payTotalUsd * 100) / 100
+    const vueltoUsd        = Math.max(0, Math.round((payTotalUsd - totalUsd) * 100) / 100)
+
     const updated = await prisma.$transaction(async (tx) => {
       const paidSale = await tx.sale.update({
         where: { id: saleId },
         data: {
-          status: 'paid',
-          sold_at: new Date(),
-          rate_used: rate,
+          status:             'paid',
+          sold_at:            new Date(),
+          rate_used:          rate,
+          monto_recibido_usd: montoRecibidoUsd,
+          vuelto_usd:         vueltoUsd,
           payments: {
             create: body.payments.map(p => ({
               payment_method_id: p.payment_method_id,

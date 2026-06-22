@@ -46,8 +46,7 @@ export async function GET(req: NextRequest) {
   const to       = new Date(year, month, 1)
   const bid      = session.businessId
   const now      = new Date()
-  // Fecha 30 días atrás para calcular CxC vencidas
-  const venc30   = new Date(now.getTime() - 30 * 86_400_000)
+  const vencer7  = new Date(now.getTime() + 7 * 86_400_000)
 
   const [
     ingresosAgg,
@@ -57,6 +56,7 @@ export async function GET(req: NextRequest) {
     gastosPagadosAgg,
     cxcAgg,
     cxcVencidasCount,
+    cxcPorVencerCount,
     cxpAgg,
     cxpVencidasCount,
     inventarioRow,
@@ -110,9 +110,14 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
     }),
 
-    // CxC vencidas: ventas pendientes creadas hace más de 30 días
+    // CxC vencidas: ventas pendientes con due_date pasado
     prisma.sale.count({
-      where: { business_id: bid, status: 'pending', created_at: { lt: venc30 } },
+      where: { business_id: bid, status: 'pending', due_date: { lt: now } },
+    }),
+
+    // CxC por vencer en los próximos 7 días
+    prisma.sale.count({
+      where: { business_id: bid, status: 'pending', due_date: { gte: now, lte: vencer7 } },
     }),
 
     // CxP activas (gastos sin pagar)
@@ -212,6 +217,7 @@ export async function GET(req: NextRequest) {
       total_pendiente_usd: r2(cxcUsd),
       count:               cxcAgg._count.id,
       vencidas:            cxcVencidasCount,
+      por_vencer:          cxcPorVencerCount,
     },
 
     cxp: {

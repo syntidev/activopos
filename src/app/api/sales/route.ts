@@ -6,11 +6,11 @@ import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 
 const saleItemSchema = z.object({
-  product_id:         z.number().int().positive(),
-  quantity:           z.number().positive(),
-  price_per_unit_usd: z.number().positive(),
-  sale_mode:          z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
-  discount_usd:       z.number().min(0).default(0),
+  product_id:   z.number().int().positive(),
+  quantity:     z.number().positive(),
+  sale_mode:    z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
+  discount_usd: z.number().min(0).default(0),
+  // price_per_unit_usd NOT accepted from client — SEC-01: always fetched from DB
 })
 
 const paymentSchema = z.object({
@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
         select: {
           id: true, name: true, base_unit_label: true,
           product_type: true, unit_type: true, unit_step: true,
+          price_per_unit_usd: true, price_per_kg_usd: true,
           components: {
             select: {
               id: true, component_id: true, quantity: true, unit_label: true,
@@ -132,8 +133,12 @@ export async function POST(req: NextRequest) {
 
       const saleItems = body.items.map(item => {
         const product = productMap.get(item.product_id)!
+        // SEC-01: price always from DB — never from client body
+        const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
+
         const subtotal_usd =
-          item.quantity * item.price_per_unit_usd - item.discount_usd
+          item.quantity * priceUsd - item.discount_usd
         const subtotal_bs = subtotal_usd * rate
 
         const recipe_snapshot =
@@ -154,7 +159,7 @@ export async function POST(req: NextRequest) {
           sale_mode:          item.sale_mode,
           unit_label:         product.base_unit_label,
           quantity:           item.quantity,
-          price_per_unit_usd: item.price_per_unit_usd,
+          price_per_unit_usd: priceUsd,
           subtotal_usd:       Math.round(subtotal_usd * 10000) / 10000,
           subtotal_bs:        Math.round(subtotal_bs * 100) / 100,
           rate_used:          rate,
@@ -281,7 +286,7 @@ export async function POST(req: NextRequest) {
       )
     }
     if (err instanceof Error) {
-      const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida']
+      const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida', 'Precio no configurado']
       if (knownErrors.some(e => err.message.includes(e))) {
         return NextResponse.json({ error: err.message }, { status: 400 })
       }

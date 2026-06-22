@@ -34,13 +34,13 @@ export async function PATCH(
       where: { id: saleId, business_id: session.businessId },
       include: {
         items: {
-          include: {
+          select: {
+            id: true, product_id: true, quantity: true,
+            recipe_snapshot: true,
             product: {
               select: {
                 product_type: true,
-                components: {
-                  select: { component_id: true, quantity: true },
-                },
+                components: { select: { component_id: true, quantity: true } },
               },
             },
           },
@@ -119,7 +119,13 @@ export async function PATCH(
             created_by:  session.userId,
           })
         } else {
-          for (const comp of item.product.components) {
+          // SEC-02: use snapshot captured at sale creation — immune to recipe changes
+          const components: { component_id: number; quantity: number }[] =
+            item.recipe_snapshot
+              ? (JSON.parse(item.recipe_snapshot) as { component_id: number; quantity: number }[])
+              : item.product.components
+
+          for (const comp of components) {
             inventoryDeductions.push({
               business_id: session.businessId,
               product_id:  comp.component_id,

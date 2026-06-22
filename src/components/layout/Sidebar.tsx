@@ -59,7 +59,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'INVENTARIO',
     items: [
-      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventario' },
+      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory' },
     ],
   },
   {
@@ -73,7 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'CATÁLOGO',
     adminOnly: true,
     items: [
-      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalogo' },
+      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalog' },
     ],
   },
   {

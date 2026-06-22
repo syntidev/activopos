@@ -19,10 +19,10 @@ interface Module {
 
 const MODULES: Module[] = [
   { key: 'pos',       label: 'POS',                     desc: 'Punto de venta principal',             Icon: ShoppingCart, alwaysOn: true  },
-  { key: 'inventario',label: 'Inventario',               desc: 'Gestión de productos y stock',          Icon: Package,      alwaysOn: true  },
+  { key: 'inventory', label: 'Inventario',               desc: 'Gestión de productos y stock',          Icon: Package,      alwaysOn: true  },
   { key: 'caja',      label: 'Caja',                    desc: 'Gestión de apertura y cierre de caja',  Icon: Calculator,   alwaysOn: false },
   { key: 'pedidos',   label: 'Pedidos',                 desc: 'Tablero kanban de pedidos',             Icon: ShoppingBag,  alwaysOn: false },
-  { key: 'catalogo',  label: 'Catálogo WhatsApp',       desc: 'Catálogo digital para clientes',        Icon: Store,        alwaysOn: false },
+  { key: 'catalog',   label: 'Catálogo WhatsApp',       desc: 'Catálogo digital para clientes',        Icon: Store,        alwaysOn: false },
   { key: 'finanzas',  label: 'Finanzas',                desc: 'CxC, CxP y control financiero',         Icon: TrendingUp,   alwaysOn: false },
   { key: 'reportes',  label: 'Reportes',                desc: 'Informes y exportación de datos',       Icon: BarChart2,    alwaysOn: false },
   { key: 'analytics', label: 'Pulso del Negocio',       desc: 'Métricas y tendencias avanzadas',       Icon: Activity,     alwaysOn: false },
@@ -30,7 +30,7 @@ const MODULES: Module[] = [
   { key: 'delivery',  label: 'Delivery',                desc: 'Para negocios con envíos',              Icon: Truck,        alwaysOn: false },
 ]
 
-const DEFAULT_ENABLED = new Set(['pos', 'inventario', 'caja', 'pedidos', 'catalogo', 'finanzas', 'reportes', 'analytics'])
+const DEFAULT_ENABLED = new Set(['pos', 'inventory', 'caja', 'pedidos', 'catalog', 'finanzas', 'reportes', 'analytics'])
 
 interface Props { businessId: number }
 
@@ -67,7 +67,7 @@ export function TabModulos({ businessId: _businessId }: Props) {
       await fetch('/api/config/business/modules', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ modules_enabled: Array.from(enabled) }),
+        body: JSON.stringify({ modules: Array.from(enabled) }),
       })
       toast('Módulos actualizados', 'success')
     } catch {

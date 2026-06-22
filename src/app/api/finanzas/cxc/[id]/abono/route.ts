@@ -11,6 +11,10 @@ const abonoSchema = z.object({
   notes:             z.string().max(500).optional(),
 })
 
+// Errors thrown inside the transaction that map to 4xx
+const TX_400 = 'SALDO:'
+const TX_404 = 'Venta no encontrada o ya pagada'
+
 type Context = { params: { id: string } }
 
 export async function POST(req: NextRequest, { params }: Context) {
@@ -24,37 +28,36 @@ export async function POST(req: NextRequest, { params }: Context) {
   try {
     const body = abonoSchema.parse(await req.json())
 
-    const sale = await prisma.sale.findFirst({
-      where:   { id: saleId, business_id: session.businessId, status: 'pending' },
-      include: { abonos: { select: { amount_usd: true } } },
-    })
-    if (!sale) return NextResponse.json({ error: 'Venta no encontrada o ya pagada' }, { status: 404 })
-
-    const totalUsd    = Number(sale.total_usd)
-    const abonadoPrev = sale.abonos.reduce((a, b) => a + Number(b.amount_usd), 0)
-    const saldoPrev   = Math.max(0, Math.round((totalUsd - abonadoPrev) * 100) / 100)
-
-    if (body.amount_usd > saldoPrev + 0.01) {
-      return NextResponse.json(
-        { error: `El abono (${body.amount_usd.toFixed(2)}) supera el saldo pendiente (${saldoPrev.toFixed(2)})` },
-        { status: 400 }
-      )
-    }
-
-    // Verify payment method belongs to this business
+    // Verify payment method outside tx — no need to hold the transaction open during this lookup
     const payMethod = await prisma.paymentMethod.findFirst({
       where: { id: body.payment_method_id, business_id: session.businessId },
     })
     if (!payMethod) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
-    const rate      = await getBcvRate(session.businessId)
-    const amountBs  = Math.round(body.amount_usd * rate * 100) / 100
+    // Fetch BCV rate outside tx — network call must not hold the transaction open
+    const rate     = await getBcvRate(session.businessId)
+    const amountBs = Math.round(body.amount_usd * rate * 100) / 100
 
-    const saldoNew  = Math.round((saldoPrev - body.amount_usd) * 100) / 100
-    const nowPaid   = saldoNew <= 0.01
+    // CX-RACE fix: saldo check + create inside a single interactive transaction
+    const { abono, saldoFinal, nowPaid, ticketNumber } = await prisma.$transaction(async (tx) => {
+      // Re-read sale + all abonos atomically inside the tx
+      const sale = await tx.sale.findFirst({
+        where:   { id: saleId, business_id: session.businessId, status: 'pending' },
+        include: { abonos: { select: { amount_usd: true } } },
+      })
+      if (!sale) throw new Error(TX_404)
 
-    const [abono] = await prisma.$transaction([
-      prisma.saleAbono.create({
+      const totalUsd    = Number(sale.total_usd)
+      const abonadoPrev = sale.abonos.reduce((a, b) => a + Number(b.amount_usd), 0)
+      const saldoPrev   = Math.max(0, Math.round((totalUsd - abonadoPrev) * 100) / 100)
+
+      if (body.amount_usd > saldoPrev + 0.01) {
+        throw new Error(
+          `${TX_400}El abono (${body.amount_usd.toFixed(2)}) supera el saldo pendiente (${saldoPrev.toFixed(2)})`
+        )
+      }
+
+      const newAbono = await tx.saleAbono.create({
         data: {
           sale_id:           saleId,
           payment_method_id: body.payment_method_id,
@@ -64,18 +67,24 @@ export async function POST(req: NextRequest, { params }: Context) {
           notes:             body.notes ?? null,
           created_by:        session.userId,
         },
-      }),
-      ...(nowPaid
-        ? [prisma.sale.update({ where: { id: saleId }, data: { status: 'paid', sold_at: new Date() } })]
-        : []),
-    ])
+      })
+
+      const saldoNew = Math.round((saldoPrev - body.amount_usd) * 100) / 100
+      const paid     = saldoNew <= 0.01
+
+      if (paid) {
+        await tx.sale.update({ where: { id: saleId }, data: { status: 'paid', sold_at: new Date() } })
+      }
+
+      return { abono: newAbono, saldoFinal: Math.max(0, saldoNew), nowPaid: paid, ticketNumber: sale.ticket_number }
+    })
 
     if (nowPaid) {
       void createNotification(
         session.businessId,
         'credit_paid',
         'Crédito saldado',
-        `Venta ${sale.ticket_number} ha sido pagada completamente.`,
+        `Venta ${ticketNumber} ha sido pagada completamente.`,
         'sale',
         saleId
       ).catch(() => {})
@@ -84,13 +93,17 @@ export async function POST(req: NextRequest, { params }: Context) {
     return NextResponse.json({
       ok:        true,
       abono:     { ...abono, amount_usd: Number(abono.amount_usd), amount_bs: Number(abono.amount_bs) },
-      saldo_usd: Math.max(0, saldoNew),
+      saldo_usd: saldoFinal,
       paid:      nowPaid,
     }, { status: 201 })
 
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    }
+    if (err instanceof Error) {
+      if (err.message === TX_404) return NextResponse.json({ error: TX_404 }, { status: 404 })
+      if (err.message.startsWith(TX_400)) return NextResponse.json({ error: err.message.slice(TX_400.length) }, { status: 400 })
     }
     console.error('cxc abono POST:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

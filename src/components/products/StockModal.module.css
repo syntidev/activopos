@@ -1,3 +1,19 @@
+/* ── Header jerarquía ── */
+.productName {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-0-5);
+  line-height: var(--leading-snug);
+  text-wrap: balance;
+}
+
+.modalSubtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
+}
+
 /* ── Current stock info ── */
 .stockInfo {
   display: flex;

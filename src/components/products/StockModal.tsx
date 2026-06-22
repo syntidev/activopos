@@ -127,8 +127,8 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
             {/* Header */}
             <div className={mStyles.modalHeader}>
               <div>
-                <h2 className={mStyles.modalTitle}>Ajustar Stock</h2>
-                <p className={mStyles.modalSubtitle}>{product.name}</p>
+                <h2 className={styles.productName}>{product.name}</h2>
+                <p className={styles.modalSubtitle}>Ajustar stock</p>
               </div>
               <button
                 className={mStyles.closeBtn}

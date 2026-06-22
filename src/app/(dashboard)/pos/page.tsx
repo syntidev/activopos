@@ -126,6 +126,7 @@ export default function POSPage() {
         paymentMethods={pos.paymentMethods}
         onConfirm={pos.procesarPago}
         rate={pos.rate}
+        clientId={pos.ticket.client_id}
       />
       <ClienteModal
         open={pos.showCliente}

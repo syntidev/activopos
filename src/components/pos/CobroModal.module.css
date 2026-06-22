@@ -302,3 +302,136 @@
   border: 1px solid var(--color-success-border);
   color: var(--color-success-text);
 }
+
+/* ── BUG-01: Vuelto / Falta ── */
+.vueltoBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2-5) var(--space-4);
+  background: var(--color-success-subtle);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-lg);
+}
+
+.vueltoLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-success-text);
+}
+
+.vueltoAmts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-0-5);
+}
+
+.vueltoMonto {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-success-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.vueltoBs {
+  font-size: var(--text-xs);
+  color: var(--color-success-text);
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+.faltaBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2-5) var(--space-4);
+  background: var(--color-warning-subtle);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  color: var(--color-warning-text);
+}
+
+.faltaMonto {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-warning-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── BUG-01b: Inline rate for USD methods ── */
+.rateRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.rateLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.rateValue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+.rateValue:hover { background: var(--color-surface-3); color: var(--color-text-primary); }
+
+.rateInput {
+  width: 90px;
+  height: 32px;
+  padding: 0 var(--space-2);
+  background: var(--input-bg);
+  border: 1.5px solid var(--color-border-focus);
+  border-radius: var(--radius-sm);
+  color: var(--input-text);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.rateBsEquiv {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
+}
+
+/* ── B2: Credit summary ── */
+.creditSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-brand-subtle);
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-md);
+}
+
+.creditSummaryLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-brand-hover);
+}
+
+.creditSummaryDue {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}

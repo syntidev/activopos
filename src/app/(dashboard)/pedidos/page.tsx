@@ -210,12 +210,29 @@ function KanbanColumn({
 
 /* ── Main content ── */
 
+/* ── Loading skeleton ── */
+function KanbanSkeleton() {
+  return (
+    <div className={styles.kanban} aria-busy="true" aria-label="Cargando pedidos">
+      {KANBAN_COLS.map(({ status }) => (
+        <div key={status} className={styles.column}>
+          <div className={`${styles.skeleton} ${styles.skeletonColHeader}`} />
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={`${styles.skeleton} ${styles.skeletonCard}`} />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function PedidosContent() {
   const { toast } = useToast()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  const [orders, setOrders]         = useState<Order[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<OrderStatus | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modalOpen, setModalOpen]   = useState(false)
   const draggingRef = useRef<Order | null>(null)
 
   const fetchOrders = useCallback(async () => {
@@ -223,14 +240,16 @@ function PedidosContent() {
       const res = await fetch('/api/orders?limit=100')
       if (res.ok) {
         const data = await res.json()
-        // Only show active (non-delivered/cancelled) statuses in kanban
         const active = (data.orders ?? []).filter(
           (o: Order) => !['delivered', 'cancelled'].includes(o.status)
         )
         setOrders(active)
+        setFetchError(null)
+      } else {
+        setFetchError('No se pudieron cargar los pedidos')
       }
     } catch {
-      /* keep previous state */
+      setFetchError('Error de conexión. Verifica tu red.')
     } finally {
       setLoading(false)
     }
@@ -338,28 +357,42 @@ function PedidosContent() {
         </Button>
       </div>
 
-      {/* Kanban board */}
-      <div className={styles.kanban} role="region" aria-label="Tablero Kanban de pedidos">
-        {KANBAN_COLS.map(({ status, label, color }) => (
-          <KanbanColumn
-            key={status}
-            status={status}
-            label={label}
-            colorClass={color}
-            orders={byStatus(status)}
-            isDragOver={dragOverCol === status}
-            onDragOver={(e) => handleDragOver(e, status)}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onDragStart={handleDragStart}
-            onAdvance={handleAdvance}
-            onWhatsApp={handleWhatsApp}
-          />
-        ))}
-      </div>
+      {/* Kanban — skeleton → error → content */}
+      {loading ? (
+        <KanbanSkeleton />
+      ) : fetchError ? (
+        <div className={styles.errorState}>
+          <p className={styles.errorMsg}>{fetchError}</p>
+          <button
+            className={styles.retryBtn}
+            onClick={() => { setLoading(true); void fetchOrders() }}
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : (
+        <div className={styles.kanban} role="region" aria-label="Tablero Kanban de pedidos">
+          {KANBAN_COLS.map(({ status, label, color }) => (
+            <KanbanColumn
+              key={status}
+              status={status}
+              label={label}
+              colorClass={color}
+              orders={byStatus(status)}
+              isDragOver={dragOverCol === status}
+              onDragOver={(e) => handleDragOver(e, status)}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onDragStart={handleDragStart}
+              onAdvance={handleAdvance}
+              onWhatsApp={handleWhatsApp}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Empty state */}
-      {!loading && orders.length === 0 && (
+      {!loading && !fetchError && orders.length === 0 && (
         <div className={styles.emptyState}>
           <ShoppingBag size={36} aria-hidden="true" className={styles.emptyIcon} />
           <p className={styles.emptyTitle}>No hay pedidos activos</p>

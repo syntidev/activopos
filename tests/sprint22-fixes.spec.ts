@@ -193,7 +193,7 @@ test('SP22-05 — CobroModal bloquea "Confirmar" sin referencia en método que l
   await expect(page).not.toHaveURL(/login/)
 
   // Add a product to the cart — click the first available product card or list row
-  const productCard = page.locator('[class*="productCard"],[class*="listRow"]').first()
+  const productCard = page.locator('[data-testid="product-card"]').first()
   await productCard.waitFor({ timeout: 8000 })
   await productCard.click()
 

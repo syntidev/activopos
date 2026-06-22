@@ -27,8 +27,11 @@ test.describe('Analytics — Certificación Sprint 14', () => {
     await page.waitForLoadState('networkidle')
     // La página debe mostrar el título del módulo O el estado "sin datos" — ambos son cargas válidas.
     // En el primer cold-call la API puede devolver vacío; AN02–AN04 verifican contenido real.
-    const titleVisible = await page.locator('h1').filter({ hasText: 'Pulso del Negocio' }).isVisible()
-    const noDataVisible = await page.getByText('Sin datos disponibles', { exact: false }).isVisible()
+    const titleLocator  = page.locator('h1').filter({ hasText: 'Pulso del Negocio' })
+    const noDataLocator = page.getByText('Sin datos disponibles', { exact: false })
+    await page.waitForLoadState('networkidle')
+    const titleVisible  = await titleLocator.isVisible()
+    const noDataVisible = await noDataLocator.isVisible()
     expect(titleVisible || noDataVisible, 'Página debería mostrar título o estado vacío').toBe(true)
   })
 

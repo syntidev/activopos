@@ -1,64 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-const DAYS_CREDIT = 30 // días de crédito por defecto
+const DAYS_VENCER = 7
+const DAYS_LEGACY = 30  // fallback for sales without due_date
+
+const querySchema = z.object({
+  status: z.enum(['vigente', 'por_vencer', 'vencido']).optional(),
+  page:   z.coerce.number().int().min(1).default(1),
+  limit:  z.coerce.number().int().min(1).max(100).default(20),
+})
+
+function classifySale(due_date: Date | null, created_at: Date, now: Date): 'vigente' | 'por_vencer' | 'vencido' {
+  const vencer7 = new Date(now.getTime() + DAYS_VENCER * 86_400_000)
+  const deadline = due_date ?? new Date(created_at.getTime() + DAYS_LEGACY * 86_400_000)
+  if (deadline < now)                             return 'vencido'
+  if (deadline >= now && deadline <= vencer7)     return 'por_vencer'
+  return 'vigente'
+}
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp     = req.nextUrl.searchParams
-  const status = sp.get('status') ?? 'todo' // pendiente | vencido | todo
+  const params = Object.fromEntries(req.nextUrl.searchParams.entries())
+  const query  = querySchema.parse(params)
 
-  const sales = await prisma.sale.findMany({
-    where: {
-      business_id: session.businessId,
-      status:      'pending',
-    },
+  // Fetch all pending sales with abonos for this business
+  const allPending = await prisma.sale.findMany({
+    where:   { business_id: session.businessId, status: 'pending' },
     include: {
-      client:  { select: { id: true, name: true, phone: true, cedula: true } },
-      abonos:  { select: { amount_usd: true } },
+      client: { select: { id: true, name: true, phone: true, cedula: true } },
+      abonos: { select: { amount_usd: true } },
     },
     orderBy: { created_at: 'asc' },
   })
 
-  const now = Date.now()
+  const now = new Date()
 
-  const cxc = sales.map(s => {
-    const totalUsd       = Number(s.total_usd)
-    const abonadoUsd     = s.abonos.reduce((acc, a) => acc + Number(a.amount_usd), 0)
-    const saldoUsd       = Math.max(0, Math.round((totalUsd - abonadoUsd) * 100) / 100)
-    const vencimientoMs  = new Date(s.created_at).getTime() + DAYS_CREDIT * 86_400_000
-    const diasVencido    = Math.max(0, Math.floor((now - vencimientoMs) / 86_400_000))
-    const vencido        = diasVencido > 0
+  const classified = allPending.map(s => {
+    const totalUsd   = Number(s.total_usd)
+    const abonadoUsd = s.abonos.reduce((acc, a) => acc + Number(a.amount_usd), 0)
+    const saldoUsd   = Math.max(0, Math.round((totalUsd - abonadoUsd) * 100) / 100)
+    const bucket     = classifySale(s.due_date, s.created_at, now)
+    const deadline   = s.due_date ?? new Date(s.created_at.getTime() + DAYS_LEGACY * 86_400_000)
+    const diasVencido = bucket === 'vencido'
+      ? Math.floor((now.getTime() - deadline.getTime()) / 86_400_000)
+      : 0
 
     return {
       sale_id:       s.id,
       ticket_number: s.ticket_number,
       client_id:     s.client_id,
       client_name:   s.client?.name ?? s.client_name ?? 'Sin nombre',
-      client_phone:  s.client?.phone ?? s.client_phone ?? null,
+      client_phone:  s.client?.phone ?? null,
       created_at:    s.created_at.toISOString(),
-      vencimiento:   new Date(vencimientoMs).toISOString().split('T')[0],
+      due_date:      deadline.toISOString().split('T')[0],
+      credit_days:   s.credit_days,
+      credit_notes:  s.credit_notes,
       total_usd:     totalUsd,
       abonado_usd:   Math.round(abonadoUsd * 100) / 100,
       saldo_usd:     saldoUsd,
       dias_vencido:  diasVencido,
-      vencido,
+      bucket,
     }
-  }).filter(c => {
-    if (status === 'vencido')   return c.vencido
-    if (status === 'pendiente') return !c.vencido
-    return true
   })
 
-  const totals = {
-    count:       cxc.length,
-    saldo_usd:   Math.round(cxc.reduce((s, c) => s + c.saldo_usd, 0) * 100) / 100,
-    vencido_usd: Math.round(cxc.filter(c => c.vencido).reduce((s, c) => s + c.saldo_usd, 0) * 100) / 100,
-  }
+  // Aggregated totals (before pagination)
+  const vencido_usd    = Math.round(classified.filter(c => c.bucket === 'vencido').reduce((s, c) => s + c.saldo_usd, 0) * 100) / 100
+  const por_vencer_usd = Math.round(classified.filter(c => c.bucket === 'por_vencer').reduce((s, c) => s + c.saldo_usd, 0) * 100) / 100
+  const vigente_usd    = Math.round(classified.filter(c => c.bucket === 'vigente').reduce((s, c) => s + c.saldo_usd, 0) * 100) / 100
 
-  return NextResponse.json({ ok: true, cxc, totals })
+  // Filter by bucket if requested
+  const filtered = query.status ? classified.filter(c => c.bucket === query.status) : classified
+
+  // Paginate
+  const total = filtered.length
+  const items = filtered.slice((query.page - 1) * query.limit, query.page * query.limit)
+
+  return NextResponse.json({
+    ok: true,
+    items,
+    total,
+    pagination: {
+      page:  query.page,
+      limit: query.limit,
+      pages: Math.ceil(total / query.limit),
+    },
+    vencido_usd,
+    por_vencer_usd,
+    vigente_usd,
+  })
 }

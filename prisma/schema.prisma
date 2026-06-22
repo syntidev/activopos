@@ -513,6 +513,8 @@ model Gasto {
   notas        String?   @db.Text
   is_paid      Boolean   @default(true)
   paid_at      DateTime?
+  due_date     DateTime?
+  supplier     String?   @db.VarChar(150)
   created_by   Int
   created_at   DateTime  @default(now())
 

@@ -28,6 +28,7 @@ export function ProductListRow({ product, rate, onAdd }: Props) {
   return (
     <motion.div
       className={`${styles.row} ${outOfStock ? styles.rowDisabled : ''}`}
+      data-testid="product-card"
       initial={{ opacity: 0, x: -4 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 4 }}

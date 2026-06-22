@@ -10,7 +10,6 @@ import { CajaAperturaScreen } from '@/components/pos/CajaAperturaScreen'
 import { CobroModal } from '@/components/pos/CobroModal'
 import { ClienteModal } from '@/components/pos/ClienteModal'
 import { CotizacionModal } from '@/components/pos/CotizacionModal'
-import { DescuentoModal } from '@/components/pos/DescuentoModal'
 import { PinDescuentoModal } from '@/components/pos/PinDescuentoModal'
 import { CargoModal } from '@/components/pos/CargoModal'
 import { QtyInput } from '@/components/pos/QtyInput'
@@ -106,7 +105,7 @@ export default function POSPage() {
             if (isEmpty) { toast('Agrega productos primero', 'warning'); return }
             pos.setShowCotizacion(true)
           }}
-          onDescuento={() => pos.setShowDescuento(true)}
+          onDescuento={() => pos.setShowPinDescuento(true)}
           onCargo={() => pos.setShowCargo(true)}
         />
       </div>
@@ -140,13 +139,6 @@ export default function POSPage() {
         ticket={pos.ticket}
         totals={totals}
         onConfirm={pos.generarCotizacion}
-      />
-      <DescuentoModal
-        open={pos.showDescuento}
-        onClose={() => pos.setShowDescuento(false)}
-        currentPct={pos.ticket.discount_global_pct}
-        totalUsd={totals.subtotal_usd}
-        onApply={pos.applyDiscount}
       />
       <PinDescuentoModal
         open={pos.showPinDescuento}

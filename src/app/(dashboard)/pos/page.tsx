@@ -11,6 +11,7 @@ import { CobroModal } from '@/components/pos/CobroModal'
 import { ClienteModal } from '@/components/pos/ClienteModal'
 import { CotizacionModal } from '@/components/pos/CotizacionModal'
 import { DescuentoModal } from '@/components/pos/DescuentoModal'
+import { PinDescuentoModal } from '@/components/pos/PinDescuentoModal'
 import { CargoModal } from '@/components/pos/CargoModal'
 import { QtyInput } from '@/components/pos/QtyInput'
 import { VariantSelector } from '@/components/products/VariantSelector'
@@ -147,6 +148,13 @@ export default function POSPage() {
         totalUsd={totals.subtotal_usd}
         onApply={pos.applyDiscount}
       />
+      <PinDescuentoModal
+        open={pos.showPinDescuento}
+        onClose={() => pos.setShowPinDescuento(false)}
+        currentPct={pos.ticket.discount_global_pct}
+        totalUsd={totals.subtotal_usd}
+        onApply={pos.applyDiscountWithPin}
+      />
       <CargoModal
         open={pos.showCargo}
         onClose={() => pos.setShowCargo(false)}
@@ -158,7 +166,13 @@ export default function POSPage() {
       <VariantSelector
         open={pos.showVariantSelector}
         onClose={pos.cancelVariantSelector}
-        product={pos.pendingVariantProduct}
+        product={pos.pendingVariantProduct
+          ? {
+              id: pos.pendingVariantProduct.id,
+              name: pos.pendingVariantProduct.name,
+              price_per_unit_usd: pos.pendingVariantProduct.price_per_unit_usd,
+            }
+          : null}
         onSelect={(variant) => {
           if (pos.pendingVariantProduct) {
             pos.addProductWithVariant(pos.pendingVariantProduct, variant)

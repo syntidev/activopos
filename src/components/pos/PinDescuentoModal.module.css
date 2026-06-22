@@ -1,0 +1,154 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── Discount % input ── */
+.discountRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.discountLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.discountInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+.discountInputWrap:focus-within { border-color: var(--color-border-focus); }
+
+.discountInput {
+  flex: 1;
+  height: 44px;
+  padding: 0 var(--space-3);
+  background: none;
+  border: none;
+  outline: none;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  text-align: right;
+}
+
+.discountSuffix {
+  padding: 0 var(--space-3) 0 var(--space-1);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.previewRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2-5) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.previewAmt {
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-text);
+}
+
+/* ── PIN section ── */
+.pinSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pinLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.pinBoxes {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.pinBox {
+  width: 52px;
+  height: 60px;
+  text-align: center;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono, monospace);
+  background: var(--color-surface-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  outline: none;
+  caret-color: var(--color-brand);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.pinBox:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
+}
+.pinBoxError {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(var(--danger-rgb, 220 38 38), 0.15);
+}
+
+/* Shake animation for wrong PIN */
+.pinBoxes.shake {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+/* ── Status messages ── */
+.errorMsg {
+  font-size: var(--text-sm);
+  color: var(--color-danger-text);
+  text-align: center;
+}
+
+.rateLimitMsg {
+  font-size: var(--text-sm);
+  color: var(--color-warning-text, var(--color-text-secondary));
+  text-align: center;
+  background: var(--color-warning-subtle, var(--color-surface-2));
+  border: 1px solid var(--color-warning-border, var(--color-border));
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+/* ── Footer ── */
+.footer {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pinBoxes.shake { animation: none; }
+  .discountInputWrap,
+  .pinBox { transition: none; }
+}

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search } from 'lucide-react'
+import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search, Pencil, Trash2 } from 'lucide-react'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
 import styles from './ProductModal.module.css'
@@ -70,6 +70,16 @@ export interface EditableProduct {
   unit_type?: 'unit' | 'weight' | 'volume' | 'length'
   unit_label?: string
   unit_step?: number
+}
+
+interface DbVariant {
+  id: number
+  tipo: string
+  valor: string
+  sku: string | null
+  precio_extra: number
+  price_usd: number | null
+  stock: number
 }
 
 interface ProductModalProps {
@@ -201,6 +211,28 @@ export function ProductModal({
   const [subcategory, setSubcategory] = useState('')
   const [isFeatured, setIsFeatured]   = useState(false)
 
+  /* ── DB variant management (existing products only) ── */
+  const [dbVariants, setDbVariants]       = useState<DbVariant[]>([])
+  const [loadingDbVars, setLoadingDbVars] = useState(false)
+  const [showVarForm, setShowVarForm]     = useState(false)
+  const [editingVar, setEditingVar]       = useState<DbVariant | null>(null)
+  const [varFormValor, setVarFormValor]   = useState('')
+  const [varFormTipo, setVarFormTipo]     = useState('personalizado')
+  const [varFormSku, setVarFormSku]       = useState('')
+  const [varFormExtra, setVarFormExtra]   = useState('')
+  const [varFormStock, setVarFormStock]   = useState('0')
+  const [varFormSaving, setVarFormSaving] = useState(false)
+
+  const fetchDbVariants = useCallback(async (productId: number) => {
+    setLoadingDbVars(true)
+    try {
+      const res = await fetch(`/api/products/${productId}/variants`)
+      const j = await res.json()
+      setDbVariants(j.variants ?? [])
+    } catch { /* non-critical */ }
+    finally { setLoadingDbVars(false) }
+  }, [])
+
   /* ── Component editor state ── */
   const [components, setComponents]       = useState<ComponentEntry[]>([])
   const [compSearch, setCompSearch]       = useState('')
@@ -235,6 +267,7 @@ export function ProductModal({
       setHasVariants(false); setVariants([])
       setNewVarName(''); setNewVarExtra('')
       setBadge('none'); setSubcategory(''); setIsFeatured(false)
+      setDbVariants([]); setShowVarForm(false); setEditingVar(null)
       return
     }
 
@@ -286,6 +319,13 @@ export function ProductModal({
       }
     }
   }, [isOpen, editProduct])
+
+  /* ── Fetch DB variants when editing an existing simple product ── */
+  useEffect(() => {
+    if (isOpen && editProduct?.id && productKind === 'simple') {
+      void fetchDbVariants(editProduct.id)
+    }
+  }, [isOpen, editProduct?.id, productKind, fetchDbVariants])
 
   /* ── Real-time price calculation ── */
   const computed = useMemo(() => {
@@ -356,6 +396,55 @@ export function ProductModal({
   const addPreset = (name: string) => {
     if (variants.some(v => v.name === name)) return
     setVariants(prev => [...prev, { name, price_extra_usd: 0 }])
+  }
+
+  /* ── DB variant CRUD ── */
+  const openVarForm = (v: DbVariant | null) => {
+    setEditingVar(v)
+    setVarFormValor(v?.valor ?? '')
+    setVarFormTipo(v?.tipo ?? 'personalizado')
+    setVarFormSku(v?.sku ?? '')
+    setVarFormExtra(v ? String(v.precio_extra) : '')
+    setVarFormStock(v ? String(v.stock) : '0')
+    setShowVarForm(true)
+  }
+
+  const handleSaveVar = async () => {
+    if (!editProduct?.id || !varFormValor.trim()) return
+    setVarFormSaving(true)
+    try {
+      const body = {
+        valor:        varFormValor.trim(),
+        tipo:         varFormTipo,
+        sku:          varFormSku.trim() || null,
+        precio_extra: parseFloat(varFormExtra) || 0,
+        price_usd:    null,
+        stock:        parseInt(varFormStock) || 0,
+      }
+      const url    = editingVar
+        ? `/api/products/${editProduct.id}/variants/${editingVar.id}`
+        : `/api/products/${editProduct.id}/variants`
+      const method = editingVar ? 'PATCH' : 'POST'
+      const res    = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      })
+      if (res.ok) {
+        await fetchDbVariants(editProduct.id)
+        setShowVarForm(false)
+        setEditingVar(null)
+      }
+    } catch { /* silent */ }
+    finally { setVarFormSaving(false) }
+  }
+
+  const handleDeleteVar = async (variantId: number) => {
+    if (!editProduct?.id) return
+    try {
+      await fetch(`/api/products/${editProduct.id}/variants/${variantId}`, { method: 'DELETE' })
+      await fetchDbVariants(editProduct.id)
+    } catch { /* silent */ }
   }
 
   /* ── Component search ── */
@@ -1147,6 +1236,124 @@ export function ProductModal({
                           <Plus size={15} aria-hidden="true" />
                         </button>
                       </div>
+                    </div>
+                  )}
+
+                  {/* ── DB Variants (editing existing simple products only) ── */}
+                  {isEdit && editProduct?.id && productKind === 'simple' && (
+                    <div className={styles.dbVariantsSection}>
+                      <div className={styles.dbVarsHeader}>
+                        <p className={mStyles.label}>Variantes guardadas</p>
+                        <button
+                          type="button"
+                          className={styles.dbVarsAddBtn}
+                          onClick={() => { setShowVarForm(true); setEditingVar(null); setVarFormValor(''); setVarFormTipo('personalizado'); setVarFormSku(''); setVarFormExtra(''); setVarFormStock('0') }}
+                        >
+                          <Plus size={13} aria-hidden="true" />
+                          Agregar
+                        </button>
+                      </div>
+
+                      {loadingDbVars ? (
+                        <div className={styles.dbVarEmpty}>
+                          <Loader2 size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+                          Cargando…
+                        </div>
+                      ) : dbVariants.length === 0 && !showVarForm ? (
+                        <p className={styles.dbVarEmpty}>Sin variantes. Agrega la primera.</p>
+                      ) : (
+                        dbVariants.map(v => (
+                          <div key={v.id} className={styles.dbVarRow}>
+                            <span className={styles.dbVarName}>{v.valor}</span>
+                            <span className={styles.dbVarPrice}>
+                              ${(v.price_usd ?? v.precio_extra).toFixed(2)}
+                            </span>
+                            <span className={styles.dbVarStock}>{v.stock} und</span>
+                            <button
+                              type="button"
+                              className={styles.dbVarAction}
+                              onClick={() => openVarForm(v)}
+                              aria-label={`Editar variante ${v.valor}`}
+                            >
+                              <Pencil size={13} aria-hidden="true" />
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.dbVarAction} ${styles.dbVarActionDelete}`}
+                              onClick={() => void handleDeleteVar(v.id)}
+                              aria-label={`Eliminar variante ${v.valor}`}
+                            >
+                              <Trash2 size={13} aria-hidden="true" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+
+                      {showVarForm && (
+                        <div className={styles.dbVarForm}>
+                          <div className={styles.dbVarFormRow}>
+                            <input
+                              type="text"
+                              className={mStyles.input}
+                              placeholder="Nombre* (ej: Talla M, Rojo)"
+                              value={varFormValor}
+                              onChange={(e) => setVarFormValor(e.target.value)}
+                              maxLength={80}
+                              aria-label="Nombre de variante"
+                            />
+                            <input
+                              type="text"
+                              className={mStyles.input}
+                              placeholder="SKU"
+                              value={varFormSku}
+                              onChange={(e) => setVarFormSku(e.target.value)}
+                              maxLength={60}
+                              aria-label="SKU"
+                              style={{ maxWidth: 110 }}
+                            />
+                          </div>
+                          <div className={styles.dbVarFormRow}>
+                            <input
+                              type="number"
+                              className={mStyles.input}
+                              placeholder="Precio extra $"
+                              value={varFormExtra}
+                              onChange={(e) => setVarFormExtra(e.target.value)}
+                              min="0"
+                              step="0.01"
+                              aria-label="Precio extra USD"
+                            />
+                            <input
+                              type="number"
+                              className={mStyles.input}
+                              placeholder="Stock inicial"
+                              value={varFormStock}
+                              onChange={(e) => setVarFormStock(e.target.value)}
+                              min="0"
+                              step="1"
+                              aria-label="Stock inicial"
+                            />
+                          </div>
+                          <div className={styles.dbVarFormActions}>
+                            <button
+                              type="button"
+                              className={styles.dbVarCancelBtn}
+                              onClick={() => { setShowVarForm(false); setEditingVar(null) }}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.dbVarSaveBtn}
+                              onClick={() => void handleSaveVar()}
+                              disabled={varFormSaving || !varFormValor.trim()}
+                            >
+                              {varFormSaving && <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} aria-hidden="true" />}
+                              {editingVar ? 'Actualizar' : 'Guardar variante'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

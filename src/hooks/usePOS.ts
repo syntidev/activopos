@@ -40,11 +40,15 @@ export function usePOS() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
   /* ── Modal visibility ── */
-  const [showCobro, setShowCobro]           = useState(false)
-  const [showCliente, setShowCliente]       = useState(false)
-  const [showCotizacion, setShowCotizacion] = useState(false)
-  const [showDescuento, setShowDescuento]   = useState(false)
-  const [showCargo, setShowCargo]           = useState(false)
+  const [showCobro, setShowCobro]               = useState(false)
+  const [showCliente, setShowCliente]           = useState(false)
+  const [showCotizacion, setShowCotizacion]     = useState(false)
+  const [showDescuento, setShowDescuento]       = useState(false)
+  const [showPinDescuento, setShowPinDescuento] = useState(false)
+  const [showCargo, setShowCargo]               = useState(false)
+
+  /* Pending sale created for authorize-discount flow */
+  const [pendingSaleId, setPendingSaleId] = useState<number | null>(null)
 
   /* ── Variant selector state ── */
   const [showVariantSelector, setShowVariantSelector]       = useState(false)
@@ -177,6 +181,7 @@ export function usePOS() {
 
   const clearTicket = useCallback(() => {
     setTicket(limpiarTicket(rate, ivaPct))
+    setPendingSaleId(null)
   }, [rate, ivaPct])
 
   // ── Acciones asíncronas ────────────────────────────────────────────────────
@@ -218,8 +223,44 @@ export function usePOS() {
     }
   }
 
+  const applyDiscountWithPin = async (discountPct: number, pin: string): Promise<void> => {
+    const saleId = pendingSaleId ?? (await postSale(ticket, 'pending', 'pos')).id
+    setPendingSaleId(saleId)
+
+    const res = await fetch(`/api/sales/${saleId}/authorize-discount`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ pin, discount_pct: discountPct }),
+    })
+    const data = await res.json().catch(() => ({})) as { error?: string }
+    if (!res.ok) {
+      const err = Object.assign(new Error(data.error ?? 'Error'), { status: res.status })
+      throw err
+    }
+    setTicket(prev => aplicarDescuentoGlobal(prev, discountPct))
+  }
+
   const procesarPago = async (payments: PaymentInput[]): Promise<SaleResult> => {
-    const result = await postSale(ticket, 'paid', 'pos', payments)
+    let result: SaleResult
+    if (pendingSaleId) {
+      const res  = await fetch(`/api/sales/${pendingSaleId}/pay`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ payments }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Error al procesar el pago')
+      result = {
+        id:            data.sale.id,
+        ticket_number: data.sale.ticket_number,
+        status:        data.sale.status,
+        total_usd:     Number(data.sale.total_usd),
+        total_bs:      Number(data.sale.total_bs),
+      }
+    } else {
+      result = await postSale(ticket, 'paid', 'pos', payments)
+    }
+    setPendingSaleId(null)
     setTicket(limpiarTicket(rate, ivaPct))
     setShowCobro(false)
     return result
@@ -263,11 +304,12 @@ export function usePOS() {
     isSearching,
     cajaStatus,
     paymentMethods,
-    showCobro,      setShowCobro,
-    showCliente,    setShowCliente,
-    showCotizacion, setShowCotizacion,
-    showDescuento,  setShowDescuento,
-    showCargo,      setShowCargo,
+    showCobro,           setShowCobro,
+    showCliente,         setShowCliente,
+    showCotizacion,      setShowCotizacion,
+    showDescuento,       setShowDescuento,
+    showPinDescuento,    setShowPinDescuento,
+    showCargo,           setShowCargo,
     showVariantSelector,
     pendingVariantProduct,
     addProduct,
@@ -276,6 +318,7 @@ export function usePOS() {
     updateQty,
     removeItem,
     applyDiscount,
+    applyDiscountWithPin,
     applyCargo,
     setClient,
     clearTicket,

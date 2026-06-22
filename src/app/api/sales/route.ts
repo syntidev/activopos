@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
       )
     }
     if (err instanceof Error) {
-      const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida', 'Precio no configurado']
+      const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida', 'Precio no configurado', 'Variante no corresponde']
       if (knownErrors.some(e => err.message.includes(e))) {
         return NextResponse.json({ error: err.message }, { status: 400 })
       }

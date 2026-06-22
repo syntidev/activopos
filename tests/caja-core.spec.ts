@@ -17,56 +17,43 @@ import { test, expect, request as newRequestCtx } from '@playwright/test'
 
 const BASE = 'http://localhost:3000'
 
-test.beforeAll(async ({ browser }) => {
-  // 1. Servidor disponible y tasa BCV activa
-  const ctx  = await browser.newContext()
-  const page = await ctx.newPage()
-
-  const ratesRes = await page.goto(`${BASE}/api/rates/bcv`).catch(() => null)
-  if (!ratesRes || ratesRes.status() !== 200) throw new Error('Pre-condición: servidor no disponible')
+test.beforeAll(async ({ request }) => {
+  // Tasa BCV activa
+  const ratesRes  = await request.get(`${BASE}/api/rates/bcv`)
   const ratesBody = await ratesRes.json() as { ok?: boolean; rate?: number }
   if (!ratesBody.ok || !ratesBody.rate) throw new Error('Pre-condición: tasa BCV no disponible')
 
-  // 2. Asegurar caja abierta — cerrar existente si hay, luego abrir una limpia
-  const statusRes  = await page.request.get(`${BASE}/api/cash/status`)
+  // Asegurar caja abierta — cerrar existente si hay, luego abrir una limpia
+  const statusRes  = await request.get(`${BASE}/api/cash/status`)
   const statusBody = await statusRes.json() as { isOpen: boolean }
 
   if (statusBody.isOpen) {
-    // Cerrar la que hay para empezar limpio
-    await page.request.post(`${BASE}/api/cash/close`, {
+    await request.post(`${BASE}/api/cash/close`, {
       data: { closing_amount_usd: 0, closing_amount_bs: 0, close_notes: 'Reset previo a certificación' },
     })
   }
 
-  // Abrir caja de prueba ($25 inicial)
-  const openRes = await page.request.post(`${BASE}/api/cash/open`, {
+  const openRes = await request.post(`${BASE}/api/cash/open`, {
     data: {
       opening_amount_usd: 25,
       opening_amount_bs:  25 * ratesBody.rate,
     },
   })
   if (!openRes.ok()) throw new Error(`Setup falló al abrir caja: HTTP ${openRes.status()}`)
-
-  await ctx.close()
 })
 
-test.afterAll(async ({ browser }) => {
+test.afterAll(async ({ request }) => {
   // Restaurar estado: abrir una caja nueva para que pos-core.spec.ts encuentre caja abierta
-  const ctx  = await browser.newContext({ storageState: 'tests/.auth-state.json' })
-  const page = await ctx.newPage()
-
-  const statusRes  = await page.request.get(`${BASE}/api/cash/status`)
+  const statusRes  = await request.get(`${BASE}/api/cash/status`)
   const statusBody = await statusRes.json() as { isOpen: boolean }
 
   if (!statusBody.isOpen) {
-    const ratesRes  = await page.request.get(`${BASE}/api/rates/bcv`)
+    const ratesRes  = await request.get(`${BASE}/api/rates/bcv`)
     const ratesBody = await ratesRes.json() as { rate: number }
-    await page.request.post(`${BASE}/api/cash/open`, {
+    await request.post(`${BASE}/api/cash/open`, {
       data: { opening_amount_usd: 25, opening_amount_bs: 25 * ratesBody.rate },
     })
   }
-
-  await ctx.close()
 })
 
 test.describe('Caja Core — Certificación Sprint 11', () => {

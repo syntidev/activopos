@@ -14,22 +14,6 @@ const BASE_URL = 'http://localhost:3000'
 
 // Auth state inyectado por playwright.config.ts (setup project)
 
-test.beforeAll(async ({ browser }) => {
-  // Verificar pre-condiciones
-  const ctx = await browser.newContext()
-  const page = await ctx.newPage()
-
-  // 1. Servidor disponible
-  const ratesResp = await page.goto(`${BASE_URL}/api/rates/bcv`).catch(() => null)
-  if (!ratesResp || ratesResp.status() !== 200) throw new Error('Pre-condición fallida: servidor no disponible')
-
-  // 2. BCV rate activa
-  const body = await ratesResp.json()
-  if (!body.ok) throw new Error('Pre-condición fallida: BCV rate no disponible')
-
-  await ctx.close()
-})
-
 test.describe('POS Core Flow — Certificación Sprint 10', () => {
   test('T01 — dashboard carga con KPIs visibles', async ({ page }) => {
     await page.goto(`${BASE_URL}/escritorio`)

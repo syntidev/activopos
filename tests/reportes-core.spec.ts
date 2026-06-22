@@ -32,15 +32,6 @@ async function prismaEndpointAvailable(
   return res.status() !== 500
 }
 
-test.beforeAll(async ({ browser }) => {
-  const ctx  = await browser.newContext()
-  const page = await ctx.newPage()
-  // Verificar servidor vía /login (no usa Prisma)
-  const res  = await page.goto(`${BASE}/login`).catch(() => null)
-  if (!res || res.status() !== 200) throw new Error('Pre-condición: servidor no disponible')
-  await ctx.close()
-})
-
 test.describe('Reportes Core — Certificación Sprint 11', () => {
 
   // ── R01 ────────────────────────────────────────────────────────────────

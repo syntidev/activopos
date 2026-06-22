@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
+import { createNotification } from '@/lib/notifications'
 
 /* ── Query schema ── */
 
@@ -178,6 +179,18 @@ export async function POST(req: NextRequest) {
         include: { items: true },
       })
     })
+
+    // Trigger notification for catalog-origin orders
+    if (data.origin === 'catalog') {
+      void createNotification(
+        session.businessId,
+        'order_new',
+        'Nuevo pedido desde catálogo',
+        `Pedido ${order.order_number}${data.client_name ? ` de ${data.client_name}` : ''} recibido.`,
+        'order',
+        order.id
+      ).catch(() => {})
+    }
 
     return NextResponse.json({ ok: true, order }, { status: 201 })
   } catch (err) {

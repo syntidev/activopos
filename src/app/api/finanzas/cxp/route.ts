@@ -12,6 +12,8 @@ const cxpSchema = z.object({
   fecha:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido'),
   notas:       z.string().max(500).optional(),
   vencimiento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  due_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  supplier:    z.string().max(150).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -62,6 +64,8 @@ export async function POST(req: NextRequest) {
         notas:       body.notas ?? null,
         is_paid:     false,
         paid_at:     null,
+        due_date:    body.due_date ? new Date(body.due_date) : null,
+        supplier:    body.supplier ?? null,
         created_by:  session.userId,
       },
     })

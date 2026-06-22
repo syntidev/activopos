@@ -114,12 +114,20 @@ function PayBar({ name, totalUsd, maxUsd, totalAll }: PayBarProps) {
 function ReportesContent() {
   const { toast } = useToast()
 
-  const [date,      setDate]      = useState<string>(todayStr)
-  const [data,      setData]      = useState<DailyData | null>(null)
-  const [loading,   setLoading]   = useState(false)
-  const [exporting,        setExporting]        = useState(false)
-  const [exportingExcel,   setExportingExcel]   = useState(false)
+  const [date,         setDate]         = useState<string>(todayStr)
+  const [data,         setData]         = useState<DailyData | null>(null)
+  const [loading,      setLoading]      = useState(false)
+  const [exporting,    setExporting]    = useState(false)
+  const [exportingExcel, setExportingExcel] = useState(false)
+  const [businessName, setBusinessName] = useState('Mi Negocio')
   const initRef = useRef(false)
+
+  useEffect(() => {
+    fetch('/api/config/business')
+      .then(r => r.json())
+      .then((j: { name?: string }) => { if (j.name) setBusinessName(j.name) })
+      .catch(() => {})
+  }, [])
 
   const fetchDaily = useCallback(async (d: string) => {
     setLoading(true)
@@ -178,7 +186,7 @@ function ReportesContent() {
       const { generateDailyReportPdf } = await import('@/lib/pdf-reports')
       await generateDailyReportPdf({
         date:            data.date,
-        businessName:    'Mi Negocio',  // placeholder — pendiente desde sesión
+        businessName,
         rate:            data.rate,
         salesCount:      data.salesCount,
         totalUsd:        data.totalUsd,

@@ -33,6 +33,7 @@ export function ProductCard({ product, rate, onAdd }: ProductCardProps) {
       whileTap={{ scale: 0.97 }}
       transition={{ duration: 0.1 }}
       aria-label={`Agregar ${product.name}`}
+      data-testid="product-card"
       type="button"
       disabled={outOfStock}
     >

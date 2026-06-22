@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { ShoppingCart, CreditCard, AlertTriangle, DollarSign, AlertCircle } from 'lucide-react'
+import { ShoppingCart, CreditCard, AlertTriangle, DollarSign, AlertCircle, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import { Badge } from '@/components/ui'
 import styles from './DashboardOperativo.module.css'
 
@@ -56,7 +57,10 @@ export default function DashboardOperativo() {
       })
   }, [])
 
-  const hasVencidos = cxc.some(c => c.vencido)
+  const vencidoItems   = cxc.filter(c => c.vencido)
+  const porVencerItems = cxc.filter(c => !c.vencido)
+  const vencidoTotal   = vencidoItems.reduce((s, c) => s + c.saldo_usd, 0)
+  const porVencerTotal = porVencerItems.reduce((s, c) => s + c.saldo_usd, 0)
 
   return (
     <div className={styles.container}>
@@ -86,30 +90,36 @@ export default function DashboardOperativo() {
         />
       </div>
 
-      {cxc.length > 0 && (
-        <div className={styles.alertCard}>
+      {vencidoItems.length > 0 && (
+        <div className={`${styles.alertCard} ${styles.alertCardDanger}`}>
           <div className={styles.alertHeader}>
             <div className={styles.alertTitleRow}>
               <AlertCircle size={16} aria-hidden="true" />
-              <h4 className={styles.alertTitle}>Cuentas por Cobrar pendientes</h4>
+              <h4 className={styles.alertTitle}>
+                {vencidoItems.length} crédito{vencidoItems.length !== 1 ? 's' : ''} vencido{vencidoItems.length !== 1 ? 's' : ''}
+                {' '}— ${vencidoTotal.toFixed(2)} pendiente
+              </h4>
             </div>
-            <Badge variant={hasVencidos ? 'danger' : 'warning'}>
-              {cxc.length} pendiente{cxc.length !== 1 ? 's' : ''}
-            </Badge>
+            <Link href="/finanzas" className={styles.alertLink}>
+              Ver CxC <ArrowRight size={12} aria-hidden="true" />
+            </Link>
           </div>
-          <div className={styles.alertList}>
-            {cxc.slice(0, 6).map(item => (
-              <div key={item.sale_id} className={styles.alertItem}>
-                <div className={styles.alertLeft}>
-                  <span className={styles.alertClientName}>{item.client_name}</span>
-                  <span className={styles.alertMeta}>{item.ticket_number} · {item.days_pending}d</span>
-                </div>
-                <div className={styles.alertRight}>
-                  <span className={styles.alertSaldo}>${item.saldo_usd.toFixed(2)}</span>
-                  {item.vencido && <Badge variant="danger" size="sm">Vencido</Badge>}
-                </div>
-              </div>
-            ))}
+        </div>
+      )}
+
+      {porVencerItems.length > 0 && (
+        <div className={`${styles.alertCard} ${styles.alertCardWarning}`}>
+          <div className={styles.alertHeader}>
+            <div className={styles.alertTitleRow}>
+              <AlertCircle size={16} aria-hidden="true" />
+              <h4 className={styles.alertTitle}>
+                {porVencerItems.length} crédito{porVencerItems.length !== 1 ? 's' : ''} pendiente{porVencerItems.length !== 1 ? 's' : ''}
+                {' '}— ${porVencerTotal.toFixed(2)}
+              </h4>
+            </div>
+            <Link href="/finanzas" className={styles.alertLink}>
+              Ver CxC <ArrowRight size={12} aria-hidden="true" />
+            </Link>
           </div>
         </div>
       )}

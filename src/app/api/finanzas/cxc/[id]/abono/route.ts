@@ -1,0 +1,111 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { getSession } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { getBcvRate } from '@/lib/bcv'
+import { createNotification } from '@/lib/notifications'
+
+const abonoSchema = z.object({
+  amount_usd:        z.number().positive(),
+  payment_method_id: z.number().int().positive(),
+  notes:             z.string().max(500).optional(),
+})
+
+// Errors thrown inside the transaction that map to 4xx
+const TX_400 = 'SALDO:'
+const TX_404 = 'Venta no encontrada o ya pagada'
+
+type Context = { params: { id: string } }
+
+export async function POST(req: NextRequest, { params }: Context) {
+  const session = await getSession()
+  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+  const saleId = parseInt(params.id, 10)
+  if (isNaN(saleId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+  try {
+    const body = abonoSchema.parse(await req.json())
+
+    // Verify payment method outside tx — no need to hold the transaction open during this lookup
+    const payMethod = await prisma.paymentMethod.findFirst({
+      where: { id: body.payment_method_id, business_id: session.businessId },
+    })
+    if (!payMethod) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
+
+    // Fetch BCV rate outside tx — network call must not hold the transaction open
+    const rate     = await getBcvRate(session.businessId)
+    const amountBs = Math.round(body.amount_usd * rate * 100) / 100
+
+    // CX-RACE fix: saldo check + create inside a single interactive transaction
+    const { abono, saldoFinal, nowPaid, ticketNumber } = await prisma.$transaction(async (tx) => {
+      // Re-read sale + all abonos atomically inside the tx
+      const sale = await tx.sale.findFirst({
+        where:   { id: saleId, business_id: session.businessId, status: 'pending' },
+        include: { abonos: { select: { amount_usd: true } } },
+      })
+      if (!sale) throw new Error(TX_404)
+
+      const totalUsd    = Number(sale.total_usd)
+      const abonadoPrev = sale.abonos.reduce((a, b) => a + Number(b.amount_usd), 0)
+      const saldoPrev   = Math.max(0, Math.round((totalUsd - abonadoPrev) * 100) / 100)
+
+      if (body.amount_usd > saldoPrev + 0.01) {
+        throw new Error(
+          `${TX_400}El abono (${body.amount_usd.toFixed(2)}) supera el saldo pendiente (${saldoPrev.toFixed(2)})`
+        )
+      }
+
+      const newAbono = await tx.saleAbono.create({
+        data: {
+          sale_id:           saleId,
+          payment_method_id: body.payment_method_id,
+          amount_usd:        body.amount_usd,
+          amount_bs:         amountBs,
+          rate_used:         rate,
+          notes:             body.notes ?? null,
+          created_by:        session.userId,
+        },
+      })
+
+      const saldoNew = Math.round((saldoPrev - body.amount_usd) * 100) / 100
+      const paid     = saldoNew <= 0.01
+
+      if (paid) {
+        await tx.sale.update({ where: { id: saleId }, data: { status: 'paid', sold_at: new Date() } })
+      }
+
+      return { abono: newAbono, saldoFinal: Math.max(0, saldoNew), nowPaid: paid, ticketNumber: sale.ticket_number }
+    })
+
+    if (nowPaid) {
+      void createNotification(
+        session.businessId,
+        'credit_paid',
+        'Crédito saldado',
+        `Venta ${ticketNumber} ha sido pagada completamente.`,
+        'sale',
+        saleId
+      ).catch(() => {})
+    }
+
+    return NextResponse.json({
+      ok:        true,
+      abono:     { ...abono, amount_usd: Number(abono.amount_usd), amount_bs: Number(abono.amount_bs) },
+      saldo_usd: saldoFinal,
+      paid:      nowPaid,
+    }, { status: 201 })
+
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    }
+    if (err instanceof Error) {
+      if (err.message === TX_404) return NextResponse.json({ error: TX_404 }, { status: 404 })
+      if (err.message.startsWith(TX_400)) return NextResponse.json({ error: err.message.slice(TX_400.length) }, { status: 400 })
+    }
+    console.error('cxc abono POST:', err)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
+}

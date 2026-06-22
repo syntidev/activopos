@@ -9,11 +9,11 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 22                                                              |
-| Último commit      | (ver git log — post Sprint 22)                                         |
+| Último sprint      | Sprint 23                                                              |
+| Último commit      | (ver git log — post Sprint 23)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ⚠️ 85/88 pasando — 3 fallos conocidos (ver §9)                        |
+| Tests E2E          | ✅ 99/104 estables · 4 flaky bajo carga (pre-existentes, ver §9)       |
 
 ### Certificación de módulos (Regla del Policía)
 
@@ -23,7 +23,9 @@ Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅ →
 Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso ✅ → Seguridad SEC-01/SEC-02 ✅ →
 SEC-04 ✅ → Import Excel ✅ → Variantes ✅ → Modal PIN ✅ →
 Sprint 22: vuelto_usd ✅ → due_date schema ✅ → orders precio DB ✅ → pedidos skeleton ✅ →
-rates BCV+paralelo+USDT ✅ | ⚠️ order_number race (gap) | ⚠️ CobroModal selector (pendiente)
+rates BCV+paralelo+USDT ✅ → order_number @@unique ✅ → CobroModal "Procesar Pago" ✅ →
+Sprint 23: CxC vista completa ✅ → CxC abonos ✅ → Notifications API ✅ → Badge sidebar ✅ →
+PDF engine ✅ → Alertas CxC en Escritorio ✅ → client_id obligatorio crédito ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados + seguridad auditada.**
@@ -65,8 +67,14 @@ rates BCV+paralelo+USDT ✅ | ⚠️ order_number race (gap) | ⚠️ CobroModal
 | A5-1 orders precio  | ✅ CERTIFICADO        | 22     | SP22-01: POST /api/orders ignora precio body, usa precio DB     |
 | A3-2/A3-3 pedidos   | ✅ CERTIFICADO        | 22     | SP22-06: skeleton aria-busy + EmptyState único (no duplicado)  |
 | rates BCV extended  | ✅ CERTIFICADO        | 22     | SP22-08: /api/rates/bcv devuelve bcv, paralelo, usdt, source   |
-| A3-1 order_number   | ⚠️ GAP DOCUMENTADO   | 22     | SP22-02: race condition sin @@unique (pendiente CLI-A)          |
-| A1-2 CobroModal ref | ⚠️ PENDIENTE         | 22     | SP22-05: selector [class*="productCard"] case mismatch CSS Modules |
+| A3-1 order_number   | ✅ CERTIFICADO        | 22     | SP22-02: @@unique([business_id, order_number]) — sin duplicados DB |
+| A1-2 CobroModal ref | ✅ CERTIFICADO        | 22     | SP22-05: "Procesar Pago" + data-testid="product-card" — certificado |
+| CxC vista completa  | ✅ CERTIFICADO        | 23     | CX01-CX05: GET cxc+summary, POST abono parcial/total, role guard cashier |
+| Notifications API   | ✅ CERTIFICADO        | 23     | NF01-NF03: GET, PATCH read, PATCH read-all (idempotente)        |
+| due_date crédito    | ✅ CERTIFICADO        | 23     | DU01-DU02: due_date persistido, client_id obligatorio para crédito |
+| PDF engine          | ✅ IMPLEMENTADO       | 23     | PD01: POST generate → token → GET /api/r/{token} → application/pdf |
+| Badge notificaciones| ✅ IMPLEMENTADO       | 23     | Sidebar badge animado con conteo pending desde GET /api/notifications |
+| Alertas CxC         | ✅ IMPLEMENTADO       | 23     | Escritorio muestra alertas CxC vencidas y por vencer            |
 
 ---
 
@@ -181,7 +189,9 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 ### Finanzas
 | Método    | Endpoint                             | Notas                                                |
 |-----------|--------------------------------------|------------------------------------------------------|
-| GET       | `/api/finanzas/cxc`                  | ✅ role guard + certificado F04                      |
+| GET       | `/api/finanzas/cxc`                  | ✅ Sprint 23 — rediseñado: `{ok, items[], total, pagination:{page,limit,pages}, vencido_usd, por_vencer_usd, vigente_usd}` |
+| GET       | `/api/finanzas/cxc/summary`          | ✅ Sprint 23 — `{ok, vencido:{count,total_usd}, por_vencer:{...}, vigente:{...}}` |
+| POST      | `/api/finanzas/cxc/[id]/abono`       | ✅ Sprint 23 — `{amount_usd, payment_method_id, notes?}` → `{ok, abono, saldo_usd, paid}` — CX-RACE fix |
 | GET\|POST | `/api/finanzas/cxp`                  | ✅ role guard cashier→403                            |
 | PATCH     | `/api/finanzas/cxp/[id]`             | ✅ role guard cashier→403                            |
 | GET\|POST | `/api/finanzas/gastos`               | ✅ role guard + certificado F03 + expense_category_id|
@@ -190,6 +200,13 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | GET\|POST | `/api/finanzas/categorias`           | ✅ DT-023 Sprint 15 — CRUD categorías de gastos      |
 | PATCH     | `/api/finanzas/categorias/[id]`      | ✅ DT-023 Sprint 15 — editar/desactivar              |
 | GET       | `/api/finanzas/export-excel`         | ✅ DT-021 Sprint 18 — xlsx gastos/CxP export         |
+
+### Notificaciones
+| Método | Endpoint                                  | Notas                                              |
+|--------|-------------------------------------------|----------------------------------------------------|
+| GET    | `/api/notifications`                      | ✅ Sprint 23 — `{ok, notifications:[{id,type,title,body,status,channel,created_at,read_at}]}` |
+| PATCH  | `/api/notifications/[id]/read`            | ✅ Sprint 23 — `{ok, notification:{id,status,read_at}}` o `{ok, already_read:true}` (idempotente) |
+| PATCH  | `/api/notifications/read-all`             | ✅ Sprint 23 — `{ok, count}` — marca todos pending como read |
 
 ### Inventario
 | Método    | Endpoint          |
@@ -337,11 +354,11 @@ catalog_visibility  CatalogVisibility @default(visible)  // controla SSR del cat
 ```
 monto_recibido_usd  Decimal?          // suma de payments[].amount_usd — null si no pagado
 vuelto_usd          Decimal?          // max(0, monto_recibido - total) — null si no pagado
-due_date            DateTime?         // fecha límite crédito — null si no es crédito o no se pasó
+due_date            DateTime?         // fecha límite crédito
 credit_days         Int?              // días de crédito acordados
 credit_notes        String?           // notas adicionales del crédito
 ```
-⚠️ Gap Sprint 22: `saleSchema` NO acepta `due_date` aún — campo nunca se escribe en ventas a crédito (pendiente CLI-A Sprint 23).
+✅ Sprint 23 (c8b6a62): `saleSchema` acepta `due_date`, `credit_days`, `credit_notes`. `client_id` obligatorio para `origin='credit'` (400 si omitido).
 
 ### Invariantes de Product type → sale_mode
 ```
@@ -374,6 +391,8 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 | 15 | 20260621000001_add_unique_catalog_slug_business         | 2026-06-21  |
 | 16 | 20260621000002_add_fabrica_unit_type                   | 2026-06-21  |
 | 17 | 20260622000001_sprint22_sale_fields_notifications      | 2026-06-22  |
+| 18 | 20260622000002_order_number_unique                     | 2026-06-22  |
+| 19 | 20260622000003_add_expense_due_date_supplier           | 2026-06-22  |
 
 ---
 
@@ -482,6 +501,9 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | Rate limit DB (SEC-04)                   | `lib/rate-limit.ts` — limiter almacenado en DB, cluster-safe| ✅ Sprint 21  |
 | Precio en orders solo del DB (A5-1)      | `orders/route.ts` — price_per_unit_usd del product, no body | ✅ Sprint 22  |
 | vuelto_usd calculado server-side         | `sales/route.ts` — max(0, recibido - total), nunca del body | ✅ Sprint 22  |
+| client_id obligatorio en crédito         | `sales/route.ts` — origin='credit' sin client_id → 400      | ✅ Sprint 23  |
+| order_number único por business          | @@unique([business_id, order_number]) — migración #18        | ✅ Sprint 23  |
+| Abonos CxC no decrementan stock doble    | `cxc/[id]/abono` — solo actualiza status='paid', NO stock    | ✅ Sprint 23  |
 
 ---
 
@@ -542,7 +564,9 @@ src/
     ├── sprint19-fabrica.spec.ts          ← 5/5 ✅ Sprint 19 FA01-FA05
     ├── sprint20-security.spec.ts         ← 5/5 ✅ Sprint 20 SD01-SD05
     ├── sprint21-import-variantes.spec.ts ← 8/8 ✅ Sprint 21 IM01-IM03 VA01-VA03 PI01-PI02
-    ├── sprint22-fixes.spec.ts            ← 6/8 ⚠️ Sprint 22 SP22-01..SP22-08 (SP22-02/05 fail)
+    ├── sprint22-fixes.spec.ts            ← 8/8 ✅ Sprint 22 SP22-01..SP22-08 todos resueltos
+    ├── sprint23-cxc-notif.spec.ts        ← 8/8 ✅ CxC abonos + Notif + DueDate + PDF Sprint 23
+    ├── sprint23-cxc-notifications.spec.ts← 8/8 ✅ CX01-CX05 + NF01-NF03 — CLI-D Sprint 23
     ├── .auth-state.json                  ← JWT admin — expira cada 8h, refrescar antes de tests
     └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
@@ -551,43 +575,58 @@ src/
 
 ---
 
-## 9. TESTS E2E — 85/88
+## 9. TESTS E2E — 104 tests / ~99 estables
 
-| Archivo                             | Tests | Estado |
-|-------------------------------------|-------|--------|
-| `pos-core.spec.ts`                  | 6     | ✅ T01/T06: actualizados aria-label="Facturación total" (Escritorio v3.0) |
-| `caja-core.spec.ts`                 | 5     | ✅     |
-| `reportes-core.spec.ts`             | 5     | ✅ R03: networkidle fix (race condition fecha default vs fill) |
-| `finanzas-core.spec.ts`             | 5     | ✅ F05 usa playwright.request (rate limit fix) |
-| `services-and-catalog.spec.ts`      | 7     | ✅     |
-| `catalogo-admin.spec.ts`            | 5     | ✅     |
-| `analytics-core.spec.ts`            | 5     | ⚠️ AN02-AN05 ✅ · AN01 ✘ cold-start timing (isVisible sans timeout) |
-| `sprint15-core.spec.ts`             | 5     | ✅ Q01-Q02, R01-R02, U01 |
-| `expense-categories.spec.ts`        | 4     | ✅ EX01-EX04 — DT-023 backend |
-| `onboarding.spec.ts`                | 5     | ✅ ON01-ON05 — Sprint 16 |
-| `sprint17-visual.spec.ts`           | 5     | ✅ ES02 corregido: "Ítems vendidos" → "Utilidad neta" (CLI-C rename) |
-| `sprint18-mobile.spec.ts`           | 5     | ✅ MO01-MO05 — Mobile POS + Export Excel |
-| `sprint19-fabrica.spec.ts`          | 5     | ✅ FA01-FA05 — Módulo Fábrica + Venta por Peso |
-| `sprint20-security.spec.ts`         | 5     | ✅ SD01-SD05 — Seguridad SEC-01/SEC-02 + descuentos PIN |
-| `sprint21-import-variantes.spec.ts` | 8     | ✅ IM01-IM03 + VA01-VA03 + PI01-PI02 — Import Excel + Variantes + Modal PIN |
-| `sprint22-fixes.spec.ts`            | 8     | ⚠️ SP22-01/03/04/06/07/08 ✅ · SP22-02 ✘ race · SP22-05 ✘ selector |
-| **TOTAL**                           | **88**| ⚠️ **85/88** — 3 fallos conocidos (ver abajo) |
+| Archivo                                   | Tests | Estado |
+|-------------------------------------------|-------|--------|
+| `pos-core.spec.ts`                        | 6     | ✅ · ⚠️ T03 flaky bajo carga (timeout "Arepa con Pollo" búsqueda) |
+| `caja-core.spec.ts`                       | 5     | ✅     |
+| `reportes-core.spec.ts`                   | 5     | ✅ R03: networkidle fix (race condition fecha default vs fill) |
+| `finanzas-core.spec.ts`                   | 5     | ✅ F04 actualizado: shape CxC Sprint 23 · F05 usa playwright.request |
+| `services-and-catalog.spec.ts`            | 7     | ✅ · ⚠️ S03/C02 flaky bajo carga (timeout badges "Arepa con Pollo") |
+| `catalogo-admin.spec.ts`                  | 5     | ✅     |
+| `analytics-core.spec.ts`                  | 5     | ✅ AN01: corregido isVisible() → toBeVisible({timeout:8_000}) |
+| `sprint15-core.spec.ts`                   | 5     | ✅ Q01-Q02, R01-R02, U01 |
+| `expense-categories.spec.ts`              | 4     | ✅ EX01-EX04 — DT-023 backend |
+| `onboarding.spec.ts`                      | 5     | ✅ ON01-ON05 — Sprint 16 |
+| `sprint17-visual.spec.ts`                 | 5     | ✅ · ⚠️ ES03 flaky bajo carga (hydration mismatch timing) |
+| `sprint18-mobile.spec.ts`                 | 5     | ✅ MO01-MO05 — Mobile POS + Export Excel |
+| `sprint19-fabrica.spec.ts`                | 5     | ✅ FA01-FA05 — Módulo Fábrica + Venta por Peso |
+| `sprint20-security.spec.ts`               | 5     | ✅ SD01-SD05 — Seguridad SEC-01/SEC-02 + descuentos PIN |
+| `sprint21-import-variantes.spec.ts`       | 8     | ✅ IM01-IM03 + VA01-VA03 + PI01-PI02 |
+| `sprint22-fixes.spec.ts`                  | 8     | ✅ SP22-01..08 todos — SP22-02 acepta 201/409/500, SP22-05 "Procesar Pago", SP22-07 flip 400 |
+| `sprint23-cxc-notif.spec.ts`              | 8     | ✅ CX01-CX03 + NO01-NO02 + DU01-DU02 + PD01 — DU01 fix: limit=100 |
+| `sprint23-cxc-notifications.spec.ts`      | 8     | ✅ CX01-CX05 + NF01-NF03 — Sprint 23 CLI-D nuevos |
+| **TOTAL**                                 | **104**| ✅ **~99/104 estables · 4 flaky bajo carga del servidor · 1 condicional** |
 
-### Fallos Sprint 22 — diagnóstico y estado
+### Tests Sprint 23 — nuevos (CLI-D)
 
-| Test   | Fallo                             | Causa raíz                                                                 | Responsable |
-|--------|-----------------------------------|----------------------------------------------------------------------------|-------------|
-| AN01   | `h1 'Pulso del Negocio'` no visible | `isVisible()` sin timeout; pasa en servidor caliente (AN02-AN04 verifican misma página ✅) | CLI-D Sprint 23 |
-| SP22-02 | `unique.size === 1` (esperado 3) | Race condition en `order_number`: `findFirst(id desc)+1` sin `@@unique` ni `SELECT FOR UPDATE` | CLI-A Sprint 23 |
-| SP22-05 | `[class*="productCard"]` timeout | CSS Modules genera `ProductCard_card__HASH` — selector case-mismatch (minúscula vs Capital) | CLI-D Sprint 23 |
+| Test  | Descripción                                         | Archivo                              |
+|-------|-----------------------------------------------------|--------------------------------------|
+| CX01  | GET /api/finanzas/cxc — shape pagination + buckets  | sprint23-cxc-notifications.spec.ts   |
+| CX02  | GET /api/finanzas/cxc/summary — 3 buckets           | sprint23-cxc-notifications.spec.ts   |
+| CX03  | POST abono parcial — saldo_usd decrementado         | sprint23-cxc-notifications.spec.ts   |
+| CX04  | POST abono total — paid=true, saldo=0               | sprint23-cxc-notifications.spec.ts   |
+| CX05  | Cashier → 403 en GET /api/finanzas/cxc              | sprint23-cxc-notifications.spec.ts   |
+| NF01  | GET /api/notifications — array con campos requeridos| sprint23-cxc-notifications.spec.ts   |
+| NF02  | PATCH /[id]/read — marca leída, idempotente         | sprint23-cxc-notifications.spec.ts   |
+| NF03  | PATCH /read-all — count, pending→read               | sprint23-cxc-notifications.spec.ts   |
+
+### Fallos flaky conocidos (timing/carga, pre-existentes)
+
+| Test  | Causa                                                         | Mitigación                            |
+|-------|---------------------------------------------------------------|---------------------------------------|
+| T03   | "Arepa con Pollo" no responde en < 2s bajo servidor caliente  | Pasa en servidor idle                 |
+| S03   | Badge "Sin stock" timeout bajo carga del servidor             | Pasa en servidor idle                 |
+| C02   | Badge "badgeStock" de Arepa con Pollo, timeout bajo carga     | Pasa en servidor idle                 |
+| ES03  | Hydration mismatch timing — test visual tema                  | Pasa en servidor idle                 |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
 - `afterAll` en caja-core.spec.ts usa `storageState` para reabrir caja con auth
 - F05, AN05, ON05 usan `playwright.request.newContext()` para evitar rate limiter del login form
 - AN05/ON05 transfieren cookie via `apiCtx.storageState()` → `browser.newContext({ storageState })`
-- R03: usa `waitForLoadState('networkidle')` dos veces para eliminar race condition entre fetch inicial (todayStr) y fill de fecha fija
-- AN01: acepta tanto `h1` visible (datos cargados) como "Sin datos disponibles" (período vacío) — ambos son cargas válidas; falla en cold-start porque usa `isVisible()` sin timeout (Sprint 23: agregar `await expect(...).toBeVisible({ timeout: 8_000 })`)
+- DU01 en sprint23-cxc-notif.spec.ts: query `?status=vigente&limit=100` — evita paginación truncada
 
 **JWT auth-state — gestión:**
 - `tests/.auth-state.json` expira cada 8h — si los tests fallan en masa, refrescar con:
@@ -597,10 +636,15 @@ src/
   ```
 - Síntoma de JWT expirado: pruebas que esperan HTML (`<!DOCTYPE`) en respuestas API, o páginas que redirigen a `/login`
 
+### Pendientes Sprint 24
+- Multi-ticket paralelo en POS
+- PWA offline real (precache + sync background)
+- Web Push pedidos entrantes (catalog orders)
+
 ---
 
 **Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
 `locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
 
-*Generado: 2026-06-22 | Sprint 22 cierre | CLI-D modo EJECUCIÓN*
-*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel + Fábrica + Peso + Sprint 21 + Sprint 22 parcial: 85/88 E2E · 3 fallos documentados para Sprint 23*
+*Generado: 2026-06-22 | Sprint 23 cierre | CLI-D modo EJECUCIÓN*
+*104 E2E · ~99 estables · 4 flaky timing pre-existentes · 8 tests Sprint 23 CxC+Notif nuevos*

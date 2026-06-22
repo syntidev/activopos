@@ -520,3 +520,52 @@ Modelo: Pulpos tiene `/pos-para-carniceria`, `/pos-para-ferreterias`, etc.
 
 *Decisiones registradas: 2026-06-22 | Sprint 21 | CLI-D*
 
+---
+
+## 15. PLAN MAESTRO SPRINT 22-26
+
+### Bloque A — Infraestructura base (Sprint 22)
+- A1: due_date en Sale + crédito reforzado (migración add_sale_due_date)
+- A2: Notification tabla central — bus de alertas (migración add_notifications)
+- A3: Tasa editable por transacción en CobroModal (BCV + paralelo + USDT)
+
+### Bloque B — Módulos incompletos (Sprint 22-23)
+- B1: CxC/CxP completo con filtros vigente/por vencer/vencido + badge sidebar
+- B2: Modal crédito con presets 7/14/21/30 días + due_date obligatorio
+- B3: Reportería PDF estándar aprobado (header teal, @media print, colorimetría sellada)
+- B4: Multi-ticket paralelo en POS (Sale status='draft', máx 5 tabs)
+
+### Bloque C — Notificaciones (Sprint 23)
+- C1: Web Push pedidos entrantes (SW ya existe — extender)
+- C2: Job alertas CxC vencidas (n8n o node-cron diario)
+- C3: WhatsApp notificaciones — Twilio, template crédito vencido
+
+### Bloque D — PWA offline + Canales (Sprint 24)
+- D1: PWA offline real (IndexedDB + sync queue al reconectar)
+- D2: Listas de precio por canal (retail / wholesale / catalog)
+
+### Bloque E — Admin multitenant (Sprint 25)
+- Capa 1 ya existe: business_id en todas las tablas — multitenant en datos ✅
+- Capa 2 (falta): admin.activopos.com — Filament v5 en repo separado
+- Territorio exclusivo: Opus. Ningún otro agente lo toca.
+
+### Bloque F — Polish + Temas cliente (Sprint 26)
+- 10 temas venezolanos implementados server-side por business.theme
+- Tu Día: narrativa inteligente de cierre de jornada
+- Auditoría WCAG completa
+
+### Bugs documentados Sprint 22 (prioridad de ejecución)
+| ID     | Sev | Descripción                                               |
+|--------|-----|-----------------------------------------------------------|
+| BUG-01 | P0  | Pago mixto no calcula vuelto — CobroModal.tsx             |
+| BUG-02 | P1  | Pedidos móvil pantalla blanca — NuevoPedidoModal z-index  |
+| BUG-03 | P1  | CxC heurístico 30 días sin due_date — resumen/route.ts:132|
+| BUG-04 | P2  | parsePeriod() triplicado en finanzas — extraer a lib/     |
+| BUG-05 | P2  | raw SQL tasa BCV con fallback '36.50' hardcodeado         |
+
+### Posicionamiento sellado
+"ActivoPOS es tu sistema de control de ventas e inventario.
+No reemplaza tu facturación SENIAT — la complementa."
+
+*Plan registrado: 2026-06-21 | Sesión Claude Web + CLI-D | Sprint 22-26*
+

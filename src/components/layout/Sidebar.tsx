@@ -121,6 +121,7 @@ interface NavContentProps {
   formatRate: (rate: number) => string
   onLogout: () => void
   onCloseMobile?: () => void
+  onCloseNotifications?: () => void
   onOpenNotifications?: () => void
   notifUnread?: number
 }
@@ -133,6 +134,7 @@ function NavContent({
   formatRate,
   onLogout,
   onCloseMobile,
+  onCloseNotifications,
   onOpenNotifications,
   notifUnread = 0,
 }: NavContentProps) {
@@ -185,7 +187,7 @@ function NavContent({
                       className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                       title={collapsed ? item.label : undefined}
                       aria-current={isActive ? 'page' : undefined}
-                      onClick={() => onCloseMobile?.()}
+                      onClick={() => { onCloseMobile?.(); onCloseNotifications?.() }}
                     >
                       <span className={styles.iconWrapper}>
                         <Icon
@@ -334,6 +336,7 @@ export function Sidebar({
     bcvRate,
     formatRate,
     onCloseMobile,
+    onCloseNotifications: () => setShowNotif(false),
     onOpenNotifications: () => setShowNotif(true),
     notifUnread,
   }

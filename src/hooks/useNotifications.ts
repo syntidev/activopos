@@ -6,9 +6,9 @@ export interface NotificationItem {
   id:          number
   type:        'credit_vencido' | 'low_stock' | 'info'
   title:       string
-  description: string
+  body:        string
   created_at:  string
-  read:        boolean
+  read_at:     string | null
 }
 
 interface NotificationsState {
@@ -39,8 +39,8 @@ export function useNotifications(): NotificationsState {
 
   const markAllRead = useCallback(async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'POST' })
-      setItems(prev => prev.map(n => ({ ...n, read: true })))
+      await fetch('/api/notifications/read-all', { method: 'PATCH' })
+      setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))
     } catch {
       // silent fail
     }
@@ -52,7 +52,7 @@ export function useNotifications(): NotificationsState {
     return () => clearInterval(interval)
   }, [fetchNotifications])
 
-  const unread = items.filter(n => !n.read).length
+  const unread = items.filter(n => !n.read_at).length
 
   return { items, unread, loading, markAllRead, refresh: fetchNotifications }
 }

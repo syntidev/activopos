@@ -41,7 +41,7 @@ export function NotificationsPanel({
     return () => document.removeEventListener('keydown', handler)
   }, [open, onClose])
 
-  const unread = items.filter(n => !n.read).length
+  const unread = items.filter(n => !n.read_at).length
 
   return (
     <AnimatePresence>
@@ -117,17 +117,17 @@ export function NotificationsPanel({
                     return (
                       <li
                         key={n.id}
-                        className={`${styles.item} ${!n.read ? styles.itemUnread : ''}`}
+                        className={`${styles.item} ${!n.read_at ? styles.itemUnread : ''}`}
                       >
                         <div className={`${styles.itemIcon} ${styles[`icon_${n.type}`]}`} aria-hidden="true">
                           <Icon size={15} />
                         </div>
                         <div className={styles.itemBody}>
                           <p className={styles.itemTitle}>{n.title}</p>
-                          <p className={styles.itemDesc}>{n.description}</p>
+                          <p className={styles.itemDesc}>{n.body}</p>
                           <span className={styles.itemTime}>{timeAgo(n.created_at)}</span>
                         </div>
-                        {!n.read && <span className={styles.unreadDot} aria-label="No leído" />}
+                        {!n.read_at && <span className={styles.unreadDot} aria-label="No leído" />}
                       </li>
                     )
                   })}

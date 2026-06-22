@@ -193,7 +193,7 @@ function KanbanColumn({
       </div>
 
       {orders.length === 0 ? (
-        <EmptyState icon={ShoppingBag} title="Sin pedidos" />
+        <EmptyState icon={ShoppingBag} title={`Sin ${label.toLowerCase()}`} />
       ) : (
         orders.map((order) => (
           <OrderCard
@@ -358,7 +358,7 @@ function PedidosContent() {
         </Button>
       </div>
 
-      {/* Kanban — skeleton → error → content */}
+      {/* Kanban — skeleton → error → empty → content (mutuamente exclusivos) */}
       {loading ? (
         <KanbanSkeleton />
       ) : fetchError ? (
@@ -371,6 +371,12 @@ function PedidosContent() {
             Reintentar
           </button>
         </div>
+      ) : orders.length === 0 ? (
+        <EmptyState
+          icon={ShoppingBag}
+          title="No hay pedidos activos"
+          description="Los pedidos que recibas aparecerán aquí en el tablero."
+        />
       ) : (
         <ErrorBoundary>
           <div className={styles.kanban} role="region" aria-label="Tablero Kanban de pedidos">
@@ -392,15 +398,6 @@ function PedidosContent() {
             ))}
           </div>
         </ErrorBoundary>
-      )}
-
-      {/* Empty state */}
-      {!loading && !fetchError && orders.length === 0 && (
-        <EmptyState
-          icon={ShoppingBag}
-          title="No hay pedidos activos"
-          description="Los pedidos que recibas aparecerán aquí en el tablero."
-        />
       )}
 
       {/* Modal: Nuevo Pedido */}

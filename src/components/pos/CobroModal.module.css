@@ -186,6 +186,15 @@
   color: var(--color-text-secondary);
 }
 
+.requiredMark { color: var(--color-danger, #ef4444); margin-left: 2px; }
+
+.inputRequired {
+  border-color: rgba(var(--accent-rgb, 239 68 68), 0.45);
+}
+.inputRequired:not(:focus) {
+  background: rgba(239, 68, 68, 0.04);
+}
+
 .textInput {
   width: 100%;
   height: var(--touch-min);

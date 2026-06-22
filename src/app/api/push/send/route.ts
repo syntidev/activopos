@@ -10,10 +10,13 @@ import webpush from 'web-push'
 //   VAPID_SUBJECT                 — mailto: or https: URL for contact
 // Generate with: npx web-push generate-vapid-keys
 
+// Only relative paths allowed — prevents open redirect via push notification click
+const RELATIVE_PATH_RE = /^\/(?!\/)[^\s]*$/
+
 const sendSchema = z.object({
   title:   z.string().min(1).max(150),
   body:    z.string().min(1).max(500),
-  url:     z.string().optional(),
+  url:     z.string().regex(RELATIVE_PATH_RE, 'URL debe ser ruta relativa').optional(),
   icon:    z.string().optional(),
 })
 

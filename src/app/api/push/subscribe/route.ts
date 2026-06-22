@@ -3,6 +3,27 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// SSRF allowlist: only known push gateway hostnames accepted
+const PUSH_ENDPOINT_ALLOWLIST = [
+  'fcm.googleapis.com',
+  'updates.push.services.mozilla.com',
+  'notify.windows.com',
+  'push.apple.com',
+]
+
+const PRIVATE_IP_RE = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/
+
+function isAllowedEndpoint(raw: string): boolean {
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'https:')                      return false
+    if (PRIVATE_IP_RE.test(url.hostname))               return false
+    return PUSH_ENDPOINT_ALLOWLIST.some(h => url.hostname === h || url.hostname.endsWith(`.${h}`))
+  } catch {
+    return false
+  }
+}
+
 const subscribeSchema = z.object({
   endpoint:   z.string().url(),
   keys: z.object({
@@ -20,6 +41,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = subscribeSchema.parse(await req.json())
+
+    if (!isAllowedEndpoint(body.endpoint)) {
+      return NextResponse.json({ error: 'Endpoint no permitido' }, { status: 400 })
+    }
 
     // Delete any previous subscription with same endpoint for this business
     await prisma.pushSubscription.deleteMany({

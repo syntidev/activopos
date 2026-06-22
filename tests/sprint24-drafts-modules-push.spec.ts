@@ -226,8 +226,8 @@ test('MD02 — PATCH /api/config/business/modules actualiza; cashier → 403', a
   const original      = originalBody.modules_enabled
 
   try {
-    // Actualizar a subset conocido
-    const testModules = ['pos', 'caja', 'finanzas']
+    // Actualizar a subset conocido — debe incluir CORE_MODULES: pos, caja, inventory
+    const testModules = ['pos', 'caja', 'inventory', 'finanzas']
     const patchRes = await request.patch(`${BASE}/api/config/business/modules`, {
       data: { modules: testModules },
     })

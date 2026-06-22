@@ -171,11 +171,6 @@ test('PU-FIX01 — POST /api/orders origin=catalog → notificación order_new c
   test.setTimeout(60_000)
   const productId = await createProduct(request, 'SP25_PUFIX01_Prod', 15.00)
 
-  // Baseline notification count before
-  const beforeRes   = await request.get(`${BASE}/api/notifications`)
-  const beforeBody  = await beforeRes.json() as { notifications: { type: string }[] }
-  const beforeCount = beforeBody.notifications.filter(n => n.type === 'order_new').length
-
   const orderRes = await request.post(`${BASE}/api/orders`, {
     data: {
       origin:      'catalog',
@@ -184,16 +179,19 @@ test('PU-FIX01 — POST /api/orders origin=catalog → notificación order_new c
     },
   })
   expect(orderRes.status()).toBe(201)
+  const orderBody = await orderRes.json() as { ok: boolean; order: { id: number } }
 
   // Fire-and-forget notification — wait for it to complete
   await new Promise(resolve => setTimeout(resolve, 600))
 
-  const afterRes   = await request.get(`${BASE}/api/notifications`)
-  const afterBody  = await afterRes.json() as { notifications: { type: string }[] }
-  const afterCount = afterBody.notifications.filter(n => n.type === 'order_new').length
-
-  expect(afterCount, 'Notificación order_new debe crearse para pedido de catálogo').toBeGreaterThan(beforeCount)
-  // PU-FIX02 gap: push web NOT sent — api/orders/route.ts L184-193 llama createNotification
+  // API caps at take:20 — use type+entity_id lookup instead of count comparison (same pattern as NO01)
+  const afterRes  = await request.get(`${BASE}/api/notifications`)
+  const afterBody = await afterRes.json() as { notifications: { type: string; entity_id: number | null }[] }
+  const orderNotif = afterBody.notifications.find(
+    n => n.type === 'order_new' && n.entity_id === orderBody.order.id
+  )
+  expect(orderNotif, 'Notificación order_new debe crearse para pedido de catálogo').toBeDefined()
+  // PU-FIX02 gap: push web NOT sent — api/orders/route.ts llama createNotification
   // pero no invoca /api/push/send. Pendiente Sprint 26 CLI-A.
 })
 

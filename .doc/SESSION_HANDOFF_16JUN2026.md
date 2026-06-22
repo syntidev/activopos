@@ -328,7 +328,7 @@ NO corregir — solo reportar para la próxima sesión
 - Generar reporte de cobertura
 - Fix de PWA: verificar que el manifest funcione en Android y iOS
 
-### Después del Sprint 5 — Primera demo con Daniel (Margarita)
+### Después del Sprint 5 — Primera demo con primer cliente
 Eso es el hito. No lanzar más features hasta tener feedback real de un usuario.
 
 ---

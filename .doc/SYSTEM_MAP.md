@@ -9,18 +9,18 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 18                                                              |
-| Último commit      | c5743a8 (ver git log)                                                  |
+| Último sprint      | Sprint 19                                                              |
+| Último commit      | (ver git log — post Sprint 19)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 62/62 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 67/67 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
 Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ →
 Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅ →
-Mobile POS ✅ → Export Excel ✅
+Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados.**
@@ -47,6 +47,8 @@ Mobile POS ✅ → Export Excel ✅
 | Escritorio v3.0     | ✅ CERTIFICADO        | 17     | ES01-ES05: teal KPIs, theme toggle, 0 hydration errors         |
 | Mobile POS          | ✅ CERTIFICADO        | 18     | MO01-MO04: drawer, FAB carrito, badge, responsive sin overflow |
 | Export Excel        | ✅ CERTIFICADO        | 18     | MO05: botón visible + GET /api/reports/export-excel 200 xlsx   |
+| Módulo Fábrica      | ✅ CERTIFICADO        | 19     | FA01-FA03: combo + componentes + recipe_snapshot en sale_items |
+| Venta por Peso      | ✅ CERTIFICADO        | 19     | FA04: qty decimal, subtotal correcto, stock descontado en kg   |
 
 ---
 
@@ -195,6 +197,8 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | GET\|PATCH\|DELETE| `/api/products/[id]`                       | coerción service→sale_mode        |
 | GET\|POST        | `/api/products/[id]/variants`               |                                   |
 | PATCH\|DELETE    | `/api/products/[id]/variants/[variantId]`   |                                   |
+| GET\|POST        | `/api/products/[id]/components`             | ✅ Sprint 19 — Módulo Fábrica, anti-circular |
+| PATCH\|DELETE    | `/api/products/[id]/components/[componentId]` | ✅ Sprint 19 — editar/quitar componente |
 | GET              | `/api/products/recent`                      | normaliza sale_mode en lectura    |
 | GET              | `/api/products/search`                      | normaliza sale_mode en lectura    |
 | POST             | `/api/products/import`                      | ✅ size limit 5MB aplicado        |
@@ -280,12 +284,15 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | QuotationItem   | quotation_items      | Líneas de cotización ✅ Sprint 15                                |
 | Return          | returns              | Devoluciones ✅ Sprint 15                                        |
 | ReturnItem      | return_items         | Líneas de devolución ✅ Sprint 15                                |
+| ProductComponent| product_components   | Componentes de combo/fabricable ✅ Sprint 19                    |
 
 ### Enums
 
 | Enum              | Valores                                                      |
 |-------------------|--------------------------------------------------------------|
 | Role              | super_admin, admin, cashier                                  |
+| ProductType       | simple, combo, fabricable                                    |
+| UnitType          | unit, weight, volume, length                                 |
 | SaleMode          | unit, weight, service, length, volume, package               |
 | SaleStatus        | quote, pending, paid, cancelled                              |
 | SaleOrigin        | pos, quote, credit                                           |
@@ -334,6 +341,7 @@ product_type = 'service'  →  sale_mode forzado a 'service' (write: POST/PATCH)
 | 13 | 20260619162814_add_quotations_returns                   | 2026-06-19  |
 | 14 | 20260619174857_expense_categories                       | 2026-06-19  |
 | 15 | 20260621000001_add_unique_catalog_slug_business         | 2026-06-21  |
+| 16 | 20260621000002_add_fabrica_unit_type                   | 2026-06-21  |
 
 ---
 
@@ -490,6 +498,7 @@ src/
     ├── onboarding.spec.ts                ← 5/5 ✅ Sprint 16 ON01-ON05
     ├── sprint17-visual.spec.ts           ← 5/5 ✅ Sprint 17 ES01-ES05
     ├── sprint18-mobile.spec.ts           ← 5/5 ✅ Sprint 18 MO01-MO05
+    ├── sprint19-fabrica.spec.ts          ← 5/5 ✅ Sprint 19 FA01-FA05
     ├── .auth-state.json                  ← JWT admin — expira cada 8h, refrescar antes de tests
     └── playwright.config.ts              ← workers:1 fijado Sprint 13
 ```
@@ -514,7 +523,8 @@ src/
 | `onboarding.spec.ts`             | 5     | ✅ ON01-ON05 — Sprint 16 |
 | `sprint17-visual.spec.ts`        | 5     | ✅ ES02 corregido: "Ítems vendidos" → "Utilidad neta" (CLI-C rename) |
 | `sprint18-mobile.spec.ts`        | 5     | ✅ MO01-MO05 — Mobile POS + Export Excel |
-| **TOTAL**                        | **62**| ✅     |
+| `sprint19-fabrica.spec.ts`       | 5     | ✅ FA01-FA05 — Módulo Fábrica + Venta por Peso |
+| **TOTAL**                        | **67**| ✅     |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
@@ -522,6 +532,7 @@ src/
 - F05, AN05, ON05 usan `playwright.request.newContext()` para evitar rate limiter del login form
 - AN05/ON05 transfieren cookie via `apiCtx.storageState()` → `browser.newContext({ storageState })`
 - R03: usa `waitForLoadState('networkidle')` dos veces para eliminar race condition entre fetch inicial (todayStr) y fill de fecha fija
+- AN01: acepta tanto `h1` visible (datos cargados) como "Sin datos disponibles" (período vacío) — ambos son cargas válidas; cold-start puede devolver vacío en primer request
 
 **JWT auth-state — gestión:**
 - `tests/.auth-state.json` expira cada 8h — si los tests fallan en masa, refrescar con:
@@ -536,5 +547,5 @@ src/
 **Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
 `locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
 
-*Generado: 2026-06-21 | Sprint 18 cierre | CLI-D modo EJECUCIÓN*
-*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel certificados: 62/62 E2E*
+*Generado: 2026-06-21 | Sprint 19 cierre | CLI-D modo EJECUCIÓN*
+*Core + Onboarding + Tokens v3.0 + Escritorio v3.0 + Mobile POS + Export Excel + Fábrica + Peso certificados: 67/67 E2E*

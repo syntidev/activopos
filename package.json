@@ -23,6 +23,7 @@
     "@radix-ui/react-separator": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.10",
     "@supabase/supabase-js": "^2.108.2",
+    "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.40.0",
     "jose": "^6.2.3",
@@ -37,6 +38,7 @@
     "react-dom": "^18",
     "recharts": "^3.8.1",
     "sharp": "^0.35.1",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },

@@ -9,18 +9,22 @@ import {
   Palette,
   Users,
   Tag,
+  Puzzle,
+  Bell,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import styles from './configuracion.module.css'
-import { TabGeneral } from './tabs/TabGeneral'
-import { TabEmpresa } from './tabs/TabEmpresa'
-import { TabImpresion } from './tabs/TabImpresion'
-import { TabPagos } from './tabs/TabPagos'
-import { TabTema } from './tabs/TabTema'
-import { TabUsuarios } from './tabs/TabUsuarios'
-import { TabCategorias } from './tabs/TabCategorias'
+import { TabGeneral }         from './tabs/TabGeneral'
+import { TabEmpresa }         from './tabs/TabEmpresa'
+import { TabImpresion }       from './tabs/TabImpresion'
+import { TabPagos }           from './tabs/TabPagos'
+import { TabTema }            from './tabs/TabTema'
+import { TabUsuarios }        from './tabs/TabUsuarios'
+import { TabCategorias }      from './tabs/TabCategorias'
+import { TabModulos }         from './tabs/TabModulos'
+import { TabNotificaciones }  from './tabs/TabNotificaciones'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'tema' | 'usuarios' | 'categorias'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'tema' | 'usuarios' | 'categorias' | 'modulos' | 'notificaciones'
 
 interface Tab {
   key: TabKey
@@ -29,12 +33,14 @@ interface Tab {
 }
 
 const MAIN_TABS: Tab[] = [
-  { key: 'general',     label: 'General',            Icon: Settings    },
-  { key: 'empresa',     label: 'Empresa',             Icon: Building2   },
-  { key: 'impresion',   label: 'Impresión',           Icon: Printer     },
-  { key: 'pagos',       label: 'Métodos de Pago',     Icon: CreditCard  },
-  { key: 'categorias',  label: 'Categorías',           Icon: Tag         },
-  { key: 'tema',        label: 'Tema Visual',          Icon: Palette     },
+  { key: 'general',        label: 'General',             Icon: Settings   },
+  { key: 'empresa',        label: 'Empresa',             Icon: Building2  },
+  { key: 'impresion',      label: 'Impresión',           Icon: Printer    },
+  { key: 'pagos',          label: 'Métodos de Pago',     Icon: CreditCard },
+  { key: 'categorias',     label: 'Categorías',          Icon: Tag        },
+  { key: 'tema',           label: 'Tema Visual',         Icon: Palette    },
+  { key: 'modulos',        label: 'Módulos',             Icon: Puzzle     },
+  { key: 'notificaciones', label: 'Notificaciones',      Icon: Bell       },
 ]
 
 const BOTTOM_TABS: Tab[] = [
@@ -81,13 +87,15 @@ export function ConfiguracionView({ session }: ConfiguracionViewProps) {
       </aside>
 
       <main className={styles.configContent}>
-        {activeTab === 'general'   && <TabGeneral   businessId={session.businessId} />}
-        {activeTab === 'empresa'   && <TabEmpresa   businessId={session.businessId} />}
-        {activeTab === 'impresion' && <TabImpresion businessId={session.businessId} />}
-        {activeTab === 'pagos'     && <TabPagos     businessId={session.businessId} />}
-        {activeTab === 'tema'        && <TabTema       businessId={session.businessId} />}
-        {activeTab === 'categorias'  && <TabCategorias businessId={session.businessId} />}
-        {activeTab === 'usuarios'  && (
+        {activeTab === 'general'        && <TabGeneral        businessId={session.businessId} />}
+        {activeTab === 'empresa'        && <TabEmpresa        businessId={session.businessId} />}
+        {activeTab === 'impresion'      && <TabImpresion      businessId={session.businessId} />}
+        {activeTab === 'pagos'          && <TabPagos          businessId={session.businessId} />}
+        {activeTab === 'tema'           && <TabTema           businessId={session.businessId} />}
+        {activeTab === 'categorias'     && <TabCategorias     businessId={session.businessId} />}
+        {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
+        {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
+        {activeTab === 'usuarios'       && (
           <TabUsuarios
             businessId={session.businessId}
             currentUserId={session.userId}

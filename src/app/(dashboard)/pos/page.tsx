@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { ShoppingCart, X } from 'lucide-react'
 import { usePOS } from '@/hooks/usePOS'
+import { useDraftTabs } from '@/hooks/useDraftTabs'
 import { calcularTotales, ticketVacio } from '@/lib/pos'
 import { LeftPanel } from './LeftPanel'
 import { TicketPanel } from './TicketPanel'
+import { DraftTabs } from '@/components/pos/DraftTabs'
 import { CajaAperturaScreen } from '@/components/pos/CajaAperturaScreen'
 import { CobroModal } from '@/components/pos/CobroModal'
 import { ClienteModal } from '@/components/pos/ClienteModal'
@@ -27,6 +29,8 @@ export default function POSPage() {
   const totals = calcularTotales(pos.ticket)
   const isEmpty = ticketVacio(pos.ticket)
   const itemCount = pos.ticket.items.length
+
+  const drafts = useDraftTabs(pos.rate, 0)
 
   if (pos.cajaStatus === 'loading') {
     return (
@@ -50,16 +54,48 @@ export default function POSPage() {
     pos.setShowCreditoModal(true)
   }
 
+  const handleSwitchTab = (id: string) => {
+    const newTicket = drafts.switchTo(id, pos.ticket)
+    pos.setTicketDirect(newTicket)
+  }
+
+  const handleNewTab = async () => {
+    const newTicket = await drafts.addTab(pos.ticket)
+    if (!newTicket) { toast('Máximo 5 tickets simultáneos', 'warning'); return }
+    pos.setTicketDirect(newTicket)
+  }
+
+  const handleCloseTab = (id: string) => {
+    const result = drafts.closeTab(id, pos.ticket)
+    if (!result) return
+    if (result.switched) pos.setTicketDirect(result.newTicket)
+  }
+
+  const handlePaymentComplete = async () => {
+    const nextTicket = await drafts.paymentComplete()
+    pos.setTicketDirect(nextTicket)
+  }
+
   return (
     <div className={styles.posContainer}>
-      <LeftPanel
-        search={pos.search}
-        onSearchChange={pos.setSearch}
-        isSearching={pos.isSearching}
-        results={pos.searchResults}
-        rate={pos.rate}
-        onProductClick={handleProductClick}
-      />
+      <div className={styles.leftArea}>
+        <DraftTabs
+          tabs={drafts.tabs}
+          activeId={drafts.activeId}
+          loading={drafts.loading}
+          onSwitch={handleSwitchTab}
+          onNew={handleNewTab}
+          onClose={handleCloseTab}
+        />
+        <LeftPanel
+          search={pos.search}
+          onSearchChange={pos.setSearch}
+          isSearching={pos.isSearching}
+          results={pos.searchResults}
+          rate={pos.rate}
+          onProductClick={handleProductClick}
+        />
+      </div>
 
       {/* Mobile: floating cart toggle */}
       <button
@@ -120,7 +156,11 @@ export default function POSPage() {
         onClose={() => pos.setShowCobro(false)}
         totals={totals}
         paymentMethods={pos.paymentMethods}
-        onConfirm={pos.procesarPago}
+        onConfirm={async (payments) => {
+          const result = await pos.procesarPago(payments)
+          await handlePaymentComplete()
+          return result
+        }}
         rate={pos.rate}
         clientId={pos.ticket.client_id}
       />
@@ -160,6 +200,7 @@ export default function POSPage() {
           pos.setShowCreditoModal(false)
           try {
             const result = await pos.venderACredito(terms)
+            await handlePaymentComplete()
             toast(`Crédito #${result.ticket_number} registrado`, 'success')
           } catch (e) {
             toast(e instanceof Error ? e.message : 'Error al registrar venta', 'error')

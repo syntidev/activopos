@@ -195,9 +195,10 @@ test('SP22-05 — CobroModal bloquea "Confirmar" sin referencia en método que l
   await page.waitForLoadState('networkidle')
   await expect(page).not.toHaveURL(/login/)
 
-  // Add a product to the cart — click the first available product card or list row
-  const productCard = page.locator('[data-testid="product-card"]').first()
-  await productCard.waitFor({ timeout: 8000 })
+  // Add a product to the cart — pick first non-disabled product card
+  const productCard = page.locator('button[data-testid="product-card"]:not([disabled])').first()
+  await productCard.waitFor({ state: 'attached', timeout: 8000 })
+  await expect(productCard).toBeEnabled({ timeout: 5000 })
   await productCard.click()
 
   // Open CobroModal via "Procesar Pago" button (Sprint 23 CLI-B renamed from "Cobrar")

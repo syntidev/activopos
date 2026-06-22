@@ -227,10 +227,8 @@ test('NO01 — notificación creada al recibir pedido origin=catalog', async ({ 
       read_at:    string | null
     }[]
   }
-  const countAfter = afterBody.notifications.length
-  expect(countAfter).toBeGreaterThan(countBefore)
-
-  // The new notification must reference the order
+  // API caps at take:20 — use type+entity_id lookup instead of count comparison
+  // (countAfter may === countBefore === 20 when business has >=20 notifications)
   const orderNotif = afterBody.notifications.find(
     n => n.type === 'order_new' && n.entity_id === orderBody.order.id
   )

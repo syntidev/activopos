@@ -27,6 +27,7 @@ export interface ProductFormData {
   costPerUnitUsd: number
   pricePerUnitUsd: number
   stockInitial: number
+  stockAlertThreshold: number
   isAvailable: boolean
   catalogVisibility: CatalogVisibility
   availability: Availability
@@ -70,6 +71,7 @@ export interface EditableProduct {
   unit_type?: 'unit' | 'weight' | 'volume' | 'length'
   unit_label?: string
   unit_step?: number
+  stock_alert_threshold?: number | null
 }
 
 interface DbVariant {
@@ -192,7 +194,8 @@ export function ProductModal({
   const [isFixedPrice, setIsFixedPrice] = useState(false)
   const [margin, setMargin]       = useState('30')
   const [price, setPrice]         = useState('')
-  const [stockInitial, setStockInitial] = useState('0')
+  const [stockInitial, setStockInitial]             = useState('0')
+  const [stockAlertThreshold, setStockAlertThreshold] = useState('5')
   const [errors, setErrors]       = useState<Record<string, string>>({})
   const [isSaving, setIsSaving]   = useState(false)
 
@@ -261,7 +264,7 @@ export function ProductModal({
       setProductKind('simple'); setMeasuredBy('weight'); setUnitLabel('kg'); setUnitStep(0.001)
       setComponents([]); setCompSearch(''); setCompResults([]); setCompQty('1'); setSelectedComp(null)
       setCostMode('unit'); setBulkSize('12'); setCost(''); setIsFixedPrice(false)
-      setMargin('30'); setPrice(''); setStockInitial('0'); setErrors({})
+      setMargin('30'); setPrice(''); setStockInitial('0'); setStockAlertThreshold('5'); setErrors({})
       setIsSaving(false); setImages([null, null, null]); setIsAvailable(true)
       setCatalogVisibility('hidden'); setAvailability('in_stock')
       setHasVariants(false); setVariants([])
@@ -308,6 +311,7 @@ export function ProductModal({
       setBadge(editProduct.badge ?? 'none')
       setSubcategory(editProduct.subcategory ?? '')
       setIsFeatured(editProduct.is_featured ?? false)
+      setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
 
       const c = editProduct.cost_per_unit_usd ?? 0
       const p = editProduct.price_per_unit_usd
@@ -499,7 +503,8 @@ export function ProductModal({
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
         pricePerUnitUsd: computed.displayPrice,
-        stockInitial:    Math.max(parseInt(stockInitial) || 0, 0),
+        stockInitial:         Math.max(parseInt(stockInitial) || 0, 0),
+        stockAlertThreshold:  Math.max(parseInt(stockAlertThreshold) || 0, 0),
         isAvailable,
         catalogVisibility,
         availability,
@@ -1125,6 +1130,31 @@ export function ProductModal({
                           min="0"
                           step={saleMode === 'weight' ? '0.001' : '1'}
                         />
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── Stock alert threshold (físicos) ── */}
+                  {saleMode !== 'service' && (
+                    <>
+                      <div className={mStyles.divider} />
+                      <div className={mStyles.formGroup}>
+                        <label className={mStyles.label} htmlFor="pm-alert-threshold">
+                          Alerta de stock crítico
+                        </label>
+                        <input
+                          id="pm-alert-threshold"
+                          type="number"
+                          className={mStyles.input}
+                          placeholder="5"
+                          value={stockAlertThreshold}
+                          onChange={(e) => setStockAlertThreshold(e.target.value)}
+                          min="0"
+                          step="1"
+                        />
+                        <p className={styles.fixedPriceSub}>
+                          Avisar cuando el stock llegue a este nivel
+                        </p>
                       </div>
                     </>
                   )}

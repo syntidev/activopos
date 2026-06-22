@@ -26,6 +26,34 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  let data = { title: 'ActivoPOS', body: 'Tienes una notificación nueva' }
+  try { data = event.data.json() } catch { /* use defaults */ }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body:  data.body,
+      icon:  '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      data:  data,
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const raw = event.notification.data?.url ?? '/'
+      // Only allow relative paths — reject protocol-relative and external URLs
+      const url = (typeof raw === 'string' && raw.startsWith('/') && !raw.startsWith('//')) ? raw : '/'
+      const existing = list.find(c => c.url.includes(url) && 'focus' in c)
+      if (existing) return existing.focus()
+      return clients.openWindow(url)
+    })
+  )
+})
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
   if (!event.request.url.startsWith(self.location.origin)) return

@@ -13,6 +13,13 @@
   background: var(--pos-grid-bg);
 }
 
+.leftArea {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
 .loadingScreen {
   height: calc(100dvh - var(--header-height));
   display: flex;

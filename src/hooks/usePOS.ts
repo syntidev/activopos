@@ -329,6 +329,7 @@ export function usePOS() {
     applyCargo,
     setClient,
     clearTicket,
+    setTicketDirect: (t: TicketState) => setTicket(t),
     totals,
     procesarPago,
     generarCotizacion,

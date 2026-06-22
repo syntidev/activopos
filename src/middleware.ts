@@ -19,6 +19,11 @@ const PUBLIC_EXACT = new Set([
   '/api/reports/monthly/mark-pending', // n8n: marca todos como pending (x-api-key)
 ])
 
+const SUPER_ADMIN_ONLY = [
+  '/admin',
+  '/api/admin',
+]
+
 const ADMIN_ONLY = [
   '/onboarding',
   '/configuracion',
@@ -69,6 +74,12 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.redirect(new URL('/login', req.url))
     res.cookies.delete('activopos_session')
     return res
+  }
+
+  if (SUPER_ADMIN_ONLY.some(p => pathname.startsWith(p))) {
+    if (session.role !== 'super_admin') {
+      return NextResponse.redirect(new URL('/escritorio', req.url))
+    }
   }
 
   if (ADMIN_ONLY.some(p => pathname.startsWith(p))) {

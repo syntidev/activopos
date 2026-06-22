@@ -15,6 +15,17 @@ const BASE_URL = 'http://localhost:3000'
 // Auth state inyectado por playwright.config.ts (setup project)
 
 test.describe('POS Core Flow — Certificación Sprint 10', () => {
+  test.beforeAll(async ({ request }) => {
+    // Ensure "Arepa con Pollo" has stock — depletes from repeated T05 runs
+    const listRes = await request.get(`${BASE_URL}/api/products?limit=100`)
+    const listBody = await listRes.json() as { products?: Array<{ id: number; name: string }> }
+    const arepa = listBody.products?.find(p => p.name === 'Arepa con Pollo')
+    if (arepa) {
+      await request.post(`${BASE_URL}/api/inventory`, {
+        data: { product_id: arepa.id, quantity: 50, notes: 'Stock para tests E2E (pos-core)' },
+      })
+    }
+  })
   test('T01 — dashboard carga con KPIs visibles', async ({ page }) => {
     await page.goto(`${BASE_URL}/escritorio`)
     await page.waitForLoadState('networkidle')

@@ -22,13 +22,16 @@ const paymentSchema = z.object({
 })
 
 const saleSchema = z.object({
-  items: z.array(saleItemSchema).min(1),
-  client_id: z.number().int().positive().optional(),
-  client_name: z.string().max(120).optional(),
-  status: z.enum(['quote', 'pending', 'paid']),
-  origin: z.enum(['pos', 'quote', 'credit']),
-  notes: z.string().optional(),
-  payments: z.array(paymentSchema).optional(),
+  items:        z.array(saleItemSchema).min(1),
+  client_id:    z.number().int().positive().optional(),
+  client_name:  z.string().max(120).optional(),
+  status:       z.enum(['quote', 'pending', 'paid']),
+  origin:       z.enum(['pos', 'quote', 'credit']),
+  notes:        z.string().optional(),
+  payments:     z.array(paymentSchema).optional(),
+  due_date:     z.string().datetime().optional(),
+  credit_days:  z.number().int().positive().optional(),
+  credit_notes: z.string().max(500).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -84,6 +87,14 @@ export async function POST(req: NextRequest) {
     if (body.status === 'paid' && (!body.payments || body.payments.length === 0)) {
       return NextResponse.json(
         { error: 'Se requieren métodos de pago para cobrar' },
+        { status: 400 }
+      )
+    }
+
+    // PASO 4: client_id obligatorio para venta a crédito
+    if (body.origin === 'credit' && !body.client_id) {
+      return NextResponse.json(
+        { error: 'Se requiere un cliente para registrar una venta a crédito' },
         { status: 400 }
       )
     }
@@ -228,6 +239,9 @@ export async function POST(req: NextRequest) {
           notes:              body.notes,
           monto_recibido_usd: montoRecibidoUsd,
           vuelto_usd:         vueltoUsd,
+          due_date:           body.due_date ? new Date(body.due_date) : null,
+          credit_days:        body.credit_days ?? null,
+          credit_notes:       body.credit_notes ?? null,
           sold_at: body.status === 'paid' ? new Date() : null,
           items: { create: saleItems },
           ...(body.status === 'paid' && body.payments

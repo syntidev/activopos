@@ -12,6 +12,7 @@ import { ClienteModal } from '@/components/pos/ClienteModal'
 import { CotizacionModal } from '@/components/pos/CotizacionModal'
 import { PinDescuentoModal } from '@/components/pos/PinDescuentoModal'
 import { CargoModal } from '@/components/pos/CargoModal'
+import { CreditoModal } from '@/components/pos/CreditoModal'
 import { QtyInput } from '@/components/pos/QtyInput'
 import { VariantSelector } from '@/components/products/VariantSelector'
 import { useToast } from '@/components/ui'
@@ -44,14 +45,9 @@ export default function POSPage() {
     else pos.addProduct(product, 1)
   }
 
-  const handleVenderCredito = async () => {
+  const handleVenderCredito = () => {
     if (isEmpty) { toast('Agrega productos al ticket', 'warning'); return }
-    try {
-      const result = await pos.venderACredito()
-      toast(`Crédito #${result.ticket_number} registrado`, 'success')
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Error al registrar venta', 'error')
-    }
+    pos.setShowCreditoModal(true)
   }
 
   return (
@@ -154,6 +150,21 @@ export default function POSPage() {
         currentPct={pos.ticket.cargo_global_pct}
         totalUsd={totals.subtotal_usd}
         onApply={pos.applyCargo}
+      />
+
+      <CreditoModal
+        open={pos.showCreditoModal}
+        onClose={() => pos.setShowCreditoModal(false)}
+        totalUsd={totals.total_usd}
+        onConfirm={async (terms) => {
+          pos.setShowCreditoModal(false)
+          try {
+            const result = await pos.venderACredito(terms)
+            toast(`Crédito #${result.ticket_number} registrado`, 'success')
+          } catch (e) {
+            toast(e instanceof Error ? e.message : 'Error al registrar venta', 'error')
+          }
+        }}
       />
 
       <VariantSelector

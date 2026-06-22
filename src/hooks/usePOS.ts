@@ -20,6 +20,7 @@ import {
   buildSalePayload,
 } from '@/lib/pos'
 import type { ProductVariant } from '@/components/products/VariantSelector'
+import type { CreditTerms } from '@/components/pos/CreditoModal'
 
 export interface PaymentMethod {
   id: number
@@ -46,6 +47,7 @@ export function usePOS() {
   const [showDescuento, setShowDescuento]       = useState(false)
   const [showPinDescuento, setShowPinDescuento] = useState(false)
   const [showCargo, setShowCargo]               = useState(false)
+  const [showCreditoModal, setShowCreditoModal] = useState(false)
 
   /* Pending sale created for authorize-discount flow */
   const [pendingSaleId, setPendingSaleId] = useState<number | null>(null)
@@ -191,7 +193,8 @@ export function usePOS() {
     status: 'paid' | 'quote' | 'pending',
     origin: 'pos' | 'quote' | 'credit',
     payments?: PaymentInput[],
-    options?: QuoteOptions
+    options?: QuoteOptions,
+    creditTerms?: CreditTerms
   ): Promise<SaleResult> => {
     const totals = calcularTotales(currentTicket)
     const items  = buildSalePayload(currentTicket, totals)
@@ -203,11 +206,14 @@ export function usePOS() {
         items,
         status,
         origin,
-        client_id:   currentTicket.client_id ?? undefined,
-        client_name: currentTicket.client_name || undefined,
-        notes:       currentTicket.notes || options?.notes || undefined,
-        iva_pct:     currentTicket.iva_pct || undefined,
+        client_id:    currentTicket.client_id ?? undefined,
+        client_name:  currentTicket.client_name || undefined,
+        notes:        currentTicket.notes || options?.notes || undefined,
+        iva_pct:      currentTicket.iva_pct || undefined,
         payments,
+        due_date:     creditTerms?.due_date?.toISOString(),
+        credit_days:  creditTerms?.credit_days,
+        credit_notes: creditTerms?.credit_notes || undefined,
       }),
     })
 
@@ -272,8 +278,8 @@ export function usePOS() {
     return result
   }
 
-  const venderACredito = async (): Promise<SaleResult> => {
-    const result = await postSale(ticket, 'pending', 'credit')
+  const venderACredito = async (terms: CreditTerms): Promise<SaleResult> => {
+    const result = await postSale(ticket, 'pending', 'credit', undefined, undefined, terms)
     setTicket(limpiarTicket(rate, ivaPct))
     return result
   }
@@ -310,6 +316,7 @@ export function usePOS() {
     showDescuento,       setShowDescuento,
     showPinDescuento,    setShowPinDescuento,
     showCargo,           setShowCargo,
+    showCreditoModal,    setShowCreditoModal,
     showVariantSelector,
     pendingVariantProduct,
     addProduct,

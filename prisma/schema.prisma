@@ -568,6 +568,7 @@ model Order {
   client    Client?     @relation(fields: [client_id], references: [id])
   items     OrderItem[]
 
+  @@unique([business_id, order_number])
   @@map("orders")
 }
 

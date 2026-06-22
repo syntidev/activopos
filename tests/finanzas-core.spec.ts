@@ -87,7 +87,7 @@ test.describe('Finanzas — Certificación Sprint 12', () => {
   // ── F03 ────────────────────────────────────────────────────────────────
   test('F03 — registrar gasto vía modal aparece en lista', async ({ page }) => {
     await page.goto(`${BASE}/finanzas`)
-    await page.waitForLoadState('domcontentloaded')
+    await page.waitForLoadState('networkidle')
 
     // Navegar a tab Gastos (tabs usan role="tab")
     const tabGastos = page.getByRole('tab', { name: /^Gastos$/i })

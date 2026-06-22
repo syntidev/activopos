@@ -9,11 +9,11 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 23                                                              |
-| Último commit      | (ver git log — post Sprint 23)                                         |
+| Último sprint      | Sprint 24                                                              |
+| Último commit      | (ver git log — post Sprint 24)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 99/104 estables · 4 flaky bajo carga (pre-existentes, ver §9)       |
+| Tests E2E          | ✅ ~115/120 estables · 4 flaky timing pre-existentes (ver §9)          |
 
 ### Certificación de módulos (Regla del Policía)
 
@@ -25,7 +25,9 @@ SEC-04 ✅ → Import Excel ✅ → Variantes ✅ → Modal PIN ✅ →
 Sprint 22: vuelto_usd ✅ → due_date schema ✅ → orders precio DB ✅ → pedidos skeleton ✅ →
 rates BCV+paralelo+USDT ✅ → order_number @@unique ✅ → CobroModal "Procesar Pago" ✅ →
 Sprint 23: CxC vista completa ✅ → CxC abonos ✅ → Notifications API ✅ → Badge sidebar ✅ →
-PDF engine ✅ → Alertas CxC en Escritorio ✅ → client_id obligatorio crédito ✅
+PDF engine ✅ → Alertas CxC en Escritorio ✅ → client_id obligatorio crédito ✅ →
+Sprint 24: Multi-ticket drafts ✅ → Módulos dinámicos sidebar ✅ → Web Push backend ✅ →
+SSRF allowlist push ✅ → stock_alert_threshold ✅ → SaleStatus.draft ✅
 ```
 
 **CORE COMPLETADO — todos los módulos del roadmap v1 certificados + seguridad auditada.**
@@ -75,6 +77,10 @@ PDF engine ✅ → Alertas CxC en Escritorio ✅ → client_id obligatorio créd
 | PDF engine          | ✅ IMPLEMENTADO       | 23     | PD01: POST generate → token → GET /api/r/{token} → application/pdf |
 | Badge notificaciones| ✅ IMPLEMENTADO       | 23     | Sidebar badge animado con conteo pending desde GET /api/notifications |
 | Alertas CxC         | ✅ IMPLEMENTADO       | 23     | Escritorio muestra alertas CxC vencidas y por vencer            |
+| Multi-ticket drafts | ✅ CERTIFICADO        | 24     | MT01-MT05: POST/GET/PATCH/DELETE /api/pos/drafts, MAX=5, DRF-NNNNN |
+| Módulos dinámicos   | ✅ CERTIFICADO        | 24     | MD01-MD02: GET/PATCH /api/config/business/modules, sidebar filtra activos |
+| Web Push SSRF guard | ✅ CERTIFICADO        | 24     | PW01: allowlist FCM/Mozilla/Windows/Apple, IP privada → 400      |
+| stock_alert_threshold| ✅ IMPLEMENTADO      | 24     | Product.stock_alert_threshold INT default 5 — migración #22      |
 
 ---
 
@@ -208,6 +214,26 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | PATCH  | `/api/notifications/[id]/read`            | ✅ Sprint 23 — `{ok, notification:{id,status,read_at}}` o `{ok, already_read:true}` (idempotente) |
 | PATCH  | `/api/notifications/read-all`             | ✅ Sprint 23 — `{ok, count}` — marca todos pending como read |
 
+### Multi-ticket POS (JWT, cualquier rol)
+| Método | Endpoint                     | Notas                                                                   |
+|--------|------------------------------|-------------------------------------------------------------------------|
+| GET    | `/api/pos/drafts`            | ✅ Sprint 24 — lista drafts del cajero activo (max 5, status='draft')   |
+| POST   | `/api/pos/drafts`            | ✅ Sprint 24 — crea draft vacío o con items; ticket_number DRF-NNNNN · 409 si MAX_DRAFTS=5 |
+| PATCH  | `/api/pos/drafts/[id]`       | ✅ Sprint 24 — reemplaza items atómicamente; precio siempre de DB        |
+| DELETE | `/api/pos/drafts/[id]`       | ✅ Sprint 24 — descarta draft + items; 404 si no existe                  |
+
+### Web Push (JWT)
+| Método | Endpoint                     | Notas                                                                   |
+|--------|------------------------------|-------------------------------------------------------------------------|
+| POST   | `/api/push/subscribe`        | ✅ Sprint 24 — guarda suscripción; SSRF allowlist: FCM/Mozilla/Windows/Apple; IP privada → 400 |
+| DELETE | `/api/push/subscribe`        | ✅ Sprint 24 — elimina suscripción por endpoint                          |
+| POST   | `/api/push/send`             | ✅ Sprint 24 — envía push a todos los subs del negocio; admin only; 503 sin VAPID keys |
+
+### Configuración (actualizado)
+| Método    | Endpoint                             | Notas                                                |
+|-----------|--------------------------------------|------------------------------------------------------|
+| GET\|PATCH| `/api/config/business/modules`       | ✅ Sprint 24 — módulos activos del negocio; ALLOWED_MODULES=[pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,kds,delivery]; cashier → 403 |
+
 ### Inventario
 | Método    | Endpoint          |
 |-----------|-------------------|
@@ -293,7 +319,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 
 ## 3. MODELOS PRISMA
 
-**22 modelos** · **22 tablas** · **250+ campos** en total
+**23 modelos** · **23 tablas** · **260+ campos** en total
 
 | Modelo          | Tabla                | Descripción                                                     |
 |-----------------|----------------------|-----------------------------------------------------------------|
@@ -323,6 +349,7 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | ReturnItem      | return_items         | Líneas de devolución ✅ Sprint 15                                |
 | ProductComponent| product_components   | Componentes de combo/fabricable ✅ Sprint 19                    |
 | Notification    | notifications        | Notificaciones sistema ✅ Sprint 22 — tipo, leído, business_id  |
+| PushSubscription| push_subscriptions   | Suscripciones Web Push ✅ Sprint 24 — endpoint, p256dh, auth_key |
 
 ### Enums
 
@@ -575,11 +602,11 @@ src/
 
 ---
 
-## 9. TESTS E2E — 104 tests / ~99 estables
+## 9. TESTS E2E — 120 tests / ~115 estables
 
 | Archivo                                   | Tests | Estado |
 |-------------------------------------------|-------|--------|
-| `pos-core.spec.ts`                        | 6     | ✅ · ⚠️ T03 flaky bajo carga (timeout "Arepa con Pollo" búsqueda) |
+| `pos-core.spec.ts`                        | 6     | ✅ · ⚠️ T03 flaky bajo carga (timeout "Arepa con Pollo" búsqueda); T04/T05 fix: beforeAll restaura stock |
 | `caja-core.spec.ts`                       | 5     | ✅     |
 | `reportes-core.spec.ts`                   | 5     | ✅ R03: networkidle fix (race condition fecha default vs fill) |
 | `finanzas-core.spec.ts`                   | 5     | ✅ F04 actualizado: shape CxC Sprint 23 · F05 usa playwright.request |
@@ -595,9 +622,11 @@ src/
 | `sprint20-security.spec.ts`               | 5     | ✅ SD01-SD05 — Seguridad SEC-01/SEC-02 + descuentos PIN |
 | `sprint21-import-variantes.spec.ts`       | 8     | ✅ IM01-IM03 + VA01-VA03 + PI01-PI02 |
 | `sprint22-fixes.spec.ts`                  | 8     | ✅ SP22-01..08 todos — SP22-02 acepta 201/409/500, SP22-05 "Procesar Pago", SP22-07 flip 400 |
-| `sprint23-cxc-notif.spec.ts`              | 8     | ✅ CX01-CX03 + NO01-NO02 + DU01-DU02 + PD01 — DU01 fix: limit=100 |
+| `sprint23-cxc-notif.spec.ts`              | 8     | ✅ CX01-CX03 + NO01-NO02 + DU01-DU02 + PD01 — NO01 fix: lookup por tipo (count capped 20) |
 | `sprint23-cxc-notifications.spec.ts`      | 8     | ✅ CX01-CX05 + NF01-NF03 — Sprint 23 CLI-D nuevos |
-| **TOTAL**                                 | **104**| ✅ **~99/104 estables · 4 flaky bajo carga del servidor · 1 condicional** |
+| `sprint24-multiticket-modules.spec.ts`    | 8     | ✅ MT01-MT03 + MO01 + MO03 + ST01 + ST02 + WP01 — CLI-C Sprint 24 |
+| `sprint24-drafts-modules-push.spec.ts`    | 8     | ✅ MT01-MT05 + MD01-MD02 + PW01 — CLI-D Sprint 24 |
+| **TOTAL**                                 | **120**| ✅ **~115/120 estables · 4 flaky timing bajo carga · 1 condicional** |
 
 ### Tests Sprint 23 — nuevos (CLI-D)
 
@@ -612,6 +641,27 @@ src/
 | NF02  | PATCH /[id]/read — marca leída, idempotente         | sprint23-cxc-notifications.spec.ts   |
 | NF03  | PATCH /read-all — count, pending→read               | sprint23-cxc-notifications.spec.ts   |
 
+### Tests Sprint 24 — nuevos (CLI-C + CLI-D)
+
+| Test  | Descripción                                               | Archivo                                |
+|-------|-----------------------------------------------------------|----------------------------------------|
+| MT01c | POST drafts con items → status draft, DRF-NNNNN           | sprint24-multiticket-modules.spec.ts   |
+| MT02c | 6to draft → 409 Conflict — MAX_DRAFTS=5 enforcement       | sprint24-multiticket-modules.spec.ts   |
+| MT03c | PATCH reemplaza items atómicamente                        | sprint24-multiticket-modules.spec.ts   |
+| MO01  | PATCH modules persiste → GET confirma                     | sprint24-multiticket-modules.spec.ts   |
+| MO03  | Gap: middleware no bloquea ruta módulo desactivado        | sprint24-multiticket-modules.spec.ts   |
+| ST01  | stock_alert_threshold guardado via PATCH /api/products/[id]| sprint24-multiticket-modules.spec.ts  |
+| ST02  | stock_low notification tras venta pagada bajo umbral      | sprint24-multiticket-modules.spec.ts   |
+| WP01  | SSRF: endpoint fuera de allowlist → 400                   | sprint24-multiticket-modules.spec.ts   |
+| MT01  | POST /api/pos/drafts → 201, DRF-NNNNN, status=draft       | sprint24-drafts-modules-push.spec.ts   |
+| MT02  | GET /api/pos/drafts — lista de drafts del cajero          | sprint24-drafts-modules-push.spec.ts   |
+| MT03  | PATCH draft items — precio calculado desde DB             | sprint24-drafts-modules-push.spec.ts   |
+| MT04  | DELETE /api/pos/drafts/[id] → 200 OK                     | sprint24-drafts-modules-push.spec.ts   |
+| MT05  | PATCH draft inexistente → 404                             | sprint24-drafts-modules-push.spec.ts   |
+| MD01  | GET /api/config/business/modules — shape + allowed_modules| sprint24-drafts-modules-push.spec.ts   |
+| MD02  | PATCH modules + cashier 403                               | sprint24-drafts-modules-push.spec.ts   |
+| PW01  | SSRF: private IP + HTTP + non-allowlist → 400             | sprint24-drafts-modules-push.spec.ts   |
+
 ### Fallos flaky conocidos (timing/carga, pre-existentes)
 
 | Test  | Causa                                                         | Mitigación                            |
@@ -620,6 +670,15 @@ src/
 | S03   | Badge "Sin stock" timeout bajo carga del servidor             | Pasa en servidor idle                 |
 | C02   | Badge "badgeStock" de Arepa con Pollo, timeout bajo carga     | Pasa en servidor idle                 |
 | ES03  | Hydration mismatch timing — test visual tema                  | Pasa en servidor idle                 |
+
+### Fixes Sprint 24 (CLI-D)
+
+| Fix   | Root cause                                                   | Solución                               |
+|-------|--------------------------------------------------------------|----------------------------------------|
+| T04/T05 | Stock "Arepa con Pollo" = 0 por ventas repetidas en T05   | beforeAll: POST /api/inventory qty=50  |
+| SP22-05 | First product-card disabled por stock = 0               | Selector `:not([disabled])` en locator |
+| NO01    | GET /api/notifications cap take:20 → countAfter=countBefore | Type-based lookup en lugar de count  |
+| F03     | `domcontentloaded` retorna antes de hidratación React        | Cambiado a `networkidle`              |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
@@ -636,15 +695,15 @@ src/
   ```
 - Síntoma de JWT expirado: pruebas que esperan HTML (`<!DOCTYPE`) en respuestas API, o páginas que redirigen a `/login`
 
-### Pendientes Sprint 24
-- Multi-ticket paralelo en POS
-- PWA offline real (precache + sync background)
-- Web Push pedidos entrantes (catalog orders)
+### Pendientes Sprint 25
+- Admin multitenant `/admin` (Next.js, rol super_admin)
+- Canales de venta / listas de precio
+- PWA offline IndexedDB sync queue
 
 ---
 
 **Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
 `locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
 
-*Generado: 2026-06-22 | Sprint 23 cierre | CLI-D modo EJECUCIÓN*
-*104 E2E · ~99 estables · 4 flaky timing pre-existentes · 8 tests Sprint 23 CxC+Notif nuevos*
+*Generado: 2026-06-22 | Sprint 24 cierre | CLI-D modo EJECUCIÓN*
+*120 E2E · ~115 estables · 4 flaky timing pre-existentes · 16 tests Sprint 24 nuevos (CLI-C×8 + CLI-D×8)*

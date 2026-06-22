@@ -17,7 +17,8 @@ const sendSchema = z.object({
   title:   z.string().min(1).max(150),
   body:    z.string().min(1).max(500),
   url:     z.string().regex(RELATIVE_PATH_RE, 'URL debe ser ruta relativa').optional(),
-  icon:    z.string().optional(),
+  // FIX 4: restrict to relative paths — prevents external tracking via icon fetch
+  icon:    z.string().regex(RELATIVE_PATH_RE, 'Icono debe ser ruta relativa').optional(),
 })
 
 /* ── POST /api/push/send — send push notification to all business subscribers ── */

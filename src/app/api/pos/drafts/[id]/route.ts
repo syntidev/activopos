@@ -3,13 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
-
-const draftItemSchema = z.object({
-  product_id:   z.number().int().positive(),
-  quantity:     z.number().positive(),
-  variant_id:   z.number().int().positive().optional(),
-  discount_usd: z.number().min(0).default(0),
-})
+import { draftItemSchema } from '@/lib/draft-schema'
 
 const patchSchema = z.object({
   items: z.array(draftItemSchema).min(0),
@@ -30,13 +24,14 @@ export async function PATCH(req: NextRequest, { params }: Context) {
   try {
     const body = patchSchema.parse(await req.json())
 
+    // FIX 3: BCV rate fetched before transaction — avoids holding pool connection during network call
+    const rate = await getBcvRate()
+
     const draft = await prisma.$transaction(async (tx) => {
       const existing = await tx.sale.findFirst({
         where: { id: draftId, business_id: session.businessId, cashier_id: session.userId, status: 'draft' },
       })
       if (!existing) throw new Error('NOT_FOUND')
-
-      const rate = await getBcvRate()
 
       // Fetch prices from DB (anti-tampering)
       let saleItemsData: {
@@ -102,9 +97,9 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
     if (err instanceof Error) {
-      if (err.message === 'NOT_FOUND')        return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
+      if (err.message === 'NOT_FOUND')         return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
       if (err.message === 'PRODUCT_NOT_FOUND') return NextResponse.json({ error: 'Producto no encontrado' }, { status: 400 })
-      if (err.message === 'PRICE_MISSING')    return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
+      if (err.message === 'PRICE_MISSING')     return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
     }
     console.error('drafts PATCH:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
@@ -120,15 +115,25 @@ export async function DELETE(_req: NextRequest, { params }: Context) {
   const draftId = parseInt(params.id, 10)
   if (isNaN(draftId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const existing = await prisma.sale.findFirst({
-    where: { id: draftId, business_id: session.businessId, cashier_id: session.userId, status: 'draft' },
-  })
-  if (!existing) return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
-
-  await prisma.$transaction([
-    prisma.saleItem.deleteMany({ where: { sale_id: draftId } }),
-    prisma.sale.delete({ where: { id: draftId } }),
-  ])
+  try {
+    // FIX 1: ownership check + delete are atomic in a single interactive transaction
+    // The delete includes status:'draft' so a concurrent promotion to 'paid' causes
+    // Prisma P2025 rather than silently destroying a completed sale.
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.sale.findFirst({
+        where: { id: draftId, business_id: session.businessId, cashier_id: session.userId, status: 'draft' },
+      })
+      if (!existing) throw new Error('NOT_FOUND')
+      await tx.saleItem.deleteMany({ where: { sale_id: draftId } })
+      await tx.sale.delete({ where: { id: draftId, status: 'draft' } })
+    })
+  } catch (err) {
+    if (err instanceof Error && err.message === 'NOT_FOUND') {
+      return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
+    }
+    console.error('drafts DELETE:', err)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }

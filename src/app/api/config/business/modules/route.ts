@@ -8,6 +8,9 @@ const ALLOWED_MODULES = [
   'finanzas', 'reportes', 'analytics', 'kds', 'delivery',
 ] as const
 
+// FIX 2: core modules cannot be disabled — they are required for the system to function
+const CORE_MODULES = ['pos', 'caja', 'inventory'] as const
+
 const modulesSchema = z.object({
   modules: z.array(z.enum(ALLOWED_MODULES)).min(1),
 })
@@ -21,6 +24,14 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = modulesSchema.parse(await req.json())
+
+    const removing_core = CORE_MODULES.filter(m => !body.modules.includes(m))
+    if (removing_core.length > 0) {
+      return NextResponse.json(
+        { error: `No puedes desactivar módulos core: ${removing_core.join(', ')}` },
+        { status: 400 }
+      )
+    }
 
     const business = await prisma.business.update({
       where: { id: session.businessId },
@@ -58,5 +69,6 @@ export async function GET() {
     ok:              true,
     modules_enabled: business.modules_enabled.split(','),
     allowed_modules: ALLOWED_MODULES,
+    core_modules:    CORE_MODULES,
   })
 }

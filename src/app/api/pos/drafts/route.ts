@@ -3,15 +3,9 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
+import { draftItemSchema } from '@/lib/draft-schema'
 
 const MAX_DRAFTS = 5
-
-const draftItemSchema = z.object({
-  product_id:   z.number().int().positive(),
-  quantity:     z.number().positive(),
-  variant_id:   z.number().int().positive().optional(),
-  discount_usd: z.number().min(0).default(0),
-})
 
 const createDraftSchema = z.object({
   items: z.array(draftItemSchema).min(0).default([]),
@@ -43,6 +37,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = createDraftSchema.parse(await req.json())
 
+    // FIX 3: BCV rate fetched before transaction — avoids holding pool connection during network call
+    const rate = await getBcvRate()
+
     const draft = await prisma.$transaction(async (tx) => {
       const count = await tx.sale.count({
         where: { business_id: session.businessId, cashier_id: session.userId, status: 'draft' },
@@ -51,18 +48,15 @@ export async function POST(req: NextRequest) {
         throw new Error('MAX_DRAFTS')
       }
 
-      const rate  = await getBcvRate()
-      let   items: typeof body.items = body.items
-
       // Fetch prices from DB if items provided
-      let   saleItemsData: {
+      let saleItemsData: {
         product_id: number; product_name: string; sale_mode: string; unit_label: string
         quantity: number; price_per_unit_usd: number; subtotal_usd: number
         subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number
       }[] = []
 
-      if (items.length > 0) {
-        const productIds = Array.from(new Set(items.map(i => i.product_id)))
+      if (body.items.length > 0) {
+        const productIds = Array.from(new Set(body.items.map(i => i.product_id)))
         const products   = await tx.product.findMany({
           where:  { id: { in: productIds }, business_id: session.businessId, active: true },
           select: { id: true, name: true, sale_mode: true, unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true },
@@ -70,8 +64,8 @@ export async function POST(req: NextRequest) {
         if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
         const productMap = new Map(products.map(p => [p.id, p]))
 
-        saleItemsData = items.map(item => {
-          const p       = productMap.get(item.product_id)!
+        saleItemsData = body.items.map(item => {
+          const p        = productMap.get(item.product_id)!
           const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
           if (priceUsd <= 0) throw new Error('PRICE_MISSING')
           const subtotal_usd = Math.max(0, item.quantity * priceUsd - item.discount_usd)
@@ -126,9 +120,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
     if (err instanceof Error) {
-      if (err.message === 'MAX_DRAFTS')       return NextResponse.json({ error: `Máximo ${MAX_DRAFTS} tickets abiertos por cajero` }, { status: 409 })
+      // FIX 8: 409 → 400 — quota rejection is a client error, not a conflict
+      if (err.message === 'MAX_DRAFTS')        return NextResponse.json({ error: `Máximo ${MAX_DRAFTS} tickets abiertos por cajero` }, { status: 400 })
       if (err.message === 'PRODUCT_NOT_FOUND') return NextResponse.json({ error: 'Producto no encontrado' }, { status: 400 })
-      if (err.message === 'PRICE_MISSING')    return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
+      if (err.message === 'PRICE_MISSING')     return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
     }
     console.error('drafts POST:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

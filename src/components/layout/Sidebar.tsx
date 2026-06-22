@@ -1,7 +1,9 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
+import { useNotifications } from '@/hooks/useNotifications'
+import { NotificationsPanel } from './NotificationsPanel'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -20,6 +22,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  Bell,
   type LucideIcon,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
@@ -118,6 +121,8 @@ interface NavContentProps {
   formatRate: (rate: number) => string
   onLogout: () => void
   onCloseMobile?: () => void
+  onOpenNotifications?: () => void
+  notifUnread?: number
 }
 
 function NavContent({
@@ -128,6 +133,8 @@ function NavContent({
   formatRate,
   onLogout,
   onCloseMobile,
+  onOpenNotifications,
+  notifUnread = 0,
 }: NavContentProps) {
   return (
     <div className={styles.inner}>
@@ -230,6 +237,31 @@ function NavContent({
           </div>
         )}
 
+        {onOpenNotifications && (
+          <button
+            className={styles.notifBtn}
+            onClick={onOpenNotifications}
+            aria-label={notifUnread > 0 ? `${notifUnread} notificaciones sin leer` : 'Notificaciones'}
+            title={collapsed ? 'Notificaciones' : undefined}
+          >
+            <span className={styles.notifIconWrap}>
+              <Bell size={18} strokeWidth={1.75} aria-hidden="true" />
+              {notifUnread > 0 && (
+                <span className={styles.notifBadge} aria-hidden="true">
+                  {notifUnread > 9 ? '9+' : notifUnread}
+                </span>
+              )}
+            </span>
+            <AnimatePresence initial={false}>
+              {!collapsed && (
+                <motion.span key="notif-label" className={styles.navLabel} {...LABEL_MOTION}>
+                  Notificaciones
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        )}
+
         <button
           className={styles.logoutBtn}
           onClick={onLogout}
@@ -270,6 +302,8 @@ export function Sidebar({
 
   const pathname = usePathname()
   const router = useRouter()
+  const [showNotif, setShowNotif] = useState(false)
+  const { items: notifItems, unread: notifUnread, loading: notifLoading, markAllRead } = useNotifications()
 
   const isAdmin = session?.role === 'admin' || session?.role === 'super_admin'
   const visibleGroups = NAV_GROUPS.filter((g) => !g.adminOnly || isAdmin)
@@ -300,6 +334,8 @@ export function Sidebar({
     bcvRate,
     formatRate,
     onCloseMobile,
+    onOpenNotifications: () => setShowNotif(true),
+    notifUnread,
   }
 
   return (
@@ -331,6 +367,15 @@ export function Sidebar({
           </motion.aside>
         )}
       </AnimatePresence>
+
+      {/* Notifications panel — rendered outside sidebar for correct z-index */}
+      <NotificationsPanel
+        open={showNotif}
+        onClose={() => setShowNotif(false)}
+        items={notifItems}
+        loading={notifLoading}
+        onMarkAll={markAllRead}
+      />
     </>
   )
 }

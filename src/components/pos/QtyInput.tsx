@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import type { ProductForPOS } from '@/lib/pos'
 import styles from './QtyInput.module.css'
 
@@ -15,6 +16,8 @@ interface QtyInputProps {
 }
 
 export function QtyInput({ product, rate, onConfirm, onClose }: QtyInputProps) {
+  useScrollLock(true)
+
   const [value, setValue] = useState('1.000')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -48,6 +51,7 @@ export function QtyInput({ product, rate, onConfirm, onClose }: QtyInputProps) {
         exit={{ opacity: 0 }}
         onClick={onClose}
         aria-hidden="true"
+        role="presentation"
       />
       <motion.div
         className={styles.panel}

@@ -17,6 +17,9 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'off',
     locale: 'es-VE',
+    launchOptions: {
+      args: ['--disable-dev-shm-usage', '--no-sandbox'],
+    },
   },
   projects: [
     {

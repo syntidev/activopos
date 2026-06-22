@@ -34,13 +34,13 @@ export async function PATCH(
       where: { id: saleId, business_id: session.businessId },
       include: {
         items: {
-          include: {
+          select: {
+            id: true, product_id: true, quantity: true,
+            recipe_snapshot: true, variant_id: true,
             product: {
               select: {
                 product_type: true,
-                components: {
-                  select: { component_id: true, quantity: true },
-                },
+                components: { select: { component_id: true, quantity: true } },
               },
             },
           },
@@ -110,16 +110,30 @@ export async function PATCH(
       for (const item of sale.items) {
         const productType = item.product.product_type
         if (productType === 'simple') {
-          inventoryDeductions.push({
-            business_id: session.businessId,
-            product_id:  item.product_id,
-            quantity:    -Number(item.quantity),
-            waste:       0,
-            notes:       `VENTA #${sale.ticket_number}`,
-            created_by:  session.userId,
-          })
+          if (item.variant_id != null) {
+            // Variant stock tracked on ProductVariant row
+            await tx.productVariant.update({
+              where: { id: item.variant_id },
+              data:  { stock: { decrement: Number(item.quantity) } },
+            })
+          } else {
+            inventoryDeductions.push({
+              business_id: session.businessId,
+              product_id:  item.product_id,
+              quantity:    -Number(item.quantity),
+              waste:       0,
+              notes:       `VENTA #${sale.ticket_number}`,
+              created_by:  session.userId,
+            })
+          }
         } else {
-          for (const comp of item.product.components) {
+          // SEC-02: use snapshot captured at sale creation — immune to recipe changes
+          const components: { component_id: number; quantity: number }[] =
+            item.recipe_snapshot
+              ? (JSON.parse(item.recipe_snapshot) as { component_id: number; quantity: number }[])
+              : item.product.components
+
+          for (const comp of components) {
             inventoryDeductions.push({
               business_id: session.businessId,
               product_id:  comp.component_id,
@@ -132,7 +146,9 @@ export async function PATCH(
         }
       }
 
-      await tx.inventoryEntry.createMany({ data: inventoryDeductions })
+      if (inventoryDeductions.length > 0) {
+        await tx.inventoryEntry.createMany({ data: inventoryDeductions })
+      }
 
       await tx.activityLog.create({
         data: {

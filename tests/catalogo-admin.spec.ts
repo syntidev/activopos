@@ -17,14 +17,6 @@ import { test, expect } from '@playwright/test'
 
 const BASE = 'http://localhost:3000'
 
-test.beforeAll(async ({ browser }) => {
-  const ctx  = await browser.newContext()
-  const page = await ctx.newPage()
-  const res  = await page.goto(`${BASE}/login`).catch(() => null)
-  if (!res || res.status() !== 200) throw new Error('Servidor no disponible en beforeAll')
-  await ctx.close()
-})
-
 test.describe('Catálogo Admin — Certificación Sprint 13', () => {
 
   // ── CA01 ────────────────────────────────────────────────────────────────

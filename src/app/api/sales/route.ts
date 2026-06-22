@@ -6,11 +6,12 @@ import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 
 const saleItemSchema = z.object({
-  product_id:         z.number().int().positive(),
-  quantity:           z.number().positive(),
-  price_per_unit_usd: z.number().positive(),
-  sale_mode:          z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
-  discount_usd:       z.number().min(0).default(0),
+  product_id:   z.number().int().positive(),
+  quantity:     z.number().positive(),
+  sale_mode:    z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
+  discount_usd: z.number().min(0).default(0),
+  variant_id:   z.number().int().positive().optional(),
+  // price_per_unit_usd NOT accepted from client — SEC-01: always fetched from DB
 })
 
 const paymentSchema = z.object({
@@ -100,6 +101,7 @@ export async function POST(req: NextRequest) {
         select: {
           id: true, name: true, base_unit_label: true,
           product_type: true, unit_type: true, unit_step: true,
+          price_per_unit_usd: true, price_per_kg_usd: true,
           components: {
             select: {
               id: true, component_id: true, quantity: true, unit_label: true,
@@ -114,6 +116,18 @@ export async function POST(req: NextRequest) {
       }
 
       const productMap = new Map(products.map(p => [p.id, p]))
+
+      // Fetch variants for items that specify one
+      const variantIds = body.items
+        .map(i => i.variant_id)
+        .filter((v): v is number => v !== undefined)
+      const variants = variantIds.length > 0
+        ? await tx.productVariant.findMany({
+            where: { id: { in: variantIds }, is_active: true },
+            select: { id: true, product_id: true, price_usd: true, stock: true },
+          })
+        : []
+      const variantMap = new Map(variants.map(v => [v.id, v]))
 
       // Validate quantities
       for (const item of body.items) {
@@ -132,8 +146,21 @@ export async function POST(req: NextRequest) {
 
       const saleItems = body.items.map(item => {
         const product = productMap.get(item.product_id)!
+        const variant = item.variant_id != null ? variantMap.get(item.variant_id) : undefined
+
+        // Validate variant belongs to this product
+        if (variant && variant.product_id !== product.id) {
+          throw new Error(`Variante no corresponde al producto "${product.name}"`)
+        }
+
+        // SEC-01: price always from DB — variant price_usd takes priority over product price
+        const priceUsd = variant?.price_usd != null
+          ? Number(variant.price_usd)
+          : Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
+
         const subtotal_usd =
-          item.quantity * item.price_per_unit_usd - item.discount_usd
+          item.quantity * priceUsd - item.discount_usd
         const subtotal_bs = subtotal_usd * rate
 
         const recipe_snapshot =
@@ -154,12 +181,13 @@ export async function POST(req: NextRequest) {
           sale_mode:          item.sale_mode,
           unit_label:         product.base_unit_label,
           quantity:           item.quantity,
-          price_per_unit_usd: item.price_per_unit_usd,
+          price_per_unit_usd: priceUsd,
           subtotal_usd:       Math.round(subtotal_usd * 10000) / 10000,
           subtotal_bs:        Math.round(subtotal_bs * 100) / 100,
           rate_used:          rate,
           discount_usd:       item.discount_usd,
           recipe_snapshot,
+          variant_id:         item.variant_id ?? null,
         }
       })
 
@@ -232,14 +260,22 @@ export async function POST(req: NextRequest) {
         for (const item of body.items) {
           const product = productMap.get(item.product_id)!
           if (product.product_type === 'simple') {
-            inventoryDeductions.push({
-              business_id: session.businessId,
-              product_id:  item.product_id,
-              quantity:    -item.quantity,
-              waste:       0,
-              notes:       `VENTA #${ticket_number}`,
-              created_by:  session.userId,
-            })
+            if (item.variant_id != null) {
+              // Variant stock tracked on ProductVariant row
+              await tx.productVariant.update({
+                where: { id: item.variant_id },
+                data:  { stock: { decrement: item.quantity } },
+              })
+            } else {
+              inventoryDeductions.push({
+                business_id: session.businessId,
+                product_id:  item.product_id,
+                quantity:    -item.quantity,
+                waste:       0,
+                notes:       `VENTA #${ticket_number}`,
+                created_by:  session.userId,
+              })
+            }
           } else {
             // combo or fabricable: deduct each component's stock
             for (const comp of product.components) {
@@ -255,7 +291,9 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        await tx.inventoryEntry.createMany({ data: inventoryDeductions })
+        if (inventoryDeductions.length > 0) {
+          await tx.inventoryEntry.createMany({ data: inventoryDeductions })
+        }
 
         await tx.activityLog.create({
           data: {
@@ -281,7 +319,7 @@ export async function POST(req: NextRequest) {
       )
     }
     if (err instanceof Error) {
-      const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida']
+      const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida', 'Precio no configurado']
       if (knownErrors.some(e => err.message.includes(e))) {
         return NextResponse.json({ error: err.message }, { status: 400 })
       }

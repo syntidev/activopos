@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -116,6 +117,7 @@ interface NavContentProps {
   bcvRate: number | null
   formatRate: (rate: number) => string
   onLogout: () => void
+  onCloseMobile?: () => void
 }
 
 function NavContent({
@@ -125,6 +127,7 @@ function NavContent({
   bcvRate,
   formatRate,
   onLogout,
+  onCloseMobile,
 }: NavContentProps) {
   return (
     <div className={styles.inner}>
@@ -175,6 +178,7 @@ function NavContent({
                       className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                       title={collapsed ? item.label : undefined}
                       aria-current={isActive ? 'page' : undefined}
+                      onClick={() => onCloseMobile?.()}
                     >
                       <span className={styles.iconWrapper}>
                         <Icon
@@ -262,6 +266,8 @@ export function Sidebar({
   isMobileOpen,
   onCloseMobile,
 }: SidebarProps) {
+  useScrollLock(isMobileOpen)
+
   const pathname = usePathname()
   const router = useRouter()
 
@@ -293,6 +299,7 @@ export function Sidebar({
     visibleGroups,
     bcvRate,
     formatRate,
+    onCloseMobile,
   }
 
   return (

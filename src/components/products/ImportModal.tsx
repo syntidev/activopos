@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Upload, Download, CheckCircle, AlertCircle, FileSpreadsheet } from 'lucide-react'
 import mStyles from './modals.module.css'
@@ -33,6 +34,8 @@ const STEPS = [
 ]
 
 export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
+  useScrollLock(isOpen)
+
   const [file, setFile]           = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [importState, setImportState] = useState<ImportState>('idle')

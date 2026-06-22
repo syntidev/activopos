@@ -9,21 +9,21 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 19                                                              |
-| Último commit      | (ver git log — post Sprint 19)                                         |
+| Último sprint      | Sprint 20                                                              |
+| Último commit      | (ver git log — post Sprint 20)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 67/67 pasando — no regresiones                                      |
+| Tests E2E          | ✅ 72/72 pasando — no regresiones                                      |
 
 ### Certificación de módulos (Regla del Policía)
 
 ```
 Productos ✅ → POS ✅ → Caja ✅ → Reportes ✅ → Finanzas ✅ → Catálogo ✅ → Analytics ✅ →
 Sprint 15 ✅ → Onboarding ✅ → Tokens v3.0 ✅ → Escritorio v3.0 ✅ →
-Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso ✅
+Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso ✅ → Seguridad SEC-01/SEC-02 ✅
 ```
 
-**CORE COMPLETADO — todos los módulos del roadmap v1 certificados.**
+**CORE COMPLETADO — todos los módulos del roadmap v1 certificados + seguridad auditada.**
 
 | Módulo              | Estado               | Sprint | Evidencia                                                      |
 |---------------------|----------------------|--------|----------------------------------------------------------------|
@@ -49,6 +49,10 @@ Mobile POS ✅ → Export Excel ✅ → Módulo Fábrica ✅ → Venta por Peso 
 | Export Excel        | ✅ CERTIFICADO        | 18     | MO05: botón visible + GET /api/reports/export-excel 200 xlsx   |
 | Módulo Fábrica      | ✅ CERTIFICADO        | 19     | FA01-FA03: combo + componentes + recipe_snapshot en sale_items |
 | Venta por Peso      | ✅ CERTIFICADO        | 19     | FA04: qty decimal, subtotal correcto, stock descontado en kg   |
+| SEC-01 precio DB    | ✅ CERTIFICADO        | 20     | SD01: precio de /api/sales ignora body — siempre del DB        |
+| SEC-02 snapshot     | ✅ CERTIFICADO        | 20     | SD02: recipe_snapshot usado en cobro diferido (no receta live) |
+| Descuentos PIN      | ✅ CERTIFICADO        | 20     | SD03-SD05: PIN incorrecto 401, límite cajero 403, admin bypass |
+| Overlay management  | ✅ IMPLEMENTADO       | 20     | useScrollLock, z-modal-top token, todos los modales corregidos |
 
 ---
 
@@ -222,12 +226,13 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
 | POST      | `/api/reports/monthly/mark-notified`   | ❌ Pendiente Sprint 13 (n8n callback) |
 
 ### Ventas
-| Método    | Endpoint                | Notas                                 |
-|-----------|-------------------------|---------------------------------------|
-| GET\|POST | `/api/sales`            |                                       |
-| PATCH     | `/api/sales/[id]/pay`   |                                       |
-| PATCH     | `/api/sales/[id]/void`  |                                       |
-| POST      | `/api/ventas/[id]/abono`| ✅ DT-011 resuelto Sprint 11          |
+| Método    | Endpoint                              | Notas                                           |
+|-----------|---------------------------------------|-------------------------------------------------|
+| GET\|POST | `/api/sales`                          | ✅ SEC-01: precio siempre del DB, nunca del body |
+| PATCH     | `/api/sales/[id]/pay`                 | ✅ SEC-02: usa recipe_snapshot en cobro diferido |
+| PATCH     | `/api/sales/[id]/void`                |                                                 |
+| POST      | `/api/sales/[id]/authorize-discount`  | ✅ Sprint 20: PIN + límite cashier + bypass admin|
+| POST      | `/api/ventas/[id]/abono`              | ✅ DT-011 resuelto Sprint 11                    |
 
 ### Usuarios
 | Método        | Endpoint          |
@@ -418,6 +423,7 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 | DT-039 | P1  | ✅ RESUELTO       | Header onClick sin mounted guard — crash SSR corregido  | 17       |
 | DT-040 | P2  | ✅ RESUELTO       | Button.module.css #fff hardcodeado — reemplazado token  | 17       |
 | DT-041 | P2  | ✅ RESUELTO       | TabTema sin mounted guard — eliminado, toggle en header | 17       |
+| DT-042 | P3  | ❌ BACKLOG        | Import masivo productos Excel — POST /api/products/import-excel | Sprint 21 |
 
 ---
 
@@ -427,6 +433,11 @@ c4d7f4d  fix+feat(sprint-11/CLI-B): DT-008 DT-009 DT-010 — lib/catalog + badge
 |------------------------------------------|-------------------------------------------------------------|---------------|
 | `business_id` siempre de `getSession()`  | `src/lib/auth.ts` — nunca del body                          | ✅            |
 | Precios en catálogo solo del DB          | `catalog/[slug]/order/route.ts` — ItemSchema sin price      | ✅            |
+| Precio en ventas solo del DB (SEC-01)    | `sales/route.ts` — price_per_unit_usd del product, no body  | ✅ Sprint 20  |
+| recipe_snapshot inmutable (SEC-02)       | `sales/[id]/pay/route.ts` — snapshot al crear, no live      | ✅ Sprint 20  |
+| Descuento requiere PIN autorizado        | `sales/[id]/authorize-discount` — PIN + max_discount_pct    | ✅ Sprint 20  |
+| max_discount_pct respetado por cashier   | 403 si discount_pct > max + role cashier                    | ✅ Sprint 20  |
+| Admin bypass límite de descuento         | Admin puede superar max_discount_pct con su PIN             | ✅ Sprint 20  |
 | Apertura de caja atómica                 | `cash/open/route.ts` — findFirst dentro de $transaction     | ✅            |
 | Abonos acotados al turno activo          | `cash/status/route.ts` — created_at >= opened_at            | ✅            |
 | Rate limiting en endpoints públicos      | `src/lib/rate-limit.ts` — catalogLimiter, loginLimiter      | ✅            |

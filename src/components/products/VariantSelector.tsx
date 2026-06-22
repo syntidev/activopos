@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import styles from './VariantSelector.module.css'
@@ -35,6 +36,8 @@ export function VariantSelector({
   product,
   onSelect,
 }: VariantSelectorProps) {
+  useScrollLock(open)
+
   const [variants, setVariants] = useState<ProductVariant[]>([])
   const [loading, setLoading] = useState(false)
 

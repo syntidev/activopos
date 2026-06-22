@@ -794,7 +794,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 160;
+  z-index: var(--z-overlay);
   animation: fadeInOverlay 0.2s ease;
 }
 
@@ -810,7 +810,7 @@
     position: fixed;
     bottom: var(--space-6);
     right: var(--space-5);
-    z-index: 155;
+    z-index: var(--z-sticky);
     width: 56px;
     height: 56px;
     border-radius: var(--radius-full);
@@ -833,7 +833,7 @@
     height: 100dvh;
     width: 88vw;
     max-width: 360px;
-    z-index: 170;
+    z-index: var(--z-modal);
     transform: translateX(100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }

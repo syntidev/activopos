@@ -11,6 +11,8 @@ const variantSchema = z.object({
   stock:        z.number().int().min(0).default(0),
   color_hex:    z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
   sort_order:   z.number().int().default(0),
+  price_usd:    z.number().min(0).nullable().optional(),
+  cost_usd:     z.number().min(0).nullable().optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -68,6 +70,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         stock:        body.stock,
         color_hex:    body.color_hex    ?? null,
         sort_order:   body.sort_order,
+        price_usd:    body.price_usd    ?? null,
+        cost_usd:     body.cost_usd     ?? null,
       },
     })
 

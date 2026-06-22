@@ -146,6 +146,7 @@ model Business {
   segment              String?  @default("retail") @db.VarChar(40)
   cobro_data           Json?
   whatsapp             String?  @db.VarChar(30)
+  max_discount_pct     Float    @default(0)
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
 
@@ -185,7 +186,8 @@ model User {
   updated_at   DateTime @updatedAt
 
   business      Business      @relation(fields: [business_id], references: [id])
-  sales         Sale[]
+  sales         Sale[]        @relation("SaleCashier")
+  discount_auths Sale[]       @relation("SaleDiscountAuth")
   cash_registers CashRegister[]
   activity_logs ActivityLog[]
   cash_movements CashMovement[]
@@ -326,18 +328,21 @@ model Sale {
   client_name     String?    @db.VarChar(120)
   client_phone    String?    @db.VarChar(20)
   notes           String?    @db.Text
-  accounting_date DateTime?  @db.Date
-  sold_at         DateTime?
-  created_at      DateTime   @default(now())
-  updated_at      DateTime   @updatedAt
+  accounting_date  DateTime?  @db.Date
+  sold_at          DateTime?
+  discount_pct     Float      @default(0)
+  discount_auth_by Int?
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
 
-  business  Business      @relation(fields: [business_id], references: [id])
-  cashier   User          @relation(fields: [cashier_id], references: [id])
-  client    Client?       @relation(fields: [client_id], references: [id])
-  items     SaleItem[]
-  payments  SalePayment[]
-  abonos    SaleAbono[]
-  returns   Return[]
+  business       Business      @relation(fields: [business_id], references: [id])
+  cashier        User          @relation("SaleCashier", fields: [cashier_id], references: [id])
+  client         Client?       @relation(fields: [client_id], references: [id])
+  discount_auth  User?         @relation("SaleDiscountAuth", fields: [discount_auth_by], references: [id])
+  items          SaleItem[]
+  payments       SalePayment[]
+  abonos         SaleAbono[]
+  returns        Return[]
 
   @@map("sales")
 }
@@ -356,9 +361,11 @@ model SaleItem {
   rate_used           Decimal @db.Decimal(10, 4)
   discount_usd        Decimal  @default(0) @db.Decimal(10, 2)
   recipe_snapshot     String?  @db.Text
+  variant_id          Int?
 
-  sale    Sale    @relation(fields: [sale_id], references: [id])
-  product Product @relation(fields: [product_id], references: [id])
+  sale    Sale            @relation(fields: [sale_id], references: [id])
+  product Product         @relation(fields: [product_id], references: [id])
+  variant ProductVariant? @relation(fields: [variant_id], references: [id])
 
   @@map("sale_items")
 }
@@ -517,13 +524,16 @@ model ProductVariant {
   valor        String   @db.VarChar(50)
   sku          String?  @db.VarChar(50)
   precio_extra Decimal  @default(0) @db.Decimal(10, 2)
+  price_usd    Float?
+  cost_usd     Float?
   stock        Int      @default(0)
   color_hex    String?  @db.VarChar(7)
   is_active    Boolean  @default(true)
   sort_order   Int      @default(0)
   created_at   DateTime @default(now())
 
-  product Product @relation(fields: [product_id], references: [id])
+  product    Product    @relation(fields: [product_id], references: [id])
+  sale_items SaleItem[]
 
   @@map("product_variants")
 }
@@ -681,4 +691,17 @@ model ProductComponent {
   @@index([parent_id])
   @@index([component_id])
   @@map("product_components")
+}
+
+model PinRateLimit {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  sale_id     Int
+  attempts    Int      @default(1)
+  reset_at    DateTime
+  created_at  DateTime @default(now())
+
+  @@unique([business_id, sale_id])
+  @@index([reset_at])
+  @@map("pin_rate_limits")
 }

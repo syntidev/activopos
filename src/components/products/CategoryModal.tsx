@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Tag, Check } from 'lucide-react'
 import mStyles from './modals.module.css'
@@ -35,6 +36,8 @@ const DOT_CLASS: Record<string, string> = {
 }
 
 export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
+  useScrollLock(isOpen)
+
   const [name, setName]         = useState('')
   const [color, setColor]       = useState('blue')
   const [error, setError]       = useState('')

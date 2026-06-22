@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Package } from 'lucide-react'
 import mStyles from './modals.module.css'
@@ -29,6 +30,8 @@ interface StockModalProps {
 }
 
 export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps) {
+  useScrollLock(isOpen)
+
   const [type, setType]         = useState<'entry' | 'adjust'>('entry')
   const [quantity, setQuantity] = useState('')
   const [cost, setCost]         = useState('')

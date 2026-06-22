@@ -18,14 +18,6 @@ import { test, expect, request as newRequest } from '@playwright/test'
 
 const BASE = 'http://localhost:3000'
 
-test.beforeAll(async ({ browser }) => {
-  const ctx  = await browser.newContext()
-  const page = await ctx.newPage()
-  const res  = await page.goto(`${BASE}/login`).catch(() => null)
-  if (!res || res.status() !== 200) throw new Error('Servidor no disponible en beforeAll')
-  await ctx.close()
-})
-
 test.describe('Finanzas — Certificación Sprint 12', () => {
 
   // ── F01 ────────────────────────────────────────────────────────────────

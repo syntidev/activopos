@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import {
   ChevronDown, Clock, Minus, Percent, Plus,
   ShoppingCart, Tag, Trash2, User,
@@ -29,6 +30,7 @@ export function TicketPanel({
   onUpdateQty, onRemove, onClear, onSelectClient,
   onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo,
 }: TicketPanelProps) {
+  const router = useRouter()
   const { discount_global_pct: discountPct, cargo_global_pct: cargoPct } = ticket
 
   return (
@@ -41,7 +43,7 @@ export function TicketPanel({
           <ChevronDown size={14} aria-hidden="true" />
         </button>
         <div className={styles.ticketActions}>
-          <button className={styles.ticketIconBtn} aria-label="Historial" title="Historial de ventas">
+          <button className={styles.ticketIconBtn} onClick={() => router.push('/reportes')} aria-label="Historial" title="Historial de ventas">
             <Clock size={16} aria-hidden="true" />
           </button>
           <button

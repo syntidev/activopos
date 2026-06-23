@@ -56,6 +56,7 @@ export async function POST(req: NextRequest, { params }: Context) {
                   price_per_unit_usd: true, price_per_kg_usd: true },
       })
       const productMap = new Map(products.map(p => [p.id, p]))
+      if (products.length !== productIds.length) throw new Error('PRODUCTS_CHANGED')
 
       const saleItems = order.items.map(item => {
         const p        = productMap.get(item.product_id)
@@ -138,9 +139,10 @@ export async function POST(req: NextRequest, { params }: Context) {
     return NextResponse.json({ ok: true, sale_id: saleId })
   } catch (err) {
     if (err instanceof Error) {
-      if (err.message === 'ORDER_NOT_FOUND') return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
-      if (err.message === 'ALREADY_COBRADO') return NextResponse.json({ error: 'Este pedido ya fue cobrado' }, { status: 409 })
-      if (err.message === 'ORDER_TERMINAL')  return NextResponse.json({ error: 'El pedido ya está entregado o cancelado' }, { status: 422 })
+      if (err.message === 'ORDER_NOT_FOUND')   return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
+      if (err.message === 'ALREADY_COBRADO')   return NextResponse.json({ error: 'Este pedido ya fue cobrado' }, { status: 409 })
+      if (err.message === 'ORDER_TERMINAL')    return NextResponse.json({ error: 'El pedido ya está entregado o cancelado' }, { status: 422 })
+      if (err.message === 'PRODUCTS_CHANGED')  return NextResponse.json({ error: 'Uno o más productos del pedido ya no están disponibles' }, { status: 422 })
     }
     console.error('cobrar POST error:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

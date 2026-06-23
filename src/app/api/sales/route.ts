@@ -122,10 +122,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // PASO 4: client_id obligatorio para venta a crédito
-    if (body.origin === 'credit' && !body.client_id) {
+    if (body.origin === 'credit' && !body.client_id && !body.client_name?.trim()) {
       return NextResponse.json(
-        { error: 'Se requiere un cliente para registrar una venta a crédito' },
+        { error: 'Se requiere nombre o cliente para registrar una venta a crédito' },
         { status: 400 }
       )
     }
@@ -158,6 +157,16 @@ export async function POST(req: NextRequest) {
       }
 
       const productMap = new Map(products.map(p => [p.id, p]))
+
+      // R4: if credit sale has client_name but no client_id → create client atomically
+      let clientId: number | null = body.client_id ?? null
+      if (body.origin === 'credit' && clientId === null && body.client_name?.trim()) {
+        const created = await tx.client.create({
+          data: { name: body.client_name.trim(), business_id: session.businessId },
+          select: { id: true },
+        })
+        clientId = created.id
+      }
 
       // Fetch variants for items that specify one
       const variantIds = body.items
@@ -265,7 +274,7 @@ export async function POST(req: NextRequest) {
           total_usd,
           total_bs,
           rate_used:          rate,
-          client_id:          body.client_id,
+          client_id:          clientId,
           client_name:        body.client_name,
           notes:              body.notes,
           monto_recibido_usd: montoRecibidoUsd,

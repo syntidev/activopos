@@ -7,6 +7,9 @@
 
 /* ─── INVARIANT — BRAND + SEMÁNTICO + ESTRUCTURA ────────────── */
 :root {
+  /* ── Marketing — Landing page specifics ── */
+  --navy:               #1E3A5F;
+
   /* ── Brand — Teal único (#0EA5A4 más puro que #14B8A6) ── */
   --brand:              #0EA5A4;
   --brand-dark:         #0D9488;

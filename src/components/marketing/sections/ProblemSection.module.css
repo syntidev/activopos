@@ -1,0 +1,107 @@
+.section {
+  padding: 96px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 5vw;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  text-wrap: balance;
+  margin-bottom: var(--space-3);
+}
+
+.subtitle {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.65;
+  max-width: 580px;
+  margin-bottom: var(--space-12);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--lp-border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--lp-border);
+  transition: background var(--transition-base);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.num {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.07);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.body {
+  min-width: 0;
+}
+
+.rowTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.rowDesc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+}
+
+.badge_red    { background: var(--lp-danger-a);   color: var(--danger); }
+.badge_amber  { background: var(--lp-warning-a);  color: var(--warning); }
+.badge_brand  { background: var(--lp-brand-a);    color: var(--brand-l); }
+.badge_purple { background: var(--lp-purple-a);   color: var(--lp-purple); }
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: 1fr; gap: var(--space-2); padding: 20px 20px; }
+  .num { display: none; }
+  .badge { align-self: flex-start; }
+}

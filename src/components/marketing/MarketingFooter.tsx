@@ -13,7 +13,7 @@ const PRODUCT_LINKS = [
 const COMPANY_LINKS = [
   { label: 'Nosotros',  href: '/nosotros' },
   { label: 'Contacto',  href: '/contacto' },
-  { label: 'Ayuda',     href: '/ayuda' },
+  { label: 'Ayuda',     href: '/soporte' },
 ]
 
 const LEGAL_LINKS = [

@@ -8,8 +8,8 @@ const ALLOWED_MODULES = [
   'finanzas', 'reportes', 'analytics', 'kds', 'delivery',
 ] as const
 
-// FIX 2: core modules cannot be disabled — they are required for the system to function
-const CORE_MODULES = ['pos', 'caja', 'inventory'] as const
+// core modules cannot be disabled — they are required for the system to function
+const CORE_MODULES = ['pos', 'caja', 'inventory', 'pedidos'] as const
 
 const modulesSchema = z.object({
   modules: z.array(z.enum(ALLOWED_MODULES)).min(1),
@@ -65,9 +65,13 @@ export async function GET() {
 
   if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
 
+  const modules_enabled = (business.modules_enabled ?? '')
+    .split(',')
+    .filter(Boolean)
+
   return NextResponse.json({
     ok:              true,
-    modules_enabled: business.modules_enabled.split(','),
+    modules_enabled,
     allowed_modules: ALLOWED_MODULES,
     core_modules:    CORE_MODULES,
   })

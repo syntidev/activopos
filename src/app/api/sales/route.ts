@@ -45,10 +45,14 @@ export async function GET(req: NextRequest) {
   const to = params.get('to')
   const cashierId = params.get('cashier_id')
   const clientId = params.get('client_id')
+  const ticket = params.get('ticket')
 
   const sales = await prisma.sale.findMany({
     where: {
       business_id: session.businessId,
+      ...(ticket && {
+        ticket_number: { contains: ticket },
+      }),
       ...(status && {
         status: status as 'quote' | 'pending' | 'paid' | 'cancelled',
       }),

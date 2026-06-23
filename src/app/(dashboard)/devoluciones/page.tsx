@@ -99,12 +99,10 @@ function DevolucionesContent() {
     setSearching(true)
     setSearchErr('')
     try {
-      const r = await fetch('/api/sales?status=paid')
+      const r = await fetch(`/api/sales?status=paid&ticket=${encodeURIComponent(q)}&limit=1`)
       if (!r.ok) throw new Error('API error')
       const d = await r.json() as { sales?: Sale[] }
-      const match = (d.sales ?? []).find(
-        s => s.ticket_number.toLowerCase() === q.toLowerCase()
-      )
+      const match = (d.sales ?? [])[0] ?? null
       if (match) {
         setFoundSale(match)
         setChecked(new Set())

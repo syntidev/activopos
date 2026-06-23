@@ -1,0 +1,212 @@
+.page {
+  min-height: calc(100vh - 64px);
+  padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem);
+}
+
+.inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-l, #4D7AFF);
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 800;
+  color: var(--text-primary, #F1F5F9);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin-bottom: 1.25rem;
+  max-width: 16ch;
+}
+
+.lead {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 1.0625rem;
+  color: var(--text-secondary, #94A3B8);
+  max-width: 58ch;
+  line-height: 1.7;
+  margin-bottom: 4rem;
+}
+
+/* Mission / Vision */
+
+.mvGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.mvCard {
+  padding: 2rem;
+  background: var(--bg-card, #132035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+}
+
+.mvIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(77, 122, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-l, #4D7AFF);
+  margin-bottom: 1.25rem;
+}
+
+.mvLabel {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #64748B);
+  margin-bottom: 0.5rem;
+}
+
+.mvTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-primary, #F1F5F9);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+.mvBody {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #94A3B8);
+  line-height: 1.65;
+}
+
+/* Values grid */
+
+.valuesTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--text-primary, #F1F5F9);
+  letter-spacing: -0.025em;
+  margin-bottom: 1.75rem;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 4rem;
+}
+
+.valueItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.valueNum {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--brand-l, #4D7AFF);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 2ch;
+  opacity: 0.7;
+}
+
+.valueName {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary, #F1F5F9);
+  margin-bottom: 4px;
+}
+
+.valueDesc {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #94A3B8);
+  line-height: 1.55;
+}
+
+/* synti.dev block */
+
+.syntiBlock {
+  background: linear-gradient(135deg, rgba(0,56,189,0.18) 0%, rgba(77,122,255,0.08) 100%);
+  border: 1px solid rgba(77, 122, 255, 0.25);
+  border-radius: 16px;
+  padding: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.syntiContent {}
+
+.syntiLabel {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-l, #4D7AFF);
+  margin-bottom: 0.5rem;
+}
+
+.syntiTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-primary, #F1F5F9);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.syntiDesc {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #94A3B8);
+  max-width: 52ch;
+  line-height: 1.6;
+}
+
+.syntiLink {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--brand-l, #4D7AFF);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: opacity 150ms ease;
+}
+
+.syntiLink:hover { opacity: 0.75; }
+
+@media (max-width: 640px) {
+  .mvGrid      { grid-template-columns: 1fr; }
+  .valuesGrid  { grid-template-columns: 1fr; }
+  .syntiBlock  { flex-direction: column; }
+}

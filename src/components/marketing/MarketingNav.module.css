@@ -1,0 +1,266 @@
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+  height: 64px;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background 300ms ease, border-color 300ms ease, backdrop-filter 300ms ease;
+}
+
+.navScrolled {
+  background: rgba(13, 27, 46, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.logo {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logoA { color: var(--text-primary, #F1F5F9); }
+.logoB { color: var(--brand-l, #4D7AFF); }
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.link {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary, #94A3B8);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.link:hover { color: var(--text-primary, #F1F5F9); }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.loginLink {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary, #94A3B8);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.loginLink:hover { color: var(--text-primary, #F1F5F9); }
+
+.ctaBtn {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand, #0038BD);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 200ms ease, transform 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ctaBtn:hover {
+  background: var(--brand-dark, #002FA0);
+  transform: translateY(-1px);
+}
+
+.menuBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  color: var(--text-primary, #F1F5F9);
+  cursor: pointer;
+  transition: border-color 150ms ease;
+  flex-shrink: 0;
+}
+
+.menuBtn:hover { border-color: rgba(255, 255, 255, 0.25); }
+
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  pointer-events: none;
+}
+
+.drawerOpen { pointer-events: auto; }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+
+.drawerOpen .overlay { opacity: 1; }
+
+.drawerPanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 90vw);
+  background: var(--bg-card, #132035);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem;
+  transform: translateX(100%);
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drawerOpen .drawerPanel { transform: translateX(0); }
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.drawerLogo {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-decoration: none;
+  display: flex;
+  gap: 2px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #94A3B8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.closeBtn:hover {
+  color: var(--text-primary, #F1F5F9);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.drawerLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.drawerLink {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary, #94A3B8);
+  text-decoration: none;
+  padding: 0.75rem 0.5rem;
+  border-radius: 8px;
+  transition: color 150ms ease, background 150ms ease;
+  display: block;
+}
+
+.drawerLink:hover {
+  color: var(--text-primary, #F1F5F9);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.drawerDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 1rem 0;
+}
+
+.drawerActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.drawerLoginLink {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary, #94A3B8);
+  text-decoration: none;
+  text-align: center;
+  padding: 0.625rem;
+  border-radius: 8px;
+  transition: color 150ms ease;
+}
+
+.drawerLoginLink:hover { color: var(--text-primary, #F1F5F9); }
+
+.drawerCta {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand, #0038BD);
+  border: none;
+  border-radius: 10px;
+  padding: 0.875rem;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: background 200ms ease;
+  display: block;
+}
+
+.drawerCta:hover { background: var(--brand-dark, #002FA0); }
+
+@media (max-width: 767px) {
+  .links { display: none; }
+  .actions { display: none; }
+  .menuBtn { display: flex; }
+}
+
+@media (min-width: 768px) {
+  .drawer { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav,
+  .drawerPanel,
+  .overlay { transition: none; }
+}

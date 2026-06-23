@@ -1,0 +1,97 @@
+.page {
+  min-height: calc(100vh - 64px);
+  padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(4rem, 8vw, 6rem);
+}
+
+.inner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-l, #4D7AFF);
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(1.875rem, 4vw, 2.75rem);
+  font-weight: 800;
+  color: var(--text-primary, #F1F5F9);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin-bottom: 0.75rem;
+}
+
+.updated {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.8125rem;
+  color: var(--text-tertiary, #64748B);
+  margin-bottom: 3rem;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 2.5rem 0;
+}
+
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.sectionTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary, #F1F5F9);
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.body {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #94A3B8);
+  line-height: 1.75;
+  max-width: 68ch;
+}
+
+.body + .body { margin-top: 0.875rem; }
+
+.list {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #94A3B8);
+  line-height: 1.75;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.contactBlock {
+  margin-top: 3rem;
+  padding: 1.5rem;
+  background: var(--bg-card, #132035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #94A3B8);
+  line-height: 1.65;
+}
+
+.contactBlock a {
+  color: var(--brand-l, #4D7AFF);
+  text-decoration: none;
+}
+
+.contactBlock a:hover { text-decoration: underline; }

@@ -46,7 +46,8 @@ const results: NodeResult[] = [
 // ── beforeAll / afterAll ──────────────────────────────────────────────────────
 
 test.beforeAll(async ({ playwright }) => {
-  const ctx = await playwright.request.newContext()
+  // storageState vacío explícito — evita que Playwright intente leer tests/.auth-state.json del config
+  const ctx = await playwright.request.newContext({ storageState: { cookies: [], origins: [] } })
   const loginRes = await ctx.post(`${BASE}/api/auth/login`, {
     data: { email: 'admin@activopos.com', password: 'admin123' },
   })

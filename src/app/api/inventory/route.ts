@@ -55,21 +55,32 @@ export async function POST(req: NextRequest) {
     })
     if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
 
-    const entry = await prisma.inventoryEntry.create({
-      data: {
-        business_id: session.businessId,
-        product_id: data.product_id,
-        quantity: data.quantity,
-        waste: data.waste,
-        cost_per_unit_usd: data.cost_per_unit_usd ?? null,
-        supplier: data.supplier ?? null,
-        notes: data.notes ?? null,
-        created_by: session.userId,
-      },
-      include: {
-        product: { select: { id: true, name: true, base_unit_label: true } },
-        user: { select: { id: true, name: true } },
-      },
+    const entry = await prisma.$transaction(async tx => {
+      const newEntry = await tx.inventoryEntry.create({
+        data: {
+          business_id:       session.businessId,
+          product_id:        data.product_id,
+          quantity:          data.quantity,
+          waste:             data.waste,
+          cost_per_unit_usd: data.cost_per_unit_usd ?? null,
+          supplier:          data.supplier ?? null,
+          notes:             data.notes ?? null,
+          created_by:        session.userId,
+        },
+        include: {
+          product: { select: { id: true, name: true, base_unit_label: true } },
+          user:    { select: { id: true, name: true } },
+        },
+      })
+
+      if (data.cost_per_unit_usd != null && data.cost_per_unit_usd > 0) {
+        await tx.product.update({
+          where: { id: data.product_id, business_id: session.businessId },
+          data:  { cost_per_unit_usd: data.cost_per_unit_usd },
+        })
+      }
+
+      return newEntry
     })
 
     return NextResponse.json({

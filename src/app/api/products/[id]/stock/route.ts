@@ -39,25 +39,36 @@ export async function POST(req: NextRequest, { params }: Context) {
 
   const notes = body.notes?.trim() || (body.type === 'entry' ? 'Entrada de inventario' : 'Ajuste manual')
 
-  const entry = await prisma.inventoryEntry.create({
-    data: {
-      business_id:       session.businessId,
-      product_id:        productId,
-      quantity:          body.quantity,
-      waste:             0,
-      cost_per_unit_usd: body.cost_per_unit ?? null,
-      supplier:          body.supplier?.trim() || null,
-      notes,
-      created_by:        session.userId,
-    },
-    select: {
-      id: true,
-      quantity: true,
-      waste: true,
-      cost_per_unit_usd: true,
-      notes: true,
-      entered_at: true,
-    },
+  const entry = await prisma.$transaction(async tx => {
+    const newEntry = await tx.inventoryEntry.create({
+      data: {
+        business_id:       session.businessId,
+        product_id:        productId,
+        quantity:          body.quantity,
+        waste:             0,
+        cost_per_unit_usd: body.cost_per_unit ?? null,
+        supplier:          body.supplier?.trim() || null,
+        notes,
+        created_by:        session.userId,
+      },
+      select: {
+        id: true,
+        quantity: true,
+        waste: true,
+        cost_per_unit_usd: true,
+        notes: true,
+        entered_at: true,
+      },
+    })
+
+    if (body.cost_per_unit != null && body.cost_per_unit > 0) {
+      await tx.product.update({
+        where: { id: productId, business_id: session.businessId },
+        data:  { cost_per_unit_usd: body.cost_per_unit },
+      })
+    }
+
+    return newEntry
   })
 
   return NextResponse.json(

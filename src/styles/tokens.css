@@ -10,16 +10,16 @@
   /* ── Marketing — Landing page specifics ── */
   --navy:               #1E3A5F;
 
-  /* ── Brand — Teal único (#0EA5A4 más puro que #14B8A6) ── */
-  --brand:              #0EA5A4;
-  --brand-dark:         #0D9488;
-  --brand-hover:        #0F766E;
-  --brand-darker:       #0F766E;
-  --brand-soft:         #CCFBF1;
-  --brand-soft-hover:   #99F6E4;
+  /* ── Brand — Persian Blue (#0038BD) ── */
+  --brand:              #0038BD;
+  --brand-dark:         #002FA0;
+  --brand-hover:        #002FA0;
+  --brand-darker:       #001D7A;
+  --brand-soft:         #DCE6FF;
+  --brand-soft-hover:   #BAD0FF;
   --brand-on:           #FFFFFF;
-  --brand-on-soft:      #0D9488;
-  --brand-rgb:          14, 165, 164;
+  --brand-on-soft:      #002FA0;
+  --brand-rgb:          0, 56, 189;
 
   /* ── On-color text — KPI cards con fondo teal — WCAG AA ── */
   --kpi-on-primary:     #FFFFFF;                   /* 4.75:1 on --brand-dark */
@@ -28,17 +28,17 @@
   --kpi-on-delta-bg:    rgba(255,255,255,0.22);
 
   /* ── CTA — Naranja — USO EXCLUSIVO: Procesar Pago, Declarar Cierre ── */
-  --cta:                #F97316;
-  --cta-hover:          #EA6C00;
-  --cta-active:         #C2500A;
+  --cta:                #EF8E01;
+  --cta-hover:          #D97900;
+  --cta-active:         #B56700;
   --cta-soft:           #FFF7ED;
   --cta-border:         #FED7AA;
   --cta-on:             #FFFFFF;
-  --cta-rgb:            249, 115, 22;
+  --cta-rgb:            239, 142, 1;
 
   /* ── Bordes laterales semánticos — patrón Fina ── */
   --border-alert:       #F97316;
-  --border-positive:    #14B8A6;
+  --border-positive:    #0038BD;
   --border-info:        #38BDF8;
   --border-success:     #22C55E;
   --border-warning:     #FBBF24;
@@ -215,6 +215,15 @@
   --violet-light: #A78BFA;
   --pink-light:   #F9A8D4;
   --cyan-light:   #67E8F9;
+
+  /* ── Tokens base (fallback invariante) ── */
+  --font-sans:             system-ui, -apple-system, sans-serif;
+  --scrollbar-track:       #F1F5F9;
+  --scrollbar-thumb:       #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+  --color-usd:             #1A1A1A;
+  --color-bs:              #64748B;
+  --color-rate-live:       #0038BD;
 }
 
 /* ══════════════════════════════════════════════════════════════

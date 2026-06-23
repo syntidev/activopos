@@ -6,9 +6,11 @@ import { prisma } from '@/lib/prisma'
 type Context = { params: { id: string } }
 
 const stockSchema = z.object({
-  qty:      z.number().refine(n => n !== 0, { message: 'qty no puede ser cero' }),
-  cost_usd: z.number().min(0).optional(),
-  type:     z.enum(['adjust', 'entry']),
+  type:          z.enum(['adjust', 'entry']),
+  quantity:      z.number().refine(n => n !== 0, { message: 'quantity no puede ser cero' }),
+  cost_per_unit: z.number().min(0).nullable().optional(),
+  supplier:      z.string().max(120).optional(),
+  notes:         z.string().max(500).optional(),
 })
 
 export async function POST(req: NextRequest, { params }: Context) {
@@ -35,15 +37,16 @@ export async function POST(req: NextRequest, { params }: Context) {
   })
   if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
 
-  const notes = body.type === 'entry' ? 'Entrada de inventario' : 'Ajuste manual'
+  const notes = body.notes?.trim() || (body.type === 'entry' ? 'Entrada de inventario' : 'Ajuste manual')
 
   const entry = await prisma.inventoryEntry.create({
     data: {
       business_id:       session.businessId,
       product_id:        productId,
-      quantity:          body.qty,
+      quantity:          body.quantity,
       waste:             0,
-      cost_per_unit_usd: body.cost_usd ?? null,
+      cost_per_unit_usd: body.cost_per_unit ?? null,
+      supplier:          body.supplier?.trim() || null,
       notes,
       created_by:        session.userId,
     },

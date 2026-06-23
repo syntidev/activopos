@@ -39,15 +39,6 @@ const ADMIN_ONLY = [
   '/api/users',
 ]
 
-// Routes gated by business modules_enabled — module name → path prefixes
-const MODULE_ROUTES: Record<string, string[]> = {
-  pedidos:   ['/pedidos', '/api/orders'],
-  catalog:   ['/catalogo-digital', '/api/catalogo'],
-  finanzas:  ['/finanzas', '/api/finanzas'],
-  reportes:  ['/reportes', '/api/reports'],
-  analytics: ['/analytics', '/api/analytics'],
-  kds:       ['/kds'],
-}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -95,18 +86,6 @@ export async function middleware(req: NextRequest) {
   if (ADMIN_ONLY.some(p => pathname.startsWith(p))) {
     if (session.role === 'cashier') {
       return NextResponse.redirect(new URL('/pos', req.url))
-    }
-  }
-
-  // Module-gated routes — only if claim is present (old sessions without claim pass through)
-  if (session.modulesEnabled) {
-    const enabled = session.modulesEnabled.split(',')
-    for (const [mod, prefixes] of Object.entries(MODULE_ROUTES)) {
-      if (!enabled.includes(mod) && prefixes.some(p => pathname.startsWith(p))) {
-        const isApi = pathname.startsWith('/api/')
-        if (isApi) return NextResponse.json({ error: 'Módulo no habilitado' }, { status: 403 })
-        return NextResponse.redirect(new URL('/escritorio', req.url))
-      }
     }
   }
 

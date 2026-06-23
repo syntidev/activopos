@@ -115,26 +115,44 @@ export async function POST(req: NextRequest) {
     const r2       = (x: number) => Math.round(x * 100) / 100
     const totalUsd = r2(body.items.reduce((s, i) => s + i.qty * i.price_usd, 0))
 
-    const result = await prisma.return.create({
-      data: {
-        business_id:    bid,
-        sale_id:        body.sale_id,
-        reason:         body.reason,
-        restores_stock: body.restores_stock,
-        total_usd:      totalUsd,
-        total_bs:       r2(totalUsd * rate),
-        rate_used:      rate,
-        created_by:     session.userId,
-        items: {
-          create: body.items.map(i => ({
-            product_id: i.product_id,
-            qty:        i.qty,
-            price_usd:  i.price_usd,
-            total_usd:  r2(i.qty * i.price_usd),
-          })),
+    const result = await prisma.$transaction(async tx => {
+      const ret = await tx.return.create({
+        data: {
+          business_id:    bid,
+          sale_id:        body.sale_id,
+          reason:         body.reason,
+          status:         'approved',
+          restores_stock: body.restores_stock,
+          total_usd:      totalUsd,
+          total_bs:       r2(totalUsd * rate),
+          rate_used:      rate,
+          created_by:     session.userId,
+          items: {
+            create: body.items.map(i => ({
+              product_id: i.product_id,
+              qty:        i.qty,
+              price_usd:  i.price_usd,
+              total_usd:  r2(i.qty * i.price_usd),
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      })
+
+      if (body.restores_stock) {
+        await tx.inventoryEntry.createMany({
+          data: body.items.map(i => ({
+            business_id: bid,
+            product_id:  i.product_id,
+            quantity:    i.qty,
+            waste:       0,
+            notes:       `DEVOLUCIÓN #${ret.id}`,
+            created_by:  session.userId,
+          })),
+        })
+      }
+
+      return ret
     })
 
     return NextResponse.json({

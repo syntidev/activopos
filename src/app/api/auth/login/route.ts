@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
             active: true,
             subscription_active: true,
             onboarding_completed: true,
+            modules_enabled: true,
           },
         },
       },
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
       role: user.role,
       name: user.name,
       onboardingCompleted: user.business.onboarding_completed,
+      modulesEnabled: user.business.modules_enabled,
     })
 
     setSessionCookie(token)

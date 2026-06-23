@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import Link from 'next/link'
 import {
   Lock,
   ArrowDownLeft,
@@ -8,6 +9,7 @@ import {
   AlertTriangle,
   Plus,
   DollarSign,
+  History,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -287,7 +289,13 @@ function CajaContent() {
   if (!status?.isOpen) {
     return (
       <div className={`${styles.page} page-container`}>
-        <h1 className={styles.pageTitle}>Gestión de Caja</h1>
+        <div className={styles.closedHeader}>
+          <h1 className={styles.pageTitle}>Gestión de Caja</h1>
+          <Link href="/caja/historial" className={styles.historialLink}>
+            <History size={15} aria-hidden="true" />
+            Ver historial
+          </Link>
+        </div>
         <div className={styles.closedWrap}>
           <div className={styles.closedCard}>
             <div className={styles.closedIcon}>
@@ -357,6 +365,10 @@ function CajaContent() {
             Abierta {timeAgo(reg.openedAt)} · Cajero: {reg.cashierName} · Tasa: Bs {reg.rateAtOpen.toFixed(2)}
           </p>
         </div>
+        <Link href="/caja/historial" className={styles.historialLink}>
+          <History size={15} aria-hidden="true" />
+          Ver historial
+        </Link>
       </div>
 
       {/* KPI cards */}

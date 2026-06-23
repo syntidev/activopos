@@ -39,6 +39,7 @@ const ADMIN_ONLY = [
   '/api/users',
 ]
 
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 

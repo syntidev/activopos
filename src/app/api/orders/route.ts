@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
+import { sendPushToBusinessSubscribers } from '@/lib/push-notify'
 
 /* ── Query schema ── */
 
@@ -180,16 +181,18 @@ export async function POST(req: NextRequest) {
       })
     })
 
-    // Trigger notification for catalog-origin orders
+    // Trigger notification + push for catalog-origin orders
     if (data.origin === 'catalog') {
+      const notifTitle = 'Nuevo pedido desde catálogo'
+      const notifBody  = `Pedido ${order.order_number}${data.client_name ? ` de ${data.client_name}` : ''} recibido.`
       void createNotification(
-        session.businessId,
-        'order_new',
-        'Nuevo pedido desde catálogo',
-        `Pedido ${order.order_number}${data.client_name ? ` de ${data.client_name}` : ''} recibido.`,
-        'order',
-        order.id
+        session.businessId, 'order_new', notifTitle, notifBody, 'order', order.id
       ).catch(() => {})
+      void sendPushToBusinessSubscribers(session.businessId, {
+        title: notifTitle,
+        body:  notifBody,
+        url:   '/pedidos',
+      }).catch(() => {})
     }
 
     return NextResponse.json({ ok: true, order }, { status: 201 })

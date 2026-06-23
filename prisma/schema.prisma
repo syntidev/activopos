@@ -51,6 +51,7 @@ enum SaleOrigin {
   pos
   quote
   credit
+  catalog
 }
 
 enum ProductType {
@@ -354,6 +355,7 @@ model Sale {
   payments      SalePayment[]
   abonos        SaleAbono[]
   returns       Return[]
+  order         Order?
 
   @@map("sales")
 }
@@ -567,12 +569,13 @@ model Order {
   total_bs       Decimal     @db.Decimal(12, 2)
   rate_used      Decimal     @db.Decimal(10, 4)
   estimated_time Int?
-  sale_id        Int?
+  sale_id        Int?        @unique
   created_at     DateTime    @default(now())
   updated_at     DateTime    @updatedAt
 
   business Business    @relation(fields: [business_id], references: [id])
   client   Client?     @relation(fields: [client_id], references: [id])
+  sale     Sale?       @relation(fields: [sale_id], references: [id])
   items    OrderItem[]
 
   @@unique([business_id, order_number])

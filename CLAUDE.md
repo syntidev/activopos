@@ -180,7 +180,7 @@ sharp              → Procesamiento de imágenes WebP
 - NUNCA colores hexadecimales directos en componentes (solo en tokens.css)
 - Fraunces como tipografía display — Inter para cuerpo
 - Touch targets mínimo 44px en elementos interactivos
-- Sidebar SIEMPRE oscuro — independiente del tema dark/light
+- Sidebar SIEMPRE blanco (#FAFBFC) — patrón Fina, borde derecho #E5E7EB — independiente del tema dark/light
 
 ### Next.js App Router
 - Server Components por defecto — `'use client'` solo cuando sea necesario y justificado

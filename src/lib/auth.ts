@@ -16,6 +16,7 @@ export interface SessionPayload {
   role: 'super_admin' | 'admin' | 'cashier'
   name: string
   onboardingCompleted?: boolean
+  modulesEnabled?: string
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {

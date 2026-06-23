@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import Link from 'next/link'
 import {
   Building2,
   ShoppingBag,
@@ -21,6 +22,9 @@ import {
   PartyPopper,
   CheckCircle2,
   ArrowRight,
+  Settings,
+  CreditCard,
+  Layers,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input }  from '@/components/ui/Input'
@@ -365,7 +369,7 @@ export default function OnboardingPage() {
               </>
             )}
 
-            {/* Step 4 — Success */}
+            {/* Step 4 — Success + checklist */}
             {step === 4 && (
               <>
                 <div className={`${styles.iconWrap} ${styles.iconWrapSuccess}`}>
@@ -375,8 +379,26 @@ export default function OnboardingPage() {
                   ¡Todo listo{bizName ? `, ${bizName}` : ''}!
                 </h1>
                 <p className={styles.stepDescription}>
-                  Tu negocio está configurado. Haz tu primera venta ahora mismo.
+                  Antes de tu primera venta, completa estos pasos rápidos:
                 </p>
+                <nav className={styles.checklist} aria-label="Pasos antes de vender">
+                  <p className={styles.checklistTitle}>Antes de tu primera venta</p>
+                  <Link href="/productos" className={styles.checklistLink}>
+                    <Layers size={15} className={styles.checklistIcon} aria-hidden="true" />
+                    Agrega tus productos
+                    <span className={styles.checklistArrow} aria-hidden="true">→</span>
+                  </Link>
+                  <Link href="/configuracion" className={styles.checklistLink}>
+                    <CreditCard size={15} className={styles.checklistIcon} aria-hidden="true" />
+                    Configura métodos de pago
+                    <span className={styles.checklistArrow} aria-hidden="true">→</span>
+                  </Link>
+                  <Link href="/caja" className={styles.checklistLink}>
+                    <Settings size={15} className={styles.checklistIcon} aria-hidden="true" />
+                    Abre tu primera caja
+                    <span className={styles.checklistArrow} aria-hidden="true">→</span>
+                  </Link>
+                </nav>
               </>
             )}
           </motion.div>

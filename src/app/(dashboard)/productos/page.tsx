@@ -4,14 +4,11 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Plus,
   Search,
-  Tag,
   Upload,
   Package,
   Edit2,
   Trash2,
   SlidersHorizontal,
-  BarChart2,
-  FileDown,
   Eye,
   EyeOff,
   Layers,
@@ -370,25 +367,6 @@ export default function ProductosPage() {
           <button
             type="button"
             className={styles.btnAction}
-            onClick={() => {/* TODO: reports */}}
-            aria-label="Ver reportes de productos"
-          >
-            <BarChart2 size={15} aria-hidden="true" />
-            Reporte
-          </button>
-
-          <button
-            type="button"
-            className={styles.btnAction}
-            aria-label="Imprimir etiquetas"
-          >
-            <Tag size={15} aria-hidden="true" />
-            Etiquetas
-          </button>
-
-          <button
-            type="button"
-            className={styles.btnAction}
             onClick={() => setShowImportModal(true)}
             aria-label="Importar productos desde Excel"
           >
@@ -635,14 +613,6 @@ export default function ProductosPage() {
                       {/* ACCIONES */}
                       <td className={`${styles.td} ${styles.tdRight}`}>
                         <div className={styles.rowActions} role="group" aria-label={`Acciones: ${product.name}`}>
-                          <button
-                            type="button"
-                            className={styles.rowActionBtn}
-                            title="Imprimir etiqueta"
-                            aria-label={`Imprimir etiqueta de ${product.name}`}
-                          >
-                            <FileDown size={15} aria-hidden="true" />
-                          </button>
                           <button
                             type="button"
                             className={styles.rowActionBtn}

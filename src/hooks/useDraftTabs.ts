@@ -224,6 +224,8 @@ export function useDraftTabs(rate: number, ivaPct: number): UseDraftTabsResult {
           .filter(t => t.id !== id)
           .map(t => t.id === activeId ? { ...t, snapshot: current } : t)
       )
+      // Sync active tab to DB so its current items survive the tab close
+      patchDraft(activeId, current)
       return { newTicket: current, switched: false }
     }
   }, [tabs, activeId])

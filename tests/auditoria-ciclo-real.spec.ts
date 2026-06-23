@@ -10,7 +10,7 @@
  *   npx playwright test tests/auditoria-ciclo-real.spec.ts
  *
  * Uso en VPS (puerto 3001):
- *   BASE_URL=http://localhost:3001 npx playwright test tests/auditoria-ciclo-real.spec.ts --reporter=line
+ *   BASE_URL=http://localhost:3003 npx playwright test tests/auditoria-ciclo-real.spec.ts --reporter=line
  */
 
 import { test, expect, type APIRequestContext } from '@playwright/test'

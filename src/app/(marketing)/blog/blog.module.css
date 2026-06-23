@@ -1,0 +1,203 @@
+.page {
+  min-height: calc(100vh - 64px);
+  padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(4rem, 8vw, 6rem);
+}
+
+.inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-l, #4D7AFF);
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  color: var(--text-primary, #F1F5F9);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin-bottom: 0.875rem;
+}
+
+.subtitle {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 1rem;
+  color: var(--text-secondary, #94A3B8);
+  max-width: 52ch;
+  line-height: 1.65;
+  margin-bottom: 3.5rem;
+}
+
+/* Cards */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--bg-card, #132035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardImg {
+  height: 180px;
+  background: linear-gradient(135deg, rgba(0,56,189,0.2) 0%, rgba(19,32,53,1) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.cardImgIcon {
+  color: rgba(77, 122, 255, 0.3);
+}
+
+.badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cta, #EF8E01);
+  background: rgba(239, 142, 1, 0.12);
+  border: 1px solid rgba(239, 142, 1, 0.25);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+.cardBody {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardCategory {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--brand-l, #4D7AFF);
+  margin-bottom: 0.625rem;
+}
+
+.cardTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary, #F1F5F9);
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin-bottom: 0.625rem;
+}
+
+.cardDesc {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.875rem;
+  color: var(--text-secondary, #94A3B8);
+  line-height: 1.6;
+  flex: 1;
+}
+
+.cardFooter {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.8125rem;
+  color: var(--text-tertiary, #64748B);
+}
+
+/* Newsletter */
+
+.newsletter {
+  margin-top: 4rem;
+  padding: 2.5rem;
+  background: linear-gradient(135deg, rgba(0,56,189,0.15) 0%, rgba(77,122,255,0.06) 100%);
+  border: 1px solid rgba(77, 122, 255, 0.2);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.newsletterTitle {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--text-primary, #F1F5F9);
+  letter-spacing: -0.025em;
+  margin-bottom: 0.5rem;
+}
+
+.newsletterSubtitle {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--text-secondary, #94A3B8);
+  margin-bottom: 1.5rem;
+}
+
+.newsletterForm {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.newsletterInput {
+  flex: 1;
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  color: var(--text-primary, #F1F5F9);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.newsletterInput::placeholder { color: var(--text-tertiary, #64748B); }
+
+.newsletterInput:focus { border-color: rgba(77, 122, 255, 0.5); }
+
+.newsletterBtn {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand, #0038BD);
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 200ms ease;
+}
+
+.newsletterBtn:hover { background: var(--brand-dark, #002FA0); }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 560px) {
+  .grid            { grid-template-columns: 1fr; }
+  .newsletterForm  { flex-direction: column; }
+}

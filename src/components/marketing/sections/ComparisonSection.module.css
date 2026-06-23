@@ -1,0 +1,101 @@
+.section {
+  padding: 96px 0;
+  background: var(--bg-card);
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 5vw;
+}
+
+.copy {
+  margin-bottom: var(--space-11);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  text-wrap: balance;
+  margin-bottom: var(--space-6);
+}
+
+.callout {
+  border: 1px solid rgba(var(--brand-rgb), 0.30);
+  padding: 22px 28px;
+  background: rgba(var(--brand-rgb), 0.06);
+  border-radius: var(--radius-lg);
+}
+
+.callout p {
+  font-family: var(--font-display);
+  font-size: clamp(1.0625rem, 2.5vw, 1.5625rem);
+  font-weight: var(--weight-bold);
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.callout strong {
+  color: var(--brand-l);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+.head {
+  padding: 14px 24px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-sans);
+}
+
+.headBad  { background: rgba(var(--danger-rgb), 0.10);  color: var(--danger); }
+.headGood { background: rgba(var(--success-rgb), 0.10); color: var(--success); }
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2-5);
+  padding: 12px 24px;
+  border-top: 1px solid var(--lp-border);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  font-family: var(--font-sans);
+}
+
+.row svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rowBad  { color: var(--text-secondary); }
+.rowBad  svg { color: var(--danger); }
+.rowGood { color: var(--text-primary); font-weight: var(--weight-medium); }
+.rowGood svg { color: var(--success); }
+
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+  .col:last-child .head { border-top: 2px solid var(--success); }
+}

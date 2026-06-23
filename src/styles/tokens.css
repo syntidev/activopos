@@ -7,16 +7,33 @@
 
 /* ─── INVARIANT — BRAND + SEMÁNTICO + ESTRUCTURA ────────────── */
 :root {
-  /* ── Brand — Teal único (#0EA5A4 más puro que #14B8A6) ── */
-  --brand:              #0EA5A4;
-  --brand-dark:         #0D9488;
-  --brand-hover:        #0F766E;
-  --brand-darker:       #0F766E;
-  --brand-soft:         #CCFBF1;
-  --brand-soft-hover:   #99F6E4;
+  /* ── Marketing — Landing page specifics ── */
+  --navy:               #1E3A5F;
+
+  /* Landing page transparent borders & glows */
+  --lp-border:          rgba(255, 255, 255, 0.08);
+  --lp-border2:         rgba(255, 255, 255, 0.14);
+  --lp-brand-a:         rgba(0, 56, 189, 0.13);
+  --lp-cta-glow:        0 4px 24px rgba(239, 142, 1, 0.32);
+  --lp-cta-glow-hover:  0 8px 32px rgba(239, 142, 1, 0.48);
+  --lp-success-a:       rgba(74, 222, 128, 0.12);
+  --lp-danger-a:        rgba(239, 68, 68, 0.10);
+  --lp-warning-a:       rgba(245, 158, 11, 0.12);
+  --lp-purple-a:        rgba(139, 92, 246, 0.10);
+  --lp-purple:          #A78BFA;
+  --lp-shadow-demo:     0 16px 48px rgba(0, 0, 0, 0.40);
+
+  /* ── Brand — Persian Blue (#0038BD) ── */
+  --brand-l:            #4D7AFF;
+  --brand:              #0038BD;
+  --brand-dark:         #002FA0;
+  --brand-hover:        #002FA0;
+  --brand-darker:       #001D7A;
+  --brand-soft:         #DCE6FF;
+  --brand-soft-hover:   #BAD0FF;
   --brand-on:           #FFFFFF;
-  --brand-on-soft:      #0D9488;
-  --brand-rgb:          14, 165, 164;
+  --brand-on-soft:      #002FA0;
+  --brand-rgb:          0, 56, 189;
 
   /* ── On-color text — KPI cards con fondo teal — WCAG AA ── */
   --kpi-on-primary:     #FFFFFF;                   /* 4.75:1 on --brand-dark */
@@ -25,17 +42,17 @@
   --kpi-on-delta-bg:    rgba(255,255,255,0.22);
 
   /* ── CTA — Naranja — USO EXCLUSIVO: Procesar Pago, Declarar Cierre ── */
-  --cta:                #F97316;
-  --cta-hover:          #EA6C00;
-  --cta-active:         #C2500A;
+  --cta:                #EF8E01;
+  --cta-hover:          #D97900;
+  --cta-active:         #B56700;
   --cta-soft:           #FFF7ED;
   --cta-border:         #FED7AA;
   --cta-on:             #FFFFFF;
-  --cta-rgb:            249, 115, 22;
+  --cta-rgb:            239, 142, 1;
 
   /* ── Bordes laterales semánticos — patrón Fina ── */
   --border-alert:       #F97316;
-  --border-positive:    #14B8A6;
+  --border-positive:    #0038BD;
   --border-info:        #38BDF8;
   --border-success:     #22C55E;
   --border-warning:     #FBBF24;
@@ -149,6 +166,7 @@
   --space-1-5: 0.375rem;
   --space-2-5: 0.625rem;
   --space-3-5: 0.875rem;
+  --space-4-5: 1.125rem;
   --space-7:   1.75rem;
   --space-9:   2.25rem;
   --space-11:  2.75rem;
@@ -212,6 +230,15 @@
   --violet-light: #A78BFA;
   --pink-light:   #F9A8D4;
   --cyan-light:   #67E8F9;
+
+  /* ── Tokens base (fallback invariante) ── */
+  --font-sans:             system-ui, -apple-system, sans-serif;
+  --scrollbar-track:       #F1F5F9;
+  --scrollbar-thumb:       #CBD5E1;
+  --scrollbar-thumb-hover: #94A3B8;
+  --color-usd:             #1A1A1A;
+  --color-bs:              #64748B;
+  --color-rate-live:       #0038BD;
 }
 
 /* ══════════════════════════════════════════════════════════════

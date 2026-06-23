@@ -1,0 +1,129 @@
+.section {
+  padding: 56px 0;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(var(--brand-rgb), 0.10) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 5vw;
+  position: relative;
+  z-index: 1;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.copy {
+  flex: 1;
+  min-width: 260px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  max-width: 400px;
+  text-wrap: balance;
+  margin-bottom: var(--space-3);
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.65;
+  max-width: 380px;
+}
+
+/* Widget card */
+.widget {
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--lp-border2);
+  border-radius: var(--radius-xl);
+  padding: 24px 28px;
+  min-width: 260px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.liveRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-2-5);
+  font-family: var(--font-sans);
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: blink 2s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+
+.rateBig {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.rateSub {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+  font-family: var(--font-sans);
+}
+
+.pills {
+  display: flex;
+  gap: 7px;
+  margin-top: var(--space-3-5);
+  flex-wrap: wrap;
+}
+
+.pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--lp-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-sans);
+}

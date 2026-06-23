@@ -1,0 +1,13 @@
+.root {
+  min-height: 100vh;
+  background: var(--bg-base, #0D1B2E);
+  color: var(--text-primary, #F1F5F9);
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding-top: 64px; /* nav height offset */
+}

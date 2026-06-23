@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
+import { CobrarPedidoModal } from './CobrarPedidoModal'
 import styles from './pedidos.module.css'
 
 /* ── Types ── */
@@ -35,6 +36,8 @@ interface Order {
   client_name: string | null
   client_phone: string | null
   total_usd: number | string
+  total_bs: number | string
+  rate_used: number | string
   created_at: string
   items: OrderItem[]
 }
@@ -75,11 +78,15 @@ function OrderCard({
   onDragStart,
   onAdvance,
   onWhatsApp,
+  onCobrar,
+  onCancelar,
 }: {
   order: Order
   onDragStart: (e: React.DragEvent, order: Order) => void
   onAdvance: (order: Order) => void
   onWhatsApp: (order: Order) => void
+  onCobrar: (order: Order) => void
+  onCancelar: (order: Order) => void
 }) {
   const nextStatus = STATUS_NEXT[order.status]
 
@@ -142,6 +149,23 @@ function OrderCard({
           <MessageCircle size={13} aria-hidden="true" />
         </button>
       </div>
+
+      <div className={styles.orderActionsCobro}>
+        <button
+          className={styles.cancelarBtn}
+          onClick={() => onCancelar(order)}
+          aria-label={`Cancelar pedido ${order.order_number}`}
+        >
+          Cancelar
+        </button>
+        <button
+          className={styles.cobrarBtn}
+          onClick={() => onCobrar(order)}
+          aria-label={`Cobrar pedido ${order.order_number}`}
+        >
+          Cobrar
+        </button>
+      </div>
     </div>
   )
 }
@@ -160,6 +184,8 @@ function KanbanColumn({
   onDragStart,
   onAdvance,
   onWhatsApp,
+  onCobrar,
+  onCancelar,
 }: {
   status: OrderStatus
   label: string
@@ -172,6 +198,8 @@ function KanbanColumn({
   onDragStart: (e: React.DragEvent, order: Order) => void
   onAdvance: (order: Order) => void
   onWhatsApp: (order: Order) => void
+  onCobrar: (order: Order) => void
+  onCancelar: (order: Order) => void
 }) {
   return (
     <div
@@ -202,6 +230,8 @@ function KanbanColumn({
             onDragStart={onDragStart}
             onAdvance={onAdvance}
             onWhatsApp={onWhatsApp}
+            onCobrar={onCobrar}
+            onCancelar={onCancelar}
           />
         ))
       )}
@@ -234,6 +264,7 @@ function PedidosContent() {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<OrderStatus | null>(null)
   const [modalOpen, setModalOpen]   = useState(false)
+  const [cobrarOrder, setCobrarOrder] = useState<Order | null>(null)
   const draggingRef = useRef<Order | null>(null)
 
   const fetchOrders = useCallback(async () => {
@@ -333,6 +364,48 @@ function PedidosContent() {
     }
   }
 
+  /* ── Cobrar / Cancelar ── */
+
+  const handleCobrarOrder = (order: Order) => {
+    setCobrarOrder(order)
+  }
+
+  const handleCobrarConfirm = async (paymentMethodId: number, reference: string) => {
+    if (!cobrarOrder) return
+    const res = await fetch(`/api/orders/${cobrarOrder.id}/cobrar`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ payment_method_id: paymentMethodId, reference: reference || undefined }),
+    })
+    if (res.ok) {
+      setOrders(prev => prev.filter(o => o.id !== cobrarOrder.id))
+      setCobrarOrder(null)
+      toast(`Pedido ${cobrarOrder.order_number} cobrado`, 'success')
+    } else {
+      const data = await res.json() as { error?: string }
+      toast(data.error ?? 'Error al cobrar el pedido', 'error')
+      throw new Error(data.error ?? 'cobrar failed')
+    }
+  }
+
+  const handleCancelarOrder = async (order: Order) => {
+    // Optimistic remove
+    setOrders(prev => prev.filter(o => o.id !== order.id))
+    try {
+      const res = await fetch(`/api/orders/${order.id}/cancelar`, { method: 'POST' })
+      if (!res.ok) {
+        // Rollback
+        setOrders(prev => [...prev, order])
+        toast('No se pudo cancelar el pedido', 'error')
+      } else {
+        toast(`Pedido ${order.order_number} cancelado`, 'success')
+      }
+    } catch {
+      setOrders(prev => [...prev, order])
+      toast('Error de conexión', 'error')
+    }
+  }
+
   /* ── Orders by column ── */
 
   const byStatus = (status: OrderStatus) =>
@@ -394,6 +467,8 @@ function PedidosContent() {
                 onDragStart={handleDragStart}
                 onAdvance={handleAdvance}
                 onWhatsApp={handleWhatsApp}
+                onCobrar={handleCobrarOrder}
+                onCancelar={handleCancelarOrder}
               />
             ))}
           </div>
@@ -407,6 +482,17 @@ function PedidosContent() {
         onCreated={(order: CreatedOrder) => {
           setOrders((prev) => [order as Order, ...prev])
         }}
+      />
+
+      {/* Modal: Cobrar Pedido */}
+      <CobrarPedidoModal
+        open={cobrarOrder !== null}
+        orderId={cobrarOrder?.id ?? 0}
+        orderNumber={cobrarOrder?.order_number ?? ''}
+        totalUsd={Number(cobrarOrder?.total_usd ?? 0)}
+        totalBs={Number(cobrarOrder?.total_bs ?? 0)}
+        onClose={() => setCobrarOrder(null)}
+        onConfirm={handleCobrarConfirm}
       />
     </div>
   )

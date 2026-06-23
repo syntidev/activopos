@@ -91,7 +91,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           cashier_id:    session.userId,
           ticket_number,
           status:        'paid',
-          origin:        'pos',
+          origin:        'catalog',
           total_usd,
           total_bs,
           rate_used:     rate,

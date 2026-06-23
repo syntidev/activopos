@@ -1,5 +1,5 @@
 # SYSTEM_MAP — ActivoPOS
-# Generado desde código real — 2026-06-22
+# Generado desde código real — 2026-06-23
 # Fuente: find, grep, prisma/schema.prisma, git log
 # NO editar a mano — regenerar con el prompt CLI-C
 
@@ -9,11 +9,14 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 25                                                              |
-| Último commit      | (ver git log — post Sprint 25)                                         |
+| Último sprint      | Sprint 27                                                              |
+| Último commit      | (ver git log — post Sprint 27)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
-| Tests E2E          | ✅ 127/128 estables · 1 skip permanente T03 (ver §9)                  |
+| Puerto VPS         | 3003 (PM2 — confirmado 2026-06-23)                                     |
+| Paleta activa      | Persian Blue `#0038BD` + Carrot `#EF8E01`                             |
+| Tests E2E          | ✅ 134/135 estables · 1 skip permanente T03 (ver §9)                  |
+| CIMAAD             | ✅ 7/7 nodos ciclo real — `auditoria-ciclo-real.spec.ts` en VPS:3003  |
 
 ### Certificación de módulos (Regla del Policía)
 
@@ -29,10 +32,12 @@ PDF engine ✅ → Alertas CxC en Escritorio ✅ → client_id obligatorio créd
 Sprint 24: Multi-ticket drafts ✅ → Módulos dinámicos sidebar ✅ → Web Push backend ✅ →
 SSRF allowlist push ✅ → stock_alert_threshold ✅ → SaleStatus.draft ✅ →
 Sprint 25: CORE_MODULES guard ✅ → Admin panel super_admin ✅ → useDraftTabs DB-backed ✅ →
-KDS placeholder ✅ → 9 code-review P0-P3 fixes ✅ → StockModal jerarquía ✅ → PWA manifest fix ✅
+KDS placeholder ✅ → 9 code-review P0-P3 fixes ✅ → StockModal jerarquía ✅ → PWA manifest fix ✅ →
+Sprint 26: botón Cobrar pedidos ✅ → middleware module-gating MO-FIX02 ✅ → onboarding checklist ✅ → historial caja ✅ →
+Sprint 27: paleta Persian Blue+Carrot ✅ → 18 módulos UI+API ✅ → 14 bugs P0-P3 corregidos ✅ → CIMAAD 7/7 ✅ → marketing system 🚧
 ```
 
-**CORE COMPLETADO — todos los módulos del roadmap v1 certificados + seguridad auditada.**
+**CORE COMPLETADO — 18 módulos del roadmap v1 operativos con UI y API conectadas. Ciclo verificado en VPS con CIMAAD 7/7.**
 
 | Módulo              | Estado               | Sprint | Evidencia                                                      |
 |---------------------|----------------------|--------|----------------------------------------------------------------|
@@ -89,6 +94,14 @@ KDS placeholder ✅ → 9 code-review P0-P3 fixes ✅ → StockModal jerarquía 
 | KDS placeholder     | ✅ IMPLEMENTADO       | 25     | /kds page.tsx con ConstructionPanel — módulo futuro               |
 | StockModal UI       | ✅ IMPLEMENTADO       | 26     | Sprint 26 CLI-B early: jerarquía visual corregida                 |
 | PWA manifest        | ✅ IMPLEMENTADO       | 26     | Sprint 26 CLI-B early: meta tags + íconos + manifest.json corregidos |
+| Botón Cobrar pedidos| ✅ IMPLEMENTADO       | 26     | Sprint 26 CLI-B: UI cobrar order desde /pedidos con CobroModal    |
+| Middleware gating   | ✅ IMPLEMENTADO       | 26     | Sprint 26 CLI-A: middleware enforcea modules_enabled — MO-FIX02 cerrado |
+| Historial de caja   | ✅ IMPLEMENTADO       | 26     | Sprint 26 CLI-B: /caja/historial con estadísticas por turno       |
+| Paleta Persian Blue | ✅ IMPLEMENTADO       | 27     | Sprint 27: #0038BD + Carrot #EF8E01 — tokens.css actualizado      |
+| 18 módulos UI+API   | ✅ OPERATIVO          | 27     | Sprint 27: todos los módulos roadmap v1 con UI y API conectadas   |
+| 14 bugs Sprint 27   | ✅ CORREGIDOS         | 27     | Sprint 27: P0-P3 fixes — verificados con CIMAAD 7/7 en VPS:3003  |
+| CIMAAD ciclo real   | ✅ CERTIFICADO        | 27     | Sprint 27 CLI-D: 7/7 nodos — Inv→POS→Caja→Reports→CxC→Orders→Finanzas |
+| Marketing system    | 🚧 EN CONSTRUCCIÓN    | 27     | (marketing)/layout.tsx + páginas — integración futura WhatsApp/n8n |
 
 ---
 
@@ -121,6 +134,7 @@ KDS placeholder ✅ → 9 code-review P0-P3 fixes ✅ → StockModal jerarquía 
 | `/businesses`         | `src/app/(admin)/businesses/page.tsx`            | JWT super_admin | Admin multitenant ✅ Sprint 25 |
 | `/stats`              | `src/app/(admin)/stats/page.tsx`                 | JWT super_admin | Stats globales ✅ Sprint 25    |
 | `/kds`                | `src/app/(dashboard)/kds/page.tsx`               | JWT      | KDS placeholder Sprint 25      |
+| `/marketing/*`        | `src/app/(marketing)/layout.tsx + páginas`        | pública  | 🚧 Sprint 27 — sistema marketing en construcción |
 
 **Middleware público** (`src/middleware.ts`):
 ```
@@ -129,9 +143,10 @@ ADMIN_ONLY      = ['/configuracion', '/finanzas', '/api/reports', '/analytics', 
                    '/api/quotations', '/cotizaciones', '/devoluciones', '/usuarios',
                    '/api/returns', '/api/users', '/onboarding/']
 SUPER_ADMIN_ONLY = ['/admin', '/api/admin']
+MODULE_GATING   = modules_enabled checkeados en middleware — MO-FIX02 resuelto Sprint 26
 ```
 ⚠️ **Gap S25-F2**: `/businesses` y `/stats` protegidas por `(admin)/layout.tsx` (redirige a /escritorio)
-pero NO están en `SUPER_ADMIN_ONLY` del middleware — protección de doble capa pendiente Sprint 26.
+pero NO están en `SUPER_ADMIN_ONLY` del middleware — pendiente Sprint 28.
 
 ---
 
@@ -649,7 +664,8 @@ src/
 | `sprint24-multiticket-modules.spec.ts`    | 8     | ✅ MT01-MT03 + MO01 + MO03 + ST01 + ST02 + WP01 — MT02 actualizado: 409 → 400 (S25 FIX8) |
 | `sprint24-drafts-modules-push.spec.ts`    | 8     | ✅ MT01-MT05 + MD01-MD02 + PW01 — MD02 fix: testModules incluye 'inventory' (CORE_MODULES S25) |
 | `sprint25-fixes-admin.spec.ts`            | 8     | ✅ MT-FIX04 + MT-FIX01+03 + MO-FIX01 + MO-FIX02-gap + PU-FIX01 + ST-FIX01 + AD01 + AD02 |
-| **TOTAL**                                 | **128**| ✅ **127/128 · 1 skip permanente T03** |
+| `auditoria-ciclo-real.spec.ts`            | 7     | ✅ **7/7 CIMAAD** — Nodo 1-7 ciclo completo · VPS:3003 · Sprint 27 |
+| **TOTAL**                                 | **135**| ✅ **134/135 · 1 skip permanente T03** |
 
 ### Tests Sprint 23 — nuevos (CLI-D)
 
@@ -717,25 +733,45 @@ src/
 | NO01    | GET /api/notifications cap take:20 → countAfter=countBefore | Type+entity_id lookup en lugar de count |
 | F03     | `domcontentloaded` retorna antes de hidratación React        | Cambiado a `networkidle`              |
 
-### Gaps conocidos — deferred Sprint 26
+### Tests Sprint 27 — CIMAAD ciclo real (CLI-D)
 
-| Gap      | Descripción                                                              | Sprint destino |
-|----------|--------------------------------------------------------------------------|----------------|
-| MO-FIX02 | Middleware no enforcea modules_enabled — rutas desactivadas accesibles   | Sprint 26 CLI-A |
-| PU-FIX02 | /api/orders no invoca /api/push/send al crear order_new                  | Sprint 26 CLI-A |
-| S25-F2   | /businesses y /stats en (admin)/layout.tsx pero NO en middleware SUPER_ADMIN_ONLY | Sprint 26 CLI-A |
-| AD04     | /businesses/[id] detail page no implementado — 404                       | Sprint 26 CLI-B |
+| Nodo | Descripción                                                   | Estado |
+|------|---------------------------------------------------------------|--------|
+| 1    | POST /api/inventory → stock.net_qty +10 en DB                | ✅     |
+| 2    | POST /api/sales paid → stock -2, ticket ACT-NNNNN            | ✅     |
+| 3    | POST /api/cash/close → isOpen=false (omitido si caja ajena)  | ✅     |
+| 4    | GET /api/reports/daily → sales_count > 0 hoy                 | ✅     |
+| 5    | POST /api/sales pending origin=credit → queda en DB          | ✅     |
+| 6    | POST /api/orders + cobrar → status=delivered                  | ✅     |
+| 7    | GET /api/finanzas/resumen → ventas_usd > 0 + CxC count >= 1  | ✅     |
+
+**CIMAAD ejecutado en VPS (localhost:3003) — 7/7 ✅ | 7.3s de ejecución**
+
+### Gaps resueltos en Sprint 26
+
+| Gap      | Descripción                                               | Resolución           |
+|----------|-----------------------------------------------------------|----------------------|
+| MO-FIX02 | Middleware no enforcea modules_enabled                    | ✅ Resuelto Sprint 26 |
+
+### Gaps abiertos — pendientes Sprint 28
+
+| Gap    | Descripción                                                              | Sprint destino |
+|--------|--------------------------------------------------------------------------|----------------|
+| PU-FIX02 | /api/orders no invoca /api/push/send al crear order_new              | Sprint 28 CLI-A |
+| S25-F2   | /businesses y /stats en layout.tsx pero NO en middleware SUPER_ADMIN_ONLY | Sprint 28 CLI-A |
+| AD04     | /businesses/[id] detail page no implementado — 404                    | Sprint 28 CLI-B |
 
 **Notas de infraestructura:**
 - `workers: 1` en playwright.config.ts — tests seriales (dependencia de estado caja)
 - `afterAll` en caja-core.spec.ts usa `storageState` para reabrir caja con auth
 - F05, AN05, ON05 usan `playwright.request.newContext()` para evitar rate limiter del login form
 - AN05/ON05 transfieren cookie via `apiCtx.storageState()` → `browser.newContext({ storageState })`
+- `auditoria-ciclo-real.spec.ts` usa login fresco en beforeAll — NO depende de `.auth-state.json`
 
-**JWT auth-state — gestión:**
+**JWT auth-state — gestión (tests locales):**
 - `tests/.auth-state.json` expira cada 8h — si los tests fallan en masa, refrescar con:
   ```javascript
-  // node -e (ejecutar en consola)
+  // node -e (ejecutar en consola, puerto local 3000)
   const http = require('http'), fs = require('fs');
   const body = JSON.stringify({ email: 'admin@activopos.com', password: 'admin123' });
   http.request({ hostname: 'localhost', port: 3000, path: '/api/auth/login', method: 'POST',
@@ -750,18 +786,19 @@ src/
   ```
 - Síntoma de JWT expirado: tests del tramo final fallan (sprint23+) con 200 en POSTs a API — middleware redirige a /login
 
-### Pendientes Sprint 26
-- MO-FIX02: Middleware enforcea modules_enabled — bloquear rutas de módulos desactivados (CLI-A)
+### Pendientes Sprint 28
 - PU-FIX02: /api/orders invoca /api/push/send para pedidos catalog (CLI-A)
 - S25-F2: Añadir /businesses y /stats a SUPER_ADMIN_ONLY en middleware.ts (CLI-A)
 - AD04: /businesses/[id] detail page implementación (CLI-B)
+- Marketing system: completar (marketing)/layout.tsx + páginas (CLI-B)
 - Canales de venta / listas de precio
 - PWA offline IndexedDB sync queue
+- Integración WhatsApp bot via n8n.syntiweb.com
 
 ---
 
 **Nota: T01/T06 en pos-core.spec.ts** — actualizados de `getByText('Ventas hoy')` a
 `locator('[aria-label="Facturación total"]')` tras renombre de KPI en Escritorio v3.0.
 
-*Generado: 2026-06-22 | Sprint 25 cierre | CLI-D modo EJECUCIÓN*
-*128 E2E · 127/128 estables · 1 skip permanente T03 · 8 tests Sprint 25 nuevos (CLI-C×8)*
+*Generado: 2026-06-23 | Sprint 27 cierre | CLI-D modo EJECUCIÓN*
+*135 E2E · 134/135 estables · 1 skip permanente T03 · 7 tests Sprint 27 CIMAAD (CLI-D×7) · VPS puerto 3003*

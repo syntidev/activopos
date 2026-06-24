@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { CreditCard, Pencil, Printer, CheckCircle2 } from 'lucide-react'
+import { CreditCard, Pencil } from 'lucide-react'
 import { Modal, Button, useToast } from '@/components/ui'
 import { CreditoModal } from './CreditoModal'
+import { SuccessTicketPanel } from './SuccessTicketPanel'
+import type { SaleItemForPanel } from './SuccessTicketPanel'
 import type { CreditTerms } from './CreditoModal'
 import type { TicketTotals, PaymentInput } from '@/lib/pos'
 import type { PaymentMethod } from '@/hooks/usePOS'
@@ -18,6 +20,8 @@ interface CobroModalProps {
   onConfirm: (payments: PaymentInput[]) => Promise<SaleResult>
   rate: number
   clientId?: number | null
+  items: SaleItemForPanel[]
+  businessName: string
 }
 
 interface MixedEntry {
@@ -33,6 +37,7 @@ const isUsd = (type: string) =>
 
 export function CobroModal({
   open, onClose, totals, paymentMethods, onConfirm, rate, clientId,
+  items, businessName,
 }: CobroModalProps) {
   const { toast } = useToast()
 
@@ -54,6 +59,11 @@ export function CobroModal({
   /* ── B2: credit modal ── */
   const [showCreditoModal, setShowCreditoModal] = useState(false)
   const [creditTerms, setCreditTerms]           = useState<CreditTerms | null>(null)
+
+  /* ── Sale snapshot for SuccessTicketPanel ── */
+  const [snapItems,         setSnapItems]         = useState<SaleItemForPanel[]>([])
+  const [snapPaymentMethod, setSnapPaymentMethod] = useState('')
+  const [snapDueDate,       setSnapDueDate]       = useState<string | null>(null)
 
   const { total_bs: totalBs, total_usd: totalUsd } = totals
 
@@ -91,6 +101,7 @@ export function CobroModal({
     setMethodRate(rate); setEditingRate(false); setRateStr(String(Math.round(rate)))
     setShowCreditoModal(false); setCreditTerms(null)
     setSaleResult(null)
+    setSnapItems([]); setSnapPaymentMethod(''); setSnapDueDate(null)
     onClose()
   }
 
@@ -145,11 +156,22 @@ export function CobroModal({
       }))
 
   const doConfirm = async (payments: PaymentInput[]) => {
+    /* Snapshot sale data before onConfirm clears the ticket */
+    const pmName = isMixed
+      ? mixedEntries.filter(e => parseFloat(e.amountBs) > 0).map(e => e.method.name).join(' + ')
+      : selectedMethod?.name ?? ''
+    setSnapItems([...items])
+    setSnapPaymentMethod(pmName)
+    setSnapDueDate(
+      creditTerms?.due_date
+        ? creditTerms.due_date.toISOString().slice(0, 10)
+        : null
+    )
+
     setLoading(true)
     try {
       const result = await onConfirm(payments)
       setSaleResult(result)
-      toast('Venta procesada exitosamente', 'success')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Error al procesar el pago', 'error')
     } finally {
@@ -200,49 +222,41 @@ export function CobroModal({
 
   return (
     <>
+      {/* ── Success panel — rendered outside Modal, full-screen overlay ── */}
+      {saleResult && (
+        <SuccessTicketPanel
+          sale={{
+            id:             saleResult.id,
+            ticket_number:  saleResult.ticket_number,
+            status:         saleResult.status,
+            total_usd:      saleResult.total_usd,
+            total_bs:       saleResult.total_bs,
+            due_date:       snapDueDate,
+            payment_method: snapPaymentMethod,
+            rate:           rate,
+            items:          snapItems,
+          }}
+          businessName={businessName}
+          onClose={handleReset}
+        />
+      )}
+
       <Modal
-        open={open}
+        open={open && !saleResult}
         onClose={handleReset}
-        title={saleResult ? '¡Venta registrada!' : 'Procesar Pago'}
+        title="Procesar Pago"
         size="md"
         footer={
-          saleResult ? (
-            <div className={styles.footer}>
-              <button
-                type="button"
-                className={styles.printBtn}
-                onClick={() => window.open(`/api/sales/${saleResult.id}/ticket`, '_blank')}
-              >
-                <Printer size={15} aria-hidden="true" />
-                Imprimir ticket
-              </button>
-              <Button variant="primary" onClick={handleReset}>Nueva venta</Button>
-            </div>
-          ) : (
-            <div className={styles.footer}>
-              <Button variant="ghost" onClick={handleReset}>Cancelar</Button>
-              <Button variant="primary" onClick={handleConfirm} loading={loading} disabled={!canConfirm}>
-                {selectedMethod?.type === 'credit' && !creditTerms
-                  ? 'Configurar crédito →'
-                  : 'Confirmar Venta'}
-              </Button>
-            </div>
-          )
+          <div className={styles.footer}>
+            <Button variant="ghost" onClick={handleReset}>Cancelar</Button>
+            <Button variant="primary" onClick={handleConfirm} loading={loading} disabled={!canConfirm}>
+              {selectedMethod?.type === 'credit' && !creditTerms
+                ? 'Configurar crédito →'
+                : 'Confirmar Venta'}
+            </Button>
+          </div>
         }
       >
-        {saleResult ? (
-          <div className={styles.successScreen}>
-            <CheckCircle2 size={52} className={styles.successIcon} aria-hidden="true" />
-            <p className={styles.successTitle}>¡Venta completada!</p>
-            <p className={styles.successTicket}>Ticket #{saleResult.ticket_number}</p>
-            <div className={styles.successAmounts}>
-              <span className={styles.successUsd}>${saleResult.total_usd.toFixed(2)}</span>
-              <span className={styles.successBs}>
-                Bs.&nbsp;{saleResult.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-        ) : (
         <div className={styles.body}>
           {/* Total */}
           <div className={styles.totalDisplay}>
@@ -460,7 +474,6 @@ export function CobroModal({
             </>
           )}
         </div>
-        )}
       </Modal>
 
       {/* B2: CreditoModal — z-modal-top so it renders above CobroModal */}

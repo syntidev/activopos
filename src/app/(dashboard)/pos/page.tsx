@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShoppingCart, X } from 'lucide-react'
 import { usePOS } from '@/hooks/usePOS'
 import { useDraftTabs } from '@/hooks/useDraftTabs'
@@ -28,6 +28,16 @@ export default function POSPage() {
   const [weightProduct, setWeightProduct] = useState<ProductForPOS | null>(null)
   const [cartOpen, setCartOpen]           = useState(false)
   const [scannerOpen, setScannerOpen]     = useState(false)
+  const [businessName, setBusinessName]   = useState('')
+
+  useEffect(() => {
+    fetch('/api/config/business')
+      .then(r => r.json())
+      .then((j: { business?: { name?: string } }) => {
+        if (j.business?.name) setBusinessName(j.business.name)
+      })
+      .catch(() => {})
+  }, [])
   const totals = calcularTotales(pos.ticket)
   const isEmpty = ticketVacio(pos.ticket)
   const itemCount = pos.ticket.items.length
@@ -171,6 +181,12 @@ export default function POSPage() {
         }}
         rate={pos.rate}
         clientId={pos.ticket.client_id}
+        items={pos.ticket.items.map(i => ({
+          name:      i.product_name,
+          qty:       i.quantity,
+          price_usd: i.price_per_unit_usd,
+        }))}
+        businessName={businessName}
       />
       <ClienteModal
         open={pos.showCliente}

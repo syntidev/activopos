@@ -38,7 +38,7 @@
 
 .logoDot {
   font-size: var(--text-lg);
-  color: var(--color-brand);
+  color: var(--cta);
   line-height: 1;
 }
 
@@ -47,6 +47,12 @@
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
   color: var(--color-brand);
+}
+
+.logoImg {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
 }
 
 /* ── Tagline ── */

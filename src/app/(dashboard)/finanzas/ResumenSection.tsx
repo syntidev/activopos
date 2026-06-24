@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  ComposedChart, Line,
+} from 'recharts'
 import styles from './finanzas.module.css'
 
 interface ER {
@@ -67,6 +70,137 @@ function computePE(er: ER, month: string) {
 
   return { pe, projected, dayOfMonth, daysInMonth, barPct, status, sin_margen }
 }
+
+/* ── Gráfico de utilidad diaria ── */
+
+interface DailyPoint {
+  date:      string
+  ingresos:  number
+  gastos:    number
+  utilidad:  number
+}
+
+interface DailyPayloadEntry {
+  name:    string
+  value:   number
+  dataKey: string
+}
+
+function DailyTrendCard({ month }: { month: string }) {
+  const [points,  setPoints]  = useState<DailyPoint[]>([])
+  const [loading, setLoading] = useState(true)
+  const [empty,   setEmpty]   = useState(false)
+
+  useEffect(() => {
+    const ctrl = new AbortController()
+    setLoading(true); setEmpty(false)
+    fetch(`/api/finanzas/daily?month=${month}`, { signal: ctrl.signal })
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status)
+        return r.json()
+      })
+      .then((j: { ok: boolean; points?: DailyPoint[] }) => {
+        if (j.ok && j.points && j.points.length > 0) {
+          setPoints(j.points)
+        } else {
+          setEmpty(true)
+        }
+      })
+      .catch((e: unknown) => {
+        if ((e as Error).name !== 'AbortError') setEmpty(true)
+      })
+      .finally(() => setLoading(false))
+    return () => ctrl.abort()
+  }, [month])
+
+  if (loading) return null
+
+  const fmtDay = (date: string) =>
+    new Date(date + 'T00:00:00').toLocaleDateString('es-VE', {
+      day: '2-digit', month: 'short',
+    })
+
+  const DailyTooltip = ({
+    active, payload, label,
+  }: { active?: boolean; payload?: DailyPayloadEntry[]; label?: string }) => {
+    if (!active || !payload?.length) return null
+    return (
+      <div className={styles.chartTooltip}>
+        <p className={styles.chartTooltipLabel}>{label ? fmtDay(label) : ''}</p>
+        {payload.map((p, i) => (
+          <p key={i} className={styles.chartTooltipValue}>
+            {p.name}: {fmtUsd(p.value)}
+          </p>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.chartCard}>
+      <h3 className={styles.chartTitle}>Utilidad del período</h3>
+      {empty ? (
+        <p className={styles.chartCaption}>Sin datos para el período</p>
+      ) : (
+        <>
+          <div className={styles.chartWrap}>
+            <ResponsiveContainer width="100%" height={220}>
+              <ComposedChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={fmtDay}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }}
+                />
+                <YAxis
+                  tickFormatter={(v: number) =>
+                    Math.abs(v) >= 1000
+                      ? `$${(v / 1000).toFixed(0)}k`
+                      : `$${v.toFixed(0)}`
+                  }
+                  tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={52}
+                />
+                <Tooltip content={<DailyTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+                <Bar
+                  dataKey="ingresos"
+                  name="Ingresos"
+                  fill="var(--color-brand)"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={20}
+                />
+                <Bar
+                  dataKey="gastos"
+                  name="Gastos"
+                  fill="var(--danger)"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={20}
+                />
+                <Line
+                  dataKey="utilidad"
+                  name="Utilidad"
+                  stroke="var(--color-success-text)"
+                  strokeWidth={2}
+                  dot={false}
+                  type="monotone"
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <p className={styles.chartCaption}>
+            Azul: Ingresos · Rojo: Gastos · Verde: Utilidad neta
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ── CLI-A: implementar GET /api/finanzas/daily?month=YYYY-MM ── */
+/* Respuesta esperada: { ok: true, points: [{ date, ingresos, gastos, utilidad }] } */
 
 export function ResumenSection({ month, rate }: Props) {
   const [data,    setData]    = useState<ResumenData | null>(null)
@@ -336,6 +470,9 @@ export function ResumenSection({ month, rate }: Props) {
             : `Pérdida neta: ${fmtUsd(Math.abs(er.utilidad_neta))} · Margen: ${fmtPct(er.margen_neto_pct)}`}
         </p>
       </div>
+
+      {/* ── Gráfico diario: Utilidad del período ── */}
+      <DailyTrendCard month={month} />
     </>
   )
 }

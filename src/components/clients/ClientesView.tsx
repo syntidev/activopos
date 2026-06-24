@@ -206,7 +206,11 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
               </thead>
               <tbody>
                 {filtered.map((client) => (
-                  <tr key={client.id} className={styles.row}>
+                  <tr
+                    key={client.id}
+                    className={styles.row}
+                    onClick={() => setHistorialId(client.id)}
+                  >
                     <td className={styles.td}>
                       <span className={styles.cedula}>{client.cedula ?? '—'}</span>
                     </td>
@@ -229,7 +233,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
                       )}
                     </td>
                     <td className={`${styles.td} ${styles.tdRight}`}>
-                      <div className={styles.actions}>
+                      <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
                         <button
                           className={styles.actionBtn}
                           onClick={() => setHistorialId(client.id)}
@@ -274,13 +278,11 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
         onUpdated={handleUpdated}
       />
 
-      {historialId !== null && (
-        <ClienteHistorialModal
-          clientId={historialId}
-          open={true}
-          onClose={() => setHistorialId(null)}
-        />
-      )}
+      <ClienteHistorialModal
+        clientId={historialId ?? 0}
+        open={historialId !== null}
+        onClose={() => setHistorialId(null)}
+      />
     </>
   )
 }

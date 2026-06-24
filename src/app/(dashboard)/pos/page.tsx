@@ -106,10 +106,15 @@ export default function POSPage() {
         onClick={() => setCartOpen(o => !o)}
         aria-label={cartOpen ? 'Cerrar carrito' : `Ver carrito (${itemCount} ítems)`}
       >
-        {cartOpen ? <X size={22} /> : <ShoppingCart size={22} />}
-        {!cartOpen && itemCount > 0 && (
-          <span className={styles.cartBadge}>{itemCount}</span>
-        )}
+        {cartOpen
+          ? <X size={20} aria-hidden="true" />
+          : itemCount > 0
+            ? <>
+                <ShoppingCart size={18} aria-hidden="true" />
+                <span className={styles.cartToggleText}>Ver carrito ({itemCount})</span>
+              </>
+            : <ShoppingCart size={22} aria-hidden="true" />
+        }
       </button>
 
       {/* Mobile: overlay backdrop */}

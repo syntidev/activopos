@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
   ShoppingBag,
   Plus,
@@ -71,6 +72,13 @@ function timeAgo(dateStr: string): string {
   return `${h}h${m > 0 ? ` ${m}m` : ''}`
 }
 
+function timeUrgency(dateStr: string): 'normal' | 'warning' | 'danger' {
+  const diffMin = (Date.now() - new Date(dateStr).getTime()) / 60000
+  if (diffMin > 60) return 'danger'
+  if (diffMin > 30) return 'warning'
+  return 'normal'
+}
+
 /* ── Order card ── */
 
 function OrderCard({
@@ -89,6 +97,12 @@ function OrderCard({
   onCancelar: (order: Order) => void
 }) {
   const nextStatus = STATUS_NEXT[order.status]
+  const urgency = timeUrgency(order.created_at)
+  const urgencyClass = urgency === 'danger'
+    ? styles.orderTimeDanger
+    : urgency === 'warning'
+      ? styles.orderTimeWarning
+      : ''
 
   return (
     <div
@@ -100,7 +114,7 @@ function OrderCard({
     >
       <div className={styles.orderHeader}>
         <span className={styles.orderNumber}>{order.order_number}</span>
-        <span className={styles.orderTime}>
+        <span className={`${styles.orderTime} ${urgencyClass}`}>
           <Clock size={10} aria-hidden="true" />
           {timeAgo(order.created_at)}
         </span>
@@ -215,7 +229,10 @@ function KanbanColumn({
           <span className={`${styles.columnDot} ${colorClass}`} aria-hidden="true" />
           <span className={styles.columnLabel}>{label}</span>
         </div>
-        <span className={styles.columnCount} aria-label={`${orders.length} pedidos`}>
+        <span
+          className={`${styles.columnCount} ${status === 'received' && orders.length > 0 ? styles.columnCountNew : ''}`}
+          aria-label={`${orders.length} pedidos`}
+        >
           {orders.length}
         </span>
       </div>
@@ -223,17 +240,27 @@ function KanbanColumn({
       {orders.length === 0 ? (
         <EmptyState icon={ShoppingBag} title={`Sin ${label.toLowerCase()}`} />
       ) : (
-        orders.map((order) => (
-          <OrderCard
-            key={order.id}
-            order={order}
-            onDragStart={onDragStart}
-            onAdvance={onAdvance}
-            onWhatsApp={onWhatsApp}
-            onCobrar={onCobrar}
-            onCancelar={onCancelar}
-          />
-        ))
+        <AnimatePresence mode="popLayout" initial={false}>
+          {orders.map((order) => (
+            <motion.div
+              key={order.id}
+              layout
+              initial={{ opacity: 0, scale: 0.95, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.93 }}
+              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <OrderCard
+                order={order}
+                onDragStart={onDragStart}
+                onAdvance={onAdvance}
+                onWhatsApp={onWhatsApp}
+                onCobrar={onCobrar}
+                onCancelar={onCancelar}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       )}
     </div>
   )

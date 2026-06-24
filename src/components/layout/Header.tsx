@@ -1,25 +1,29 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Menu, Sun, Moon, Bell, ShoppingBag, AlertTriangle, DollarSign } from 'lucide-react'
+import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { CajaToggle } from './CajaToggle'
 import styles from './Header.module.css'
 
 interface NotificationItem {
   id: number
-  type: 'order' | 'stock' | 'debt'
-  message: string
+  type: 'order' | 'stock' | 'debt' | string
+  title: string
+  body?: string
+  /** @deprecated use title */
+  message?: string
+  url?: string
   read: boolean
   created_at: string
 }
 
-const NOTIF_ICONS: Record<NotificationItem['type'], { Icon: React.ElementType; cls: string }> = {
-  order: { Icon: ShoppingBag,    cls: styles.notifIconOrder },
-  stock: { Icon: AlertTriangle,  cls: styles.notifIconStock },
-  debt:  { Icon: DollarSign,     cls: styles.notifIconDebt  },
+const NOTIF_ICONS: Record<string, { Icon: React.ElementType; cls: string }> = {
+  order: { Icon: ShoppingBag, cls: styles.notifIconOrder },
+  stock: { Icon: Package,     cls: styles.notifIconStock },
+  debt:  { Icon: CreditCard,  cls: styles.notifIconDebt  },
 }
 
 function relativeTime(iso: string): string {
@@ -75,6 +79,7 @@ export function Header({
   onToggleMobile,
 }: HeaderProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -103,6 +108,16 @@ export function Header({
     }
   }, [])
 
+  const pollUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications/history')
+      if (!res.ok) return
+      const data = await res.json() as { items?: NotificationItem[] }
+      const items = data.items ?? []
+      setUnreadCount(items.filter(n => !n.read).length)
+    } catch { /* graceful */ }
+  }, [])
+
   const markAllRead = useCallback(async () => {
     try {
       await fetch('/api/notifications/read-all', { method: 'PATCH' })
@@ -114,13 +129,15 @@ export function Header({
   const handleToggleNotif = useCallback(async () => {
     const opening = !notifOpen
     setNotifOpen(opening)
-    if (opening) {
-      await fetchNotifications()
-      await markAllRead()
-    }
-  }, [notifOpen, fetchNotifications, markAllRead])
+    if (opening) await fetchNotifications()
+  }, [notifOpen, fetchNotifications])
 
-  useEffect(() => { void fetchNotifications() }, [fetchNotifications])
+  /* Initial fetch + 60s polling for unread badge */
+  useEffect(() => {
+    void fetchNotifications()
+    const interval = setInterval(() => { void pollUnreadCount() }, 60_000)
+    return () => clearInterval(interval)
+  }, [fetchNotifications, pollUnreadCount])
 
   useEffect(() => {
     if (!notifOpen) return
@@ -250,9 +267,19 @@ export function Header({
         >
           <div className={styles.notifPanelHeader}>
             <span className={styles.notifPanelTitle}>Notificaciones</span>
-            {!notifLoading && notifications.length > 0 && unreadCount === 0 && (
+            {!notifLoading && unreadCount > 0 ? (
+              <button
+                type="button"
+                className={styles.markAllReadBtn}
+                onClick={() => { void markAllRead() }}
+                aria-label="Marcar todas como leídas"
+              >
+                <CheckCheck size={13} aria-hidden="true" />
+                Marcar leídas
+              </button>
+            ) : !notifLoading && notifications.length > 0 ? (
               <span className={styles.notifAllRead}>Todas leídas</span>
-            )}
+            ) : null}
           </div>
 
           <div className={styles.notifList}>
@@ -264,21 +291,37 @@ export function Header({
             ) : notifications.length === 0 ? (
               <div className={styles.notifEmptyState}>
                 <Bell size={24} className={styles.notifEmptyIcon} aria-hidden="true" />
-                <span>Sin notificaciones recientes</span>
+                <span>No hay notificaciones pendientes</span>
               </div>
             ) : (
               notifications.map(n => {
                 const { Icon, cls } = NOTIF_ICONS[n.type] ?? { Icon: Bell, cls: '' }
+                const label = n.title ?? n.message ?? ''
                 return (
                   <div
                     key={n.id}
-                    className={`${styles.notifItem} ${n.read ? styles.notifItemRead : ''}`}
+                    className={`${styles.notifItem} ${n.read ? styles.notifItemRead : ''} ${n.url ? styles.notifItemClickable : ''}`}
+                    role={n.url ? 'button' : undefined}
+                    tabIndex={n.url ? 0 : undefined}
+                    onClick={() => {
+                      if (n.url) {
+                        router.push(n.url)
+                        setNotifOpen(false)
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (n.url && (e.key === 'Enter' || e.key === ' ')) {
+                        router.push(n.url)
+                        setNotifOpen(false)
+                      }
+                    }}
                   >
                     <span className={`${styles.notifIconCircle} ${cls}`} aria-hidden="true">
                       <Icon size={14} strokeWidth={2} />
                     </span>
                     <div className={styles.notifItemBody}>
-                      <p className={styles.notifItemMsg}>{n.message}</p>
+                      <p className={styles.notifItemTitle}>{label}</p>
+                      {n.body && <p className={styles.notifItemDesc}>{n.body}</p>}
                       <p className={styles.notifItemTime}>{relativeTime(n.created_at)}</p>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   ComposedChart, Line,
@@ -424,13 +424,13 @@ export function ResumenSection({ month, rate }: Props) {
 
           <div className={`${styles.peStatusRow} ${peStatusClass}`}>
             {peData.status === 'success' && (
-              <>✅ Superado — Excedente: {fmtUsd(er.ventas_netas - peData.pe)}</>
+              <><CheckCircle size={14} aria-hidden="true" /> Superado — Excedente: {fmtUsd(er.ventas_netas - peData.pe)}</>
             )}
             {peData.status === 'progress' && (
-              <>⏳ En progreso — Faltan {fmtUsd(peData.pe - er.ventas_netas)} para cubrir gastos</>
+              <><Clock size={14} aria-hidden="true" /> En progreso — Faltan {fmtUsd(peData.pe - er.ventas_netas)} para cubrir gastos</>
             )}
             {peData.status === 'risk' && (
-              <>⚠️ En riesgo — Proyección ({fmtUsd(peData.projected)}) no alcanza el PE</>
+              <><AlertTriangle size={14} aria-hidden="true" /> En riesgo — Proyección ({fmtUsd(peData.projected)}) no alcanza el PE</>
             )}
           </div>
         </div>

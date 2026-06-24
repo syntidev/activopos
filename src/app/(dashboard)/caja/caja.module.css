@@ -285,6 +285,10 @@
 }
 
 /* ── Payment methods table ── */
+.pmTableWrap {
+  overflow-x: auto;
+}
+
 .pmTable {
   width: 100%;
   border-collapse: collapse;

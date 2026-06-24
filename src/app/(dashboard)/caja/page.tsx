@@ -470,6 +470,7 @@ function CajaContent() {
               <div className={styles.cardHeader}>
                 <h2 className={styles.cardTitle}>Ventas por Método de Pago</h2>
               </div>
+              <div className={styles.pmTableWrap}>
               <table className={styles.pmTable}>
                 <thead className={styles.pmThead}>
                   <tr>
@@ -495,6 +496,7 @@ function CajaContent() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>

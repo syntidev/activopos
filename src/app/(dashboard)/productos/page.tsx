@@ -458,7 +458,7 @@ export default function ProductosPage() {
     }
   }, [products, openEdit])
 
-  const { videoRef: scanVideoRef, permError: scanPermError } = useScanner({
+  const { videoContainerRef: scanVideoRef, permError: scanPermError } = useScanner({
     active:   scannerActive,
     onResult: handleProductScan,
   })
@@ -882,13 +882,10 @@ export default function ProductosPage() {
           aria-modal="true"
           aria-label="Escáner de código de barras"
         >
-          {/* Camera */}
-          <video
+          {/* Camera — Quagga renders <video>+<canvas> inside this div */}
+          <div
             ref={scanVideoRef}
             className={styles.scanVideo}
-            playsInline
-            muted
-            autoPlay
             aria-hidden="true"
           />
 

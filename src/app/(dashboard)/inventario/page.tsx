@@ -459,7 +459,7 @@ function InventarioContent() {
   const [entryProduct, setEntryProduct]     = useState<Product | null>(null)
   const [scannerActive, setScannerActive]   = useState(false)
 
-  const { videoRef } = useScanner({
+  const { videoContainerRef } = useScanner({
     active: scannerActive,
     onResult: (barcode) => {
       const found = products.find(p => p.barcode === barcode)
@@ -619,7 +619,7 @@ function InventarioContent() {
 
       {scannerActive && (
         <div className={styles.scannerWrap} onClick={() => setScannerActive(false)}>
-          <video ref={videoRef} className={styles.scannerVideo} autoPlay playsInline muted />
+          <div ref={videoContainerRef} className={styles.scannerVideo} />
           <button
             className={styles.scannerClose}
             onClick={() => setScannerActive(false)}

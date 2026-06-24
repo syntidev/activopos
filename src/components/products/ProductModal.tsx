@@ -245,7 +245,7 @@ export function ProductModal({
 
   /* ── Barcode scanner ── */
   const [isScanning, setIsScanning] = useState(false)
-  const { videoRef, permError } = useScanner({
+  const { videoContainerRef, permError } = useScanner({
     active: isScanning,
     onResult: (code) => {
       setBarcode(code)
@@ -1471,12 +1471,9 @@ export function ProductModal({
             aria-label="Escáner de código de barras"
             aria-modal="true"
           >
-            <video
-              ref={videoRef}
+            <div
+              ref={videoContainerRef}
               className={styles.scanVideo}
-              playsInline
-              muted
-              autoPlay
             />
             <div className={styles.scanFrame} aria-hidden="true" />
             {permError && (

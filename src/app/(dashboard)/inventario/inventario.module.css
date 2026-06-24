@@ -852,6 +852,16 @@
   max-width: 380px;
   border-radius: var(--radius-lg);
   display: block;
+  overflow: hidden;
+}
+
+.scannerVideo :global(video) {
+  width: 100%;
+  display: block;
+}
+
+.scannerVideo :global(canvas) {
+  display: none;
 }
 
 .scannerClose {

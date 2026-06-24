@@ -96,7 +96,7 @@ export function ScannerModal({
     }
   }, [onAddProduct])
 
-  const { videoRef, permError } = useScanner({
+  const { videoContainerRef, permError } = useScanner({
     active:   open,
     onResult: handleBarcode,
   })
@@ -116,13 +116,10 @@ export function ScannerModal({
       {/* ══ Camera zone (33dvh) ══ */}
       <div className={styles.cameraZone}>
 
-        {/* Video stream */}
-        <video
-          ref={videoRef}
+        {/* Video stream — Quagga renders <video>+<canvas> inside this div */}
+        <div
+          ref={videoContainerRef}
           className={styles.video}
-          playsInline
-          muted
-          autoPlay
           aria-hidden="true"
         />
 

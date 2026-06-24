@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { FileSpreadsheet } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { FileSpreadsheet, Check } from 'lucide-react'
 import { Button }          from '@/components/ui/Button'
 import { CxCSection }      from './CxCSection'
 import { CxPSection }      from './CxPSection'
@@ -24,13 +24,30 @@ export default function FinanzasPage() {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
-  const [rate, setRate] = useState(0)
+  const [rate,            setRate]           = useState(0)
+  const [exportingExcel,  setExportingExcel] = useState(false)
+  const [exportSuccess,   setExportSuccess]  = useState(false)
 
   useEffect(() => {
     fetch('/api/rates/bcv')
       .then(r => r.json())
       .then(j => { if (j.ok && j.rate) setRate(Number(j.rate)) })
   }, [])
+
+  const handleExportExcel = useCallback(() => {
+    if (exportingExcel) return
+    setExportingExcel(true)
+    const [year, mon] = month.split('-')
+    const lastDay = new Date(Number(year), Number(mon), 0).getDate()
+    const from = `${month}-01`
+    const to   = `${month}-${String(lastDay).padStart(2, '0')}`
+    window.location.href = `/api/finanzas/export?from=${from}&to=${to}`
+    setTimeout(() => {
+      setExportingExcel(false)
+      setExportSuccess(true)
+      setTimeout(() => setExportSuccess(false), 2000)
+    }, 1500)
+  }, [month, exportingExcel])
 
   return (
     <div className={`${styles.page} page-container`}>
@@ -40,11 +57,16 @@ export default function FinanzasPage() {
           <Button
             variant="ghost"
             size="sm"
-            leftIcon={<FileSpreadsheet size={14} aria-hidden="true" />}
-            disabled
-            title="Exportar Excel — próximamente"
+            leftIcon={
+              exportSuccess
+                ? <Check size={14} aria-hidden="true" />
+                : <FileSpreadsheet size={14} aria-hidden="true" />
+            }
+            onClick={handleExportExcel}
+            loading={exportingExcel}
+            aria-label="Exportar Excel del mes seleccionado"
           >
-            Excel
+            {exportSuccess ? '¡Listo!' : 'Excel'}
           </Button>
           <input
             type="month"

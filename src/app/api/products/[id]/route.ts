@@ -30,6 +30,7 @@ const patchSchema = z.object({
   subcategory:        z.string().max(60).nullable().optional(),
   is_featured:        z.boolean().optional(),
   active:             z.boolean().optional(),
+  is_active:          z.boolean().optional(),
   sort_order:             z.number().int().optional(),
   availability:           z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).optional(),
   catalog_visibility:     z.enum(['visible', 'hidden', 'on_request']).optional(),
@@ -96,7 +97,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   try {
     const body = await req.json()
-    const { margin, ...data } = patchSchema.parse(body)
+    const { margin, is_active, ...data } = patchSchema.parse(body)
+    if (is_active !== undefined) data.active = is_active
 
     const existing = await prisma.product.findFirst({
       where: { id, business_id: session.businessId },
@@ -143,11 +145,22 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   const id = parseId(params.id)
   if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const existing = await prisma.product.findFirst({
-    where: { id, business_id: session.businessId },
-  })
+  const [existing, salesCount] = await Promise.all([
+    prisma.product.findFirst({ where: { id, business_id: session.businessId } }),
+    prisma.saleItem.count({ where: { product_id: id } }),
+  ])
   if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-  await prisma.product.update({ where: { id }, data: { active: false } })
+  if (salesCount > 0) {
+    return NextResponse.json(
+      {
+        error: 'Este producto tiene historial de ventas. Te recomendamos desactivarlo en lugar de eliminarlo.',
+        sales_count: salesCount,
+      },
+      { status: 409 }
+    )
+  }
+
+  await prisma.product.delete({ where: { id } })
   return NextResponse.json({ ok: true })
 }

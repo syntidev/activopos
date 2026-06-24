@@ -5,6 +5,7 @@
   gap: var(--space-4);
   max-width: 1400px;
   width: 100%;
+  overflow-x: hidden;
 }
 
 /* ── Header ── */
@@ -358,6 +359,7 @@
 /* ── Tabla — cabecera teal ── */
 .tableWrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-lg);
   box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px rgba(var(--brand-rgb), 0.08);
 }

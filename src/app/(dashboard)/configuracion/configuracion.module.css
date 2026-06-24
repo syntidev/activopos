@@ -9,6 +9,8 @@
   display: grid;
   grid-template-columns: 260px 1fr;
   min-height: calc(100vh - 56px);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .configSidebar {
@@ -481,6 +483,12 @@
 .summaryLabel {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
+}
+
+.usersTableWrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .usersTable {

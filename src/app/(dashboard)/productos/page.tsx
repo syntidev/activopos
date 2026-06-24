@@ -477,8 +477,8 @@ export default function ProductosPage() {
         </div>
       </div>
 
-      {/* ── Toolbar ── */}
-      <div className={styles.toolbar}>
+      {/* ── Filter row: search + status tabs + count ── */}
+      <div className={styles.filterRow}>
         <div className={styles.searchWrapper}>
           <Search size={15} className={styles.searchIcon} aria-hidden="true" />
           <input
@@ -491,27 +491,26 @@ export default function ProductosPage() {
           />
         </div>
 
+        <div className={styles.statusTabsBar} role="tablist" aria-label="Filtrar por estado">
+          {(['all', 'active', 'inactive'] as const).map(s => (
+            <button
+              key={s}
+              role="tab"
+              type="button"
+              className={`${styles.statusTab} ${statusFilter === s ? styles.statusTabActive : ''}`}
+              onClick={() => setStatusFilter(s)}
+              aria-selected={statusFilter === s}
+            >
+              {{ all: 'Todos', active: 'Activos', inactive: 'Inactivos' }[s]}
+            </button>
+          ))}
+        </div>
+
         {!isLoading && products.length > 0 && (
           <span className={styles.countInfo}>
             {products.length} {products.length === 1 ? 'producto' : 'productos'}
           </span>
         )}
-      </div>
-
-      {/* ── Status filter tabs (FIX 3) ── */}
-      <div className={styles.statusTabsBar} role="tablist" aria-label="Filtrar por estado">
-        {(['all', 'active', 'inactive'] as const).map(s => (
-          <button
-            key={s}
-            role="tab"
-            type="button"
-            className={`${styles.statusTab} ${statusFilter === s ? styles.statusTabActive : ''}`}
-            onClick={() => setStatusFilter(s)}
-            aria-selected={statusFilter === s}
-          >
-            {{ all: 'Todos', active: 'Activos', inactive: 'Inactivos' }[s]}
-          </button>
-        ))}
       </div>
 
       {/* ── Category tabs ── */}

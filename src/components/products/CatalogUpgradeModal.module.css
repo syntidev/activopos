@@ -28,8 +28,8 @@
   position: absolute;
   top: var(--space-3);
   right: var(--space-3);
-  width: 28px;
-  height: 28px;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   border: none;
   background: var(--color-surface-2);
   border-radius: var(--radius-full);

@@ -168,8 +168,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;
@@ -233,8 +233,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   border-radius: var(--radius-sm);
   background: var(--color-surface-3);
   border: var(--border-width-thin) solid var(--color-border);
@@ -274,8 +274,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;

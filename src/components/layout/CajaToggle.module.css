@@ -13,7 +13,7 @@
   gap: var(--space-2);
   padding: var(--space-1-5) var(--space-3);
   border-radius: var(--radius-full);
-  height: 32px;
+  min-height: var(--touch-min);
   border: 1px solid;
   cursor: pointer;
   font-family: var(--font-sans);

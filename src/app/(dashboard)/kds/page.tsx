@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChefHat, Clock, CheckCheck, RefreshCw, Settings, Utensils } from 'lucide-react'
+import { ChefHat, Clock, CheckCheck, RefreshCw, Settings, Utensils, UtensilsCrossed, Pizza, Package, Croissant } from 'lucide-react'
 import Link from 'next/link'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './kds.module.css'
@@ -57,10 +57,10 @@ function KDSActivation() {
 
         <div className={styles.segmentList} aria-label="Ideal para">
           {[
-            { icon: '🍽️', label: 'Restaurantes y cafeterías' },
-            { icon: '🍕', label: 'Cocinas con pedidos por WhatsApp' },
-            { icon: '📦', label: 'Despacho y preparación de pedidos' },
-            { icon: '🥐', label: 'Panaderías y pastelerías' },
+            { icon: <UtensilsCrossed size={18} />, label: 'Restaurantes y cafeterías' },
+            { icon: <Pizza size={18} />, label: 'Cocinas con pedidos por WhatsApp' },
+            { icon: <Package size={18} />, label: 'Despacho y preparación de pedidos' },
+            { icon: <Croissant size={18} />, label: 'Panaderías y pastelerías' },
           ].map(item => (
             <div key={item.label} className={styles.segmentItem}>
               <span aria-hidden="true">{item.icon}</span>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { getBcvRate } from '@/lib/bcv'
 import HeroSection from '@/components/marketing/sections/HeroSection'
 import TickerSection from '@/components/marketing/sections/TickerSection'
 import SegmentsSection from '@/components/marketing/sections/SegmentsSection'
@@ -24,19 +25,10 @@ export const metadata: Metadata = {
   },
 }
 
-async function fetchBCVRate(): Promise<number> {
-  try {
-    const port = process.env.PORT ?? '3001'
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? `http://localhost:${port}`
-    const res = await fetch(`${base}/api/rates/bcv`, { next: { revalidate: 300 } })
-    const data = await res.json()
-    if (data.ok && data.rate) return parseFloat(data.rate)
-  } catch {}
-  return 0
-}
+export const revalidate = 300
 
 export default async function LandingPage() {
-  const bcvRate = await fetchBCVRate()
+  const bcvRate = await getBcvRate()
 
   return (
     <div className={styles.page}>

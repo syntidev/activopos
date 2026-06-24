@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Zap, Package, Globe, BarChart3, Check, Share2, MessageCircle, Menu, X } from 'lucide-react'
+import { Zap, Package, Globe, BarChart3, Check, Share2, MessageCircle, Menu, X, Store, Beef, Shirt, Coffee, Pill, Hammer, UtensilsCrossed, ShoppingCart } from 'lucide-react'
 import { Space_Grotesk } from 'next/font/google'
 import styles from './landing.module.css'
 
@@ -331,14 +331,14 @@ export default function LandingPage() {
           </div>
           <div className={styles.segGrid}>
             {[
-              { icon: '🛒', label: 'Bodega' },
-              { icon: '🥩', label: 'Carnicería' },
-              { icon: '👗', label: 'Boutique' },
-              { icon: '☕', label: 'Café' },
-              { icon: '💊', label: 'Farmacia' },
-              { icon: '🔧', label: 'Ferretería' },
-              { icon: '🍽️', label: 'Restaurante' },
-              { icon: '🏪', label: 'Minimarket' },
+              { icon: <Store size={18} />, label: 'Bodega' },
+              { icon: <Beef size={18} />, label: 'Carnicería' },
+              { icon: <Shirt size={18} />, label: 'Boutique' },
+              { icon: <Coffee size={18} />, label: 'Café' },
+              { icon: <Pill size={18} />, label: 'Farmacia' },
+              { icon: <Hammer size={18} />, label: 'Ferretería' },
+              { icon: <UtensilsCrossed size={18} />, label: 'Restaurante' },
+              { icon: <ShoppingCart size={18} />, label: 'Minimarket' },
             ].map(({ icon, label }) => (
               <div key={label} className={styles.segChip}>
                 <span className={styles.segChipIcon} aria-hidden="true">{icon}</span>

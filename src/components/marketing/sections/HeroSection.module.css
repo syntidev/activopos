@@ -333,6 +333,17 @@
   z-index: 1;
 }
 
+@media (max-width: 900px) {
+  .appFrame {
+    height: auto;
+    min-height: 320px;
+    grid-template-columns: 1fr;
+  }
+  .appSidebar {
+    display: none;
+  }
+}
+
 /* ── Sidebar ── */
 .appSidebar {
   background: #060F1C;

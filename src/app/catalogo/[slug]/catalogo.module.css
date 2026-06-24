@@ -755,8 +755,8 @@
   backdrop-filter: blur(8px);
   border:          none;
   cursor:          pointer;
-  width:           32px;
-  height:          32px;
+  min-width:       var(--touch-min);
+  min-height:      var(--touch-min);
   border-radius:   var(--radius-full);
   display:         flex;
   align-items:     center;
@@ -845,8 +845,8 @@
   background:  none;
   border:      none;
   cursor:      pointer;
-  width:       40px;
-  height:      40px;
+  min-width:   var(--touch-min);
+  min-height:  var(--touch-min);
   display:     flex;
   align-items: center;
   justify-content: center;
@@ -1139,8 +1139,8 @@
   background:  none;
   border:      none;
   cursor:      pointer;
-  width:       30px;
-  height:      30px;
+  min-width:   var(--touch-min);
+  min-height:  var(--touch-min);
   display:     flex;
   align-items: center;
   justify-content:center;

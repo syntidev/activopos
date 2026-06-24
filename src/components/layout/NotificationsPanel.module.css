@@ -19,6 +19,18 @@
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
 }
 
+@media (max-width: 767px) {
+  .panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: min(480px, 90dvh);
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
 /* ── Header ── */
 .header {
   display: flex;
@@ -54,7 +66,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  height: 30px;
+  min-height: var(--touch-min);
   padding: 0 var(--space-2-5);
   background: none;
   border: 1px solid var(--color-border);

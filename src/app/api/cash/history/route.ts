@@ -84,17 +84,29 @@ export async function GET(req: NextRequest) {
     const diferencia =
       efectivoContado !== null ? efectivoContado - efectivoEsperado : null
 
+    const countedUsd     = reg.closing_amount_usd ? Number(reg.closing_amount_usd) : null
+    const differenceUsd  = countedUsd !== null
+      ? Math.round((countedUsd - totalVentasUsd) * 100) / 100
+      : null
+
     return {
-      id: reg.id,
+      // Spec-required fields
+      id:                 reg.id,
+      opened_at:          reg.opened_at.toISOString(),
+      closed_at:          reg.closed_at ? reg.closed_at.toISOString() : null,
+      opening_amount_usd: Number(reg.opening_amount_usd),
+      expected_usd:       Math.round(totalVentasUsd * 100) / 100,
+      counted_usd:        countedUsd,
+      difference_usd:     differenceUsd,
+      sales_count:        regSales.length,
+      // Extended fields
       openedAt: reg.opened_at,
       closedAt: reg.closed_at,
       cashierName: reg.cashier.name,
       openingAmountBs: Number(reg.opening_amount_bs),
       openingAmountUsd: Number(reg.opening_amount_usd),
       closingAmountBs: efectivoContado,
-      closingAmountUsd: reg.closing_amount_usd
-        ? Number(reg.closing_amount_usd)
-        : null,
+      closingAmountUsd: countedUsd,
       rateAtOpen: Number(reg.rate_at_open),
       closeNotes: reg.close_notes,
       salesCount: regSales.length,

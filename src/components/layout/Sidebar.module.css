@@ -50,7 +50,7 @@
 
 .logoDot {
   font-size: var(--text-xl);
-  color: var(--color-brand);
+  color: var(--cta);
   flex-shrink: 0;
   line-height: 1;
   width: 20px;
@@ -77,6 +77,14 @@
   font-weight: var(--weight-extrabold);
   letter-spacing: var(--tracking-tight);
   color: var(--sidebar-text-active);
+}
+
+.logoImg {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
 }
 
 /* ── Divider ── */

@@ -41,8 +41,8 @@ export async function GET(req: NextRequest) {
   }
 
   const [year, month, day] = dateStr.split('-').map(Number)
-  const dayStart = new Date(year, month - 1, day)
-  const dayEnd   = new Date(dayStart.getTime() + 86_400_000)
+  const dayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+  const dayEnd   = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0))
 
   const [
     salesAgg,

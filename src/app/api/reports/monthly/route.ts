@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
   }
 
   const [year, month] = periodParam.split('-').map(Number)
-  const monthStart    = new Date(year, month - 1, 1)
-  const monthEnd      = new Date(year, month, 1)
+  const monthStart    = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
+  const monthEnd      = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
 
   const [salesAgg, dailyRaw, weeklyRaw, report] = await Promise.all([
     prisma.sale.aggregate({

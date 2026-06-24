@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
 
   const { from: fromStr, to: toStr } = parsed.data
   const bid  = session.businessId
-  const from = new Date(`${fromStr}T00:00:00`)
-  const to   = new Date(`${toStr}T23:59:59.999`)
+  const from = new Date(`${fromStr}T00:00:00Z`)
+  const to   = new Date(`${toStr}T23:59:59.999Z`)
 
   const [salesAgg, profitRows, byDayRows] = await Promise.all([
     prisma.sale.aggregate({

@@ -606,3 +606,254 @@
   .tr, .rowActionBtn, .btnAction, .btnPrimary { transition: none; }
   .catTab { transition: none; }
 }
+
+/* ── Status filter tabs (FIX 3) ── */
+.statusTabsBar {
+  display:    flex;
+  gap:        var(--space-1);
+  padding:    var(--space-1);
+  background: var(--color-surface-2);
+  border:     1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  width:      fit-content;
+}
+
+.statusTab {
+  padding:       var(--space-1-5) var(--space-4);
+  background:    none;
+  border:        none;
+  border-radius: var(--radius-md);
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-medium);
+  color:         var(--color-text-muted);
+  cursor:        pointer;
+  transition:    background var(--transition-fast), color var(--transition-fast);
+  white-space:   nowrap;
+  min-height:    var(--touch-min);
+}
+
+.statusTab:hover { color: var(--color-text-primary); }
+
+.statusTabActive {
+  background:  var(--color-surface);
+  color:       var(--color-brand);
+  font-weight: var(--weight-semibold);
+  box-shadow:  0 1px 3px rgba(0,0,0,0.07);
+}
+
+/* ── Inactive row (FIX 3) ── */
+.trInactive { opacity: 0.6; }
+
+/* ── Inactive badge (FIX 3) ── */
+.productNameRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  flex-wrap:   wrap;
+}
+
+.inactiveBadge {
+  display:       inline-flex;
+  align-items:   center;
+  padding:       2px var(--space-2);
+  background:    var(--color-surface-3);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size:     10px;
+  font-weight:   var(--weight-semibold);
+  color:         var(--color-text-muted);
+  white-space:   nowrap;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* ── Toggle switch (FIX 3) ── */
+.toggle {
+  position:   relative;
+  display:    inline-flex;
+  align-items: center;
+  cursor:     pointer;
+  flex-shrink: 0;
+}
+
+.toggleInput {
+  position: absolute;
+  opacity:  0;
+  width:    0;
+  height:   0;
+}
+
+.toggleTrack {
+  display:       block;
+  width:         34px;
+  height:        18px;
+  background:    var(--color-surface-3);
+  border:        1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  transition:    background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.toggle:has(.toggleInput:checked) .toggleTrack {
+  background:   rgba(var(--success-rgb, 22, 163, 74), 0.15);
+  border-color: var(--color-success-border);
+}
+
+.toggleThumb {
+  position:      absolute;
+  top:           3px;
+  left:          3px;
+  width:         12px;
+  height:        12px;
+  background:    var(--color-text-muted);
+  border-radius: var(--radius-full);
+  transition:    transform var(--transition-fast), background var(--transition-fast);
+}
+
+.toggle:has(.toggleInput:checked) .toggleThumb {
+  transform:  translateX(16px);
+  background: var(--color-success-text);
+}
+
+/* ── Sortable column headers (FIX 4) ── */
+.sortTh {
+  display:     inline-flex;
+  align-items: center;
+  gap:         3px;
+  background:  none;
+  border:      none;
+  padding:     0;
+  font-size:   inherit;
+  font-weight: inherit;
+  color:       inherit;
+  font-family: inherit;
+  cursor:      pointer;
+  white-space: nowrap;
+  transition:  color var(--transition-fast);
+}
+.sortTh:hover { color: var(--color-brand); }
+
+.sortIdle { opacity: 0.35; }
+
+/* ── Delete confirmation modal (FIX 2) ── */
+.deleteOverlay {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(0,0,0,0.45);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  z-index:         var(--z-modal);
+  padding:         var(--space-4);
+}
+
+.deletePanel {
+  width:          100%;
+  max-width:      440px;
+  background:     var(--color-surface);
+  border:         1px solid var(--color-border);
+  border-radius:  var(--radius-xl);
+  padding:        var(--space-6);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-4);
+  box-shadow:     0 8px 32px rgba(0,0,0,0.18);
+}
+
+.deletePanelHeader {
+  display:     flex;
+  align-items: flex-start;
+  gap:         var(--space-3);
+}
+
+.deletePanelIcon {
+  flex-shrink: 0;
+  color:       var(--color-danger-text);
+  margin-top:  2px;
+}
+
+.deletePanelIconWarning {
+  flex-shrink: 0;
+  color:       var(--color-warning-text, var(--cta));
+  margin-top:  2px;
+}
+
+.deletePanelTitle {
+  font-size:   var(--text-base);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+  margin:      0;
+  line-height: 1.3;
+}
+
+.deletePanelMsg {
+  font-size:   var(--text-sm);
+  color:       var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin:      0;
+}
+
+.deletePanelActions {
+  display:         flex;
+  justify-content: flex-end;
+  gap:             var(--space-2);
+  flex-wrap:       wrap;
+}
+
+.deleteBtnCancel {
+  padding:       0 var(--space-4);
+  min-height:    var(--touch-min);
+  background:    var(--color-surface-2);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-medium);
+  color:         var(--color-text-secondary);
+  font-family:   inherit;
+  cursor:        pointer;
+  transition:    background var(--transition-fast);
+}
+.deleteBtnCancel:hover { background: var(--color-surface-3); }
+.deleteBtnCancel:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.deleteBtnDeactivate {
+  padding:       0 var(--space-4);
+  min-height:    var(--touch-min);
+  background:    var(--color-brand);
+  border:        none;
+  border-radius: var(--radius-md);
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-semibold);
+  color:         #fff;
+  font-family:   inherit;
+  cursor:        pointer;
+  transition:    background var(--transition-fast);
+}
+.deleteBtnDeactivate:hover:not(:disabled) { background: var(--color-brand-hover); }
+.deleteBtnDeactivate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.deleteBtnForce {
+  padding:       0 var(--space-4);
+  min-height:    var(--touch-min);
+  background:    var(--color-danger-subtle);
+  border:        1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-semibold);
+  color:         var(--color-danger-text);
+  font-family:   inherit;
+  cursor:        pointer;
+  transition:    background var(--transition-fast);
+}
+.deleteBtnForce:hover:not(:disabled) { background: var(--color-danger); color: #fff; }
+.deleteBtnForce:disabled { opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .deletePanelActions { flex-direction: column-reverse; }
+  .deleteBtnCancel, .deleteBtnDeactivate, .deleteBtnForce { width: 100%; text-align: center; }
+  .statusTabsBar { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle .toggleTrack, .toggle .toggleThumb { transition: none; }
+  .statusTab, .deleteBtnCancel, .deleteBtnDeactivate, .deleteBtnForce { transition: none; }
+}

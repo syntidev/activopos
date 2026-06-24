@@ -44,7 +44,7 @@ interface NavItem {
   label: string
   moduleKey?: string
   colorKey?: string
-  badgeKey?: 'pending_orders' | 'critical_stock'
+  badgeKey?: 'pending_orders'
 }
 
 interface NavGroup {
@@ -71,7 +71,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'INVENTARIO',
     items: [
-      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory', colorKey: 'inventario', badgeKey: 'critical_stock' },
+      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory', colorKey: 'inventario' },
     ],
   },
   {
@@ -224,22 +224,14 @@ function NavContent({
                           strokeWidth={isActive ? 2.25 : 1.75}
                           aria-hidden="true"
                         />
-                        {(() => {
-                          const count = item.badgeKey === 'pending_orders'
-                            ? (sidebarCounts?.pendingOrders ?? 0)
-                            : item.badgeKey === 'critical_stock'
-                              ? (sidebarCounts?.criticalStock ?? 0)
-                              : 0
-                          if (count <= 0) return null
-                          return (
-                            <span
-                              className={item.badgeKey === 'pending_orders' ? styles.itemBadgeRed : styles.itemBadgeOrange}
-                              aria-label={`${count} alertas`}
-                            >
-                              {count > 9 ? '9+' : count}
-                            </span>
-                          )
-                        })()}
+                        {item.badgeKey === 'pending_orders' && (sidebarCounts?.pendingOrders ?? 0) > 0 && (
+                          <span
+                            className={styles.itemBadgeRed}
+                            aria-label={`${sidebarCounts?.pendingOrders} pedidos pendientes`}
+                          >
+                            {(sidebarCounts?.pendingOrders ?? 0) > 9 ? '9+' : sidebarCounts?.pendingOrders}
+                          </span>
+                        )}
                       </span>
                       <AnimatePresence initial={false}>
                         {!collapsed && (

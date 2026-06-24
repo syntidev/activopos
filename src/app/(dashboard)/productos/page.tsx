@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Plus,
   Search,
@@ -9,9 +9,11 @@ import {
   Edit2,
   Trash2,
   SlidersHorizontal,
-  Eye,
-  EyeOff,
   Layers,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
+  AlertTriangle,
 } from 'lucide-react'
 import { ProductModal } from '@/components/products/ProductModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
@@ -149,6 +151,30 @@ export default function ProductosPage() {
   const [showImportModal, setShowImportModal] = useState(false)
   const [stockProduct, setStockProduct]   = useState<Product | null>(null)
 
+  /* ── Status filter (FIX 3) ── */
+  type StatusFilter = 'all' | 'active' | 'inactive'
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+
+  /* ── Sort state (FIX 4) ── */
+  type ProdSortKey = 'name' | 'price' | 'stock' | 'utility' | 'category'
+  type SortDir = 'asc' | 'desc'
+  const [sortKey, setSortKey] = useState<ProdSortKey | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+  const handleSort = (key: ProdSortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  /* ── Delete modal state (FIX 2) ── */
+  type DeletePhase = 'confirm' | 'has_history'
+  interface DeleteModal { product: Product; phase: DeletePhase; saving: boolean }
+  const [deleteModal, setDeleteModal] = useState<DeleteModal | null>(null)
+
   /* ── Debounced search ── */
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -259,18 +285,83 @@ export default function ProductosPage() {
     if (!isEdit) await fetchCategories()
   }, [editProduct, fetchProducts, fetchCategories])
 
-  const handleDeleteProduct = useCallback(async (product: Product) => {
-    if (!confirm(`¿Eliminar "${product.name}"? Esta acción no se puede deshacer.`)) return
+  /* ── Delete handlers (FIX 2) ── */
+  const handleDeleteClick = useCallback((product: Product) => {
+    setDeleteModal({ product, phase: 'confirm', saving: false })
+  }, [])
 
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteModal) return
+    setDeleteModal(m => m ? { ...m, saving: true } : null)
     try {
-      const res = await fetch(`/api/products/${product.id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/products/${deleteModal.product.id}`, { method: 'DELETE' })
       if (res.ok) {
-        setProducts((prev) => prev.filter((p) => p.id !== product.id))
+        setProducts(prev => prev.filter(p => p.id !== deleteModal.product.id))
+        setDeleteModal(null)
+      } else if (res.status === 409) {
+        setDeleteModal(m => m ? { ...m, phase: 'has_history', saving: false } : null)
+      } else {
+        setDeleteModal(m => m ? { ...m, saving: false } : null)
       }
     } catch {
-      // Ignore
+      setDeleteModal(m => m ? { ...m, saving: false } : null)
     }
-  }, [])
+  }, [deleteModal])
+
+  const handleDeactivateProduct = useCallback(async () => {
+    if (!deleteModal) return
+    setDeleteModal(m => m ? { ...m, saving: true } : null)
+    try {
+      await fetch(`/api/products/${deleteModal.product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_available: false }),
+      })
+      setProducts(prev => prev.map(p =>
+        p.id === deleteModal.product.id ? { ...p, is_available: false } : p
+      ))
+      setDeleteModal(null)
+    } catch {
+      setDeleteModal(m => m ? { ...m, saving: false } : null)
+    }
+  }, [deleteModal])
+
+  const handleForceDelete = useCallback(async () => {
+    if (!deleteModal) return
+    setDeleteModal(m => m ? { ...m, saving: true } : null)
+    try {
+      const res = await fetch(`/api/products/${deleteModal.product.id}?force=true`, { method: 'DELETE' })
+      if (res.ok) {
+        setProducts(prev => prev.filter(p => p.id !== deleteModal.product.id))
+        setDeleteModal(null)
+      } else {
+        setDeleteModal(m => m ? { ...m, saving: false } : null)
+      }
+    } catch {
+      setDeleteModal(m => m ? { ...m, saving: false } : null)
+    }
+  }, [deleteModal])
+
+  /* ── Display list: filter + sort (FIX 3 + FIX 4) ── */
+  const displayProducts = useMemo(() => {
+    let list = products
+    if (statusFilter === 'active')   list = list.filter(p => p.is_available !== false)
+    if (statusFilter === 'inactive') list = list.filter(p => p.is_available === false)
+    if (!sortKey) return list
+    return [...list].sort((a, b) => {
+      let cmp = 0
+      if (sortKey === 'name')     cmp = a.name.localeCompare(b.name)
+      if (sortKey === 'price')    cmp = a.price_per_unit_usd - b.price_per_unit_usd
+      if (sortKey === 'stock')    cmp = a.stock_quantity - b.stock_quantity
+      if (sortKey === 'utility') {
+        const ua = a.cost_per_unit_usd !== null ? a.price_per_unit_usd - a.cost_per_unit_usd : -Infinity
+        const ub = b.cost_per_unit_usd !== null ? b.price_per_unit_usd - b.cost_per_unit_usd : -Infinity
+        cmp = ua - ub
+      }
+      if (sortKey === 'category') cmp = (a.category?.name ?? '').localeCompare(b.category?.name ?? '')
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [products, statusFilter, sortKey, sortDir])
 
   const handleSaveCategory = useCallback(async (name: string, color: string) => {
     const res = await fetch('/api/products/categories', {
@@ -407,6 +498,22 @@ export default function ProductosPage() {
         )}
       </div>
 
+      {/* ── Status filter tabs (FIX 3) ── */}
+      <div className={styles.statusTabsBar} role="tablist" aria-label="Filtrar por estado">
+        {(['all', 'active', 'inactive'] as const).map(s => (
+          <button
+            key={s}
+            role="tab"
+            type="button"
+            className={`${styles.statusTab} ${statusFilter === s ? styles.statusTabActive : ''}`}
+            onClick={() => setStatusFilter(s)}
+            aria-selected={statusFilter === s}
+          >
+            {{ all: 'Todos', active: 'Activos', inactive: 'Inactivos' }[s]}
+          </button>
+        ))}
+      </div>
+
       {/* ── Category tabs ── */}
       {categories.length > 0 && (
         <div className={styles.tabsBar} role="tablist" aria-label="Filtrar por categoría">
@@ -417,7 +524,7 @@ export default function ProductosPage() {
             onClick={() => setSelectedCategory('')}
             aria-selected={selectedCategory === ''}
           >
-            Todos
+            Todas las categorías
           </button>
           {categories.map((cat) => (
             <button
@@ -440,14 +547,32 @@ export default function ProductosPage() {
           <table className={styles.table} aria-label="Lista de productos">
             <thead>
               <tr>
-                <th className={styles.th}>Producto</th>
-                <th className={styles.th}>Precio (REF)</th>
-                <th className={styles.th}>Precio (Bs)</th>
-                <th className={styles.th}>Stock</th>
-                <th className={styles.th}>Utilidad</th>
-                <th className={`${styles.th} ${styles.tdCenter}`}>
-                  <Eye size={14} aria-hidden="true" />
+                <th className={styles.th}>
+                  <button type="button" className={styles.sortTh} onClick={() => handleSort('name')}>
+                    Producto
+                    {sortKey === 'name' ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                  </button>
                 </th>
+                <th className={styles.th}>
+                  <button type="button" className={styles.sortTh} onClick={() => handleSort('price')}>
+                    Precio (REF)
+                    {sortKey === 'price' ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                  </button>
+                </th>
+                <th className={styles.th}>Precio (Bs)</th>
+                <th className={styles.th}>
+                  <button type="button" className={styles.sortTh} onClick={() => handleSort('stock')}>
+                    Stock
+                    {sortKey === 'stock' ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                  </button>
+                </th>
+                <th className={styles.th}>
+                  <button type="button" className={styles.sortTh} onClick={() => handleSort('utility')}>
+                    Utilidad
+                    {sortKey === 'utility' ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                  </button>
+                </th>
+                <th className={`${styles.th} ${styles.tdCenter}`}>Activo</th>
                 <th className={`${styles.th} ${styles.tdRight}`}>
                   <SlidersHorizontal size={14} aria-hidden="true" />
                 </th>
@@ -486,56 +611,50 @@ export default function ProductosPage() {
                     </div>
                   </td>
                 </tr>
+              ) : displayProducts.length === 0 && statusFilter !== 'all' ? (
+                <tr>
+                  <td colSpan={7}>
+                    <div className={styles.emptyState}>
+                      <div className={styles.emptyIcon}><Package size={24} aria-hidden="true" /></div>
+                      <p className={styles.emptyTitle}>
+                        No hay productos {statusFilter === 'active' ? 'activos' : 'inactivos'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
               ) : (
-                products.map((product) => {
-                  const stockLevel = product.sale_mode === 'service'
-                    ? null
-                    : getStockLevel(product.stock_quantity, product.min_stock)
-
-                  const utility = product.cost_per_unit_usd !== null
-                    ? product.price_per_unit_usd - product.cost_per_unit_usd
-                    : null
-
-                  const catBadgeClass = product.category
-                    ? CAT_BADGE[product.category.color] ?? styles.catGray
-                    : null
+                displayProducts.map((product) => {
+                  const isInactive  = product.is_available === false
+                  const stockLevel  = product.sale_mode === 'service' ? null : getStockLevel(product.stock_quantity, product.min_stock)
+                  const utility     = product.cost_per_unit_usd !== null ? product.price_per_unit_usd - product.cost_per_unit_usd : null
+                  const catBadgeClass = product.category ? CAT_BADGE[product.category.color] ?? styles.catGray : null
 
                   return (
                     <tr
                       key={product.id}
-                      className={`${styles.tr} ${(product.is_available === false) ? styles.trUnavailable : ''}`}
+                      className={`${styles.tr} ${isInactive ? styles.trInactive : ''}`}
                     >
                       {/* PRODUCTO */}
                       <td className={styles.td}>
                         <div className={styles.productCell}>
                           {product.image_path ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={product.image_path}
-                              alt={product.name}
-                              className={styles.productThumb}
-                            />
+                            <img src={product.image_path} alt={product.name} className={styles.productThumb} />
                           ) : (
-                            <div className={styles.productThumbEmpty}>
-                              <Package size={14} aria-hidden="true" />
-                            </div>
+                            <div className={styles.productThumbEmpty}><Package size={14} aria-hidden="true" /></div>
                           )}
                           <div className={styles.productInfo}>
-                            <span className={styles.productName}>{product.name}</span>
+                            <div className={styles.productNameRow}>
+                              <span className={styles.productName}>{product.name}</span>
+                              {isInactive && <span className={styles.inactiveBadge}>Inactivo</span>}
+                            </div>
                             <div className={styles.productMeta}>
                               {product.category && catBadgeClass && (
-                                <span className={`${styles.categoryBadge} ${catBadgeClass}`}>
-                                  {product.category.name}
-                                </span>
+                                <span className={`${styles.categoryBadge} ${catBadgeClass}`}>{product.category.name}</span>
                               )}
-                              <span className={styles.saleModeTag}>
-                                {SALE_MODE_LABEL[product.sale_mode]}
-                              </span>
+                              <span className={styles.saleModeTag}>{SALE_MODE_LABEL[product.sale_mode]}</span>
                               {product.has_variants && (
-                                <span className={styles.variantBadge}>
-                                  <Layers size={10} aria-hidden="true" />
-                                  Variantes
-                                </span>
+                                <span className={styles.variantBadge}><Layers size={10} aria-hidden="true" /> Variantes</span>
                               )}
                             </div>
                           </div>
@@ -543,102 +662,66 @@ export default function ProductosPage() {
                       </td>
 
                       {/* PRECIO REF */}
-                      <td className={styles.td}>
-                        <span className={styles.priceRef}>
-                          {fmtUsd(product.price_per_unit_usd)}
-                        </span>
-                      </td>
+                      <td className={styles.td}><span className={styles.priceRef}>{fmtUsd(product.price_per_unit_usd)}</span></td>
 
                       {/* PRECIO BS */}
-                      <td className={styles.td}>
-                        <span className={styles.priceBs}>
-                          {fmtBs(product.price_per_unit_usd, bcvRate)}
-                        </span>
-                      </td>
+                      <td className={styles.td}><span className={styles.priceBs}>{fmtBs(product.price_per_unit_usd, bcvRate)}</span></td>
 
                       {/* STOCK */}
                       <td className={styles.td}>
                         {stockLevel === null ? (
                           <span className={styles.stockNone}>—</span>
                         ) : stockLevel === 'out' ? (
-                          <span className={`${styles.stockBadge} ${styles.stockOut}`}>
-                            Agotado
-                          </span>
+                          <span className={`${styles.stockBadge} ${styles.stockOut}`}>Agotado</span>
                         ) : (
-                          <span
-                            className={`${styles.stockBadge} ${
-                              stockLevel === 'low' ? styles.stockLow : styles.stockOk
-                            }`}
-                          >
-                            {product.stock_quantity}
-                            {product.sale_mode === 'weight' ? ' kg' : ' und'}
+                          <span className={`${styles.stockBadge} ${stockLevel === 'low' ? styles.stockLow : styles.stockOk}`}>
+                            {product.stock_quantity}{product.sale_mode === 'weight' ? ' kg' : ' und'}
                           </span>
                         )}
                       </td>
 
                       {/* UTILIDAD */}
                       <td className={styles.td}>
-                        {utility === null ? (
-                          <span className={styles.utilityZero}>—</span>
-                        ) : (
-                          <span
-                            className={
-                              utility > 0
-                                ? styles.utilityPos
-                                : utility < 0
-                                  ? styles.utilityNeg
-                                  : styles.utilityZero
-                            }
-                          >
+                        {utility === null ? <span className={styles.utilityZero}>—</span> : (
+                          <span className={utility > 0 ? styles.utilityPos : utility < 0 ? styles.utilityNeg : styles.utilityZero}>
                             {fmtUsd(utility)}
                           </span>
                         )}
                       </td>
 
-                      {/* DISPONIBLE */}
+                      {/* TOGGLE ACTIVO (FIX 3) */}
                       <td className={`${styles.td} ${styles.tdCenter}`}>
-                        <button
-                          type="button"
-                          className={`${styles.rowActionBtn} ${(product.is_available === false) ? styles.rowActionOff : ''}`}
-                          title={product.is_available === false ? 'Activar producto' : 'Desactivar producto'}
-                          aria-label={product.is_available === false ? `Activar ${product.name}` : `Desactivar ${product.name}`}
-                          onClick={() => handleToggleAvailable(product)}
+                        <label
+                          className={styles.toggle}
+                          title={isInactive ? 'Activar producto' : 'Desactivar producto'}
+                          aria-label={isInactive ? `Activar ${product.name}` : `Desactivar ${product.name}`}
                         >
-                          {product.is_available === false
-                            ? <EyeOff size={15} aria-hidden="true" />
-                            : <Eye size={15} aria-hidden="true" />}
-                        </button>
+                          <input
+                            type="checkbox"
+                            className={styles.toggleInput}
+                            checked={!isInactive}
+                            onChange={() => handleToggleAvailable(product)}
+                          />
+                          <span className={styles.toggleTrack} />
+                          <span className={styles.toggleThumb} />
+                        </label>
                       </td>
 
                       {/* ACCIONES */}
                       <td className={`${styles.td} ${styles.tdRight}`}>
                         <div className={styles.rowActions} role="group" aria-label={`Acciones: ${product.name}`}>
-                          <button
-                            type="button"
-                            className={styles.rowActionBtn}
-                            title="Ajustar stock"
+                          <button type="button" className={styles.rowActionBtn} title="Ajustar stock"
                             aria-label={`Ajustar stock de ${product.name}`}
-                            onClick={() => setStockProduct(product)}
-                            disabled={product.sale_mode === 'service'}
-                          >
+                            onClick={() => setStockProduct(product)} disabled={product.sale_mode === 'service'}>
                             <Package size={15} aria-hidden="true" />
                           </button>
-                          <button
-                            type="button"
-                            className={styles.rowActionBtn}
-                            title="Editar producto"
-                            aria-label={`Editar ${product.name}`}
-                            onClick={() => openEdit(product)}
-                          >
+                          <button type="button" className={styles.rowActionBtn} title="Editar producto"
+                            aria-label={`Editar ${product.name}`} onClick={() => openEdit(product)}>
                             <Edit2 size={15} aria-hidden="true" />
                           </button>
-                          <button
-                            type="button"
-                            className={`${styles.rowActionBtn} ${styles.rowActionDanger}`}
-                            title="Eliminar producto"
-                            aria-label={`Eliminar ${product.name}`}
-                            onClick={() => handleDeleteProduct(product)}
-                          >
+                          <button type="button" className={`${styles.rowActionBtn} ${styles.rowActionDanger}`}
+                            title="Eliminar producto" aria-label={`Eliminar ${product.name}`}
+                            onClick={() => handleDeleteClick(product)}>
                             <Trash2 size={15} aria-hidden="true" />
                           </button>
                         </div>
@@ -690,6 +773,72 @@ export default function ProductosPage() {
         onClose={() => setStockProduct(null)}
         onSave={handleSaveStock}
       />
+
+      {/* ── Delete confirmation modal (FIX 2) ── */}
+      {deleteModal && (
+        <div className={styles.deleteOverlay} onClick={() => !deleteModal.saving && setDeleteModal(null)}>
+          <div className={styles.deletePanel} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+            {deleteModal.phase === 'confirm' ? (
+              <>
+                <div className={styles.deletePanelHeader}>
+                  <Trash2 size={20} className={styles.deletePanelIcon} aria-hidden="true" />
+                  <h3 className={styles.deletePanelTitle}>¿Eliminar este producto?</h3>
+                </div>
+                <p className={styles.deletePanelMsg}>
+                  Vas a eliminar <strong>{deleteModal.product.name}</strong>. Esta acción no se puede deshacer.
+                </p>
+                <div className={styles.deletePanelActions}>
+                  <button
+                    type="button"
+                    className={styles.deleteBtnCancel}
+                    onClick={() => setDeleteModal(null)}
+                    disabled={deleteModal.saving}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.deleteBtnForce}
+                    onClick={() => void handleConfirmDelete()}
+                    disabled={deleteModal.saving}
+                  >
+                    {deleteModal.saving ? 'Eliminando…' : 'Eliminar'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.deletePanelHeader}>
+                  <AlertTriangle size={20} className={styles.deletePanelIconWarning} aria-hidden="true" />
+                  <h3 className={styles.deletePanelTitle}>Este producto tiene historial de ventas</h3>
+                </div>
+                <p className={styles.deletePanelMsg}>
+                  Si eliminas <strong>{deleteModal.product.name}</strong> perderás el registro de ventas asociado.
+                  Se recomienda desactivarlo para ocultarlo del POS sin borrar el historial.
+                </p>
+                <div className={styles.deletePanelActions}>
+                  <button
+                    type="button"
+                    className={styles.deleteBtnDeactivate}
+                    onClick={() => void handleDeactivateProduct()}
+                    disabled={deleteModal.saving}
+                  >
+                    Desactivar (recomendado)
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.deleteBtnForce}
+                    onClick={() => void handleForceDelete()}
+                    disabled={deleteModal.saving}
+                  >
+                    {deleteModal.saving ? 'Eliminando…' : 'Eliminar de todas formas'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

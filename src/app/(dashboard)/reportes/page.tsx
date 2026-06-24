@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Download, FileSpreadsheet, BarChart2, CreditCard, Package, ChevronUp, ChevronDown, CalendarRange, X } from 'lucide-react'
+import { Download, FileSpreadsheet, BarChart2, CreditCard, Package, ChevronUp, ChevronDown, CalendarRange, X, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { MonthlyReportBanner } from '@/components/reports/MonthlyReportBanner'
@@ -137,7 +137,20 @@ function ReportesContent() {
   const [rangeData,      setRangeData]      = useState<RangeData | null>(null)
   const [rangeLoading,   setRangeLoading]   = useState(false)
   const [rangeOpen,      setRangeOpen]      = useState(false)
+  type ProductSortKey = 'name' | 'quantity' | 'unit' | 'total'
+  type SortDir = 'asc' | 'desc'
+  const [prodSortKey, setProdSortKey] = useState<ProductSortKey | null>(null)
+  const [prodSortDir, setProdSortDir] = useState<SortDir>('asc')
   const initRef = useRef(false)
+
+  const handleProdSort = (key: ProductSortKey) => {
+    if (prodSortKey === key) {
+      setProdSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setProdSortKey(key)
+      setProdSortDir('asc')
+    }
+  }
 
   useEffect(() => {
     fetch('/api/config/business')
@@ -486,28 +499,60 @@ function ReportesContent() {
                 <table className={styles.reportTable}>
                   <thead>
                     <tr>
-                      <th className={`${styles.th} ${styles.colProducto}`}>Producto</th>
-                      <th className={`${styles.th} ${styles.colCant}`}>Cant.</th>
-                      <th className={`${styles.th} ${styles.colPrecio}`}>P. Unit.</th>
-                      <th className={`${styles.th} ${styles.colTotal}`}>Total</th>
+                      <th className={`${styles.th} ${styles.colProducto}`}>
+                        <button type="button" className={styles.sortTh} onClick={() => handleProdSort('name')}>
+                          Producto
+                          {prodSortKey === 'name' ? (prodSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                        </button>
+                      </th>
+                      <th className={`${styles.th} ${styles.colCant}`}>
+                        <button type="button" className={styles.sortTh} onClick={() => handleProdSort('quantity')}>
+                          Cant.
+                          {prodSortKey === 'quantity' ? (prodSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                        </button>
+                      </th>
+                      <th className={`${styles.th} ${styles.colPrecio}`}>
+                        <button type="button" className={styles.sortTh} onClick={() => handleProdSort('unit')}>
+                          P. Unit.
+                          {prodSortKey === 'unit' ? (prodSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                        </button>
+                      </th>
+                      <th className={`${styles.th} ${styles.colTotal}`}>
+                        <button type="button" className={styles.sortTh} onClick={() => handleProdSort('total')}>
+                          Total
+                          {prodSortKey === 'total' ? (prodSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
+                        </button>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {activeData.topProducts.map((p, i) => {
-                      const unitUsd = p.quantity > 0 ? p.totalUsd / p.quantity : 0
-                      return (
-                        <tr key={p.productId} className={i % 2 === 1 ? styles.rowEven : ''}>
-                          <td className={`${styles.td} ${styles.colProducto}`}>{p.name}</td>
-                          <td className={`${styles.td} ${styles.colCant}`}>{p.quantity}</td>
-                          <td className={`${styles.td} ${styles.colPrecio}`}>{fmtUsd(unitUsd)}</td>
-                          <td className={`${styles.td} ${styles.colTotal}`}>
-                            <span className={styles.totalBold}>{fmtUsd(p.totalUsd)}</span>
-                            <br />
-                            <span className={styles.tdSub}>{fmtBs(p.totalBs)}</span>
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    {[...activeData.topProducts]
+                      .sort((a, b) => {
+                        if (!prodSortKey) return 0
+                        const ua = a.quantity > 0 ? a.totalUsd / a.quantity : 0
+                        const ub = b.quantity > 0 ? b.totalUsd / b.quantity : 0
+                        let cmp = 0
+                        if (prodSortKey === 'name')     cmp = a.name.localeCompare(b.name)
+                        if (prodSortKey === 'quantity') cmp = a.quantity - b.quantity
+                        if (prodSortKey === 'unit')     cmp = ua - ub
+                        if (prodSortKey === 'total')    cmp = a.totalUsd - b.totalUsd
+                        return prodSortDir === 'asc' ? cmp : -cmp
+                      })
+                      .map((p, i) => {
+                        const unitUsd = p.quantity > 0 ? p.totalUsd / p.quantity : 0
+                        return (
+                          <tr key={p.productId} className={i % 2 === 1 ? styles.rowEven : ''}>
+                            <td className={`${styles.td} ${styles.colProducto}`}>{p.name}</td>
+                            <td className={`${styles.td} ${styles.colCant}`}>{p.quantity}</td>
+                            <td className={`${styles.td} ${styles.colPrecio}`}>{fmtUsd(unitUsd)}</td>
+                            <td className={`${styles.td} ${styles.colTotal}`}>
+                              <span className={styles.totalBold}>{fmtUsd(p.totalUsd)}</span>
+                              <br />
+                              <span className={styles.tdSub}>{fmtBs(p.totalBs)}</span>
+                            </td>
+                          </tr>
+                        )
+                      })}
                   </tbody>
                 </table>
               </div>

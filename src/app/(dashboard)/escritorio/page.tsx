@@ -163,7 +163,9 @@ export default function EscritorioPage() {
 
   const v        = summary?.ventas
   const delta    = summary?.vs_anterior?.variacion_pct ?? 0
-  const maxQty   = Math.max(...products.map(p => p.qty_sold), 1)
+  const maxQty      = Math.max(...products.map(p => p.qty_sold), 1)
+  const utilityNeta = summary?.resultado?.utilidad_neta_usd ?? 0
+  const utilityIsNeg = !loading && utilityNeta < 0
 
   return (
     <div className={`${styles.page} page-container`}>
@@ -192,30 +194,32 @@ export default function EscritorioPage() {
       {/* ── KPI grid ── */}
       <div className={styles.kpiGrid}>
 
-        {/* KPI 1 — Facturación (teal primary) */}
+        {/* KPI 1 — Facturación */}
         <div
-          className={`${styles.kpiCardColor} ${styles.kpiPrimary}`}
+          className={`${styles.kpiCardWhite} ${styles.kpiBorderBrand}`}
           aria-busy={loading}
           aria-label="Facturación total"
         >
-          <DollarSign size={48} className={styles.kpiBgIcon} aria-hidden="true" />
-          <span className={styles.kpiColorLabel}>Facturación</span>
+          <div className={styles.kpiWhiteHead}>
+            <span className={styles.kpiWhiteLabel}>Facturación</span>
+            <DollarSign size={16} className={styles.kpiIconBrand} aria-hidden="true" />
+          </div>
           {loading ? (
-            <div className={`${styles.skeletonKpiVal} ${styles.skeletonOnColor}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
           ) : (
             <>
-              <span className={styles.kpiColorValue}>{fmtUsd(v?.total_usd ?? 0)}</span>
-              <span className={styles.kpiColorSub}>{fmtBsVal(v?.total_bs ?? 0)}</span>
-              <DeltaBadge pct={delta} colored />
+              <span className={styles.kpiWhiteValue}>{fmtUsd(v?.total_usd ?? 0)}</span>
+              <span className={styles.kpiWhiteSub}>{fmtBsVal(v?.total_bs ?? 0)}</span>
+              <DeltaBadge pct={delta} />
             </>
           )}
         </div>
 
-        {/* KPI 2 — Ticket promedio (white) */}
-        <div className={styles.kpiCardWhite} aria-busy={loading} aria-label="Ticket promedio">
+        {/* KPI 2 — Ticket promedio */}
+        <div className={`${styles.kpiCardWhite} ${styles.kpiBorderCyan}`} aria-busy={loading} aria-label="Ticket promedio">
           <div className={styles.kpiWhiteHead}>
             <span className={styles.kpiWhiteLabel}>Ticket Prom.</span>
-            <TrendingUp size={16} className={styles.kpiWhiteIcon} aria-hidden="true" />
+            <TrendingUp size={16} className={styles.kpiIconCyan} aria-hidden="true" />
           </div>
           {loading ? (
             <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
@@ -227,11 +231,11 @@ export default function EscritorioPage() {
           )}
         </div>
 
-        {/* KPI 3 — Órdenes (white) */}
-        <div className={styles.kpiCardWhite} aria-busy={loading} aria-label="Órdenes cobradas">
+        {/* KPI 3 — Órdenes */}
+        <div className={`${styles.kpiCardWhite} ${styles.kpiBorderPurple}`} aria-busy={loading} aria-label="Órdenes cobradas">
           <div className={styles.kpiWhiteHead}>
             <span className={styles.kpiWhiteLabel}>Órdenes</span>
-            <ShoppingCart size={16} className={styles.kpiWhiteIcon} aria-hidden="true" />
+            <ShoppingCart size={16} className={styles.kpiIconPurple} aria-hidden="true" />
           </div>
           {loading ? (
             <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
@@ -243,22 +247,24 @@ export default function EscritorioPage() {
           )}
         </div>
 
-        {/* KPI 4 — Utilidad neta (teal secondary) */}
+        {/* KPI 4 — Utilidad neta */}
         <div
-          className={`${styles.kpiCardColor} ${styles.kpiSecondary}`}
+          className={`${styles.kpiCardWhite} ${utilityIsNeg ? styles.kpiBorderDanger : styles.kpiBorderSuccess}`}
           aria-busy={loading}
           aria-label="Utilidad neta"
         >
-          <TrendingUp size={48} className={styles.kpiBgIcon} aria-hidden="true" />
-          <span className={styles.kpiColorLabel}>Utilidad neta</span>
+          <div className={styles.kpiWhiteHead}>
+            <span className={styles.kpiWhiteLabel}>Utilidad neta</span>
+            <TrendingUp size={16} className={utilityIsNeg ? styles.kpiIconDanger : styles.kpiIconSuccess} aria-hidden="true" />
+          </div>
           {loading ? (
-            <div className={`${styles.skeletonKpiVal} ${styles.skeletonOnColor}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
           ) : (
             <>
-              <span className={styles.kpiColorValue}>
+              <span className={styles.kpiWhiteValue}>
                 {fmtUsd(summary?.resultado?.utilidad_neta_usd ?? 0)}
               </span>
-              <span className={styles.kpiColorSub}>
+              <span className={styles.kpiWhiteSub}>
                 {v && v.total_usd > 0
                   ? `${(((summary?.resultado?.utilidad_neta_usd ?? 0) / v.total_usd) * 100).toFixed(1)}% margen`
                   : 'sin ventas'}
@@ -287,12 +293,9 @@ export default function EscritorioPage() {
               {lowStock === null ? (
                 <div className={`${styles.skeleton} ${styles.skeletonRow}`} />
               ) : lowStock > 0 ? (
-                <>
-                  <p className={styles.alertCount}>{lowStock}</p>
-                  <p className={styles.alertLabel}>
-                    producto{lowStock !== 1 ? 's' : ''} con stock crítico
-                  </p>
-                </>
+                <span className={styles.alertCriticalBadge}>
+                  {lowStock} producto{lowStock !== 1 ? 's' : ''} crítico{lowStock !== 1 ? 's' : ''}
+                </span>
               ) : (
                 <p className={`${styles.alertLabel} ${styles.alertOk}`}>
                   Sin alertas de inventario
@@ -398,10 +401,10 @@ export default function EscritorioPage() {
 
 /* ── Helper components ── */
 
-function DeltaBadge({ pct, colored }: { pct: number; colored?: boolean }) {
+function DeltaBadge({ pct }: { pct: number }) {
   if (pct > 0) {
     return (
-      <span className={colored ? styles.kpiColorDelta : `${styles.kpiTrend} ${styles.kpiTrendUp}`}>
+      <span className={`${styles.kpiTrend} ${styles.kpiTrendUp}`}>
         <ArrowUp size={10} strokeWidth={2.5} aria-hidden="true" />
         {pct.toFixed(1)}%
       </span>
@@ -409,14 +412,14 @@ function DeltaBadge({ pct, colored }: { pct: number; colored?: boolean }) {
   }
   if (pct < 0) {
     return (
-      <span className={colored ? styles.kpiColorDelta : `${styles.kpiTrend} ${styles.kpiTrendDown}`}>
+      <span className={`${styles.kpiTrend} ${styles.kpiTrendDown}`}>
         <ArrowDown size={10} strokeWidth={2.5} aria-hidden="true" />
         {Math.abs(pct).toFixed(1)}%
       </span>
     )
   }
   return (
-    <span className={colored ? styles.kpiColorDelta : `${styles.kpiTrend} ${styles.kpiTrendFlat}`}>
+    <span className={`${styles.kpiTrend} ${styles.kpiTrendFlat}`}>
       <Minus size={10} strokeWidth={2.5} aria-hidden="true" />
     </span>
   )

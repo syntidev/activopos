@@ -412,7 +412,7 @@
   --input-text:         var(--text-primary);
 
   /* Header v1 alias */
-  --header-bg:     rgba(255, 255, 255, 0.9);
+  --header-bg:     #F8FAFC;
   --header-border: var(--border-card);
   --header-blur:   12px;
 

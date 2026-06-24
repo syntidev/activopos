@@ -137,6 +137,7 @@ body  {
 <script>window.onload = () => window.print()</script>
 </head>
 <body>
+<div class="c" style="margin-bottom:2px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="20" height="20" style="vertical-align:middle"><defs><clipPath id="lc"><polygon points="235,270 600,-600 600,500 0,500"/></clipPath></defs><path d="M200,40 L360,340 L40,340 Z" fill="#0038BD"/><path d="M200,40 L360,340 L40,340 Z" fill="#EF8E01" clip-path="url(#lc)"/></svg></div>
 <div class="c biz">${esc(business.name)}</div>
 ${business.address ? `<div class="c">${esc(business.address)}</div>` : ''}
 ${business.phone   ? `<div class="c">Tel: ${esc(business.phone)}</div>` : ''}

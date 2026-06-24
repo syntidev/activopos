@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  ArrowDownToLine, Clock, Package, Plus, Search, X,
+  ArrowDownToLine, ChevronLeft, ChevronRight, Clock, FileDown,
+  Package, Plus, Search, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './inventario.module.css'
@@ -23,6 +24,7 @@ interface Product {
 interface InventoryEntry {
   id: number
   quantity: number
+  waste: number
   cost_per_unit_usd: number | null
   supplier: string | null
   notes: string | null
@@ -30,6 +32,8 @@ interface InventoryEntry {
   product: { id: number; name: string; base_unit_label: string }
   user: { id: number; name: string } | null
 }
+
+type EntryType = 'all' | 'entrada' | 'ajuste'
 
 /* ── Helpers ── */
 
@@ -42,6 +46,19 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('es-VE', { day: 'numeric', month: 'short' })
 }
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-VE', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+function getEntryType(e: InventoryEntry): 'entrada' | 'ajuste' {
+  return e.waste > 0 ? 'ajuste' : 'entrada'
+}
+
+const PAGE_SIZE = 20
+
 /* ── Entry modal ── */
 
 interface ModalProps {
@@ -52,12 +69,12 @@ interface ModalProps {
 
 function EntryModal({ product, onClose, onSaved }: ModalProps) {
   const { toast } = useToast()
-  const [qty, setQty]         = useState('')
-  const [cost, setCost]       = useState('')
+  const [qty, setQty]           = useState('')
+  const [cost, setCost]         = useState('')
   const [supplier, setSupplier] = useState('')
-  const [notes, setNotes]     = useState('')
-  const [saving, setSaving]   = useState(false)
-  const [err, setErr]         = useState<Record<string, string>>({})
+  const [notes, setNotes]       = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [err, setErr]           = useState<Record<string, string>>({})
 
   const isWeight = product?.sale_mode === 'weight'
 
@@ -258,6 +275,13 @@ function InventarioContent() {
   const [loading, setLoading]   = useState(true)
   const [selected, setSelected] = useState<Product | null>(null)
 
+  /* ── Historial filters ── */
+  const [histSearch, setHistSearch] = useState('')
+  const [histType, setHistType]     = useState<EntryType>('all')
+  const [histFrom, setHistFrom]     = useState('')
+  const [histTo, setHistTo]         = useState('')
+  const [histPage, setHistPage]     = useState(0)
+
   const fetchData = useCallback(async () => {
     try {
       const [pRes, eRes] = await Promise.all([
@@ -285,6 +309,57 @@ function InventarioContent() {
     !search || p.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  /* ── Historial derived state ── */
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter(e => {
+      if (histSearch && !e.product.name.toLowerCase().includes(histSearch.toLowerCase())) return false
+      if (histType === 'entrada' && getEntryType(e) !== 'entrada') return false
+      if (histType === 'ajuste'  && getEntryType(e) !== 'ajuste')  return false
+      const day = e.entered_at.slice(0, 10)
+      if (histFrom && day < histFrom) return false
+      if (histTo   && day > histTo)   return false
+      return true
+    })
+  }, [entries, histSearch, histType, histFrom, histTo])
+
+  const totalPages    = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE))
+  const safePage      = Math.min(histPage, totalPages - 1)
+  const paginatedEntries = filteredEntries.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
+
+  const totalEntradas = useMemo(() =>
+    filteredEntries.filter(e => getEntryType(e) === 'entrada').reduce((s, e) => s + e.quantity, 0),
+    [filteredEntries]
+  )
+  const totalAjustes = useMemo(() =>
+    filteredEntries.filter(e => getEntryType(e) === 'ajuste').length,
+    [filteredEntries]
+  )
+  const valorTotal = useMemo(() =>
+    filteredEntries.reduce((s, e) => {
+      if (e.cost_per_unit_usd != null) return s + e.quantity * e.cost_per_unit_usd
+      return s
+    }, 0),
+    [filteredEntries]
+  )
+
+  function resetFilters() {
+    setHistSearch('')
+    setHistType('all')
+    setHistFrom('')
+    setHistTo('')
+    setHistPage(0)
+  }
+
+  function buildExportUrl(): string {
+    const p = new URLSearchParams()
+    if (histSearch) p.set('search', histSearch)
+    if (histType !== 'all') p.set('type', histType)
+    if (histFrom) p.set('from', histFrom)
+    if (histTo)   p.set('to', histTo)
+    return `/api/inventory/export?${p.toString()}`
+  }
+
   function handleSaved(entry: InventoryEntry) {
     setEntries(prev => [entry, ...prev])
     setProducts(prev =>
@@ -296,6 +371,12 @@ function InventarioContent() {
     )
     setSelected(null)
   }
+
+  function handleFilterChange<T>(setter: (v: T) => void) {
+    return (v: T) => { setter(v); setHistPage(0) }
+  }
+
+  const hasActiveFilters = histSearch || histType !== 'all' || histFrom || histTo
 
   return (
     <div className={styles.page}>
@@ -387,65 +468,206 @@ function InventarioContent() {
             )}
           </section>
 
-          {/* Entries section */}
+          {/* ── Historial section ── */}
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>
-              <ArrowDownToLine size={15} aria-hidden="true" />
-              Últimas entradas
-            </h2>
+            <div className={styles.histSectionBar}>
+              <h2 className={styles.histSectionTitle}>
+                <ArrowDownToLine size={15} aria-hidden="true" />
+                Historial de movimientos
+              </h2>
+              <a
+                href={buildExportUrl()}
+                className={styles.exportBtn}
+                download
+                aria-label="Exportar historial a Excel"
+              >
+                <FileDown size={14} aria-hidden="true" />
+                Exportar Excel
+              </a>
+            </div>
 
-            {entries.length === 0 ? (
+            {/* Filters */}
+            <div className={styles.histFilters}>
+              <div className={styles.histSearchWrap}>
+                <Search size={13} className={styles.histSearchIcon} aria-hidden="true" />
+                <input
+                  type="search"
+                  className={styles.histSearchInput}
+                  value={histSearch}
+                  onChange={e => handleFilterChange(setHistSearch)(e.target.value)}
+                  placeholder="Buscar producto…"
+                  aria-label="Filtrar historial por producto"
+                />
+              </div>
+              <select
+                className={styles.histSelect}
+                value={histType}
+                onChange={e => handleFilterChange(setHistType)(e.target.value as EntryType)}
+                aria-label="Filtrar por tipo"
+              >
+                <option value="all">Todos los tipos</option>
+                <option value="entrada">Entrada</option>
+                <option value="ajuste">Ajuste / Merma</option>
+              </select>
+              <input
+                type="date"
+                className={styles.histDateInput}
+                value={histFrom}
+                onChange={e => handleFilterChange(setHistFrom)(e.target.value)}
+                aria-label="Desde"
+                title="Desde"
+              />
+              <input
+                type="date"
+                className={styles.histDateInput}
+                value={histTo}
+                onChange={e => handleFilterChange(setHistTo)(e.target.value)}
+                aria-label="Hasta"
+                title="Hasta"
+              />
+              {hasActiveFilters && (
+                <button
+                  className={styles.histClearBtn}
+                  onClick={resetFilters}
+                  type="button"
+                  aria-label="Limpiar filtros"
+                >
+                  <X size={12} aria-hidden="true" />
+                  Limpiar
+                </button>
+              )}
+            </div>
+
+            {paginatedEntries.length === 0 ? (
               <div className={styles.empty}>
                 <ArrowDownToLine size={28} strokeWidth={1.25} aria-hidden="true" />
-                <p>Aún no hay entradas registradas</p>
-                <p className={styles.emptyHint}>
-                  Usa el botón&nbsp;<strong>Entrada</strong>&nbsp;en cualquier producto para comenzar
-                </p>
+                <p>{hasActiveFilters ? 'Sin resultados para los filtros aplicados' : 'Aún no hay entradas registradas'}</p>
+                {!hasActiveFilters && (
+                  <p className={styles.emptyHint}>
+                    Usa el botón&nbsp;<strong>Entrada</strong>&nbsp;en cualquier producto para comenzar
+                  </p>
+                )}
               </div>
             ) : (
-              <div className={styles.tableWrap}>
-                <table className={styles.table} aria-label="Historial de entradas">
-                  <thead className={styles.thead}>
-                    <tr>
-                      <th className={styles.th}>Producto</th>
-                      <th className={`${styles.th} ${styles.thNum}`}>Cantidad</th>
-                      <th className={`${styles.th} ${styles.thNum}`}>Costo / und</th>
-                      <th className={styles.th}>Proveedor</th>
-                      <th className={styles.th}>Hace</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.slice(0, 50).map(e => (
-                      <tr key={e.id} className={styles.tr}>
-                        <td className={styles.td}>
-                          <span className={styles.productName}>{e.product.name}</span>
-                        </td>
-                        <td className={`${styles.td} ${styles.tdNum}`}>
-                          <span className={styles.stockOk}>
-                            +{Number(e.quantity).toFixed(3)}&nbsp;{e.product.base_unit_label}
-                          </span>
-                        </td>
-                        <td className={`${styles.td} ${styles.tdNum}`}>
-                          {e.cost_per_unit_usd != null
-                            ? <span className={styles.price}>${e.cost_per_unit_usd.toFixed(3)}</span>
-                            : <span className={styles.dash}>—</span>}
-                        </td>
-                        <td className={styles.td}>
-                          <span className={e.supplier ? styles.supplier : styles.dash}>
-                            {e.supplier ?? '—'}
-                          </span>
-                        </td>
-                        <td className={styles.td}>
-                          <span className={styles.timeCell}>
-                            <Clock size={10} aria-hidden="true" />
-                            {timeAgo(e.entered_at)}
-                          </span>
-                        </td>
+              <>
+                <div className={styles.tableWrap}>
+                  <table className={styles.table} aria-label="Historial de movimientos">
+                    <thead className={styles.thead}>
+                      <tr>
+                        <th className={styles.th}>Fecha</th>
+                        <th className={styles.th}>Producto</th>
+                        <th className={styles.th}>Tipo</th>
+                        <th className={`${styles.th} ${styles.thNum}`}>Cantidad</th>
+                        <th className={`${styles.th} ${styles.thNum}`}>Costo / u</th>
+                        <th className={styles.th}>Proveedor</th>
+                        <th className={styles.th}>Notas</th>
+                        <th className={styles.th}>Usuario</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {paginatedEntries.map(e => {
+                        const type     = getEntryType(e)
+                        const isWeight = e.product.base_unit_label !== 'und'
+                        const qty      = type === 'ajuste'
+                          ? `-${e.waste.toFixed(isWeight ? 3 : 0)}`
+                          : `+${e.quantity.toFixed(isWeight ? 3 : 0)}`
+                        return (
+                          <tr key={e.id} className={styles.tr}>
+                            <td className={styles.td}>
+                              <span className={styles.timeCell}>
+                                <Clock size={10} aria-hidden="true" />
+                                {formatDate(e.entered_at)}
+                              </span>
+                            </td>
+                            <td className={styles.td}>
+                              <span className={styles.productName}>{e.product.name}</span>
+                              <span className={styles.productUnit}>{e.product.base_unit_label}</span>
+                            </td>
+                            <td className={styles.td}>
+                              <span className={type === 'entrada' ? styles.typeBadgeEntrada : styles.typeBadgeAjuste}>
+                                {type === 'entrada' ? 'Entrada' : 'Ajuste'}
+                              </span>
+                            </td>
+                            <td className={`${styles.td} ${styles.tdNum}`}>
+                              <span className={type === 'entrada' ? styles.stockOk : styles.stockLow}>
+                                {qty}&nbsp;{e.product.base_unit_label}
+                              </span>
+                            </td>
+                            <td className={`${styles.td} ${styles.tdNum}`}>
+                              {e.cost_per_unit_usd != null
+                                ? <span className={styles.price}>${e.cost_per_unit_usd.toFixed(3)}</span>
+                                : <span className={styles.dash}>—</span>}
+                            </td>
+                            <td className={styles.td}>
+                              <span className={e.supplier ? styles.supplier : styles.dash}>
+                                {e.supplier ?? '—'}
+                              </span>
+                            </td>
+                            <td className={styles.td}>
+                              <span className={styles.noteCell} title={e.notes ?? undefined}>
+                                {e.notes ?? <span className={styles.dash}>—</span>}
+                              </span>
+                            </td>
+                            <td className={styles.td}>
+                              <span className={styles.userCell}>
+                                {e.user?.name ?? '—'}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totals */}
+                <div className={styles.totalsBar}>
+                  <div className={styles.totalItem}>
+                    <span className={styles.totalLabel}>Entradas del período</span>
+                    <span className={styles.totalValueGreen}>+{totalEntradas.toFixed(0)} und</span>
+                  </div>
+                  <div className={styles.totalDivider} aria-hidden="true" />
+                  <div className={styles.totalItem}>
+                    <span className={styles.totalLabel}>Ajustes registrados</span>
+                    <span className={styles.totalValue}>{totalAjustes}</span>
+                  </div>
+                  <div className={styles.totalDivider} aria-hidden="true" />
+                  <div className={styles.totalItem}>
+                    <span className={styles.totalLabel}>Valor total inventariado</span>
+                    <span className={styles.totalValue}>${valorTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className={styles.paginationBar}>
+                    <button
+                      className={styles.paginBtn}
+                      onClick={() => setHistPage(p => Math.max(0, p - 1))}
+                      disabled={safePage === 0}
+                      type="button"
+                      aria-label="Página anterior"
+                    >
+                      <ChevronLeft size={14} aria-hidden="true" />
+                      Anterior
+                    </button>
+                    <span className={styles.paginInfo}>
+                      Pág.&nbsp;{safePage + 1}&nbsp;de&nbsp;{totalPages}
+                      &nbsp;·&nbsp;{filteredEntries.length} registros
+                    </span>
+                    <button
+                      className={styles.paginBtn}
+                      onClick={() => setHistPage(p => Math.min(totalPages - 1, p + 1))}
+                      disabled={safePage >= totalPages - 1}
+                      type="button"
+                      aria-label="Página siguiente"
+                    >
+                      Siguiente
+                      <ChevronRight size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </>

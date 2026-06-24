@@ -82,9 +82,9 @@ export async function GET(req: NextRequest) {
     total_bs:    Number(salesAgg._sum.total_bs  ?? 0),
     profit_usd:  parseFloat(profitRows[0]?.profit ?? '0') || 0,
     by_day: byDayRows.map(r => ({
-      date:      String(r.date),
-      sales:     Number(r.sales),
-      total_usd: Number(r.total_usd),
+      date:        String(r.date),
+      sales_count: Number(r.sales),
+      total_usd:   Number(r.total_usd),
     })),
   })
 }

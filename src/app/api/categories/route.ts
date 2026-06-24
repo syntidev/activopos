@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, category }, { status: 201 })
   } catch (err) {
+    if ((err as { code?: string }).code === 'P2002') {
+      return NextResponse.json({ error: 'Ya existe una categoría con ese nombre' }, { status: 409 })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

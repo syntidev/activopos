@@ -57,17 +57,12 @@ export function ScannerModal({
   const barcodeCache  = useRef<Map<string, ProductForPOS | null>>(new Map())
   const lookingUpRef  = useRef(false)
 
-  const [flash, setFlash]       = useState<'success' | 'error' | null>(null)
+  const [flash, setFlash]       = useState(false)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
-
-  const triggerFlash = (type: 'success' | 'error') => {
-    setFlash(type)
-    setTimeout(() => setFlash(null), type === 'success' ? 200 : 300)
-  }
 
   const showToast = (msg: string) => {
     setToastMsg(msg)
-    setTimeout(() => setToastMsg(null), 1500)
+    setTimeout(() => setToastMsg(null), 1000)
   }
 
   const handleBarcode = useCallback(async (code: string) => {
@@ -91,13 +86,12 @@ export function ScannerModal({
 
     if (product) {
       onAddProduct(product)
-      triggerFlash('success')
+      setFlash(true)
+      setTimeout(() => setFlash(false), 200)
       playBeep(880, 80)
       if (navigator.vibrate) navigator.vibrate([50])
     } else {
-      triggerFlash('error')
       playBeep(220, 200)
-      if (navigator.vibrate) navigator.vibrate([100, 50, 100])
       showToast('Producto no encontrado')
     }
   }, [onAddProduct])
@@ -122,12 +116,6 @@ export function ScannerModal({
       {/* ══ Camera zone (33dvh) ══ */}
       <div className={styles.cameraZone}>
 
-        {/* Flash feedback overlay */}
-        <div
-          className={`${styles.flashOverlay}${flash === 'success' ? ` ${styles.flashSuccess}` : flash === 'error' ? ` ${styles.flashError}` : ''}`}
-          aria-hidden="true"
-        />
-
         {/* Video stream */}
         <video
           ref={videoRef}
@@ -138,15 +126,23 @@ export function ScannerModal({
           aria-hidden="true"
         />
 
-        {/* Viewfinder (shown when camera is active) */}
+        {/* Viewfinder + dark overlay outside via box-shadow */}
         {!permError && (
-          <div className={styles.viewfinder} aria-hidden="true">
-            <span className={`${styles.corner} ${styles.cornerTL}`} />
-            <span className={`${styles.corner} ${styles.cornerTR}`} />
-            <span className={`${styles.corner} ${styles.cornerBL}`} />
-            <span className={`${styles.corner} ${styles.cornerBR}`} />
-            <span className={styles.scanLine} />
-          </div>
+          <>
+            <div className={styles.viewfinder} aria-hidden="true">
+              <span className={`${styles.corner} ${styles.cornerTL}`} />
+              <span className={`${styles.corner} ${styles.cornerTR}`} />
+              <span className={`${styles.corner} ${styles.cornerBL}`} />
+              <span className={`${styles.corner} ${styles.cornerBR}`} />
+              <span className={styles.scanLine} />
+              {/* Green flash — viewfinder only, success scan */}
+              <div
+                className={`${styles.viewfinderFlash}${flash ? ` ${styles.viewfinderFlashActive}` : ''}`}
+                aria-hidden="true"
+              />
+            </div>
+            <p className={styles.scanHint} aria-hidden="true">Centra el código en el recuadro</p>
+          </>
         )}
 
         {/* Status badge (top-left) */}

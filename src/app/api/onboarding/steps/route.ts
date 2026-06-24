@@ -3,9 +3,9 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 interface Step {
-  id:        string
-  label:     string
-  completed: boolean
+  key:   string
+  label: string
+  done:  boolean
 }
 
 export async function GET() {
@@ -32,41 +32,39 @@ export async function GET() {
 
   const steps: Step[] = [
     {
-      id:        'business',
-      label:     'Configura tu negocio',
-      completed: Boolean(
-        business && business.name !== 'Mi Negocio' && business.logo_path != null
-      ),
+      key:   'business',
+      label: 'Configura tu negocio',
+      done:  Boolean(business && business.name !== 'Mi Negocio' && business.logo_path != null),
     },
     {
-      id:        'product',
-      label:     'Crea tu primer producto',
-      completed: productCount > 0,
+      key:   'product',
+      label: 'Crea tu primer producto',
+      done:  productCount > 0,
     },
     {
-      id:        'payment',
-      label:     'Configura métodos de pago',
-      completed: paymentCount > 0,
+      key:   'payment',
+      label: 'Configura métodos de pago',
+      done:  paymentCount > 0,
     },
     {
-      id:        'sale',
-      label:     'Registra tu primera venta',
-      completed: saleCount > 0,
+      key:   'sale',
+      label: 'Registra tu primera venta',
+      done:  saleCount > 0,
     },
     {
-      id:        'catalog',
-      label:     'Activa tu catálogo digital',
-      completed: Boolean(business?.catalog_active),
+      key:   'catalog',
+      label: 'Activa tu catálogo digital',
+      done:  Boolean(business?.catalog_active),
     },
   ]
 
-  const completedCount = steps.filter(s => s.completed).length
-  const progress       = Math.round((completedCount / steps.length) * 100)
+  const completedCount = steps.filter(s => s.done).length
+  const progress_pct   = Math.round((completedCount / steps.length) * 100)
 
   return NextResponse.json({
     ok:           true,
     steps,
-    progress,
+    progress_pct,
     all_complete: completedCount === steps.length,
   })
 }

@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search, Pencil, Trash2 } from 'lucide-react'
+import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search, Pencil, Trash2, ScanBarcode } from 'lucide-react'
+import { useScanner } from '@/hooks/useScanner'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
 import styles from './ProductModal.module.css'
@@ -241,6 +242,21 @@ export function ProductModal({
     } catch { /* non-critical */ }
     finally { setLoadingDbVars(false) }
   }, [])
+
+  /* ── Barcode scanner ── */
+  const [isScanning, setIsScanning] = useState(false)
+  const { videoRef, permError } = useScanner({
+    active: isScanning,
+    onResult: (code) => {
+      setBarcode(code)
+      setIsScanning(false)
+    },
+  })
+
+  // Stop scanner when modal closes
+  useEffect(() => {
+    if (!isOpen) setIsScanning(false)
+  }, [isOpen])
 
   /* ── Component editor state ── */
   const [components, setComponents]       = useState<ComponentEntry[]>([])
@@ -741,15 +757,27 @@ export function ProductModal({
                   {/* ── Barcode ── */}
                   <div className={mStyles.formGroup}>
                     <label className={mStyles.label} htmlFor="pm-barcode">Código de Barras</label>
-                    <input
-                      id="pm-barcode"
-                      type="text"
-                      className={mStyles.input}
-                      placeholder="EAN-13, QR, SKU..."
-                      value={barcode}
-                      onChange={(e) => setBarcode(e.target.value)}
-                      maxLength={60}
-                    />
+                    <div className={styles.barcodeRow}>
+                      <input
+                        id="pm-barcode"
+                        type="text"
+                        inputMode="text"
+                        className={mStyles.input}
+                        placeholder="EAN-13, QR, SKU..."
+                        value={barcode}
+                        onChange={(e) => setBarcode(e.target.value)}
+                        maxLength={60}
+                      />
+                      <button
+                        type="button"
+                        className={styles.scanBtn}
+                        onClick={() => setIsScanning(true)}
+                        aria-label="Escanear código de barras"
+                        title="Escanear con cámara"
+                      >
+                        <ScanBarcode size={16} aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* ── Imágenes ── */}
@@ -1015,6 +1043,7 @@ export function ProductModal({
                       <input
                         id="pm-cost"
                         type="number"
+                        inputMode="numeric"
                         className={styles.prefixInput}
                         placeholder="0.00"
                         value={cost}
@@ -1089,6 +1118,7 @@ export function ProductModal({
                         <input
                           id="pm-price"
                           type="number"
+                          inputMode="numeric"
                           className={`${styles.prefixInput} ${!isFixedPrice ? styles.calculatedField : ''}`}
                           placeholder="0.00"
                           value={isFixedPrice ? price : computed.displayPrice > 0 ? computed.displayPrice.toFixed(2) : ''}
@@ -1151,6 +1181,7 @@ export function ProductModal({
                         <input
                           id="pm-alert-threshold"
                           type="number"
+                          inputMode="numeric"
                           className={mStyles.input}
                           placeholder="5"
                           value={stockAlertThreshold}
@@ -1426,6 +1457,44 @@ export function ProductModal({
         open={showCatalogUpgrade}
         onClose={() => setShowCatalogUpgrade(false)}
       />
+
+      {/* ── Barcode scanner overlay — mobile only ── */}
+      <AnimatePresence>
+        {isScanning && (
+          <motion.div
+            className={styles.scanOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            role="dialog"
+            aria-label="Escáner de código de barras"
+            aria-modal="true"
+          >
+            <video
+              ref={videoRef}
+              className={styles.scanVideo}
+              playsInline
+              muted
+            />
+            <div className={styles.scanFrame} aria-hidden="true" />
+            {permError && (
+              <p className={styles.scanError}>
+                Sin acceso a la cámara. Verifica los permisos del navegador.
+              </p>
+            )}
+            <button
+              type="button"
+              className={styles.scanClose}
+              onClick={() => setIsScanning(false)}
+              aria-label="Cerrar escáner"
+            >
+              <X size={18} aria-hidden="true" />
+              Cancelar
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

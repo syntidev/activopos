@@ -32,6 +32,11 @@ export const ratesLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+export const uploadLimiter = new RateLimiterMemory({
+  points:   20,   // 20 uploads por IP
+  duration: 60,   // por minuto
+})
+
 // Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
 // antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
 export const getClientIp = (req: Request): string =>

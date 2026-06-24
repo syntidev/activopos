@@ -29,6 +29,7 @@ const STATUS_LABELS: Record<SaleHistoryItem['status'], string> = {
   pending:   'Pendiente',
   paid:      'Pagado',
   cancelled: 'Anulado',
+  returned:  'Devuelta',
 }
 
 const STATUS_VARIANT: Record<SaleHistoryItem['status'], BadgeVariant> = {
@@ -37,6 +38,7 @@ const STATUS_VARIANT: Record<SaleHistoryItem['status'], BadgeVariant> = {
   pending:   'warning',
   paid:      'success',
   cancelled: 'danger',
+  returned:  'danger',
 }
 
 function fmtDate(d: Date | string | null): string {

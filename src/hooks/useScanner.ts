@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
+import { DecodeHintType, BarcodeFormat } from '@zxing/library'
 
 interface ScannerControls { stop(): void }
 
@@ -21,6 +22,33 @@ interface UseScannerReturn {
   videoRef: React.RefObject<HTMLVideoElement>
   /** True when the camera could not be started. */
   permError: boolean
+}
+
+/* ── Decoder hints — narrow to common retail formats for faster matching ── */
+const HINTS = new Map<DecodeHintType, unknown>()
+HINTS.set(DecodeHintType.POSSIBLE_FORMATS, [
+  BarcodeFormat.EAN_13,
+  BarcodeFormat.EAN_8,
+  BarcodeFormat.CODE_128,
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.UPC_A,
+  BarcodeFormat.UPC_E,
+])
+HINTS.set(DecodeHintType.TRY_HARDER, true)
+
+/* ── Camera constraints — 640p preferred, rear camera, continuous focus ── */
+const CONSTRAINTS: MediaStreamConstraints = {
+  video: {
+    facingMode: { ideal: 'environment' },
+    width:      { ideal: 640, max: 1280 },
+    height:     { ideal: 480, max: 720 },
+    frameRate:  { ideal: 30, max: 30 },
+    advanced: [
+      { focusMode: 'continuous' },
+      { exposureMode: 'continuous' },
+      { whiteBalanceMode: 'continuous' },
+    ] as unknown as MediaTrackConstraintSet[],
+  },
 }
 
 /**
@@ -54,15 +82,15 @@ export function useScanner({
     setPermError(false)
     lastScannedRef.current = null
 
-    const reader = new BrowserMultiFormatReader()
+    const reader = new BrowserMultiFormatReader(HINTS)
     let mounted = true
 
     const init = async () => {
       const el = videoRef.current
       if (!el) return
       try {
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
+        const controls = await reader.decodeFromConstraints(
+          CONSTRAINTS,
           el,
           (result) => {
             if (!result || !mounted) return
@@ -93,6 +121,13 @@ export function useScanner({
       mounted = false
       controlsRef.current?.stop()
       controlsRef.current = null
+      // Explicitly release all camera tracks to free hardware and save battery
+      const video = videoRef.current
+      const stream = video?.srcObject
+      if (stream instanceof MediaStream) {
+        stream.getTracks().forEach(t => t.stop())
+      }
+      if (video) video.srcObject = null
     }
   }, [active, debounceMs])
 

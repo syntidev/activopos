@@ -45,6 +45,7 @@ enum SaleStatus {
   pending
   paid
   cancelled
+  returned
 }
 
 enum SaleOrigin {

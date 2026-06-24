@@ -320,6 +320,13 @@
   outline-offset: -2px;
 }
 
+/* ── Icon group accent colors (inactive state only) ── */
+.iconColorVentas       { color: var(--brand); }
+.iconColorInventario   { color: var(--cta); }
+.iconColorCaja         { color: var(--color-success); }
+.iconColorInteligencia { color: rgb(var(--purple-rgb)); }
+.iconColorAdmin        { color: var(--color-text-secondary); }
+
 /* ── Responsive visibility ── */
 @media (max-width: 1023px) {
   /* Hide fixed desktop sidebar on mobile */

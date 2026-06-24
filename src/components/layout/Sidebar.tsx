@@ -29,11 +29,20 @@ import {
 import type { SessionUser } from '@/types'
 import styles from './Sidebar.module.css'
 
+const ICON_COLOR_CLASSES: Record<string, string> = {
+  ventas:        styles.iconColorVentas,
+  inventario:    styles.iconColorInventario,
+  caja:          styles.iconColorCaja,
+  inteligencia:  styles.iconColorInteligencia,
+  admin:         styles.iconColorAdmin,
+}
+
 interface NavItem {
   href: string
   icon: LucideIcon
   label: string
   moduleKey?: string
+  colorKey?: string
 }
 
 interface NavGroup {
@@ -46,65 +55,65 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'PRINCIPAL',
     items: [
-      { href: '/escritorio', icon: LayoutDashboard, label: 'Escritorio' },
+      { href: '/escritorio', icon: LayoutDashboard, label: 'Escritorio', colorKey: 'ventas' },
     ],
   },
   {
     label: 'VENTAS',
     items: [
-      { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta', moduleKey: 'pos'     },
-      { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos',        moduleKey: 'pedidos' },
-      { href: '/clientes', icon: Users,         label: 'Clientes'                            },
+      { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta', moduleKey: 'pos',     colorKey: 'ventas' },
+      { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos',        moduleKey: 'pedidos', colorKey: 'ventas' },
+      { href: '/clientes', icon: Users,         label: 'Clientes',                            colorKey: 'ventas' },
     ],
   },
   {
     label: 'INVENTARIO',
     items: [
-      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory' },
+      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory', colorKey: 'inventario' },
     ],
   },
   {
     label: 'CAJA',
     items: [
-      { href: '/caja',     icon: Calculator, label: 'Gestión de Caja', moduleKey: 'caja'     },
-      { href: '/reportes', icon: BarChart2,  label: 'Reportes',        moduleKey: 'reportes' },
+      { href: '/caja',     icon: Calculator, label: 'Gestión de Caja', moduleKey: 'caja',     colorKey: 'caja' },
+      { href: '/reportes', icon: BarChart2,  label: 'Reportes',        moduleKey: 'reportes', colorKey: 'caja' },
     ],
   },
   {
     label: 'CATÁLOGO',
     adminOnly: true,
     items: [
-      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalog' },
+      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalog', colorKey: 'inventario' },
     ],
   },
   {
     label: 'FINANZAS',
     adminOnly: true,
     items: [
-      { href: '/finanzas',  icon: TrendingUp, label: 'Finanzas',          moduleKey: 'finanzas'  },
-      { href: '/analytics', icon: Activity,   label: 'Pulso del Negocio', moduleKey: 'analytics' },
+      { href: '/finanzas',  icon: TrendingUp, label: 'Finanzas',          moduleKey: 'finanzas',  colorKey: 'caja'         },
+      { href: '/analytics', icon: Activity,   label: 'Pulso del Negocio', moduleKey: 'analytics', colorKey: 'inteligencia' },
     ],
   },
   {
     label: 'RESTAURANTE',
     adminOnly: true,
     items: [
-      { href: '/kds', icon: ChefHat, label: 'Cocina (KDS)', moduleKey: 'kds' },
+      { href: '/kds', icon: ChefHat, label: 'Cocina (KDS)', moduleKey: 'kds', colorKey: 'inventario' },
     ],
   },
   {
     label: 'INTELIGENCIA',
     adminOnly: true,
     items: [
-      { href: '/tu-dia', icon: Sparkles, label: 'Tu Día' },
+      { href: '/tu-dia', icon: Sparkles, label: 'Tu Día', colorKey: 'inteligencia' },
     ],
   },
   {
     label: 'SISTEMA',
     adminOnly: true,
     items: [
-      { href: '/configuracion', icon: Settings,   label: 'Configuración' },
-      { href: '/ayuda',         icon: HelpCircle, label: 'Ayuda' },
+      { href: '/configuracion', icon: Settings,   label: 'Configuración', colorKey: 'admin' },
+      { href: '/ayuda',         icon: HelpCircle, label: 'Ayuda',         colorKey: 'admin' },
     ],
   },
 ]
@@ -205,7 +214,7 @@ function NavContent({
                       aria-current={isActive ? 'page' : undefined}
                       onClick={() => { onCloseMobile?.(); onCloseNotifications?.() }}
                     >
-                      <span className={styles.iconWrapper}>
+                      <span className={`${styles.iconWrapper}${!isActive && item.colorKey ? ' ' + (ICON_COLOR_CLASSES[item.colorKey] ?? '') : ''}`}>
                         <Icon
                           size={18}
                           strokeWidth={isActive ? 2.25 : 1.75}

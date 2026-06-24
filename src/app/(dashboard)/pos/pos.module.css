@@ -319,6 +319,11 @@
   display: block;
 }
 
+/* Hidden on desktop — scanner is mobile-only */
+@media (hover: hover) and (pointer: fine) {
+  .cameraBtn { display: none; }
+}
+
 .cameraBtn {
   position: absolute;
   right: var(--space-2);

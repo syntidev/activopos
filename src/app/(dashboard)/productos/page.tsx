@@ -14,7 +14,10 @@ import {
   ChevronDown,
   ArrowUpDown,
   AlertTriangle,
+  ScanBarcode,
+  X,
 } from 'lucide-react'
+import { useScanner } from '@/hooks/useScanner'
 import { ProductModal } from '@/components/products/ProductModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ImportModal } from '@/components/products/ImportModal'
@@ -151,7 +154,11 @@ export default function ProductosPage() {
   const [showImportModal, setShowImportModal] = useState(false)
   const [stockProduct, setStockProduct]   = useState<Product | null>(null)
 
-  /* ── Status filter (FIX 3) ── */
+  /* ── Mobile barcode scanner state (hook wired after openEdit) ── */
+  const [scannerActive, setScannerActive] = useState(false)
+  const [scanToast, setScanToast]         = useState<string | null>(null)
+
+  /* ── Status filter ── */
   type StatusFilter = 'all' | 'active' | 'inactive'
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
@@ -439,6 +446,23 @@ export default function ProductosPage() {
     setShowProductModal(true)
   }, [])
 
+  /* ── Mobile scanner: wired here so openEdit is in scope ── */
+  const handleProductScan = useCallback((barcode: string) => {
+    const found = products.find(p => p.barcode === barcode)
+    if (found) {
+      setScannerActive(false)
+      openEdit(found)
+    } else {
+      setScanToast('Producto no encontrado')
+      setTimeout(() => setScanToast(null), 1500)
+    }
+  }, [products, openEdit])
+
+  const { videoRef: scanVideoRef, permError: scanPermError } = useScanner({
+    active:   scannerActive,
+    onResult: handleProductScan,
+  })
+
   /* ── Render ── */
 
   const modalCategories: ModalCategory[] = categories
@@ -455,6 +479,17 @@ export default function ProductosPage() {
         </div>
 
         <div className={styles.headerActions}>
+          {/* Scan button — mobile only */}
+          <button
+            type="button"
+            className={`${styles.btnAction} ${styles.btnScan}`}
+            onClick={() => setScannerActive(true)}
+            aria-label="Escanear código de barras"
+          >
+            <ScanBarcode size={15} aria-hidden="true" />
+            Escanear
+          </button>
+
           <button
             type="button"
             className={styles.btnAction}
@@ -836,6 +871,66 @@ export default function ProductosPage() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Mobile barcode scanner overlay ── */}
+      {scannerActive && (
+        <div
+          className={styles.scanOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Escáner de código de barras"
+        >
+          {/* Camera */}
+          <video
+            ref={scanVideoRef}
+            className={styles.scanVideo}
+            playsInline
+            muted
+            autoPlay
+            aria-hidden="true"
+          />
+
+          {/* Viewfinder */}
+          {!scanPermError && (
+            <div className={styles.scanViewfinder} aria-hidden="true">
+              <span className={`${styles.scanCorner} ${styles.scanCornerTL}`} />
+              <span className={`${styles.scanCorner} ${styles.scanCornerTR}`} />
+              <span className={`${styles.scanCorner} ${styles.scanCornerBL}`} />
+              <span className={`${styles.scanCorner} ${styles.scanCornerBR}`} />
+              <span className={styles.scanLine} />
+            </div>
+          )}
+
+          {/* Status */}
+          <div className={styles.scanBadge}>
+            {scanPermError ? (
+              <span>Activa la cámara en la configuración.</span>
+            ) : (
+              <>
+                <span className={styles.scanDot} aria-hidden="true" />
+                <span>Buscando producto...</span>
+              </>
+            )}
+          </div>
+
+          {/* Close */}
+          <button
+            type="button"
+            className={styles.scanCloseBtn}
+            onClick={() => setScannerActive(false)}
+            aria-label="Cerrar escáner"
+          >
+            <X size={20} strokeWidth={2} aria-hidden="true" />
+          </button>
+
+          {/* Not-found toast */}
+          {scanToast && (
+            <p className={styles.scanToast} role="status" aria-live="polite">
+              {scanToast}
+            </p>
+          )}
         </div>
       )}
     </div>

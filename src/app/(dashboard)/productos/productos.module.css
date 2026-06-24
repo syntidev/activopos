@@ -879,3 +879,174 @@
   .toggle .toggleTrack, .toggle .toggleThumb { transition: none; }
   .statusTab, .deleteBtnCancel, .deleteBtnDeactivate, .deleteBtnForce { transition: none; }
 }
+
+/* ══ Mobile barcode scanner — scan button + overlay ══ */
+
+/* Scan button: mobile-only — hidden on desktop */
+@media (hover: hover) and (pointer: fine) {
+  .btnScan { display: none; }
+}
+
+/* At 480px the general action rule hides btnAction; override for btnScan */
+@media (max-width: 480px) {
+  .btnScan { display: inline-flex; }
+}
+
+/* Full-screen camera overlay */
+.scanOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  background: rgb(0, 0, 0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overscroll-behavior: contain;
+}
+
+.scanVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Viewfinder: centered rectangle */
+.scanViewfinder {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 20%;
+  bottom: 20%;
+  z-index: 2;
+}
+
+/* Corner markers */
+.scanCorner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: var(--color-brand);
+  border-style: solid;
+  border-radius: 3px;
+}
+
+.scanCornerTL { top: 0;    left: 0;   border-width: 3px 0 0 3px; }
+.scanCornerTR { top: 0;    right: 0;  border-width: 3px 3px 0 0; }
+.scanCornerBL { bottom: 0; left: 0;   border-width: 0 0 3px 3px; }
+.scanCornerBR { bottom: 0; right: 0;  border-width: 0 3px 3px 0; }
+
+/* Scan line */
+.scanLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-brand) 25%,
+    var(--color-brand) 75%,
+    transparent 100%
+  );
+  box-shadow: 0 0 10px 1px rgba(var(--brand-rgb), 0.65);
+  animation: prodScanLine 2s ease-in-out infinite;
+}
+
+@keyframes prodScanLine {
+  0%   { top: 4px; }
+  50%  { top: calc(100% - 4px); }
+  100% { top: 4px; }
+}
+
+/* Status badge */
+.scanBadge {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-3);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: white;
+}
+
+/* Pulsing dot */
+.scanDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--success);
+  animation: prodDotPulse 1.3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes prodDotPulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* Close button */
+.scanCloseBtn {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: none;
+  color: white;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.scanCloseBtn:hover  { background: rgba(0, 0, 0, 0.85); }
+
+/* Not-found toast */
+.scanToast {
+  position: absolute;
+  bottom: var(--space-10);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  margin: 0;
+  padding: var(--space-2) var(--space-5);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  animation: prodToastIn 0.15s ease-out;
+}
+
+@keyframes prodToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanLine  { animation: none; top: 50%; }
+  .scanDot   { animation: none; }
+  .scanToast { animation: none; }
+}

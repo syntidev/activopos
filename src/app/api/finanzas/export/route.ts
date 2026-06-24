@@ -18,6 +18,11 @@ const rangeSchema = z.object({ from: dateStr, to: dateStr }).superRefine((data, 
   }
 })
 
+// Prevent CSV/XLSX formula injection — prefix dangerous leading chars with a literal apostrophe
+function safe(v: string): string {
+  return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v
+}
+
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -56,12 +61,12 @@ export async function GET(req: NextRequest) {
     ventas.length > 0
       ? ventas.map(s => ({
           'Fecha':      s.sold_at ? s.sold_at.toISOString().slice(0, 10) : '',
-          '# Ticket':   s.ticket_number,
-          'Cliente':    s.client_name ?? '',
+          '# Ticket':   safe(s.ticket_number),
+          'Cliente':    safe(s.client_name ?? ''),
           'Total USD':  Number(s.total_usd),
           'Total Bs':   Number(s.total_bs),
           'Tasa BCV':   Number(s.rate_used),
-          'Método':     s.payments.map(p => p.payment_method?.name ?? '').join(', '),
+          'Método':     safe(s.payments.map(p => p.payment_method?.name ?? '').join(', ')),
         }))
       : [{ 'Sin ventas': `${fromStr} → ${toStr}` }]
   )
@@ -71,8 +76,8 @@ export async function GET(req: NextRequest) {
     gastos.length > 0
       ? gastos.map(g => ({
           'Fecha':       g.fecha.toISOString().slice(0, 10),
-          'Categoría':   g.categoria,
-          'Descripción': g.concepto,
+          'Categoría':   safe(g.categoria),
+          'Descripción': safe(g.concepto),
           'Monto USD':   Number(g.monto_usd),
         }))
       : [{ 'Sin gastos': `${fromStr} → ${toStr}` }]

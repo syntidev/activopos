@@ -9,7 +9,7 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 27                                                              |
+| Último sprint      | Sprint 28                                                              |
 | Último commit      | (ver git log — post Sprint 27)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
@@ -34,10 +34,11 @@ SSRF allowlist push ✅ → stock_alert_threshold ✅ → SaleStatus.draft ✅ �
 Sprint 25: CORE_MODULES guard ✅ → Admin panel super_admin ✅ → useDraftTabs DB-backed ✅ →
 KDS placeholder ✅ → 9 code-review P0-P3 fixes ✅ → StockModal jerarquía ✅ → PWA manifest fix ✅ →
 Sprint 26: botón Cobrar pedidos ✅ → middleware module-gating MO-FIX02 ✅ → onboarding checklist ✅ → historial caja ✅ →
-Sprint 27: paleta Persian Blue+Carrot ✅ → 18 módulos UI+API ✅ → 14 bugs P0-P3 corregidos ✅ → CIMAAD 7/7 ✅ → marketing system 🚧
+Sprint 27: paleta Persian Blue+Carrot ✅ → 18 módulos UI+API ✅ → 14 bugs P0-P3 corregidos ✅ → CIMAAD 7/7 ✅ → marketing system 🚧 →
+Sprint 28: Bot IA datos reales ✅ → onboarding 5 pasos ✅ → variantes POS ✅ → export Excel full ✅ → rango fechas reportes ✅ → desactivar productos ✅ → badge solo Pedidos ✅ → ordenamiento tablas ✅ → S25-F2 🚧 → PU-FIX02 🚧
 ```
 
-**CORE COMPLETADO — 18 módulos del roadmap v1 operativos con UI y API conectadas. Ciclo verificado en VPS con CIMAAD 7/7.**
+**SPRINT 28 — 18 módulos del roadmap v1 operativos con UI y API conectadas. Bot IA activo con datos reales. Ciclo verificado en VPS con CIMAAD 7/7.**
 
 | Módulo              | Estado               | Sprint | Evidencia                                                      |
 |---------------------|----------------------|--------|----------------------------------------------------------------|
@@ -102,6 +103,12 @@ Sprint 27: paleta Persian Blue+Carrot ✅ → 18 módulos UI+API ✅ → 14 bugs
 | 14 bugs Sprint 27   | ✅ CORREGIDOS         | 27     | Sprint 27: P0-P3 fixes — verificados con CIMAAD 7/7 en VPS:3003  |
 | CIMAAD ciclo real   | ✅ CERTIFICADO        | 27     | Sprint 27 CLI-D: 7/7 nodos — Inv→POS→Caja→Reports→CxC→Orders→Finanzas |
 | Marketing system    | 🚧 EN CONSTRUCCIÓN    | 27     | (marketing)/layout.tsx + páginas — integración futura WhatsApp/n8n |
+| Bot IA datos reales | ✅ OPERATIVO          | 28     | Sprint 28: respuestas contextuales con KPIs y datos reales del negocio |
+| Onboarding 5 pasos  | ✅ ACTUALIZADO        | 28     | Sprint 28: paso 5 añadido — era 4 pasos (Sprint 16), wizard ampliado  |
+| Rango fechas rpt    | ✅ IMPLEMENTADO       | 28     | Sprint 28: filtro from/to en reportes — daily y mensual aceptan rango  |
+| Desactivar prods    | ✅ IMPLEMENTADO       | 28     | Sprint 28: soft-delete UI — desactivar vs eliminar, productos quedan en historial |
+| Badge solo Pedidos  | ✅ CORREGIDO          | 28     | Sprint 28: badge notificaciones movido sidebar → módulo Pedidos exclusivamente |
+| Ordenamiento tablas | ✅ IMPLEMENTADO       | 28     | Sprint 28: sort por columna en Productos, Clientes, Reportes           |
 
 ---
 
@@ -128,7 +135,7 @@ Sprint 27: paleta Persian Blue+Carrot ✅ → 18 módulos UI+API ✅ → 14 bugs
 | `/tu-dia`             | `src/app/(dashboard)/tu-dia/page.tsx`            | JWT      |                                |
 | `/usuarios`           | `src/app/(dashboard)/usuarios/page.tsx`          | JWT      |                                |
 | `/ayuda`              | `src/app/(dashboard)/ayuda/page.tsx`             | JWT      |                                |
-| `/onboarding`         | `src/app/(dashboard)/onboarding/page.tsx`        | JWT admin| Wizard 4 pasos ✅ Sprint 16 — cajero bloqueado |
+| `/onboarding`         | `src/app/(dashboard)/onboarding/page.tsx`        | JWT admin| Wizard 5 pasos ✅ Sprint 28 — cajero bloqueado |
 | `/catalogo-digital`   | `src/app/(dashboard)/catalogo-digital/page.tsx`  | JWT admin| Métricas + QR + bulk toggle ✅ |
 | `/catalogo/[slug]`    | `src/app/catalogo/[slug]/page.tsx`               | pública  | SSR + CatalogoGrid client      |
 | `/businesses`         | `src/app/(admin)/businesses/page.tsx`            | JWT super_admin | Admin multitenant ✅ Sprint 25 |
@@ -338,6 +345,11 @@ pero NO están en `SUPER_ADMIN_ONLY` del middleware — pendiente Sprint 28.
 - Password hasheada con bcrypt antes de almacenar
 - Rate limiter activo — retorna 429 si se excede
 - Token JWT emitido como cookie HTTP-only (NO en el body de respuesta)
+
+### Bot IA (JWT)
+| Método | Endpoint          | Notas                                                             |
+|--------|-------------------|-------------------------------------------------------------------|
+| POST   | `/api/ai/bot`     | ✅ Sprint 28 — respuestas contextuales con datos reales del negocio|
 
 ### Misc
 | Método        | Endpoint                   | Notas                            |
@@ -665,7 +677,7 @@ src/
 | `sprint24-drafts-modules-push.spec.ts`    | 8     | ✅ MT01-MT05 + MD01-MD02 + PW01 — MD02 fix: testModules incluye 'inventory' (CORE_MODULES S25) |
 | `sprint25-fixes-admin.spec.ts`            | 8     | ✅ MT-FIX04 + MT-FIX01+03 + MO-FIX01 + MO-FIX02-gap + PU-FIX01 + ST-FIX01 + AD01 + AD02 |
 | `auditoria-ciclo-real.spec.ts`            | 7     | ✅ **7/7 CIMAAD** — Nodo 1-7 ciclo completo · VPS:3003 · Sprint 27 |
-| **TOTAL**                                 | **135**| ✅ **134/135 · 1 skip permanente T03** |
+| **TOTAL**                                 | **135**| ✅ **134/135 · 1 skip permanente T03** · Sprint 28: sin nuevos spec (features verificadas manualment) |
 
 ### Tests Sprint 23 — nuevos (CLI-D)
 

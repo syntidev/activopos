@@ -761,6 +761,7 @@ export function ProductModal({
                       <input
                         id="pm-barcode"
                         type="text"
+                        inputMode="text"
                         className={mStyles.input}
                         placeholder="EAN-13, QR, SKU..."
                         value={barcode}
@@ -1042,6 +1043,7 @@ export function ProductModal({
                       <input
                         id="pm-cost"
                         type="number"
+                        inputMode="numeric"
                         className={styles.prefixInput}
                         placeholder="0.00"
                         value={cost}
@@ -1116,6 +1118,7 @@ export function ProductModal({
                         <input
                           id="pm-price"
                           type="number"
+                          inputMode="numeric"
                           className={`${styles.prefixInput} ${!isFixedPrice ? styles.calculatedField : ''}`}
                           placeholder="0.00"
                           value={isFixedPrice ? price : computed.displayPrice > 0 ? computed.displayPrice.toFixed(2) : ''}
@@ -1178,6 +1181,7 @@ export function ProductModal({
                         <input
                           id="pm-alert-threshold"
                           type="number"
+                          inputMode="numeric"
                           className={mStyles.input}
                           placeholder="5"
                           value={stockAlertThreshold}

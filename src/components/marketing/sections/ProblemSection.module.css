@@ -24,7 +24,7 @@
 
 .subtitle {
   font-size: clamp(15px, 2vw, 17px);
-  color: #64748B;
+  color: var(--text-secondary);
   line-height: 1.65;
   max-width: 580px;
   margin-bottom: var(--space-12);
@@ -53,7 +53,7 @@
 
 .row:last-child { border-bottom: none; }
 
-.row:hover { background: #F8FAFC; }
+.row:hover { background: var(--lp-bg-base); }
 
 .num {
   font-family: var(--font-display);
@@ -77,7 +77,7 @@
 
 .rowDesc {
   font-size: clamp(15px, 2vw, 17px);
-  color: #64748B;
+  color: var(--text-secondary);
   line-height: 1.65;
   font-family: var(--font-sans);
 }

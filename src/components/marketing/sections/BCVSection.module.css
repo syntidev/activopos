@@ -100,8 +100,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #4ADE80;
-  box-shadow: 0 0 8px #4ADE80;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
   animation: blink 2s infinite;
   flex-shrink: 0;
 }

@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    REPORTES — Daily report dashboard
    ============================================================ */
 
@@ -489,7 +489,7 @@
 .tabBtn:hover { background: var(--color-bg); color: var(--color-text); }
 .tabBtnActive {
   background: rgba(var(--brand-rgb, 0, 56, 189), 0.08);
-  color: var(--color-brand, #0038BD);
+  color: var(--color-brand, var(--brand));
   font-weight: 600;
 }
 
@@ -666,7 +666,7 @@
   border-radius: 4px;
   text-transform: uppercase;
   background: rgba(var(--success-rgb, 22, 163, 74), 0.1);
-  color: var(--success-text, #15803D);
+  color: var(--success-text, var(--color-success-text));
 }
 
 .badgeAjuste {
@@ -679,17 +679,17 @@
   border-radius: 4px;
   text-transform: uppercase;
   background: rgba(var(--warning-rgb, 251, 191, 36), 0.15);
-  color: var(--warning-text, #D97706);
+  color: var(--warning-text, var(--color-warning-text));
 }
 
-.qtyPos { color: var(--success-text, #15803D); font-weight: 600; }
-.qtyNeg { color: var(--danger-text, #DC2626);  font-weight: 600; }
+.qtyPos { color: var(--success-text, var(--color-success-text)); font-weight: 600; }
+.qtyNeg { color: var(--danger-text, var(--danger-text));  font-weight: 600; }
 
 .tdDash { color: var(--color-text-secondary); }
 
 /* Diferencia (cierres) */
-.difPos { color: var(--success-text, #15803D); font-weight: 700; }
-.difNeg { color: var(--danger-text, #DC2626);  font-weight: 700; }
+.difPos { color: var(--success-text, var(--color-success-text)); font-weight: 700; }
+.difNeg { color: var(--danger-text, var(--danger-text));  font-weight: 700; }
 
 @media (max-width: 768px) {
   .tabBar { padding: var(--space-2) var(--space-3); }

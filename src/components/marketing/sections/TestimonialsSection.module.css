@@ -1,6 +1,6 @@
 .section {
   padding: 96px 0;
-  background: #0D1B2E;
+  background: var(--bg-base);
   position: relative;
   z-index: 1;
   overflow: hidden;

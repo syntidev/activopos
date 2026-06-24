@@ -5,6 +5,7 @@ import { useScrollLock } from '@/hooks/useScrollLock'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useSidebarNotifications, type SidebarCounts } from '@/hooks/useSidebarNotifications'
 import { NotificationsPanel } from './NotificationsPanel'
+import { CajaToggle } from './CajaToggle'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -30,6 +31,18 @@ import {
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import styles from './Sidebar.module.css'
+
+const ROLE_LABELS: Record<SessionUser['role'], string> = {
+  super_admin: 'Super Admin',
+  admin:       'Admin',
+  cashier:     'Cajero',
+}
+
+const ROLE_BADGE_CLASSES: Record<SessionUser['role'], string> = {
+  admin:       styles.roleAdmin,
+  cashier:     styles.roleCashier,
+  super_admin: styles.roleSuperAdmin,
+}
 
 const ICON_COLOR_CLASSES: Record<string, string> = {
   ventas:        styles.iconColorVentas,
@@ -148,6 +161,8 @@ interface NavContentProps {
   notifUnread?: number
   enabledModules?: string[] | null
   sidebarCounts?: SidebarCounts
+  showMobileInfo?: boolean
+  session?: SessionUser | null
 }
 
 function NavContent({
@@ -163,6 +178,8 @@ function NavContent({
   notifUnread = 0,
   enabledModules,
   sidebarCounts,
+  showMobileInfo = false,
+  session,
 }: NavContentProps) {
   return (
     <div className={styles.inner}>
@@ -304,6 +321,20 @@ function NavContent({
           </button>
         )}
 
+        {showMobileInfo && session && (
+          <div className={styles.mobileInfoRow}>
+            <div className={styles.mobileUserMeta}>
+              <span className={styles.mobileUserName}>{session.name}</span>
+              <span className={`${styles.mobileRoleBadge} ${ROLE_BADGE_CLASSES[session.role]}`}>
+                {ROLE_LABELS[session.role]}
+              </span>
+            </div>
+            <div className={styles.mobileCajaWrap}>
+              <CajaToggle />
+            </div>
+          </div>
+        )}
+
         <button
           className={styles.logoutBtn}
           onClick={onLogout}
@@ -384,6 +415,7 @@ export function Sidebar({
     notifUnread,
     enabledModules,
     sidebarCounts,
+    session,
   }
 
   return (
@@ -403,15 +435,15 @@ export function Sidebar({
         {isMobileOpen && (
           <motion.aside
             className={`${styles.sidebar} ${styles.sidebarMobile}`}
-            initial={{ x: -220 }}
+            initial={{ x: -280 }}
             animate={{ x: 0 }}
-            exit={{ x: -220 }}
+            exit={{ x: -280 }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
             aria-label="Barra lateral"
             aria-modal="true"
             role="dialog"
           >
-            <NavContent {...sharedProps} collapsed={false} onLogout={handleMobileLogout} />
+            <NavContent {...sharedProps} collapsed={false} onLogout={handleMobileLogout} showMobileInfo />
           </motion.aside>
         )}
       </AnimatePresence>

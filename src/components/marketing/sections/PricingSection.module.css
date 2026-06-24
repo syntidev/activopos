@@ -1,6 +1,6 @@
-.section {
+﻿.section {
   padding: 96px 0;
-  background: #FFFFFF;
+  background: var(--lp-bg-card);
   position: relative;
   z-index: 1;
   overflow: hidden;
@@ -42,7 +42,7 @@
 
 .subtitle {
   font-size: clamp(15px, 2vw, 17px);
-  color: #64748B;
+  color: var(--text-secondary);
   line-height: 1.65;
   max-width: 440px;
   margin: 0 auto;
@@ -57,7 +57,7 @@
 
 .card {
   padding: 36px 28px;
-  background: #FFFFFF;
+  background: var(--lp-bg-card);
   border: 1px solid rgba(0, 56, 189, 0.12);
   border-left: 3px solid rgba(var(--brand-rgb), 0.25);
   border-radius: 16px;
@@ -105,7 +105,7 @@
   font-weight: var(--weight-bold);
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #94A3B8;
+  color: var(--text-tertiary);
   margin-bottom: var(--space-2);
   font-family: var(--font-sans);
 }
@@ -135,7 +135,7 @@
 
 .cardDesc {
   font-size: clamp(15px, 2vw, 17px);
-  color: #64748B;
+  color: var(--text-secondary);
   line-height: 1.65;
   font-family: var(--font-sans);
 }
@@ -213,7 +213,7 @@
   text-align: center;
   margin-top: var(--space-7);
   font-size: var(--text-sm);
-  color: #94A3B8;
+  color: var(--text-tertiary);
   font-family: var(--font-sans);
 }
 

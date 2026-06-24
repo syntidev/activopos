@@ -18,9 +18,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 220px !important; /* override Framer Motion width on mobile */
+  width: 280px !important; /* override Framer Motion width on mobile */
   height: 100dvh;
   z-index: var(--z-modal);
+  overflow-y: auto;
 }
 
 /* ── Inner layout ── */
@@ -30,6 +31,13 @@
   height: 100%;
   width: 220px; /* fixed inner width, sidebar clips via overflow:hidden */
   overflow: hidden;
+}
+
+@media (max-width: 1023px) {
+  .inner {
+    width: 280px;
+    overflow-y: auto;
+  }
 }
 
 /* ── Logo area ── */
@@ -364,6 +372,68 @@
   .sidebarMobile {
     display: none !important;
   }
+}
+
+/* ── Mobile user info block (only rendered in mobile drawer) ── */
+.mobileInfoRow {
+  border-top: 1px solid var(--sidebar-border);
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mobileUserMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-1);
+  overflow: hidden;
+}
+
+.mobileUserName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--sidebar-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.mobileRoleBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid;
+}
+
+.roleAdmin {
+  background: var(--color-brand-subtle);
+  color: var(--color-brand);
+  border-color: var(--color-brand-border);
+}
+
+.roleSuperAdmin {
+  background: var(--badge-quote-bg);
+  color: var(--badge-quote-text);
+  border-color: var(--badge-quote-border);
+}
+
+.roleCashier {
+  background: var(--color-surface-3);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+.mobileCajaWrap {
+  padding: 0 var(--space-1);
 }
 
 /* ── Reduced motion ── */

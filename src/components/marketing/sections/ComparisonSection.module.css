@@ -1,6 +1,6 @@
-.section {
+﻿.section {
   padding: 96px 0;
-  background: #FFFFFF;
+  background: var(--lp-bg-card);
   position: relative;
   z-index: 1;
 }
@@ -86,7 +86,7 @@
 
 .row svg { flex-shrink: 0; margin-top: 2px; }
 
-.rowBad  { color: #94A3B8; background: #FAFAFA; }
+.rowBad  { color: var(--text-tertiary); background: var(--lp-bg-base); }
 .rowBad  svg { color: var(--danger-text); }
 .rowGood { color: #1E293B; font-weight: var(--weight-medium); }
 .rowGood svg { color: var(--success-text); }

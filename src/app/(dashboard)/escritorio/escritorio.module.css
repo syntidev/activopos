@@ -1,4 +1,4 @@
-/* ── Page ── */
+﻿/* ── Page ── */
 .page {
   display: flex;
   flex-direction: column;
@@ -125,14 +125,14 @@
 
 /* ── KPI border modifiers — semantic Stripe pattern ── */
 .kpiBorderBrand   { border-left: 3px solid var(--brand); }
-.kpiBorderCyan    { border-left: 3px solid #06B6D4; }
+.kpiBorderCyan    { border-left: 3px solid var(--info); }
 .kpiBorderPurple  { border-left: 3px solid rgb(var(--purple-rgb)); }
 .kpiBorderSuccess { border-left: 3px solid var(--color-success); }
 .kpiBorderDanger  { border-left: 3px solid var(--color-danger); }
 
 /* ── KPI icon colors — semantic ── */
 .kpiIconBrand   { color: var(--brand); }
-.kpiIconCyan    { color: #06B6D4; }
+.kpiIconCyan    { color: var(--info); }
 .kpiIconPurple  { color: rgb(var(--purple-rgb)); }
 .kpiIconSuccess { color: var(--color-success); }
 .kpiIconDanger  { color: var(--color-danger); }
@@ -563,8 +563,8 @@
 
 .daySummaryText { flex: 1; }
 
-.daySummaryPos { color: var(--success-text, #15803D); }
-.daySummaryNeg { color: var(--danger-text, #DC2626); }
+.daySummaryPos { color: var(--success-text, var(--color-success-text)); }
+.daySummaryNeg { color: var(--danger-text, var(--danger-text)); }
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {

@@ -47,6 +47,12 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .content {
+    overflow-x: visible;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mainWrapper {
     transition: none;

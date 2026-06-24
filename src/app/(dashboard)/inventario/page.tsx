@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowDownToLine, ChevronLeft, ChevronRight, Clock, FileDown,
-  Package, Plus, Search, X,
+  Package, Plus, Scan, Search, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { useScanner } from '@/hooks/useScanner'
 import styles from './inventario.module.css'
 
 /* ── Types ── */
@@ -14,6 +15,7 @@ import styles from './inventario.module.css'
 interface Product {
   id: number
   name: string
+  barcode: string | null
   base_unit_label: string
   sale_mode: string
   price_per_unit_usd: number | null
@@ -269,11 +271,25 @@ function EntryModal({ product, onClose, onSaved }: ModalProps) {
 
 function InventarioContent() {
   const { toast } = useToast()
-  const [products, setProducts] = useState<Product[]>([])
-  const [entries, setEntries]   = useState<InventoryEntry[]>([])
-  const [search, setSearch]     = useState('')
-  const [loading, setLoading]   = useState(true)
-  const [selected, setSelected] = useState<Product | null>(null)
+  const [products, setProducts]       = useState<Product[]>([])
+  const [entries, setEntries]         = useState<InventoryEntry[]>([])
+  const [search, setSearch]           = useState('')
+  const [loading, setLoading]         = useState(true)
+  const [selected, setSelected]       = useState<Product | null>(null)
+  const [scannerActive, setScannerActive] = useState(false)
+
+  const { videoRef } = useScanner({
+    active: scannerActive,
+    onResult: (barcode) => {
+      const found = products.find(p => p.barcode === barcode)
+      if (found) {
+        setScannerActive(false)
+        setSelected(found)
+      } else {
+        toast('Producto no encontrado', 'error')
+      }
+    },
+  })
 
   /* ── Historial filters ── */
   const [histSearch, setHistSearch] = useState('')
@@ -385,7 +401,36 @@ function InventarioContent() {
           <h1 className={styles.pageTitle}>Inventario</h1>
           <p className={styles.pageSubtitle}>Registra entradas de stock para tus productos</p>
         </div>
+        <button
+          className={styles.scanBtn}
+          onClick={() => setScannerActive(s => !s)}
+          type="button"
+          aria-label="Escanear código de barras"
+        >
+          <Scan size={16} aria-hidden="true" />
+          Escanear
+        </button>
       </div>
+
+      {scannerActive && (
+        <div className={styles.scannerWrap} onClick={() => setScannerActive(false)}>
+          <video
+            ref={videoRef}
+            className={styles.scannerVideo}
+            autoPlay
+            playsInline
+            muted
+          />
+          <button
+            className={styles.scannerClose}
+            onClick={() => setScannerActive(false)}
+            type="button"
+            aria-label="Cerrar scanner"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className={styles.skeletonWrap} aria-label="Cargando…">

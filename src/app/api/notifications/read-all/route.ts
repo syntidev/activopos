@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function PATCH() {
+export async function POST() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const result = await prisma.notification.updateMany({
-    where: { business_id: session.businessId, read_at: null },
-    data:  { read_at: new Date(), status: 'read' },
+  await prisma.business.update({
+    where: { id: session.businessId },
+    data:  { notifications_last_read: new Date() },
   })
 
-  return NextResponse.json({ ok: true, count: result.count })
+  return NextResponse.json({ ok: true })
 }

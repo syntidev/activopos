@@ -149,9 +149,10 @@ model Business {
   cobro_data           Json?
   whatsapp             String?  @db.VarChar(30)
   max_discount_pct     Float    @default(0)
-  modules_enabled      String   @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics") @db.VarChar(500)
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  modules_enabled             String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics") @db.VarChar(500)
+  notifications_last_read     DateTime?
+  created_at                  DateTime  @default(now())
+  updated_at                  DateTime  @updatedAt
 
   users              User[]
   products           Product[]

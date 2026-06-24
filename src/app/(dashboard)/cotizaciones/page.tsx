@@ -388,17 +388,14 @@ function CotizacionesContent() {
   async function handleConvert(q: Quotation) {
     setConverting(q.id)
     try {
-      const r = await fetch(`/api/quotations/${q.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'accepted' }),
-      })
+      const r = await fetch(`/api/quotations/${q.id}/convert`, { method: 'POST' })
       if (r.ok) {
-        setQuotations(prev => prev.map(x => x.id === q.id ? { ...x, status: 'accepted' } : x))
-        toast(`Cotización ${q.number} aceptada`, 'success')
+        const d = await r.json() as { ok: boolean; ticket_number?: string }
+        setQuotations(prev => prev.map(x => x.id === q.id ? { ...x, status: 'converted' } : x))
+        toast(`Cotización ${q.number} convertida${d.ticket_number ? ` — Ticket #${d.ticket_number}` : ''}`, 'success')
       } else {
         const d = await r.json() as { error?: string }
-        toast(d.error ?? 'Error al actualizar', 'error')
+        toast(d.error ?? 'Error al convertir', 'error')
       }
     } catch {
       toast('Error de conexión', 'error')

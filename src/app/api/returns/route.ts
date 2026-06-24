@@ -7,7 +7,6 @@ import { readCachedBcvRate } from '@/lib/bcv'
 const ItemSchema = z.object({
   product_id: z.number().int().positive(),
   qty:        z.number().positive(),
-  price_usd:  z.number().nonnegative(),
 })
 
 const PostSchema = z.object({
@@ -74,22 +73,32 @@ export async function POST(req: NextRequest) {
     const body = PostSchema.parse(await req.json())
     const bid  = session.businessId
 
-    // Verify sale belongs to this business
+    // Verify sale belongs to this business and is in a returnable state
     const sale = await prisma.sale.findFirst({
-      where:   { id: body.sale_id, business_id: bid, status: 'paid' },
-      include: { items: { select: { product_id: true, quantity: true } } },
+      where:   { id: body.sale_id, business_id: bid },
+      include: { items: { select: { product_id: true, quantity: true, price_per_unit_usd: true } } },
     })
     if (!sale) {
+      return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
+    }
+    if (sale.status === 'returned') {
+      return NextResponse.json({ error: 'Esta venta ya fue devuelta.' }, { status: 409 })
+    }
+    if (sale.status !== 'paid') {
       return NextResponse.json({ error: 'Venta no encontrada o no pagada' }, { status: 404 })
     }
+
+    // Build price map from server — never trust client-supplied prices
+    const priceMap = new Map<number, number>()
+    for (const si of sale.items) priceMap.set(si.product_id, Number(si.price_per_unit_usd))
 
     // Validate: no devolver más de lo vendido
     const soldMap = new Map<number, number>()
     for (const si of sale.items) soldMap.set(si.product_id, Number(si.quantity))
 
-    // Existing approved returns for this sale
+    // Existing approved returns for this sale — scoped to this business
     const existingReturns = await prisma.returnItem.findMany({
-      where: { return: { sale_id: body.sale_id, status: 'approved' } },
+      where: { return: { sale_id: body.sale_id, business_id: bid, status: 'approved' } },
       select: { product_id: true, qty: true },
     })
     const returnedMap = new Map<number, number>()
@@ -113,9 +122,18 @@ export async function POST(req: NextRequest) {
 
     const rate     = await readCachedBcvRate()
     const r2       = (x: number) => Math.round(x * 100) / 100
-    const totalUsd = r2(body.items.reduce((s, i) => s + i.qty * i.price_usd, 0))
+    const totalUsd = r2(body.items.reduce((s, i) => s + i.qty * (priceMap.get(i.product_id) ?? 0), 0))
 
     const result = await prisma.$transaction(async tx => {
+      // TOCTOU guard: atomically claim the sale for this return
+      const { count } = await tx.sale.updateMany({
+        where: { id: body.sale_id, business_id: bid, status: 'paid' },
+        data:  { status: 'returned' },
+      })
+      if (count === 0) {
+        throw Object.assign(new Error('ALREADY_RETURNED'), { code: 'ALREADY_RETURNED' })
+      }
+
       const ret = await tx.return.create({
         data: {
           business_id:    bid,
@@ -128,12 +146,15 @@ export async function POST(req: NextRequest) {
           rate_used:      rate,
           created_by:     session.userId,
           items: {
-            create: body.items.map(i => ({
-              product_id: i.product_id,
-              qty:        i.qty,
-              price_usd:  i.price_usd,
-              total_usd:  r2(i.qty * i.price_usd),
-            })),
+            create: body.items.map(i => {
+              const unitPrice = priceMap.get(i.product_id) ?? 0
+              return {
+                product_id: i.product_id,
+                qty:        i.qty,
+                price_usd:  unitPrice,
+                total_usd:  r2(i.qty * unitPrice),
+              }
+            }),
           },
         },
         include: { items: true },
@@ -171,6 +192,9 @@ export async function POST(req: NextRequest) {
       },
     }, { status: 201 })
   } catch (err) {
+    if ((err as { code?: string }).code === 'ALREADY_RETURNED') {
+      return NextResponse.json({ error: 'Esta venta ya fue devuelta.' }, { status: 409 })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

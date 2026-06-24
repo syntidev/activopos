@@ -448,3 +448,254 @@
   }
   .rangeDateInput { width: 100%; }
 }
+
+/* ── Tab system ── */
+
+.tabRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabBar::-webkit-scrollbar { display: none; }
+
+.tabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.tabBtn:hover { background: var(--color-bg); color: var(--color-text); }
+.tabBtnActive {
+  background: rgba(var(--brand-rgb, 0, 56, 189), 0.08);
+  color: var(--color-brand, #0038BD);
+  font-weight: 600;
+}
+
+/* Tab panes */
+.tabPane {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tabPaneFluid {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Inner padded wrapper (for inventario + cierres tabs) */
+.tabInner {
+  padding: var(--space-5) var(--space-6);
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Tab section header */
+.tabSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tabSectionTitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.tabCountBadge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  color: var(--color-text-secondary);
+}
+
+/* Tab filters row */
+.tabFilters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.tabSearchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.tabSearchIcon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.tabSearchInput {
+  width: 100%;
+  height: 34px;
+  padding: 0 var(--space-3) 0 calc(var(--space-3) + 20px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+.tabSearchInput:focus { outline: none; border-color: rgba(var(--brand-rgb, 0, 56, 189), 0.5); }
+
+.tabSelect,
+.tabDateInput {
+  height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.tabSelect:focus, .tabDateInput:focus { outline: none; border-color: rgba(var(--brand-rgb, 0, 56, 189), 0.5); }
+
+.tabClearBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 var(--space-3);
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tabClearBtn:hover { background: var(--color-bg); }
+
+/* Tab loading state */
+.tabLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) 0;
+  color: var(--color-text-secondary);
+}
+
+/* Pagination */
+.tabPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.tabPaginBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tabPaginBtn:hover:not(:disabled) { background: var(--color-bg); color: var(--color-text); }
+.tabPaginBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.tabPaginInfo {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Shared table styles for new tabs */
+.dateCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.badgeEntrada {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  background: rgba(var(--success-rgb, 22, 163, 74), 0.1);
+  color: var(--success-text, #15803D);
+}
+
+.badgeAjuste {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  background: rgba(var(--warning-rgb, 251, 191, 36), 0.15);
+  color: var(--warning-text, #D97706);
+}
+
+.qtyPos { color: var(--success-text, #15803D); font-weight: 600; }
+.qtyNeg { color: var(--danger-text, #DC2626);  font-weight: 600; }
+
+.tdDash { color: var(--color-text-secondary); }
+
+/* Diferencia (cierres) */
+.difPos { color: var(--success-text, #15803D); font-weight: 700; }
+.difNeg { color: var(--danger-text, #DC2626);  font-weight: 700; }
+
+@media (max-width: 768px) {
+  .tabBar { padding: var(--space-2) var(--space-3); }
+  .tabInner { padding: var(--space-4) var(--space-4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabBtn { transition: none; }
+}

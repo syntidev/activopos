@@ -876,3 +876,8 @@
   margin: var(--space-2) 0 0;
   text-align: center;
 }
+
+
+@media (min-width: 1024px) {
+  .page { overflow-x: visible; }
+}

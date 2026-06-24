@@ -231,3 +231,12 @@ input, textarea, select {
   .page-container,
   .page-container-full { padding: 0 var(--space-4); }
 }
+
+
+/* ── Desktop overflow release ── */
+@media (min-width: 1024px) {
+  html, body {
+    overflow-x: visible;
+    max-width: none;
+  }
+}

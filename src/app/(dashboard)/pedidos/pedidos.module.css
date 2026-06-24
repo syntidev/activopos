@@ -422,3 +422,8 @@
   .orderTimeDanger   { animation: none; }
   .columnCountNew    { animation: none; }
 }
+
+
+@media (min-width: 1024px) {
+  .page { overflow-x: visible; }
+}

@@ -1051,3 +1051,8 @@
   .scanDot   { animation: none; }
   .scanToast { animation: none; }
 }
+
+
+@media (min-width: 1024px) {
+  .page { overflow-x: visible; }
+}

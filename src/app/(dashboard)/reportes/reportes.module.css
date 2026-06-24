@@ -701,3 +701,8 @@
 @media (prefers-reduced-motion: reduce) {
   .tabBtn { transition: none; }
 }
+
+
+@media (min-width: 1024px) {
+  .page { overflow-x: visible; }
+}

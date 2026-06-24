@@ -1161,3 +1161,8 @@
 @media (prefers-reduced-motion: reduce) {
   .panelBackdrop, .panel { transition: none; }
 }
+
+
+@media (min-width: 1024px) {
+  .page { overflow-x: visible; }
+}

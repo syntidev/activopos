@@ -71,10 +71,6 @@ export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
     }
   }
 
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose()
-  }
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -84,7 +80,6 @@ export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          onClick={handleOverlayClick}
           aria-modal="true"
           role="dialog"
           aria-label="Nueva categoría"

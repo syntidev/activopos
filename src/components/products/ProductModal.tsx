@@ -536,7 +536,7 @@ export function ProductModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+            onClick={(e) => e.stopPropagation()}
             aria-modal="true"
             role="dialog"
             aria-label={isEdit ? `Editar ${editProduct?.name}` : 'Nuevo Producto'}

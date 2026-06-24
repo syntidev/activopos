@@ -98,10 +98,6 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
     }
   }
 
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose()
-  }
-
   return (
     <AnimatePresence>
       {isOpen && product && (
@@ -111,7 +107,6 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
-          onClick={handleOverlayClick}
           aria-modal="true"
           role="dialog"
           aria-label={`Ajustar stock: ${product.name}`}

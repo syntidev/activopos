@@ -1,5 +1,9 @@
+'use client'
+
+import React from 'react'
 import Link from 'next/link'
-import { MessageCircle, LogIn, CheckCircle, Layers, Globe, Smartphone, RefreshCw } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { MessageCircle, LogIn, RefreshCw, Layers, Globe, Smartphone } from 'lucide-react'
 import styles from './HeroSection.module.css'
 
 interface Props {
@@ -11,7 +15,57 @@ function fmtRate(rate: number): string {
   return rate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+interface FloatingShapeProps {
+  delay: number
+  width: number
+  height: number
+  rotate: number
+  color: string
+  style: React.CSSProperties
+}
+
+function FloatingShape({ delay, width, height, rotate, color, style }: FloatingShapeProps) {
+  return (
+    <motion.div
+      className={styles.floatingShape}
+      style={style}
+      initial={{ opacity: 0, y: -60, rotate: rotate - 10 }}
+      animate={{ opacity: 1, y: 0, rotate }}
+      transition={{ duration: 2.2, delay, ease: [0.23, 0.86, 0.39, 0.96] }}
+    >
+      <motion.div
+        animate={{ y: [0, 14, 0] }}
+        transition={{ duration: 9 + delay * 2, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ width, height }}
+      >
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            background: `linear-gradient(135deg, ${color}22 0%, transparent 70%)`,
+            border: `1px solid ${color}16`,
+            backdropFilter: 'blur(2px)',
+          }}
+        />
+      </motion.div>
+    </motion.div>
+  )
+}
+
+const ACCENT_STYLES: Record<string, string> = {
+  success: styles.posCard_success ?? '',
+  brand:   styles.posCard_brand   ?? '',
+  warning: styles.posCard_warning ?? '',
+}
+
 function AppMockup() {
+  const products: Array<{ name: string; price: string; spec: string; stock: string; accent: string }> = [
+    { name: 'Pechuga de Res',  price: '$4.80/kg', spec: 'Vendido por kg', stock: '12.5 kg',     accent: 'success' },
+    { name: 'Camisa Polo',     price: '$15.00',   spec: 'M · Azul',       stock: '18 und',      accent: 'brand'   },
+    { name: 'Instalación El.', price: '$25.00',   spec: 'Servicio · 2h',  stock: 'Disponible',  accent: 'warning' },
+  ]
+
   return (
     <div className={styles.appFrame} aria-label="Vista del POS de ActivoPOS" role="img">
       {/* Sidebar */}
@@ -56,13 +110,9 @@ function AppMockup() {
               <button className={styles.posTab}>Servicios</button>
             </div>
             <div className={styles.posGrid}>
-              {[
-                { name: 'Pechuga de Res', price: '$4.80/kg', spec: 'Vendido por kg', stock: '12.5 kg', accent: 'success' },
-                { name: 'Camisa Polo', price: '$15.00', spec: 'M · Azul', stock: '18 und', accent: 'brand' },
-                { name: 'Instalación Eléct.', price: '$25.00', spec: 'Servicio · 2h', stock: 'Disponible', accent: 'warning' },
-              ].map((p) => (
-                <div key={p.name} className={`${styles.posCard} ${styles[`posCard_${p.accent}`]}`}>
-                  <div className={styles.pcAccent} data-accent={p.accent} />
+              {products.map((p) => (
+                <div key={p.name} className={`${styles.posCard} ${ACCENT_STYLES[p.accent] ?? ''}`}>
+                  <div className={styles.pcAccent} />
                   <div className={styles.pcName}>{p.name}</div>
                   <div className={styles.pcPrice}>{p.price}</div>
                   <div className={styles.pcSpec}>{p.spec}</div>
@@ -91,6 +141,32 @@ function AppMockup() {
   )
 }
 
+const fadeUp = (delay: number) => ({
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.8, delay, ease: [0.25, 0.4, 0.25, 1] as [number, number, number, number] },
+})
+
+const STATS = [
+  { num: '50+',   label: 'Negocios activos',         cta: false },
+  { num: 'BCV',   label: 'Automático en cada cobro',  cta: true  },
+  { num: '2',     label: 'Planes disponibles',         cta: false },
+  { num: '24h',   label: 'Demo garantizada',           cta: true  },
+] as const
+
+interface MobileFeat {
+  icon: React.ElementType
+  text: string
+  sub: string
+}
+
+const MOBILE_FEATS: MobileFeat[] = [
+  { icon: RefreshCw,  text: 'BCV automático en cada cobro',  sub: 'Siempre en USD, Bs exacto al cobrar'   },
+  { icon: Layers,     text: 'Especificaciones por producto',  sub: 'Tallas, kg, litros, horas de servicio' },
+  { icon: Globe,      text: 'Catálogo digital con pedidos',   sub: 'WhatsApp directo, sin intermediarios'  },
+  { icon: Smartphone, text: 'Pago Móvil, Zelle, Efectivo',   sub: 'Todos los métodos venezolanos'         },
+]
+
 export default function HeroSection({ bcvRate }: Props) {
   const rateDisplay = fmtRate(bcvRate)
 
@@ -98,33 +174,50 @@ export default function HeroSection({ bcvRate }: Props) {
     <section className={styles.hero}>
       {/* Gradient mesh */}
       <div className={styles.heroBg} aria-hidden />
-      <div className={styles.heroGrid} aria-hidden />
+      <div className={styles.heroDots} aria-hidden />
+
+      {/* Color blobs */}
+      <div className={`${styles.blob} ${styles.blobBrand}`} aria-hidden />
+      <div className={`${styles.blob} ${styles.blobCta}`}   aria-hidden />
+      <div className={`${styles.blob} ${styles.blobAccent}`} aria-hidden />
+
+      {/* Floating geometric shapes */}
+      <div className={styles.shapes} aria-hidden>
+        <FloatingShape delay={0.3} width={540} height={130} rotate={12}  color="#4D7AFF"
+          style={{ left: '-6%', top: '16%' }} />
+        <FloatingShape delay={0.5} width={400} height={100} rotate={-14} color="#EF8E01"
+          style={{ right: '-3%', bottom: '18%' }} />
+        <FloatingShape delay={0.45} width={240} height={65} rotate={-8}  color="#4D7AFF"
+          style={{ left: '7%', bottom: '10%' }} />
+        <FloatingShape delay={0.65} width={170} height={50} rotate={22}  color="#EF8E01"
+          style={{ right: '17%', top: '10%' }} />
+      </div>
 
       <div className={styles.heroContent}>
         {/* Eyebrow */}
-        <div className={styles.eyebrow} data-reveal>
+        <motion.div className={styles.eyebrow} {...fadeUp(0.1)}>
           <span className={styles.eyeDot} />
           POS · Hecho en Venezuela · Para Venezuela
-        </div>
+        </motion.div>
 
         {/* H1 */}
-        <h1 className={styles.h1} data-reveal data-reveal-delay="1">
+        <motion.h1 className={styles.h1} {...fadeUp(0.2)}>
           El dinero entra.{' '}
           <span className={styles.h1Accent}>Tú lo controlas.</span>
-        </h1>
+        </motion.h1>
 
         {/* Subtitle */}
-        <p className={styles.subtitle} data-reveal data-reveal-delay="2">
+        <motion.p className={styles.subtitle} {...fadeUp(0.3)}>
           POS táctil, BCV automático{' '}
           <span className={styles.bcvTag}>
             <RefreshCw size={11} aria-hidden />
             Bs.&nbsp;{rateDisplay}
           </span>
           , catálogo digital con pedidos por WhatsApp, variantes por talla·peso·color y cotización de servicios.
-        </p>
+        </motion.p>
 
         {/* CTAs */}
-        <div className={styles.actions} data-reveal data-reveal-delay="3">
+        <motion.div className={styles.actions} {...fadeUp(0.4)}>
           <a
             href="https://wa.me/584222654827?text=Hola%2C+quiero+ver+ActivoPOS+en+acci%C3%B3n"
             target="_blank"
@@ -138,29 +231,43 @@ export default function HeroSection({ bcvRate }: Props) {
             <LogIn size={16} aria-hidden />
             Entrar al sistema
           </Link>
-        </div>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div className={styles.statsRow} {...fadeUp(0.5)}>
+          {STATS.map((s, i) => (
+            <React.Fragment key={s.num}>
+              {i > 0 && <div className={styles.statDiv} />}
+              <div className={styles.statItem}>
+                <span className={`${styles.statNum}${s.cta ? ' ' + styles.statNumCta : ''}`}>
+                  {s.num}
+                </span>
+                <span className={styles.statLabel}>{s.label}</span>
+              </div>
+            </React.Fragment>
+          ))}
+        </motion.div>
 
         {/* App mockup — desktop only */}
-        <div className={styles.mockupWrap} data-reveal data-reveal-delay="3">
+        <motion.div className={styles.mockupWrap} {...fadeUp(0.55)}>
+          <div className={styles.mockupGlow} aria-hidden />
           <AppMockup />
-        </div>
+        </motion.div>
 
         {/* Mobile features */}
         <div className={styles.mobileFeats}>
-          {[
-            { icon: RefreshCw, text: 'BCV automático en cada cobro', sub: 'Siempre en USD, Bs exacto al cobrar' },
-            { icon: Layers, text: 'Especificaciones por producto', sub: 'Tallas, kg, litros, horas de servicio' },
-            { icon: Globe, text: 'Catálogo digital con pedidos', sub: 'WhatsApp directo, sin intermediarios' },
-            { icon: Smartphone, text: 'Pago Móvil, Zelle, Efectivo, USDT', sub: 'Todos los métodos venezolanos' },
-          ].map(({ icon: Icon, text, sub }) => (
-            <div key={text} className={styles.mfItem}>
-              <div className={styles.mfIcon}><Icon size={18} aria-hidden /></div>
-              <div>
-                <div className={styles.mfText}>{text}</div>
-                <div className={styles.mfSub}>{sub}</div>
+          {MOBILE_FEATS.map((feat) => {
+            const MFIcon = feat.icon
+            return (
+              <div key={feat.text} className={styles.mfItem}>
+                <div className={styles.mfIcon}><MFIcon size={18} /></div>
+                <div>
+                  <div className={styles.mfText}>{feat.text}</div>
+                  <div className={styles.mfSub}>{feat.sub}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

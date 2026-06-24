@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChefHat, Clock, CheckCheck, RefreshCw, Settings, Utensils, UtensilsCrossed, Pizza, Package, Croissant } from 'lucide-react'
+import {
+  ChefHat, Clock, CheckCheck, RefreshCw, Settings,
+  Utensils, UtensilsCrossed, Pizza, Package, Croissant,
+} from 'lucide-react'
 import Link from 'next/link'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { playBeep } from '@/lib/audio'
 import styles from './kds.module.css'
 
 /* ── Types ── */
@@ -26,18 +30,41 @@ interface Order {
   items: OrderItem[]
 }
 
-/* ── Helpers ── */
+/* ── Constants ── */
 
-function elapsed(iso: string): string {
-  const secs = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
-  const m    = Math.floor(secs / 60)
-  const s    = Math.floor(secs % 60)
-  if (m >= 60) return `${Math.floor(m / 60)}h ${m % 60}m`
-  return m > 0 ? `${m}m ${s}s` : `${s}s`
+const OVERFLOW_SECS  = 45 * 60  // 45 min → warning (orange)
+const EMERGENCY_SECS = 90 * 60  // 90 min → danger (red, pulsing)
+
+// Frontend STATUS_FLOW — bump via PATCH /api/orders/{id} with { status }
+// /api/kds/bump does not exist; keep using PATCH /api/orders/{id}
+const STATUS_FLOW: Record<string, string> = {
+  received:  'preparing',
+  preparing: 'ready',
 }
 
-function isUrgent(iso: string): boolean {
-  return (Date.now() - new Date(iso).getTime()) / 1000 > 600 // > 10 min
+/* ── Helpers ── */
+
+function elapsedSecs(createdAt: string, now: number): number {
+  return Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / 1000))
+}
+
+function fmtElapsed(secs: number): string {
+  if (secs >= 3600) {
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0')
+    return `${h}h${m}m`
+  }
+  const m = Math.floor(secs / 60).toString().padStart(2, '0')
+  const s = (secs % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
+}
+
+type Urgency = 'normal' | 'overflow' | 'emergency'
+
+function getUrgency(secs: number): Urgency {
+  if (secs >= EMERGENCY_SECS) return 'emergency'
+  if (secs >= OVERFLOW_SECS)  return 'overflow'
+  return 'normal'
 }
 
 /* ── KDS Activation Screen ── */
@@ -58,9 +85,9 @@ function KDSActivation() {
         <div className={styles.segmentList} aria-label="Ideal para">
           {[
             { icon: <UtensilsCrossed size={18} />, label: 'Restaurantes y cafeterías' },
-            { icon: <Pizza size={18} />, label: 'Cocinas con pedidos por WhatsApp' },
-            { icon: <Package size={18} />, label: 'Despacho y preparación de pedidos' },
-            { icon: <Croissant size={18} />, label: 'Panaderías y pastelerías' },
+            { icon: <Pizza size={18} />,           label: 'Cocinas con pedidos por WhatsApp' },
+            { icon: <Package size={18} />,         label: 'Despacho y preparación de pedidos' },
+            { icon: <Croissant size={18} />,       label: 'Panaderías y pastelerías' },
           ].map(item => (
             <div key={item.label} className={styles.segmentItem}>
               <span aria-hidden="true">{item.icon}</span>
@@ -75,7 +102,7 @@ function KDSActivation() {
             Activar KDS en Configuración
           </Link>
           <p className={styles.activationHint}>
-            Ve a Configuración → Módulos y activa "Pantalla de Cocina".
+            Ve a Configuración → Módulos y activa &quot;Pantalla de Cocina&quot;.
           </p>
         </div>
       </div>
@@ -86,31 +113,34 @@ function KDSActivation() {
 /* ── Order card ── */
 
 interface CardProps {
-  order: Order
+  order:     Order
+  now:       number
   onAdvance: (id: number, nextStatus: string) => void
   advancing: boolean
 }
 
-function OrderCard({ order, onAdvance, advancing }: CardProps) {
-  const [secs, setSecs] = useState(0)
-
-  useEffect(() => {
-    setSecs(Math.max(0, (Date.now() - new Date(order.created_at).getTime()) / 1000))
-    const t = setInterval(() => {
-      setSecs(Math.max(0, (Date.now() - new Date(order.created_at).getTime()) / 1000))
-    }, 5000)
-    return () => clearInterval(t)
-  }, [order.created_at])
-
-  const m      = Math.floor(secs / 60)
-  const urgent = secs > 600
+function OrderCard({ order, now, onAdvance, advancing }: CardProps) {
+  const secs    = elapsedSecs(order.created_at, now)
+  const urgency = getUrgency(secs)
   const isPreparing = order.status === 'preparing'
-  const nextStatus  = isPreparing ? 'ready' : 'preparing'
+  const nextStatus  = STATUS_FLOW[order.status] ?? 'preparing'
   const btnLabel    = isPreparing ? 'Marcar listo' : 'Preparando'
+
+  const timerWrapClass = [
+    styles.timerWrap,
+    urgency === 'overflow'  ? styles.timerWrapOverflow  : '',
+    urgency === 'emergency' ? styles.timerWrapEmergency : '',
+  ].filter(Boolean).join(' ')
+
+  const timerClass = [
+    styles.timer,
+    urgency === 'overflow'  ? styles.timerOverflow  : '',
+    urgency === 'emergency' ? styles.timerEmergency : '',
+  ].filter(Boolean).join(' ')
 
   return (
     <motion.article
-      className={`${styles.orderCard} ${urgent ? styles.orderCardUrgent : ''} ${isPreparing ? styles.orderCardPreparing : ''}`}
+      className={`${styles.orderCard} ${isPreparing ? styles.orderCardPreparing : ''} ${urgency === 'emergency' ? styles.orderCardEmergency : ''}`}
       layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -125,21 +155,26 @@ function OrderCard({ order, onAdvance, advancing }: CardProps) {
             <span className={styles.clientName}>{order.client.name}</span>
           )}
         </div>
-        <div className={styles.timerWrap}>
+        <div className={timerWrapClass}>
           <Clock size={12} aria-hidden="true" />
-          <span className={`${styles.timer} ${urgent ? styles.timerUrgent : ''}`}>
-            {m > 0 ? `${m}m` : `${Math.floor(secs)}s`}
+          <span className={timerClass} aria-label={`Tiempo: ${fmtElapsed(secs)}`}>
+            {fmtElapsed(secs)}
           </span>
         </div>
       </div>
 
-      {/* Status badge */}
+      {/* Status + urgency badges */}
       <div className={styles.statusRow}>
         <span className={`${styles.statusBadge} ${isPreparing ? styles.statusBadgePreparing : styles.statusBadgeReceived}`}>
           {isPreparing ? 'En preparación' : 'Recibido'}
         </span>
-        {urgent && (
-          <span className={styles.urgentBadge} aria-label="Pedido demorado">
+        {urgency === 'emergency' && (
+          <span className={styles.urgentBadge} aria-label="Pedido crítico — más de 90 minutos">
+            Crítico
+          </span>
+        )}
+        {urgency === 'overflow' && (
+          <span className={`${styles.urgentBadge} ${styles.urgentBadgeOverflow}`} aria-label="Pedido demorado — más de 45 minutos">
             Demorado
           </span>
         )}
@@ -184,12 +219,22 @@ function OrderCard({ order, onAdvance, advancing }: CardProps) {
 /* ── KDS Board ── */
 
 function KDSBoard() {
-  const { toast }     = useToast()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+  const [orders,   setOrders]   = useState<Order[]>([])
+  const [loading,  setLoading]  = useState(true)
   const [advancing, setAdvancing] = useState<Set<number>>(new Set())
   const [lastRefresh, setLastRefresh] = useState(Date.now())
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Shared 1-second clock — drives all card timers without per-card intervals
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const prevIdsRef   = useRef<Set<number>>(new Set())
+  const isFirstFetch = useRef(true)
 
   const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -201,12 +246,21 @@ function KDSBoard() {
       const all: Order[] = []
       if (r1.ok) { const d = await r1.json() as { orders?: Order[] }; all.push(...(d.orders ?? [])) }
       if (r2.ok) { const d = await r2.json() as { orders?: Order[] }; all.push(...(d.orders ?? [])) }
-      // Sort: preparing first, then by age (oldest first)
+
       all.sort((a, b) => {
         if (a.status === 'preparing' && b.status !== 'preparing') return -1
         if (b.status === 'preparing' && a.status !== 'preparing') return 1
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       })
+
+      // Beep on new orders — skip first fetch to avoid false positives on page load
+      if (!isFirstFetch.current) {
+        const newOrders = all.filter(o => !prevIdsRef.current.has(o.id))
+        if (newOrders.length > 0) playBeep(880, 100)
+      }
+      isFirstFetch.current = false
+      prevIdsRef.current = new Set(all.map(o => o.id))
+
       setOrders(all)
       setLastRefresh(Date.now())
     } catch {
@@ -233,6 +287,7 @@ function KDSBoard() {
       if (res.ok) {
         if (nextStatus === 'ready') {
           setOrders(prev => prev.filter(o => o.id !== orderId))
+          prevIdsRef.current = new Set(Array.from(prevIdsRef.current).filter(id => id !== orderId))
           toast('Pedido marcado como listo', 'success')
         } else {
           setOrders(prev => prev.map(o =>
@@ -276,8 +331,12 @@ function KDSBoard() {
             <span className={styles.countMuted}>Sin pedidos activos</span>
           )}
         </div>
-        <button className={styles.refreshBtn} onClick={() => fetchOrders(true)}
-          type="button" aria-label="Actualizar pedidos">
+        <button
+          className={styles.refreshBtn}
+          onClick={() => fetchOrders(true)}
+          type="button"
+          aria-label="Actualizar pedidos"
+        >
           <RefreshCw size={14} aria-hidden="true" />
           <span className={styles.refreshTime}>
             {Math.round((Date.now() - lastRefresh) / 1000)}s
@@ -298,6 +357,7 @@ function KDSBoard() {
               <OrderCard
                 key={o.id}
                 order={o}
+                now={now}
                 onAdvance={handleAdvance}
                 advancing={advancing.has(o.id)}
               />
@@ -316,7 +376,9 @@ function KDSContent() {
 
   useEffect(() => {
     fetch('/api/config/business/modules')
-      .then(r => r.ok ? r.json() as Promise<{ modules_enabled?: string[] }> : Promise.resolve({ modules_enabled: [] as string[] }))
+      .then(r => r.ok
+        ? r.json() as Promise<{ modules_enabled?: string[] }>
+        : Promise.resolve({ modules_enabled: [] as string[] }))
       .then(d => {
         const mods = d.modules_enabled ?? []
         setKdsEnabled(mods.includes('kds'))

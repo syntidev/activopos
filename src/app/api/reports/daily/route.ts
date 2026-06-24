@@ -28,6 +28,8 @@ type HourRow = {
 
 type RateRow = { rate: string | number }
 
+// P2: sin rate limit explícito — si se agrega, usar Redis (ioredis + rate-limiter-flexible)
+// para cluster-safety con PM2 multi-worker. RateLimiterMemory no comparte estado entre workers.
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })

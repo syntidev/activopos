@@ -17,6 +17,8 @@ import { test, expect, type APIRequestContext } from '@playwright/test'
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
 
+test.describe.serial('CIMAAD — Auditoría Ciclo Real', () => {
+
 // ── Estado compartido entre nodos ─────────────────────────────────────────────
 
 // eslint-disable-next-line prefer-const
@@ -300,7 +302,9 @@ test('Nodo 4 — Reportes: daily report > 0 ventas hoy', async () => {
   }
 
   try {
-    const today = new Date().toISOString().slice(0, 10)
+    // Use explicit UTC components — server uses Date.UTC for the daily window
+    const now   = new Date()
+    const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
     const res   = await api.get(`${BASE}/api/reports/daily?date=${today}`)
     expect(res.status()).toBe(200)
 
@@ -480,3 +484,5 @@ test('Nodo 7 — Finanzas Coherencia: resumen con ventas + CxC del ciclo', async
     throw err
   }
 })
+
+}) // end test.describe.serial

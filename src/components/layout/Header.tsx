@@ -1,12 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Menu, Sun, Moon } from 'lucide-react'
+import { Menu, Sun, Moon, Bell, ShoppingBag, AlertTriangle, DollarSign } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { CajaToggle } from './CajaToggle'
 import styles from './Header.module.css'
+
+interface NotificationItem {
+  id: number
+  type: 'order' | 'stock' | 'debt'
+  message: string
+  read: boolean
+  created_at: string
+}
+
+const NOTIF_ICONS: Record<NotificationItem['type'], { Icon: React.ElementType; cls: string }> = {
+  order: { Icon: ShoppingBag,    cls: styles.notifIconOrder },
+  stock: { Icon: AlertTriangle,  cls: styles.notifIconStock },
+  debt:  { Icon: DollarSign,     cls: styles.notifIconDebt  },
+}
+
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'Ahora'
+  if (diffMin < 60) return `Hace ${diffMin} min`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `Hace ${diffH}h`
+  return `Hace ${Math.floor(diffH / 24)}d`
+}
 
 interface HeaderProps {
   session: SessionUser | null
@@ -55,6 +79,61 @@ export function Header({
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
+  /* ── Notifications ── */
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [notifLoading, setNotifLoading] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const notifBellRef = useRef<HTMLButtonElement>(null)
+  const notifPanelRef = useRef<HTMLDivElement>(null)
+
+  const fetchNotifications = useCallback(async () => {
+    setNotifLoading(true)
+    try {
+      const res = await fetch('/api/notifications/history')
+      if (!res.ok) return
+      const data = await res.json() as { items?: NotificationItem[] }
+      const items = data.items ?? []
+      setNotifications(items)
+      setUnreadCount(items.filter(n => !n.read).length)
+    } catch {
+      // endpoint not yet available — show empty state
+    } finally {
+      setNotifLoading(false)
+    }
+  }, [])
+
+  const markAllRead = useCallback(async () => {
+    try {
+      await fetch('/api/notifications/read-all', { method: 'PATCH' })
+    } catch { /* graceful */ }
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    setUnreadCount(0)
+  }, [])
+
+  const handleToggleNotif = useCallback(async () => {
+    const opening = !notifOpen
+    setNotifOpen(opening)
+    if (opening) {
+      await fetchNotifications()
+      await markAllRead()
+    }
+  }, [notifOpen, fetchNotifications, markAllRead])
+
+  useEffect(() => { void fetchNotifications() }, [fetchNotifications])
+
+  useEffect(() => {
+    if (!notifOpen) return
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node
+      const inBell  = notifBellRef.current?.contains(target)
+      const inPanel = notifPanelRef.current?.contains(target)
+      if (!inBell && !inPanel) setNotifOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [notifOpen])
+
   const pageTitle =
     PAGE_TITLES.find(
       ([path]) => pathname === path || pathname.startsWith(path + '/')
@@ -70,77 +149,145 @@ export function Header({
   const roleClass = session ? ROLE_CLASSES[session.role] : ''
 
   return (
-    <header className={styles.header} role="banner">
-      {/* Left: hamburger + page title */}
-      <div className={styles.left}>
-        {/* Desktop: toggles sidebar collapse */}
-        <button
-          className={styles.hamburgerDesktop}
-          onClick={onToggleCollapse}
-          aria-label={isCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral'}
-          aria-expanded={!isCollapsed}
-        >
-          <Menu size={20} strokeWidth={1.75} aria-hidden="true" />
-        </button>
+    <>
+      <header className={styles.header} role="banner">
+        {/* Left: hamburger + page title */}
+        <div className={styles.left}>
+          {/* Desktop: toggles sidebar collapse */}
+          <button
+            className={styles.hamburgerDesktop}
+            onClick={onToggleCollapse}
+            aria-label={isCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral'}
+            aria-expanded={!isCollapsed}
+          >
+            <Menu size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
 
-        {/* Mobile: opens drawer */}
-        <button
-          className={styles.hamburgerMobile}
-          onClick={onToggleMobile}
-          aria-label="Abrir menú de navegación"
-        >
-          <Menu size={20} strokeWidth={1.75} aria-hidden="true" />
-        </button>
+          {/* Mobile: opens drawer */}
+          <button
+            className={styles.hamburgerMobile}
+            onClick={onToggleMobile}
+            aria-label="Abrir menú de navegación"
+          >
+            <Menu size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
 
-        <h1 className={styles.pageTitle}>{pageTitle}</h1>
-      </div>
+          <h1 className={styles.pageTitle}>{pageTitle}</h1>
+        </div>
 
-      {/* Right: BCV rate + theme toggle + user info */}
-      <div className={styles.right}>
-        {bcvRate && (
-          <>
-            <div
-              className={styles.bcvPill}
-              title="Tasa BCV oficial"
-              aria-label={`Tasa BCV: ${formatRate(bcvRate)} bolívares por dólar`}
-            >
-              <span className={styles.bcvCurrency}>USD/VES</span>
-              <span className={styles.bcvAmount}>{formatRate(bcvRate)}</span>
-              <span className={styles.bcvBs}>Bs</span>
-            </div>
-            <div className={styles.separator} aria-hidden="true" />
-          </>
-        )}
-
-        {/* Caja status toggle */}
-        <CajaToggle />
-
-        {/* Theme toggle */}
-        <button
-          className={styles.themeToggle}
-          onClick={() => { if (mounted) setTheme(resolvedTheme === 'dark' ? 'light' : 'dark') }}
-          aria-label={mounted && resolvedTheme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-          title={mounted && resolvedTheme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-        >
-          {mounted && resolvedTheme === 'dark' ? (
-            <Sun size={18} strokeWidth={1.75} aria-hidden="true" />
-          ) : (
-            <Moon size={18} strokeWidth={1.75} aria-hidden="true" />
+        {/* Right: BCV rate + caja + notif + theme + user */}
+        <div className={styles.right}>
+          {bcvRate && (
+            <>
+              <div
+                className={styles.bcvPill}
+                title="Tasa BCV oficial"
+                aria-label={`Tasa BCV: ${formatRate(bcvRate)} bolívares por dólar`}
+              >
+                <span className={styles.bcvCurrency}>USD/VES</span>
+                <span className={styles.bcvAmount}>{formatRate(bcvRate)}</span>
+                <span className={styles.bcvBs}>Bs</span>
+              </div>
+              <div className={styles.separator} aria-hidden="true" />
+            </>
           )}
-        </button>
 
-        {session && (
-          <>
-            <div className={styles.separator} aria-hidden="true" />
-            <div className={styles.userInfo} aria-label={`Usuario: ${session.name}`}>
-              <span className={styles.userName}>{session.name}</span>
-              <span className={`${styles.roleBadge} ${roleClass}`}>
-                {roleLabel}
+          {/* Caja status toggle */}
+          <CajaToggle />
+
+          {/* Notification bell */}
+          <button
+            ref={notifBellRef}
+            className={styles.notifBtn}
+            onClick={() => { void handleToggleNotif() }}
+            aria-label={`Notificaciones${unreadCount > 0 ? ` — ${unreadCount} sin leer` : ''}`}
+            aria-expanded={notifOpen}
+            aria-haspopup="true"
+          >
+            <Bell size={18} strokeWidth={1.75} aria-hidden="true" />
+            {unreadCount > 0 && (
+              <span className={styles.notifBadge} aria-hidden="true">
+                {unreadCount > 9 ? '9+' : unreadCount}
               </span>
-            </div>
-          </>
-        )}
-      </div>
-    </header>
+            )}
+          </button>
+
+          {/* Theme toggle */}
+          <button
+            className={styles.themeToggle}
+            onClick={() => { if (mounted) setTheme(resolvedTheme === 'dark' ? 'light' : 'dark') }}
+            aria-label={mounted && resolvedTheme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            title={mounted && resolvedTheme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          >
+            {mounted && resolvedTheme === 'dark' ? (
+              <Sun size={18} strokeWidth={1.75} aria-hidden="true" />
+            ) : (
+              <Moon size={18} strokeWidth={1.75} aria-hidden="true" />
+            )}
+          </button>
+
+          {session && (
+            <>
+              <div className={styles.separator} aria-hidden="true" />
+              <div className={styles.userInfo} aria-label={`Usuario: ${session.name}`}>
+                <span className={styles.userName}>{session.name}</span>
+                <span className={`${styles.roleBadge} ${roleClass}`}>
+                  {roleLabel}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* Notification panel — rendered outside header to avoid backdrop-filter stacking context */}
+      {notifOpen && (
+        <div
+          ref={notifPanelRef}
+          className={styles.notifPanel}
+          role="dialog"
+          aria-label="Notificaciones"
+        >
+          <div className={styles.notifPanelHeader}>
+            <span className={styles.notifPanelTitle}>Notificaciones</span>
+            {!notifLoading && notifications.length > 0 && unreadCount === 0 && (
+              <span className={styles.notifAllRead}>Todas leídas</span>
+            )}
+          </div>
+
+          <div className={styles.notifList}>
+            {notifLoading ? (
+              <div className={styles.notifLoadingState}>
+                <span className={styles.notifSpinner} aria-hidden="true" />
+                Cargando...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className={styles.notifEmptyState}>
+                <Bell size={24} className={styles.notifEmptyIcon} aria-hidden="true" />
+                <span>Sin notificaciones recientes</span>
+              </div>
+            ) : (
+              notifications.map(n => {
+                const { Icon, cls } = NOTIF_ICONS[n.type] ?? { Icon: Bell, cls: '' }
+                return (
+                  <div
+                    key={n.id}
+                    className={`${styles.notifItem} ${n.read ? styles.notifItemRead : ''}`}
+                  >
+                    <span className={`${styles.notifIconCircle} ${cls}`} aria-hidden="true">
+                      <Icon size={14} strokeWidth={2} />
+                    </span>
+                    <div className={styles.notifItemBody}>
+                      <p className={styles.notifItemMsg}>{n.message}</p>
+                      <p className={styles.notifItemTime}>{relativeTime(n.created_at)}</p>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </>
   )
 }

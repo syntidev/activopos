@@ -270,67 +270,13 @@ function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => vo
   )
 }
 
-/* ── Chatbot responses ── */
-
-const BOT_RULES: [string[], string][] = [
-  [
-    ['tasa', 'bcv', 'cambio', 'dólar', 'divisa'],
-    'Ve a Configuración → General → Tasas de Cambio y presiona "Guardar Tasas". La tasa se actualiza automáticamente desde el BCV.',
-  ],
-  [
-    ['anular', 'cancelar', 'devolver', 'devolución'],
-    'En Reportes busca la venta y usa el botón Anular. Solo el administrador puede hacerlo y debe ingresar un motivo.',
-  ],
-  [
-    ['cajero', 'usuario', 'empleado', 'acceso', 'contraseña'],
-    'Ve a Configuración → Usuarios → Nuevo Usuario. Asigna el rol "Empleado" para acceso al POS únicamente.',
-  ],
-  [
-    ['producto', 'artículo', 'inventario', 'stock'],
-    'Ve a la sección Productos y usa "+ Nuevo" para agregar un artículo. Ingresa nombre, precio y categoría.',
-  ],
-  [
-    ['caja', 'turno', 'apertura', 'cierre', 'cuadre'],
-    'En Gestión de Caja abre el turno con los fondos iniciales. Al cerrar, ingresa el efectivo contado y se calculará la diferencia.',
-  ],
-  [
-    ['cliente', 'fiado', 'crédito', 'deuda'],
-    'En la sección Clientes crea un perfil. Desde el POS puedes asignar una venta a crédito seleccionando el cliente.',
-  ],
-  [
-    ['pago', 'cobrar', 'venta', 'pos', 'ticket'],
-    'En el POS selecciona los productos, ingresa la cantidad y procesa el pago eligiendo el método (efectivo, transferencia, etc.).',
-  ],
-  [
-    ['reporte', 'exportar', 'pdf', 'historial'],
-    'En la sección Reportes filtra por fecha y usa "Exportar PDF" para descargar el resumen de ventas del período.',
-  ],
-  [
-    ['tema', 'oscuro', 'claro', 'color', 'apariencia'],
-    'Ve a Configuración → Apariencia para cambiar entre tema oscuro y claro. El cambio aplica de inmediato.',
-  ],
-  [
-    ['whatsapp', 'soporte', 'ayuda', 'contacto'],
-    'Puedes contactar soporte por WhatsApp haciendo clic en el botón "WhatsApp Soporte" en esta misma página.',
-  ],
-]
-
-function getBotResponse(input: string): string {
-  const lower = input.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  for (const [keywords, response] of BOT_RULES) {
-    if (keywords.some((k) => lower.includes(k.normalize('NFD').replace(/[̀-ͯ]/g, '')))) {
-      return response
-    }
-  }
-  return 'Para más ayuda, contacta soporte por WhatsApp usando el botón en esta página. Responden en minutos.'
-}
-
 /* ── Chatbot panel ── */
 
 interface ChatMessage {
   id: number
   type: 'bot' | 'user'
   text: string
+  isPending?: boolean
 }
 
 function ChatPanel({ onClose }: { onClose: () => void }) {
@@ -338,27 +284,60 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
     { id: 0, type: 'bot', text: '¡Hola! ¿En qué puedo ayudarte hoy? Pregunta sobre ventas, caja, productos o configuración.' },
   ])
   const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim()
-    if (!text) return
+    if (!text || isLoading) return
 
     const userMsg: ChatMessage = { id: Date.now(), type: 'user', text }
-    const botMsg: ChatMessage = { id: Date.now() + 1, type: 'bot', text: getBotResponse(text) }
+    const pendingId = Date.now() + 1
+    const pendingMsg: ChatMessage = { id: pendingId, type: 'bot', text: 'Consultando datos...', isPending: true }
 
-    setMessages((prev) => [...prev, userMsg, botMsg])
+    setMessages(prev => [...prev, userMsg, pendingMsg])
     setInput('')
+    setIsLoading(true)
+
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      })
+
+      let botText: string
+      if (res.status === 403) {
+        botText = 'Solo administradores pueden usar el asistente.'
+      } else if (!res.ok) {
+        botText = 'No pude conectarme. Intenta de nuevo.'
+      } else {
+        const data = await res.json() as { response?: string }
+        botText = data.response ?? 'No pude procesar tu pregunta. Intenta de nuevo.'
+      }
+
+      setMessages(prev => prev.map(m =>
+        m.id === pendingId ? { ...m, text: botText, isPending: false } : m
+      ))
+    } catch {
+      setMessages(prev => prev.map(m =>
+        m.id === pendingId
+          ? { ...m, text: 'No pude conectarme. Intenta de nuevo.', isPending: false }
+          : m
+      ))
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      send()
+      void send()
     }
   }
 
@@ -371,7 +350,9 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
           </div>
           <div>
             <p className={styles.chatName}>Asistente ActivoPOS</p>
-            <p className={styles.chatStatus}>En línea · responde al instante</p>
+            <p className={styles.chatStatus}>
+              {isLoading ? 'Consultando IA...' : 'En línea · responde al instante'}
+            </p>
           </div>
         </div>
         <button
@@ -387,8 +368,9 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`${styles.chatBubble} ${msg.type === 'user' ? styles.chatBubbleUser : styles.chatBubbleBot}`}
+            className={`${styles.chatBubble} ${msg.type === 'user' ? styles.chatBubbleUser : styles.chatBubbleBot}${msg.isPending ? ` ${styles.chatBubblePending}` : ''}`}
           >
+            {msg.isPending && <span className={styles.chatSpinner} aria-hidden="true" />}
             {msg.text}
           </div>
         ))}
@@ -404,12 +386,13 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
           placeholder="Escribe tu pregunta..."
           className={styles.chatInput}
           aria-label="Escribe tu pregunta"
+          disabled={isLoading}
         />
         <button
           className={styles.chatSendBtn}
-          onClick={send}
+          onClick={() => void send()}
           aria-label="Enviar"
-          disabled={!input.trim()}
+          disabled={!input.trim() || isLoading}
         >
           <Send size={15} aria-hidden="true" />
         </button>

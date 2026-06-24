@@ -25,6 +25,7 @@ interface LowStockRow {
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Solo administradores pueden usar el asistente.' }, { status: 403 })
 
   try {
     await aiChatLimiter.consume(`user:${session.userId}`)

@@ -97,10 +97,10 @@ export async function GET(req: NextRequest) {
   XLSX.utils.book_append_sheet(wb, wsVentas,  'Ventas')
   XLSX.utils.book_append_sheet(wb, wsGastos,  'Gastos')
 
-  const raw    = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as number[]
-  const buffer = new Uint8Array(raw)
+  const raw = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as number[]
+  const buf = new Uint8Array(raw)
 
-  return new Response(buffer, {
+  return new NextResponse(buf.buffer as ArrayBuffer, {
     headers: {
       'Content-Type':        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="finanzas-${fromStr}-${toStr}.xlsx"`,

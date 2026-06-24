@@ -30,39 +30,23 @@
   object-fit: cover;
 }
 
-/* Flash feedback — green/red overlay */
-.flashOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 50ms ease;
-}
-
-.flashSuccess {
-  opacity: 1;
-  background: rgba(var(--success-rgb), 0.38);
-}
-
-.flashError {
-  opacity: 1;
-  background: rgba(var(--danger-rgb), 0.38);
-}
-
-/* ── Viewfinder rectangle + scan animation ── */
+/* ── Viewfinder — 260×180px centered rectangle ── */
 
 .viewfinder {
   position: absolute;
-  /* centered rectangle: 70% wide, 70% tall */
-  left: 15%;
-  right: 15%;
-  top: 10%;
-  bottom: 10%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 260px;
+  height: 180px;
   z-index: 3;
+  overflow: hidden;
+  border-radius: 4px;
+  /* Dark overlay outside the rectangle — clipped by .cameraZone overflow:hidden */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.52);
 }
 
-/* Corner markers */
+/* Corner markers — brand color with gentle glow pulse */
 .corner {
   position: absolute;
   width: 22px;
@@ -70,6 +54,12 @@
   border-color: var(--color-brand);
   border-style: solid;
   border-radius: 2px;
+  animation: cornerGlow 2s ease-in-out infinite;
+}
+
+@keyframes cornerGlow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(var(--brand-rgb), 0.7)); }
+  50%       { filter: drop-shadow(0 0 7px rgba(var(--brand-rgb), 1));   }
 }
 
 .cornerTL { top: 0;    left: 0;   border-width: 3px 0 0 3px; }
@@ -77,7 +67,7 @@
 .cornerBL { bottom: 0; left: 0;   border-width: 0 0 3px 3px; }
 .cornerBR { bottom: 0; right: 0;  border-width: 0 3px 3px 0; }
 
-/* Animated scan line */
+/* Scan line — travels inside the viewfinder rectangle */
 .scanLine {
   position: absolute;
   left: 0;
@@ -99,6 +89,38 @@
   0%   { top: 4px; }
   50%  { top: calc(100% - 4px); }
   100% { top: 4px; }
+}
+
+/* Green flash — viewfinder only, success scan */
+.viewfinderFlash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(var(--success-rgb), 0.42);
+  border-radius: 3px;
+  transition: opacity 40ms ease;
+}
+
+.viewfinderFlashActive {
+  opacity: 1;
+}
+
+/* ── Hint text — below the viewfinder rectangle ── */
+
+.scanHint {
+  position: absolute;
+  left: 50%;
+  /* 90px = half of viewfinder height; 10px gap */
+  top: calc(50% + 100px);
+  transform: translateX(-50%);
+  z-index: 4;
+  margin: 0;
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* ── Status badge (top-left) ── */
@@ -419,12 +441,14 @@
 /* ── Reduced motion ── */
 
 @media (prefers-reduced-motion: reduce) {
-  .scanLine   { animation: none; top: 50%; }
-  .scanDot    { animation: none; }
-  .itemRow    { animation: none; }
-  .toast      { animation: none; }
-  .closeBtn   { transition: background var(--transition-fast); }
-  .closeBtn:active { transform: none; }
-  .cobrarBtn  { transition: background var(--transition-fast); }
+  .scanLine         { animation: none; top: 50%; }
+  .scanDot          { animation: none; }
+  .corner           { animation: none; filter: none; }
+  .itemRow          { animation: none; }
+  .toast            { animation: none; }
+  .viewfinderFlash  { transition: none; }
+  .closeBtn         { transition: background var(--transition-fast); }
+  .closeBtn:active  { transform: none; }
+  .cobrarBtn        { transition: background var(--transition-fast); }
   .cobrarBtn:active:not(:disabled) { transform: none; }
 }

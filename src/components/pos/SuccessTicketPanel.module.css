@@ -1,0 +1,232 @@
+/* ──────────────────────────────────────────────────────
+   SuccessTicketPanel — post-cobro feedback
+   ────────────────────────────────────────────────────── */
+
+/* ── Full-screen overlay ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(4px);
+  z-index: calc(var(--z-modal, 400) + 10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+
+/* ── Card ── */
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-surface);
+  border: 1px solid rgba(var(--success-rgb, 22, 163, 74), 0.22);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 28px 56px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 40px rgba(var(--success-rgb, 22, 163, 74), 0.08);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Animated check icon ── */
+.iconWrap {
+  margin-bottom: var(--space-4);
+}
+
+.checkSvg {
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+
+.checkCircle {
+  fill: none;
+  stroke-dasharray: 126;
+  stroke-dashoffset: 126;
+  transform-origin: 24px 24px;
+  transform: rotate(-90deg);
+  animation: drawCircle 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.12s forwards;
+}
+
+.checkMark {
+  fill: none;
+  stroke-dasharray: 34;
+  stroke-dashoffset: 34;
+  animation: drawMark 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.60s forwards;
+}
+
+@keyframes drawCircle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes drawMark {
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkCircle,
+  .checkMark {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── Heading ── */
+.heading {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+  margin: 0;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+/* ── Ticket number ── */
+.ticketNum {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-brand);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: var(--space-1) 0 var(--space-5);
+}
+
+/* ── Totals block ── */
+.totals {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1-5);
+  margin-bottom: var(--space-6);
+  width: 100%;
+}
+
+.totalUsd {
+  font-size: var(--text-4xl, 2.25rem);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.totalBs {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.paymentPill {
+  margin-top: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.dueDateLine {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--warning-text);
+}
+
+/* ── Action buttons ── */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2-5);
+  width: 100%;
+}
+
+/* ── Shared button base ── */
+.btnWhatsapp,
+.btnPrint,
+.btnNew {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: none;
+  transition:
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform 80ms ease;
+}
+
+.btnWhatsapp:active,
+.btnPrint:active,
+.btnNew:active {
+  transform: scale(0.975);
+}
+
+/* WhatsApp — verde */
+.btnWhatsapp {
+  background: var(--whatsapp);
+  color: var(--whatsapp-on);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.30);
+}
+
+.btnWhatsapp:hover {
+  background: var(--whatsapp-hover);
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.38);
+}
+
+.btnWhatsapp:focus-visible {
+  outline: 2px solid var(--whatsapp);
+  outline-offset: 2px;
+}
+
+/* Imprimir — ghost */
+.btnPrint {
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.btnPrint:hover {
+  background: var(--color-surface-2);
+  border-color: var(--color-border-strong);
+}
+
+.btnPrint:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Nueva venta — CTA naranja, texto a la izquierda, flecha a la derecha */
+.btnNew {
+  background: var(--cta);
+  color: var(--cta-on);
+  box-shadow: 0 2px 10px rgba(var(--cta-rgb), 0.32);
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+}
+
+.btnNew:hover {
+  background: var(--cta-hover);
+  box-shadow: 0 4px 16px rgba(var(--cta-rgb), 0.42);
+}
+
+.btnNew:focus-visible {
+  outline: 2px solid var(--cta);
+  outline-offset: 2px;
+}

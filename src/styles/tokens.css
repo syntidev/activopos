@@ -61,6 +61,11 @@
   --cta-on:             #FFFFFF;
   --cta-rgb:            239, 142, 1;
 
+  /* ── WhatsApp ── */
+  --whatsapp:           #25D366;
+  --whatsapp-hover:     #1EBE57;
+  --whatsapp-on:        #FFFFFF;
+
   /* ── Bordes laterales semánticos — patrón Fina ── */
   --border-alert:       #F97316;
   --border-positive:    #0038BD;

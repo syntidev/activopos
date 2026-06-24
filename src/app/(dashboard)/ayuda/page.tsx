@@ -345,7 +345,7 @@ function AyudaContent() {
           <h2 className={styles.contactTitle}>Contactos y Accesos Rápidos</h2>
           <div className={styles.contactGrid}>
             <a
-              href="https://wa.me/584121234567"
+              href="https://wa.me/584243244788"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.contactCard}

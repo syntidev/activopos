@@ -169,6 +169,7 @@ export function MovimientoModal({
           <Input
             label={currency === 'usd' ? 'Monto (USD)' : 'Monto (Bs)'}
             type="number"
+            inputMode="decimal"
             min="0"
             step="0.01"
             value={amount}

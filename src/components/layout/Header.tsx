@@ -8,6 +8,17 @@ import type { SessionUser } from '@/types'
 import { CajaToggle } from './CajaToggle'
 import styles from './Header.module.css'
 
+interface BizInfo { name: string; logo_path: string | null }
+
+function bizInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0] ?? '')
+    .join('')
+    .toUpperCase()
+}
+
 interface NotificationItem {
   id: number
   type: 'order' | 'stock' | 'debt' | string
@@ -83,6 +94,15 @@ export function Header({
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  /* ── Business brand (desktop left) ── */
+  const [biz, setBiz] = useState<BizInfo | null>(null)
+  useEffect(() => {
+    fetch('/api/config/business')
+      .then(r => r.ok ? r.json() : null)
+      .then((j: BizInfo | null) => { if (j?.name) setBiz({ name: j.name, logo_path: j.logo_path ?? null }) })
+      .catch(() => {})
+  }, [])
 
   /* ── Notifications ── */
   const [notifOpen, setNotifOpen] = useState(false)
@@ -188,6 +208,27 @@ export function Header({
           >
             <Menu size={20} strokeWidth={1.75} aria-hidden="true" />
           </button>
+
+          {/* Desktop: business brand — logo + name */}
+          {biz && (
+            <>
+              <div className={styles.bizBrand} aria-label={`Negocio: ${biz.name}`}>
+                {biz.logo_path?.startsWith('/uploads/') ? (
+                  <img
+                    src={biz.logo_path}
+                    alt={biz.name}
+                    className={styles.bizLogo}
+                  />
+                ) : (
+                  <span className={styles.bizInitials} aria-hidden="true">
+                    {bizInitials(biz.name)}
+                  </span>
+                )}
+                <span className={styles.bizName}>{biz.name}</span>
+              </div>
+              <div className={styles.bizSep} aria-hidden="true" />
+            </>
+          )}
 
           <h1 className={styles.pageTitle}>{pageTitle}</h1>
         </div>

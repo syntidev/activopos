@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   ChevronRight,
   Clock,
+  TriangleAlert,
 } from 'lucide-react'
 import styles from './escritorio.module.css'
 
@@ -138,6 +139,7 @@ export default function EscritorioPage() {
   const [loading,      setLoading]      = useState(true)
   const [creditData,   setCreditData]   = useState<CreditData | null>(null)
   const [todayVentas,  setTodayVentas]  = useState<TodayVentas | null>(null)
+  const [gastosAlert,  setGastosAlert]  = useState<{ count: number } | null>(null)
 
   const fetchOperativo = useCallback(async () => {
     try {
@@ -198,6 +200,16 @@ export default function EscritorioPage() {
 
   useEffect(() => { void fetchOperativo() }, [fetchOperativo])
   useEffect(() => { void fetchAnalytics(period) }, [fetchAnalytics, period])
+
+  /* Gastos próximos a vencer — alert banner */
+  useEffect(() => {
+    fetch('/api/expenses/alerts')
+      .then(r => r.ok ? r.json() : null)
+      .then((j: { count?: number } | null) => {
+        if (j && (j.count ?? 0) > 0) setGastosAlert({ count: j.count ?? 0 })
+      })
+      .catch(() => {})
+  }, [])
 
   const dateStr = new Date().toLocaleDateString('es-VE', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -332,6 +344,21 @@ export default function EscritorioPage() {
           )}
         </div>
       </div>
+
+      {/* ── Alerta gastos por vencer ── */}
+      {gastosAlert && gastosAlert.count > 0 && (
+        <div className={styles.gastosAlertBanner} role="alert">
+          <TriangleAlert size={16} className={styles.gastosAlertIcon} aria-hidden="true" />
+          <span>
+            Tienes <strong>{gastosAlert.count}</strong>{' '}
+            {gastosAlert.count === 1 ? 'gasto fijo por vencer' : 'gastos fijos por vencer'}{' '}
+            esta semana.
+          </span>
+          <Link href="/finanzas" className={styles.gastosAlertLink}>
+            Ver Finanzas
+          </Link>
+        </div>
+      )}
 
       {/* ── Resumen del día ── */}
       {todayVentas !== null && (

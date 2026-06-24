@@ -1,33 +1,40 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, BarChart2 } from 'lucide-react'
-import { Badge, EmptyState } from '@/components/ui'
+import { Plus, BarChart2, Trash2 } from 'lucide-react'
+import { EmptyState } from '@/components/ui'
 import { GastoModal } from '@/components/finanzas/GastoModal'
 import styles from './finanzas.module.css'
 
 interface Gasto {
-  id:        number
-  concepto:  string
-  monto_usd: number
-  categoria: string
-  fecha:     string
+  id:         number
+  concepto:   string
+  monto_usd:  number
+  categoria:  string
+  fecha:      string
+  tipo:       'fijo' | 'variable'
+  recurrente: boolean
+  due_date:   string | null
 }
 
-interface CategoryRow { name: string; amount: number; pct: number }
+type TipoFilter = 'todos' | 'fijo' | 'variable'
 
-function buildCategories(gastos: Gasto[], total: number): CategoryRow[] {
-  const map = new Map<string, number>()
-  for (const g of gastos) {
-    map.set(g.categoria, (map.get(g.categoria) ?? 0) + g.monto_usd)
-  }
-  return Array.from(map.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, amount]) => ({
-      name,
-      amount,
-      pct: total > 0 ? (amount / total) * 100 : 0,
-    }))
+function getDueBadge(dueDate: string | null): { text: string; style: 'urgente' | 'vencido' } | null {
+  if (!dueDate) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(dueDate + 'T00:00:00')
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays < 0)  return { text: 'Vencido',           style: 'vencido'  }
+  if (diffDays === 0) return { text: 'Vence hoy',         style: 'vencido'  }
+  if (diffDays <= 5)  return { text: `Vence en ${diffDays}d`, style: 'urgente' }
+  return null
+}
+
+function monthEnd(month: string): string {
+  const [y, m] = month.split('-')
+  const last = new Date(Number(y), Number(m), 0).getDate()
+  return `${month}-${String(last).padStart(2, '0')}`
 }
 
 export function GastosSection({ month }: { month: string }) {
@@ -35,11 +42,21 @@ export function GastosSection({ month }: { month: string }) {
   const [total,      setTotal]      = useState(0)
   const [showModal,  setShowModal]  = useState(false)
   const [loading,    setLoading]    = useState(true)
+  const [tipoFilter, setTipoFilter] = useState<TipoFilter>('todos')
+  const [from,       setFrom]       = useState(() => `${month}-01`)
+  const [to,         setTo]         = useState(() => monthEnd(month))
+
+  useEffect(() => {
+    setFrom(`${month}-01`)
+    setTo(monthEnd(month))
+  }, [month])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/finanzas/gastos?month=${month}`)
+      const params = new URLSearchParams({ month, from, to })
+      if (tipoFilter !== 'todos') params.set('tipo', tipoFilter)
+      const res = await fetch(`/api/finanzas/gastos?${params}`)
       if (res.ok) {
         const j = await res.json()
         setGastos(j.gastos ?? [])
@@ -48,70 +65,137 @@ export function GastosSection({ month }: { month: string }) {
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, from, to, tipoFilter])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { void load() }, [load])
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Eliminar este gasto?')) return
+    const res = await fetch(`/api/finanzas/gastos/${id}`, { method: 'DELETE' })
+    if (res.ok) void load()
+  }
 
   if (loading) return <div className={styles.loading}>Cargando gastos…</div>
 
-  const categories = buildCategories(gastos, total)
-
   return (
     <>
-      {/* ── Category distribution ── */}
-      {categories.length > 0 && (
-        <div className={styles.catSection}>
-          <h3 className={styles.catSectionTitle}>Distribución por categoría</h3>
-          <div className={styles.catList}>
-            {categories.map(cat => (
-              <div key={cat.name} className={styles.catRow}>
-                <span className={styles.catName}>{cat.name}</span>
-                <div className={styles.catBarWrap}>
-                  <div className={styles.catBarFill} style={{ width: `${cat.pct}%` }} />
-                </div>
-                <span className={styles.catPct}>{cat.pct.toFixed(0)}%</span>
-                <span className={styles.catAmt}>${cat.amount.toFixed(2)}</span>
-              </div>
-            ))}
+      {/* ── Filters ── */}
+      <div className={styles.gastosFilters}>
+        <div className={styles.gastosDateRange}>
+          <div className={styles.gastoDateField}>
+            <label className={styles.gastosDateLabel}>Desde</label>
+            <input
+              type="date"
+              className={styles.gastosDateInput}
+              value={from}
+              onChange={e => setFrom(e.target.value)}
+              aria-label="Desde"
+            />
+          </div>
+          <div className={styles.gastoDateField}>
+            <label className={styles.gastosDateLabel}>Hasta</label>
+            <input
+              type="date"
+              className={styles.gastosDateInput}
+              value={to}
+              onChange={e => setTo(e.target.value)}
+              aria-label="Hasta"
+            />
           </div>
         </div>
-      )}
+        <div className={styles.filterRow}>
+          {(['todos', 'fijo', 'variable'] as TipoFilter[]).map(t => (
+            <button
+              key={t}
+              type="button"
+              className={`${styles.filterBtn} ${tipoFilter === t ? styles.filterBtnActive : ''}`}
+              onClick={() => setTipoFilter(t)}
+            >
+              {t === 'todos' ? 'Todos' : t === 'fijo' ? 'Fijo' : 'Variable'}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ── Header ── */}
       <div className={styles.sectionHeader}>
         <p className={styles.sectionSubtitle}>
-          Gastos del mes · Total: <strong>${total.toFixed(2)}</strong>
+          Total período: <strong>${total.toFixed(2)}</strong>
         </p>
-        <button className={styles.newBtn} onClick={() => setShowModal(true)}>
+        <button type="button" className={styles.newBtn} onClick={() => setShowModal(true)}>
           <Plus size={15} aria-hidden="true" />
           Nuevo gasto
         </button>
       </div>
 
-      {/* ── Expense list ── */}
+      {/* ── Table ── */}
       {!gastos.length ? (
         <EmptyState
           icon={BarChart2}
           title="Sin gastos registrados"
-          description="No hay gastos para este mes."
+          description="No hay gastos para este período."
         />
       ) : (
-        <div className={styles.cxcList}>
-          {gastos.map(g => (
-            <div key={g.id} className={styles.cxcRow}>
-              <div className={styles.cxcLeft}>
-                <span className={styles.cxcName}>{g.concepto}</span>
-                <div className={styles.cxcMeta}>
-                  <Badge variant="neutral" size="sm">{g.categoria}</Badge>
-                  <span>·</span>
-                  <span>{new Date(g.fecha).toLocaleDateString('es-VE')}</span>
-                </div>
-              </div>
-              <div className={styles.cxcRight}>
-                <span className={styles.cxcSaldo}>${g.monto_usd.toFixed(2)}</span>
-              </div>
-            </div>
-          ))}
+        <div className={styles.finTableWrap}>
+          <table className={styles.finTable}>
+            <thead>
+              <tr>
+                <th className={styles.finTh}>Fecha</th>
+                <th className={styles.finTh}>Categoría</th>
+                <th className={styles.finTh}>Descripción</th>
+                <th className={`${styles.finTh} ${styles.colRight}`}>Monto USD</th>
+                <th className={`${styles.finTh} ${styles.colCenter}`}>Tipo</th>
+                <th className={`${styles.finTh} ${styles.colCenter}`}>Vence</th>
+                <th className={styles.finTh} aria-label="Acciones" />
+              </tr>
+            </thead>
+            <tbody>
+              {gastos.map(g => {
+                const badge = getDueBadge(g.due_date)
+                return (
+                  <tr key={g.id}>
+                    <td className={styles.finTd}>
+                      {new Date(g.fecha + 'T00:00:00').toLocaleDateString('es-VE')}
+                    </td>
+                    <td className={styles.finTd}>{g.categoria}</td>
+                    <td className={`${styles.finTd} ${styles.tdPrimary}`}>{g.concepto}</td>
+                    <td className={`${styles.finTd} ${styles.finAmtBold} ${styles.colRight}`}>
+                      ${Number(g.monto_usd).toFixed(2)}
+                    </td>
+                    <td className={`${styles.finTd} ${styles.colCenter}`}>
+                      <span className={g.tipo === 'fijo' ? styles.badgeFijo : styles.badgeVariable}>
+                        {g.tipo === 'fijo' ? 'Fijo' : 'Variable'}
+                      </span>
+                    </td>
+                    <td className={`${styles.finTd} ${styles.colCenter}`}>
+                      {badge ? (
+                        <span className={badge.style === 'vencido' ? styles.badgeVencido : styles.badgeUrgente}>
+                          {badge.text}
+                        </span>
+                      ) : g.due_date ? (
+                        <span className={styles.finSubText}>
+                          {new Date(g.due_date + 'T00:00:00').toLocaleDateString('es-VE')}
+                        </span>
+                      ) : (
+                        <span className={styles.finSubText}>—</span>
+                      )}
+                    </td>
+                    <td className={styles.finTd}>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        onClick={() => handleDelete(g.id)}
+                        aria-label="Eliminar gasto"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} aria-hidden="true" />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

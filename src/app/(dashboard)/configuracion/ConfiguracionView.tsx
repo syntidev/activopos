@@ -12,6 +12,7 @@ import {
   Puzzle,
   Bell,
   Wallet,
+  Crown,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import styles from './configuracion.module.css'
@@ -25,8 +26,9 @@ import { TabCategorias }      from './tabs/TabCategorias'
 import { TabModulos }         from './tabs/TabModulos'
 import { TabNotificaciones }  from './tabs/TabNotificaciones'
 import { TabCobros }          from './tabs/TabCobros'
+import { TabPlan }            from './tabs/TabPlan'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'cobros' | 'tema' | 'usuarios' | 'categorias' | 'modulos' | 'notificaciones'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'cobros' | 'tema' | 'usuarios' | 'categorias' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -47,6 +49,7 @@ const MAIN_TABS: Tab[] = [
 ]
 
 const BOTTOM_TABS: Tab[] = [
+  { key: 'plan',     label: 'Tu Plan',  Icon: Crown },
   { key: 'usuarios', label: 'Usuarios', Icon: Users },
 ]
 
@@ -99,6 +102,7 @@ export function ConfiguracionView({ session }: ConfiguracionViewProps) {
         {activeTab === 'categorias'     && <TabCategorias     businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
+        {activeTab === 'plan'           && <TabPlan     businessId={session.businessId} />}
         {activeTab === 'usuarios'       && (
           <TabUsuarios
             businessId={session.businessId}

@@ -67,6 +67,7 @@ export function CargoModal({ open, onClose, currentPct, totalUsd, onApply }: Car
           <span className={styles.prefix}>{type === 'pct' ? '%' : '$'}</span>
           <input
             type="number"
+            inputMode="decimal"
             className={styles.valueInput}
             placeholder="0"
             value={value}

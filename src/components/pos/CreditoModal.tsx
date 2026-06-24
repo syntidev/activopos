@@ -105,6 +105,7 @@ export function CreditoModal({ open, onClose, onConfirm }: CreditoModalProps) {
                 <span className={styles.customLabel}>O ingresa:</span>
                 <input
                   type="number"
+                  inputMode="numeric"
                   className={styles.customInput}
                   placeholder="0"
                   value={customDays}

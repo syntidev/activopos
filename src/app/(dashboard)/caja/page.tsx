@@ -309,6 +309,7 @@ function CajaContent() {
               <Input
                 label="Fondos iniciales (USD)"
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.01"
                 value={openingUsd}
@@ -319,6 +320,7 @@ function CajaContent() {
               <Input
                 label="Fondos iniciales (Bs)"
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.01"
                 value={openingBs}
@@ -518,6 +520,7 @@ function CajaContent() {
               <Input
                 label="Efectivo contado (USD)"
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.01"
                 value={closingUsd}
@@ -528,6 +531,7 @@ function CajaContent() {
               <Input
                 label="Efectivo contado (Bs)"
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.01"
                 value={closingBs}

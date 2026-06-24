@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -6,16 +6,18 @@ import { Menu, X } from 'lucide-react'
 import styles from './MarketingNav.module.css'
 
 const NAV_LINKS = [
-  { label: '¿Para quién?',  href: '/#segmentos' },
+  { label: '¿Para quién?', href: '/#segmentos' },
   { label: 'Cómo funciona', href: '/#ecosystem' },
-  { label: 'Planes',        href: '/#pricing' },
-  { label: 'Blog',          href: '/blog' },
-  { label: 'Contacto',      href: '/contacto' },
+  { label: 'Planes', href: '/#pricing' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Ayuda', href: '/soporte' },
+  { label: 'FAQ', href: '/faq' },
+  { label: 'Contacto', href: '/contacto' },
 ]
 
 export default function MarketingNav() {
-  const [scrolled, setScrolled]   = useState(false)
-  const [menuOpen, setMenuOpen]   = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -23,7 +25,6 @@ export default function MarketingNav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  /* lock body scroll when drawer open */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -70,7 +71,6 @@ export default function MarketingNav() {
         </button>
       </nav>
 
-      {/* Mobile drawer */}
       <div
         id="mobile-drawer"
         className={`${styles.drawer} ${menuOpen ? styles.drawerOpen : ''}`}
@@ -90,7 +90,6 @@ export default function MarketingNav() {
               <X size={18} aria-hidden="true"/>
             </button>
           </div>
-
           <nav className={styles.drawerLinks}>
             {NAV_LINKS.map(({ label, href }) => (
               <Link key={href} href={href} className={styles.drawerLink} onClick={close}>
@@ -98,9 +97,7 @@ export default function MarketingNav() {
               </Link>
             ))}
           </nav>
-
           <div className={styles.drawerDivider} aria-hidden="true"/>
-
           <div className={styles.drawerActions}>
             <Link href="/login" className={styles.drawerLoginLink} onClick={close}>
               Iniciar sesión

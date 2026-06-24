@@ -1,8 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, useInView, animate } from 'framer-motion'
 import { MessageCircle, LogIn, RefreshCw, Layers, Globe, Smartphone } from 'lucide-react'
 import styles from './HeroSection.module.css'
 
@@ -147,12 +147,47 @@ const fadeUp = (delay: number) => ({
   transition: { duration: 0.8, delay, ease: [0.25, 0.4, 0.25, 1] as [number, number, number, number] },
 })
 
-const STATS = [
-  { num: '50+',   label: 'Negocios activos',         cta: false },
-  { num: 'BCV',   label: 'Automático en cada cobro',  cta: true  },
-  { num: '2',     label: 'Planes disponibles',         cta: false },
-  { num: '24h',   label: 'Demo garantizada',           cta: true  },
-] as const
+interface StatDef {
+  target: number | null
+  display: string
+  suffix: string
+  label: string
+  cta: boolean
+}
+
+const STATS: StatDef[] = [
+  { target: 50,   display: '50+', suffix: '+', label: 'Negocios activos',         cta: false },
+  { target: null, display: 'BCV', suffix: '',  label: 'Automático en cada cobro', cta: true  },
+  { target: 2,    display: '2',   suffix: '',  label: 'Planes disponibles',        cta: false },
+  { target: null, display: '24h', suffix: '',  label: 'Demo garantizada',          cta: true  },
+]
+
+function CounterStat({ target, display, suffix, label, cta }: StatDef) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true })
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!isInView || target === null) return
+    const controls = animate(0, target, {
+      duration: 1.4,
+      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+      onUpdate: (v) => setCount(Math.round(v)),
+    })
+    return () => controls.stop()
+  }, [isInView, target])
+
+  const shown = target !== null ? `${count}${suffix}` : display
+
+  return (
+    <div ref={ref} className={styles.statItem}>
+      <span className={`${styles.statNum}${cta ? ' ' + styles.statNumCta : ''}`}>
+        {shown}
+      </span>
+      <span className={styles.statLabel}>{label}</span>
+    </div>
+  )
+}
 
 interface MobileFeat {
   icon: React.ElementType
@@ -169,6 +204,20 @@ const MOBILE_FEATS: MobileFeat[] = [
 
 export default function HeroSection({ bcvRate }: Props) {
   const rateDisplay = fmtRate(bcvRate)
+
+  // Pre-computed outside JSX to avoid block-body arrow function ambiguity in JSX parser
+  const mfItems = MOBILE_FEATS.map((feat) => {
+    const MFIcon = feat.icon
+    return (
+      <div key={feat.text} className={styles.mfItem}>
+        <div className={styles.mfIcon}><MFIcon size={18} /></div>
+        <div>
+          <div className={styles.mfText}>{feat.text}</div>
+          <div className={styles.mfSub}>{feat.sub}</div>
+        </div>
+      </div>
+    )
+  })
 
   return (
     <section className={styles.hero}>
@@ -233,17 +282,12 @@ export default function HeroSection({ bcvRate }: Props) {
           </Link>
         </motion.div>
 
-        {/* Stats */}
+        {/* Stats — counter animado al entrar en viewport */}
         <motion.div className={styles.statsRow} {...fadeUp(0.5)}>
           {STATS.map((s, i) => (
-            <React.Fragment key={s.num}>
+            <React.Fragment key={s.display}>
               {i > 0 && <div className={styles.statDiv} />}
-              <div className={styles.statItem}>
-                <span className={`${styles.statNum}${s.cta ? ' ' + styles.statNumCta : ''}`}>
-                  {s.num}
-                </span>
-                <span className={styles.statLabel}>{s.label}</span>
-              </div>
+              <CounterStat {...s} />
             </React.Fragment>
           ))}
         </motion.div>
@@ -255,20 +299,7 @@ export default function HeroSection({ bcvRate }: Props) {
         </motion.div>
 
         {/* Mobile features */}
-        <div className={styles.mobileFeats}>
-          {MOBILE_FEATS.map((feat) => {
-            const MFIcon = feat.icon
-            return (
-              <div key={feat.text} className={styles.mfItem}>
-                <div className={styles.mfIcon}><MFIcon size={18} /></div>
-                <div>
-                  <div className={styles.mfText}>{feat.text}</div>
-                  <div className={styles.mfSub}>{feat.sub}</div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <div className={styles.mobileFeats}>{mfItems}</div>
       </div>
     </section>
   )

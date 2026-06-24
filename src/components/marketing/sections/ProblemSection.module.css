@@ -6,14 +6,14 @@
 }
 
 .container {
-  max-width: 1140px;
+  max-width: min(1140px, 90vw);
   margin: 0 auto;
-  padding: 0 5vw;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-size: clamp(28px, 5vw, 52px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -23,7 +23,7 @@
 }
 
 .subtitle {
-  font-size: var(--text-base);
+  font-size: clamp(15px, 2vw, 17px);
   color: #64748B;
   line-height: 1.65;
   max-width: 580px;
@@ -69,16 +69,16 @@
 
 .rowTitle {
   font-family: var(--font-display);
-  font-size: var(--text-base);
-  font-weight: var(--weight-bold);
+  font-size: clamp(17px, 2.5vw, 20px);
+  font-weight: 700;
   color: #1E293B;
   margin-bottom: var(--space-1);
 }
 
 .rowDesc {
-  font-size: var(--text-sm);
+  font-size: clamp(15px, 2vw, 17px);
   color: #64748B;
-  line-height: 1.6;
+  line-height: 1.65;
   font-family: var(--font-sans);
 }
 
@@ -86,10 +86,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: var(--weight-bold);
   padding: 4px 12px;
-  border-radius: var(--radius-full);
+  border-radius: 100px;
   white-space: nowrap;
   flex-shrink: 0;
   font-family: var(--font-sans);

@@ -20,16 +20,16 @@
 }
 
 .container {
-  max-width: 1140px;
+  max-width: min(1140px, 90vw);
   margin: 0 auto;
-  padding: 0 5vw;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
   position: relative;
   z-index: 1;
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-size: clamp(28px, 5vw, 52px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -67,7 +67,7 @@
 }
 
 .quote {
-  font-size: var(--text-sm);
+  font-size: clamp(15px, 2vw, 17px);
   color: rgba(255, 255, 255, 0.78);
   line-height: 1.7;
   margin-bottom: var(--space-4-5);
@@ -112,4 +112,8 @@
 
 @media (max-width: 860px) {
   .grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .card { padding: 24px 20px; }
 }

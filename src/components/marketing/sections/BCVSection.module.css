@@ -28,9 +28,9 @@
 }
 
 .container {
-  max-width: 1140px;
+  max-width: min(1140px, 90vw);
   margin: 0 auto;
-  padding: 0 5vw;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
   position: relative;
   z-index: 1;
 }
@@ -49,7 +49,7 @@
 
 .title {
   font-family: var(--font-display);
-  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-size: clamp(28px, 5vw, 52px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -60,7 +60,7 @@
 }
 
 .subtitle {
-  font-size: var(--text-sm);
+  font-size: clamp(15px, 2vw, 17px);
   color: rgba(255, 255, 255, 0.78);
   line-height: 1.65;
   max-width: 380px;
@@ -76,6 +76,9 @@
   border-radius: var(--radius-xl);
   padding: 24px 28px;
   min-width: 260px;
+  max-width: 360px;
+  width: 100%;
+  box-sizing: border-box;
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.20);
 }
@@ -129,6 +132,29 @@
   gap: 7px;
   margin-top: var(--space-3-5);
   flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 32px;
+  }
+
+  .copy {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .widget {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .rateBig {
+    font-size: clamp(28px, 9vw, 38px);
+  }
 }
 
 .pill {

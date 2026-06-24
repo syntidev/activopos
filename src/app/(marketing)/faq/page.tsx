@@ -42,7 +42,7 @@ const CATEGORIES = [
     items: [
       {
         q: '¿ActivoPOS reemplaza la facturación SENIAT?',
-        a: 'No. ActivoPOS es tu sistema de control de ventas e inventario. La facturación fiscal ante el SENIAT la seguís haciendo con tu sistema actual — ActivoPOS la complementa, no la reemplaza.',
+        a: 'No. ActivoPOS es tu sistema de control de ventas e inventario. La facturación fiscal ante el SENIAT la sigues haciendo con tu sistema actual — ActivoPOS la complementa, no la reemplaza.',
       },
       {
         q: '¿Necesito instalar algo?',
@@ -63,7 +63,7 @@ const CATEGORIES = [
     items: [
       {
         q: '¿Cómo funciona el BCV automático?',
-        a: 'ActivoPOS consulta la tasa oficial BCV cada vez que abrís caja. Cada venta congela la tasa del momento — el historial siempre queda en USD con el equivalente exacto en Bs al momento de la transacción.',
+        a: 'ActivoPOS consulta la tasa oficial BCV cada vez que abres caja. Cada venta congela la tasa del momento — el historial siempre queda en USD con el equivalente exacto en Bs al momento de la transacción.',
       },
       {
         q: '¿Puedo vender en bolívares y en dólares al mismo tiempo?',
@@ -71,7 +71,7 @@ const CATEGORIES = [
       },
       {
         q: '¿Qué pasa con los precios si sube el dólar?',
-        a: 'Nada que tengas que hacer tú. El precio base está en USD. La conversión a Bs se recalcula automáticamente con la tasa BCV actual. Cerrás el día con los números correctos sin tocar nada.',
+        a: 'Nada que tengas que hacer tú. El precio base está en USD. La conversión a Bs se recalcula automáticamente con la tasa BCV actual. Cierras el día con los números correctos sin tocar nada.',
       },
       {
         q: '¿Puedo tener varios cajeros con accesos distintos?',
@@ -84,11 +84,11 @@ const CATEGORIES = [
     items: [
       {
         q: '¿Cuánto cuesta ActivoPOS?',
-        a: 'Los planes se consultan por WhatsApp — sin precios publicados porque adaptamos la propuesta al tipo y tamaño de tu negocio. Escribinos y en menos de 24 horas tenés tu cotización.',
+        a: 'Los planes se consultan por WhatsApp — sin precios publicados porque adaptamos la propuesta al tipo y tamaño de tu negocio. Escríbenos y en menos de 24 horas tienes tu cotización.',
       },
       {
         q: '¿Hay período de prueba?',
-        a: 'Sí. Podés ver una demo completa del sistema antes de comprometerte. Sin instalar nada, sin tarjeta de crédito. Solo escribinos.',
+        a: 'Sí. Puedes ver una demo completa del sistema antes de comprometerte. Sin instalar nada, sin tarjeta de crédito. Solo escríbenos.',
       },
       {
         q: '¿Qué pasa si cancelo?',

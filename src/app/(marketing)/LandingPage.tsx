@@ -346,7 +346,7 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <p className={styles.segFrase}>Si vendés algo, ActivoPOS te funciona.</p>
+          <p className={styles.segFrase}>Si vendes algo, ActivoPOS te funciona.</p>
         </div>
       </section>
 

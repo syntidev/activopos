@@ -3,7 +3,8 @@ import { prisma } from './prisma'
 const BCV_API      = process.env.BCV_API_URL ?? 'https://ve.dolarapi.com/v1/dolares/oficial'
 const PARALLEL_API = 'https://ve.dolarapi.com/v1/dolares/paralelo'
 const USDT_API     = 'https://ve.dolarapi.com/v1/dolares/cripto'
-const FALLBACK_RATE = parseFloat(process.env.BCV_FALLBACK_RATE ?? '36.50')
+// Último recurso solo cuando la DB está vacía — mantener actualizado manualmente.
+const FALLBACK_RATE = parseFloat(process.env.BCV_FALLBACK_RATE ?? '617.00')
 const CACHE_TTL = 60 * 60 * 1000 // 1 hora en ms
 
 // Cache en DB (cluster-safe para PM2 multi-worker).
@@ -21,33 +22,38 @@ export async function getBcvRate(businessId?: number): Promise<number> {
   })
   if (cached) return parseFloat(cached.rate.toString())
 
-  // 2. Cache expirado — fetch de API
+  // 2. Cache expirado — fetch de API.
+  // cache: 'no-store' es obligatorio: Next.js data cache almacena respuestas fetch
+  // independientemente del TTL de DB, causando que el "refresh" devuelva datos stale.
   try {
     const res = await fetch(BCV_API, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
       signal: AbortSignal.timeout(5000),
     })
     if (!res.ok) throw new Error(`BCV API error: ${res.status}`)
 
-    const data = await res.json()
-    const rate = parseFloat(data.promedio ?? data.price ?? data.dolar)
+    const data = await res.json() as Record<string, unknown>
+    const raw = data.promedio ?? data.price ?? data.dolar
+    const rate = typeof raw === 'number' ? raw : parseFloat(String(raw ?? ''))
     if (!rate || isNaN(rate)) throw new Error('BCV: tasa inválida')
 
-    // Desactivar anteriores, insertar nueva — todos los workers leerán la misma fila
-    await prisma.dollarRate.updateMany({
-      where: { is_active: true, source: 'bcv' },
-      data: { is_active: false },
-    })
-    await prisma.dollarRate.create({
-      data: { rate, source: 'bcv', is_active: true, business_id: businessId ?? null },
-    })
+    // Transacción atómica: evita filas duplicadas con is_active=true bajo PM2 cluster
+    await prisma.$transaction([
+      prisma.dollarRate.updateMany({
+        where: { is_active: true, source: 'bcv' },
+        data: { is_active: false },
+      }),
+      prisma.dollarRate.create({
+        data: { rate, source: 'bcv', is_active: true, business_id: businessId ?? null },
+      }),
+    ])
 
     return rate
 
   } catch (err) {
     console.error('BCV fetch failed:', err)
 
-    // Fallback: última tasa conocida en DB
+    // Fallback: última tasa conocida en DB (sin límite de edad)
     const last = await prisma.dollarRate.findFirst({
       where: { source: 'bcv' },
       orderBy: { fetched_at: 'desc' },
@@ -75,16 +81,20 @@ export async function getOtherRate(source: 'paralelo' | 'usdt'): Promise<number 
   if (cached) return parseFloat(cached.rate.toString())
 
   try {
-    const res = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) })
+    const res = await fetch(apiUrl, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
     if (!res.ok) throw new Error(`${source} API error: ${res.status}`)
-    const data = await res.json()
-    const rate = parseFloat(data.promedio ?? data.price ?? data.dolar)
+    const data = await res.json() as Record<string, unknown>
+    const raw = data.promedio ?? data.price ?? data.dolar
+    const rate = typeof raw === 'number' ? raw : parseFloat(String(raw ?? ''))
     if (!rate || isNaN(rate)) throw new Error(`${source}: tasa inválida`)
 
-    await prisma.dollarRate.updateMany({ where: { is_active: true, source }, data: { is_active: false } })
-    await prisma.dollarRate.create({ data: { rate, source, is_active: true, business_id: null } })
+    await prisma.$transaction([
+      prisma.dollarRate.updateMany({ where: { is_active: true, source }, data: { is_active: false } }),
+      prisma.dollarRate.create({ data: { rate, source, is_active: true, business_id: null } }),
+    ])
     return rate
-  } catch {
+  } catch (err) {
+    console.error(`${source} fetch failed:`, err)
     const last = await prisma.dollarRate.findFirst({
       where:   { source },
       orderBy: { fetched_at: 'desc' },
@@ -96,6 +106,7 @@ export async function getOtherRate(source: 'paralelo' | 'usdt'): Promise<number 
 
 // Lee tasa desde DB sin hacer fetch externo ni escribir registros.
 // Uso: endpoints que no tienen session.businessId disponible.
+// Puede devolver una tasa de cualquier antigüedad — nunca bloquea la operación.
 export async function readCachedBcvRate(): Promise<number> {
   const last = await prisma.dollarRate.findFirst({
     where: { source: 'bcv' },

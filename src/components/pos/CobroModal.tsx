@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CreditCard, Pencil } from 'lucide-react'
+import { CreditCard, Pencil, Printer, CheckCircle2 } from 'lucide-react'
 import { Modal, Button, useToast } from '@/components/ui'
 import { CreditoModal } from './CreditoModal'
 import type { CreditTerms } from './CreditoModal'
@@ -44,6 +44,7 @@ export function CobroModal({
   const [receivedBs, setReceivedBs]         = useState('')
   const [changeMode, setChangeMode]         = useState<'bs' | 'usd'>('bs')
   const [mixedEntries, setMixedEntries]     = useState<MixedEntry[]>([])
+  const [saleResult, setSaleResult]         = useState<SaleResult | null>(null)
 
   /* ── BUG-01b: per-method rate ── */
   const [methodRate, setMethodRate]   = useState(rate)
@@ -89,6 +90,7 @@ export function CobroModal({
     setReceivedBs(''); setMixedEntries([])
     setMethodRate(rate); setEditingRate(false); setRateStr(String(Math.round(rate)))
     setShowCreditoModal(false); setCreditTerms(null)
+    setSaleResult(null)
     onClose()
   }
 
@@ -145,9 +147,9 @@ export function CobroModal({
   const doConfirm = async (payments: PaymentInput[]) => {
     setLoading(true)
     try {
-      await onConfirm(payments)
+      const result = await onConfirm(payments)
+      setSaleResult(result)
       toast('Venta procesada exitosamente', 'success')
-      handleReset()
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Error al procesar el pago', 'error')
     } finally {
@@ -201,19 +203,46 @@ export function CobroModal({
       <Modal
         open={open}
         onClose={handleReset}
-        title="Procesar Pago"
+        title={saleResult ? '¡Venta registrada!' : 'Procesar Pago'}
         size="md"
         footer={
-          <div className={styles.footer}>
-            <Button variant="ghost" onClick={handleReset}>Cancelar</Button>
-            <Button variant="primary" onClick={handleConfirm} loading={loading} disabled={!canConfirm}>
-              {selectedMethod?.type === 'credit' && !creditTerms
-                ? 'Configurar crédito →'
-                : 'Confirmar Venta'}
-            </Button>
-          </div>
+          saleResult ? (
+            <div className={styles.footer}>
+              <button
+                type="button"
+                className={styles.printBtn}
+                onClick={() => window.open(`/api/sales/${saleResult.id}/ticket`, '_blank')}
+              >
+                <Printer size={15} aria-hidden="true" />
+                Imprimir ticket
+              </button>
+              <Button variant="primary" onClick={handleReset}>Nueva venta</Button>
+            </div>
+          ) : (
+            <div className={styles.footer}>
+              <Button variant="ghost" onClick={handleReset}>Cancelar</Button>
+              <Button variant="primary" onClick={handleConfirm} loading={loading} disabled={!canConfirm}>
+                {selectedMethod?.type === 'credit' && !creditTerms
+                  ? 'Configurar crédito →'
+                  : 'Confirmar Venta'}
+              </Button>
+            </div>
+          )
         }
       >
+        {saleResult ? (
+          <div className={styles.successScreen}>
+            <CheckCircle2 size={52} className={styles.successIcon} aria-hidden="true" />
+            <p className={styles.successTitle}>¡Venta completada!</p>
+            <p className={styles.successTicket}>Ticket #{saleResult.ticket_number}</p>
+            <div className={styles.successAmounts}>
+              <span className={styles.successUsd}>${saleResult.total_usd.toFixed(2)}</span>
+              <span className={styles.successBs}>
+                Bs.&nbsp;{saleResult.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        ) : (
         <div className={styles.body}>
           {/* Total */}
           <div className={styles.totalDisplay}>
@@ -431,6 +460,7 @@ export function CobroModal({
             </>
           )}
         </div>
+        )}
       </Modal>
 
       {/* B2: CreditoModal — z-modal-top so it renders above CobroModal */}

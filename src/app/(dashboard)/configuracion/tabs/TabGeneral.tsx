@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, Lock, Percent } from 'lucide-react'
+import { RefreshCw, Lock, Percent, KeyRound } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { Input }    from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
@@ -9,6 +9,18 @@ import type { BusinessConfig, IvaConfig } from '@/types'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
+
+function pwStrength(pw: string): { level: 1 | 2 | 3; label: string } | null {
+  if (!pw) return null
+  if (pw.length < 8) return { level: 1, label: 'Débil' }
+  const hasUpper   = /[A-Z]/.test(pw)
+  const hasDigit   = /[0-9]/.test(pw)
+  const hasSpecial = /[^A-Za-z0-9]/.test(pw)
+  const score = [hasUpper, hasDigit, hasSpecial].filter(Boolean).length
+  if (score >= 2) return { level: 3, label: 'Fuerte' }
+  if (score >= 1) return { level: 2, label: 'Media' }
+  return { level: 1, label: 'Débil' }
+}
 
 export function TabGeneral({ businessId: _businessId }: Props) {
   const { toast } = useToast()
@@ -25,6 +37,13 @@ export function TabGeneral({ businessId: _businessId }: Props) {
   const [pins, setPins]           = useState(['', '', '', ''])
   const [savingPin, setSavingPin] = useState(false)
   const pinRefs = useRef<Array<HTMLInputElement | null>>([null, null, null, null])
+
+  const [pwCurrent, setPwCurrent] = useState('')
+  const [pwNew, setPwNew]         = useState('')
+  const [pwConfirm, setPwConfirm] = useState('')
+  const [savingPw, setSavingPw]   = useState(false)
+  const [pwError, setPwError]     = useState('')
+  const [pwSuccess, setPwSuccess] = useState(false)
 
   const fetchConfig = useCallback(async () => {
     setLoading(true)
@@ -135,6 +154,30 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       toast('Error al guardar el PIN.', 'error')
     } finally {
       setSavingPin(false)
+    }
+  }
+
+  const handleSavePw = async () => {
+    if (!pwCurrent) { setPwError('Ingresa tu contraseña actual.'); return }
+    if (pwNew.length < 8) { setPwError('La nueva contraseña debe tener al menos 8 caracteres.'); return }
+    if (pwNew !== pwConfirm) { setPwError('Las contraseñas no coinciden.'); return }
+    setSavingPw(true); setPwError('')
+    try {
+      const res = await fetch('/api/users/change-password', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ current_password: pwCurrent, new_password: pwNew }),
+      })
+      const body = await res.json() as { error?: string }
+      if (!res.ok) { setPwError(body.error ?? 'Error al actualizar la contraseña.'); return }
+      setPwCurrent(''); setPwNew(''); setPwConfirm('')
+      setPwSuccess(true)
+      toast('¡Contraseña actualizada!', 'success')
+      setTimeout(() => setPwSuccess(false), 5000)
+    } catch {
+      setPwError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setSavingPw(false)
     }
   }
 
@@ -311,6 +354,91 @@ export function TabGeneral({ businessId: _businessId }: Props) {
             disabled={pins.join('').length !== 4}
           >
             Guardar PIN
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Cambiar contraseña ── */}
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>
+          <KeyRound size={16} aria-hidden="true" />
+          Cambiar Contraseña
+        </h3>
+        <p className={styles.formCardHint}>
+          Usa al menos 8 caracteres, incluyendo letras mayúsculas, números o caracteres especiales.
+        </p>
+
+        <div className={styles.formFields}>
+          <Input
+            label="Contraseña actual"
+            type="password"
+            placeholder="••••••••"
+            value={pwCurrent}
+            onChange={(e) => setPwCurrent(e.target.value)}
+            autoComplete="current-password"
+          />
+          <div>
+            <Input
+              label="Nueva contraseña"
+              type="password"
+              placeholder="••••••••"
+              value={pwNew}
+              onChange={(e) => { setPwNew(e.target.value); setPwError('') }}
+              autoComplete="new-password"
+            />
+            {pwNew && (() => {
+              const s = pwStrength(pwNew)
+              if (!s) return null
+              return (
+                <div className={styles.pwStrengthWrap} aria-label={`Fortaleza: ${s.label}`}>
+                  <div className={styles.pwStrengthBars}>
+                    {([1, 2, 3] as const).map((lvl) => (
+                      <div
+                        key={lvl}
+                        className={`${styles.pwStrengthBar} ${s.level >= lvl
+                          ? lvl === 1
+                            ? styles.pwStrengthBarWeak
+                            : lvl === 2
+                              ? styles.pwStrengthBarMed
+                              : styles.pwStrengthBarStrong
+                          : ''}`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`${styles.pwStrengthLabel} ${
+                    s.level === 1 ? styles.pwStrengthLabelWeak
+                    : s.level === 2 ? styles.pwStrengthLabelMed
+                    : styles.pwStrengthLabelStrong
+                  }`}>{s.label}</span>
+                </div>
+              )
+            })()}
+          </div>
+          <Input
+            label="Confirmar nueva contraseña"
+            type="password"
+            placeholder="••••••••"
+            value={pwConfirm}
+            onChange={(e) => { setPwConfirm(e.target.value); setPwError('') }}
+            autoComplete="new-password"
+          />
+        </div>
+
+        {pwError && (
+          <p className={styles.errorMsg} role="alert">{pwError}</p>
+        )}
+        {pwSuccess && (
+          <p className={styles.pwSuccessMsg} role="status">¡Contraseña actualizada correctamente!</p>
+        )}
+
+        <div className={styles.saveRow}>
+          <Button
+            variant="primary"
+            onClick={handleSavePw}
+            loading={savingPw}
+            disabled={!pwCurrent || pwNew.length < 8 || pwNew !== pwConfirm}
+          >
+            Actualizar contraseña
           </Button>
         </div>
       </div>

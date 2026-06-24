@@ -444,3 +444,97 @@
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
 }
+
+/* ── Success screen ── */
+.successScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.successIcon {
+  color: var(--color-success-text);
+  animation: successPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes successPop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+.successTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.successTicket {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.successAmounts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-0-5);
+  margin-top: var(--space-1);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-6);
+}
+
+.successUsd {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-usd);
+  font-variant-numeric: tabular-nums;
+}
+
+.successBs {
+  font-size: var(--text-sm);
+  color: var(--color-bs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Print ticket button (in footer) ── */
+.printBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--touch-min);
+  padding: 0 var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast),
+              border-color var(--transition-fast);
+}
+
+.printBtn:hover {
+  background: var(--color-surface-3);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
+}
+
+.printBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .successIcon { animation: none; }
+}

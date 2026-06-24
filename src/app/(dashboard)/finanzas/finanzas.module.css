@@ -826,3 +826,52 @@
 @media (prefers-reduced-motion: reduce) {
   .plBarFill, .catBarFill, .peBarFill { transition: none; }
 }
+
+/* ── Gráfico comparativo (recharts) ── */
+.chartCard {
+  background:    var(--color-surface);
+  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border-radius: var(--radius-lg);
+  padding:       var(--space-5) var(--space-6);
+  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+}
+
+.chartTitle {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-4);
+}
+
+.chartWrap {
+  width: 100%;
+}
+
+.chartTooltip {
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2-5) var(--space-3);
+  box-shadow: var(--shadow-md);
+}
+
+.chartTooltipLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-0-5);
+}
+
+.chartTooltipValue {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.chartCaption {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: var(--space-2) 0 0;
+  text-align: center;
+}

@@ -569,7 +569,7 @@ export function ProductModal({
               </div>
 
               {/* Body */}
-              <form onSubmit={handleSubmit} noValidate>
+              <form onSubmit={handleSubmit} noValidate className={mStyles.modalForm}>
                 <div className={mStyles.modalBody}>
 
                   {/* ── Nombre ── */}

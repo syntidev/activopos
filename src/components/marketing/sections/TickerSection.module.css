@@ -1,9 +1,9 @@
 .wrap {
   overflow: hidden;
-  border-top: 1px solid var(--lp-border);
-  border-bottom: 1px solid var(--lp-border);
-  background: var(--bg-card);
-  padding: 11px 0;
+  border-top: 1px solid rgba(0, 56, 189, 0.15);
+  border-bottom: 1px solid rgba(0, 56, 189, 0.15);
+  background: var(--brand-soft);
+  padding: 12px 0;
   position: relative;
   z-index: 1;
 }
@@ -22,8 +22,8 @@
 .item {
   padding: 0 28px;
   font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--text-tertiary);
+  font-weight: var(--weight-semibold);
+  color: var(--brand);
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -32,8 +32,9 @@
 }
 
 .item svg {
-  color: var(--brand-l);
+  color: var(--brand);
   flex-shrink: 0;
+  opacity: 0.70;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,13 +1,30 @@
 .section {
   padding: 96px 0;
+  background: #0D1B2E;
   position: relative;
   z-index: 1;
+  overflow: hidden;
+}
+
+/* Subtle radial glow */
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(var(--brand-rgb), 0.12) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .container {
   max-width: 1140px;
   margin: 0 auto;
   padding: 0 5vw;
+  position: relative;
+  z-index: 1;
 }
 
 .title {
@@ -16,7 +33,7 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
-  color: var(--text-primary);
+  color: #FFFFFF;
   text-wrap: balance;
   text-align: center;
   margin-bottom: var(--space-12);
@@ -29,22 +46,29 @@
 }
 
 .card {
-  background: var(--bg-card);
-  border: 1px solid var(--lp-border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-top: 2px solid rgba(var(--brand-rgb), 0.30);
   border-radius: var(--radius-xl);
   padding: 28px;
+  transition: background var(--transition-base), border-color var(--transition-base);
+}
+
+.card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .stars {
   display: flex;
   gap: 3px;
   margin-bottom: var(--space-3-5);
-  color: var(--warning);
+  color: var(--cta);
 }
 
 .quote {
   font-size: var(--text-sm);
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.78);
   line-height: 1.7;
   margin-bottom: var(--space-4-5);
   font-style: italic;
@@ -61,8 +85,8 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--lp-brand-a);
-  border: 1px solid rgba(var(--brand-rgb), 0.30);
+  background: rgba(var(--brand-rgb), 0.18);
+  border: 1px solid rgba(var(--brand-rgb), 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,13 +100,13 @@
 .authorName {
   font-size: var(--text-sm);
   font-weight: var(--weight-bold);
-  color: var(--text-primary);
+  color: #FFFFFF;
   font-family: var(--font-sans);
 }
 
 .authorBiz {
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: rgba(255, 255, 255, 0.45);
   font-family: var(--font-sans);
 }
 

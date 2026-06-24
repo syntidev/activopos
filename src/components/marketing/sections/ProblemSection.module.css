@@ -1,5 +1,6 @@
 .section {
   padding: 96px 0;
+  background: #F0F4F8;
   position: relative;
   z-index: 1;
 }
@@ -16,25 +17,28 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
-  color: var(--text-primary);
+  color: #1E293B;
   text-wrap: balance;
   margin-bottom: var(--space-3);
 }
 
 .subtitle {
   font-size: var(--text-base);
-  color: var(--text-secondary);
+  color: #64748B;
   line-height: 1.65;
   max-width: 580px;
   margin-bottom: var(--space-12);
+  font-family: var(--font-sans);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--lp-border);
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 56, 189, 0.10);
   border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .row {
@@ -43,43 +47,39 @@
   align-items: center;
   gap: var(--space-5);
   padding: 24px 32px;
-  border-bottom: 1px solid var(--lp-border);
+  border-bottom: 1px solid rgba(0, 56, 189, 0.07);
   transition: background var(--transition-base);
 }
 
-.row:last-child {
-  border-bottom: none;
-}
+.row:last-child { border-bottom: none; }
 
-.row:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
+.row:hover { background: #F8FAFC; }
 
 .num {
   font-family: var(--font-display);
   font-size: 34px;
   font-weight: 900;
-  color: rgba(255, 255, 255, 0.07);
+  color: var(--cta);
   line-height: 1;
   flex-shrink: 0;
+  opacity: 0.80;
 }
 
-.body {
-  min-width: 0;
-}
+.body { min-width: 0; }
 
 .rowTitle {
   font-family: var(--font-display);
   font-size: var(--text-base);
   font-weight: var(--weight-bold);
-  color: var(--text-primary);
+  color: #1E293B;
   margin-bottom: var(--space-1);
 }
 
 .rowDesc {
   font-size: var(--text-sm);
-  color: var(--text-secondary);
+  color: #64748B;
   line-height: 1.6;
+  font-family: var(--font-sans);
 }
 
 .badge {
@@ -95,10 +95,10 @@
   font-family: var(--font-sans);
 }
 
-.badge_red    { background: var(--lp-danger-a);   color: var(--danger); }
-.badge_amber  { background: var(--lp-warning-a);  color: var(--warning); }
-.badge_brand  { background: var(--lp-brand-a);    color: var(--brand-l); }
-.badge_purple { background: var(--lp-purple-a);   color: var(--lp-purple); }
+.badge_red    { background: var(--danger-soft);            color: var(--danger-text);  }
+.badge_amber  { background: var(--warning-soft);           color: var(--warning-text); }
+.badge_brand  { background: rgba(var(--brand-rgb), 0.08);  color: var(--brand);        }
+.badge_purple { background: rgba(139, 92, 246, 0.10);      color: #7C3AED;             }
 
 @media (max-width: 640px) {
   .row { grid-template-columns: 1fr; gap: var(--space-2); padding: 20px 20px; }

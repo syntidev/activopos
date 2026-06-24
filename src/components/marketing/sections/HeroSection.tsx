@@ -170,6 +170,20 @@ const MOBILE_FEATS: MobileFeat[] = [
 export default function HeroSection({ bcvRate }: Props) {
   const rateDisplay = fmtRate(bcvRate)
 
+  // Pre-computed outside JSX to avoid block-body arrow function ambiguity in JSX parser
+  const mfItems = MOBILE_FEATS.map((feat) => {
+    const MFIcon = feat.icon
+    return (
+      <div key={feat.text} className={styles.mfItem}>
+        <div className={styles.mfIcon}><MFIcon size={18} /></div>
+        <div>
+          <div className={styles.mfText}>{feat.text}</div>
+          <div className={styles.mfSub}>{feat.sub}</div>
+        </div>
+      </div>
+    )
+  })
+
   return (
     <section className={styles.hero}>
       {/* Gradient mesh */}
@@ -255,20 +269,7 @@ export default function HeroSection({ bcvRate }: Props) {
         </motion.div>
 
         {/* Mobile features */}
-        <div className={styles.mobileFeats}>
-          {MOBILE_FEATS.map((feat) => {
-            const MFIcon = feat.icon
-            return (
-              <div key={feat.text} className={styles.mfItem}>
-                <div className={styles.mfIcon}><MFIcon size={18} /></div>
-                <div>
-                  <div className={styles.mfText}>{feat.text}</div>
-                  <div className={styles.mfSub}>{feat.sub}</div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <div className={styles.mobileFeats}>{mfItems}</div>
       </div>
     </section>
   )

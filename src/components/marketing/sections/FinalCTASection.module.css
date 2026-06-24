@@ -3,15 +3,33 @@
   text-align: center;
   position: relative;
   overflow: hidden;
-  background: var(--bg-card);
+  background: var(--cta);
   z-index: 1;
 }
 
-.bg {
+/* Warm white blobs */
+.section::before {
+  content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 60% 40% at 50% 50%, rgba(var(--brand-rgb), 0.09) 0%, transparent 70%);
+  background:
+    radial-gradient(ellipse 50% 70% at 15% 30%, rgba(255, 255, 255, 0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 55% at 85% 70%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
   pointer-events: none;
+}
+
+/* Dot grid */
+.section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+.bg {
+  display: none;
 }
 
 .content {
@@ -27,19 +45,19 @@
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  color: var(--text-primary);
+  color: #FFFFFF;
   text-wrap: balance;
   margin-bottom: var(--space-5);
 }
 
 .title em {
   font-style: italic;
-  color: var(--brand-l);
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .subtitle {
   font-size: var(--text-lg);
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.85);
   max-width: 480px;
   margin: 0 auto var(--space-9);
   line-height: 1.65;
@@ -50,28 +68,29 @@
   margin-bottom: var(--space-7);
 }
 
+/* White button on orange bg */
 .ctaBtn {
-  background: var(--cta);
-  color: var(--cta-on);
+  background: #FFFFFF;
+  color: var(--cta);
   border: none;
   padding: 16px 36px;
   border-radius: var(--radius-lg);
   font-family: var(--font-sans);
   font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  transition: background var(--transition-base), transform var(--transition-fast), box-shadow var(--transition-base);
-  box-shadow: var(--lp-cta-glow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-base), background var(--transition-base);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.20);
 }
 
 .ctaBtn:hover {
-  background: var(--cta-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--lp-cta-glow-hover);
+  background: #FFF7ED;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 }
 
 .trust {
@@ -87,11 +106,11 @@
   align-items: center;
   gap: 6px;
   font-size: var(--text-sm);
-  color: var(--text-tertiary);
+  color: rgba(255, 255, 255, 0.72);
   font-weight: var(--weight-medium);
   font-family: var(--font-sans);
 }
 
 .trustItem svg {
-  color: var(--success);
+  color: rgba(255, 255, 255, 0.90);
 }

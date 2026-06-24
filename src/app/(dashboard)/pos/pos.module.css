@@ -319,6 +319,11 @@
   display: block;
 }
 
+/* Hidden on desktop — scanner is mobile-only */
+@media (hover: hover) and (pointer: fine) {
+  .cameraBtn { display: none; }
+}
+
 .cameraBtn {
   position: absolute;
   right: var(--space-2);
@@ -805,21 +810,29 @@
   animation: fadeInOverlay 0.2s ease;
 }
 
-/* ── Mobile: side drawer ── */
+/* ── Mobile: bottom drawer ── */
 
 @media (max-width: 767px) {
   .posContainer {
     grid-template-columns: 1fr;
   }
 
+  /* 2-column product grid on mobile */
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+
+  /* FAB base */
   .cartToggle {
     display: flex;
     position: fixed;
     bottom: var(--space-6);
-    right: var(--space-5);
+    right: var(--space-4);
     z-index: var(--z-sticky);
-    width: 56px;
+    min-width: 56px;
     height: 56px;
+    padding: 0 var(--space-4);
     border-radius: var(--radius-full);
     background: var(--brand-dark);
     color: var(--kpi-on-primary);
@@ -827,33 +840,65 @@
     cursor: pointer;
     align-items: center;
     justify-content: center;
+    gap: var(--space-2);
     box-shadow: 0 4px 20px rgba(var(--brand-rgb), 0.45);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), min-width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .cartToggle:active { transform: scale(0.9); }
+  .cartToggle:active { transform: scale(0.93); }
 
+  /* FAB text label (shown when cart has items) */
+  .cartToggleText {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    letter-spacing: var(--tracking-tight);
+  }
+
+  /* Bottom drawer */
   .cartSlot {
     position: fixed;
-    top: 0;
+    bottom: 0;
+    left: 0;
     right: 0;
-    height: 100dvh;
-    width: 88vw;
-    max-width: 360px;
+    top: auto;
+    width: 100%;
+    max-width: none;
+    height: 72dvh;
     z-index: var(--z-modal);
-    transform: translateX(100%);
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    background: var(--pos-ticket-bg);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
   }
 
-  .cartSlotOpen { transform: translateX(0); }
+  /* Handle pill via ::before */
+  .cartSlot::before {
+    content: '';
+    display: block;
+    flex-shrink: 0;
+    width: 36px;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+    margin: 10px auto 0;
+  }
+
+  .cartSlotOpen { transform: translateY(0); }
 
   .cartSlot .rightPanel {
-    height: 100%;
+    flex: 1;
+    height: auto;
+    min-height: 0;
     max-height: none;
     border-left: none;
     border-top: none;
     border-radius: 0;
-    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.22);
+    box-shadow: none;
   }
 }
 

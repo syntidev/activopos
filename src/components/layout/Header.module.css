@@ -420,6 +420,56 @@
   min-width: 0;
 }
 
+.markAllReadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2-5);
+  background: var(--color-brand-subtle);
+  border: 1px solid var(--color-brand-border);
+  border-radius: var(--radius-full);
+  color: var(--color-brand-hover);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.markAllReadBtn:hover {
+  background: var(--color-brand);
+  color: var(--brand-on);
+  border-color: var(--color-brand);
+}
+
+.notifItemClickable {
+  cursor: pointer;
+}
+
+.notifItemClickable:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+.notifItemTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--leading-snug);
+  word-wrap: break-word;
+  margin: 0;
+}
+
+.notifItemDesc {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-snug);
+  margin: var(--space-0-5) 0 0;
+  word-wrap: break-word;
+}
+
+/* kept for compat */
 .notifItemMsg {
   font-size: var(--text-sm);
   color: var(--color-text-primary);

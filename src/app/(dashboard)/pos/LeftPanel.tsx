@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Barcode, Camera, Search, LayoutGrid, List } from 'lucide-react'
+import { Barcode, ScanBarcode, Search, LayoutGrid, List } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ProductCard } from '@/components/pos/ProductCard'
 import { ProductListRow } from '@/components/pos/ProductListRow'
@@ -75,12 +75,13 @@ interface LeftPanelProps {
   results: ProductForPOS[]
   rate: number
   onProductClick: (p: ProductForPOS) => void
+  onScannerOpen?: () => void
 }
 
 /* ── Component ─────────────────────────────────────────────────────────────── */
 
 export function LeftPanel({
-  search, onSearchChange, isSearching, results, rate, onProductClick,
+  search, onSearchChange, isSearching, results, rate, onProductClick, onScannerOpen,
 }: LeftPanelProps) {
 
   /* ── View mode (localStorage) ── */
@@ -170,11 +171,11 @@ export function LeftPanel({
               : (
                 <button
                   className={styles.cameraBtn}
-                  aria-label="Escanear código"
-                  title="Próximamente"
+                  aria-label="Escáner de código de barras"
                   type="button"
+                  onClick={onScannerOpen}
                 >
-                  <Camera size={18} aria-hidden="true" />
+                  <ScanBarcode size={18} aria-hidden="true" />
                 </button>
               )
             }

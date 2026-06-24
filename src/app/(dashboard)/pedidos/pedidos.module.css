@@ -129,6 +129,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background var(--transition-normal), color var(--transition-normal);
+}
+
+.columnCountNew {
+  background: var(--danger);
+  color: #fff;
+  animation: countPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes countPop {
+  0%   { transform: scale(0.6); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 
 .columnEmpty {
@@ -184,6 +197,27 @@
   gap: var(--space-1);
   font-size: var(--text-2xs);
   color: var(--color-text-muted);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.orderTimeWarning {
+  color: var(--warning-text);
+  background: var(--warning-soft);
+  font-weight: var(--weight-semibold);
+}
+
+.orderTimeDanger {
+  color: var(--danger-text);
+  background: var(--danger-soft);
+  font-weight: var(--weight-semibold);
+  animation: urgencyPulse 2s ease-in-out infinite;
+}
+
+@keyframes urgencyPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.7; }
 }
 
 .orderClient {
@@ -382,6 +416,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton { animation: none; }
-  .retryBtn { transition: none; }
+  .skeleton          { animation: none; }
+  .retryBtn          { transition: none; }
+  .orderTimeDanger   { animation: none; }
+  .columnCountNew    { animation: none; }
 }

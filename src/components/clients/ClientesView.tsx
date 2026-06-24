@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Users, Pencil, History, Trash2, Search, UserPlus } from 'lucide-react'
+import { Users, Pencil, History, Trash2, Search, UserPlus, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button }      from '@/components/ui/Button'
 import { Badge }       from '@/components/ui/Badge'
 import { EmptyState }  from '@/components/ui/EmptyState'
@@ -25,16 +25,40 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
   const [historialId, setHistorialId] = useState<number | null>(null)
   const [deleting, setDeleting]       = useState<number | null>(null)
 
-  /* ── Client-side search ── */
+  type ClientSortKey = 'name' | 'balance'
+  type SortDir = 'asc' | 'desc'
+  const [sortKey, setSortKey] = useState<ClientSortKey | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+  const handleSort = (key: ClientSortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  /* ── Client-side search + sort ── */
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return clients
-    return clients.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.cedula ?? '').toLowerCase().includes(q)
-    )
-  }, [clients, search])
+    let list = q
+      ? clients.filter(c =>
+          c.name.toLowerCase().includes(q) ||
+          (c.cedula ?? '').toLowerCase().includes(q)
+        )
+      : clients
+
+    if (sortKey) {
+      list = [...list].sort((a, b) => {
+        let cmp = 0
+        if (sortKey === 'name')    cmp = a.name.localeCompare(b.name)
+        if (sortKey === 'balance') cmp = a.pending_balance_usd - b.pending_balance_usd
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+    }
+    return list
+  }, [clients, search, sortKey, sortDir])
 
   /* ── CRUD handlers ── */
   const handleCreated = (c: ClientRecord) => {
@@ -144,9 +168,39 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
               <thead className={styles.thead}>
                 <tr>
                   <th className={styles.th}>Cédula / RIF</th>
-                  <th className={styles.th}>Nombre</th>
+                  <th className={styles.th}>
+                    <button
+                      type="button"
+                      className={styles.sortBtn}
+                      onClick={() => handleSort('name')}
+                      aria-label="Ordenar por nombre"
+                    >
+                      Nombre
+                      {sortKey === 'name'
+                        ? sortDir === 'asc'
+                          ? <ChevronUp size={12} aria-hidden="true" />
+                          : <ChevronDown size={12} aria-hidden="true" />
+                        : <span className={styles.sortInactive} aria-hidden="true" />
+                      }
+                    </button>
+                  </th>
                   <th className={styles.th}>Teléfono</th>
-                  <th className={`${styles.th} ${styles.thRight}`}>Saldo Pendiente</th>
+                  <th className={`${styles.th} ${styles.thRight}`}>
+                    <button
+                      type="button"
+                      className={`${styles.sortBtn} ${styles.sortBtnRight}`}
+                      onClick={() => handleSort('balance')}
+                      aria-label="Ordenar por saldo pendiente"
+                    >
+                      Saldo Pendiente
+                      {sortKey === 'balance'
+                        ? sortDir === 'asc'
+                          ? <ChevronUp size={12} aria-hidden="true" />
+                          : <ChevronDown size={12} aria-hidden="true" />
+                        : <span className={styles.sortInactive} aria-hidden="true" />
+                      }
+                    </button>
+                  </th>
                   <th className={`${styles.th} ${styles.thRight}`}>Acciones</th>
                 </tr>
               </thead>

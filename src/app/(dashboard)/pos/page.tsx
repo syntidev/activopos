@@ -10,6 +10,7 @@ import { TicketPanel } from './TicketPanel'
 import { DraftTabs } from '@/components/pos/DraftTabs'
 import { CajaAperturaScreen } from '@/components/pos/CajaAperturaScreen'
 import { CobroModal } from '@/components/pos/CobroModal'
+import { ScannerModal } from '@/components/pos/ScannerModal'
 import { ClienteModal } from '@/components/pos/ClienteModal'
 import { CotizacionModal } from '@/components/pos/CotizacionModal'
 import { PinDescuentoModal } from '@/components/pos/PinDescuentoModal'
@@ -25,7 +26,8 @@ export default function POSPage() {
   const pos = usePOS()
   const { toast } = useToast()
   const [weightProduct, setWeightProduct] = useState<ProductForPOS | null>(null)
-  const [cartOpen, setCartOpen] = useState(false)
+  const [cartOpen, setCartOpen]           = useState(false)
+  const [scannerOpen, setScannerOpen]     = useState(false)
   const totals = calcularTotales(pos.ticket)
   const isEmpty = ticketVacio(pos.ticket)
   const itemCount = pos.ticket.items.length
@@ -94,6 +96,7 @@ export default function POSPage() {
           results={pos.searchResults}
           rate={pos.rate}
           onProductClick={handleProductClick}
+          onScannerOpen={() => setScannerOpen(true)}
         />
       </div>
 
@@ -103,10 +106,15 @@ export default function POSPage() {
         onClick={() => setCartOpen(o => !o)}
         aria-label={cartOpen ? 'Cerrar carrito' : `Ver carrito (${itemCount} ítems)`}
       >
-        {cartOpen ? <X size={22} /> : <ShoppingCart size={22} />}
-        {!cartOpen && itemCount > 0 && (
-          <span className={styles.cartBadge}>{itemCount}</span>
-        )}
+        {cartOpen
+          ? <X size={20} aria-hidden="true" />
+          : itemCount > 0
+            ? <>
+                <ShoppingCart size={18} aria-hidden="true" />
+                <span className={styles.cartToggleText}>Ver carrito ({itemCount})</span>
+              </>
+            : <ShoppingCart size={22} aria-hidden="true" />
+        }
       </button>
 
       {/* Mobile: overlay backdrop */}
@@ -205,6 +213,19 @@ export default function POSPage() {
           } catch (e) {
             toast(e instanceof Error ? e.message : 'Error al registrar venta', 'error')
           }
+        }}
+      />
+
+      <ScannerModal
+        open={scannerOpen}
+        ticket={pos.ticket}
+        totals={totals}
+        onAddProduct={(product) => pos.addProduct(product, 1)}
+        onUpdateQty={pos.updateQty}
+        onClose={() => setScannerOpen(false)}
+        onProcesarPago={() => {
+          setScannerOpen(false)
+          pos.setShowCobro(true)
         }}
       />
 

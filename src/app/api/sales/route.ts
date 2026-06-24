@@ -39,47 +39,65 @@ export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-  const params = req.nextUrl.searchParams
-  const status = params.get('status')
-  const from = params.get('from')
-  const to = params.get('to')
-  const cashierId = params.get('cashier_id')
-  const clientId = params.get('client_id')
-  const ticket = params.get('ticket')
+  const params       = req.nextUrl.searchParams
+  const status       = params.get('status')
+  const from         = params.get('from')
+  const to           = params.get('to')
+  const cashierId    = params.get('cashier_id')
+  const clientId     = params.get('client_id')
+  const ticket       = params.get('ticket')
+  const search       = params.get('search')
+  const useCreatedAt = params.get('use_created_at') === '1'
+  const page         = Math.max(1, parseInt(params.get('page')  ?? '1',  10))
+  const limit        = Math.min(100, Math.max(1, parseInt(params.get('limit') ?? '20', 10)))
 
-  const sales = await prisma.sale.findMany({
-    where: {
-      business_id: session.businessId,
-      ...(ticket && {
-        ticket_number: { contains: ticket },
-      }),
-      ...(status && {
-        status: status as 'quote' | 'pending' | 'paid' | 'cancelled',
-      }),
-      ...(from || to
-        ? {
-            sold_at: {
-              ...(from && { gte: new Date(from) }),
-              ...(to && { lte: new Date(`${to}T23:59:59`) }),
-            },
-          }
-        : {}),
-      ...(cashierId && { cashier_id: parseInt(cashierId, 10) }),
-      ...(clientId && { client_id: parseInt(clientId, 10) }),
-    },
-    include: {
-      items: true,
-      payments: {
-        include: { payment_method: { select: { id: true, name: true, type: true } } },
+  const dateFilter = (from || to)
+    ? {
+        [useCreatedAt ? 'created_at' : 'sold_at']: {
+          ...(from ? { gte: new Date(from) } : {}),
+          ...(to   ? { lte: new Date(`${to}T23:59:59`) } : {}),
+        },
+      }
+    : {}
+
+  const where = {
+    business_id: session.businessId,
+    ...(ticket
+      ? { ticket_number: { contains: ticket } }
+      : search
+      ? {
+          OR: [
+            { ticket_number: { contains: search } },
+            { client_name:   { contains: search } },
+            { client: { name: { contains: search } } },
+          ],
+        }
+      : {}),
+    ...(status    ? { status: status as 'quote' | 'pending' | 'paid' | 'cancelled' } : {}),
+    ...dateFilter,
+    ...(cashierId ? { cashier_id: parseInt(cashierId, 10) } : {}),
+    ...(clientId  ? { client_id:  parseInt(clientId,  10) } : {}),
+  }
+
+  const [sales, total] = await Promise.all([
+    prisma.sale.findMany({
+      where,
+      include: {
+        items: true,
+        payments: {
+          include: { payment_method: { select: { id: true, name: true, type: true } } },
+        },
+        client:  { select: { id: true, name: true, phone: true } },
+        cashier: { select: { id: true, name: true } },
       },
-      client: { select: { id: true, name: true, phone: true } },
-      cashier: { select: { id: true, name: true } },
-    },
-    orderBy: { created_at: 'desc' },
-    take: 100,
-  })
+      orderBy: { created_at: 'desc' },
+      skip:    (page - 1) * limit,
+      take:    limit,
+    }),
+    prisma.sale.count({ where }),
+  ])
 
-  return NextResponse.json({ ok: true, sales })
+  return NextResponse.json({ ok: true, sales, total, page, pages: Math.ceil(total / limit) })
 }
 
 async function checkStockAlerts(businessId: number, productIds: number[], ticketNumber: string) {

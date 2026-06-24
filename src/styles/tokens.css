@@ -23,6 +23,17 @@
   --lp-purple:          #A78BFA;
   --lp-shadow-demo:     0 16px 48px rgba(0, 0, 0, 0.40);
 
+  /* ── Landing light sections — invariant (not overridden by data-theme="dark") ── */
+  --lp-bg-base:         #F8FAFC;
+  --lp-bg-card:         #FFFFFF;
+  --lp-bg-mid:          #F0F4F8;
+  --lp-text-h:          #0F172A;
+  --lp-text-body:       #64748B;
+  --lp-text-muted:      #94A3B8;
+  --lp-border-light:    rgba(0, 56, 189, 0.10);
+  --lp-shadow-card:     0 2px 12px rgba(0, 0, 0, 0.06);
+  --lp-shadow-hover:    0 8px 24px rgba(0, 56, 189, 0.10);
+
   /* ── Brand — Persian Blue (#0038BD) ── */
   --brand-l:            #4D7AFF;
   --brand:              #0038BD;

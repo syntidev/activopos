@@ -1,6 +1,7 @@
 .page {
   min-height: calc(100vh - 64px);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(4rem, 8vw, 6rem);
+  background: var(--lp-bg-base);
 }
 
 .inner {
@@ -22,7 +23,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 800;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   line-height: 1.15;
   letter-spacing: -0.03em;
   text-wrap: balance;
@@ -32,7 +33,7 @@
 .subtitle {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 1rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--lp-text-body);
   max-width: 52ch;
   line-height: 1.65;
   margin-bottom: 3.5rem;
@@ -47,17 +48,24 @@
 }
 
 .card {
-  background: var(--bg-card, #132035);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--lp-bg-card);
+  border: 1px solid var(--lp-border-light);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--lp-shadow-card);
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.card:hover {
+  box-shadow: var(--lp-shadow-hover);
+  border-color: rgba(0, 56, 189, 0.20);
 }
 
 .cardImg {
   height: 180px;
-  background: linear-gradient(135deg, rgba(0,56,189,0.2) 0%, rgba(19,32,53,1) 100%);
+  background: linear-gradient(135deg, rgba(0, 56, 189, 0.08) 0%, #F0F4F8 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,7 +73,7 @@
 }
 
 .cardImgIcon {
-  color: rgba(77, 122, 255, 0.3);
+  color: rgba(0, 56, 189, 0.25);
 }
 
 .badge {
@@ -78,7 +86,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cta, #EF8E01);
-  background: rgba(239, 142, 1, 0.12);
+  background: rgba(239, 142, 1, 0.10);
   border: 1px solid rgba(239, 142, 1, 0.25);
   border-radius: 6px;
   padding: 4px 10px;
@@ -95,7 +103,7 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--brand-l, #4D7AFF);
+  color: var(--brand, #0038BD);
   margin-bottom: 0.625rem;
 }
 
@@ -103,7 +111,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   letter-spacing: -0.02em;
   line-height: 1.3;
   margin-bottom: 0.625rem;
@@ -112,7 +120,7 @@
 .cardDesc {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--lp-text-body);
   line-height: 1.6;
   flex: 1;
 }
@@ -120,10 +128,10 @@
 .cardFooter {
   margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(0, 56, 189, 0.08);
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.8125rem;
-  color: var(--text-tertiary, #64748B);
+  color: var(--lp-text-muted);
 }
 
 /* Newsletter */
@@ -131,8 +139,8 @@
 .newsletter {
   margin-top: 4rem;
   padding: 2.5rem;
-  background: linear-gradient(135deg, rgba(0,56,189,0.15) 0%, rgba(77,122,255,0.06) 100%);
-  border: 1px solid rgba(77, 122, 255, 0.2);
+  background: linear-gradient(135deg, rgba(0, 56, 189, 0.06) 0%, rgba(77, 122, 255, 0.03) 100%);
+  border: 1px solid rgba(0, 56, 189, 0.12);
   border-radius: 16px;
   text-align: center;
 }
@@ -141,7 +149,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.625rem;
   font-weight: 700;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   letter-spacing: -0.025em;
   margin-bottom: 0.5rem;
 }
@@ -149,7 +157,7 @@
 .newsletterSubtitle {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--lp-text-body);
   margin-bottom: 1.5rem;
 }
 
@@ -164,18 +172,18 @@
   flex: 1;
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  color: var(--text-primary, #F1F5F9);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--lp-text-h);
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 56, 189, 0.15);
   border-radius: 10px;
   padding: 0.75rem 1rem;
   outline: none;
   transition: border-color 150ms ease;
 }
 
-.newsletterInput::placeholder { color: var(--text-tertiary, #64748B); }
+.newsletterInput::placeholder { color: var(--lp-text-muted); }
 
-.newsletterInput:focus { border-color: rgba(77, 122, 255, 0.5); }
+.newsletterInput:focus { border-color: rgba(0, 56, 189, 0.40); }
 
 .newsletterBtn {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);

@@ -302,16 +302,9 @@ test('Nodo 4 — Reportes: daily report > 0 ventas hoy', async () => {
   }
 
   try {
-    // Diagnóstico: verificar que la venta de Nodo 2 sea visible vía GET /api/sales
-    const salesCheck = await api.get(`${BASE}/api/sales?status=paid`)
-    const salesBody  = await salesCheck.json() as { ok: boolean; sales: Array<{ id: number; status: string; sold_at: string | null }> }
-    const ourSale    = salesBody.sales?.find(s => s.id === saleId)
-    console.log(`[N4 diag] saleId=${saleId} found=${!!ourSale} sold_at=${ourSale?.sold_at ?? 'N/A'}`)
-
     // Use explicit UTC components — server uses Date.UTC for the daily window
     const now   = new Date()
     const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
-    console.log(`[N4 diag] querying date=${today} (UTC)`)
     const res   = await api.get(`${BASE}/api/reports/daily?date=${today}`)
     expect(res.status()).toBe(200)
 
@@ -321,7 +314,6 @@ test('Nodo 4 — Reportes: daily report > 0 ventas hoy', async () => {
       sales_count: number
       total_usd:   number
     }
-    console.log(`[N4 diag] report → ok=${body.ok} date=${body.date} sales_count=${body.sales_count}`)
     expect(body.ok).toBe(true)
     expect(body.date).toBe(today)
     expect(body.sales_count, 'daily sales_count debe ser > 0').toBeGreaterThan(0)

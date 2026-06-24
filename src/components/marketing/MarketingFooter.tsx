@@ -29,8 +29,11 @@ export default function MarketingFooter() {
         {/* Brand col */}
         <div className={styles.brand}>
           <Link href="/" className={styles.logo} aria-label="ActivoPOS — inicio">
-            <span className={styles.logoA}>Activo</span>
-            <span className={styles.logoB}>POS</span>
+            <img src="/logo.svg" alt="" aria-hidden="true" className={styles.logoImg} />
+            <span className={styles.logoName}>
+              <span className={styles.logoA}>Activo</span>
+              <span className={styles.logoB}>POS</span>
+            </span>
           </Link>
           <p className={styles.tagline}>El POS para negocios que andan activos.</p>
           <p className={styles.copy}>

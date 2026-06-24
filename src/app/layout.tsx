@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Fraunces } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
 import '@/styles/globals.css'
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
+  display: 'swap',
+})
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-display',
+  weight: ['700', '800'],
   display: 'swap',
 })
 
@@ -49,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={inter.variable}>
+      <body className={`${inter.variable} ${fraunces.variable}`}>
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="light"

@@ -48,43 +48,36 @@
   overflow: hidden;
 }
 
-.logoDot {
-  font-size: var(--text-xl);
-  color: var(--cta);
-  flex-shrink: 0;
-  line-height: 1;
-  width: 20px;
-  text-align: center;
-}
-
-.logoText {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-0-5);
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.logoActivo {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-tight);
-  color: var(--color-brand);
-}
-
-.logoPos {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-extrabold);
-  letter-spacing: var(--tracking-tight);
-  color: var(--sidebar-text-active);
-}
-
 .logoImg {
   height: 28px;
   width: auto;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
+}
+
+.logoName {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.logoActivo {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+}
+
+.logoPOS {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--brand);
 }
 
 /* ── Divider ── */

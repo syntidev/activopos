@@ -169,13 +169,13 @@ function NavContent({
       {/* Logo */}
       <div className={styles.logoWrapper}>
         <div className={styles.logoRow} aria-label="ActivoPOS">
-          <AnimatePresence initial={false} mode="wait">
-            {collapsed ? (
-              <motion.span key="logo-dot" className={styles.logoDot} aria-hidden="true" {...LABEL_MOTION}>
-                ●
+          <img src="/logo.svg" alt="ActivoPOS" className={styles.logoImg} />
+          <AnimatePresence initial={false}>
+            {!collapsed && (
+              <motion.span key="logo-name" className={styles.logoName} {...LABEL_MOTION}>
+                <span className={styles.logoActivo}>Activo</span>
+                <span className={styles.logoPOS}>POS</span>
               </motion.span>
-            ) : (
-              <motion.img key="logo-img" src="/logo.svg" alt="ActivoPOS" className={styles.logoImg} {...LABEL_MOTION} />
             )}
           </AnimatePresence>
         </div>

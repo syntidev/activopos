@@ -219,6 +219,13 @@ export default function EscritorioPage() {
       {/* ── Header ── */}
       <div className={styles.header}>
         <div>
+          <div className={styles.brandMark} aria-hidden="true">
+            <img src="/logo.svg" alt="" className={styles.brandMarkLogo} />
+            <span className={styles.brandMarkName}>
+              <span className={styles.brandMarkActivo}>Activo</span>
+              <span className={styles.brandMarkPOS}>POS</span>
+            </span>
+          </div>
           <h2 className={styles.greeting}>{getGreeting()}</h2>
           <p className={styles.subtitle}>{dateStr}</p>
         </div>

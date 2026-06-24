@@ -192,6 +192,15 @@ export function Header({
           <h1 className={styles.pageTitle}>{pageTitle}</h1>
         </div>
 
+        {/* Mobile: brand in center */}
+        <div className={styles.mobileBrand} aria-label="ActivoPOS">
+          <img src="/logo.svg" alt="ActivoPOS" className={styles.mobileBrandLogo} />
+          <span className={styles.mobileBrandName}>
+            <span className={styles.mobileBrandActivo}>Activo</span>
+            <span className={styles.mobileBrandPOS}>POS</span>
+          </span>
+        </div>
+
         {/* Right: BCV rate + caja + notif + theme + user */}
         <div className={styles.right}>
           {bcvRate && (

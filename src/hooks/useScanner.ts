@@ -86,7 +86,14 @@ export function useScanner({
     let mounted = true
 
     const init = async () => {
-      const el = videoRef.current
+      // Video ref may be null on first render tick — retry up to 10×50ms = 500ms
+      let el = videoRef.current
+      let attempts = 0
+      while (!el && attempts < 10) {
+        await new Promise<void>(r => setTimeout(r, 50))
+        el = videoRef.current
+        attempts++
+      }
       if (!el) return
       try {
         const controls = await reader.decodeFromConstraints(

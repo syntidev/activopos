@@ -1476,6 +1476,7 @@ export function ProductModal({
               className={styles.scanVideo}
               playsInline
               muted
+              autoPlay
             />
             <div className={styles.scanFrame} aria-hidden="true" />
             {permError && (

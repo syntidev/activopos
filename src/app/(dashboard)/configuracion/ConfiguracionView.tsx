@@ -11,6 +11,7 @@ import {
   Tag,
   Puzzle,
   Bell,
+  Wallet,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import styles from './configuracion.module.css'
@@ -23,8 +24,9 @@ import { TabUsuarios }        from './tabs/TabUsuarios'
 import { TabCategorias }      from './tabs/TabCategorias'
 import { TabModulos }         from './tabs/TabModulos'
 import { TabNotificaciones }  from './tabs/TabNotificaciones'
+import { TabCobros }          from './tabs/TabCobros'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'tema' | 'usuarios' | 'categorias' | 'modulos' | 'notificaciones'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'cobros' | 'tema' | 'usuarios' | 'categorias' | 'modulos' | 'notificaciones'
 
 interface Tab {
   key: TabKey
@@ -37,6 +39,7 @@ const MAIN_TABS: Tab[] = [
   { key: 'empresa',        label: 'Empresa',             Icon: Building2  },
   { key: 'impresion',      label: 'Impresión',           Icon: Printer    },
   { key: 'pagos',          label: 'Métodos de Pago',     Icon: CreditCard },
+  { key: 'cobros',         label: 'Cobros',              Icon: Wallet     },
   { key: 'categorias',     label: 'Categorías',          Icon: Tag        },
   { key: 'tema',           label: 'Tema Visual',         Icon: Palette    },
   { key: 'modulos',        label: 'Módulos',             Icon: Puzzle     },
@@ -91,6 +94,7 @@ export function ConfiguracionView({ session }: ConfiguracionViewProps) {
         {activeTab === 'empresa'        && <TabEmpresa        businessId={session.businessId} />}
         {activeTab === 'impresion'      && <TabImpresion      businessId={session.businessId} />}
         {activeTab === 'pagos'          && <TabPagos          businessId={session.businessId} />}
+        {activeTab === 'cobros'         && <TabCobros         businessId={session.businessId} />}
         {activeTab === 'tema'           && <TabTema           businessId={session.businessId} />}
         {activeTab === 'categorias'     && <TabCategorias     businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}

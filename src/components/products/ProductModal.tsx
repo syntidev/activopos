@@ -162,8 +162,13 @@ const AVAIL_LABEL: Record<string, string> = {
   discontinued: 'Descontinuado',
 }
 
-const SIZE_PRESETS  = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
-const COLOR_PRESETS = ['Negro', 'Blanco', 'Rojo', 'Azul', 'Verde', 'Amarillo']
+const PRESET_GROUPS = [
+  { id: 'ropa-adulto', label: 'Ropa adulto', values: ['XS','S','M','L','XL','XXL','XXXL'] },
+  { id: 'ropa-nino',   label: 'Ropa niño',   values: ['2','4','6','8','10','12','14','16'] },
+  { id: 'zap-adulto',  label: 'Zapato ad.',  values: ['35','36','37','38','39','40','41','42','43','44'] },
+  { id: 'zap-nino',    label: 'Zapato niño', values: ['18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34'] },
+  { id: 'colores',     label: 'Colores',     values: ['Negro','Blanco','Rojo','Azul','Verde','Amarillo','Naranja','Rosado','Gris','Morado'] },
+] as const
 
 /* ── Component ── */
 
@@ -213,6 +218,7 @@ export function ProductModal({
   const [badge, setBadge]             = useState('none')
   const [subcategory, setSubcategory] = useState('')
   const [isFeatured, setIsFeatured]   = useState(false)
+  const [selectedPresetGroup, setSelectedPresetGroup] = useState<string | null>(null)
 
   /* ── DB variant management (existing products only) ── */
   const [dbVariants, setDbVariants]       = useState<DbVariant[]>([])
@@ -1159,118 +1165,128 @@ export function ProductModal({
                     </>
                   )}
 
-                  <div className={mStyles.divider} />
+                  {(productKind === 'simple' || productKind === 'weight') && (
+                    <>
+                      <div className={mStyles.divider} />
 
-                  {/* ── Toggle: Tiene variantes ── */}
-                  <div className={styles.fixedPriceRow}>
-                    <div className={styles.fixedPriceLabel}>
-                      <Layers size={14} className={styles.toggleIcon} aria-hidden="true" />
-                      <div>
-                        <span className={styles.fixedPriceTitle}>Tiene variantes (tallas/colores)</span>
-                        <span className={styles.fixedPriceSub}>
-                          El cajero elige variante antes de vender
-                        </span>
-                      </div>
-                    </div>
-                    <label className={styles.toggle} aria-label="Tiene variantes">
-                      <input
-                        type="checkbox"
-                        className={styles.toggleInput}
-                        checked={hasVariants}
-                        onChange={(e) => setHasVariants(e.target.checked)}
-                      />
-                      <span className={styles.toggleTrack} />
-                      <span className={styles.toggleThumb} />
-                    </label>
-                  </div>
-
-                  {/* ── Sección Variantes ── */}
-                  {hasVariants && (
-                    <div className={styles.variantsSection}>
-                      <p className={styles.sectionLabel}>Presets rápidos</p>
-                      <div className={styles.presetGroup}>
-                        {SIZE_PRESETS.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            className={`${styles.presetBtn} ${variants.some(v => v.name === s) ? styles.presetBtnActive : ''}`}
-                            onClick={() => addPreset(s)}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                      <div className={styles.presetGroup}>
-                        {COLOR_PRESETS.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            className={`${styles.presetBtn} ${variants.some(v => v.name === c) ? styles.presetBtnActive : ''}`}
-                            onClick={() => addPreset(c)}
-                          >
-                            {c}
-                          </button>
-                        ))}
+                      {/* ── Toggle: Tiene variantes ── */}
+                      <div className={styles.fixedPriceRow}>
+                        <div className={styles.fixedPriceLabel}>
+                          <Layers size={14} className={styles.toggleIcon} aria-hidden="true" />
+                          <div>
+                            <span className={styles.fixedPriceTitle}>Tiene variantes (tallas/colores)</span>
+                            <span className={styles.fixedPriceSub}>
+                              El cajero elige variante antes de vender
+                            </span>
+                          </div>
+                        </div>
+                        <label className={styles.toggle} aria-label="Tiene variantes">
+                          <input
+                            type="checkbox"
+                            className={styles.toggleInput}
+                            checked={hasVariants}
+                            onChange={(e) => {
+                              setHasVariants(e.target.checked)
+                              if (!e.target.checked) setSelectedPresetGroup(null)
+                            }}
+                          />
+                          <span className={styles.toggleTrack} />
+                          <span className={styles.toggleThumb} />
+                        </label>
                       </div>
 
-                      {variants.length > 0 && (
-                        <div className={styles.variantList}>
-                          {variants.map((v, i) => (
-                            <div key={i} className={styles.variantRow}>
-                              <span className={styles.variantRowName}>{v.name}</span>
-                              {v.price_extra_usd > 0 && (
-                                <span className={styles.variantRowExtra}>
-                                  +${v.price_extra_usd.toFixed(2)}
-                                </span>
-                              )}
+                      {/* ── Sección Variantes ── */}
+                      {hasVariants && (
+                        <div className={styles.variantsSection}>
+                          <p className={styles.sectionLabel}>Elige un tipo</p>
+                          <div className={styles.presetGroupSelector}>
+                            {PRESET_GROUPS.map((g) => (
                               <button
+                                key={g.id}
                                 type="button"
-                                className={styles.variantRemoveBtn}
-                                onClick={() => removeVariant(i)}
-                                aria-label={`Eliminar variante ${v.name}`}
+                                className={`${styles.presetGroupBtn} ${selectedPresetGroup === g.id ? styles.presetGroupBtnActive : ''}`}
+                                onClick={() => setSelectedPresetGroup(prev => prev === g.id ? null : g.id)}
                               >
-                                <X size={13} aria-hidden="true" />
+                                {g.label}
                               </button>
+                            ))}
+                          </div>
+
+                          {selectedPresetGroup && (
+                            <div className={styles.presetGroup}>
+                              {PRESET_GROUPS.find(g => g.id === selectedPresetGroup)?.values.map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={`${styles.presetBtn} ${variants.some(va => va.name === v) ? styles.presetBtnActive : ''}`}
+                                  onClick={() => addPreset(v)}
+                                >
+                                  {v}
+                                </button>
+                              ))}
                             </div>
-                          ))}
+                          )}
+
+                          {variants.length > 0 && (
+                            <div className={styles.variantList}>
+                              {variants.map((v, i) => (
+                                <div key={i} className={styles.variantRow}>
+                                  <span className={styles.variantRowName}>{v.name}</span>
+                                  {v.price_extra_usd > 0 && (
+                                    <span className={styles.variantRowExtra}>
+                                      +${v.price_extra_usd.toFixed(2)}
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className={styles.variantRemoveBtn}
+                                    onClick={() => removeVariant(i)}
+                                    aria-label={`Eliminar variante ${v.name}`}
+                                  >
+                                    <X size={13} aria-hidden="true" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className={styles.variantAddRow}>
+                            <input
+                              type="text"
+                              className={`${mStyles.input} ${styles.variantNameInput}`}
+                              placeholder="Nombre personalizado (ej: Talla M, Rojo)"
+                              value={newVarName}
+                              onChange={(e) => setNewVarName(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addVariant() } }}
+                              maxLength={60}
+                            />
+                            <input
+                              type="number"
+                              className={`${mStyles.input} ${styles.variantExtraInput}`}
+                              placeholder="+$0.00"
+                              value={newVarExtra}
+                              onChange={(e) => setNewVarExtra(e.target.value)}
+                              min="0"
+                              step="0.01"
+                              aria-label="Precio extra USD"
+                            />
+                            <button
+                              type="button"
+                              className={styles.variantAddBtn}
+                              onClick={addVariant}
+                              disabled={!newVarName.trim()}
+                              aria-label="Añadir variante"
+                            >
+                              <Plus size={15} aria-hidden="true" />
+                            </button>
+                          </div>
                         </div>
                       )}
-
-                      <div className={styles.variantAddRow}>
-                        <input
-                          type="text"
-                          className={`${mStyles.input} ${styles.variantNameInput}`}
-                          placeholder="Nombre (ej: Talla M, Rojo)"
-                          value={newVarName}
-                          onChange={(e) => setNewVarName(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addVariant() } }}
-                          maxLength={60}
-                        />
-                        <input
-                          type="number"
-                          className={`${mStyles.input} ${styles.variantExtraInput}`}
-                          placeholder="+$0.00"
-                          value={newVarExtra}
-                          onChange={(e) => setNewVarExtra(e.target.value)}
-                          min="0"
-                          step="0.01"
-                          aria-label="Precio extra USD"
-                        />
-                        <button
-                          type="button"
-                          className={styles.variantAddBtn}
-                          onClick={addVariant}
-                          disabled={!newVarName.trim()}
-                          aria-label="Añadir variante"
-                        >
-                          <Plus size={15} aria-hidden="true" />
-                        </button>
-                      </div>
-                    </div>
+                    </>
                   )}
 
-                  {/* ── DB Variants (editing existing simple products only) ── */}
-                  {isEdit && editProduct?.id && productKind === 'simple' && (
+                  {/* ── DB Variants (editing existing simple/weight products) ── */}
+                  {isEdit && editProduct?.id && (productKind === 'simple' || productKind === 'weight') && (
                     <div className={styles.dbVariantsSection}>
                       <div className={styles.dbVarsHeader}>
                         <p className={mStyles.label}>Variantes guardadas</p>

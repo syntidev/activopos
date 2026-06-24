@@ -305,6 +305,15 @@
   background: var(--color-border-subtle);
 }
 
+/* ── Mobile first ── */
+@media (max-width: 640px) {
+  .overlay { padding: var(--space-2); align-items: flex-end; }
+  .modal { max-height: 95dvh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .modalHeader { padding: var(--space-3) var(--space-4); }
+  .modalBody { padding: var(--space-4); gap: var(--space-4); }
+  .modalFooter { padding: var(--space-3) var(--space-4); }
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation: none; }

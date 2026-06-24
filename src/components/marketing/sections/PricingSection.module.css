@@ -17,9 +17,9 @@
 }
 
 .container {
-  max-width: 860px;
+  max-width: min(1140px, 90vw);
   margin: 0 auto;
-  padding: 0 5vw;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
   position: relative;
   z-index: 1;
 }
@@ -31,7 +31,7 @@
 
 .title {
   font-family: var(--font-display);
-  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-size: clamp(28px, 5vw, 52px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -41,7 +41,7 @@
 }
 
 .subtitle {
-  font-size: var(--text-base);
+  font-size: clamp(15px, 2vw, 17px);
   color: #64748B;
   line-height: 1.65;
   max-width: 440px;
@@ -112,8 +112,8 @@
 
 .cardName {
   font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 800;
+  font-size: clamp(17px, 2.5vw, 20px);
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: #1E293B;
@@ -134,9 +134,9 @@
 .cardFeatured .tagline { color: var(--brand); }
 
 .cardDesc {
-  font-size: var(--text-sm);
+  font-size: clamp(15px, 2vw, 17px);
   color: #64748B;
-  line-height: 1.6;
+  line-height: 1.65;
   font-family: var(--font-sans);
 }
 
@@ -226,4 +226,6 @@
 
 @media (max-width: 640px) {
   .grid { grid-template-columns: 1fr; }
+  .card { padding: 24px 20px; }
+  .badge { font-size: 12px; padding: 4px 12px; border-radius: 100px; }
 }

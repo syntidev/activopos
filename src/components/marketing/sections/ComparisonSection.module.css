@@ -6,9 +6,9 @@
 }
 
 .container {
-  max-width: 800px;
+  max-width: min(1140px, 90vw);
   margin: 0 auto;
-  padding: 0 5vw;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
 }
 
 .copy {
@@ -17,7 +17,7 @@
 
 .title {
   font-family: var(--font-display);
-  font-size: clamp(1.625rem, 4vw, 3rem);
+  font-size: clamp(28px, 5vw, 52px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -79,8 +79,8 @@
   gap: var(--space-2-5);
   padding: 12px 24px;
   border-top: 1px solid rgba(0, 56, 189, 0.08);
-  font-size: var(--text-sm);
-  line-height: 1.5;
+  font-size: clamp(15px, 2vw, 17px);
+  line-height: 1.65;
   font-family: var(--font-sans);
 }
 

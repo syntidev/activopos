@@ -43,9 +43,9 @@ interface AnalyticsSummary {
     tendencia:     'up' | 'down' | 'flat'
   }
   por_metodo: Array<{
-    metodo:    string
-    total_usd: number
-    count:     number
+    method_name: string
+    total_usd:   number
+    count:       number
   }>
 }
 
@@ -368,9 +368,9 @@ export default function EscritorioPage() {
               </thead>
               <tbody>
                 {summary.por_metodo.map(m => (
-                  <tr key={m.metodo}>
+                  <tr key={m.method_name}>
                     <td className={styles.tdPrimary}>
-                      {METODO_LABELS[m.metodo] ?? m.metodo}
+                      {METODO_LABELS[m.method_name] ?? m.method_name}
                     </td>
                     <td>{m.count}</td>
                     <td className={styles.tdBrand}>{fmtUsd(m.total_usd)}</td>

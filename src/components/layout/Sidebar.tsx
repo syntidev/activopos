@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useSidebarNotifications, type SidebarCounts } from '@/hooks/useSidebarNotifications'
 import { NotificationsPanel } from './NotificationsPanel'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -43,6 +44,7 @@ interface NavItem {
   label: string
   moduleKey?: string
   colorKey?: string
+  badgeKey?: 'pending_orders' | 'critical_stock'
 }
 
 interface NavGroup {
@@ -62,14 +64,14 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'VENTAS',
     items: [
       { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta', moduleKey: 'pos',     colorKey: 'ventas' },
-      { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos',        moduleKey: 'pedidos', colorKey: 'ventas' },
+      { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos',        moduleKey: 'pedidos', colorKey: 'ventas', badgeKey: 'pending_orders' },
       { href: '/clientes', icon: Users,         label: 'Clientes',                            colorKey: 'ventas' },
     ],
   },
   {
     label: 'INVENTARIO',
     items: [
-      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory', colorKey: 'inventario' },
+      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory', colorKey: 'inventario', badgeKey: 'critical_stock' },
     ],
   },
   {
@@ -143,6 +145,7 @@ interface NavContentProps {
   onOpenNotifications?: () => void
   notifUnread?: number
   enabledModules?: string[] | null
+  sidebarCounts?: SidebarCounts
 }
 
 function NavContent({
@@ -157,6 +160,7 @@ function NavContent({
   onOpenNotifications,
   notifUnread = 0,
   enabledModules,
+  sidebarCounts,
 }: NavContentProps) {
   return (
     <div className={styles.inner}>
@@ -220,6 +224,22 @@ function NavContent({
                           strokeWidth={isActive ? 2.25 : 1.75}
                           aria-hidden="true"
                         />
+                        {(() => {
+                          const count = item.badgeKey === 'pending_orders'
+                            ? (sidebarCounts?.pendingOrders ?? 0)
+                            : item.badgeKey === 'critical_stock'
+                              ? (sidebarCounts?.criticalStock ?? 0)
+                              : 0
+                          if (count <= 0) return null
+                          return (
+                            <span
+                              className={item.badgeKey === 'pending_orders' ? styles.itemBadgeRed : styles.itemBadgeOrange}
+                              aria-label={`${count} alertas`}
+                            >
+                              {count > 9 ? '9+' : count}
+                            </span>
+                          )
+                        })()}
                       </span>
                       <AnimatePresence initial={false}>
                         {!collapsed && (
@@ -335,6 +355,7 @@ export function Sidebar({
   const [showNotif, setShowNotif] = useState(false)
   const { items: notifItems, unread: notifUnread, loading: notifLoading, markAllRead } = useNotifications()
 
+  const sidebarCounts = useSidebarNotifications()
   const isAdmin = session?.role === 'admin' || session?.role === 'super_admin'
   const visibleGroups = NAV_GROUPS.filter((g) => !g.adminOnly || isAdmin)
 
@@ -368,6 +389,7 @@ export function Sidebar({
     onOpenNotifications: () => setShowNotif(true),
     notifUnread,
     enabledModules,
+    sidebarCounts,
   }
 
   return (

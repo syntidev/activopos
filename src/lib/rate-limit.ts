@@ -22,6 +22,11 @@ export const onboardingLimiter = new RateLimiterMemory({
   duration: 3600, // en 1 hora
 })
 
+export const aiChatLimiter = new RateLimiterMemory({
+  points:   20,   // 20 mensajes por minuto por usuario
+  duration: 60,
+})
+
 // Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
 // antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
 export const getClientIp = (req: Request): string =>

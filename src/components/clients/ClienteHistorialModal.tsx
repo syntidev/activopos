@@ -6,7 +6,7 @@ import { Button }  from '@/components/ui/Button'
 import { Badge, type BadgeVariant } from '@/components/ui/Badge'
 import { Input }   from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
-import { Calendar, Hash, Plus, AlertCircle, Loader2 } from 'lucide-react'
+import { Calendar, Hash, Plus, AlertCircle, Loader2, Printer } from 'lucide-react'
 import type {
   ClientHistoryData,
   SaleHistoryItem,
@@ -64,6 +64,7 @@ export function ClienteHistorialModal({
 
   const [data, setData]       = useState<ClientHistoryData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [histTab, setHistTab] = useState<'compras' | 'cxc'>('compras')
 
   const [abonoTarget, setAbonoTarget]   = useState<AbonoTarget | null>(null)
   const [abonoForm, setAbonoForm]       = useState<AbonoForm>(EMPTY_ABONO)
@@ -185,74 +186,140 @@ export function ClienteHistorialModal({
 
             <div className={styles.divider} />
 
-            {/* Sales */}
-            {data.sales.length === 0 ? (
-              <p className={styles.emptyText}>
-                Este cliente no tiene ventas registradas.
-              </p>
-            ) : (
-              <div className={styles.salesList}>
-                {data.sales.map((sale) => (
-                  <div key={sale.id} className={styles.saleCard}>
-                    {/* Sale row */}
-                    <div className={styles.saleHeader}>
-                      <div className={styles.saleMeta}>
-                        <span className={styles.ticketNum}>
-                          <Hash size={12} strokeWidth={2} aria-hidden="true" />
-                          {sale.ticket_number}
-                        </span>
-                        <span className={styles.saleDate}>
-                          <Calendar size={12} strokeWidth={1.75} aria-hidden="true" />
-                          {fmtDate(sale.sold_at ?? sale.created_at)}
-                        </span>
-                      </div>
-                      <div className={styles.saleRight}>
-                        <span className={styles.saleTotal}>{fmtUsd(sale.total_usd)}</span>
-                        <Badge variant={STATUS_VARIANT[sale.status]} size="sm">
-                          {STATUS_LABELS[sale.status]}
-                        </Badge>
-                      </div>
-                    </div>
+            {/* Tabs */}
+            <div className={styles.tabs} role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={histTab === 'compras'}
+                className={`${styles.tab} ${histTab === 'compras' ? styles.tabActive : ''}`}
+                onClick={() => setHistTab('compras')}
+              >
+                Compras
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={histTab === 'cxc'}
+                className={`${styles.tab} ${histTab === 'cxc' ? styles.tabActive : ''}`}
+                onClick={() => setHistTab('cxc')}
+              >
+                Pagos CxC
+              </button>
+            </div>
 
-                    {/* CxC section — only for pending sales */}
-                    {sale.status === 'pending' && (
-                      <div className={styles.cxcSection}>
-                        {sale.abonos.length > 0 && (
-                          <ul className={styles.abonosList} role="list">
-                            {sale.abonos.map((a) => (
-                              <li key={a.id} className={styles.abonoRow}>
-                                <span className={styles.abonoDate}>
-                                  {fmtDate(a.created_at)}
-                                </span>
-                                <span className={styles.abonoAmount}>
-                                  +{fmtUsd(a.amount_usd)}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                        <div className={styles.balanceRow}>
-                          <span className={styles.balanceLabel}>Restante</span>
-                          <span className={styles.balanceValue}>
-                            {fmtUsd(sale.balance_remaining)}
+            {/* ── Compras tab ── */}
+            {histTab === 'compras' && (
+              data.sales.length === 0 ? (
+                <p className={styles.emptyText}>
+                  Este cliente no tiene ventas registradas.
+                </p>
+              ) : (
+                <div className={styles.salesList}>
+                  {data.sales.map((sale) => (
+                    <div key={sale.id} className={styles.saleCard}>
+                      <div className={styles.saleHeader}>
+                        <div className={styles.saleMeta}>
+                          <span className={styles.ticketNum}>
+                            <Hash size={12} strokeWidth={2} aria-hidden="true" />
+                            {sale.ticket_number}
+                          </span>
+                          <span className={styles.saleDate}>
+                            <Calendar size={12} strokeWidth={1.75} aria-hidden="true" />
+                            {fmtDate(sale.sold_at ?? sale.created_at)}
                           </span>
                         </div>
-                        {sale.balance_remaining > 0 && (
+                        <div className={styles.saleRight}>
                           <button
-                            className={styles.abonoBtn}
-                            onClick={() => openAbono(sale)}
                             type="button"
+                            className={styles.viewTicketBtn}
+                            onClick={() => window.open(`/api/sales/${sale.id}/ticket`, '_blank')}
+                            title={`Ver ticket #${sale.ticket_number}`}
+                            aria-label={`Ver ticket #${sale.ticket_number}`}
                           >
-                            <Plus size={13} strokeWidth={2} aria-hidden="true" />
-                            Registrar abono
+                            <Printer size={13} aria-hidden="true" />
                           </button>
-                        )}
+                          <span className={styles.saleTotal}>{fmtUsd(sale.total_usd)}</span>
+                          <Badge variant={STATUS_VARIANT[sale.status]} size="sm">
+                            {STATUS_LABELS[sale.status]}
+                          </Badge>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+
+                      {/* CxC section — only for pending sales */}
+                      {sale.status === 'pending' && (
+                        <div className={styles.cxcSection}>
+                          {sale.abonos.length > 0 && (
+                            <ul className={styles.abonosList} role="list">
+                              {sale.abonos.map((a) => (
+                                <li key={a.id} className={styles.abonoRow}>
+                                  <span className={styles.abonoDate}>
+                                    {fmtDate(a.created_at)}
+                                  </span>
+                                  <span className={styles.abonoAmount}>
+                                    +{fmtUsd(a.amount_usd)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <div className={styles.balanceRow}>
+                            <span className={styles.balanceLabel}>Restante</span>
+                            <span className={styles.balanceValue}>
+                              {fmtUsd(sale.balance_remaining)}
+                            </span>
+                          </div>
+                          {sale.balance_remaining > 0 && (
+                            <button
+                              className={styles.abonoBtn}
+                              onClick={() => openAbono(sale)}
+                              type="button"
+                            >
+                              <Plus size={13} strokeWidth={2} aria-hidden="true" />
+                              Registrar abono
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
             )}
+
+            {/* ── Pagos CxC tab ── */}
+            {histTab === 'cxc' && (() => {
+              const allAbonos = data.sales
+                .flatMap(s => s.abonos.map(a => ({
+                  ...a,
+                  ticketNumber: s.ticket_number,
+                  saleId: s.id,
+                })))
+                .sort((a, b) =>
+                  new Date(b.created_at ?? 0).getTime() -
+                  new Date(a.created_at ?? 0).getTime()
+                )
+              if (allAbonos.length === 0) {
+                return (
+                  <p className={styles.emptyText}>
+                    No hay pagos registrados para este cliente.
+                  </p>
+                )
+              }
+              return (
+                <ul className={styles.abonosList} role="list">
+                  {allAbonos.map((a) => (
+                    <li key={a.id} className={`${styles.abonoRow} ${styles.abonoRowFull}`}>
+                      <span className={styles.abonoDate}>
+                        {fmtDate(a.created_at)}
+                        <span className={styles.abonoTicketRef}>· #{a.ticketNumber}</span>
+                      </span>
+                      <span className={styles.abonoAmount}>+{fmtUsd(a.amount_usd)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )
+            })()}
           </div>
 
         ) : (

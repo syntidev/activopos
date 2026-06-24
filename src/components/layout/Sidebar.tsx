@@ -25,6 +25,7 @@ import {
   LogOut,
   Bell,
   ChefHat,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
@@ -65,7 +66,8 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta', moduleKey: 'pos',     colorKey: 'ventas' },
       { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos',        moduleKey: 'pedidos', colorKey: 'ventas', badgeKey: 'pending_orders' },
-      { href: '/clientes', icon: Users,         label: 'Clientes',                            colorKey: 'ventas' },
+      { href: '/ventas',   icon: Receipt,       label: 'Historial',                            colorKey: 'ventas' },
+      { href: '/clientes', icon: Users,         label: 'Clientes',                             colorKey: 'ventas' },
     ],
   },
   {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import styles from './finanzas.module.css'
 
 interface ER {
@@ -90,6 +91,35 @@ export function ResumenSection({ month, rate }: Props) {
   const er     = data.estado_resultados
   const isPos  = er.utilidad_neta >= 0
   const peData = computePE(er, month)
+
+  const chartData = [
+    { name: 'Ingresos', value: er.ventas_netas,          key: 'income'  },
+    { name: 'Gastos',   value: er.gastos_operativos,      key: 'expense' },
+    { name: 'Utilidad', value: Math.abs(er.utilidad_neta), key: isPos ? 'profit' : 'loss' },
+  ]
+
+  const CHART_COLORS: Record<string, string> = {
+    income:  'var(--color-brand)',
+    expense: 'var(--danger)',
+    profit:  'var(--color-success-text)',
+    loss:    'var(--danger)',
+  }
+
+  interface TooltipPayload {
+    payload?: { name: string; value: number }
+    value?: number
+  }
+
+  const ChartTooltip = ({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) => {
+    if (!active || !payload?.length) return null
+    const item = payload[0]
+    return (
+      <div className={styles.chartTooltip}>
+        <p className={styles.chartTooltipLabel}>{item.payload?.name ?? ''}</p>
+        <p className={styles.chartTooltipValue}>{fmtUsd(item.payload?.value ?? 0)}</p>
+      </div>
+    )
+  }
 
   /* P&L bars — proportional to ventas_netas */
   const barW = (n: number) =>
@@ -271,6 +301,41 @@ export function ResumenSection({ month, rate }: Props) {
           </div>
         </div>
       )}
+
+      {/* ── Gráfico comparativo ── */}
+      <div className={styles.chartCard}>
+        <h3 className={styles.chartTitle}>Comparativa del período</h3>
+        <div className={styles.chartWrap}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={chartData} barCategoryGap="38%" margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
+              />
+              <YAxis
+                tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+                width={52}
+              />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={96}>
+                {chartData.map((entry, i) => (
+                  <Cell key={`cell-${i}`} fill={CHART_COLORS[entry.key]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <p className={styles.chartCaption}>
+          {isPos
+            ? `Utilidad neta: ${fmtUsd(er.utilidad_neta)} · Margen: ${fmtPct(er.margen_neto_pct)}`
+            : `Pérdida neta: ${fmtUsd(Math.abs(er.utilidad_neta))} · Margen: ${fmtPct(er.margen_neto_pct)}`}
+        </p>
+      </div>
     </>
   )
 }

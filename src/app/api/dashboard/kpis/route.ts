@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
     todayP, yesterdayP, monthP, prevMonthP, periodP,
     cancellations, creditToday,
     methodsRows, topProductsRows, cxcRows, stockRows,
-    rateRows,
+    rateRows, creditAggToday, ordenesCount,
   ] = await Promise.all([
     // Revenue aggregates
     prisma.sale.aggregate({ where: paidToday,     _sum: { total_usd: true, total_bs: true } }),
@@ -147,6 +147,15 @@ export async function GET(req: NextRequest) {
         AND IFNULL(ie.net_qty,0) < p.min_stock AND p.min_stock>0`,
     // BCV rate
     prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
+    // Ventas a crédito (pending) creadas hoy — para coherencia dashboard
+    prisma.sale.aggregate({
+      where: { business_id: bid, status: 'pending', created_at: { gte: todayStart, lt: tomorrowStart } },
+      _sum:  { total_usd: true },
+    }),
+    // Órdenes recibidas hoy
+    prisma.order.count({
+      where: { business_id: bid, created_at: { gte: todayStart, lt: tomorrowStart } },
+    }),
   ])
 
   const rate = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
@@ -166,9 +175,22 @@ export async function GET(req: NextRequest) {
   const uMes   = p0(monthP);    const uMesA  = p0(prevMonthP)
   const uPer   = p0(periodP)
 
+  const creditoHoy       = Number(creditAggToday._sum.total_usd ?? 0)
+  const costoInvertidoHoy = Math.max(0, vHoy - uHoy)
+
   return NextResponse.json({
     ok:       true,
     greeting: getGreeting(now.getHours()),
+    kpis: {
+      cobrado_usd:        vHoy,
+      credito_usd:        creditoHoy,
+      total_usd:          r2(vHoy + creditoHoy),
+      utilidad_usd:       r2(uHoy),
+      costo_invertido_usd: r2(costoInvertidoHoy),
+      tickets_count:      todayCount,
+      ticket_promedio_usd: todayCount > 0 ? r2(vHoy / todayCount) : 0,
+      ordenes_count:      ordenesCount,
+    },
     rate,
     ventas_hoy: {
       usd: vHoy, bs: vHoyBs, count: todayCount,

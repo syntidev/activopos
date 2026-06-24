@@ -507,6 +507,28 @@
   .ctaBtn { width: 100%; justify-content: center; }
 }
 
+/* ── Warning KPI variant (crédito pendiente) ── */
+.kpiBorderWarning { border-left: 3px solid var(--warning); }
+.kpiIconWarning   { color: var(--warning-text); }
+
+/* ── Resumen del día ── */
+.daySummary {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid rgba(var(--brand-rgb), 0.12);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.daySummaryText { flex: 1; }
+
+.daySummaryPos { color: var(--success-text, #15803D); }
+.daySummaryNeg { color: var(--danger-text, #DC2626); }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .skeleton     { animation: none; opacity: 0.5; }

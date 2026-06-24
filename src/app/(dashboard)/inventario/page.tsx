@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  ArrowDownToLine, ChevronLeft, ChevronRight, Clock, FileDown,
-  Package, Plus, Scan, Search, X,
+  AlertTriangle, ArrowDownToLine, ChevronLeft, ChevronRight,
+  Clock, DollarSign, FileDown, Layers, Package, Plus, Scan,
+  Search, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { useScanner } from '@/hooks/useScanner'
@@ -20,6 +21,8 @@ interface Product {
   sale_mode: string
   price_per_unit_usd: number | null
   cost_per_unit_usd: number | null
+  min_stock: number
+  is_low_stock: boolean
   stock: { net_qty: number }
 }
 
@@ -36,17 +39,9 @@ interface InventoryEntry {
 }
 
 type EntryType = 'all' | 'entrada' | 'ajuste'
+type StockStatus = 'ok' | 'low' | 'out'
 
 /* ── Helpers ── */
-
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000
-  if (diff < 60)   return 'ahora'
-  if (diff < 3600) return `${Math.floor(diff / 60)} min`
-  const h = Math.floor(diff / 3600)
-  if (h < 24)      return `${h}h`
-  return new Date(iso).toLocaleDateString('es-VE', { day: 'numeric', month: 'short' })
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-VE', {
@@ -55,8 +50,25 @@ function formatDate(iso: string): string {
   })
 }
 
+function fmtTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+}
+
 function getEntryType(e: InventoryEntry): 'entrada' | 'ajuste' {
   return e.waste > 0 ? 'ajuste' : 'entrada'
+}
+
+function getStockStatus(p: Product): StockStatus {
+  if (p.stock.net_qty <= 0) return 'out'
+  if (p.is_low_stock || (p.min_stock > 0 && p.stock.net_qty <= p.min_stock)) return 'low'
+  return 'ok'
+}
+
+const STOCK_STATUS_LABEL: Record<StockStatus, string> = { ok: 'OK', low: 'BAJO', out: 'AGOTADO' }
+const STOCK_STATUS_CLASS: Record<StockStatus, string> = {
+  ok:  'stockBadgeOk',
+  low: 'stockBadgeLow',
+  out: 'stockBadgeOut',
 }
 
 const PAGE_SIZE = 20
@@ -267,16 +279,185 @@ function EntryModal({ product, onClose, onSaved }: ModalProps) {
   )
 }
 
+/* ── Product side panel ── */
+
+interface PanelProps {
+  product: Product
+  todayMoves: InventoryEntry[]
+  onClose: () => void
+  onRegisterEntry: (p: Product) => void
+}
+
+function ProductPanel({ product, todayMoves, onClose, onRegisterEntry }: PanelProps) {
+  const isW      = product.sale_mode === 'weight'
+  const status   = getStockStatus(product)
+  const price    = product.price_per_unit_usd
+  const cost     = product.cost_per_unit_usd
+  const margen   = price && cost && price > 0
+    ? ((price - cost) / price) * 100
+    : null
+
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        className={styles.panelBackdrop}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Panel */}
+      <motion.aside
+        className={styles.panel}
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', stiffness: 340, damping: 34, mass: 0.8 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={product.name}
+      >
+        {/* Header */}
+        <div className={styles.panelHeader}>
+          <div>
+            <h2 className={styles.panelTitle}>{product.name}</h2>
+            <span className={styles.panelUnit}>{product.base_unit_label}</span>
+          </div>
+          <button
+            className={styles.panelClose}
+            onClick={onClose}
+            type="button"
+            aria-label="Cerrar panel"
+          >
+            <X size={17} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className={styles.panelBody}>
+
+          {/* Stock status badge */}
+          <div className={styles.panelStatusRow}>
+            <span className={`${styles.stockBadge} ${styles[STOCK_STATUS_CLASS[status]]}`}>
+              {STOCK_STATUS_LABEL[status]}
+            </span>
+          </div>
+
+          {/* Stock section */}
+          <div className={styles.panelSection}>
+            <p className={styles.panelSectionTitle}>Stock</p>
+            <div className={styles.panelMetaGrid}>
+              <div className={styles.panelMetaItem}>
+                <span className={styles.panelMetaLabel}>Actual</span>
+                <span className={styles.panelMetaValue}>
+                  {product.stock.net_qty.toFixed(isW ? 3 : 0)}&nbsp;{product.base_unit_label}
+                </span>
+              </div>
+              <div className={styles.panelMetaItem}>
+                <span className={styles.panelMetaLabel}>Mínimo</span>
+                <span className={styles.panelMetaValue}>
+                  {product.min_stock > 0
+                    ? `${product.min_stock.toFixed(isW ? 3 : 0)} ${product.base_unit_label}`
+                    : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Precio / Costo / Margen */}
+          <div className={styles.panelSection}>
+            <p className={styles.panelSectionTitle}>Precios</p>
+            <div className={styles.panelMetaGrid}>
+              <div className={styles.panelMetaItem}>
+                <span className={styles.panelMetaLabel}>Precio venta</span>
+                <span className={styles.panelMetaValue}>
+                  {price != null ? `$${price.toFixed(3)}` : '—'}
+                </span>
+              </div>
+              <div className={styles.panelMetaItem}>
+                <span className={styles.panelMetaLabel}>Costo</span>
+                <span className={styles.panelMetaValue}>
+                  {cost != null ? `$${cost.toFixed(3)}` : '—'}
+                </span>
+              </div>
+              {margen !== null && (
+                <div className={styles.panelMetaItem}>
+                  <span className={styles.panelMetaLabel}>Margen</span>
+                  <span className={`${styles.panelMetaValue} ${margen >= 0 ? styles.panelMargenPos : styles.panelMargenNeg}`}>
+                    {margen.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Movimientos de hoy */}
+          <div className={styles.panelSection}>
+            <p className={styles.panelSectionTitle}>Movimientos de hoy</p>
+            {todayMoves.length === 0 ? (
+              <p className={styles.movEmpty}>Sin movimientos hoy</p>
+            ) : (
+              <ul className={styles.movList} aria-label="Movimientos de hoy">
+                {todayMoves.map(e => {
+                  const t = getEntryType(e)
+                  const qty = t === 'ajuste'
+                    ? `-${e.waste.toFixed(isW ? 3 : 0)}`
+                    : `+${e.quantity.toFixed(isW ? 3 : 0)}`
+                  return (
+                    <li key={e.id} className={styles.movItem}>
+                      <span className={`${styles.typeBadgeEntrada} ${t === 'ajuste' ? styles.typeBadgeAjuste : ''}`}>
+                        {t === 'entrada' ? 'E' : 'A'}
+                      </span>
+                      <span className={styles.movQty}>{qty}&nbsp;{product.base_unit_label}</span>
+                      <span className={styles.movTime}>{fmtTime(e.entered_at)}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+            {/* CLI-A: implement GET /api/inventory/product/{id}/movements?date=X for paginated history */}
+          </div>
+
+          {/* Actions */}
+          <div className={styles.panelActions}>
+            <button
+              className={styles.panelBtn}
+              type="button"
+              onClick={() => onRegisterEntry(product)}
+            >
+              <Plus size={14} aria-hidden="true" />
+              Registrar Entrada
+            </button>
+            <button
+              className={styles.panelBtnSecondary}
+              type="button"
+              disabled
+              title="Próximamente"
+              aria-label="Ajustar stock — próximamente"
+            >
+              Ajustar stock
+            </button>
+          </div>
+        </div>
+      </motion.aside>
+    </>
+  )
+}
+
 /* ── Main content ── */
 
 function InventarioContent() {
   const { toast } = useToast()
-  const [products, setProducts]       = useState<Product[]>([])
-  const [entries, setEntries]         = useState<InventoryEntry[]>([])
-  const [search, setSearch]           = useState('')
-  const [loading, setLoading]         = useState(true)
-  const [selected, setSelected]       = useState<Product | null>(null)
-  const [scannerActive, setScannerActive] = useState(false)
+  const [products, setProducts]             = useState<Product[]>([])
+  const [entries, setEntries]               = useState<InventoryEntry[]>([])
+  const [search, setSearch]                 = useState('')
+  const [loading, setLoading]               = useState(true)
+  const [panelProduct, setPanelProduct]     = useState<Product | null>(null)
+  const [entryProduct, setEntryProduct]     = useState<Product | null>(null)
+  const [scannerActive, setScannerActive]   = useState(false)
 
   const { videoRef } = useScanner({
     active: scannerActive,
@@ -284,7 +465,7 @@ function InventarioContent() {
       const found = products.find(p => p.barcode === barcode)
       if (found) {
         setScannerActive(false)
-        setSelected(found)
+        setPanelProduct(found)
       } else {
         toast('Producto no encontrado', 'error')
       }
@@ -321,12 +502,39 @@ function InventarioContent() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  /* ── KPI computations ── */
+  const kpiEntradoHoy = useMemo(() => {
+    const todayEntradas = entries.filter(e =>
+      e.entered_at.slice(0, 10) === todayStr && getEntryType(e) === 'entrada'
+    )
+    return {
+      qty: todayEntradas.reduce((s, e) => s + e.quantity, 0),
+      usd: todayEntradas.reduce((s, e) =>
+        s + (e.cost_per_unit_usd != null ? e.quantity * e.cost_per_unit_usd : 0), 0),
+    }
+  }, [entries, todayStr])
+
+  const kpiStockTotal   = useMemo(() => products.reduce((s, p) => s + Math.max(0, p.stock.net_qty), 0), [products])
+  const kpiBajoMinimo   = useMemo(() => products.filter(p => p.is_low_stock || (p.min_stock > 0 && p.stock.net_qty <= p.min_stock)).length, [products])
+  const kpiValorTotal   = useMemo(() =>
+    products.reduce((s, p) => {
+      if (p.cost_per_unit_usd != null && p.stock.net_qty > 0) return s + p.stock.net_qty * p.cost_per_unit_usd
+      return s
+    }, 0), [products])
+
+  /* ── Panel today moves ── */
+  const panelTodayMoves = useMemo(() => {
+    if (!panelProduct) return []
+    return entries.filter(e => e.product.id === panelProduct.id && e.entered_at.slice(0, 10) === todayStr)
+  }, [entries, panelProduct, todayStr])
+
   const filtered = products.filter(p =>
     !search || p.name.toLowerCase().includes(search.toLowerCase())
   )
 
   /* ── Historial derived state ── */
-
   const filteredEntries = useMemo(() => {
     return entries.filter(e => {
       if (histSearch && !e.product.name.toLowerCase().includes(histSearch.toLowerCase())) return false
@@ -351,7 +559,7 @@ function InventarioContent() {
     filteredEntries.filter(e => getEntryType(e) === 'ajuste').length,
     [filteredEntries]
   )
-  const valorTotal = useMemo(() =>
+  const valorFiltrado = useMemo(() =>
     filteredEntries.reduce((s, e) => {
       if (e.cost_per_unit_usd != null) return s + e.quantity * e.cost_per_unit_usd
       return s
@@ -360,11 +568,7 @@ function InventarioContent() {
   )
 
   function resetFilters() {
-    setHistSearch('')
-    setHistType('all')
-    setHistFrom('')
-    setHistTo('')
-    setHistPage(0)
+    setHistSearch(''); setHistType('all'); setHistFrom(''); setHistTo(''); setHistPage(0)
   }
 
   function buildExportUrl(): string {
@@ -385,7 +589,8 @@ function InventarioContent() {
           : p
       )
     )
-    setSelected(null)
+    setEntryProduct(null)
+    setPanelProduct(null)
   }
 
   function handleFilterChange<T>(setter: (v: T) => void) {
@@ -414,13 +619,7 @@ function InventarioContent() {
 
       {scannerActive && (
         <div className={styles.scannerWrap} onClick={() => setScannerActive(false)}>
-          <video
-            ref={videoRef}
-            className={styles.scannerVideo}
-            autoPlay
-            playsInline
-            muted
-          />
+          <video ref={videoRef} className={styles.scannerVideo} autoPlay playsInline muted />
           <button
             className={styles.scannerClose}
             onClick={() => setScannerActive(false)}
@@ -440,6 +639,37 @@ function InventarioContent() {
         </div>
       ) : (
         <>
+          {/* ── KPI strip ── */}
+          <div className={styles.kpiStrip} aria-label="Resumen de inventario">
+            <div className={styles.kpiMini}>
+              <ArrowDownToLine size={15} className={styles.kpiMiniIcon} aria-hidden="true" />
+              <span className={styles.kpiMiniLabel}>Entrado hoy</span>
+              <span className={styles.kpiMiniValue}>{kpiEntradoHoy.qty.toFixed(0)} und</span>
+              {kpiEntradoHoy.usd > 0 && (
+                <span className={styles.kpiMiniSub}>${kpiEntradoHoy.usd.toFixed(2)}</span>
+              )}
+            </div>
+            <div className={styles.kpiMini}>
+              <Layers size={15} className={styles.kpiMiniIcon} aria-hidden="true" />
+              <span className={styles.kpiMiniLabel}>Stock total</span>
+              <span className={styles.kpiMiniValue}>{kpiStockTotal.toFixed(0)} und</span>
+            </div>
+            <div className={`${styles.kpiMini} ${kpiBajoMinimo > 0 ? styles.kpiMiniWarn : ''}`}>
+              <AlertTriangle size={15} className={styles.kpiMiniIcon} aria-hidden="true" />
+              <span className={styles.kpiMiniLabel}>Bajo mínimo</span>
+              <span className={styles.kpiMiniValue}>{kpiBajoMinimo}</span>
+              <span className={styles.kpiMiniSub}>
+                {kpiBajoMinimo === 1 ? 'producto' : 'productos'}
+              </span>
+            </div>
+            <div className={styles.kpiMini}>
+              <DollarSign size={15} className={styles.kpiMiniIcon} aria-hidden="true" />
+              <span className={styles.kpiMiniLabel}>Valor inventario</span>
+              <span className={styles.kpiMiniValue}>${kpiValorTotal.toFixed(2)}</span>
+              <span className={styles.kpiMiniSub}>a costo</span>
+            </div>
+          </div>
+
           {/* Products section */}
           <section className={styles.section}>
             <div className={styles.sectionBar}>
@@ -468,23 +698,35 @@ function InventarioContent() {
                   <thead className={styles.thead}>
                     <tr>
                       <th className={styles.th}>Producto</th>
+                      <th className={styles.th}>Estado</th>
                       <th className={`${styles.th} ${styles.thNum}`}>Stock actual</th>
                       <th className={`${styles.th} ${styles.thNum}`}>Costo / und</th>
-                      <th className={styles.th} />
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map(p => {
-                      const isW  = p.sale_mode === 'weight'
-                      const low  = p.stock.net_qty <= 0
+                      const isW    = p.sale_mode === 'weight'
+                      const status = getStockStatus(p)
                       return (
-                        <tr key={p.id} className={styles.tr}>
+                        <tr
+                          key={p.id}
+                          className={`${styles.tr} ${styles.trClickable}`}
+                          onClick={() => setPanelProduct(p)}
+                          tabIndex={0}
+                          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setPanelProduct(p) }}
+                          aria-label={`Ver detalles de ${p.name}`}
+                        >
                           <td className={styles.td}>
                             <span className={styles.productName}>{p.name}</span>
                             <span className={styles.productUnit}>{p.base_unit_label}</span>
                           </td>
+                          <td className={styles.td}>
+                            <span className={`${styles.stockBadge} ${styles[STOCK_STATUS_CLASS[status]]}`}>
+                              {STOCK_STATUS_LABEL[status]}
+                            </span>
+                          </td>
                           <td className={`${styles.td} ${styles.tdNum}`}>
-                            <span className={low ? styles.stockLow : styles.stockOk}>
+                            <span className={status === 'out' ? styles.stockLow : status === 'low' ? styles.stockLow : styles.stockOk}>
                               {p.stock.net_qty.toFixed(isW ? 3 : 0)}
                             </span>
                           </td>
@@ -492,17 +734,6 @@ function InventarioContent() {
                             {p.cost_per_unit_usd != null
                               ? <span className={styles.price}>${p.cost_per_unit_usd.toFixed(3)}</span>
                               : <span className={styles.dash}>—</span>}
-                          </td>
-                          <td className={`${styles.td} ${styles.tdAction}`}>
-                            <button
-                              className={styles.entradaBtn}
-                              onClick={() => setSelected(p)}
-                              type="button"
-                              aria-label={`Registrar entrada para ${p.name}`}
-                            >
-                              <Plus size={13} aria-hidden="true" />
-                              Entrada
-                            </button>
                           </td>
                         </tr>
                       )
@@ -589,7 +820,7 @@ function InventarioContent() {
                 <p>{hasActiveFilters ? 'Sin resultados para los filtros aplicados' : 'Aún no hay entradas registradas'}</p>
                 {!hasActiveFilters && (
                   <p className={styles.emptyHint}>
-                    Usa el botón&nbsp;<strong>Entrada</strong>&nbsp;en cualquier producto para comenzar
+                    Haz clic en cualquier producto para registrar una entrada
                   </p>
                 )}
               </div>
@@ -612,10 +843,10 @@ function InventarioContent() {
                     <tbody>
                       {paginatedEntries.map(e => {
                         const type     = getEntryType(e)
-                        const isWeight = e.product.base_unit_label !== 'und'
+                        const isWt     = e.product.base_unit_label !== 'und'
                         const qty      = type === 'ajuste'
-                          ? `-${e.waste.toFixed(isWeight ? 3 : 0)}`
-                          : `+${e.quantity.toFixed(isWeight ? 3 : 0)}`
+                          ? `-${e.waste.toFixed(isWt ? 3 : 0)}`
+                          : `+${e.quantity.toFixed(isWt ? 3 : 0)}`
                         return (
                           <tr key={e.id} className={styles.tr}>
                             <td className={styles.td}>
@@ -654,9 +885,7 @@ function InventarioContent() {
                               </span>
                             </td>
                             <td className={styles.td}>
-                              <span className={styles.userCell}>
-                                {e.user?.name ?? '—'}
-                              </span>
+                              <span className={styles.userCell}>{e.user?.name ?? '—'}</span>
                             </td>
                           </tr>
                         )
@@ -679,7 +908,7 @@ function InventarioContent() {
                   <div className={styles.totalDivider} aria-hidden="true" />
                   <div className={styles.totalItem}>
                     <span className={styles.totalLabel}>Valor total inventariado</span>
-                    <span className={styles.totalValue}>${valorTotal.toFixed(2)}</span>
+                    <span className={styles.totalValue}>${valorFiltrado.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -718,10 +947,23 @@ function InventarioContent() {
         </>
       )}
 
-      {selected && (
+      {/* ── Side panel ── */}
+      <AnimatePresence>
+        {panelProduct && !entryProduct && (
+          <ProductPanel
+            product={panelProduct}
+            todayMoves={panelTodayMoves}
+            onClose={() => setPanelProduct(null)}
+            onRegisterEntry={p => setEntryProduct(p)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Entry modal ── */}
+      {entryProduct && (
         <EntryModal
-          product={selected}
-          onClose={() => setSelected(null)}
+          product={entryProduct}
+          onClose={() => setEntryProduct(null)}
           onSaved={handleSaved}
         />
       )}

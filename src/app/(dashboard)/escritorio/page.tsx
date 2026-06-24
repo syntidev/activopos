@@ -12,6 +12,7 @@ import {
   Minus,
   ShoppingBag,
   ChevronRight,
+  Clock,
 } from 'lucide-react'
 import styles from './escritorio.module.css'
 
@@ -60,6 +61,16 @@ interface TopProduct {
 
 interface ChartsMin {
   low_stock_count: number
+}
+
+interface CreditData {
+  total: number
+  count: number
+}
+
+interface TodayVentas {
+  totalUsd: number
+  utilidad: number
 }
 
 function toDateStr(d: Date) {
@@ -120,11 +131,13 @@ const METODO_LABELS: Record<string, string> = {
 }
 
 export default function EscritorioPage() {
-  const [period,   setPeriod]   = useState<Period>('7dias')
-  const [summary,  setSummary]  = useState<AnalyticsSummary | null>(null)
-  const [products, setProducts] = useState<TopProduct[]>([])
-  const [lowStock, setLowStock] = useState<number | null>(null)
-  const [loading,  setLoading]  = useState(true)
+  const [period,       setPeriod]       = useState<Period>('7dias')
+  const [summary,      setSummary]      = useState<AnalyticsSummary | null>(null)
+  const [products,     setProducts]     = useState<TopProduct[]>([])
+  const [lowStock,     setLowStock]     = useState<number | null>(null)
+  const [loading,      setLoading]      = useState(true)
+  const [creditData,   setCreditData]   = useState<CreditData | null>(null)
+  const [todayVentas,  setTodayVentas]  = useState<TodayVentas | null>(null)
 
   const fetchOperativo = useCallback(async () => {
     try {
@@ -154,6 +167,35 @@ export default function EscritorioPage() {
     finally { setLoading(false) }
   }, [])
 
+  /* Fetch credit pending — outstanding balance, runs once on mount */
+  useEffect(() => {
+    fetch('/api/sales?status=pending&limit=100')
+      .then(r => r.ok ? r.json() : null)
+      .then((j: { ok: boolean; sales: Array<{ total_usd: number }> } | null) => {
+        if (j?.ok) {
+          const total = j.sales.reduce((s, sale) => s + Number(sale.total_usd), 0)
+          setCreditData({ total, count: j.sales.length })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  /* Fetch today's summary for the day card — runs once on mount */
+  useEffect(() => {
+    const { from, to } = getRange('hoy')
+    fetch(`/api/analytics/summary?from=${from}&to=${to}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((j: AnalyticsSummary | null) => {
+        if (j?.ok) {
+          setTodayVentas({
+            totalUsd: j.ventas.total_usd,
+            utilidad: j.resultado?.utilidad_neta_usd ?? 0,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => { void fetchOperativo() }, [fetchOperativo])
   useEffect(() => { void fetchAnalytics(period) }, [fetchAnalytics, period])
 
@@ -161,11 +203,15 @@ export default function EscritorioPage() {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   })
 
-  const v        = summary?.ventas
-  const delta    = summary?.vs_anterior?.variacion_pct ?? 0
-  const maxQty      = Math.max(...products.map(p => p.qty_sold), 1)
-  const utilityNeta = summary?.resultado?.utilidad_neta_usd ?? 0
+  const v            = summary?.ventas
+  const delta        = summary?.vs_anterior?.variacion_pct ?? 0
+  const maxQty       = Math.max(...products.map(p => p.qty_sold), 1)
+  const utilityNeta  = summary?.resultado?.utilidad_neta_usd ?? 0
   const utilityIsNeg = !loading && utilityNeta < 0
+
+  const todayMargen = todayVentas && todayVentas.totalUsd > 0
+    ? (todayVentas.utilidad / todayVentas.totalUsd) * 100
+    : 0
 
   return (
     <div className={`${styles.page} page-container`}>
@@ -194,14 +240,14 @@ export default function EscritorioPage() {
       {/* ── KPI grid ── */}
       <div className={styles.kpiGrid}>
 
-        {/* KPI 1 — Facturación */}
+        {/* KPI 1 — Cobrado */}
         <div
           className={`${styles.kpiCardWhite} ${styles.kpiBorderBrand}`}
           aria-busy={loading}
-          aria-label="Facturación total"
+          aria-label="Cobrado"
         >
           <div className={styles.kpiWhiteHead}>
-            <span className={styles.kpiWhiteLabel}>Facturación</span>
+            <span className={styles.kpiWhiteLabel}>Cobrado</span>
             <DollarSign size={16} className={styles.kpiIconBrand} aria-hidden="true" />
           </div>
           {loading ? (
@@ -215,26 +261,32 @@ export default function EscritorioPage() {
           )}
         </div>
 
-        {/* KPI 2 — Ticket promedio */}
-        <div className={`${styles.kpiCardWhite} ${styles.kpiBorderCyan}`} aria-busy={loading} aria-label="Ticket promedio">
+        {/* KPI 2 — Crédito pendiente (all-time outstanding) */}
+        <div
+          className={`${styles.kpiCardWhite} ${styles.kpiBorderWarning}`}
+          aria-label="Crédito pendiente"
+        >
           <div className={styles.kpiWhiteHead}>
-            <span className={styles.kpiWhiteLabel}>Ticket Prom.</span>
-            <TrendingUp size={16} className={styles.kpiIconCyan} aria-hidden="true" />
+            <span className={styles.kpiWhiteLabel}>Crédito pendiente</span>
+            <Clock size={16} className={styles.kpiIconWarning} aria-hidden="true" />
           </div>
-          {loading ? (
+          {creditData === null ? (
             <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
           ) : (
             <>
-              <span className={styles.kpiWhiteValue}>{fmtUsd(v?.avg_ticket_usd ?? 0)}</span>
-              <span className={styles.kpiWhiteSub}>por transacción</span>
+              <span className={styles.kpiWhiteValue}>{fmtUsd(creditData.total)}</span>
+              <span className={styles.kpiWhiteSub}>
+                {creditData.count}{creditData.count >= 100 ? '+' : ''}&nbsp;
+                {creditData.count === 1 ? 'venta' : 'ventas'} a cobrar
+              </span>
             </>
           )}
         </div>
 
-        {/* KPI 3 — Órdenes */}
-        <div className={`${styles.kpiCardWhite} ${styles.kpiBorderPurple}`} aria-busy={loading} aria-label="Órdenes cobradas">
+        {/* KPI 3 — Tickets cobrados */}
+        <div className={`${styles.kpiCardWhite} ${styles.kpiBorderPurple}`} aria-busy={loading} aria-label="Tickets cobrados">
           <div className={styles.kpiWhiteHead}>
-            <span className={styles.kpiWhiteLabel}>Órdenes</span>
+            <span className={styles.kpiWhiteLabel}>Tickets cobrados</span>
             <ShoppingCart size={16} className={styles.kpiIconPurple} aria-hidden="true" />
           </div>
           {loading ? (
@@ -242,7 +294,7 @@ export default function EscritorioPage() {
           ) : (
             <>
               <span className={styles.kpiWhiteValue}>{fmtNum(v?.count ?? 0)}</span>
-              <span className={styles.kpiWhiteSub}>transacciones cobradas</span>
+              <span className={styles.kpiWhiteSub}>transacciones pagadas</span>
             </>
           )}
         </div>
@@ -273,6 +325,27 @@ export default function EscritorioPage() {
           )}
         </div>
       </div>
+
+      {/* ── Resumen del día ── */}
+      {todayVentas !== null && (
+        <div className={styles.daySummary} aria-label="Resumen del día">
+          <span className={styles.daySummaryText}>
+            Vendiste&nbsp;<strong>{fmtUsd(todayVentas.totalUsd)}</strong>&nbsp;hoy
+            {todayVentas.utilidad !== 0 && (
+              <>
+                &nbsp;·&nbsp;Utilidad:&nbsp;
+                <strong className={todayVentas.utilidad >= 0 ? styles.daySummaryPos : styles.daySummaryNeg}>
+                  {fmtUsd(todayVentas.utilidad)}
+                </strong>
+                &nbsp;·&nbsp;Margen:&nbsp;
+                <strong className={todayVentas.utilidad >= 0 ? styles.daySummaryPos : styles.daySummaryNeg}>
+                  {todayMargen.toFixed(1)}%
+                </strong>
+              </>
+            )}
+          </span>
+        </div>
+      )}
 
       {/* ── Row 2: alerta + top productos ── */}
       <div className={styles.row2}>

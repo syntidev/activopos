@@ -20,12 +20,12 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--text-secondary, var(--text-tertiary));
 }
 
 .optional {
   font-weight: 400;
-  color: var(--text-tertiary, #64748B);
+  color: var(--text-tertiary, var(--text-secondary));
 }
 
 .input {
@@ -41,7 +41,7 @@
   width: 100%;
 }
 
-.input::placeholder { color: var(--text-tertiary, #64748B); }
+.input::placeholder { color: var(--text-tertiary, var(--text-secondary)); }
 
 .input:focus {
   border-color: rgba(77, 122, 255, 0.5);
@@ -53,7 +53,7 @@
 .errorMsg {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
-  color: #f87171;
+  color: var(--danger);
   background: rgba(248, 113, 113, 0.08);
   border: 1px solid rgba(248, 113, 113, 0.2);
   border-radius: 8px;
@@ -65,7 +65,7 @@
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
-  background: var(--brand, #0038BD);
+  background: var(--brand, var(--brand));
   border: none;
   border-radius: 12px;
   padding: 0.875rem 1.5rem;
@@ -75,7 +75,7 @@
 }
 
 .submitBtn:hover:not(:disabled) {
-  background: var(--brand-dark, #002FA0);
+  background: var(--brand-dark, var(--brand-dark));
   transform: translateY(-1px);
 }
 
@@ -100,7 +100,7 @@
   border-radius: 50%;
   background: rgba(34, 197, 94, 0.15);
   border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #22c55e;
+  color: var(--success);
   font-size: 1.25rem;
   display: flex;
   align-items: center;
@@ -118,7 +118,7 @@
 .successDesc {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--text-secondary, var(--text-tertiary));
   line-height: 1.6;
 }
 
@@ -127,7 +127,7 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--brand-l, #4D7AFF);
+  color: var(--brand-l, var(--brand-l));
   background: none;
   border: none;
   cursor: pointer;

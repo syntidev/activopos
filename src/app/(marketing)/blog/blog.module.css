@@ -15,7 +15,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--brand-l, #4D7AFF);
+  color: var(--brand-l, var(--brand-l));
   margin-bottom: 1rem;
 }
 
@@ -88,7 +88,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--cta, #EF8E01);
+  color: var(--cta, var(--cta));
   background: rgba(239, 142, 1, 0.10);
   border: 1px solid rgba(239, 142, 1, 0.25);
   border-radius: 6px;
@@ -106,7 +106,7 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--brand, #0038BD);
+  color: var(--brand, var(--brand));
   margin-bottom: 0.625rem;
 }
 
@@ -193,7 +193,7 @@
   font-size: 0.9375rem;
   font-weight: 600;
   color: #fff;
-  background: var(--brand, #0038BD);
+  background: var(--brand, var(--brand));
   border: none;
   border-radius: 10px;
   padding: 0.75rem 1.25rem;
@@ -202,7 +202,7 @@
   transition: background 200ms ease;
 }
 
-.newsletterBtn:hover { background: var(--brand-dark, #002FA0); }
+.newsletterBtn:hover { background: var(--brand-dark, var(--brand-dark)); }
 
 @media (max-width: 860px) {
   .grid { grid-template-columns: 1fr 1fr; }

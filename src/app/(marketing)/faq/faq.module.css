@@ -7,7 +7,7 @@
 /* ── Hero — dark navy ────────────────────────────────────── */
 
 .hero {
-  background: #0D1B2E;
+  background: var(--bg-base);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(3rem, 6vw, 4rem);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   animation: fadeUp 0.5s ease both;
@@ -25,7 +25,7 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--brand-l, #4D7AFF);
+  color: var(--brand-l, var(--brand-l));
   background: rgba(77, 122, 255, 0.1);
   border: 1px solid rgba(77, 122, 255, 0.25);
   border-radius: 999px;
@@ -149,7 +149,7 @@
 
 .item[open] .chevron {
   transform: rotate(180deg);
-  color: var(--brand, #0038BD);
+  color: var(--brand, var(--brand));
 }
 
 /* Answer — animates in on open */
@@ -208,7 +208,7 @@
   font-size: 0.9375rem;
   font-weight: 700;
   color: #fff;
-  background: var(--cta, #EF8E01);
+  background: var(--cta, var(--cta));
   border-radius: 10px;
   padding: 0.875rem 1.5rem;
   text-decoration: none;
@@ -217,7 +217,7 @@
 }
 
 .ctaBtn:hover {
-  background: var(--cta-hover, #D97900);
+  background: var(--cta-hover, var(--cta-hover));
   transform: translateY(-1px);
 }
 

@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    ACTIVOPOS — Catálogo Digital público — Rediseño mobile-first
    src/app/catalogo/[slug]/catalogo.module.css
    ============================================================ */
@@ -912,7 +912,7 @@
 .btnWhatsapp {
   flex:            1;
   height:          var(--touch-large);
-  background:      #25D366;
+  background:      var(--whatsapp);
   color:           #fff;
   border:          none;
   border-radius:   var(--radius-md);
@@ -927,13 +927,13 @@
   text-decoration: none;
   transition:      background var(--transition-fast), transform var(--duration-fast);
 }
-.btnWhatsapp:hover  { background: #1ebe57; color: #fff; }
+.btnWhatsapp:hover  { background: var(--whatsapp-hover); color: #fff; }
 .btnWhatsapp:active { transform: scale(0.98); }
 
 .waOrangeBtn {
   width:           100%;
   height:          var(--touch-large);
-  background:      #25D366;
+  background:      var(--whatsapp);
   color:           #fff;
   border:          none;
   border-radius:   var(--radius-md);
@@ -948,7 +948,7 @@
   text-decoration: none;
   transition:      background var(--transition-fast);
 }
-.waOrangeBtn:hover { background: #1ebe57; color: #fff; }
+.waOrangeBtn:hover { background: var(--whatsapp-hover); color: #fff; }
 
 .btnDisabled {
   width:           100%;
@@ -1230,7 +1230,7 @@
 .drawerWaBtn {
   width:           100%;
   height:          var(--touch-large);
-  background:      #25D366;
+  background:      var(--whatsapp);
   color:           #fff;
   border:          none;
   border-radius:   var(--radius-md);
@@ -1244,7 +1244,7 @@
   gap:             var(--space-2);
   transition:      background var(--transition-fast), transform var(--duration-fast);
 }
-.drawerWaBtn:hover { background: #1ebe57; }
+.drawerWaBtn:hover { background: var(--whatsapp-hover); }
 .drawerWaBtn:active{ transform: scale(0.98); }
 
 /* ── CHECKOUT MODAL ──────────────────────────────────────────── */
@@ -1373,7 +1373,7 @@
 .sendBtn {
   width:           100%;
   height:          var(--touch-large);
-  background:      #25D366;
+  background:      var(--whatsapp);
   color:           #fff;
   border:          none;
   border-radius:   var(--radius-md);
@@ -1387,7 +1387,7 @@
   gap:             var(--space-2);
   transition:      background var(--transition-fast), opacity var(--duration-fast);
 }
-.sendBtn:hover:not(:disabled) { background: #1ebe57; }
+.sendBtn:hover:not(:disabled) { background: var(--whatsapp-hover); }
 .sendBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .cancelBtn {
@@ -1415,7 +1415,7 @@
   display:         flex;
   align-items:     center;
   gap:             var(--space-2-5);
-  background:      #25D366;
+  background:      var(--whatsapp);
   color:           #fff;
   text-decoration: none;
   border-radius:   var(--radius-full);

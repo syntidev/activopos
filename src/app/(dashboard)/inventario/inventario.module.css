@@ -941,7 +941,7 @@
 
 .stockBadgeOut {
   background: rgba(var(--danger-rgb, 239, 68, 68), 0.1);
-  color: var(--danger-text, #DC2626);
+  color: var(--danger-text, var(--danger-text));
 }
 
 /* ── Clickable row ── */
@@ -1073,7 +1073,7 @@
 }
 
 .panelMargenPos { color: var(--success-text, #15803D); }
-.panelMargenNeg { color: var(--danger-text, #DC2626); }
+.panelMargenNeg { color: var(--danger-text, var(--danger-text)); }
 
 /* Movements list in panel */
 .movList {
@@ -1129,7 +1129,7 @@
   gap: var(--space-2);
   height: 40px;
   padding: 0 var(--space-4);
-  background: var(--color-brand, #0038BD);
+  background: var(--color-brand, var(--brand));
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);

@@ -1,10 +1,10 @@
-/* ── Landing page tokens (scoped to .landing wrapper) ── */
+﻿/* ── Landing page tokens (scoped to .landing wrapper) ── */
 .landing {
   --lp-navy:   var(--navy);
   --lp-teal:   var(--brand);
   --lp-orange: var(--cta);
   --lp-bg:     var(--bg-base);
-  --lp-white:  #FAFBFC;
+  --lp-white:  var(--lp-bg-base);
   --lp-text:   var(--navy);
   --sg:        var(--font-sg, system-ui, sans-serif);
 
@@ -573,7 +573,7 @@
 
 .testiBiz {
   font-size: var(--text-xs);
-  color: #64748B;
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 .testiCardFeatured .testiBiz { color: rgba(255,255,255,0.7); }
@@ -663,7 +663,7 @@
 
 .planPeriod {
   font-size: var(--text-sm);
-  color: #64748B;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 .planFeatured .planPeriod { color: rgba(255,255,255,0.75); }
@@ -727,7 +727,7 @@
   text-align: center;
   margin-top: var(--space-8);
   font-size: var(--text-sm);
-  color: #64748B;
+  color: var(--text-secondary);
 }
 
 /* ══════════════════════════════════════════

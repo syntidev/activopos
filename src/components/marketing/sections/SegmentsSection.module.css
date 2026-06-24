@@ -121,7 +121,7 @@
 
 .itemSub {
   font-size: 10px;
-  color: #94A3B8;
+  color: var(--text-tertiary);
   text-align: center;
   font-family: var(--font-sans);
 }

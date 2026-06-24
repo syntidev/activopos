@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
   Package,
@@ -19,9 +20,94 @@ import {
   RotateCw,
   ExternalLink,
   ChevronRight,
+  Lightbulb,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './ayuda.module.css'
+
+/* ── Help topic content ── */
+
+interface HelpTopic {
+  steps: string[]
+  tip: string
+}
+
+const HELP_TOPICS: Record<string, HelpTopic> = {
+  Inventario: {
+    steps: [
+      'Ve a Productos → botón "Nuevo Producto".',
+      'Ingresa nombre, precio USD y categoría.',
+      'Opcionalmente sube una foto y agrega código de barras.',
+      'Guarda y aparece en el listado de inventario.',
+    ],
+    tip: 'El stock se controla desde "Ajustar Stock" en cada producto.',
+  },
+  'Ventas (POS)': {
+    steps: [
+      'Abre el Punto de Venta desde el menú lateral.',
+      'Busca o escanea el producto que quieres vender.',
+      'Ingresa la cantidad — el sistema calcula el total en USD y Bs.',
+      'Selecciona el método de pago y procesa la venta.',
+    ],
+    tip: 'Puedes pausar una venta y atender otra al mismo tiempo.',
+  },
+  Devoluciones: {
+    steps: [
+      'Ve a Reportes y busca la venta que quieres revertir.',
+      'Haz clic en "Anular" e ingresa el motivo de la devolución.',
+      'El sistema registrará la devolución y reintegrará el stock.',
+    ],
+    tip: 'Solo el administrador puede anular ventas para mayor control del negocio.',
+  },
+  Clientes: {
+    steps: [
+      'Ve a la sección Clientes y presiona "Nuevo Cliente".',
+      'Ingresa nombre, teléfono y cédula o RIF.',
+      'Desde el POS puedes asignar la venta a ese cliente.',
+    ],
+    tip: 'Los clientes con crédito quedan registrados en Finanzas para su cobranza.',
+  },
+  Reportes: {
+    steps: [
+      'Ve a Reportes y selecciona el rango de fechas.',
+      'Revisa el resumen: ventas, métodos de pago y productos más vendidos.',
+      'Usa "Exportar PDF" para guardar o imprimir el reporte.',
+    ],
+    tip: 'Filtra por cajero para ver el rendimiento de cada empleado.',
+  },
+  'Gestión de Caja': {
+    steps: [
+      'Ve a Gestión de Caja y abre un turno con el monto inicial en efectivo.',
+      'Durante el turno todas las ventas se registran automáticamente.',
+      'Al cerrar, ingresa el efectivo contado para el cuadre.',
+    ],
+    tip: 'Haz cortes de caja al mediodía si manejas mucho efectivo.',
+  },
+  Finanzas: {
+    steps: [
+      'Ve a Finanzas para ver los ingresos y gastos del negocio.',
+      'Registra gastos como alquiler, servicios o pagos a proveedores.',
+      'Las ventas a crédito aparecen en Cuentas por Cobrar.',
+    ],
+    tip: 'Cobra las deudas desde el perfil del cliente o desde Finanzas directamente.',
+  },
+  Usuarios: {
+    steps: [
+      'Ve a Configuración → Usuarios → Nuevo Usuario.',
+      'Asigna nombre, cédula, contraseña y rol (cajero o administrador).',
+      'El cajero solo verá el POS; el administrador tiene acceso completo.',
+    ],
+    tip: 'Cambia la contraseña de un cajero desde su perfil si se la olvida.',
+  },
+  Configuraciones: {
+    steps: [
+      'Ve a Configuración para personalizar tu negocio.',
+      'Agrega el nombre del negocio, logo y teléfono.',
+      'Configura la tasa BCV y el formato del ticket de venta.',
+    ],
+    tip: 'El tema oscuro/claro se cambia desde Apariencia y aplica al instante.',
+  },
+}
 
 /* ── Help articles ── */
 
@@ -88,6 +174,101 @@ const HELP_CARDS: HelpCard[] = [
     keywords: ['configuracion', 'tasa', 'bcv', 'ticket', 'tema', 'moneda'],
   },
 ]
+
+/* ── Help modal ── */
+
+const OVERLAY_VARIANTS = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.18 } },
+  exit: { opacity: 0, transition: { duration: 0.14 } },
+}
+
+const PANEL_VARIANTS = {
+  hidden: { opacity: 0, scale: 0.96, y: 8 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, stiffness: 340, damping: 28 } },
+  exit: { opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.14 } },
+}
+
+function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => void }) {
+  const topic = card ? HELP_TOPICS[card.title] : null
+
+  useEffect(() => {
+    if (!card) return
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [card, onClose])
+
+  return (
+    <AnimatePresence>
+      {card && topic && (
+        <motion.div
+          className={styles.helpModalOverlay}
+          variants={OVERLAY_VARIANTS}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          onClick={onClose}
+          role="dialog"
+          aria-modal="true"
+          aria-label={card.title}
+        >
+          <motion.div
+            className={styles.helpModalPanel}
+            variants={PANEL_VARIANTS}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.helpModalContent}>
+              {/* Header */}
+              <div className={styles.helpModalHeader}>
+                <div className={styles.helpModalIconWrap} aria-hidden="true">
+                  <card.icon size={22} />
+                </div>
+                <div className={styles.helpModalTitleGroup}>
+                  <h2 className={styles.helpModalTitle}>{card.title}</h2>
+                  <p className={styles.helpModalDesc}>{card.description}</p>
+                </div>
+                <button
+                  className={styles.helpModalClose}
+                  onClick={onClose}
+                  aria-label="Cerrar"
+                >
+                  <X size={18} aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* Steps */}
+              <ol className={styles.helpStepsList}>
+                {topic.steps.map((step, i) => (
+                  <li key={i} className={styles.helpStepItem}>
+                    <span className={styles.helpStepNum} aria-hidden="true">{i + 1}</span>
+                    <span className={styles.helpStepText}>{step}</span>
+                  </li>
+                ))}
+              </ol>
+
+              {/* Tip */}
+              <div className={styles.helpTipBox} role="note">
+                <Lightbulb size={16} className={styles.helpTipIcon} aria-hidden="true" />
+                <p className={styles.helpTipText}><strong>Tip:</strong> {topic.tip}</p>
+              </div>
+
+              {/* Footer */}
+              <div className={styles.helpModalFooter}>
+                <button className={styles.helpModalBtn} onClick={onClose}>
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 /* ── Chatbot responses ── */
 
@@ -245,6 +426,7 @@ function AyudaContent() {
   const [query, setQuery] = useState('')
   const [chatOpen, setChatOpen] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [activeCard, setActiveCard] = useState<HelpCard | null>(null)
 
   const filteredCards = query.trim()
     ? HELP_CARDS.filter((c) => {
@@ -321,7 +503,12 @@ function AyudaContent() {
             {filteredCards.map((card) => {
               const Icon = card.icon
               return (
-                <button key={card.title} className={styles.helpCard} tabIndex={0}>
+                <button
+                  key={card.title}
+                  className={styles.helpCard}
+                  tabIndex={0}
+                  onClick={() => setActiveCard(card)}
+                >
                   <div className={styles.helpIconWrap} aria-hidden="true">
                     <Icon size={20} />
                   </div>
@@ -380,6 +567,9 @@ function AyudaContent() {
           </div>
         </div>
       </div>
+
+      {/* Help modal */}
+      <HelpModal card={activeCard} onClose={() => setActiveCard(null)} />
 
       {/* Floating chat bubble */}
       <button

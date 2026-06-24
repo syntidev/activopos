@@ -189,7 +189,30 @@
   justify-content: center;
   flex-shrink: 0;
   width: 20px;
+  position: relative;
 }
+
+/* ── Item activity badges ── */
+.itemBadgeRed,
+.itemBadgeOrange {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: var(--radius-full);
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.itemBadgeRed    { background: var(--color-danger); }
+.itemBadgeOrange { background: var(--cta); }
 
 /* ── Nav label (animated) ── */
 .navLabel {

@@ -29,11 +29,27 @@
   line-height: 1;
 }
 
+.logoName {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  line-height: 1;
+}
+
 .logoActivo {
+  font-family: var(--font-display);
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
-  color: var(--color-text-primary);
+  color: var(--text-primary);
+}
+
+.logoPOS {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--brand);
 }
 
 .logoDot {
@@ -50,7 +66,7 @@
 }
 
 .logoImg {
-  height: 44px;
+  height: 48px;
   width: auto;
   object-fit: contain;
 }

@@ -39,8 +39,11 @@ export default function MarketingNav() {
         aria-label="Navegación principal"
       >
         <Link href="/" className={styles.logo} onClick={close} aria-label="ActivoPOS — inicio">
-          <span className={styles.logoA}>Activo</span>
-          <span className={styles.logoB}>POS</span>
+          <img src="/logo.svg" alt="" aria-hidden="true" className={styles.logoImg} />
+          <span className={styles.logoName}>
+            <span className={styles.logoA}>Activo</span>
+            <span className={styles.logoB}>POS</span>
+          </span>
         </Link>
 
         <div className={styles.links} role="list">
@@ -83,8 +86,11 @@ export default function MarketingNav() {
         <div className={styles.drawerPanel}>
           <div className={styles.drawerHeader}>
             <Link href="/" className={styles.drawerLogo} onClick={close}>
-              <span className={styles.logoA}>Activo</span>
-              <span className={styles.logoB}>POS</span>
+              <img src="/logo.svg" alt="" aria-hidden="true" className={styles.logoImg} />
+              <span className={styles.logoName}>
+                <span className={styles.logoA}>Activo</span>
+                <span className={styles.logoB}>POS</span>
+              </span>
             </Link>
             <button className={styles.closeBtn} onClick={close} aria-label="Cerrar menú">
               <X size={18} aria-hidden="true"/>

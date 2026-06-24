@@ -28,9 +28,21 @@
   letter-spacing: -0.025em;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0.5rem;
   text-decoration: none;
   flex-shrink: 0;
+}
+
+.logoImg {
+  height: 28px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.logoName {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
 }
 
 .logoA { color: var(--text-primary, #F1F5F9); }
@@ -167,7 +179,8 @@
   font-weight: 800;
   text-decoration: none;
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .closeBtn {

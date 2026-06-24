@@ -159,6 +159,7 @@ ${footerMsg}
 <div class="c">&#161;Gracias por su compra!</div>
 <div class="hr"></div>
 ${catalogUrl}
+<div class="c" style="font-size:8px;color:#999;margin-top:4px">Powered by ActivoPOS</div>
 </body>
 </html>`
 

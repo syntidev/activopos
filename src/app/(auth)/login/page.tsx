@@ -52,6 +52,10 @@ export default function LoginPage() {
       >
         <div className={styles.logoRow} aria-label="ActivoPOS">
           <img src="/logo.svg" alt="ActivoPOS" className={styles.logoImg} />
+          <span className={styles.logoName}>
+            <span className={styles.logoActivo}>Activo</span>
+            <span className={styles.logoPOS}>POS</span>
+          </span>
         </div>
 
         <p className={styles.tagline}>

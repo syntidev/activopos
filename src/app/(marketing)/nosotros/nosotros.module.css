@@ -1,6 +1,7 @@
 .page {
   min-height: calc(100vh - 64px);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem);
+  background: var(--lp-bg-base);
 }
 
 .inner {
@@ -22,7 +23,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: clamp(2rem, 5vw, 3.25rem);
   font-weight: 800;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   line-height: 1.15;
   letter-spacing: -0.03em;
   text-wrap: balance;
@@ -33,7 +34,7 @@
 .lead {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 1.0625rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--lp-text-body);
   max-width: 58ch;
   line-height: 1.7;
   margin-bottom: 4rem;
@@ -50,9 +51,10 @@
 
 .mvCard {
   padding: 2rem;
-  background: var(--bg-card, #132035);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--lp-bg-card);
+  border: 1px solid var(--lp-border-light);
   border-radius: 16px;
+  box-shadow: var(--lp-shadow-card);
 }
 
 .mvIcon {
@@ -73,7 +75,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-tertiary, #64748B);
+  color: var(--lp-text-muted);
   margin-bottom: 0.5rem;
 }
 
@@ -81,7 +83,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.375rem;
   font-weight: 700;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   letter-spacing: -0.02em;
   margin-bottom: 0.75rem;
 }
@@ -89,7 +91,7 @@
 .mvBody {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--lp-text-body);
   line-height: 1.65;
 }
 
@@ -99,7 +101,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.625rem;
   font-weight: 700;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   letter-spacing: -0.025em;
   margin-bottom: 1.75rem;
 }
@@ -116,9 +118,10 @@
   align-items: flex-start;
   gap: 0.875rem;
   padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--lp-bg-card);
+  border: 1px solid rgba(0, 56, 189, 0.08);
   border-radius: 12px;
+  box-shadow: var(--lp-shadow-card);
 }
 
 .valueNum {
@@ -136,22 +139,22 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   margin-bottom: 4px;
 }
 
 .valueDesc {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.8125rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--lp-text-body);
   line-height: 1.55;
 }
 
 /* synti.dev block */
 
 .syntiBlock {
-  background: linear-gradient(135deg, rgba(0,56,189,0.18) 0%, rgba(77,122,255,0.08) 100%);
-  border: 1px solid rgba(77, 122, 255, 0.25);
+  background: linear-gradient(135deg, rgba(0, 56, 189, 0.06) 0%, rgba(77, 122, 255, 0.03) 100%);
+  border: 1px solid rgba(0, 56, 189, 0.12);
   border-radius: 16px;
   padding: 2.5rem;
   display: flex;
@@ -169,7 +172,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--brand-l, #4D7AFF);
+  color: var(--brand, #0038BD);
   margin-bottom: 0.5rem;
 }
 
@@ -177,7 +180,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.375rem;
   font-weight: 700;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--lp-text-h);
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
 }
@@ -185,7 +188,7 @@
 .syntiDesc {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  color: var(--text-secondary, #94A3B8);
+  color: var(--lp-text-body);
   max-width: 52ch;
   line-height: 1.6;
 }
@@ -194,7 +197,7 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--brand-l, #4D7AFF);
+  color: var(--brand, #0038BD);
   text-decoration: none;
   display: inline-flex;
   align-items: center;

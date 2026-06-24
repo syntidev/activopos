@@ -187,3 +187,33 @@
   border: var(--border-width-thin) solid var(--color-border);
   background-color: var(--color-surface);
 }
+
+
+/* ── Sortable headers ── */
+.sortBtn {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--space-1);
+  background:      none;
+  border:          none;
+  padding:         0;
+  font-size:       inherit;
+  font-weight:     inherit;
+  color:           inherit;
+  font-family:     inherit;
+  cursor:          pointer;
+  white-space:     nowrap;
+  transition:      color var(--transition-fast);
+}
+.sortBtn:hover { color: var(--color-brand); }
+
+.sortBtnRight {
+  margin-left: auto;
+}
+
+.sortInactive {
+  display:    inline-block;
+  width:      12px;
+  height:     12px;
+  opacity:    0;
+}

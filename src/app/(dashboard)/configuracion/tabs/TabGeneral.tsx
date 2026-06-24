@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, Lock, Percent, KeyRound } from 'lucide-react'
+import { RefreshCw, Lock, Percent, KeyRound, Eye, EyeOff } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { Input }    from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
@@ -20,6 +20,41 @@ function pwStrength(pw: string): { level: 1 | 2 | 3; label: string } | null {
   if (score >= 2) return { level: 3, label: 'Fuerte' }
   if (score >= 1) return { level: 2, label: 'Media' }
   return { level: 1, label: 'Débil' }
+}
+
+function PwField({
+  id, label, value, onChange, show, onToggle, autoComplete,
+}: {
+  id: string; label: string; value: string
+  onChange: (v: string) => void; show: boolean
+  onToggle: () => void; autoComplete?: string
+}) {
+  return (
+    <div className={styles.pwField}>
+      <label className={styles.pwLabel} htmlFor={id}>{label}</label>
+      <div className={styles.pwInputWrap}>
+        <input
+          id={id}
+          type={show ? 'text' : 'password'}
+          className={styles.pwInput}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="••••••••"
+          autoComplete={autoComplete}
+        />
+        <button
+          type="button"
+          className={styles.pwToggleBtn}
+          onClick={onToggle}
+          aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        >
+          {show
+            ? <EyeOff size={16} aria-hidden="true" />
+            : <Eye size={16} aria-hidden="true" />}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export function TabGeneral({ businessId: _businessId }: Props) {
@@ -44,6 +79,10 @@ export function TabGeneral({ businessId: _businessId }: Props) {
   const [savingPw, setSavingPw]   = useState(false)
   const [pwError, setPwError]     = useState('')
   const [pwSuccess, setPwSuccess] = useState(false)
+
+  const [showPwCurrent,  setShowPwCurrent]  = useState(false)
+  const [showPwNew,      setShowPwNew]      = useState(false)
+  const [showPwConfirm,  setShowPwConfirm]  = useState(false)
 
   const fetchConfig = useCallback(async () => {
     setLoading(true)
@@ -369,21 +408,23 @@ export function TabGeneral({ businessId: _businessId }: Props) {
         </p>
 
         <div className={styles.formFields}>
-          <Input
+          <PwField
+            id="pw-current"
             label="Contraseña actual"
-            type="password"
-            placeholder="••••••••"
             value={pwCurrent}
-            onChange={(e) => setPwCurrent(e.target.value)}
+            onChange={setPwCurrent}
+            show={showPwCurrent}
+            onToggle={() => setShowPwCurrent(v => !v)}
             autoComplete="current-password"
           />
           <div>
-            <Input
+            <PwField
+              id="pw-new"
               label="Nueva contraseña"
-              type="password"
-              placeholder="••••••••"
               value={pwNew}
-              onChange={(e) => { setPwNew(e.target.value); setPwError('') }}
+              onChange={(v) => { setPwNew(v); setPwError('') }}
+              show={showPwNew}
+              onToggle={() => setShowPwNew(v => !v)}
               autoComplete="new-password"
             />
             {pwNew && (() => {
@@ -414,12 +455,13 @@ export function TabGeneral({ businessId: _businessId }: Props) {
               )
             })()}
           </div>
-          <Input
+          <PwField
+            id="pw-confirm"
             label="Confirmar nueva contraseña"
-            type="password"
-            placeholder="••••••••"
             value={pwConfirm}
-            onChange={(e) => { setPwConfirm(e.target.value); setPwError('') }}
+            onChange={(v) => { setPwConfirm(v); setPwError('') }}
+            show={showPwConfirm}
+            onToggle={() => setShowPwConfirm(v => !v)}
             autoComplete="new-password"
           />
         </div>

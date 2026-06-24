@@ -1173,6 +1173,76 @@
 .pwStrengthLabelMed    { color: var(--warning-text); }
 .pwStrengthLabelStrong { color: var(--color-success-text); }
 
+/* ── Password field with show/hide toggle ── */
+.pwField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.pwLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+}
+
+.pwInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pwInput {
+  width: 100%;
+  height: var(--touch-comfy, 44px);
+  padding: 0 calc(var(--space-3) + 36px) 0 var(--space-3);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.pwInput:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
+  outline: none;
+}
+
+.pwInput::placeholder {
+  color: var(--input-placeholder);
+  letter-spacing: 0.2em;
+}
+
+.pwToggleBtn {
+  position: absolute;
+  right: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.pwToggleBtn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+}
+
+.pwToggleBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
 /* ── Password success message ── */
 .pwSuccessMsg {
   font-size: var(--text-sm);

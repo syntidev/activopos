@@ -42,8 +42,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;

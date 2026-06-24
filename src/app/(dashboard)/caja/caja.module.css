@@ -29,7 +29,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  height: 36px;
+  min-height: var(--touch-min);
   padding: 0 var(--space-4);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);

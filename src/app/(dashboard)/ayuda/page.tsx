@@ -270,6 +270,40 @@ function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => vo
   )
 }
 
+/* ── Chatbot local fallback ── */
+
+interface BotRule { keywords: string[]; response: string }
+
+const BOT_RULES: BotRule[] = [
+  { keywords: ['hola','buenos','buenas'], response: '¡Hola! Soy el asistente de ActivoPOS. Puedo ayudarte con ventas, inventario, caja, pedidos, clientes y configuración. ¿Qué necesitas?' },
+  { keywords: ['vender','venta','cobrar','pos','punto de venta'], response: 'Para vender: abre la Caja primero, luego ve al Punto de Venta. Busca el producto por nombre, código de barras o con el escáner de cámara. Agrega al ticket y presiona Cobrar.' },
+  { keywords: ['escaner','escanear','camara','codigo de barra','barcode'], response: 'El escáner de cámara está disponible en el POS, Productos e Inventario. Toca el ícono de escáner en el header (solo en móvil). Apunta la cámara al código de barras del producto.' },
+  { keywords: ['talla','variante','color','tallas','zapato','ropa'], response: 'Las variantes (talla, color, modelo) se configuran en cada producto. Abre el producto, activa el toggle "Este producto tiene variantes" y selecciona las tallas: ropa adulto (XS-XXXL), ropa niño (2-16), zapato adulto (35-44), zapato niño (18-34).' },
+  { keywords: ['inventario','stock','entrada','mercancia'], response: 'Para registrar mercancía: ve a Inventario y haz clic en "Entrada" en el producto correspondiente. Ingresa cantidad y costo. El sistema actualiza el stock y el costo automáticamente.' },
+  { keywords: ['caja','abrir caja','cerrar caja','arqueo'], response: 'Para abrir la caja: ve a Gestión de Caja y presiona "Abrir caja" con el monto inicial. Al cerrar: cuenta el efectivo real, ingresa el monto y el sistema calcula la diferencia.' },
+  { keywords: ['pedido','pedidos','catalogo','whatsapp','orden'], response: 'Los pedidos del catálogo digital llegan al módulo Pedidos en formato kanban: Recibido → Preparando → Listo → Despachado. Puedes cobrar cada pedido directamente desde la tarjeta.' },
+  { keywords: ['cliente','clientes','credito','cxc','deuda'], response: 'Para vender a crédito: en el POS selecciona "Crédito" como método de pago. La deuda queda en el módulo Finanzas → CxC. Para abonar: ve a Clientes → selecciona el cliente → Registrar abono.' },
+  { keywords: ['bcv','tasa','bolivar','bs','dolar'], response: 'La tasa BCV se actualiza automáticamente cada hora desde el Banco Central de Venezuela. Se congela en cada venta para que el historial siempre sea exacto en USD.' },
+  { keywords: ['reporte','reportes','ventas del dia','cuanto vendi'], response: 'Los reportes están en el módulo Reportes. Puedes ver por Hoy, 7 días, Este mes, Trimestre o un rango de fechas personalizado. También puedes exportar a Excel.' },
+  { keywords: ['finanzas','gasto','gastos','utilidad','ganancia'], response: 'En Finanzas puedes registrar gastos, ver tus CxC (ventas a crédito), CxP (cuentas por pagar) y el punto de equilibrio. El resumen muestra ingresos vs gastos del período.' },
+  { keywords: ['notificacion','notificaciones','alerta'], response: 'Las notificaciones aparecen en la campana del header. Te avisan de pedidos nuevos del catálogo, stock crítico y CxC vencidas. Puedes marcarlas todas como leídas.' },
+  { keywords: ['kds','cocina','kitchen','pantalla cocina'], response: 'El KDS (Kitchen Display System) es una pantalla para cocina o despacho que muestra los pedidos en tiempo real. Se activa en Configuración → Módulos Opcionales. Ideal para restaurantes y cafeterías.' },
+  { keywords: ['usuario','usuarios','cajero','pin','contraseña'], response: 'Puedes crear usuarios en el módulo Usuarios. Los cajeros necesitan un PIN de 4 dígitos para autorizar descuentos. Para cambiar contraseña: ve a Configuración → Seguridad.' },
+  { keywords: ['ticket','imprimir','impresora','termica','58mm'], response: 'ActivoPOS genera tickets térmicos para impresoras de 58mm (como la Roccia). Después de cada cobro, toca "Imprimir ticket" para enviar a la impresora.' },
+  { keywords: ['pwa','instalar','app','movil','celular'], response: 'ActivoPOS funciona como app en tu celular. En Chrome, toca el menú → "Instalar app" o "Agregar a pantalla de inicio". Funciona sin instalación desde la App Store.' },
+  { keywords: ['catalogo','tienda','qr','enlace','digital'], response: 'El Catálogo Digital es tu tienda online en activopos.com/catalogo/tu-negocio. Comparte el QR o el enlace con tus clientes. Los pedidos llegan automáticamente al módulo Pedidos.' },
+]
+
+const DEFAULT_REPLY = 'No encontré información sobre eso. Puedes preguntarme sobre: ventas, inventario, caja, pedidos, clientes, tallas, escáner, reportes, finanzas, notificaciones, KDS o impresión de tickets.'
+
+function botReply(text: string): string {
+  const q = text.toLowerCase()
+  for (const rule of BOT_RULES) {
+    if (rule.keywords.some(k => q.includes(k))) return rule.response
+  }
+  return DEFAULT_REPLY
+}
+
 /* ── Chatbot panel ── */
 
 interface ChatMessage {
@@ -297,40 +331,40 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
 
     const userMsg: ChatMessage = { id: Date.now(), type: 'user', text }
     const pendingId = Date.now() + 1
-    const pendingMsg: ChatMessage = { id: pendingId, type: 'bot', text: 'Consultando datos...', isPending: true }
+    const pendingMsg: ChatMessage = { id: pendingId, type: 'bot', text: 'Consultando...', isPending: true }
 
     setMessages(prev => [...prev, userMsg, pendingMsg])
     setInput('')
     setIsLoading(true)
 
+    let botText = botReply(text)
+
     try {
+      const ctrl = new AbortController()
+      const timeoutId = setTimeout(() => ctrl.abort(), 8000)
+
       const res = await fetch('/api/ai/chat', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body:    JSON.stringify({ message: text }),
+        signal:  ctrl.signal,
       })
+      clearTimeout(timeoutId)
 
-      let botText: string
       if (res.status === 403) {
-        botText = 'Solo administradores pueden usar el asistente.'
-      } else if (!res.ok) {
-        botText = 'No pude conectarme. Intenta de nuevo.'
-      } else {
+        botText = 'Solo administradores pueden usar el asistente IA.'
+      } else if (res.ok) {
         const data = await res.json() as { response?: string }
-        botText = data.response ?? 'No pude procesar tu pregunta. Intenta de nuevo.'
+        botText = data.response ?? botReply(text)
       }
-
+      // 5xx or other errors → keep local fallback already in botText
+    } catch {
+      // Network error or timeout → keep local fallback already in botText
+    } finally {
+      setIsLoading(false)
       setMessages(prev => prev.map(m =>
         m.id === pendingId ? { ...m, text: botText, isPending: false } : m
       ))
-    } catch {
-      setMessages(prev => prev.map(m =>
-        m.id === pendingId
-          ? { ...m, text: 'No pude conectarme. Intenta de nuevo.', isPending: false }
-          : m
-      ))
-    } finally {
-      setIsLoading(false)
     }
   }
 

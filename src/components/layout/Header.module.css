@@ -259,14 +259,22 @@
   outline-offset: 2px;
 }
 
-/* ── Responsive: hide BCV pill on small screens ── */
-@media (max-width: 640px) {
-  .bcvPill {
-    display: none;
+/* ── Mobile: fixed header + strip desktop-only chrome ── */
+@media (max-width: 1023px) {
+  .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100vw;
   }
 
-  .userName {
-    max-width: 100px;
+  .bcvPill,
+  .cajaToggleWrap,
+  .themeToggle,
+  .userInfo,
+  .separator {
+    display: none;
   }
 }
 

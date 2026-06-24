@@ -218,8 +218,10 @@ export function Header({
             </>
           )}
 
-          {/* Caja status toggle */}
-          <CajaToggle />
+          {/* Caja status toggle — hidden on mobile, shown in sidebar drawer instead */}
+          <div className={styles.cajaToggleWrap}>
+            <CajaToggle />
+          </div>
 
           {/* Notification bell */}
           <button

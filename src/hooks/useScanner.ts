@@ -89,14 +89,12 @@ export function useScanner({
             type: 'LiveStream',
             target,
             constraints: {
-              facingMode: 'environment',
-              width:  { min: 640 },
-              height: { min: 480 },
+              facingMode: { ideal: 'environment' },
             },
           },
           locator: {
-            patchSize: 'medium',
-            halfSample: true,
+            patchSize: 'large',
+            halfSample: false,
           },
           numOfWorkers: 2,
           decoder: {

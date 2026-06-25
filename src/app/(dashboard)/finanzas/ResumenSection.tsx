@@ -399,45 +399,47 @@ export function ResumenSection({ month, rate }: Props) {
             <line x1="0" y1="80" x2="120" y2="0" stroke="currentColor" strokeWidth="1.5"/>
             <circle cx="82" cy="19" r="3" fill="currentColor"/>
           </svg>
-          <h3 className={styles.peTitle}>
-            Punto de Equilibrio — {new Date(month + '-01').toLocaleDateString('es-VE', { month: 'long', year: 'numeric' })}
-          </h3>
+          <div className={styles.peContent}>
+            <h3 className={styles.peTitle}>
+              Punto de Equilibrio — {new Date(month + '-01').toLocaleDateString('es-VE', { month: 'long', year: 'numeric' })}
+            </h3>
 
-          <div className={styles.peStatsRow}>
-            <div className={styles.peStat}>
-              <span className={styles.peStatLabel}>Gastos fijos</span>
-              <span className={styles.peStatValue}>{fmtUsd(er.gastos_operativos)}</span>
+            <div className={styles.peStatsRow}>
+              <div className={styles.peStat}>
+                <span className={styles.peStatLabel}>Gastos fijos</span>
+                <span className={styles.peStatValue}>{fmtUsd(er.gastos_operativos)}</span>
+              </div>
+              <div className={styles.peStat}>
+                <span className={styles.peStatLabel}>Margen contribución</span>
+                <span className={styles.peStatValue}>{fmtPct(er.margen_bruto_pct)}</span>
+              </div>
+              <div className={styles.peStat}>
+                <span className={styles.peStatLabel}>Punto de equilibrio</span>
+                <span className={styles.peStatValue}>{fmtUsd(peData.pe)}</span>
+              </div>
             </div>
-            <div className={styles.peStat}>
-              <span className={styles.peStatLabel}>Margen contribución</span>
-              <span className={styles.peStatValue}>{fmtPct(er.margen_bruto_pct)}</span>
+
+            <div className={styles.peBar}>
+              <div className={`${styles.peBarFill} ${peBarClass}`} style={{ width: `${peData.barPct}%` }} />
             </div>
-            <div className={styles.peStat}>
-              <span className={styles.peStatLabel}>Punto de equilibrio</span>
-              <span className={styles.peStatValue}>{fmtUsd(peData.pe)}</span>
+
+            <p className={styles.peCaption}>
+              Ventas actuales: {fmtUsd(er.ventas_netas)} / PE: {fmtUsd(peData.pe)}
+              {' '}· Día {peData.dayOfMonth} de {peData.daysInMonth}
+              {' '}· Proyección: {fmtUsd(peData.projected)}
+            </p>
+
+            <div className={`${styles.peStatusRow} ${peStatusClass}`}>
+              {peData.status === 'success' && (
+                <><CheckCircle size={14} aria-hidden="true" /> Superado — Excedente: {fmtUsd(er.ventas_netas - peData.pe)}</>
+              )}
+              {peData.status === 'progress' && (
+                <><Clock size={14} aria-hidden="true" /> En progreso — Faltan {fmtUsd(peData.pe - er.ventas_netas)} para cubrir gastos</>
+              )}
+              {peData.status === 'risk' && (
+                <><AlertTriangle size={14} aria-hidden="true" /> En riesgo — Proyección ({fmtUsd(peData.projected)}) no alcanza el PE</>
+              )}
             </div>
-          </div>
-
-          <div className={styles.peBar}>
-            <div className={`${styles.peBarFill} ${peBarClass}`} style={{ width: `${peData.barPct}%` }} />
-          </div>
-
-          <p className={styles.peCaption}>
-            Ventas actuales: {fmtUsd(er.ventas_netas)} / PE: {fmtUsd(peData.pe)}
-            {' '}· Día {peData.dayOfMonth} de {peData.daysInMonth}
-            {' '}· Proyección: {fmtUsd(peData.projected)}
-          </p>
-
-          <div className={`${styles.peStatusRow} ${peStatusClass}`}>
-            {peData.status === 'success' && (
-              <><CheckCircle size={14} aria-hidden="true" /> Superado — Excedente: {fmtUsd(er.ventas_netas - peData.pe)}</>
-            )}
-            {peData.status === 'progress' && (
-              <><Clock size={14} aria-hidden="true" /> En progreso — Faltan {fmtUsd(peData.pe - er.ventas_netas)} para cubrir gastos</>
-            )}
-            {peData.status === 'risk' && (
-              <><AlertTriangle size={14} aria-hidden="true" /> En riesgo — Proyección ({fmtUsd(peData.projected)}) no alcanza el PE</>
-            )}
           </div>
         </div>
       )}

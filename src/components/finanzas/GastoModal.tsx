@@ -23,19 +23,21 @@ interface GastoModalProps {
 export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModalProps) {
   const { toast } = useToast()
 
-  const [concepto,  setConcepto]  = useState('')
-  const [monto,     setMonto]     = useState('')
-  const [catId,     setCatId]     = useState<number | null>(null)
-  const [fecha,     setFecha]     = useState(`${month}-01`)
-  const [notas,     setNotas]     = useState('')
-  const [loading,   setLoading]   = useState(false)
-  const [cats,      setCats]      = useState<ExpenseCat[]>([])
+  const [concepto,   setConcepto]   = useState('')
+  const [monto,      setMonto]      = useState('')
+  const [catId,      setCatId]      = useState<number | null>(null)
+  const [fecha,      setFecha]      = useState(`${month}-01`)
+  const [notas,      setNotas]      = useState('')
+  const [tipo,       setTipo]       = useState<'fijo' | 'variable'>('variable')
+  const [recurrente, setRecurrente] = useState(false)
+  const [dueDate,    setDueDate]    = useState('')
+  const [loading,    setLoading]    = useState(false)
+  const [cats,       setCats]       = useState<ExpenseCat[]>([])
 
   const endpoint = mode === 'gasto' ? '/api/finanzas/gastos' : '/api/finanzas/cxp'
   const title    = mode === 'gasto' ? 'Nuevo Gasto' : 'Nueva Cuenta por Pagar'
   const valid    = concepto.trim().length >= 3 && parseFloat(monto) > 0 && !!fecha
 
-  // Load categories once on mount
   useEffect(() => {
     fetch('/api/finanzas/categorias')
       .then(r => r.json() as Promise<{ ok: boolean; categories: ExpenseCat[] }>)
@@ -49,13 +51,15 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
       .catch(() => {})
   }, [])
 
-  // Reset text fields when modal closes
   useEffect(() => {
     if (!open) {
       setConcepto('')
       setMonto('')
       setNotas('')
       setFecha(`${month}-01`)
+      setTipo('variable')
+      setRecurrente(false)
+      setDueDate('')
     }
   }, [open, month])
 
@@ -64,13 +68,16 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
     setLoading(true)
     try {
       const body: Record<string, unknown> = {
-        concepto:  concepto.trim(),
-        monto_usd: parseFloat(monto),
+        concepto:   concepto.trim(),
+        monto_usd:  parseFloat(monto),
         fecha,
-        notas:     notas.trim() || undefined,
+        tipo,
+        recurrente: tipo === 'fijo' ? recurrente : false,
+        due_date:   tipo === 'fijo' && dueDate ? dueDate : undefined,
+        notas:      notas.trim() || undefined,
       }
       if (catId != null) body.expense_category_id = catId
-      else               body.categoria           = 'otro'
+      else               body.categoria            = 'otro'
 
       const res = await fetch(endpoint, {
         method:  'POST',
@@ -106,6 +113,7 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
       }
     >
       <div className={styles.body}>
+        {/* Concepto */}
         <div className={styles.field}>
           <label className={styles.label}>Concepto</label>
           <Input
@@ -117,6 +125,7 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
           />
         </div>
 
+        {/* Monto + Fecha */}
         <div className={styles.row2}>
           <div className={styles.field}>
             <label className={styles.label}>Monto (USD)</label>
@@ -124,6 +133,7 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
               value={monto}
               onChange={e => setMonto(e.target.value)}
               type="number"
+              inputMode="decimal"
               step="0.01"
               min="0.01"
               placeholder="0.00"
@@ -139,6 +149,7 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
           </div>
         </div>
 
+        {/* Categoría */}
         <div className={styles.field}>
           <label className={styles.label} htmlFor="gasto-categoria">Categoría</label>
           <select
@@ -157,6 +168,56 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
           </select>
         </div>
 
+        {/* Tipo */}
+        <div className={styles.field}>
+          <label className={styles.label}>Tipo</label>
+          <div className={styles.pillRow}>
+            <button
+              type="button"
+              className={`${styles.pill} ${tipo === 'variable' ? styles.pillActive : ''}`}
+              onClick={() => { setTipo('variable'); setRecurrente(false); setDueDate('') }}
+            >
+              Variable
+            </button>
+            <button
+              type="button"
+              className={`${styles.pill} ${tipo === 'fijo' ? styles.pillActiveFijo : ''}`}
+              onClick={() => setTipo('fijo')}
+            >
+              Fijo
+            </button>
+          </div>
+        </div>
+
+        {/* Recurrente + Vencimiento — solo si Fijo */}
+        {tipo === 'fijo' && (
+          <>
+            <div className={styles.field}>
+              <label className={styles.toggleRow}>
+                <span className={styles.label}>Recurrente (mensual)</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={recurrente}
+                  className={`${styles.toggleBtn} ${recurrente ? styles.toggleBtnOn : ''}`}
+                  onClick={() => setRecurrente(v => !v)}
+                >
+                  <span className={styles.toggleThumb} />
+                </button>
+              </label>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Fecha de vencimiento</label>
+              <Input
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                type="date"
+              />
+            </div>
+          </>
+        )}
+
+        {/* Notas */}
         <div className={styles.field}>
           <label className={styles.label}>Notas (opcional)</label>
           <textarea

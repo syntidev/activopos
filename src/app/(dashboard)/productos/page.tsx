@@ -156,6 +156,7 @@ export default function ProductosPage() {
 
   /* ── Mobile barcode scanner state (hook wired after openEdit) ── */
   const [scannerActive, setScannerActive] = useState(false)
+  const [isScanning, setIsScanning]       = useState(false)
   const [scanToast, setScanToast]         = useState<string | null>(null)
 
   /* ── Status filter ── */
@@ -458,9 +459,14 @@ export default function ProductosPage() {
     }
   }, [products, openEdit])
 
-  const { videoRef: scanVideoRef, permError: scanPermError } = useScanner({
+  const { videoContainerRef: scanVideoRef, permError: scanPermError } = useScanner({
     active:   scannerActive,
     onResult: handleProductScan,
+  })
+
+  const { videoContainerRef: searchVideoRef } = useScanner({
+    active:   isScanning,
+    onResult: (code) => { setSearch(code); setIsScanning(false) },
   })
 
   /* ── Render ── */
@@ -519,12 +525,20 @@ export default function ProductosPage() {
           <input
             type="search"
             className={styles.searchInput}
-            placeholder="Buscar producto por nombre o SKU..."
+            placeholder="Nombre, SKU o código de barras…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Buscar productos"
           />
         </div>
+        <button
+          type="button"
+          className={styles.searchScanBtn}
+          onClick={() => setIsScanning(true)}
+          aria-label="Escanear código de barras"
+        >
+          <ScanBarcode size={20} aria-hidden="true" />
+        </button>
 
         <div className={styles.statusTabsBar} role="tablist" aria-label="Filtrar por estado">
           {(['all', 'active', 'inactive'] as const).map(s => (
@@ -874,6 +888,26 @@ export default function ProductosPage() {
         </div>
       )}
 
+      {/* ── Search barcode scanner overlay ── */}
+      {isScanning && (
+        <div
+          className={styles.scanOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Escáner de código de barras"
+        >
+          <div ref={searchVideoRef} className={styles.scanVideo} aria-hidden="true" />
+          <button
+            type="button"
+            className={styles.scanCloseBtn}
+            onClick={() => setIsScanning(false)}
+            aria-label="Cerrar escáner"
+          >
+            <X size={20} strokeWidth={2} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {/* ── Mobile barcode scanner overlay ── */}
       {scannerActive && (
         <div
@@ -882,13 +916,10 @@ export default function ProductosPage() {
           aria-modal="true"
           aria-label="Escáner de código de barras"
         >
-          {/* Camera */}
-          <video
+          {/* Camera — Quagga renders <video>+<canvas> inside this div */}
+          <div
             ref={scanVideoRef}
             className={styles.scanVideo}
-            playsInline
-            muted
-            autoPlay
             aria-hidden="true"
           />
 

@@ -336,6 +336,7 @@ export function CobroModal({
 
                   <input
                     type="number"
+                    inputMode="decimal"
                     className={styles.receivedInput}
                     placeholder={isUsdMethod ? totalUsd.toFixed(2) : changeMode === 'bs' ? totalBs.toFixed(2) : totalUsd.toFixed(2)}
                     value={receivedBs}
@@ -352,6 +353,7 @@ export function CobroModal({
                       {editingRate ? (
                         <input
                           type="number"
+                          inputMode="decimal"
                           className={styles.rateInput}
                           value={rateStr}
                           onChange={(e) => {
@@ -442,6 +444,7 @@ export function CobroModal({
                         <div className={styles.mixedInputs}>
                           <input
                             type="number"
+                            inputMode="decimal"
                             className={styles.mixedAmountInput}
                             placeholder="Bs."
                             value={entry.amountBs}

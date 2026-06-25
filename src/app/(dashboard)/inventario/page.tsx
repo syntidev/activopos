@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertTriangle, ArrowDownToLine, ChevronLeft, ChevronRight,
-  Clock, DollarSign, FileDown, Layers, Package, Plus, Scan,
+  Clock, DollarSign, FileDown, Layers, Package, Plus, ScanBarcode,
   Search, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
@@ -16,6 +16,7 @@ import styles from './inventario.module.css'
 interface Product {
   id: number
   name: string
+  sku: string | null
   barcode: string | null
   base_unit_label: string
   sale_mode: string
@@ -458,8 +459,9 @@ function InventarioContent() {
   const [panelProduct, setPanelProduct]     = useState<Product | null>(null)
   const [entryProduct, setEntryProduct]     = useState<Product | null>(null)
   const [scannerActive, setScannerActive]   = useState(false)
+  const [isScanning, setIsScanning]         = useState(false)
 
-  const { videoRef } = useScanner({
+  const { videoContainerRef } = useScanner({
     active: scannerActive,
     onResult: (barcode) => {
       const found = products.find(p => p.barcode === barcode)
@@ -470,6 +472,11 @@ function InventarioContent() {
         toast('Producto no encontrado', 'error')
       }
     },
+  })
+
+  const { videoContainerRef: searchVideoRef } = useScanner({
+    active:   isScanning,
+    onResult: (code) => { setSearch(code); setIsScanning(false) },
   })
 
   /* ── Historial filters ── */
@@ -530,9 +537,15 @@ function InventarioContent() {
     return entries.filter(e => e.product.id === panelProduct.id && e.entered_at.slice(0, 10) === todayStr)
   }, [entries, panelProduct, todayStr])
 
-  const filtered = products.filter(p =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = products.filter(p => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      p.name.toLowerCase().includes(q) ||
+      (p.sku?.toLowerCase().includes(q) ?? false) ||
+      (p.barcode?.toLowerCase().includes(q) ?? false)
+    )
+  })
 
   /* ── Historial derived state ── */
   const filteredEntries = useMemo(() => {
@@ -612,17 +625,31 @@ function InventarioContent() {
           type="button"
           aria-label="Escanear código de barras"
         >
-          <Scan size={16} aria-hidden="true" />
+          <ScanBarcode size={16} aria-hidden="true" />
           Escanear
         </button>
       </div>
 
       {scannerActive && (
         <div className={styles.scannerWrap} onClick={() => setScannerActive(false)}>
-          <video ref={videoRef} className={styles.scannerVideo} autoPlay playsInline muted />
+          <div ref={videoContainerRef} className={styles.scannerVideo} />
           <button
             className={styles.scannerClose}
             onClick={() => setScannerActive(false)}
+            type="button"
+            aria-label="Cerrar scanner"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      {isScanning && (
+        <div className={styles.scannerWrap} onClick={() => setIsScanning(false)}>
+          <div ref={searchVideoRef} className={styles.scannerVideo} />
+          <button
+            className={styles.scannerClose}
+            onClick={(e) => { e.stopPropagation(); setIsScanning(false) }}
             type="button"
             aria-label="Cerrar scanner"
           >
@@ -680,10 +707,18 @@ function InventarioContent() {
                   className={styles.searchInput}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Buscar producto…"
-                  aria-label="Buscar producto"
+                  placeholder="Nombre, SKU o código de barras…"
+                  aria-label="Buscar producto por nombre, SKU o código de barras"
                 />
               </div>
+              <button
+                type="button"
+                className={styles.searchScanBtn}
+                onClick={() => setIsScanning(true)}
+                aria-label="Escanear código de barras"
+              >
+                <ScanBarcode size={20} aria-hidden="true" />
+              </button>
               <span className={styles.countBadge}>{filtered.length}</span>
             </div>
 

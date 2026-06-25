@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader } from '@zxing/browser'
-import { DecodeHintType, BarcodeFormat } from '@zxing/library'
+import type Quagga from '@ericblade/quagga2'
 
-interface ScannerControls { stop(): void }
+type QuaggaType = typeof Quagga
 
 interface UseScannerOptions {
   /** Whether the scanner should be running. Flip to true to start, false to stop. */
@@ -18,42 +17,18 @@ interface UseScannerOptions {
 }
 
 interface UseScannerReturn {
-  /** Attach to a <video> element in the DOM when `active` is true. */
-  videoRef: React.RefObject<HTMLVideoElement>
+  /** Attach to a <div> element — Quagga renders video/canvas inside it. */
+  videoContainerRef: React.RefObject<HTMLDivElement>
   /** True when the camera could not be started. */
   permError: boolean
 }
 
-/* ── Decoder hints — narrow to common retail formats for faster matching ── */
-const HINTS = new Map<DecodeHintType, unknown>()
-HINTS.set(DecodeHintType.POSSIBLE_FORMATS, [
-  BarcodeFormat.EAN_13,
-  BarcodeFormat.EAN_8,
-  BarcodeFormat.CODE_128,
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.UPC_A,
-  BarcodeFormat.UPC_E,
-])
-HINTS.set(DecodeHintType.TRY_HARDER, true)
-
-/* ── Camera constraints — 640p preferred, rear camera, continuous focus ── */
-const CONSTRAINTS: MediaStreamConstraints = {
-  video: {
-    facingMode: { ideal: 'environment' },
-    width:      { ideal: 640, max: 1280 },
-    height:     { ideal: 480, max: 720 },
-    frameRate:  { ideal: 30, max: 30 },
-    advanced: [
-      { focusMode: 'continuous' },
-      { exposureMode: 'continuous' },
-      { whiteBalanceMode: 'continuous' },
-    ] as unknown as MediaTrackConstraintSet[],
-  },
-}
+type DetectHandler = (result: { codeResult: { code: string | null } }) => void
 
 /**
- * Shared scanner hook — manages @zxing/browser lifecycle, camera permissions,
- * and debounce. Any module can use this: POS split-screen, product lookup, etc.
+ * Shared scanner hook — manages @ericblade/quagga2 lifecycle, camera permissions,
+ * and debounce. Quagga2's locator finds barcodes even when rotated or off-center.
+ * Uses dynamic import to avoid SSR failures (Quagga accesses browser APIs at load time).
  */
 export function useScanner({
   active,
@@ -61,82 +36,101 @@ export function useScanner({
   onError,
   debounceMs = 1500,
 }: UseScannerOptions): UseScannerReturn {
-  const videoRef       = useRef<HTMLVideoElement>(null)
-  const controlsRef    = useRef<ScannerControls | null>(null)
-  const lastScannedRef = useRef<{ code: string; ts: number } | null>(null)
-  // Store callbacks in refs so effect doesn't re-run when they change
-  const onResultRef    = useRef(onResult)
-  const onErrorRef     = useRef(onError)
+  const videoContainerRef = useRef<HTMLDivElement>(null)
+  const [permError, setPermError]   = useState(false)
+
+  // Stable refs for the loaded module and active handler (shared between effect and cleanup)
+  const quaggaRef  = useRef<QuaggaType | null>(null)
+  const handlerRef = useRef<DetectHandler | null>(null)
+
+  // Store callbacks in refs so the effect doesn't re-run when they change identity
+  const onResultRef = useRef(onResult)
+  const onErrorRef  = useRef(onError)
   useEffect(() => { onResultRef.current = onResult }, [onResult])
   useEffect(() => { onErrorRef.current = onError }, [onError])
 
-  const [permError, setPermError] = useState(false)
-
   useEffect(() => {
+    const target = videoContainerRef.current
+
     if (!active) {
-      controlsRef.current?.stop()
-      controlsRef.current = null
+      const Q = quaggaRef.current
+      const H = handlerRef.current
+      if (Q && H) Q.offDetected(H)
+      if (Q) { try { Q.stop() } catch { /* not running */ } }
       return
     }
 
+    if (!target) return
+
     setPermError(false)
-    lastScannedRef.current = null
 
-    const reader = new BrowserMultiFormatReader(HINTS)
     let mounted = true
+    let lastCode = ''
+    let lastTs   = 0
 
-    const init = async () => {
-      // Video ref may be null on first render tick — retry up to 10×50ms = 500ms
-      let el = videoRef.current
-      let attempts = 0
-      while (!el && attempts < 10) {
-        await new Promise<void>(r => setTimeout(r, 50))
-        el = videoRef.current
-        attempts++
-      }
-      if (!el) return
-      try {
-        const controls = await reader.decodeFromConstraints(
-          CONSTRAINTS,
-          el,
-          (result) => {
-            if (!result || !mounted) return
-            const code = result.getText()
-            const now  = Date.now()
-            if (
-              lastScannedRef.current &&
-              lastScannedRef.current.code === code &&
-              now - lastScannedRef.current.ts < debounceMs
-            ) return
-            lastScannedRef.current = { code, ts: now }
-            onResultRef.current(code)
-          }
-        )
-        if (mounted) controlsRef.current = controls
-        else          controls.stop()
-      } catch {
-        if (mounted) {
-          setPermError(true)
-          onErrorRef.current?.('permission_denied')
-        }
-      }
+    const handler: DetectHandler = (result) => {
+      const code = result.codeResult.code
+      if (!code) return
+      const now = Date.now()
+      if (code === lastCode && now - lastTs < debounceMs) return
+      lastCode = code
+      lastTs   = now
+      onResultRef.current(code)
     }
 
-    void init()
+    void import('@ericblade/quagga2').then(({ default: Q }) => {
+      if (!mounted) return
+      quaggaRef.current  = Q
+      handlerRef.current = handler
+
+      Q.init(
+        {
+          inputStream: {
+            type: 'LiveStream',
+            target,
+            constraints: {
+              facingMode: { ideal: 'environment' },
+            },
+          },
+          locator: {
+            patchSize: 'large',
+            halfSample: false,
+          },
+          numOfWorkers: 2,
+          decoder: {
+            readers: [
+              'ean_reader',
+              'ean_8_reader',
+              'code_128_reader',
+              'upc_reader',
+              'upc_e_reader',
+            ],
+          },
+          locate: true,
+        },
+        (err) => {
+          if (!mounted) return
+          if (err) {
+            setPermError(true)
+            onErrorRef.current?.('permission_denied')
+            return
+          }
+          Q.start()
+          Q.onDetected(handler)
+        }
+      )
+    })
 
     return () => {
       mounted = false
-      controlsRef.current?.stop()
-      controlsRef.current = null
-      // Explicitly release all camera tracks to free hardware and save battery
-      const video = videoRef.current
-      const stream = video?.srcObject
-      if (stream instanceof MediaStream) {
-        stream.getTracks().forEach(t => t.stop())
-      }
-      if (video) video.srcObject = null
+      const Q = quaggaRef.current
+      const H = handlerRef.current
+      if (Q && H) Q.offDetected(H)
+      if (Q) { try { Q.stop() } catch { /* already stopped */ } }
+      quaggaRef.current  = null
+      handlerRef.current = null
     }
   }, [active, debounceMs])
 
-  return { videoRef, permError }
+  return { videoContainerRef, permError }
 }

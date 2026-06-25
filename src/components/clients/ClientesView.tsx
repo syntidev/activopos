@@ -45,6 +45,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
     let list = q
       ? clients.filter(c =>
           c.name.toLowerCase().includes(q) ||
+          (c.phone  ?? '').toLowerCase().includes(q) ||
           (c.cedula ?? '').toLowerCase().includes(q)
         )
       : clients
@@ -125,7 +126,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
           <input
             type="search"
             className={styles.searchInput}
-            placeholder="Buscar por nombre o cédula..."
+            placeholder="Nombre, teléfono o cédula…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Buscar clientes"

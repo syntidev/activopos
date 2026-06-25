@@ -21,13 +21,25 @@
   flex-shrink: 0;
 }
 
-/* Video fills camera zone */
+/* Container div — Quagga renders <video>+<canvas> inside */
 .video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.video :global(video) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+}
+
+/* Hide Quagga's debug canvas overlay — we use our own viewfinder UI */
+.video :global(canvas) {
+  display: none;
 }
 
 /* ── Viewfinder — 260×180px centered rectangle ── */

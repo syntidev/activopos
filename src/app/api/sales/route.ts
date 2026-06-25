@@ -69,7 +69,8 @@ export async function GET(req: NextRequest) {
           OR: [
             { ticket_number: { contains: search } },
             { client_name:   { contains: search } },
-            { client: { name: { contains: search } } },
+            { client:        { name: { contains: search } } },
+            { payments: { some: { payment_method: { name: { contains: search } } } } },
           ],
         }
       : {}),

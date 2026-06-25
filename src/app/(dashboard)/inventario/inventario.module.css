@@ -852,6 +852,16 @@
   max-width: 380px;
   border-radius: var(--radius-lg);
   display: block;
+  overflow: hidden;
+}
+
+.scannerVideo :global(video) {
+  width: 100%;
+  display: block;
+}
+
+.scannerVideo :global(canvas) {
+  display: none;
 }
 
 .scannerClose {
@@ -868,6 +878,29 @@
   justify-content: center;
   color: #fff;
   cursor: pointer;
+}
+
+/* ── Search bar scanner button — inline, always visible ── */
+.searchScanBtn {
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-brand);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.searchScanBtn:hover {
+  background: var(--color-brand-subtle);
+  color: var(--color-brand-hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  .searchScanBtn { transition: none; }
 }
 
 /* ── KPI strip ── */

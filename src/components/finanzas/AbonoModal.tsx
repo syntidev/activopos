@@ -50,16 +50,23 @@ export function AbonoModal({ open, onClose, sale, rate, onSuccess }: AbonoModalP
 
   const handleSubmit = async () => {
     if (!sale || !pmId || amountNum <= 0) return
+
+    // FIX 1 — client-side saldo guard
+    if (amountNum > saldo + 0.01) {
+      toast('El abono no puede superar el saldo pendiente: $' + saldo.toFixed(2), 'error')
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch(`/api/ventas/${sale.id}/abono`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
+        // FIX 3 — server calculates amount_bs; don't send it from client
         body: JSON.stringify({
           payment_method_id: pmId,
-          amount_usd: amountNum,
-          amount_bs:  amountBs,
-          reference:  reference || undefined,
+          amount_usd:        amountNum,
+          reference:         reference || undefined,
         }),
       })
       if (res.ok) {
@@ -67,8 +74,13 @@ export function AbonoModal({ open, onClose, sale, rate, onSuccess }: AbonoModalP
         onSuccess()
         onClose()
       } else {
-        const err = await res.json()
-        toast(err.error ?? 'Error al registrar abono', 'error')
+        // FIX 2 — specific message when caja is closed
+        const msg = await res.json().then((j: { error?: string }) => j.error ?? 'Error al registrar abono')
+        if (msg.includes('caja')) {
+          toast('Abre la caja primero para registrar abonos', 'error')
+        } else {
+          toast(msg, 'error')
+        }
       }
     } finally {
       setLoading(false)

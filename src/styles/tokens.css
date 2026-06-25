@@ -300,7 +300,7 @@
 [data-theme="light"] {
 
   /* Fondos */
-  --bg-base:        #E8EEF4;
+  --bg-base:        #F4F6FA;
   --bg-card:        #FFFFFF;
   --bg-card-hover:  #F8FAFC;
   --bg-input:       #FFFFFF;
@@ -359,7 +359,7 @@
   --scrollbar-thumb-hover: #94A3B8;
 
   /* Sombras */
-  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-card:  0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
 
   /* Sombras v1 light overrides */

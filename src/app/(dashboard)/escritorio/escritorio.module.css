@@ -111,25 +111,24 @@
 /* ── KPI card — white ── */
 .kpiCardWhite {
   background:    var(--bg-card);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding:       var(--space-4);
   display:       flex;
   flex-direction: column;
-  box-shadow:    var(--shadow-card-brand);
+  box-shadow:    var(--shadow-card);
   transition:    box-shadow var(--transition-base);
 }
 
 .kpiCardWhite:hover {
-  box-shadow: var(--shadow-card-brand-hover);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
 }
 
 /* ── KPI border modifiers — semantic Stripe pattern ── */
-.kpiBorderBrand   { border-left: 3px solid var(--brand); }
-.kpiBorderCyan    { border-left: 3px solid var(--info); }
-.kpiBorderPurple  { border-left: 3px solid rgb(var(--purple-rgb)); }
-.kpiBorderSuccess { border-left: 3px solid var(--color-success); }
-.kpiBorderDanger  { border-left: 3px solid var(--color-danger); }
+.kpiBorderBrand   { border-left: 4px solid var(--brand); }
+.kpiBorderCyan    { border-left: 4px solid var(--info); }
+.kpiBorderPurple  { border-left: 4px solid rgb(var(--purple-rgb)); }
+.kpiBorderSuccess { border-left: 4px solid var(--color-success); }
+.kpiBorderDanger  { border-left: 4px solid var(--color-danger); }
 
 /* ── KPI icon colors — semantic ── */
 .kpiIconBrand   { color: var(--brand); }
@@ -192,11 +191,10 @@
 /* ── Section card base ── */
 .sectionCard {
   background:    var(--bg-card);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding:       var(--space-4);
   overflow:      hidden;
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 /* Patrón Fina — aprobado por Carlos */
@@ -530,13 +528,13 @@
 }
 
 @media (max-width: 768px) {
-  .row2 { grid-template-columns: 1fr; }
-  .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+  .row2   { grid-template-columns: 1fr; }
+  .kpiGrid { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
   .header { flex-direction: column; align-items: flex-start; }
 }
 
 @media (max-width: 640px) {
-  .kpiGrid { grid-template-columns: 1fr; }
+  .kpiGrid { grid-template-columns: 1fr 1fr; }
   .periodTabs {
     overflow-x: auto;
     scrollbar-width: none;

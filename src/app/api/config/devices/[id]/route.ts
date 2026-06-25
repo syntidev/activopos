@@ -3,14 +3,14 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
-const DEVICE_TYPES = ['punto_venta', 'datafono', 'tpv', 'caja', 'otro'] as const
+const DEVICE_TYPES_UI = ['debit', 'credit', 'biopago'] as const
 
 const PatchSchema = z.object({
-  type:              z.enum(DEVICE_TYPES).optional(),
-  bank_name:         z.string().min(1).max(80).optional(),
-  serial:            z.string().max(60).nullish(),
-  commercial_number: z.string().max(40).nullish(),
-  is_active:         z.boolean().optional(),
+  tipo:         z.enum(DEVICE_TYPES_UI).optional(),
+  banco:        z.string().min(1).max(80).optional(),
+  serial:       z.string().max(60).nullish(),
+  nro_comercio: z.string().max(40).nullish(),
+  is_active:    z.boolean().optional(),
 }).strict()
 
 export async function PATCH(
@@ -24,7 +24,6 @@ export async function PATCH(
   const id = parseInt(params.id, 10)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  // IDOR: verificar ownership antes de cualquier operación
   const existing = await prisma.businessDevice.findFirst({
     where:  { id, business_id: session.businessId },
     select: { id: true },
@@ -41,10 +40,27 @@ export async function PATCH(
 
   const device = await prisma.businessDevice.update({
     where: { id },
-    data:  body,
+    data: {
+      ...(body.tipo         !== undefined && { type:              body.tipo }),
+      ...(body.banco        !== undefined && { bank_name:         body.banco }),
+      ...(body.serial       !== undefined && { serial:            body.serial }),
+      ...(body.nro_comercio !== undefined && { commercial_number: body.nro_comercio }),
+      ...(body.is_active    !== undefined && { is_active:         body.is_active }),
+    },
   })
 
-  return NextResponse.json({ ok: true, device })
+  return NextResponse.json({
+    ok: true,
+    device: {
+      id:           device.id,
+      business_id:  device.business_id,
+      tipo:         device.type,
+      banco:        device.bank_name,
+      serial:       device.serial,
+      nro_comercio: device.commercial_number,
+      is_active:    device.is_active,
+    },
+  })
 }
 
 export async function DELETE(
@@ -58,7 +74,6 @@ export async function DELETE(
   const id = parseInt(params.id, 10)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  // IDOR: verificar ownership antes de eliminar
   const existing = await prisma.businessDevice.findFirst({
     where:  { id, business_id: session.businessId },
     select: { id: true },

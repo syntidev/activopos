@@ -3,27 +3,43 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
-// Mismo formato flat que payment-methods/route.ts — coexistencia sin colisión.
-// PATCH hace merge (Object.assign) en vez de reemplazar, protegiendo keys del otro endpoint.
+// Schema nested — coincide exactamente con CobrosFormData en TabCobros.tsx
+const PagoMovilSchema = z.object({
+  banco:                z.string().max(10).default(''),
+  telefono:             z.string().max(16).default(''),
+  usa_whatsapp_negocio: z.boolean().default(false),
+  titular:              z.string().max(80).default(''),
+  tipo_doc:             z.string().max(2).default('V'),
+  documento:            z.string().max(12).default(''),
+})
+
+const SimplePaySchema = z.object({
+  contacto: z.string().max(120).default(''),
+  titular:  z.string().max(80).default(''),
+})
+
+const UsdtSchema = z.object({
+  wallet:  z.string().max(100).default(''),
+  red:     z.string().max(10).default('TRC20'),
+  titular: z.string().max(80).default(''),
+})
+
 const CobroDataSchema = z.object({
-  pago_movil_banco:    z.string().max(80).optional(),
-  pago_movil_telefono: z.string().max(20).optional(),
-  pago_movil_titular:  z.string().max(80).optional(),
-  pago_movil_cedula:   z.string().max(15).optional(),
-  zelle_contacto:      z.string().max(80).optional(),
-  zelle_titular:       z.string().max(80).optional(),
-  binance_id:          z.string().max(80).optional(),
-  zinli_correo:        z.string().max(80).optional(),
-  paypal_correo:       z.string().max(80).optional(),
-  usdt_address:        z.string().max(100).optional(),
-}).strict()
+  pago_movil: PagoMovilSchema.optional(),
+  zelle:      SimplePaySchema.optional(),
+  zinli:      SimplePaySchema.optional(),
+  paypal:     SimplePaySchema.optional(),
+  binance:    SimplePaySchema.optional(),
+  usdt:       UsdtSchema.optional(),
+})
 
-type CobroDataShape = z.infer<typeof CobroDataSchema>
-
-const EMPTY_COBRO: CobroDataShape = {
-  pago_movil_banco: '', pago_movil_telefono: '', pago_movil_titular: '', pago_movil_cedula: '',
-  zelle_contacto: '', zelle_titular: '', binance_id: '', zinli_correo: '',
-  paypal_correo: '', usdt_address: '',
+const EMPTY_COBROS = {
+  pago_movil: { banco: '', telefono: '', usa_whatsapp_negocio: false, titular: '', tipo_doc: 'V', documento: '' },
+  zelle:      { contacto: '', titular: '' },
+  zinli:      { contacto: '', titular: '' },
+  paypal:     { contacto: '', titular: '' },
+  binance:    { contacto: '', titular: '' },
+  usdt:       { wallet: '', red: 'TRC20', titular: '' },
 }
 
 export async function GET() {
@@ -35,10 +51,15 @@ export async function GET() {
     select: { cobro_data: true },
   })
 
-  return NextResponse.json({
-    ok:         true,
-    cobro_data: business?.cobro_data ?? EMPTY_COBRO,
-  })
+  const stored = business?.cobro_data
+  // Si cobro_data tiene formato nested (key 'pago_movil') → devolverlo.
+  // Si es null o el formato flat legacy → devolver EMPTY_COBROS.
+  const isNested = stored !== null &&
+    typeof stored === 'object' &&
+    !Array.isArray(stored) &&
+    'pago_movil' in (stored as Record<string, unknown>)
+
+  return NextResponse.json({ ok: true, data: isNested ? stored : EMPTY_COBROS })
 }
 
 export async function PATCH(req: Request) {
@@ -46,7 +67,7 @@ export async function PATCH(req: Request) {
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  let incoming: CobroDataShape
+  let incoming: z.infer<typeof CobroDataSchema>
   try {
     incoming = CobroDataSchema.parse(await req.json())
   } catch (err) {
@@ -54,7 +75,7 @@ export async function PATCH(req: Request) {
     throw err
   }
 
-  // Merge para no destruir keys escritas por payment-methods PATCH
+  // Merge top-level para preservar otras keys de cobro_data (e.g. payment-methods)
   const current = await prisma.business.findUnique({
     where:  { id: session.businessId },
     select: { cobro_data: true },
@@ -68,5 +89,5 @@ export async function PATCH(req: Request) {
     select: { cobro_data: true },
   })
 
-  return NextResponse.json({ ok: true, cobro_data: updated.cobro_data })
+  return NextResponse.json({ ok: true, data: updated.cobro_data })
 }

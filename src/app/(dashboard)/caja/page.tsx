@@ -308,10 +308,8 @@ function CajaContent() {
             <div className={styles.openForm}>
               <Input
                 label="Fondos iniciales (USD)"
-                type="number"
+                type="text"
                 inputMode="decimal"
-                min="0"
-                step="0.01"
                 value={openingUsd}
                 onChange={(e) => setOpeningUsd(e.target.value)}
                 placeholder="0.00"
@@ -319,10 +317,8 @@ function CajaContent() {
               />
               <Input
                 label="Fondos iniciales (Bs)"
-                type="number"
+                type="text"
                 inputMode="decimal"
-                min="0"
-                step="0.01"
                 value={openingBs}
                 onChange={(e) => setOpeningBs(e.target.value)}
                 placeholder="0.00"
@@ -519,10 +515,8 @@ function CajaContent() {
             <div className={styles.cierreInputs}>
               <Input
                 label="Efectivo contado (USD)"
-                type="number"
+                type="text"
                 inputMode="decimal"
-                min="0"
-                step="0.01"
                 value={closingUsd}
                 onChange={(e) => setClosingUsd(e.target.value)}
                 placeholder="0.00"
@@ -530,10 +524,8 @@ function CajaContent() {
               />
               <Input
                 label="Efectivo contado (Bs)"
-                type="number"
+                type="text"
                 inputMode="decimal"
-                min="0"
-                step="0.01"
                 value={closingBs}
                 onChange={(e) => setClosingBs(e.target.value)}
                 placeholder="0.00"

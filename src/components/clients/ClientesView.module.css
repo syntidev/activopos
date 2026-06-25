@@ -71,11 +71,10 @@
 
 /* ── Table ── */
 .tableWrapper {
-  border-radius:    var(--radius-lg);
-  border:           1px solid rgba(var(--brand-rgb), 0.20);
+  border-radius:    var(--radius-xl);
   background-color: var(--color-surface);
   overflow:         hidden;
-  box-shadow:       0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:       var(--shadow-card);
 }
 
 .scrollArea {
@@ -183,9 +182,9 @@
 
 /* ── Empty ── */
 .emptyWrapper {
-  border-radius: var(--radius-lg);
-  border: var(--border-width-thin) solid var(--color-border);
+  border-radius:    var(--radius-xl);
   background-color: var(--color-surface);
+  box-shadow:       var(--shadow-card);
 }
 
 

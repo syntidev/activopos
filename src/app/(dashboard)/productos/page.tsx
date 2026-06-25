@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
+import { Button } from '@/components/ui/Button'
 import { ProductModal } from '@/components/products/ProductModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ImportModal } from '@/components/products/ImportModal'
@@ -506,15 +507,15 @@ export default function ProductosPage() {
             Migración
           </button>
 
-          <button
-            type="button"
-            className={`btn-primary ${styles.btnPrimaryAction}`}
+          <Button
+            variant="primary"
+            className={styles.btnPrimaryAction}
+            leftIcon={<Plus size={16} />}
             onClick={() => { setEditProduct(null); setShowProductModal(true) }}
             aria-label="Crear nuevo producto"
           >
-            <Plus size={16} aria-hidden="true" />
             Nuevo
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -647,14 +648,13 @@ export default function ProductosPage() {
                           : 'Crea tu primer producto para comenzar a vender.'}
                       </p>
                       {!debouncedSearch && !selectedCategory && (
-                        <button
-                          type="button"
-                          className="btn-primary"
+                        <Button
+                          variant="primary"
+                          leftIcon={<Plus size={15} />}
                           onClick={() => { setEditProduct(null); setShowProductModal(true) }}
                         >
-                          <Plus size={15} aria-hidden="true" />
                           Nuevo Producto
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </td>

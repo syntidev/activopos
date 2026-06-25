@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       notas:       g.notas,
       is_paid:     g.is_paid,
       paid_at:     g.paid_at,
-      due_date:    g.due_date,
+      due_date:    g.due_date instanceof Date ? g.due_date.toISOString().slice(0, 10) : (g.due_date ?? null),
       supplier:    g.supplier,
       created_at:  g.created_at,
     })),

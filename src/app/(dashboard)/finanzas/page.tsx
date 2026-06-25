@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { FileSpreadsheet, Check } from 'lucide-react'
+import { ErrorBoundary } from 'react-error-boundary'
 import { Button }          from '@/components/ui/Button'
 import { CxCSection }      from './CxCSection'
 import { CxPSection }      from './CxPSection'
@@ -93,10 +94,18 @@ export default function FinanzasPage() {
       </div>
 
       <div className={styles.tabContent} role="tabpanel">
-        {tab === 'cxc'     && <CxCSection rate={rate} />}
-        {tab === 'cxp'     && <CxPSection month={month} />}
-        {tab === 'gastos'  && <GastosSection month={month} />}
-        {tab === 'resumen' && <ResumenSection month={month} rate={rate} />}
+        <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
+          {tab === 'resumen' && <ResumenSection month={month} rate={rate} />}
+        </ErrorBoundary>
+        <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
+          {tab === 'gastos'  && <GastosSection month={month} rate={rate} />}
+        </ErrorBoundary>
+        <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
+          {tab === 'cxc'     && <CxCSection rate={rate} />}
+        </ErrorBoundary>
+        <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
+          {tab === 'cxp'     && <CxPSection month={month} />}
+        </ErrorBoundary>
       </div>
     </div>
   )

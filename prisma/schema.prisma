@@ -135,7 +135,8 @@ model Business {
   ticket_footer        String?  @db.Text
   currency_default     String   @default("USD")
   rate_source          String   @default("bcv")
-  subscription_active  Boolean  @default(true)
+  subscription_active      Boolean   @default(true)
+  subscription_expires_at  DateTime?
   onboarding_completed Boolean  @default(false)
   active               Boolean  @default(true)
   settings             Json?

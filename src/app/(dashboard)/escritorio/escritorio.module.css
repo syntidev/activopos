@@ -534,7 +534,7 @@
 }
 
 @media (max-width: 640px) {
-  .kpiGrid { grid-template-columns: 1fr; }
+  .kpiGrid { grid-template-columns: 1fr 1fr; }
   .periodTabs {
     overflow-x: auto;
     scrollbar-width: none;

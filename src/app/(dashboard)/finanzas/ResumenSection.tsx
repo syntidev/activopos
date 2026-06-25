@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   ComposedChart, Line,
@@ -275,9 +275,8 @@ export function ResumenSection({ month, rate }: Props) {
       <div className={styles.kpiGrid}>
 
         <div className={styles.kpiCard}>
-          <div className={styles.kpiIconWrap}><TrendingUp size={18} aria-hidden="true" /></div>
           <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel2}>Ventas del mes</span>
+            <span className={styles.kpiLabel2}>Ventas</span>
             <span className={styles.kpiPrimary}>{fmtUsd(er.ventas_netas)}</span>
             <span className={styles.kpiSub2}>{data.ingresos_totales.bs > 0
               ? `Bs. ${data.ingresos_totales.bs.toLocaleString('es-VE', { maximumFractionDigits: 0 })}`
@@ -287,20 +286,16 @@ export function ResumenSection({ month, rate }: Props) {
         </div>
 
         <div className={styles.kpiCard}>
-          <div className={styles.kpiIconWrap}><DollarSign size={18} aria-hidden="true" /></div>
           <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel2}>Gastos del mes</span>
+            <span className={styles.kpiLabel2}>Gastos</span>
             <span className={styles.kpiPrimary}>{fmtUsd(er.gastos_operativos)}</span>
             <span className={styles.kpiSub2}>{fmtBs(er.gastos_operativos, rate)}</span>
           </div>
         </div>
 
         <div className={`${styles.kpiCard} ${isPos ? styles.kpiCardSuccess : styles.kpiCardDanger}`}>
-          <div className={`${styles.kpiIconWrap} ${isPos ? styles.kpiIconWrapSuccess : styles.kpiIconWrapDanger}`}>
-            {isPos ? <TrendingUp size={18} aria-hidden="true" /> : <TrendingDown size={18} aria-hidden="true" />}
-          </div>
           <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel2}>Utilidad neta</span>
+            <span className={styles.kpiLabel2}>Utilidad</span>
             <span className={`${styles.kpiPrimary} ${isPos ? styles.kpiPrimarySuccess : styles.kpiPrimaryDanger}`}>
               {isPos ? '' : '−'}{fmtUsd(er.utilidad_neta)}
             </span>
@@ -309,9 +304,8 @@ export function ResumenSection({ month, rate }: Props) {
         </div>
 
         <div className={styles.kpiCard}>
-          <div className={styles.kpiIconWrap}><Percent size={18} aria-hidden="true" /></div>
           <div className={styles.kpiBody}>
-            <span className={styles.kpiLabel2}>Margen neto</span>
+            <span className={styles.kpiLabel2}>Margen</span>
             <span className={`${styles.kpiPrimary} ${isPos ? styles.kpiPrimarySuccess : styles.kpiPrimaryDanger}`}>
               {fmtPct(er.margen_neto_pct)}
             </span>

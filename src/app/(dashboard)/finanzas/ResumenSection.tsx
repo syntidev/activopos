@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Percent, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   ComposedChart, Line,
@@ -275,6 +275,7 @@ export function ResumenSection({ month, rate }: Props) {
       <div className={styles.kpiGrid}>
 
         <div className={styles.kpiCard}>
+          <TrendingUp size={16} className={`${styles.kpiIcon} ${styles.kpiIconBrand}`} aria-hidden="true" />
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel2}>Ventas</span>
             <span className={styles.kpiPrimary}>{fmtUsd(er.ventas_netas)}</span>
@@ -286,6 +287,7 @@ export function ResumenSection({ month, rate }: Props) {
         </div>
 
         <div className={styles.kpiCard}>
+          <DollarSign size={16} className={`${styles.kpiIcon} ${styles.kpiIconMuted}`} aria-hidden="true" />
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel2}>Gastos</span>
             <span className={styles.kpiPrimary}>{fmtUsd(er.gastos_operativos)}</span>
@@ -294,6 +296,10 @@ export function ResumenSection({ month, rate }: Props) {
         </div>
 
         <div className={`${styles.kpiCard} ${isPos ? styles.kpiCardSuccess : styles.kpiCardDanger}`}>
+          {isPos
+            ? <TrendingUp size={16} className={`${styles.kpiIcon} ${styles.kpiIconSuccess}`} aria-hidden="true" />
+            : <TrendingDown size={16} className={`${styles.kpiIcon} ${styles.kpiIconDanger}`} aria-hidden="true" />
+          }
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel2}>Utilidad</span>
             <span className={`${styles.kpiPrimary} ${isPos ? styles.kpiPrimarySuccess : styles.kpiPrimaryDanger}`}>
@@ -304,6 +310,7 @@ export function ResumenSection({ month, rate }: Props) {
         </div>
 
         <div className={styles.kpiCard}>
+          <Percent size={16} className={`${styles.kpiIcon} ${styles.kpiIconMuted}`} aria-hidden="true" />
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel2}>Margen</span>
             <span className={`${styles.kpiPrimary} ${isPos ? styles.kpiPrimarySuccess : styles.kpiPrimaryDanger}`}>
@@ -387,6 +394,11 @@ export function ResumenSection({ month, rate }: Props) {
         </div>
       ) : peData.pe > 0 && (
         <div className={styles.peCard}>
+          <svg className={styles.peSvgBg} viewBox="0 0 120 80" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <line x1="0" y1="55" x2="120" y2="55" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3"/>
+            <line x1="0" y1="80" x2="120" y2="0" stroke="currentColor" strokeWidth="1.5"/>
+            <circle cx="82" cy="19" r="3" fill="currentColor"/>
+          </svg>
           <h3 className={styles.peTitle}>
             Punto de Equilibrio — {new Date(month + '-01').toLocaleDateString('es-VE', { month: 'long', year: 'numeric' })}
           </h3>

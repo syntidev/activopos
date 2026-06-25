@@ -150,7 +150,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
         <div className={styles.headerBtns}>
           <button
             type="button"
-            className={styles.manageCatsBtn}
+            className={styles.btnSecondary}
             onClick={() => setShowManageCats(true)}
           >
             <Tag size={14} aria-hidden="true" />
@@ -158,7 +158,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
           </button>
           <button
             type="button"
-            className={styles.newBtn}
+            className={styles.btnPrimary}
             onClick={() => { setEditGasto(null); setShowModal(true) }}
           >
             <Plus size={15} aria-hidden="true" />
@@ -175,7 +175,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
           action={
             <button
               type="button"
-              className={styles.newBtn}
+              className={styles.btnPrimary}
               onClick={() => { setEditGasto(null); setShowModal(true) }}
             >
               <Plus size={15} aria-hidden="true" />
@@ -244,9 +244,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
                         <span className={styles.finSubText}>
                           {new Date(g.due_date + 'T12:00:00').toLocaleDateString('es-VE')}
                         </span>
-                      ) : (
-                        <span className={styles.finSubText}>—</span>
-                      )}
+                      ) : null}
                     </td>
 
                     <td className={styles.finTd}>

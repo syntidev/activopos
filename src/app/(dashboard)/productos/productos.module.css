@@ -81,7 +81,7 @@
 .searchInput {
   height: var(--touch-min);
   width: 100%;
-  padding: 0 var(--space-3) 0 var(--space-9);
+  padding: 0 var(--space-11) 0 var(--space-9);
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
@@ -880,25 +880,36 @@
   .statusTab, .deleteBtnCancel, .deleteBtnDeactivate, .deleteBtnForce { transition: none; }
 }
 
-/* ── Search bar scanner button — inline, always visible ── */
+/* ── Search bar scanner button — inside input wrapper, mobile-only ── */
+
+/* Hidden on desktop */
+@media (hover: hover) and (pointer: fine) {
+  .searchScanBtn { display: none; }
+}
+
 .searchScanBtn {
-  min-width: var(--touch-min);
-  min-height: var(--touch-min);
+  position: absolute;
+  right: var(--space-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-brand);
+  width: var(--touch-min);
+  height: var(--touch-min);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
   cursor: pointer;
-  flex-shrink: 0;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
-.searchScanBtn:hover {
-  background: var(--color-brand-subtle);
-  border-color: var(--color-brand-border);
+
+@media (hover: hover) and (pointer: fine) {
+  .searchScanBtn:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-2);
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .searchScanBtn { transition: none; }
 }

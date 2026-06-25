@@ -78,7 +78,7 @@
 .searchInput {
   width: 100%;
   min-height: var(--touch-min);
-  padding: 0 var(--space-3) 0 var(--space-8);
+  padding: 0 var(--space-11) 0 var(--space-8);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -879,24 +879,34 @@
 }
 
 /* ── Search bar scanner button — inline, always visible ── */
+/* Hidden on desktop — scanner is mobile-only */
+@media (hover: hover) and (pointer: fine) {
+  .searchScanBtn { display: none; }
+}
+
 .searchScanBtn {
-  min-width: var(--touch-min);
-  min-height: var(--touch-min);
+  position: absolute;
+  right: var(--space-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-brand);
+  width: var(--touch-min);
+  height: var(--touch-min);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
   cursor: pointer;
-  flex-shrink: 0;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
-.searchScanBtn:hover {
-  background: var(--color-brand-subtle);
-  color: var(--color-brand-hover);
+
+@media (hover: hover) and (pointer: fine) {
+  .searchScanBtn:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-2);
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .searchScanBtn { transition: none; }
 }

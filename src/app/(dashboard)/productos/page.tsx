@@ -531,15 +531,15 @@ export default function ProductosPage() {
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Buscar productos"
           />
+          <button
+            type="button"
+            className={styles.searchScanBtn}
+            onClick={() => setIsScanning(true)}
+            aria-label="Escanear código de barras"
+          >
+            <ScanBarcode size={18} aria-hidden="true" />
+          </button>
         </div>
-        <button
-          type="button"
-          className={styles.searchScanBtn}
-          onClick={() => setIsScanning(true)}
-          aria-label="Escanear código de barras"
-        >
-          <ScanBarcode size={20} aria-hidden="true" />
-        </button>
 
         <div className={styles.statusTabsBar} role="tablist" aria-label="Filtrar por estado">
           {(['all', 'active', 'inactive'] as const).map(s => (

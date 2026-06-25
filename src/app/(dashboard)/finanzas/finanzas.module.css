@@ -526,10 +526,9 @@
 
 .peCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-xl);
   padding:       var(--space-5);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .peTitle {
@@ -604,10 +603,9 @@
 
 .catSection {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-xl);
   overflow:      hidden;
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .catSectionTitle {
@@ -867,7 +865,7 @@
 }
 
 @media (max-width: 640px) {
-  .kpiGrid { grid-template-columns: 1fr; }
+  .kpiGrid { grid-template-columns: 1fr 1fr; }
   .peStatsRow { grid-template-columns: 1fr; }
   .plLabel, .plSubtotalLabel { min-width: 120px; }
 }
@@ -879,10 +877,9 @@
 /* ── Gráfico comparativo (recharts) ── */
 .chartCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding:       var(--space-5) var(--space-6);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .chartTitle {

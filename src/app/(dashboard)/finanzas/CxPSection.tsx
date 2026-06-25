@@ -1,17 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle, Plus, FileText } from 'lucide-react'
+import { CheckCircle, Plus, FileText, Pencil } from 'lucide-react'
 import { EmptyState, useToast } from '@/components/ui'
 import { GastoModal } from '@/components/finanzas/GastoModal'
 import styles from './finanzas.module.css'
 
 interface CxPItem {
-  id:        number
-  concepto:  string
-  monto_usd: number
-  categoria: string
-  fecha:     string
+  id:          number
+  concepto:    string
+  monto_usd:   number
+  categoria:   string
+  category_id: number | null
+  fecha:       string
+  notas:       string | null
+  due_date:    string | null
 }
 
 const fmtUsd = (n: number) =>
@@ -25,10 +28,12 @@ function isUrgente(fechaStr: string): boolean {
 
 export function CxPSection({ month }: { month: string }) {
   const { toast } = useToast()
-  const [items,      setItems]      = useState<CxPItem[]>([])
-  const [total,      setTotal]      = useState(0)
-  const [showModal,  setShowModal]  = useState(false)
-  const [loading,    setLoading]    = useState(true)
+  const [items,         setItems]         = useState<CxPItem[]>([])
+  const [total,         setTotal]         = useState(0)
+  const [showModal,     setShowModal]     = useState(false)
+  const [editCxP,       setEditCxP]       = useState<CxPItem | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [loading,       setLoading]       = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -44,16 +49,21 @@ export function CxPSection({ month }: { month: string }) {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { void load() }, [load])
 
   const markPaid = async (id: number) => {
     const res = await fetch(`/api/finanzas/cxp/${id}`, { method: 'PATCH' })
     if (res.ok) {
       toast('Marcado como pagado', 'success')
-      load()
+      void load()
     } else {
       toast('Error al actualizar', 'error')
     }
+  }
+
+  const handleEditCxP = (item: CxPItem) => {
+    setEditCxP(item)
+    setShowEditModal(true)
   }
 
   if (loading) return <div className={styles.loading}>Cargando cuentas por pagar…</div>
@@ -70,7 +80,7 @@ export function CxPSection({ month }: { month: string }) {
             </span>
           </div>
         </div>
-        <button className={styles.newBtn} onClick={() => setShowModal(true)}>
+        <button type="button" className={styles.newBtn} onClick={() => setShowModal(true)}>
           <Plus size={15} aria-hidden="true" />
           Nueva CxP
         </button>
@@ -94,7 +104,7 @@ export function CxPSection({ month }: { month: string }) {
                   <th className={`${styles.finTh} ${styles.colRight}`}>Monto</th>
                   <th className={styles.finTh}>Fecha</th>
                   <th className={`${styles.finTh} ${styles.colCenter}`}>Estado</th>
-                  <th className={`${styles.finTh} ${styles.colRight}`}>Pagar</th>
+                  <th className={`${styles.finTh} ${styles.colRight}`}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,19 +120,31 @@ export function CxPSection({ month }: { month: string }) {
                         <span className={styles.finAmtBold}>{fmtUsd(item.monto_usd)}</span>
                       </td>
                       <td className={styles.finTd}>
-                        {new Date(item.fecha).toLocaleDateString('es-VE')}
+                        {new Date(item.fecha + 'T12:00:00').toLocaleDateString('es-VE')}
                       </td>
                       <td className={`${styles.finTd} ${styles.colCenter}`}>
                         {urgente && <span className={styles.badgeUrgente}>Urgente</span>}
                       </td>
                       <td className={`${styles.finTd} ${styles.colRight}`}>
-                        <button
-                          className={styles.actionBtn}
-                          onClick={() => markPaid(item.id)}
-                        >
-                          <CheckCircle size={12} aria-hidden="true" />
-                          Pagar
-                        </button>
+                        <span className={styles.actionsBtnGroup}>
+                          <button
+                            type="button"
+                            className={styles.iconBtnEdit}
+                            onClick={() => handleEditCxP(item)}
+                            aria-label="Editar cuenta por pagar"
+                            title="Editar"
+                          >
+                            <Pencil size={14} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => void markPaid(item.id)}
+                          >
+                            <CheckCircle size={12} aria-hidden="true" />
+                            Pagar
+                          </button>
+                        </span>
                       </td>
                     </tr>
                   )
@@ -133,11 +155,22 @@ export function CxPSection({ month }: { month: string }) {
         </div>
       )}
 
+      {/* Modal — crear nueva CxP */}
       <GastoModal
         open={showModal}
         onClose={() => setShowModal(false)}
         mode="cxp"
         month={month}
+        onSuccess={load}
+      />
+
+      {/* Modal — editar CxP existente (gasto mode → PATCH /api/gastos/:id) */}
+      <GastoModal
+        open={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditCxP(null) }}
+        mode="gasto"
+        month={month}
+        editData={editCxP}
         onSuccess={load}
       />
     </>

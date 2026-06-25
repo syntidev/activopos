@@ -8,7 +8,6 @@ import {
   CreditCard,
   Palette,
   Users,
-  Tag,
   Puzzle,
   Bell,
   Wallet,
@@ -22,13 +21,12 @@ import { TabImpresion }       from './tabs/TabImpresion'
 import { TabPagos }           from './tabs/TabPagos'
 import { TabTema }            from './tabs/TabTema'
 import { TabUsuarios }        from './tabs/TabUsuarios'
-import { TabCategorias }      from './tabs/TabCategorias'
 import { TabModulos }         from './tabs/TabModulos'
 import { TabNotificaciones }  from './tabs/TabNotificaciones'
 import { TabCobros }          from './tabs/TabCobros'
 import { TabPlan }            from './tabs/TabPlan'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'cobros' | 'tema' | 'usuarios' | 'categorias' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'pagos' | 'cobros' | 'tema' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -42,7 +40,6 @@ const MAIN_TABS: Tab[] = [
   { key: 'impresion',      label: 'Impresión',           Icon: Printer    },
   { key: 'pagos',          label: 'Métodos de Pago',     Icon: CreditCard },
   { key: 'cobros',         label: 'Cobros',              Icon: Wallet     },
-  { key: 'categorias',     label: 'Categorías',          Icon: Tag        },
   { key: 'tema',           label: 'Tema Visual',         Icon: Palette    },
   { key: 'modulos',        label: 'Módulos',             Icon: Puzzle     },
   { key: 'notificaciones', label: 'Notificaciones',      Icon: Bell       },
@@ -99,7 +96,6 @@ export function ConfiguracionView({ session }: ConfiguracionViewProps) {
         {activeTab === 'pagos'          && <TabPagos          businessId={session.businessId} />}
         {activeTab === 'cobros'         && <TabCobros         businessId={session.businessId} />}
         {activeTab === 'tema'           && <TabTema           businessId={session.businessId} />}
-        {activeTab === 'categorias'     && <TabCategorias     businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
         {activeTab === 'plan'           && <TabPlan     businessId={session.businessId} />}

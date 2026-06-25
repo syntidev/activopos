@@ -69,7 +69,7 @@ export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: 
       setConcepto('')
       setMonto('')
       setNotas('')
-      setFecha(`${month}-01`)
+      setFecha(new Date().toISOString().slice(0, 10))
       setTipo('variable')
       setRecurrente(false)
       setDueDate('')
@@ -79,11 +79,15 @@ export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: 
       setConcepto(editData.concepto)
       setMonto(String(editData.monto_usd))
       setNotas(editData.notas ?? '')
-      setFecha(new Date(editData.fecha).toISOString().slice(0, 10))
-      setDueDate(editData.due_date ? new Date(editData.due_date).toISOString().slice(0, 10) : '')
+      setFecha(new Date(editData.fecha + 'T12:00:00').toISOString().slice(0, 10))
+      const hasDueDate = !!editData.due_date
+      setTipo(hasDueDate ? 'fijo' : 'variable')
+      setDueDate(hasDueDate ? new Date(editData.due_date! + 'T12:00:00').toISOString().slice(0, 10) : '')
       if (editData.category_id) setCatId(editData.category_id)
+    } else {
+      setFecha(new Date().toISOString().slice(0, 10))
     }
-  }, [open, month, editData])
+  }, [open, editData])
 
   const handleSubmit = async () => {
     if (!valid) return
@@ -99,10 +103,11 @@ export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: 
       if (catId != null) body.category_id = catId
       else               body.categoria   = 'otro'
 
+      if (tipo !== 'fijo') delete body.due_date
+
       if (mode !== 'gasto') {
         body.tipo       = tipo
         body.recurrente = tipo === 'fijo' ? recurrente : false
-        if (tipo !== 'fijo') delete body.due_date
       }
 
       const url    = isEdit ? `/api/gastos/${editData!.id}` : endpoint
@@ -200,50 +205,47 @@ export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: 
           </select>
         </div>
 
-        {/* Tipo + Recurrente — solo para CxP */}
-        {mode !== 'gasto' && (
-          <>
-            <div className={styles.field}>
-              <label className={styles.label}>Tipo</label>
-              <div className={styles.pillRow}>
-                <button
-                  type="button"
-                  className={`${styles.pill} ${tipo === 'variable' ? styles.pillActive : ''}`}
-                  onClick={() => { setTipo('variable'); setRecurrente(false); setDueDate('') }}
-                >
-                  Variable
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.pill} ${tipo === 'fijo' ? styles.pillActiveFijo : ''}`}
-                  onClick={() => setTipo('fijo')}
-                >
-                  Fijo
-                </button>
-              </div>
-            </div>
+        {/* Tipo — Fijo (con fecha de vencimiento) o Variable */}
+        <div className={styles.field}>
+          <label className={styles.label}>Tipo</label>
+          <div className={styles.pillRow}>
+            <button
+              type="button"
+              className={`${styles.pill} ${tipo === 'variable' ? styles.pillActive : ''}`}
+              onClick={() => { setTipo('variable'); setRecurrente(false); setDueDate('') }}
+            >
+              Variable
+            </button>
+            <button
+              type="button"
+              className={`${styles.pill} ${tipo === 'fijo' ? styles.pillActiveFijo : ''}`}
+              onClick={() => setTipo('fijo')}
+            >
+              Fijo
+            </button>
+          </div>
+        </div>
 
-            {tipo === 'fijo' && (
-              <div className={styles.field}>
-                <label className={styles.toggleRow}>
-                  <span className={styles.label}>Recurrente (mensual)</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={recurrente}
-                    className={`${styles.toggleBtn} ${recurrente ? styles.toggleBtnOn : ''}`}
-                    onClick={() => setRecurrente(v => !v)}
-                  >
-                    <span className={styles.toggleThumb} />
-                  </button>
-                </label>
-              </div>
-            )}
-          </>
+        {/* Recurrente — solo para CxP fijo */}
+        {mode !== 'gasto' && tipo === 'fijo' && (
+          <div className={styles.field}>
+            <label className={styles.toggleRow}>
+              <span className={styles.label}>Recurrente (mensual)</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={recurrente}
+                className={`${styles.toggleBtn} ${recurrente ? styles.toggleBtnOn : ''}`}
+                onClick={() => setRecurrente(v => !v)}
+              >
+                <span className={styles.toggleThumb} />
+              </button>
+            </label>
+          </div>
         )}
 
-        {/* Fecha de vencimiento — siempre en modo gasto, solo si fijo en modo cxp */}
-        {(mode === 'gasto' || tipo === 'fijo') && (
+        {/* Fecha de vencimiento — solo cuando tipo = fijo */}
+        {tipo === 'fijo' && (
           <div className={styles.field}>
             <label className={styles.label}>Fecha de vencimiento (opcional)</label>
             <Input

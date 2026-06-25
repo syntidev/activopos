@@ -414,9 +414,8 @@
 
 .closedCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-xl);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
   padding: var(--space-10) var(--space-8);
   display: flex;
   flex-direction: column;
@@ -508,8 +507,8 @@
 }
 
 @media (max-width: 480px) {
-  .kpis { grid-template-columns: 1fr; }
-  .skeletonKpis { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .skeletonKpis { grid-template-columns: 1fr 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

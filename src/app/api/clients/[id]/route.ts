@@ -91,7 +91,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-    const client = await prisma.client.update({ where: { id }, data })
+    const client = await prisma.client.update({ where: { id, business_id: session.businessId }, data })
     return NextResponse.json({ ok: true, client })
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -125,6 +125,6 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     )
   }
 
-  await prisma.client.update({ where: { id }, data: { is_active: false } })
+  await prisma.client.update({ where: { id, business_id: session.businessId }, data: { is_active: false } })
   return NextResponse.json({ ok: true })
 }

@@ -86,7 +86,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     })
     if (Number(totalPaid._sum.amount_usd ?? 0) >= Number(sale.total_usd) - 0.001) {
       await prisma.sale.update({
-        where: { id: data.sale_id },
+        where: { id: data.sale_id, business_id: session.businessId },
         data:  { status: 'paid', sold_at: new Date() },
       })
     }

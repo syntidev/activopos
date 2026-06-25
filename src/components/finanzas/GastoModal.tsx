@@ -12,15 +12,27 @@ interface ExpenseCat {
 
 export type GastoMode = 'gasto' | 'cxp'
 
+interface GastoForEdit {
+  id:          number
+  concepto:    string
+  monto_usd:   number
+  categoria:   string
+  category_id: number | null
+  fecha:       string
+  notas:       string | null
+  due_date:    string | null
+}
+
 interface GastoModalProps {
   open:      boolean
   onClose:   () => void
   mode:      GastoMode
   month:     string
+  editData?: GastoForEdit | null
   onSuccess: () => void
 }
 
-export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModalProps) {
+export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: GastoModalProps) {
   const { toast } = useToast()
 
   const [concepto,   setConcepto]   = useState('')
@@ -34,8 +46,9 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
   const [loading,    setLoading]    = useState(false)
   const [cats,       setCats]       = useState<ExpenseCat[]>([])
 
-  const endpoint = mode === 'gasto' ? '/api/finanzas/gastos' : '/api/finanzas/cxp'
-  const title    = mode === 'gasto' ? 'Nuevo Gasto' : 'Nueva Cuenta por Pagar'
+  const isEdit   = mode === 'gasto' && !!editData?.id
+  const endpoint = mode === 'gasto' ? '/api/gastos' : '/api/finanzas/cxp'
+  const title    = isEdit ? 'Editar Gasto' : mode === 'gasto' ? 'Nuevo Gasto' : 'Nueva Cuenta por Pagar'
   const valid    = concepto.trim().length >= 3 && parseFloat(monto) > 0 && !!fecha
 
   useEffect(() => {
@@ -60,32 +73,51 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
       setTipo('variable')
       setRecurrente(false)
       setDueDate('')
+      return
     }
-  }, [open, month])
+    if (editData) {
+      setConcepto(editData.concepto)
+      setMonto(String(editData.monto_usd))
+      setNotas(editData.notas ?? '')
+      setFecha(new Date(editData.fecha).toISOString().slice(0, 10))
+      setDueDate(editData.due_date ? new Date(editData.due_date).toISOString().slice(0, 10) : '')
+      if (editData.category_id) setCatId(editData.category_id)
+    }
+  }, [open, month, editData])
 
   const handleSubmit = async () => {
     if (!valid) return
     setLoading(true)
     try {
       const body: Record<string, unknown> = {
-        concepto:   concepto.trim(),
-        monto_usd:  parseFloat(monto),
+        concepto:  concepto.trim(),
+        monto_usd: parseFloat(monto),
         fecha,
-        tipo,
-        recurrente: tipo === 'fijo' ? recurrente : false,
-        due_date:   tipo === 'fijo' && dueDate ? dueDate : undefined,
-        notas:      notas.trim() || undefined,
+        notas:     notas.trim() || undefined,
+        due_date:  dueDate || undefined,
       }
-      if (catId != null) body.expense_category_id = catId
-      else               body.categoria            = 'otro'
+      if (catId != null) body.category_id = catId
+      else               body.categoria   = 'otro'
 
-      const res = await fetch(endpoint, {
-        method:  'POST',
+      if (mode !== 'gasto') {
+        body.tipo       = tipo
+        body.recurrente = tipo === 'fijo' ? recurrente : false
+        if (tipo !== 'fijo') delete body.due_date
+      }
+
+      const url    = isEdit ? `/api/gastos/${editData!.id}` : endpoint
+      const method = isEdit ? 'PATCH' : 'POST'
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
       })
       if (res.ok) {
-        toast(mode === 'gasto' ? 'Gasto registrado' : 'CxP creada', 'success')
+        const msg = isEdit
+          ? 'Gasto actualizado'
+          : mode === 'gasto' ? 'Gasto registrado' : 'CxP creada'
+        toast(msg, 'success')
         onSuccess()
         onClose()
       } else {
@@ -107,7 +139,7 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
         <>
           <Button variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Button>
           <Button variant="primary" onClick={handleSubmit} disabled={loading || !valid}>
-            {loading ? 'Guardando...' : 'Guardar'}
+            {loading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Guardar'}
           </Button>
         </>
       }
@@ -168,53 +200,58 @@ export function GastoModal({ open, onClose, mode, month, onSuccess }: GastoModal
           </select>
         </div>
 
-        {/* Tipo */}
-        <div className={styles.field}>
-          <label className={styles.label}>Tipo</label>
-          <div className={styles.pillRow}>
-            <button
-              type="button"
-              className={`${styles.pill} ${tipo === 'variable' ? styles.pillActive : ''}`}
-              onClick={() => { setTipo('variable'); setRecurrente(false); setDueDate('') }}
-            >
-              Variable
-            </button>
-            <button
-              type="button"
-              className={`${styles.pill} ${tipo === 'fijo' ? styles.pillActiveFijo : ''}`}
-              onClick={() => setTipo('fijo')}
-            >
-              Fijo
-            </button>
-          </div>
-        </div>
-
-        {/* Recurrente + Vencimiento — solo si Fijo */}
-        {tipo === 'fijo' && (
+        {/* Tipo + Recurrente — solo para CxP */}
+        {mode !== 'gasto' && (
           <>
             <div className={styles.field}>
-              <label className={styles.toggleRow}>
-                <span className={styles.label}>Recurrente (mensual)</span>
+              <label className={styles.label}>Tipo</label>
+              <div className={styles.pillRow}>
                 <button
                   type="button"
-                  role="switch"
-                  aria-checked={recurrente}
-                  className={`${styles.toggleBtn} ${recurrente ? styles.toggleBtnOn : ''}`}
-                  onClick={() => setRecurrente(v => !v)}
+                  className={`${styles.pill} ${tipo === 'variable' ? styles.pillActive : ''}`}
+                  onClick={() => { setTipo('variable'); setRecurrente(false); setDueDate('') }}
                 >
-                  <span className={styles.toggleThumb} />
+                  Variable
                 </button>
-              </label>
+                <button
+                  type="button"
+                  className={`${styles.pill} ${tipo === 'fijo' ? styles.pillActiveFijo : ''}`}
+                  onClick={() => setTipo('fijo')}
+                >
+                  Fijo
+                </button>
+              </div>
             </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Fecha de vencimiento</label>
-              <Input
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                type="date"
-              />
-            </div>
+
+            {tipo === 'fijo' && (
+              <div className={styles.field}>
+                <label className={styles.toggleRow}>
+                  <span className={styles.label}>Recurrente (mensual)</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={recurrente}
+                    className={`${styles.toggleBtn} ${recurrente ? styles.toggleBtnOn : ''}`}
+                    onClick={() => setRecurrente(v => !v)}
+                  >
+                    <span className={styles.toggleThumb} />
+                  </button>
+                </label>
+              </div>
+            )}
           </>
+        )}
+
+        {/* Fecha de vencimiento — siempre en modo gasto, solo si fijo en modo cxp */}
+        {(mode === 'gasto' || tipo === 'fijo') && (
+          <div className={styles.field}>
+            <label className={styles.label}>Fecha de vencimiento (opcional)</label>
+            <Input
+              value={dueDate}
+              onChange={e => setDueDate(e.target.value)}
+              type="date"
+            />
+          </div>
         )}
 
         {/* Notas */}

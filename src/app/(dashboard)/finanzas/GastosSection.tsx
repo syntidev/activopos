@@ -53,7 +53,7 @@ function getDueBadge(dueDate: string | null): { text: string; style: 'urgente' |
   return null
 }
 
-export function GastosSection({ month }: { month: string }) {
+export function GastosSection({ month, rate }: { month: string; rate: number }) {
   const [gastos,         setGastos]         = useState<Gasto[]>([])
   const [catMap,         setCatMap]         = useState<Map<number, ExpenseCat>>(new Map())
   const [showModal,      setShowModal]      = useState(false)
@@ -114,18 +114,33 @@ export function GastosSection({ month }: { month: string }) {
         <div className={styles.gastoKpiCell}>
           <span className={styles.gastoKpiLabel}>Total período</span>
           <span className={styles.gastoKpiValue}>${totalPeriodo.toFixed(2)}</span>
+          {rate > 0 && (
+            <span className={styles.kpiBs}>
+              Bs. {(totalPeriodo * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })}
+            </span>
+          )}
         </div>
         <div className={styles.gastoKpiCell}>
           <span className={styles.gastoKpiLabel}>Fijo</span>
           <span className={`${styles.gastoKpiValue} ${styles.gastoKpiValueFijo}`}>
             ${totalFijo.toFixed(2)}
           </span>
+          {rate > 0 && (
+            <span className={styles.kpiBs}>
+              Bs. {(totalFijo * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })}
+            </span>
+          )}
         </div>
         <div className={styles.gastoKpiCell}>
           <span className={styles.gastoKpiLabel}>Variable</span>
           <span className={`${styles.gastoKpiValue} ${styles.gastoKpiValueVar}`}>
             ${totalVar.toFixed(2)}
           </span>
+          {rate > 0 && (
+            <span className={styles.kpiBs}>
+              Bs. {(totalVar * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })}
+            </span>
+          )}
         </div>
       </div>
 

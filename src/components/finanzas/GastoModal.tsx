@@ -82,7 +82,7 @@ export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: 
       setFecha(new Date(editData.fecha + 'T12:00:00').toISOString().slice(0, 10))
       const hasDueDate = !!editData.due_date
       setTipo(hasDueDate ? 'fijo' : 'variable')
-      setDueDate(hasDueDate ? new Date(editData.due_date! + 'T12:00:00').toISOString().slice(0, 10) : '')
+      setDueDate(hasDueDate ? String(editData.due_date!).slice(0, 10) : '')
       if (editData.category_id) setCatId(editData.category_id)
     } else {
       setFecha(new Date().toISOString().slice(0, 10))

@@ -974,6 +974,17 @@
   box-shadow: 0 0 0 3px var(--color-brand-subtle);
 }
 
+/* ── ErrorBoundary fallback ── */
+.sectionError {
+  padding:    var(--space-6);
+  text-align: center;
+  color:      var(--color-danger-text);
+  font-size:  var(--text-sm);
+  background: var(--color-danger-subtle);
+  border:     1px solid var(--color-danger-border);
+  border-radius: var(--radius-lg);
+}
+
 /* ── Gastos — edit icon button (brand hover) ── */
 .iconBtnEdit {
   display:         inline-flex;
@@ -1063,6 +1074,12 @@
 
 .gastoKpiValueFijo { color: var(--color-brand); }
 .gastoKpiValueVar  { color: var(--cta); }
+
+.kpiBs {
+  font-size:            var(--text-xs);
+  color:                var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── Gastos — category badge in table ── */
 .catBadge {

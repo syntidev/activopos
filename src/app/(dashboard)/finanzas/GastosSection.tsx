@@ -112,7 +112,7 @@ export function GastosSection({ month }: { month: string }) {
                 return (
                   <tr key={g.id}>
                     <td className={styles.finTd}>
-                      {new Date(g.fecha).toLocaleDateString('es-VE')}
+                      {new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-VE')}
                     </td>
                     <td className={styles.finTd}>{g.categoria}</td>
                     <td className={`${styles.finTd} ${styles.tdPrimary}`}>{g.concepto}</td>

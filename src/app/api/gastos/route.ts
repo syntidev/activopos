@@ -32,10 +32,17 @@ export async function GET(req: NextRequest) {
   const { year, month } = parsePeriodFromParams(sp)
   const from            = new Date(year, month - 1, 1)
   const to              = new Date(year, month, 1)
+  const tipo            = sp.get('tipo') // 'fijo' | 'variable'
 
   const [gastos, rate] = await Promise.all([
     prisma.gasto.findMany({
-      where:   { business_id: session.businessId, fecha: { gte: from, lt: to } },
+      where: {
+        business_id: session.businessId,
+        fecha:       { gte: from, lt: to },
+        // 'fijo' = gasto recurrente con fecha de vencimiento; 'variable' = sin vencimiento
+        ...(tipo === 'fijo'     ? { due_date: { not: null } } : {}),
+        ...(tipo === 'variable' ? { due_date: null }          : {}),
+      },
       orderBy: { fecha: 'desc' },
     }),
     readCachedBcvRate(),
@@ -53,7 +60,7 @@ export async function GET(req: NextRequest) {
       monto_bs:    r2(Number(g.monto_usd) * rate),
       categoria:   g.categoria,
       category_id: g.category_id,
-      fecha:       g.fecha,
+      fecha:       g.fecha instanceof Date ? g.fecha.toISOString().slice(0, 10) : String(g.fecha).slice(0, 10),
       notas:       g.notas,
       is_paid:     g.is_paid,
       paid_at:     g.paid_at,

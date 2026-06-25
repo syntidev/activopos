@@ -142,9 +142,8 @@ export function AbonoModal({ open, onClose, sale, rate, onSuccess }: AbonoModalP
           <Input
             value={amountUsd}
             onChange={e => setAmountUsd(e.target.value)}
-            type="number"
-            step="0.01"
-            min="0.01"
+            type="text"
+            inputMode="decimal"
             placeholder="0.00"
           />
           {amountBs > 0 && rate > 0 && (

@@ -335,14 +335,12 @@ export function CobroModal({
                   )}
 
                   <input
-                    type="number"
+                    type="text"
                     inputMode="decimal"
                     className={styles.receivedInput}
                     placeholder={isUsdMethod ? totalUsd.toFixed(2) : changeMode === 'bs' ? totalBs.toFixed(2) : totalUsd.toFixed(2)}
                     value={receivedBs}
                     onChange={(e) => setReceivedBs(e.target.value)}
-                    min="0"
-                    step="0.01"
                     aria-label={isUsdMethod ? 'Monto recibido (USD)' : 'Monto recibido'}
                   />
 
@@ -352,7 +350,7 @@ export function CobroModal({
                       <span className={styles.rateLabel}>Tasa</span>
                       {editingRate ? (
                         <input
-                          type="number"
+                          type="text"
                           inputMode="decimal"
                           className={styles.rateInput}
                           value={rateStr}
@@ -443,14 +441,12 @@ export function CobroModal({
                       {entry && (
                         <div className={styles.mixedInputs}>
                           <input
-                            type="number"
+                            type="text"
                             inputMode="decimal"
                             className={styles.mixedAmountInput}
                             placeholder="Bs."
                             value={entry.amountBs}
                             onChange={(e) => updateEntry(m.id, 'amountBs', e.target.value)}
-                            min="0"
-                            step="0.01"
                             aria-label={`Monto en Bs. para ${m.name}`}
                           />
                           {REFERENCE_TYPES.has(m.type) && (

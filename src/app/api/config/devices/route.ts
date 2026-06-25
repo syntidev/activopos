@@ -3,15 +3,33 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
-const DEVICE_TYPES = ['punto_venta', 'datafono', 'tpv', 'caja', 'otro'] as const
+// Nombres que envía la UI — se mapean a los campos del modelo BusinessDevice al persistir
+const DEVICE_TYPES_UI = ['debit', 'credit', 'biopago'] as const
 
 const PostSchema = z.object({
-  type:              z.enum(DEVICE_TYPES),
-  bank_name:         z.string().min(1).max(80),
-  serial:            z.string().max(60).optional(),
-  commercial_number: z.string().max(40).optional(),
-  is_active:         z.boolean().optional(),
+  tipo:         z.enum(DEVICE_TYPES_UI),
+  banco:        z.string().min(1).max(80),
+  serial:       z.string().max(60).optional(),
+  nro_comercio: z.string().max(40).optional(),
+  is_active:    z.boolean().optional(),
 }).strict()
+
+type DBDevice = {
+  id: number; business_id: number; type: string; bank_name: string
+  serial: string | null; commercial_number: string | null; is_active: boolean
+}
+
+function toUI(d: DBDevice) {
+  return {
+    id:           d.id,
+    business_id:  d.business_id,
+    tipo:         d.type,
+    banco:        d.bank_name,
+    serial:       d.serial,
+    nro_comercio: d.commercial_number,
+    is_active:    d.is_active,
+  }
+}
 
 export async function GET() {
   const session = await getSession()
@@ -23,7 +41,7 @@ export async function GET() {
     orderBy: { created_at: 'asc' },
   })
 
-  return NextResponse.json({ ok: true, devices })
+  return NextResponse.json({ ok: true, devices: devices.map(toUI) })
 }
 
 export async function POST(req: Request) {
@@ -42,13 +60,13 @@ export async function POST(req: Request) {
   const device = await prisma.businessDevice.create({
     data: {
       business_id:       session.businessId,
-      type:              body.type,
-      bank_name:         body.bank_name,
-      serial:            body.serial            ?? null,
-      commercial_number: body.commercial_number ?? null,
-      is_active:         body.is_active         ?? true,
+      type:              body.tipo,
+      bank_name:         body.banco,
+      serial:            body.serial       ?? null,
+      commercial_number: body.nro_comercio ?? null,
+      is_active:         body.is_active    ?? true,
     },
   })
 
-  return NextResponse.json({ ok: true, device }, { status: 201 })
+  return NextResponse.json({ ok: true, device: toUI(device) }, { status: 201 })
 }

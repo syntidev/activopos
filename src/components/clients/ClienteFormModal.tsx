@@ -152,6 +152,7 @@ export function ClienteFormModal({
           placeholder="V-12345678 o J-123456789"
           value={form.cedula}
           onChange={set('cedula')}
+          inputMode="numeric"
           hint="Opcional"
         />
 

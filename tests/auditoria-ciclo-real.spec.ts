@@ -51,7 +51,7 @@ test.beforeAll(async ({ playwright }) => {
   // storageState vacío explícito — evita que Playwright intente leer tests/.auth-state.json del config
   const ctx = await playwright.request.newContext({ storageState: { cookies: [], origins: [] } })
   const loginRes = await ctx.post(`${BASE}/api/auth/login`, {
-    data: { email: 'admin@activopos.com', password: 'admin123' },
+    data: { email: 'admin@activopos.com', password: process.env.CIMAAD_PASSWORD ?? 'Admin2026!' },
   })
   expect(loginRes.ok(), `Login falló: ${loginRes.status()}`).toBeTruthy()
   const state = await ctx.storageState()

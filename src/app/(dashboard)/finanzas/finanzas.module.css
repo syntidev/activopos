@@ -396,6 +396,8 @@
   background:    var(--color-surface);
   border-radius: var(--radius-xl);
   box-shadow:    var(--shadow-card);
+  min-width:     0;
+  overflow:      hidden;
 }
 
 .kpiCardSuccess {
@@ -875,7 +877,7 @@
 }
 
 @media (max-width: 640px) {
-  .kpiGrid { grid-template-columns: 1fr 1fr; }
+  .kpiGrid { grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 4px; }
   .peStatsRow { grid-template-columns: 1fr; }
   .plLabel, .plSubtotalLabel { min-width: 120px; }
 }

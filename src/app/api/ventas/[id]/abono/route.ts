@@ -6,6 +6,11 @@ import { getBcvRate } from '@/lib/bcv'
 
 type RouteContext = { params: { id: string } }
 
+class OverpaymentError extends Error {
+  readonly code = 'OVERPAYMENT' as const
+  constructor(message: string) { super(message); this.name = 'OverpaymentError' }
+}
+
 const abonoSchema = z.object({
   payment_method_id: z.number().int().positive(),
   amount_usd:        z.number().positive(),
@@ -49,19 +54,21 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Debes abrir la caja antes de registrar un abono' }, { status: 400 })
     }
 
-    const existingAgg = await prisma.saleAbono.aggregate({
-      where: { sale_id: saleId },
-      _sum:  { amount_usd: true },
-    })
-    const saldoPrev = Number(sale.total_usd) - Number(existingAgg._sum.amount_usd ?? 0)
-    if (body.amount_usd > saldoPrev + 0.01) {
-      return NextResponse.json(
-        { error: `El abono ($${body.amount_usd}) supera el saldo pendiente ($${saldoPrev.toFixed(2)})` },
-        { status: 400 },
-      )
-    }
-
     const { abono, sumAbonado } = await prisma.$transaction(async (tx) => {
+      // Row lock: serializa abonos concurrentes sobre la misma venta (fix TOCTOU)
+      await tx.$queryRaw`SELECT id FROM sales WHERE id = ${saleId} FOR UPDATE`
+
+      const prevAgg = await tx.saleAbono.aggregate({
+        where: { sale_id: saleId },
+        _sum:  { amount_usd: true },
+      })
+      const saldoPrev = Number(sale.total_usd) - Number(prevAgg._sum.amount_usd ?? 0)
+      if (body.amount_usd > saldoPrev + 0.01) {
+        throw new OverpaymentError(
+          `El abono ($${body.amount_usd}) supera el saldo pendiente ($${saldoPrev.toFixed(2)})`,
+        )
+      }
+
       const amount_bs = body.amount_usd * rate
 
       const newAbono = await tx.saleAbono.create({
@@ -137,6 +144,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    }
+    if (err instanceof OverpaymentError) {
+      return NextResponse.json({ error: err.message }, { status: 400 })
     }
     console.error(`ventas/${saleId}/abono POST:`, err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

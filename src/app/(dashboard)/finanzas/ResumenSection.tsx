@@ -315,7 +315,7 @@ export function ResumenSection({ month, rate }: Props) {
             <span className={`${styles.kpiPrimary} ${isPos ? styles.kpiPrimarySuccess : styles.kpiPrimaryDanger}`}>
               {fmtPct(er.margen_neto_pct)}
             </span>
-            <span className={styles.kpiSub2}>Margen bruto: {fmtPct(er.margen_bruto_pct)}</span>
+            <span className={`${styles.kpiSub2} ${styles.kpiSub2Margen}`}>Margen bruto: {fmtPct(er.margen_bruto_pct)}</span>
           </div>
         </div>
 

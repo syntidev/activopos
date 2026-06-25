@@ -61,9 +61,11 @@
 
 /* ── Search ── */
 .searchWrap {
-  position: relative;
-  flex: 1;
-  max-width: 320px;
+  position:    relative;
+  display:     flex;
+  align-items: center;
+  flex:        1;
+  max-width:   320px;
 }
 
 .searchIcon {

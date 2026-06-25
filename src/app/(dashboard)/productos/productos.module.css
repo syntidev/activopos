@@ -63,10 +63,12 @@
 }
 
 .searchWrapper {
-  position: relative;
-  flex: 1;
-  min-width: 200px;
-  max-width: 360px;
+  position:    relative;
+  display:     flex;
+  align-items: center;
+  flex:        1;
+  min-width:   200px;
+  max-width:   360px;
 }
 
 .searchIcon {

@@ -258,7 +258,7 @@ function EntryModal({ product, onClose, onSaved }: ModalProps) {
             <div className={styles.modalFooter}>
               <button
                 type="button"
-                className={styles.btnSecondary}
+                className="btn-secondary"
                 onClick={onClose}
                 disabled={saving}
               >
@@ -266,7 +266,7 @@ function EntryModal({ product, onClose, onSaved }: ModalProps) {
               </button>
               <button
                 type="submit"
-                className={styles.btnPrimary}
+                className="btn-primary"
                 disabled={saving || !qty.trim()}
               >
                 {saving && <span className={styles.spinner} aria-hidden="true" />}

@@ -508,7 +508,7 @@ export default function ProductosPage() {
 
           <button
             type="button"
-            className={`${styles.btnPrimary} ${styles.btnPrimaryAction}`}
+            className={`btn-primary ${styles.btnPrimaryAction}`}
             onClick={() => { setEditProduct(null); setShowProductModal(true) }}
             aria-label="Crear nuevo producto"
           >
@@ -649,7 +649,7 @@ export default function ProductosPage() {
                       {!debouncedSearch && !selectedCategory && (
                         <button
                           type="button"
-                          className={styles.btnPrimary}
+                          className="btn-primary"
                           onClick={() => { setEditProduct(null); setShowProductModal(true) }}
                         >
                           <Plus size={15} aria-hidden="true" />

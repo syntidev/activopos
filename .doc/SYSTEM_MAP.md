@@ -1,5 +1,5 @@
 # SYSTEM_MAP — ActivoPOS
-# Generado desde código real — 2026-06-23
+# Actualizado: 2026-06-25 | Sprint 33 (CLI-D)
 # Fuente: find, grep, prisma/schema.prisma, git log
 # NO editar a mano — regenerar con el prompt CLI-C
 
@@ -9,14 +9,14 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 28                                                              |
+| Último sprint      | Sprint 33 (docs) · Sprint 32 (última feature)                         |
 | Último commit      | (ver git log — post Sprint 27)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
 | Puerto VPS         | 3003 (PM2 — confirmado 2026-06-23)                                     |
 | Paleta activa      | Persian Blue `#0038BD` + Carrot `#EF8E01`                             |
 | Tests E2E          | ✅ 134/135 estables · 1 skip permanente T03 (ver §9)                  |
-| CIMAAD             | ✅ 7/7 nodos ciclo real — `auditoria-ciclo-real.spec.ts` en VPS:3003  |
+| CIMAAD             | ⚠️ 1/7 local (Nodo 1 falla — servidor no activo) · ✅ 7/7 en VPS:3003 |
 
 ### Certificación de módulos (Regla del Policía)
 
@@ -35,10 +35,12 @@ Sprint 25: CORE_MODULES guard ✅ → Admin panel super_admin ✅ → useDraftTa
 KDS placeholder ✅ → 9 code-review P0-P3 fixes ✅ → StockModal jerarquía ✅ → PWA manifest fix ✅ →
 Sprint 26: botón Cobrar pedidos ✅ → middleware module-gating MO-FIX02 ✅ → onboarding checklist ✅ → historial caja ✅ →
 Sprint 27: paleta Persian Blue+Carrot ✅ → 18 módulos UI+API ✅ → 14 bugs P0-P3 corregidos ✅ → CIMAAD 7/7 ✅ → marketing system 🚧 →
-Sprint 28: Bot IA datos reales ✅ → onboarding 5 pasos ✅ → variantes POS ✅ → export Excel full ✅ → rango fechas reportes ✅ → desactivar productos ✅ → badge solo Pedidos ✅ → ordenamiento tablas ✅ → S25-F2 🚧 → PU-FIX02 🚧
+Sprint 28: Bot IA datos reales ✅ → onboarding 5 pasos ✅ → variantes POS ✅ → export Excel full ✅ → rango fechas reportes ✅ → desactivar productos ✅ → badge solo Pedidos ✅ → ordenamiento tablas ✅ → S25-F2 🚧 → PU-FIX02 🚧 →
+Sprint 31-32: Backend Gastos (5 endpoints) ✅ → Backend Cobros (6 endpoints) ✅ → fix IDOR clients ✅ → schema business_devices ✅ → fix CxC TOCTOU ✅ → TabPlan subscription ✅ → fix finanzas P1 (4 bugs) ✅ → estándar global botones ✅ → rediseño mobile-first Escritorio ✅ → skills Ponytail+Taste instalados ✅ →
+Sprint 33: SYSTEM_MAP Sprint 31-32 endpoints ✅ → HANDOFF Sprint 33 ✅ → CIMAAD verificado (⚠️ 1/7 local — servidor inactivo)
 ```
 
-**SPRINT 28 — 18 módulos del roadmap v1 operativos con UI y API conectadas. Bot IA activo con datos reales. Ciclo verificado en VPS con CIMAAD 7/7.**
+**SPRINT 32 — Backend módulo Gastos y Cobros completo. CxC TOCTOU cerrado. Mobile-first Escritorio implementado. Suscripción conectada.**
 
 | Módulo              | Estado               | Sprint | Evidencia                                                      |
 |---------------------|----------------------|--------|----------------------------------------------------------------|
@@ -243,6 +245,15 @@ pero NO están en `SUPER_ADMIN_ONLY` del middleware — pendiente Sprint 28.
 | PATCH     | `/api/finanzas/categorias/[id]`      | ✅ DT-023 Sprint 15 — editar/desactivar              |
 | GET       | `/api/finanzas/export-excel`         | ✅ DT-021 Sprint 18 — xlsx gastos/CxP export         |
 
+### Gastos (módulo propio — Sprint 31)
+| Método        | Endpoint                | Notas                                                              |
+|---------------|-------------------------|--------------------------------------------------------------------|
+| GET\|POST     | `/api/gastos`           | ✅ Sprint 31 — listado + crear gasto · role guard cashier → 403    |
+| PATCH\|DELETE | `/api/gastos/[id]`      | ✅ Sprint 31 — editar / eliminar gasto · business_id guard         |
+| GET           | `/api/gastos/alerts`    | ✅ Sprint 31 — gastos fijos con vencimiento ≤ 5 días · pendiente conectar a UI Escritorio |
+
+> ⚠️ Gap: `/api/finanzas/gastos` en SYSTEM_MAP anterior era el endpoint real, pero el backend de Sprint 31 usa `/api/gastos`. El endpoint `/api/finanzas/gastos` queda huérfano — pendiente eliminar o redirigir (Sprint 34).
+
 ### Notificaciones
 | Método | Endpoint                                  | Notas                                              |
 |--------|-------------------------------------------|----------------------------------------------------|
@@ -265,10 +276,14 @@ pero NO están en `SUPER_ADMIN_ONLY` del middleware — pendiente Sprint 28.
 | DELETE | `/api/push/subscribe`        | ✅ Sprint 24 — elimina suscripción por endpoint                          |
 | POST   | `/api/push/send`             | ✅ Sprint 24 — envía push a todos los subs del negocio; admin only; 503 sin VAPID keys |
 
-### Configuración (actualizado)
+### Configuración (actualizado Sprint 31-32)
 | Método    | Endpoint                             | Notas                                                |
 |-----------|--------------------------------------|------------------------------------------------------|
 | GET\|PATCH| `/api/config/business/modules`       | ✅ Sprint 24/25 — ALLOWED_MODULES=[pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,kds,delivery]; CORE_MODULES=['pos','caja','inventory'] — PATCH retorna 400 si se omite alguno; cashier → 403 |
+| GET\|PATCH| `/api/config/cobros/data`            | ✅ Sprint 31 — datos bancarios para recibir cobros (banco, número de cuenta, pago móvil, Zelle, etc.) |
+| GET\|POST | `/api/config/devices`                | ✅ Sprint 31 — dispositivos registrados del negocio (tabla `business_devices`) |
+| PATCH\|DELETE| `/api/config/devices/[id]`        | ✅ Sprint 31 — editar / eliminar dispositivo · business_id guard |
+| GET\|PATCH| `/api/config/subscription`           | ✅ Sprint 32 — plan de suscripción + `subscription_expires_at` · TabPlan.tsx consume este endpoint |
 
 ### Inventario
 | Método    | Endpoint          |

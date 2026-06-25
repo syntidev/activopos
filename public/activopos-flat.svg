@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!--
+    ActivoPOS Logo — FLAT
+    Colores puros sin gradiente, sin sombra, sin oscurecer
+    Azul: #0038BD | Naranja: #EF8E01
+  -->
+  <defs>
+    <clipPath id="naranja_clip">
+      <polygon points="235,270 600,-600 600,500 0,500"/>
+    </clipPath>
+  </defs>
+
+  <path d="M200,40 L360,340 L40,340 Z"
+    fill="#0038BD" stroke="#0038BD" stroke-width="52"
+    stroke-linejoin="round" stroke-linecap="round"/>
+
+  <path d="M200,40 L360,340 L40,340 Z"
+    fill="#EF8E01" stroke="#EF8E01" stroke-width="52"
+    stroke-linejoin="round" stroke-linecap="round"
+    clip-path="url(#naranja_clip)"/>
+</svg>

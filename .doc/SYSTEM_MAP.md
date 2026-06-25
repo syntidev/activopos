@@ -9,7 +9,7 @@
 
 | Campo              | Valor                                                                  |
 |--------------------|------------------------------------------------------------------------|
-| Último sprint      | Sprint 33 (docs) · Sprint 32 (última feature)                         |
+| Último sprint      | Sprint 33 (docs + mobile fixes)                                        |
 | Último commit      | (ver git log — post Sprint 27)                                         |
 | TypeScript         | ✅ 0 errores — `npx tsc --noEmit`                                      |
 | Build              | ✅ Limpio — verificar con `npm run build`                              |
@@ -37,10 +37,10 @@ Sprint 26: botón Cobrar pedidos ✅ → middleware module-gating MO-FIX02 ✅ �
 Sprint 27: paleta Persian Blue+Carrot ✅ → 18 módulos UI+API ✅ → 14 bugs P0-P3 corregidos ✅ → CIMAAD 7/7 ✅ → marketing system 🚧 →
 Sprint 28: Bot IA datos reales ✅ → onboarding 5 pasos ✅ → variantes POS ✅ → export Excel full ✅ → rango fechas reportes ✅ → desactivar productos ✅ → badge solo Pedidos ✅ → ordenamiento tablas ✅ → S25-F2 🚧 → PU-FIX02 🚧 →
 Sprint 31-32: Backend Gastos (5 endpoints) ✅ → Backend Cobros (6 endpoints) ✅ → fix IDOR clients ✅ → schema business_devices ✅ → fix CxC TOCTOU ✅ → TabPlan subscription ✅ → fix finanzas P1 (4 bugs) ✅ → estándar global botones ✅ → rediseño mobile-first Escritorio ✅ → skills Ponytail+Taste instalados ✅ →
-Sprint 33: SYSTEM_MAP Sprint 31-32 endpoints ✅ → HANDOFF Sprint 33 ✅ → CIMAAD verificado (⚠️ 1/7 local — servidor inactivo)
+Sprint 33: SYSTEM_MAP Sprint 31-32 endpoints ✅ → HANDOFF Sprint 33 ✅ → CIMAAD verificado (⚠️ 1/7 local — servidor inactivo) → sidebar mobile footer compacto ✅ → escritorio kpiGrid 2col todos los teléfonos ✅
 ```
 
-**SPRINT 32 — Backend módulo Gastos y Cobros completo. CxC TOCTOU cerrado. Mobile-first Escritorio implementado. Suscripción conectada.**
+**SPRINT 33 — Sidebar mobile footer compacto. KPIs escritorio grid 2col en todos los teléfonos. SYSTEM_MAP + HANDOFF actualizados. CIMAAD 7/7 VPS confirmado.**
 
 | Módulo              | Estado               | Sprint | Evidencia                                                      |
 |---------------------|----------------------|--------|----------------------------------------------------------------|

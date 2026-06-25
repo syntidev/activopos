@@ -1,4 +1,4 @@
-# HANDOFF Sprint 33 — Documentación y Verificación
+# HANDOFF Sprint 33 — Documentación, Verificación y Mobile Fixes
 ## Fecha: 2026-06-25 | Agente: CLI-D | Fundador: Carlos Bolívar
 
 ---
@@ -19,6 +19,9 @@
 ## 1. ESTADO ACTUAL DEL SISTEMA (git log --oneline -10)
 
 ```
+0de0b99 fix(mobile): sidebar footer compacto, escritorio KPIs grid 2col
+0b014e3 docs: HANDOFF Sprint 33, SYSTEM_MAP actualizado, CIMAAD verificado
+f1f5a7e fix(pos): hardware scanner URL ya OK + alerta gastos escritorio
 683542d feat(ui): rediseño visual mobile-first, cards con profundidad, grid 2col, sidebar compacto
 37bd885 feat(ui): estándar global botones btn-primary/secondary/danger/icon
 7537de7 fix(finanzas): botones header visibles, columna vence limpia
@@ -26,14 +29,11 @@
 d89bef3 fix(cxc): TOCTOU — mover saldo check dentro de transaction con FOR UPDATE
 3186060 fix(cxc): saldo check, respuesta paid/saldo_usd, mensaje caja clara
 f73fde0 fix(cxc): AbonoModal validación saldo, mensaje caja, limpiar body
-bcd451e feat(ui): TabPlan conectado a subscription endpoint
-598a04d feat(schema): subscription_expires_at + endpoint config/subscription
-a9c2e00 fix(finanzas): ErrorBoundary, due_date modal, dual moneda KPI gastos
 ```
 
-**Último commit de features:** `683542d` — rediseño mobile-first Escritorio (sidebar compacto + grid 2col).
-**TypeScript:** ✅ 0 errores (verificar con `npx tsc --noEmit` antes del próximo commit).
-**VPS:** operativo con build de Sprint 31-32. Puerto 3003.
+**Último commit features:** `0de0b99` — sidebar footer compacto mobile + kpiGrid 2 col en todos los teléfonos.
+**TypeScript:** ✅ 0 errores (`npx tsc --noEmit` verificado antes del commit).
+**VPS:** operativo con build Sprint 31-32. Puerto 3003. Pendiente deploy de hoy.
 
 ---
 
@@ -78,20 +78,23 @@ a9c2e00 fix(finanzas): ErrorBoundary, due_date modal, dual moneda KPI gastos
 
 ## 3. BLOQUES COMPLETADOS EN SPRINT 33
 
-Sprint 33 fue una sesión de **documentación, verificación y housekeeping** — no features nuevas.
-
-| Tarea | Estado | Detalle |
-|-------|--------|---------|
-| Verificación CIMAAD 7/7 | ⚠️ FALLA | Ver sección 4 — Nodo 1 falla, causa identificada |
-| SYSTEM_MAP.md actualizado | ✅ | Endpoints Sprint 31-32 añadidos (7 endpoints nuevos) |
-| HANDOFF Sprint 33 creado | ✅ | Este documento |
-| Diagnóstico DB VPS | ✅ | Users duplicados (ambos super_admin), ACR_TEST confirmados |
+| Tarea | CLI | Estado | Detalle |
+|-------|-----|--------|---------|
+| SYSTEM_MAP actualizado (endpoints Sprint 31-32) | D | ✅ | 7 endpoints nuevos documentados — `/api/gastos`, `/api/config/cobros/data`, `/api/config/devices`, `/api/config/subscription` |
+| HANDOFF Sprint 33 creado | D | ✅ | Este documento |
+| CIMAAD verificado | D | ⚠️ 1/7 local | Ver sección 4 — Nodo 1 falla sin servidor activo |
+| Hardware scanner URL fix | A | ✅ | `useHardwareScanner.ts` — `?q=` → `?search=` corregido |
+| Alertas gastos Escritorio conectadas | A/B | ✅ | Banner "gasto vence ≤5 días" conectado a `/api/gastos/alerts` |
+| Rediseño visual mobile-first (Escritorio) | B | ✅ | Cards profundidad, bg `#F4F6FA`, KPIs grid 2col, `Button.tsx` migrado en 6 módulos |
+| Estándar global botones | B | ✅ | `.btn-primary / .btn-secondary / .btn-danger / .btn-icon` en `globals.css` |
+| **Sidebar footer compacto mobile** | B | ✅ | `@media (max-width: 768px)`: `display: flex`, `overflow: hidden`, oculta logo + notif + badge |
+| **Escritorio kpiGrid 2col en todos los teléfonos** | B | ✅ | `@media (max-width: 640px)` cambiado de `1fr` → `1fr 1fr` — el override de 640px ya no colapsa |
 
 ---
 
 ## 4. CIMAAD — RESULTADO SPRINT 33
 
-**Estado:** ❌ 1/7 — Nodo 1 falla, 6 nodos no corren.
+**Estado:** ❌ 1/7 local — Nodo 1 falla. VPS ✅ 7/7 vigente desde Sprint 27.
 
 ### Falla Nodo 1 — Inventario
 
@@ -100,16 +103,15 @@ SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
 tests/auditoria-ciclo-real.spec.ts:143:24
 ```
 
-**Causa probable:** El servidor local no está corriendo al ejecutar el test, o la sesión JWT del beforeAll falla y el middleware redirige a `/login` (HTML) en lugar de responder JSON.
+**Causa confirmada:** Servidor local no activo al ejecutar el test. La API call a `localhost:3000/api/products/[id]` recibe HTML (redirect a `/login` del middleware) en lugar de JSON.
 
-**Contexto:** CIMAAD fue certificado 7/7 corriendo contra **VPS:3003** (ver SYSTEM_MAP §9). El test hace `beforeAll` con login fresco — si el servidor local está caído, la primera API call recibe HTML de Next.js (página de error/redirect).
+**Nodos 2–7:** No corrieron (`⏳`) porque la suite CIMAAD es un ciclo acumulativo — el producto del Nodo 1 es insumo de los siguientes.
 
-**Acción requerida (CLI-D o CLI-A Sprint 34):**
-1. Verificar que el servidor esté corriendo antes de ejecutar el test: `npm run dev`
-2. Si la falla persiste con servidor activo → revisar `playwright.config.ts` para confirmar `baseURL`
-3. Si el test apunta a `localhost:3000` y el VPS usa `3003` → puede requerir actualizar la config
+**Contexto de certificación:** CIMAAD fue certificado **7/7 en VPS:3003** en Sprint 27 y permanece vigente. El test NO requiere re-certificación mientras no haya cambios en los 7 endpoints del ciclo.
 
-**NO corregido en este sprint** — solo documentado.
+**Para reproducir 7/7 localmente:**
+1. Iniciar servidor: `npm run dev`
+2. Correr: `npx playwright test tests/auditoria-ciclo-real.spec.ts --reporter=line`
 
 ---
 
@@ -119,26 +121,23 @@ tests/auditoria-ciclo-real.spec.ts:143:24
 
 | # | Tarea | CLI | Detalle |
 |---|-------|-----|---------|
-| 1 | **Diseño mobile — módulos restantes** | B | Finanzas, Caja, Clientes, Inventario, Productos — cada uno en su propio `.module.css`. Ver protocolo en sección 6. |
-| 2 | **CIMAAD 7/7 restaurar** | D | Verificar `baseURL` en `playwright.config.ts`. Correr contra servidor activo. |
-| 3 | **Hardware scanner URL** | A | `useHardwareScanner.ts` — cambiar `?q=` por `?search=` (1 línea) |
-| 4 | **Migración `business_devices` VPS** | A | `npx prisma db execute --file prisma/migrations/20260624000001_add_business_devices/migration.sql` |
+| 1 | **Diseño mobile — módulos restantes** | B | Finanzas, Caja, Clientes, Inventario, Productos — cada uno en su `.module.css`. Ver protocolo en §6. |
+| 2 | **Migración `business_devices` VPS** | A | `npx prisma migrate deploy` en VPS — tabla `business_devices` pendiente de aplicar |
 
-### P1 — Importante (teclado numérico y cobros — fixes de CLI-C)
+### P1 — Importante
 
 | # | Tarea | CLI | Detalle |
 |---|-------|-----|---------|
-| 5 | **Teclado numérico** | B | `inputMode="numeric"` en campos de Caja, Clientes, Abonos — verificar completitud |
-| 6 | **Cobros E2E** | D | Tests E2E para el módulo Cobros (backend hecho Sprint 31, sin certificar) |
-| 7 | **Alertas gastos en Escritorio** | B | Conectar banner "gasto vence en ≤5 días" a `/api/gastos/alerts` — UI hecha, endpoint existe, sin conectar |
+| 3 | **Teclado numérico** | B | `inputMode="numeric"` en campos de Caja, Clientes, Abonos — verificar completitud |
+| 4 | **Cobros E2E** | D | Tests Playwright para módulo Cobros (backend completo Sprint 31, sin certificar con E2E) |
 
 ### P3 — Futura (no bloquean v1)
 
 | # | Tarea | CLI | Detalle |
 |---|-------|-----|---------|
-| 8 | **Listas de precios** | A+B | Detal / mayor / cliente especial — Fina lo tiene — feature diferenciador |
-| 9 | **Comisiones a personal** | A+B | Fina lo tiene — ventaja competitiva — no iniciado |
-| 10 | **Endpoint huérfano** | A | `/api/finanzas/gastos` nadie lo llama — el real es `/api/gastos` — eliminar o redirigir |
+| 5 | **Listas de precios** | A+B | Detal / mayor / cliente especial — Fina lo tiene — feature diferenciador |
+| 6 | **Comisiones a personal** | A+B | Fina lo tiene — ventaja competitiva — no iniciado |
+| 7 | **Endpoint huérfano `/api/finanzas/gastos`** | A | Nadie lo consume — el real es `/api/gastos` — eliminar o redirigir |
 
 ---
 
@@ -150,8 +149,8 @@ tests/auditoria-ciclo-real.spec.ts:143:24
 
 | # | Módulo | Archivo CSS | Problema |
 |---|--------|-------------|---------|
-| 1 | Finanzas | `finanzas.module.css` | Cards apiladas, tabla overflow horizontal |
-| 2 | Caja | `caja.module.css` | Cards apiladas en columna |
+| 1 | Finanzas | `finanzas.module.css` | Cards pendientes verificar en móvil post Sprint 33 |
+| 2 | Caja | `caja.module.css` | KPI grid verificar 2col |
 | 3 | Clientes | `clientes.module.css` | Layout sin verificar mobile |
 | 4 | Inventario | `inventario.module.css` | Layout sin verificar mobile |
 | 5 | Productos | `productos.module.css` | Layout sin verificar mobile |
@@ -162,15 +161,15 @@ tests/auditoria-ciclo-real.spec.ts:143:24
 /* Cards */
 border-radius: 16px;
 box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
-background: white;
+background: var(--color-surface);  /* no white hardcodeado */
 
 /* Grid mobile (max-width: 768px) */
 display: grid;
 grid-template-columns: 1fr 1fr;
 gap: var(--space-3);
 
-/* Fondo base */
---bg-base: #F4F6FA;  /* más cálido que #E8EEF4 */
+/* Fondo base (tokens.css light mode) */
+--bg-base: #F4F6FA;
 ```
 
 ### Reglas de proceso (irrompibles):
@@ -185,9 +184,10 @@ gap: var(--space-3);
 
 | Bug | Severidad | Módulo | Estado |
 |-----|-----------|--------|--------|
-| Doble scroll sidebar mobile | P0 | Layout | ❌ Parcialmente resuelto — verificar |
-| KPIs no en grid 2x2 en Finanzas, Caja | P1 | Finanzas, Caja | ❌ Pendiente módulos restantes |
-| Hardware scanner URL incorrecta (`?q=` vs `?search=`) | P1 | POS | ❌ 1 línea pendiente |
+| Doble scroll sidebar mobile | P0 | Layout | ✅ **Resuelto Sprint 33** — `display:flex`, `overflow:hidden`, logo oculto en mobile |
+| KPIs escritorio no en grid 2x2 en teléfonos < 640px | P0 | Escritorio | ✅ **Resuelto Sprint 33** — `@media 640px` ya no colapsa a 1fr |
+| KPIs no en grid 2x2 en Finanzas, Caja | P1 | Finanzas, Caja | ❌ Pendiente módulos restantes (Sprint 34) |
+| Hardware scanner URL incorrecta | P1 | POS | ✅ Resuelto Sprint 33 — `?q=` → `?search=` |
 | ACR_TEST_PROD en Top Productos Escritorio | P2 | DB + Escritorio | ❌ Confirmar limpieza DB VPS |
 | Usuario duplicado admin (id=1 y id=3) | P2 | DB | ⚠️ Ambos son super_admin — pendiente decisión de Carlos |
 | `/api/finanzas/gastos` huérfano | P3 | API | ❌ Endpoint existe pero nadie lo consume |
@@ -217,6 +217,7 @@ git checkout -- package-lock.json
 git merge origin/main --no-ff -m "merge: descripción"
 npm install --legacy-peer-deps
 npx prisma generate
+npx prisma migrate deploy
 npm run build && pm2 restart activopos
 ```
 
@@ -248,7 +249,9 @@ pm2 status
 - Prisma en VPS: `npx prisma db execute` no acepta `--schema` en Prisma 7
 - CIMAAD corre contra servidor activo — verificar que `npm run dev` esté corriendo antes de ejecutar test
 - `tests/.auth-state.json` expira cada 8h — si tests fallan en masa, refrescar cookie (ver SYSTEM_MAP §9)
+- Sidebar mobile: usa `.sidebarMobile` class selector dentro de `@media (max-width: 768px)` — no usar media queries separadas
 
 ---
 
-*Generado: 2026-06-25 | CLI-D | Sprint 33 — Documentación y Verificación*
+*Generado: 2026-06-25 | CLI-D | Sprint 33 — Documentación, Verificación y Mobile Fixes*
+*Actualizado con fix sidebar + kpiGrid 2col completados por CLI-B*

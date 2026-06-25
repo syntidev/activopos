@@ -109,13 +109,15 @@
 }
 
 .kpiCard {
-  background:    var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding:       var(--space-5);
-  display:       flex;
+  background:     var(--color-surface);
+  border-radius:  var(--radius-xl);
+  padding:        var(--space-5);
+  display:        flex;
   flex-direction: column;
-  gap:           var(--space-1);
-  box-shadow:    var(--shadow-card);
+  gap:            var(--space-1);
+  box-shadow:     var(--shadow-card);
+  min-width:      0;
+  overflow:       hidden;
 }
 
 .kpiCardExpected {
@@ -504,6 +506,10 @@
   .page { padding: var(--space-4); gap: var(--space-4); }
   .kpis { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
   .skeletonKpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .kpis { gap: 8px; padding: 0 4px; }
 }
 
 @media (max-width: 480px) {

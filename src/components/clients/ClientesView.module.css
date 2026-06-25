@@ -216,3 +216,10 @@
   height:     12px;
   opacity:    0;
 }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .searchRow    { flex-wrap: wrap; }
+  .searchWrapper { max-width: 100%; }
+  .tableWrapper { border-radius: var(--radius-xl); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+}

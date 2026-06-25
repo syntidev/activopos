@@ -481,6 +481,22 @@ export function TabCobros({ businessId: _businessId }: Props) {
     }
   }
 
+  const handleToggleDevice = async (device: DeviceRecord) => {
+    const next = !device.is_active
+    setDevices(prev => prev.map(d => d.id === device.id ? { ...d, is_active: next } : d))
+    try {
+      const res = await fetch(`/api/config/devices/${device.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ is_active: next }),
+      })
+      if (!res.ok) throw new Error()
+    } catch {
+      setDevices(prev => prev.map(d => d.id === device.id ? { ...d, is_active: device.is_active } : d))
+      toast('Error al actualizar el dispositivo.', 'error')
+    }
+  }
+
   const handleDeleteDevice = async (device: DeviceRecord) => {
     try {
       const res = await fetch(`/api/config/devices/${device.id}`, { method: 'DELETE' })
@@ -673,9 +689,7 @@ export function TabCobros({ businessId: _businessId }: Props) {
                   <button
                     type="button"
                     className={`${styles.toggleBtn} ${device.is_active ? styles.toggleBtnOn : ''}`}
-                    onClick={() => setDevices(prev => prev.map(d =>
-                      d.id === device.id ? { ...d, is_active: !d.is_active } : d
-                    ))}
+                    onClick={() => void handleToggleDevice(device)}
                     aria-pressed={device.is_active}
                     aria-label={`${device.is_active ? 'Desactivar' : 'Activar'} dispositivo`}
                   >

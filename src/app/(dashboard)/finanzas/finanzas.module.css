@@ -887,9 +887,9 @@
   display:       inline-flex;
   align-items:   center;
   padding:       2px 7px;
-  background:    var(--cta-soft);
-  color:         var(--cta);
-  border:        1px solid var(--cta-border);
+  background:    var(--color-brand-subtle);
+  color:         var(--color-brand);
+  border:        1px solid var(--color-brand-border);
   border-radius: var(--radius-full);
   font-size:     var(--text-2xs);
   font-weight:   var(--weight-semibold);
@@ -900,9 +900,9 @@
   display:       inline-flex;
   align-items:   center;
   padding:       2px 7px;
-  background:    var(--color-info-subtle);
-  color:         var(--color-info-text);
-  border:        1px solid var(--color-info-border);
+  background:    var(--cta-soft);
+  color:         var(--cta);
+  border:        1px solid var(--cta-border);
   border-radius: var(--radius-full);
   font-size:     var(--text-2xs);
   font-weight:   var(--weight-semibold);
@@ -972,4 +972,122 @@
   outline: none;
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px var(--color-brand-subtle);
+}
+
+/* ── Gastos — edit icon button (brand hover) ── */
+.iconBtnEdit {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           30px;
+  height:          30px;
+  background:      none;
+  border:          none;
+  border-radius:   var(--radius-md);
+  color:           var(--color-text-muted);
+  cursor:          pointer;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+}
+
+.iconBtnEdit:hover {
+  background: var(--color-brand-subtle);
+  color:      var(--color-brand);
+}
+
+/* ── Gastos — section header with 2 buttons ── */
+.headerBtns {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  flex-wrap:   wrap;
+}
+
+.manageCatsBtn {
+  display:      inline-flex;
+  align-items:  center;
+  gap:          var(--space-1-5);
+  min-height:   44px;
+  padding:      0 var(--space-3);
+  background:   none;
+  border:       1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size:    var(--text-sm);
+  font-family:  var(--font-sans);
+  font-weight:  var(--weight-medium);
+  color:        var(--color-text-secondary);
+  cursor:       pointer;
+  transition:   all var(--transition-fast);
+}
+
+.manageCatsBtn:hover {
+  border-color: var(--color-text-muted);
+  color:        var(--color-text-primary);
+}
+
+/* ── Gastos — compact KPI strip ── */
+.gastoKpiStrip {
+  display:               grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  background:            var(--color-surface);
+  border:                1px solid rgba(var(--brand-rgb), 0.15);
+  border-radius:         var(--radius-lg);
+  overflow:              hidden;
+  box-shadow:            0 1px 4px rgba(0,0,0,0.05);
+}
+
+.gastoKpiCell {
+  padding:        var(--space-3) var(--space-4);
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-1);
+  border-right:   1px solid var(--color-border-subtle);
+}
+
+.gastoKpiCell:last-child { border-right: none; }
+
+.gastoKpiLabel {
+  font-size:      var(--text-xs);
+  color:          var(--color-text-muted);
+  font-weight:    var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gastoKpiValue {
+  font-size:            var(--text-xl);
+  font-weight:          var(--weight-bold);
+  color:                var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height:          1.1;
+}
+
+.gastoKpiValueFijo { color: var(--color-brand); }
+.gastoKpiValueVar  { color: var(--cta); }
+
+/* ── Gastos — category badge in table ── */
+.catBadge {
+  display:     inline-flex;
+  align-items: center;
+  gap:         5px;
+}
+
+.catDot {
+  width:         7px;
+  height:        7px;
+  border-radius: var(--radius-full);
+  flex-shrink:   0;
+  display:       inline-block;
+}
+
+.catName {
+  font-size:   var(--text-xs);
+  color:       var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+/* ── Gastos — action buttons cell ── */
+.actionsBtnGroup {
+  display:     inline-flex;
+  align-items: center;
+  gap:         var(--space-1);
 }

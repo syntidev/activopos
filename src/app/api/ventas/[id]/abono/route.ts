@@ -46,10 +46,22 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
     }
     if (!activeRegister) {
-      return NextResponse.json({ error: 'No hay turno de caja abierto' }, { status: 400 })
+      return NextResponse.json({ error: 'Debes abrir la caja antes de registrar un abono' }, { status: 400 })
     }
 
-    const abono = await prisma.$transaction(async (tx) => {
+    const existingAgg = await prisma.saleAbono.aggregate({
+      where: { sale_id: saleId },
+      _sum:  { amount_usd: true },
+    })
+    const saldoPrev = Number(sale.total_usd) - Number(existingAgg._sum.amount_usd ?? 0)
+    if (body.amount_usd > saldoPrev + 0.01) {
+      return NextResponse.json(
+        { error: `El abono ($${body.amount_usd}) supera el saldo pendiente ($${saldoPrev.toFixed(2)})` },
+        { status: 400 },
+      )
+    }
+
+    const { abono, sumAbonado } = await prisma.$transaction(async (tx) => {
       const amount_bs = body.amount_usd * rate
 
       const newAbono = await tx.saleAbono.create({
@@ -106,17 +118,21 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         })
       }
 
-      return newAbono
+      return { abono: newAbono, sumAbonado }
     })
 
+    const saldoNew = Math.max(0, Number(sale.total_usd) - sumAbonado)
+
     return NextResponse.json({
-      ok:    true,
-      abono: {
+      ok:        true,
+      abono:     {
         ...abono,
         amount_usd: Number(abono.amount_usd),
         amount_bs:  Number(abono.amount_bs),
         rate_used:  Number(abono.rate_used),
       },
+      saldo_usd: saldoNew,
+      paid:      saldoNew <= 0.01,
     }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {

@@ -49,7 +49,7 @@ export default function POSPage() {
     enabled: pos.cajaStatus === 'open',
     onScan:  async (code) => {
       try {
-        const res = await fetch(`/api/products/search?q=${encodeURIComponent(code)}&limit=1`)
+        const res = await fetch(`/api/products?search=${encodeURIComponent(code)}`)
         if (!res.ok) return
         const data = await res.json() as { products?: ProductForPOS[] }
         const product = data.products?.[0]

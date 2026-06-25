@@ -293,11 +293,12 @@
 
 /* ── Estado de Resultados ── */
 .erCard {
-  background:    var(--color-surface);
-  border-radius: var(--radius-xl);
-  padding:       var(--space-5);
-  box-shadow:    var(--shadow-card);
-  overflow-x:    auto;
+  background:                 var(--color-surface);
+  border-radius:              var(--radius-xl);
+  padding:                    var(--space-5);
+  box-shadow:                 var(--shadow-card);
+  overflow-x:                 auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .erTitle {
@@ -363,9 +364,11 @@
 }
 
 .erPct {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-normal);
-  opacity: 0.75;
+  font-size:    var(--text-xs);
+  font-weight:  var(--weight-normal);
+  opacity:      0.75;
+  white-space:  nowrap;
+  min-width:    48px;
 }
 
 /* ── Responsive ── */

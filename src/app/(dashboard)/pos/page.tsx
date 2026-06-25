@@ -19,6 +19,7 @@ import { CreditoModal } from '@/components/pos/CreditoModal'
 import { QtyInput } from '@/components/pos/QtyInput'
 import { VariantSelector } from '@/components/products/VariantSelector'
 import { useToast } from '@/components/ui'
+import { useHardwareScanner } from '@/hooks/useHardwareScanner'
 import type { ProductForPOS } from '@/lib/pos'
 import styles from './pos.module.css'
 
@@ -43,6 +44,29 @@ export default function POSPage() {
   const itemCount = pos.ticket.items.length
 
   const drafts = useDraftTabs(pos.rate, 0)
+
+  useHardwareScanner({
+    enabled: pos.cajaStatus === 'open',
+    onScan:  async (code) => {
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(code)}`)
+        if (!res.ok) return
+        const data = await res.json() as { products?: ProductForPOS[] }
+        const product = data.products?.[0]
+        if (!product) {
+          toast(`Producto no encontrado: ${code}`, 'error')
+          return
+        }
+        if (product.sale_mode === 'weight') {
+          setWeightProduct(product)
+        } else {
+          pos.addProduct(product, 1)
+        }
+      } catch {
+        // Never interrupt the cashier — scan errors are silent
+      }
+    },
+  })
 
   if (pos.cajaStatus === 'loading') {
     return (

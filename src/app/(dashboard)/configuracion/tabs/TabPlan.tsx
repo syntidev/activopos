@@ -1,55 +1,79 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Crown, Calendar, ExternalLink } from 'lucide-react'
+import { Crown, Calendar, ExternalLink, AlertCircle } from 'lucide-react'
 import styles from './TabPlan.module.css'
 
-interface PlanData {
+interface SubscriptionData {
   subscription_active:     boolean
   subscription_expires_at: string | null
-  plan_name:               string | null
+  days_remaining:          number | null
 }
 
-function daysUntil(dateStr: string | null): number | null {
-  if (!dateStr) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const exp = new Date(dateStr)
-  return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+type BadgeVariant = 'active' | 'soon' | 'expired' | 'no-date'
+
+function getBadge(d: SubscriptionData): BadgeVariant {
+  if (!d.subscription_active || (d.days_remaining !== null && d.days_remaining <= 0)) return 'expired'
+  if (d.subscription_expires_at === null) return 'no-date'
+  if (d.days_remaining !== null && d.days_remaining <= 5) return 'soon'
+  return 'active'
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso.slice(0, 10) + 'T12:00:00')
+    .toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 export function TabPlan({ businessId }: { businessId: number }) {
-  const [data,    setData]    = useState<PlanData | null>(null)
+  const [data,    setData]    = useState<SubscriptionData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(false)
 
   useEffect(() => {
-    fetch('/api/config/business')
-      .then(r => r.ok ? r.json() : null)
-      .then((j: Record<string, unknown> | null) => {
-        if (j) {
-          setData({
-            subscription_active:     Boolean(j.subscription_active ?? true),
-            subscription_expires_at: typeof j.subscription_expires_at === 'string'
-              ? j.subscription_expires_at
-              : null,
-            plan_name: typeof j.plan_name === 'string' ? j.plan_name : null,
-          })
-        }
+    setLoading(true)
+    setError(false)
+    fetch('/api/config/subscription')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((j: { ok: boolean; plan: SubscriptionData }) => {
+        if (j.ok) setData(j.plan)
+        else setError(true)
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [businessId])
-
-  if (loading) return <div className={styles.loading}>Cargando plan…</div>
-
-  const days    = daysUntil(data?.subscription_expires_at ?? null)
-  const expired = data?.subscription_active === false || (days !== null && days < 0)
-  const soon    = !expired && days !== null && days < 30
-  const planName = data?.plan_name ?? 'Plan ActivoPOS'
 
   const waMsg = encodeURIComponent(
     `¡Hola! Quiero reportar un pago o renovar mi plan de ActivoPOS. Mi negocio ID es ${businessId}.`
   )
+
+  if (loading) {
+    return (
+      <div className={styles.wrap}>
+        <div className={styles.skeletonCard}>
+          <div className={styles.skeletonLine} />
+          <div className={`${styles.skeletonLine} ${styles.skeletonLineMd}`} />
+          <div className={`${styles.skeletonLine} ${styles.skeletonLineSm}`} />
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className={styles.wrap}>
+        <div className={styles.errorState}>
+          <AlertCircle size={18} aria-hidden="true" />
+          No se pudo cargar la información del plan
+        </div>
+      </div>
+    )
+  }
+
+  const badge    = getBadge(data)
+  const expired  = badge === 'expired'
+  const soon     = badge === 'soon'
+  const planName = data.subscription_active ? 'Plan Activo' : 'Plan Vencido'
+  const days     = data.days_remaining
 
   return (
     <div className={styles.wrap}>
@@ -62,31 +86,31 @@ export function TabPlan({ businessId }: { businessId: number }) {
 
           <div className={styles.planInfo}>
             <h2 className={styles.planName}>{planName}</h2>
-            {data?.subscription_expires_at && (
+            {data.subscription_expires_at && (
               <div className={styles.expiryRow}>
                 <Calendar size={12} aria-hidden="true" />
-                <span>
-                  Vence el{' '}
-                  {new Date(data.subscription_expires_at).toLocaleDateString('es-VE', {
-                    day: 'numeric', month: 'long', year: 'numeric',
-                  })}
-                </span>
+                <span>Vence el {formatDate(data.subscription_expires_at)}</span>
               </div>
             )}
           </div>
 
-          {expired ? (
-            <span className={styles.badgeExpired}>Plan vencido</span>
-          ) : soon ? (
-            <span className={styles.badgeSoon}>
-              Vence en {days} {days === 1 ? 'día' : 'días'}
-            </span>
-          ) : (
+          {badge === 'active' && (
             <span className={styles.badgeActive}>Activo</span>
+          )}
+          {badge === 'soon' && (
+            <span className={styles.badgeSoon}>
+              Vence pronto
+            </span>
+          )}
+          {badge === 'expired' && (
+            <span className={styles.badgeExpired}>Vencido</span>
+          )}
+          {badge === 'no-date' && (
+            <span className={styles.badgeNoDate}>Sin fecha</span>
           )}
         </div>
 
-        {/* Days bar */}
+        {/* Days progress bar */}
         {days !== null && !expired && (
           <div className={styles.daysSection}>
             <div className={styles.daysBar}>

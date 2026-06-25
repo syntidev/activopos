@@ -459,6 +459,7 @@ function InventarioContent() {
   const [panelProduct, setPanelProduct]     = useState<Product | null>(null)
   const [entryProduct, setEntryProduct]     = useState<Product | null>(null)
   const [scannerActive, setScannerActive]   = useState(false)
+  const [isScanning, setIsScanning]         = useState(false)
 
   const { videoContainerRef } = useScanner({
     active: scannerActive,
@@ -471,6 +472,11 @@ function InventarioContent() {
         toast('Producto no encontrado', 'error')
       }
     },
+  })
+
+  const { videoContainerRef: searchVideoRef } = useScanner({
+    active:   isScanning,
+    onResult: (code) => { setSearch(code); setIsScanning(false) },
   })
 
   /* ── Historial filters ── */
@@ -638,6 +644,20 @@ function InventarioContent() {
         </div>
       )}
 
+      {isScanning && (
+        <div className={styles.scannerWrap} onClick={() => setIsScanning(false)}>
+          <div ref={searchVideoRef} className={styles.scannerVideo} />
+          <button
+            className={styles.scannerClose}
+            onClick={(e) => { e.stopPropagation(); setIsScanning(false) }}
+            type="button"
+            aria-label="Cerrar scanner"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className={styles.skeletonWrap} aria-label="Cargando…">
           {[0, 1, 2, 3, 4].map(i => (
@@ -691,6 +711,14 @@ function InventarioContent() {
                   aria-label="Buscar producto por nombre, SKU o código de barras"
                 />
               </div>
+              <button
+                type="button"
+                className={styles.searchScanBtn}
+                onClick={() => setIsScanning(true)}
+                aria-label="Escanear código de barras"
+              >
+                <ScanBarcode size={20} aria-hidden="true" />
+              </button>
               <span className={styles.countBadge}>{filtered.length}</span>
             </div>
 

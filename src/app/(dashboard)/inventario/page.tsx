@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertTriangle, ArrowDownToLine, ChevronLeft, ChevronRight,
-  Clock, DollarSign, FileDown, Layers, Package, Plus, Scan,
+  Clock, DollarSign, FileDown, Layers, Package, Plus, ScanBarcode,
   Search, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
@@ -16,6 +16,7 @@ import styles from './inventario.module.css'
 interface Product {
   id: number
   name: string
+  sku: string | null
   barcode: string | null
   base_unit_label: string
   sale_mode: string
@@ -530,9 +531,15 @@ function InventarioContent() {
     return entries.filter(e => e.product.id === panelProduct.id && e.entered_at.slice(0, 10) === todayStr)
   }, [entries, panelProduct, todayStr])
 
-  const filtered = products.filter(p =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = products.filter(p => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      p.name.toLowerCase().includes(q) ||
+      (p.sku?.toLowerCase().includes(q) ?? false) ||
+      (p.barcode?.toLowerCase().includes(q) ?? false)
+    )
+  })
 
   /* ── Historial derived state ── */
   const filteredEntries = useMemo(() => {
@@ -612,7 +619,7 @@ function InventarioContent() {
           type="button"
           aria-label="Escanear código de barras"
         >
-          <Scan size={16} aria-hidden="true" />
+          <ScanBarcode size={16} aria-hidden="true" />
           Escanear
         </button>
       </div>
@@ -680,8 +687,8 @@ function InventarioContent() {
                   className={styles.searchInput}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Buscar producto…"
-                  aria-label="Buscar producto"
+                  placeholder="Nombre, SKU o código de barras…"
+                  aria-label="Buscar producto por nombre, SKU o código de barras"
                 />
               </div>
               <span className={styles.countBadge}>{filtered.length}</span>

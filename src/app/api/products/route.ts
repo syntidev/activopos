@@ -82,7 +82,15 @@ export async function GET(req: NextRequest) {
         ...(availableFilter === 'true'  ? { is_available: true  } : {}),
         ...(availableFilter === 'false' ? { is_available: false } : {}),
         ...(posFilter ? { available_in_pos: true } : {}),
-        ...(search     ? { name: { contains: search } } : {}),
+        ...(search
+          ? {
+              OR: [
+                { name:    { contains: search } },
+                { sku:     { contains: search } },
+                { barcode: { contains: search } },
+              ],
+            }
+          : {}),
         ...(categoryId ? { category_id: parseInt(categoryId) } : {}),
       },
       include: {

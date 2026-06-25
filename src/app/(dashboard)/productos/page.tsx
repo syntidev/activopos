@@ -519,7 +519,7 @@ export default function ProductosPage() {
           <input
             type="search"
             className={styles.searchInput}
-            placeholder="Buscar producto por nombre o SKU..."
+            placeholder="Nombre, SKU o código de barras…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Buscar productos"

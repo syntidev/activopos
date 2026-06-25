@@ -323,7 +323,7 @@ function VentasContent({ isAdmin }: VentasContentProps) {
           <Search size={15} className={styles.searchIcon} aria-hidden="true" />
           <input
             type="search"
-            placeholder="Buscar ticket, cliente…"
+            placeholder="Ticket, cliente o método de pago…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={styles.searchInput}

@@ -392,8 +392,10 @@
 }
 
 .kpiCard {
+  position:       relative;
   display:        flex;
   flex-direction: column;
+  gap:            4px;
   padding:        var(--space-4);
   background:     var(--color-surface);
   border-radius:  var(--radius-xl);
@@ -409,6 +411,18 @@
 .kpiCardDanger {
   box-shadow: 0 0 14px rgba(var(--danger-rgb), 0.15);
 }
+
+.kpiIcon {
+  position: absolute;
+  top:      12px;
+  right:    12px;
+  opacity:  0.7;
+}
+
+.kpiIconSuccess { color: var(--color-success); }
+.kpiIconDanger  { color: var(--color-danger); }
+.kpiIconBrand   { color: var(--color-brand); }
+.kpiIconMuted   { color: var(--color-text-secondary); }
 
 .kpiBody {
   display:        flex;
@@ -523,10 +537,23 @@
 /* ── Punto de Equilibrio ──────────────────────────────── */
 
 .peCard {
+  position:      relative;
   background:    var(--color-surface);
   border-radius: var(--radius-xl);
   padding:       var(--space-5);
   box-shadow:    var(--shadow-card);
+  overflow:      hidden;
+}
+
+.peSvgBg {
+  position:       absolute;
+  bottom:         0;
+  right:          0;
+  width:          120px;
+  height:         80px;
+  color:          var(--color-brand);
+  opacity:        0.06;
+  pointer-events: none;
 }
 
 .peTitle {

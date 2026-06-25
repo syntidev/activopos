@@ -9,8 +9,8 @@ const DEVICE_TYPES_UI = ['debit', 'credit', 'biopago'] as const
 const PostSchema = z.object({
   tipo:         z.enum(DEVICE_TYPES_UI),
   banco:        z.string().min(1).max(80),
-  serial:       z.string().max(60).optional(),
-  nro_comercio: z.string().max(40).optional(),
+  serial:       z.string().max(60).nullish(),
+  nro_comercio: z.string().max(40).nullish(),
   is_active:    z.boolean().optional(),
 }).strict()
 

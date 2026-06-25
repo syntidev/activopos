@@ -8,6 +8,7 @@ import {
   Search, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { Button } from '@/components/ui/Button'
 import { useScanner } from '@/hooks/useScanner'
 import styles from './inventario.module.css'
 
@@ -256,22 +257,21 @@ function EntryModal({ product, onClose, onSaved }: ModalProps) {
             </div>
 
             <div className={styles.modalFooter}>
-              <button
-                type="button"
-                className="btn-secondary"
+              <Button
+                variant="secondary"
                 onClick={onClose}
                 disabled={saving}
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="btn-primary"
-                disabled={saving || !qty.trim()}
+                variant="primary"
+                loading={saving}
+                disabled={!qty.trim()}
               >
-                {saving && <span className={styles.spinner} aria-hidden="true" />}
                 {saving ? 'Guardando…' : 'Registrar entrada'}
-              </button>
+              </Button>
             </div>
           </form>
         </motion.div>

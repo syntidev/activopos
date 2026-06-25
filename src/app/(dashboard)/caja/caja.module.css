@@ -110,13 +110,12 @@
 
 .kpiCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding:       var(--space-5);
   display:       flex;
   flex-direction: column;
   gap:           var(--space-1);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .kpiCardExpected {
@@ -170,10 +169,9 @@
 /* ── Cards ── */
 .card {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow:      hidden;
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .cardDangerBorder {
@@ -505,7 +503,7 @@
 
 @media (max-width: 768px) {
   .page { padding: var(--space-4); gap: var(--space-4); }
-  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .kpis { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
   .skeletonKpis { grid-template-columns: repeat(2, 1fr); }
 }
 

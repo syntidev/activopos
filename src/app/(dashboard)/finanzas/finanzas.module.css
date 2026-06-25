@@ -101,11 +101,10 @@
 
 .summaryCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding:       var(--space-4) var(--space-5);
   min-width:     180px;
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .summaryDanger { box-shadow: 0 0 14px rgba(var(--danger-rgb), 0.15); }
@@ -214,10 +213,9 @@
   display:       flex;
   flex-direction: column;
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow:      hidden;
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .cxcRow {
@@ -293,10 +291,10 @@
 /* ── Estado de Resultados ── */
 .erCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   padding:       var(--space-5);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
+  overflow-x:    auto;
 }
 
 .erTitle {
@@ -368,6 +366,10 @@
 }
 
 /* ── Responsive ── */
+@media (max-width: 768px) {
+  .kpiGrid { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+}
+
 @media (max-width: 640px) {
   .tabsRow { overflow-x: auto; }
   .tab { padding: 0 var(--space-3); }
@@ -389,9 +391,8 @@
   gap:           var(--space-3);
   padding:       var(--space-4) var(--space-5);
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-xl);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-card);
 }
 
 .kpiCardSuccess {

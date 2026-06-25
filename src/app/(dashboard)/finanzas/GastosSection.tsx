@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Receipt, Tag, Pencil, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui'
 import { GastoModal } from '@/components/finanzas/GastoModal'
 import { CategoriasGastos } from './CategoriasGastos'
@@ -148,22 +149,22 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
       <div className={styles.sectionHeader}>
         <span />
         <div className={styles.headerBtns}>
-          <button
+          <Button
             type="button"
-            className="btn-secondary"
+            variant="secondary"
+            leftIcon={<Tag size={14} />}
             onClick={() => setShowManageCats(true)}
           >
-            <Tag size={14} aria-hidden="true" />
             Gestionar categorías
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn-primary"
+            variant="primary"
+            leftIcon={<Plus size={15} />}
             onClick={() => { setEditGasto(null); setShowModal(true) }}
           >
-            <Plus size={15} aria-hidden="true" />
             Nuevo gasto
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -173,14 +174,14 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
           icon={Receipt}
           title="Sin gastos en este período"
           action={
-            <button
+            <Button
               type="button"
-              className="btn-primary"
+              variant="primary"
+              leftIcon={<Plus size={15} />}
               onClick={() => { setEditGasto(null); setShowModal(true) }}
             >
-              <Plus size={15} aria-hidden="true" />
               Nuevo gasto
-            </button>
+            </Button>
           }
         />
       ) : (

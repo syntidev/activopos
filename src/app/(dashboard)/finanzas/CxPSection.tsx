@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle, Plus, FileText, Pencil } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import { EmptyState, useToast } from '@/components/ui'
 import { GastoModal } from '@/components/finanzas/GastoModal'
 import styles from './finanzas.module.css'
@@ -80,10 +81,9 @@ export function CxPSection({ month }: { month: string }) {
             </span>
           </div>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setShowModal(true)}>
-          <Plus size={15} aria-hidden="true" />
+        <Button type="button" variant="primary" leftIcon={<Plus size={15} />} onClick={() => setShowModal(true)}>
           Nueva CxP
-        </button>
+        </Button>
       </div>
 
       {/* ── Table ── */}
@@ -136,14 +136,14 @@ export function CxPSection({ month }: { month: string }) {
                           >
                             <Pencil size={14} aria-hidden="true" />
                           </button>
-                          <button
+                          <Button
                             type="button"
-                            className="btn-primary"
+                            variant="primary"
+                            leftIcon={<CheckCircle size={12} />}
                             onClick={() => void markPaid(item.id)}
                           >
-                            <CheckCircle size={12} aria-hidden="true" />
                             Pagar
-                          </button>
+                          </Button>
                         </span>
                       </td>
                     </tr>

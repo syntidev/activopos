@@ -203,10 +203,11 @@ export default function EscritorioPage() {
 
   /* Gastos próximos a vencer — alert banner */
   useEffect(() => {
-    fetch('/api/expenses/alerts')
+    fetch('/api/gastos/alerts')
       .then(r => r.ok ? r.json() : null)
-      .then((j: { count?: number } | null) => {
-        if (j && (j.count ?? 0) > 0) setGastosAlert({ count: j.count ?? 0 })
+      .then((j: { ok?: boolean; alerts?: Array<{ id: number }> } | null) => {
+        const count = j?.alerts?.length ?? 0
+        if (count > 0) setGastosAlert({ count })
       })
       .catch(() => {})
   }, [])
@@ -255,6 +256,21 @@ export default function EscritorioPage() {
           ))}
         </div>
       </div>
+
+      {/* ── Alerta gastos por vencer ── */}
+      {gastosAlert && gastosAlert.count > 0 && (
+        <div className={styles.gastosAlertBanner} role="alert">
+          <TriangleAlert size={16} className={styles.gastosAlertIcon} aria-hidden="true" />
+          <span>
+            Tienes <strong>{gastosAlert.count}</strong>{' '}
+            {gastosAlert.count === 1 ? 'gasto fijo por vencer' : 'gastos fijos por vencer'}{' '}
+            esta semana.
+          </span>
+          <Link href="/finanzas" className={styles.gastosAlertLink}>
+            Ver Finanzas
+          </Link>
+        </div>
+      )}
 
       {/* ── KPI grid ── */}
       <div className={styles.kpiGrid}>
@@ -344,21 +360,6 @@ export default function EscritorioPage() {
           )}
         </div>
       </div>
-
-      {/* ── Alerta gastos por vencer ── */}
-      {gastosAlert && gastosAlert.count > 0 && (
-        <div className={styles.gastosAlertBanner} role="alert">
-          <TriangleAlert size={16} className={styles.gastosAlertIcon} aria-hidden="true" />
-          <span>
-            Tienes <strong>{gastosAlert.count}</strong>{' '}
-            {gastosAlert.count === 1 ? 'gasto fijo por vencer' : 'gastos fijos por vencer'}{' '}
-            esta semana.
-          </span>
-          <Link href="/finanzas" className={styles.gastosAlertLink}>
-            Ver Finanzas
-          </Link>
-        </div>
-      )}
 
       {/* ── Resumen del día ── */}
       {todayVentas !== null && (

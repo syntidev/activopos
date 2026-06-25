@@ -80,7 +80,7 @@ export function CxPSection({ month }: { month: string }) {
             </span>
           </div>
         </div>
-        <button type="button" className={styles.newBtn} onClick={() => setShowModal(true)}>
+        <button type="button" className="btn-primary" onClick={() => setShowModal(true)}>
           <Plus size={15} aria-hidden="true" />
           Nueva CxP
         </button>
@@ -129,7 +129,7 @@ export function CxPSection({ month }: { month: string }) {
                         <span className={styles.actionsBtnGroup}>
                           <button
                             type="button"
-                            className={styles.iconBtnEdit}
+                            className="btn-icon"
                             onClick={() => handleEditCxP(item)}
                             aria-label="Editar cuenta por pagar"
                             title="Editar"
@@ -138,7 +138,7 @@ export function CxPSection({ month }: { month: string }) {
                           </button>
                           <button
                             type="button"
-                            className={styles.actionBtn}
+                            className="btn-primary"
                             onClick={() => void markPaid(item.id)}
                           >
                             <CheckCircle size={12} aria-hidden="true" />

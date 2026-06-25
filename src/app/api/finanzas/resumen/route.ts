@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
 
     // CxP vencidas: gastos sin pagar con fecha pasada (fecha < hoy)
     prisma.gasto.count({
-      where: { business_id: bid, is_paid: false, fecha: { lt: now } },
+      where: { business_id: bid, is_paid: false, due_date: { lt: now, not: null } },
     }),
 
     // Inventario valorizado al costo y a precio de venta

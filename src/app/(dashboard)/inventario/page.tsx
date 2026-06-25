@@ -710,15 +710,15 @@ function InventarioContent() {
                   placeholder="Nombre, SKU o código de barras…"
                   aria-label="Buscar producto por nombre, SKU o código de barras"
                 />
+                <button
+                  type="button"
+                  className={styles.searchScanBtn}
+                  onClick={() => setIsScanning(true)}
+                  aria-label="Escanear código de barras"
+                >
+                  <ScanBarcode size={18} aria-hidden="true" />
+                </button>
               </div>
-              <button
-                type="button"
-                className={styles.searchScanBtn}
-                onClick={() => setIsScanning(true)}
-                aria-label="Escanear código de barras"
-              >
-                <ScanBarcode size={20} aria-hidden="true" />
-              </button>
               <span className={styles.countBadge}>{filtered.length}</span>
             </div>
 

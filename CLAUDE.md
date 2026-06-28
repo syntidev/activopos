@@ -1,7 +1,7 @@
 # CLAUDE.md — ActivoPOS
 # Instrucciones maestras para Claude Code y todos los agentes
 # ⚠️ LEER COMPLETO ANTES DE CUALQUIER ACCIÓN
-# Versión: 3.0 | Junio 2026 | Carlos Bolívar — SYNTIdev
+# Versión: 3.1 | Junio 2026 | Carlos Bolívar — SYNTIdev
 
 ---
 
@@ -228,11 +228,11 @@ sharp              → Procesamiento de imágenes WebP
 
 ## 👥 ROLES DEL SISTEMA
 
-| Rol         | Acceso                                     | Restricciones                        |
+| Rol         | Acceso                                      | Restricciones                        |
 |-------------|---------------------------------------------|--------------------------------------|
-| super_admin | Todo el sistema                            | Solo Carlos Bolívar                  |
-| admin       | Todo excepto super_admin                   | No puede ver otros tenants           |
-| cashier     | POS, Caja, Clientes — sin costos ni config | Sin finanzas, sin configuración      |
+| super_admin | Todo el sistema                             | Solo Carlos Bolívar                  |
+| admin       | Todo excepto super_admin                    | No puede ver otros tenants           |
+| cashier     | POS, Caja, Clientes — sin costos ni config  | Sin finanzas, sin configuración      |
 
 ---
 
@@ -250,10 +250,10 @@ CLI-D → Features/Testing: módulos nuevos, Playwright E2E
 ### Skills obligatorios por CLI — sin estos el prompt es inválido y no se ejecuta
 
 ```
-CLI-A: /code-review + /security-guidance + /software-architecture
-CLI-B: /impeccable craft + /frontend-design + /ui-ux-pro-max
-CLI-C: /code-review + /security-guidance
-CLI-D: /playwright + /impeccable craft + /frontend-design
+CLI-A: /code-review + /security-guidance + /software-architecture + database-migrations + api-design
+CLI-B: /impeccable craft + /frontend-design + /ui-ux-pro-max + deployment-patterns
+CLI-C: /code-review + /security-guidance → delegar auditorías en typescript-reviewer y security-reviewer via Task tool
+CLI-D: /playwright + /impeccable craft + /frontend-design + e2e-testing
 ```
 
 ### Plugins oficiales instalados
@@ -263,6 +263,7 @@ CLI-D: /playwright + /impeccable craft + /frontend-design
 - `security-guidance` — Anthropic oficial
 - `superpowers` — Anthropic oficial
 - `ui-ux-pro-max` — skills-dir del proyecto
+- `ecc@ecc` — ECC global (ver sección ECC INTEGRATION)
 
 ### Reglas de scope (irrompibles)
 - Cada CLI tiene scope exclusivo — no invadir el de otro agente
@@ -446,3 +447,71 @@ git log --oneline -3
 - Competidores documentados: Venko, Fina, SOFI, Control Total, Negotiale
 - Referencia catálogo: LLEVA.app (`camilashop.lleva.app`)
 - n8n: `n8n.syntiweb.com` — pendiente integración WhatsApp bot
+
+---
+
+## ⚡ ECC INTEGRATION (global)
+
+ECC v2.0.0 instalado globalmente en `~/.claude/` — 77 agents · 93 skills · 38 hooks activos.
+Plugin registrado: `ecc@ecc` (user scope).
+
+### Activación obligatoria al inicio de cada sesión CLI
+
+```
+/instinct-status
+```
+
+Carga patrones aprendidos de sesiones anteriores. Sin este comando, el agente opera sin memoria acumulada.
+
+### Memory Persistence (automático — sin acción manual)
+
+| Hook            | Cuándo dispara          | Qué hace                                        |
+|-----------------|-------------------------|-------------------------------------------------|
+| session-start   | Al abrir Claude Code    | Carga contexto de sesión anterior               |
+| pre-compact     | Antes de compactar      | Guarda estado crítico antes de comprimir        |
+| session-end     | Al cerrar sesión        | Persiste aprendizajes en `~/.claude/session-data/` |
+
+El agente NO necesita hacer nada manual. Los hooks gestionan memoria automáticamente.
+
+### Subagentes ECC disponibles via Task tool
+
+Delegar en estos agentes en lugar de hacer inline:
+
+| Agente                | CLI que lo usa | Cuándo invocarlo                              |
+|-----------------------|----------------|-----------------------------------------------|
+| `typescript-reviewer` | CLI-C          | Auditorías TypeScript strict, tipos, generics |
+| `security-reviewer`   | CLI-C          | IDOR, business_id leaks, Zod v4, JWT          |
+| `e2e-runner`          | CLI-D          | Playwright, CIMAAD suite, flujos E2E          |
+| `code-reviewer`       | CLI-C / CLI-A  | Calidad general, patrones, deuda técnica       |
+
+### Skills ECC activos para ActivoPOS
+
+| Skill                  | CLI           | Aplicación directa                          |
+|------------------------|---------------|---------------------------------------------|
+| `database-migrations`  | CLI-A         | Migraciones Prisma 7, alter tables MariaDB  |
+| `api-design`           | CLI-A         | Endpoints Next.js 14, REST patterns         |
+| `e2e-testing`          | CLI-D         | Playwright patterns, Page Object Model      |
+| `deployment-patterns`  | CLI-D         | PM2 cluster, Nginx, health checks           |
+
+### Rules ECC activas (globales)
+
+```
+~/.claude/rules/ecc/common/     → principios universales (siempre activos)
+~/.claude/rules/ecc/typescript/ → TypeScript/Next.js patterns (siempre activos)
+```
+
+Estas rules complementan las reglas de este CLAUDE.md. En caso de conflicto, **este CLAUDE.md tiene prioridad absoluta**.
+
+### Contextos dinámicos por modo (opcional, avanzado)
+
+```powershell
+# Desarrollo activo — carga contexto mínimo
+alias claude-dev='claude --system-prompt "$(cat ~/.claude/contexts/dev.md)"'
+
+# Auditoría de calidad — carga contexto de revisión
+alias claude-review='claude --system-prompt "$(cat ~/.claude/contexts/review.md)"'
+```
+
+### Regla de contexto (irrompible)
+
+Máximo 10 MCPs activos por sesión. Con más de 80 tools activos la ventana de contexto se degrada significativamente. Deshabilitar MCPs no usados antes de cada sesión de trabajo intenso.

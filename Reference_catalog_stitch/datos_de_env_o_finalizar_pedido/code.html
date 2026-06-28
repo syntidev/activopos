@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ActivoPOS - Formulario de Pedido</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e0e3e5",
+                        "on-primary-fixed": "#001452",
+                        "inverse-on-surface": "#eff1f3",
+                        "surface-dim": "#d8dadc",
+                        "primary-container": "#0052ff",
+                        "on-primary-container": "#dfe3ff",
+                        "inverse-primary": "#b7c4ff",
+                        "tertiary-container": "#57677e",
+                        "secondary-container": "#dae2fd",
+                        "secondary-fixed": "#dae2fd",
+                        "surface-variant": "#e0e3e5",
+                        "background": "#f7f9fb",
+                        "tertiary-fixed-dim": "#b7c8e1",
+                        "secondary": "#565e74",
+                        "inverse-surface": "#2d3133",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "outline": "#737688",
+                        "surface-tint": "#004ced",
+                        "on-tertiary-fixed": "#0b1c30",
+                        "surface-bright": "#f7f9fb",
+                        "primary-fixed": "#dde1ff",
+                        "primary": "#003ec7",
+                        "on-secondary-container": "#5c647a",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c3c5d9",
+                        "tertiary-fixed": "#d3e4fe",
+                        "on-error": "#ffffff",
+                        "surface-container": "#eceef0",
+                        "on-tertiary-fixed-variant": "#38485d",
+                        "on-tertiary-container": "#d6e6ff",
+                        "tertiary": "#3f4f65",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-container-low": "#f2f4f6",
+                        "primary-fixed-dim": "#b7c4ff",
+                        "on-background": "#191c1e",
+                        "on-surface-variant": "#434656",
+                        "on-secondary-fixed": "#131b2e",
+                        "error": "#ba1a1a",
+                        "on-surface": "#191c1e",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#0038b6",
+                        "surface": "#f7f9fb",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "error-container": "#ffdad6",
+                        "cta": "#f59e0b" /* Amber for CTA as requested */
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "container-padding": "20px",
+                        "gutter": "16px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "2xl": "48px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0", "fontWeight": "400" }],
+                        "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-modal {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        /* Custom Input Styling */
+        .form-input {
+            width: 100%;
+            background-color: #F1F5F9;
+            border: 1px solid transparent;
+            border-radius: 0.5rem;
+            padding: 12px 16px;
+            font-size: 16px;
+            color: #191c1e;
+            transition: all 0.2s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #003ec7;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(0, 62, 199, 0.1);
+        }
+        
+        .whatsapp-prefix {
+            display: flex;
+            align-items: center;
+            background-color: #F1F5F9;
+            padding-left: 16px;
+            border-radius: 0.5rem 0 0 0.5rem;
+            border: 1px solid transparent;
+            border-right: none;
+            color: #434656;
+            font-weight: 500;
+        }
+        .whatsapp-input-group:focus-within .whatsapp-prefix {
+            border-color: #003ec7;
+            background-color: #ffffff;
+        }
+        .whatsapp-input-group input {
+            border-radius: 0 0.5rem 0.5rem 0;
+            padding-left: 8px;
+        }
+        .whatsapp-input-group:focus-within input {
+            border-left-color: transparent;
+        }
+
+        .select-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23434656'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 20px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen relative overflow-hidden flex flex-col antialiased">
+<!-- Top Navigation (Shell) -->
+<header class="fixed top-0 w-full z-50 border-b border-surface-variant/30 bg-surface/80 dark:bg-surface-container-highest/80 backdrop-blur-xl shadow-sm">
+<div class="flex justify-between items-center h-16 px-container-padding w-full">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<h1 class="font-display text-headline-md font-bold text-primary dark:text-primary-fixed-dim">ActivoPOS</h1>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">shopping_cart</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas (Background Content simulating a catalog) -->
+<main class="flex-1 pt-24 px-container-padding pb-32">
+<div class="max-w-4xl mx-auto space-y-xl opacity-30 pointer-events-none filter blur-sm">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+<!-- Skeleton Catalog Items -->
+<div class="bg-surface-container rounded-xl aspect-[4/5]"></div>
+<div class="bg-surface-container rounded-xl aspect-[4/5]"></div>
+<div class="bg-surface-container rounded-xl aspect-[4/5]"></div>
+<div class="bg-surface-container rounded-xl aspect-[4/5]"></div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation (Shell - Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full h-20 flex justify-around items-center px-lg pb-safe z-40 rounded-t-xl border-t border-white/20 bg-surface/80 dark:bg-surface-container-highest/80 backdrop-blur-xl shadow-[0px_-4px_20px_rgba(15,23,42,0.05)]">
+<a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-sm rounded-lg" href="#">
+<span class="material-symbols-outlined mb-1">grid_view</span>
+<span class="font-label-sm text-label-sm">Catalog</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim relative after:content-[''] after:absolute after:-bottom-1 after:w-1 after:h-1 after:bg-primary after:rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-sm rounded-lg active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1">receipt_long</span>
+<span class="font-label-sm text-label-sm">Orders</span>
+</a>
+</nav>
+<!-- Overlay & Modal -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-container-padding bg-scrim/40 backdrop-blur-sm">
+<!-- Modal Container -->
+<div class="w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-[0px_20px_40px_rgba(15,23,42,0.12)] overflow-hidden flex flex-col transform transition-all">
+<!-- Modal Header -->
+<div class="px-lg pt-lg pb-md border-b border-surface-variant/50">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-xs">Antes de enviar</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Por favor, completa tus datos para procesar el pedido.</p>
+</div>
+<!-- Modal Body (Form) -->
+<form class="px-lg py-lg space-y-md overflow-y-auto max-h-[530px]">
+<!-- Field 1: Nombre y Apellido -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs" for="fullName">Nombre y Apellido</label>
+<input class="form-input font-body-md text-body-md" id="fullName" name="fullName" placeholder="Ej. Juan Pérez" required="" type="text"/>
+</div>
+<!-- Field 2: WhatsApp -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs" for="whatsapp">WhatsApp</label>
+<div class="whatsapp-input-group flex">
+<span class="whatsapp-prefix font-body-md text-body-md">+58</span>
+<input class="form-input rounded-l-none border-l-0 font-body-md text-body-md" id="whatsapp" name="whatsapp" pattern="[0-9]{3}[0-9]{7}" placeholder="414 1234567" required="" type="tel"/>
+</div>
+</div>
+<!-- Field 3: Referencia / Sector -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs" for="reference">Referencia / Sector <span class="text-on-surface-variant font-normal">(Opcional)</span></label>
+<input class="form-input font-body-md text-body-md" id="reference" name="reference" placeholder="Ej. Altamira, cerca de la plaza" type="text"/>
+</div>
+<!-- Field 4: Método de pago -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-xs" for="paymentMethod">Método de pago</label>
+<select class="form-input select-input font-body-md text-body-md pr-10 cursor-pointer" id="paymentMethod" name="paymentMethod" required="">
+<option disabled="" selected="" value="">Selecciona un método</option>
+<option value="pago_movil">Pago Móvil</option>
+<option value="zelle">Zelle</option>
+<option value="efectivo">Efectivo</option>
+</select>
+</div>
+</form>
+<!-- Modal Footer (Actions) -->
+<div class="px-lg py-lg border-t border-surface-variant/50 bg-surface-bright flex flex-col gap-sm mt-auto">
+<button class="w-full h-[56px] rounded-xl bg-[#f59e0b] hover:bg-[#d97706] text-white font-label-md text-label-md flex items-center justify-center gap-sm transition-colors active:scale-[0.98]" type="submit">
+<span class="material-symbols-outlined" style="font-size: 20px;">chat</span>
+                    Enviar Pedido por WhatsApp
+                </button>
+<button class="w-full h-[48px] rounded-xl bg-transparent hover:bg-surface-container-low text-on-surface-variant font-label-md text-label-md transition-colors active:scale-[0.98]" type="button">
+                    Cancelar
+                </button>
+</div>
+</div>
+</div>
+</body></html>

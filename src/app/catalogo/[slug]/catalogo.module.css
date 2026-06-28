@@ -19,12 +19,12 @@
   position:          sticky;
   top:               0;
   z-index:           var(--z-sticky);
-  background:        var(--header-bg);
-  backdrop-filter:   blur(var(--header-blur));
-  -webkit-backdrop-filter: blur(var(--header-blur));
+  background:        color-mix(in srgb, var(--color-white) 92%, transparent);
+  backdrop-filter:   blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom:     1px solid var(--color-border-subtle);
   padding:           0 var(--space-4);
-  height:            57px;
+  height:            52px;
   display:           flex;
   align-items:       center;
   justify-content:   space-between;
@@ -61,14 +61,6 @@
   letter-spacing:  0.03em;
 }
 
-.headerNameGroup {
-  display:        flex;
-  flex-direction: column;
-  justify-content:center;
-  min-width:      0;
-  gap:            1px;
-}
-
 .headerName {
   font-size:     var(--text-sm);
   font-weight:   var(--weight-semibold);
@@ -76,22 +68,6 @@
   overflow:      hidden;
   text-overflow: ellipsis;
   white-space:   nowrap;
-  line-height:   1.2;
-}
-
-.headerCity {
-  display:        flex;
-  align-items:    center;
-  gap:            3px;
-  font-size:      var(--text-2xs);
-  color:          var(--color-text-muted);
-  line-height:    1.1;
-  animation:      headerCityIn var(--transition-base) var(--ease-out);
-}
-
-@keyframes headerCityIn {
-  from { opacity: 0; transform: translateY(-3px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
 
 .stickyCartBtn {
@@ -150,7 +126,7 @@
 
 .hero {
   position:    relative;
-  height:      72px;
+  height:      64px;
   overflow:    hidden;
   flex-shrink: 0;
   background:  var(--biz-color, var(--color-brand));
@@ -249,76 +225,98 @@
   background:    var(--color-white);
 }
 
-/* ── SEARCH BAR (sticky) ─────────────────────────────────────── */
+/* ── H2 NAV BAR (sticky) — lupa + hamburguesa + chips ────────── */
 
-.searchBar {
-  position:      sticky;
-  top:           57px;
-  z-index:       calc(var(--z-sticky) - 10);
-  background:    var(--color-surface);
-  border-bottom: 1px solid var(--color-border-subtle);
-  padding:       var(--space-2-5) var(--space-4);
-  display:       flex;
-  align-items:   center;
-  gap:           var(--space-2);
+.navBar {
+  position:        sticky;
+  top:             52px;
+  z-index:         calc(var(--z-sticky) - 5);
+  display:         flex;
+  /* relative context para el dropdown de categorías */
+  align-items:     center;
+  gap:             var(--space-1-5);
+  height:          48px;
+  padding:         0 var(--space-3);
+  background:      color-mix(in srgb, var(--color-white) 92%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom:   1px solid var(--color-border-subtle);
 }
 
-.searchBarIcon { color: var(--color-text-muted); flex-shrink: 0; }
-
-.searchBarInput {
-  flex:        1;
-  border:      none;
-  outline:     none;
-  background:  none;
-  font-size:   var(--text-sm);
-  font-family: inherit;
-  color:       var(--color-text-primary);
+.navIconBtn {
+  flex-shrink:     0;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           var(--touch-min);
+  height:          var(--touch-min);
+  border:          none;
+  border-radius:   var(--radius-md);
+  background:      none;
+  color:           var(--color-text-secondary);
+  cursor:          pointer;
+  transition:      background var(--transition-fast), color var(--transition-fast);
 }
-.searchBarInput::placeholder { color: var(--color-text-muted); }
+.navIconBtn:hover { background: var(--color-brand-subtle); color: var(--color-brand); }
 
-.searchBarClear {
-  background:  none;
-  border:      none;
-  cursor:      pointer;
-  color:       var(--color-text-muted);
-  padding:     var(--space-1);
+/* Búsqueda expandible (reemplaza chips al tocar la lupa) */
+.searchExpanded {
   display:     flex;
   align-items: center;
-  transition:  color var(--transition-fast);
-}
-.searchBarClear:hover { color: var(--color-text-primary); }
-
-/* ── CATEGORY TABS (horizontal scroll) ──────────────────────── */
-
-.categoryScroll {
-  position:       relative;
-  display:        flex;
-  align-items:    center;
-  gap:            var(--space-2);
-  border-bottom:  1px solid var(--color-border-subtle);
-  background:     var(--color-surface);
-  padding:        var(--space-2) var(--space-4);
+  gap:         var(--space-2);
+  width:       100%;
+  animation:   searchSlideIn var(--transition-base) both;
 }
 
-.catHamburger {
+@keyframes searchSlideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.searchExpandedIcon { color: var(--color-text-muted); flex-shrink: 0; }
+
+.searchExpandedInput {
+  flex:          1;
+  height:        36px;
+  min-width:     0;
+  border:        none;
+  outline:       none;
+  background:    var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding:       0 var(--space-3);
+  font-size:     var(--text-sm);
+  font-family:   inherit;
+  color:         var(--color-text-primary);
+  transition:    background var(--transition-fast), box-shadow var(--transition-fast);
+}
+.searchExpandedInput::placeholder { color: var(--color-text-muted); }
+.searchExpandedInput:focus {
+  background:  var(--color-white);
+  box-shadow:  0 0 0 2px var(--biz-color, var(--color-brand));
+}
+
+.searchExpandedClose {
   flex-shrink:     0;
   display:         flex;
   align-items:     center;
   justify-content: center;
   min-width:       var(--touch-min);
   min-height:      var(--touch-min);
-  border:          1px solid var(--color-border);
-  border-radius:   var(--radius-md);
   background:      none;
-  color:           var(--color-text-secondary);
+  border:          none;
   cursor:          pointer;
-  transition:      all var(--transition-fast);
+  color:           var(--color-text-secondary);
+  border-radius:   var(--radius-md);
+  transition:      background var(--transition-fast);
 }
-.catHamburger:hover { background: var(--color-surface-2); color: var(--color-text-primary); }
+.searchExpandedClose:hover { background: var(--color-surface-2); }
+
+/* ── CATEGORY TABS (horizontal scroll) ──────────────────────── */
 
 .categoryFixed {
   flex-shrink:   0;
-  padding-right: var(--space-2);
+  padding-right: var(--space-1-5);
+  margin-right:  var(--space-0-5);
   border-right:  1px solid var(--color-border-subtle);
 }
 
@@ -1657,7 +1655,7 @@
   .cartBadgeBump,
   .cartIdleAnimation,
   .catMenuDropdown,
-  .headerCity {
+  .searchExpanded {
     animation: none;
   }
   .empty svg,

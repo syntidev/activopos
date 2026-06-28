@@ -149,14 +149,13 @@ export function CatalogoGrid({
   const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
   const [submitting,     setSubmitting]     = useState(false)
   const [submitted,      setSubmitted]      = useState(false)
-  const [heroVisible,    setHeroVisible]    = useState(true)
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
   const [cartBumping,    setCartBumping]    = useState(false)
+  const [searchExpanded, setSearchExpanded] = useState(false)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
-  const heroRef   = useRef<HTMLElement>(null)
   const categoryTrackRef = useRef<HTMLDivElement>(null)
 
   const hasFeatured = useMemo(() => products.some(p => p.isFeatured), [products])
@@ -196,17 +195,13 @@ export function CatalogoGrid({
 
   useEffect(() => { setActiveSub(null) }, [activeCategory])
 
-  // Hero visibility → header shows city when hero scrolled away
+  // Focus the search input when the lupa expands it
   useEffect(() => {
-    const node = heroRef.current
-    if (!node) return
-    const observer = new IntersectionObserver(
-      ([entry]) => setHeroVisible(entry.isIntersecting),
-      { threshold: 0 },
-    )
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
+    if (searchExpanded) {
+      const t = setTimeout(() => searchRef.current?.focus(), 50)
+      return () => clearTimeout(t)
+    }
+  }, [searchExpanded])
 
   const visible = useMemo(() => {
     if (query.trim()) {
@@ -285,13 +280,14 @@ export function CatalogoGrid({
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       if (catMenuOpen)                { setCatMenuOpen(false); return }
+      if (searchExpanded)             { setSearchExpanded(false); setQuery(''); return }
       if (checkoutOpen && !submitting) { setCheckoutOpen(false); return }
       if (selectedProduct)            { closeModal(); return }
       if (cartOpen)                   { setCartOpen(false) }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [checkoutOpen, selectedProduct, cartOpen, submitting, catMenuOpen])
+  }, [checkoutOpen, selectedProduct, cartOpen, submitting, catMenuOpen, searchExpanded])
 
   // Focus traps
   useEffect(() => {
@@ -359,15 +355,7 @@ export function CatalogoGrid({
               {initials}
             </span>
           )}
-          <span className={styles.headerNameGroup}>
-            <span className={styles.headerName}>{businessName}</span>
-            {!heroVisible && businessCity && (
-              <span className={styles.headerCity}>
-                <MapPin size={11} aria-hidden="true" />
-                {businessCity}
-              </span>
-            )}
-          </span>
+          <span className={styles.headerName}>{businessName}</span>
         </div>
 
         <button
@@ -386,7 +374,7 @@ export function CatalogoGrid({
       </header>
 
       {/* ── Hero ───────────────────────────────────────────────── */}
-      <section ref={heroRef} className={styles.hero} aria-label="Información del negocio">
+      <section className={styles.hero} aria-label="Información del negocio">
         <div className={styles.heroContent}>
           {businessLogo ? (
             <img
@@ -415,37 +403,42 @@ export function CatalogoGrid({
         </div>
       </section>
 
-      {/* ── Search bar (sticky) ────────────────────────────────── */}
-      <div className={styles.searchBar} role="search">
-        <Search size={16} className={styles.searchBarIcon} aria-hidden="true" />
-        <input
-          ref={searchRef}
-          type="search"
-          className={styles.searchBarInput}
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Buscar productos…"
-          aria-label="Buscar productos"
-        />
-        {query && (
-          <button
-            type="button"
-            className={styles.searchBarClear}
-            onClick={() => { setQuery(''); searchRef.current?.focus() }}
-            aria-label="Limpiar búsqueda"
-          >
-            <X size={14} aria-hidden="true" />
-          </button>
-        )}
-      </div>
-
-      {/* ── Category tabs (horizontal scroll) ─────────────────── */}
-      {!query && (
-        <>
-          <div className={styles.categoryScroll}>
+      {/* ── H2: Navegación + búsqueda expandible (sticky) ──────── */}
+      <div className={styles.navBar}>
+        {searchExpanded ? (
+          <div className={styles.searchExpanded} role="search">
+            <Search size={16} className={styles.searchExpandedIcon} aria-hidden="true" />
+            <input
+              ref={searchRef}
+              type="search"
+              className={styles.searchExpandedInput}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar productos…"
+              aria-label="Buscar productos"
+            />
             <button
               type="button"
-              className={styles.catHamburger}
+              className={styles.searchExpandedClose}
+              onClick={() => { setSearchExpanded(false); setQuery('') }}
+              aria-label="Cerrar búsqueda"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={styles.navIconBtn}
+              onClick={() => setSearchExpanded(true)}
+              aria-label="Buscar productos"
+            >
+              <Search size={18} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={styles.navIconBtn}
               onClick={() => setCatMenuOpen(o => !o)}
               aria-label="Ver todas las categorías"
               aria-expanded={catMenuOpen}
@@ -534,33 +527,33 @@ export function CatalogoGrid({
                 </div>
               </>
             )}
-          </div>
+          </>
+        )}
+      </div>
 
-          {/* Subcategory pills */}
-          {subcategoriesForActive.length > 0 && (
-            <div className={styles.subcatScroll}>
-              <div className={styles.subcatTrack} role="group" aria-label="Subcategorías">
-                <button
-                  type="button"
-                  className={`${styles.subcatPill} ${activeSub === null ? styles.subcatPillActive : ''}`}
-                  onClick={() => setActiveSub(null)}
-                >
-                  Todas
-                </button>
-                {subcategoriesForActive.map(sub => (
-                  <button
-                    key={sub}
-                    type="button"
-                    className={`${styles.subcatPill} ${activeSub === sub ? styles.subcatPillActive : ''}`}
-                    onClick={() => setActiveSub(sub)}
-                  >
-                    {sub}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+      {/* ── Subcategory pills ──────────────────────────────────── */}
+      {!searchExpanded && !query && subcategoriesForActive.length > 0 && (
+        <div className={styles.subcatScroll}>
+          <div className={styles.subcatTrack} role="group" aria-label="Subcategorías">
+            <button
+              type="button"
+              className={`${styles.subcatPill} ${activeSub === null ? styles.subcatPillActive : ''}`}
+              onClick={() => setActiveSub(null)}
+            >
+              Todas
+            </button>
+            {subcategoriesForActive.map(sub => (
+              <button
+                key={sub}
+                type="button"
+                className={`${styles.subcatPill} ${activeSub === sub ? styles.subcatPillActive : ''}`}
+                onClick={() => setActiveSub(sub)}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ── Product grid ───────────────────────────────────────── */}

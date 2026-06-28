@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, MapPin,
@@ -113,6 +114,12 @@ function getCategoryClass(categoryName: string | null | undefined): string {
 
 const FEATURED_KEY = '__destacados__'
 
+// EXCEPCIÓN DOCUMENTADA — Sprint 35.1
+// Colores de confeti para animación de celebración post-pedido.
+// Uso puramente decorativo/animación — no UI funcional ni semántico.
+// Basados en brand palette + colores vivos para efecto cotillón.
+const CONFETTI_COLORS = ['#0038BD','#FF6B35','#FFD700','#10B981','#F472B6','#8B5CF6','#EF4444','#06B6D4']
+
 /* ── Component ───────────────────────────────────────────────── */
 
 export function CatalogoGrid({
@@ -149,6 +156,21 @@ export function CatalogoGrid({
 
   const hasFeatured = useMemo(() => products.some(p => p.isFeatured), [products])
   const initials    = getInitials(businessName)
+
+  const confettiParticles = useMemo(() =>
+    Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      style: {
+        left:              `${(i * 1.7 % 10) * 10}%`,
+        animationDelay:    `${(i * 0.13) % 2.5}s`,
+        animationDuration: `${2 + (i * 0.19) % 2}s`,
+        background:        CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        width:             `${8 + (i % 6)}px`,
+        height:            `${8 + (i % 4)}px`,
+        borderRadius:      i % 3 === 0 ? '50%' : '3px',
+      },
+    }))
+  , [])
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -323,8 +345,6 @@ export function CatalogoGrid({
 
       {/* ── Hero ───────────────────────────────────────────────── */}
       <section className={styles.hero} aria-label="Información del negocio">
-        <div className={styles.heroGradient} aria-hidden="true" />
-        <div className={styles.heroOverlay}  aria-hidden="true" />
         <div className={styles.heroContent}>
           {businessLogo ? (
             <img
@@ -341,7 +361,7 @@ export function CatalogoGrid({
           <div className={styles.heroMeta}>
             {businessCity && (
               <span className={styles.heroMetaItem}>
-                <MapPin size={12} aria-hidden="true" />
+                <MapPin size={10} aria-hidden="true" />
                 {businessCity}
               </span>
             )}
@@ -350,9 +370,6 @@ export function CatalogoGrid({
               Abierto
             </span>
           </div>
-          {businessDesc && (
-            <p className={styles.heroDesc}>{businessDesc}</p>
-          )}
         </div>
       </section>
 
@@ -622,6 +639,7 @@ export function CatalogoGrid({
                   <div className={styles.drawerItemInfo}>
                     <span className={styles.drawerItemName}>{item.name}</span>
                     <span className={styles.drawerItemPrice}>{fmtUsd(item.price_usd)} c/u</span>
+                    <span className={styles.drawerItemPriceBs}>{fmtBs(item.price_usd * rate)} c/u</span>
                     <span className={styles.drawerItemSubtotal}>{fmtUsd(item.qty * item.price_usd)}</span>
                   </div>
                   <div className={styles.drawerQtyCtrl}>
@@ -647,17 +665,6 @@ export function CatalogoGrid({
               ))
             )}
           </div>
-
-          {paymentMethods.length > 0 && (
-            <div className={styles.drawerPayments}>
-              <p className={styles.drawerPaymentsLabel}>Métodos de pago</p>
-              <div className={styles.drawerPaymentBadges}>
-                {paymentMethods.map(pm => (
-                  <span key={pm.id} className={styles.drawerPaymentBadge}>{pm.name}</span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {cart.length > 0 && (
             <div className={styles.drawerFooter}>
@@ -685,115 +692,133 @@ export function CatalogoGrid({
       )}
 
       {/* ── Checkout modal ──────────────────────────────────────── */}
-      {checkoutOpen && (
+      {checkoutOpen && !submitted && (
         <div
           className={styles.checkoutOverlay}
           onClick={e => { if (e.target === e.currentTarget && !submitting) setCheckoutOpen(false) }}
         >
           <div className={styles.checkoutModal} role="dialog" aria-modal="true" aria-label="Antes de enviar">
-            {submitted ? (
-              <div className={styles.checkoutSuccess}>
-                <div className={styles.successIcon}>
-                  <CheckCircle size={32} aria-hidden="true" />
-                </div>
-                <h3 className={styles.successTitle}>¡Pedido enviado!</h3>
-                <p className={styles.successSubtitle}>
-                  WhatsApp se abrió con los detalles de tu pedido.<br />El negocio lo recibirá en breve.
-                </p>
+            <div className={styles.checkoutHeader}>
+              <h3 className={styles.checkoutTitle}>Antes de enviar</h3>
+              <p className={styles.checkoutSubtitle}>
+                Déjanos tus datos para personalizar tu pedido.
+              </p>
+            </div>
+            <div className={styles.checkoutFields}>
+              <div className={styles.checkoutFieldGroup}>
+                <label className={styles.checkoutLabel} htmlFor="co-name">
+                  Nombre <span className={styles.checkoutRequired}>*</span>
+                </label>
+                <input
+                  ref={nameRef}
+                  id="co-name"
+                  type="text"
+                  className={styles.checkoutInput}
+                  value={cName}
+                  onChange={e => setCName(e.target.value)}
+                  placeholder="Tu nombre completo"
+                  disabled={submitting}
+                />
               </div>
-            ) : (
-              <>
-                <div className={styles.checkoutHeader}>
-                  <h3 className={styles.checkoutTitle}>Antes de enviar</h3>
-                  <p className={styles.checkoutSubtitle}>
-                    Déjanos tus datos para personalizar tu pedido.
-                  </p>
-                </div>
-                <div className={styles.checkoutFields}>
-                  <div className={styles.checkoutFieldGroup}>
-                    <label className={styles.checkoutLabel} htmlFor="co-name">
-                      Nombre <span className={styles.checkoutRequired}>*</span>
-                    </label>
-                    <input
-                      ref={nameRef}
-                      id="co-name"
-                      type="text"
-                      className={styles.checkoutInput}
-                      value={cName}
-                      onChange={e => setCName(e.target.value)}
-                      placeholder="Tu nombre completo"
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div className={styles.checkoutFieldGroup}>
-                    <label className={styles.checkoutLabel} htmlFor="co-phone">
-                      WhatsApp <span className={styles.checkoutRequired}>*</span>
-                    </label>
-                    <input
-                      id="co-phone"
-                      type="tel"
-                      className={styles.checkoutInput}
-                      value={cPhone}
-                      onChange={e => setCPhone(e.target.value)}
-                      placeholder="58XXXXXXXXXX"
-                      disabled={submitting}
-                    />
-                  </div>
-                  <div className={styles.checkoutFieldGroup}>
-                    <label className={styles.checkoutLabel} htmlFor="co-ref">
-                      Referencia / Sector <span className={styles.checkoutOptional}>(opcional)</span>
-                    </label>
-                    <input
-                      id="co-ref"
-                      type="text"
-                      className={styles.checkoutInput}
-                      value={cRef}
-                      onChange={e => setCRef(e.target.value)}
-                      placeholder="Ej: El Paraíso, piso 2"
-                      disabled={submitting}
-                    />
-                  </div>
-                  {paymentMethods.length > 0 && (
-                    <div className={styles.checkoutFieldGroup}>
-                      <label className={styles.checkoutLabel} htmlFor="co-payment">
-                        Método de pago <span className={styles.checkoutRequired}>*</span>
-                      </label>
-                      <select
-                        id="co-payment"
-                        className={styles.checkoutSelect}
-                        value={cPayment}
-                        onChange={e => setCPayment(e.target.value)}
-                        disabled={submitting}
-                      >
-                        {paymentMethods.map(pm => (
-                          <option key={pm.id} value={pm.name}>{pm.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-                <div className={styles.checkoutActions}>
-                  <button
-                    type="button"
-                    className={styles.sendBtn}
-                    onClick={handleCheckout}
-                    disabled={submitting || !cName.trim() || !cPhone.trim() || (paymentMethods.length > 0 && !cPayment)}
-                  >
-                    <MessageCircle size={18} aria-hidden="true" />
-                    {submitting ? 'Enviando…' : 'Enviar por WhatsApp'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.cancelBtn}
-                    onClick={() => setCheckoutOpen(false)}
+              <div className={styles.checkoutFieldGroup}>
+                <label className={styles.checkoutLabel} htmlFor="co-phone">
+                  WhatsApp <span className={styles.checkoutRequired}>*</span>
+                </label>
+                <input
+                  id="co-phone"
+                  type="tel"
+                  className={styles.checkoutInput}
+                  value={cPhone}
+                  onChange={e => setCPhone(e.target.value)}
+                  placeholder="58XXXXXXXXXX"
+                  disabled={submitting}
+                />
+              </div>
+              <div className={styles.checkoutFieldGroup}>
+                <label className={styles.checkoutLabel} htmlFor="co-ref">
+                  Referencia / Sector <span className={styles.checkoutOptional}>(opcional)</span>
+                </label>
+                <input
+                  id="co-ref"
+                  type="text"
+                  className={styles.checkoutInput}
+                  value={cRef}
+                  onChange={e => setCRef(e.target.value)}
+                  placeholder="Ej: El Paraíso, piso 2"
+                  disabled={submitting}
+                />
+              </div>
+              {paymentMethods.length > 0 && (
+                <div className={styles.checkoutFieldGroup}>
+                  <label className={styles.checkoutLabel} htmlFor="co-payment">
+                    Método de pago <span className={styles.checkoutRequired}>*</span>
+                  </label>
+                  <select
+                    id="co-payment"
+                    className={styles.checkoutSelect}
+                    value={cPayment}
+                    onChange={e => setCPayment(e.target.value)}
                     disabled={submitting}
                   >
-                    Cancelar
-                  </button>
+                    {paymentMethods.map(pm => (
+                      <option key={pm.id} value={pm.name}>{pm.name}</option>
+                    ))}
+                  </select>
                 </div>
-              </>
-            )}
+              )}
+            </div>
+            <div className={styles.checkoutActions}>
+              <button
+                type="button"
+                className={styles.sendBtn}
+                onClick={handleCheckout}
+                disabled={submitting || !cName.trim() || !cPhone.trim() || (paymentMethods.length > 0 && !cPayment)}
+              >
+                <MessageCircle size={18} aria-hidden="true" />
+                {submitting ? 'Enviando…' : 'Enviar por WhatsApp'}
+              </button>
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={() => setCheckoutOpen(false)}
+                disabled={submitting}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Celebration overlay ─────────────────────────────────── */}
+      {submitted && (
+        <div className={styles.celebrationOverlay}>
+          <div className={styles.confettiWrap} aria-hidden="true">
+            {confettiParticles.map(p => (
+              <div key={p.id} className={styles.confettiPiece} style={p.style} />
+            ))}
+          </div>
+          <motion.div
+            className={styles.celebrationCard}
+            initial={{ opacity: 0, scale: 0.85, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+          >
+            <div className={styles.celebrationIconWrap}>
+              <CheckCircle size={48} aria-hidden="true" />
+            </div>
+            <h2 className={styles.celebrationTitle}>¡Gracias por tu compra!</h2>
+            <p className={styles.celebrationSubtitle}>
+              Tu pedido fue enviado por WhatsApp.<br />El negocio lo recibirá en breve.
+            </p>
+            <button
+              type="button"
+              className={styles.celebrationBtn}
+              onClick={() => { setSubmitted(false); setCheckoutOpen(false) }}
+            >
+              Seguir comprando
+            </button>
+          </motion.div>
         </div>
       )}
 

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, type CSSProperties } from 'react'
 import { motion } from 'framer-motion'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
-  CheckCircle, Star, Archive, MapPin,
+  CheckCircle, Star, Archive, MapPin, Menu,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -149,10 +149,15 @@ export function CatalogoGrid({
   const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
   const [submitting,     setSubmitting]     = useState(false)
   const [submitted,      setSubmitted]      = useState(false)
+  const [heroVisible,    setHeroVisible]    = useState(true)
+  const [catMenuOpen,    setCatMenuOpen]    = useState(false)
+  const [cartBumping,    setCartBumping]    = useState(false)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const heroRef   = useRef<HTMLElement>(null)
+  const categoryTrackRef = useRef<HTMLDivElement>(null)
 
   const hasFeatured = useMemo(() => products.some(p => p.isFeatured), [products])
   const initials    = getInitials(businessName)
@@ -191,6 +196,18 @@ export function CatalogoGrid({
 
   useEffect(() => { setActiveSub(null) }, [activeCategory])
 
+  // Hero visibility → header shows city when hero scrolled away
+  useEffect(() => {
+    const node = heroRef.current
+    if (!node) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
   const visible = useMemo(() => {
     if (query.trim()) {
       const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -225,6 +242,22 @@ export function CatalogoGrid({
         image_url:  product.image,
       }]
     })
+    setCartBumping(true)
+    setTimeout(() => setCartBumping(false), 300)
+  }
+
+  // Scroll-to-center the active category chip
+  const selectCategory = (cat: string | null) => {
+    setActiveCategory(cat)
+    const track = categoryTrackRef.current
+    if (!track || cat === null) return
+    const activeBtn = track.querySelector<HTMLElement>(`[data-category="${cat}"]`)
+    if (!activeBtn) return
+    const trackRect = track.getBoundingClientRect()
+    const btnRect   = activeBtn.getBoundingClientRect()
+    const scrollLeft = track.scrollLeft + (btnRect.left - trackRect.left)
+      - (trackRect.width / 2) + (btnRect.width / 2)
+    track.scrollTo({ left: scrollLeft, behavior: 'smooth' })
   }
 
   const updateCartQty = (productId: number, delta: number) => {
@@ -251,13 +284,14 @@ export function CatalogoGrid({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      if (catMenuOpen)                { setCatMenuOpen(false); return }
       if (checkoutOpen && !submitting) { setCheckoutOpen(false); return }
       if (selectedProduct)            { closeModal(); return }
       if (cartOpen)                   { setCartOpen(false) }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [checkoutOpen, selectedProduct, cartOpen, submitting])
+  }, [checkoutOpen, selectedProduct, cartOpen, submitting, catMenuOpen])
 
   // Focus traps
   useEffect(() => {
@@ -325,18 +359,26 @@ export function CatalogoGrid({
               {initials}
             </span>
           )}
-          <span className={styles.headerName}>{businessName}</span>
+          <span className={styles.headerNameGroup}>
+            <span className={styles.headerName}>{businessName}</span>
+            {!heroVisible && businessCity && (
+              <span className={styles.headerCity}>
+                <MapPin size={11} aria-hidden="true" />
+                {businessCity}
+              </span>
+            )}
+          </span>
         </div>
 
         <button
           type="button"
-          className={styles.stickyCartBtn}
+          className={`${styles.stickyCartBtn} ${totalItems === 0 ? styles.cartIdleAnimation : ''}`}
           onClick={() => setCartOpen(true)}
           aria-label={`Carrito — ${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`}
         >
           <ShoppingBag size={20} aria-hidden="true" />
           {totalItems > 0 && (
-            <span key={totalItems} className={styles.cartCount} aria-hidden="true">
+            <span className={`${styles.cartCount} ${cartBumping ? styles.cartBadgeBump : ''}`} aria-hidden="true">
               {totalItems > 99 ? '99+' : totalItems}
             </span>
           )}
@@ -344,7 +386,7 @@ export function CatalogoGrid({
       </header>
 
       {/* ── Hero ───────────────────────────────────────────────── */}
-      <section className={styles.hero} aria-label="Información del negocio">
+      <section ref={heroRef} className={styles.hero} aria-label="Información del negocio">
         <div className={styles.heroContent}>
           {businessLogo ? (
             <img
@@ -401,41 +443,97 @@ export function CatalogoGrid({
       {!query && (
         <>
           <div className={styles.categoryScroll}>
-            <div className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
+            <button
+              type="button"
+              className={styles.catHamburger}
+              onClick={() => setCatMenuOpen(o => !o)}
+              aria-label="Ver todas las categorías"
+              aria-expanded={catMenuOpen}
+            >
+              <Menu size={18} aria-hidden="true" />
+            </button>
+
+            <div className={styles.categoryFixed}>
+              <button
+                role="tab"
+                aria-selected={activeCategory === null}
+                className={`${styles.categoryTab} ${activeCategory === null ? styles.categoryTabActive : ''}`}
+                onClick={() => selectCategory(null)}
+              >
+                Todos
+                <span className={styles.categoryTabCount}>{products.length}</span>
+              </button>
+            </div>
+
+            <div ref={categoryTrackRef} className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
               {hasFeatured && (
                 <button
                   role="tab"
+                  data-category={FEATURED_KEY}
                   aria-selected={activeCategory === FEATURED_KEY}
                   className={`${styles.categoryTab} ${activeCategory === FEATURED_KEY ? styles.categoryTabActive : ''}`}
-                  onClick={() => setActiveCategory(FEATURED_KEY)}
+                  onClick={() => selectCategory(FEATURED_KEY)}
                 >
                   <Star size={13} aria-hidden="true" />
                   Destacados
                   <span className={styles.categoryTabCount}>{products.filter(p => p.isFeatured).length}</span>
                 </button>
               )}
-              <button
-                role="tab"
-                aria-selected={activeCategory === null}
-                className={`${styles.categoryTab} ${activeCategory === null ? styles.categoryTabActive : ''}`}
-                onClick={() => setActiveCategory(null)}
-              >
-                Todos
-                <span className={styles.categoryTabCount}>{products.length}</span>
-              </button>
               {categories.map(cat => (
                 <button
                   key={cat}
                   role="tab"
+                  data-category={cat}
                   aria-selected={activeCategory === cat}
                   className={`${styles.categoryTab} ${activeCategory === cat ? styles.categoryTabActive : ''}`}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => selectCategory(cat)}
                 >
                   {cat}
                   <span className={styles.categoryTabCount}>{categoryCounts.get(cat) ?? 0}</span>
                 </button>
               ))}
             </div>
+
+            {catMenuOpen && (
+              <>
+                <div className={styles.catMenuBackdrop} onClick={() => setCatMenuOpen(false)} aria-hidden="true" />
+                <div className={styles.catMenuDropdown} role="menu" aria-label="Todas las categorías">
+                  <p className={styles.catMenuTitle}>Categorías</p>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={styles.catMenuItem}
+                    onClick={() => { selectCategory(null); setCatMenuOpen(false) }}
+                  >
+                    Todos
+                    <span className={styles.catMenuCount}>{products.length}</span>
+                  </button>
+                  {hasFeatured && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={styles.catMenuItem}
+                      onClick={() => { selectCategory(FEATURED_KEY); setCatMenuOpen(false) }}
+                    >
+                      Destacados
+                      <span className={styles.catMenuCount}>{products.filter(p => p.isFeatured).length}</span>
+                    </button>
+                  )}
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      role="menuitem"
+                      className={styles.catMenuItem}
+                      onClick={() => { selectCategory(cat); setCatMenuOpen(false) }}
+                    >
+                      {cat}
+                      <span className={styles.catMenuCount}>{categoryCounts.get(cat) ?? 0}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Subcategory pills */}
@@ -486,11 +584,12 @@ export function CatalogoGrid({
             )}
           </div>
         ) : (
-          <div className={styles.productsGrid}>
-            {visible.map(p => (
+          <div className={styles.productsGrid} key={`${activeCategory ?? 'all'}|${activeSub ?? ''}`}>
+            {visible.map((p, i) => (
               <article
                 key={p.id}
                 className={styles.productCard}
+                style={{ '--card-index': Math.min(i, 12) } as CSSProperties}
                 onClick={() => openModal(p)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
@@ -501,6 +600,7 @@ export function CatalogoGrid({
               >
                 {/* Image */}
                 <div className={styles.productImageWrap}>
+                  <span className={styles.productCardAccent} aria-hidden="true" />
                   {p.image ? (
                     <img
                       src={p.image}

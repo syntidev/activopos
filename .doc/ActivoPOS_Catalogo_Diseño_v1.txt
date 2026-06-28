@@ -1,0 +1,114 @@
+ActivoPOS
+Catálogo Digital Público
+Documento de Diseño y Especificación Funcional
+Versión 1.0  |  Junio 2026  |  SYNTIdev
+
+1. Propósito del Módulo
+El Catálogo Digital Público de ActivoPOS es una página web pública accesible via URL única por negocio, sin login, que permite a los clientes finales explorar productos, agregarlos a un carrito y enviar el pedido directamente por WhatsApp al negocio.
+
+Diferenciador clave
+No es una tienda eCommerce tradicional. No procesa pagos. No genera tracking. Es un canal de captación de pedidos que convierte WhatsApp (la herramienta que ya usa el venezolano) en un punto de venta estructurado.
+El catálogo cumple tres funciones simultáneas:
+• Vitrina comercial: el negocio la comparte por link, QR, Instagram o WhatsApp
+• Canal de pedidos: el cliente selecciona productos y envía el pedido con su nombre y contacto
+• Herramienta de ventas del dueño: puede mostrarla en persona en su teléfono o tablet
+
+2. Estructura de URLs
+PantallaURLCatálogo (listado)activopos.com/c/[slug]Detalle de productoactivopos.com/c/[slug]/[id]  (post-v1)API pública catálogoGET /api/catalog/[slug]API crear pedidoPOST /api/catalog/[slug]/order
+? El catálogo opera sin JWT. Los precios de los productos SIEMPRE vienen del DB, nunca del request body.
+? Un slug debe ser @unique en la tabla businesses. Ya existe endpoint, verificar constraint en DB.
+
+3. Diseño de Pantalla — Mobile First
+El 90% del tráfico será mobile. El diseño comienza desde 375px y escala hacia desktop. No hay dos pantallas separadas: existe una sola vista con componentes adaptativos.
+3.1 Anatomía de la Vista Principal
+ZonaContenidoHeader fijo (sticky)Avatar + Nombre del negocio | Icono carrito con badge de cantidadBanner de identidadFranja comprimida ~72px: color de fondo del negocio + nombre + ciudad + estado (Abierto/Cerrado). SIN foto grande.BuscadorInput de búsqueda full-width. Filtra en tiempo real por nombre de producto.Chips de categoríasScroll horizontal. [Todos] activo por defecto + una chip por cada categoría con productos. Filtra el grid.Sección DestacadosFila horizontal 'Destacados' solo si el dueño marcó productos como featured=true. Máx 6 productos.Grid de productos2 columnas en mobile, 3-4 en desktop. Scroll vertical continuo. Sin paginación en v1.Bottom bar (condicional)Aparece SOLO cuando hay items en el carrito. Muestra: icono carrito + N items + total USD + botón 'Ver pedido'.
+3.2 Card de Producto
+ElementoEspecificaciónImagenCuadrada 1:1. Si no hay imagen: fondo con inicial del nombre en tipografía grande.Badge Sin stockChip rojo superpuesto sobre imagen si stock = 0. Card no es clickeable.CategoríaLabel pequeño encima del nombre. Ej: ROPANombreTexto principal, 2 líneas máx con ellipsisPrecio USDSiempre visible. Ej: $15.00Precio BsSiempre visible debajo del USD. Calculado dinámicamente con tasa BCV actual.Botón agregarIcono + pequeño. Al tocar: card muestra contador -1+ inline. No abre modal en v1.
+4. Banner de Identidad del Negocio
+El banner existe. No se elimina. Se comprime. La función es dar contexto de marca antes de ver productos.
+
+Regla de oro
+El primer producto debe ser visible SIN hacer scroll. Si el banner empuja el primer producto fuera del viewport inicial, el banner está mal diseñado.
+Especificación del banner comprimido:
+• Altura máxima: 72px en mobile
+• Contenido: avatar circular del negocio (inicial o logo) + nombre + ciudad + badge Abierto/Cerrado
+• Fondo: color configurable por el dueño (hereda del tema del negocio)
+• Lo que se elimina: foto de portada grande, descripción larga, gradiente de altura completa
+? El dueño puede subir logo/avatar en Configuración del negocio. Si no sube nada, se genera automáticamente un avatar con la inicial del nombre sobre fondo del color primario del negocio.
+
+5. Orden y Organización de Productos
+Un catálogo universal no puede asumir el contenido del dueño. La solución no es una portada de categorías — es un sistema de priorización simple.
+5.1 Lógica de Ordenamiento (v1)
+PrioridadCriterio1°Productos marcados como featured=true — aparecen en sección 'Destacados' arriba del grid2°Productos con stock > 0 ordenados por nombre3°Productos sin stock al final del grid con badge 'Sin stock'
+? El campo featured ya existe en el schema. El dueño lo activa desde el admin en Productos. Máximo 6 destacados recomendado para no inflar la sección.
+? No hay drag & drop de orden en v1. El bodeguero marca destacados, el resto se ordena alfabéticamente.
+5.2 Categorías como Filtro, No como Página
+Las categorías NO tienen página propia. Son chips de filtro horizontal encima del grid. Al tocar un chip, el grid se filtra por esa categoría en tiempo real (cliente-side, sin llamada a API adicional ya que los productos están cargados).
+• Primer chip siempre: [Todos N] donde N = total de productos
+• Chips siguientes: una por cada categoría que tenga al menos 1 producto visible
+• Chip activo: color primario del negocio (background sólido)
+• Chip inactivo: borde + texto, fondo transparente
+
+6. Flujo Completo de Pedido
+6.1 Estados de la Interfaz
+EstadoDescripciónExploraciónGrid visible, sin bottom bar. El cliente navega.Selección activaAl agregar primer item: bottom bar aparece desde abajo con animación slide-up.Carrito abiertoBottom sheet sube ~80% de la pantalla. Muestra items, cantidades editables, subtotal USD y equivalente Bs.Formulario finalModal o pantalla 'Antes de enviar' con campos: Nombre, WhatsApp, Referencia/Sector (opcional), Método de pago.ConfirmaciónMensaje de éxito + botón para abrir WhatsApp con mensaje pre-armado.
+6.2 Bottom Bar — Especificación
+ElementoDetalleVisibilidadSOLO cuando hay items en el carrito. No existe si carrito está vacío.PosiciónFixed bottom, encima de la barra de navegación del browserAltura56-64pxContenido izq.Icono carrito + badge con número de itemsContenido centroTotal en USD. Ej: $23.50Contenido der.Botón 'Ver pedido' ? abre bottom sheet del carritoAnimaciónSlide-up desde abajo al aparecer. Slide-down al vaciar carrito.
+6.3 Carrito (Bottom Sheet)
+• Lista de items con imagen, nombre, precio unitario
+• Controles -  N  + por item para ajustar cantidad
+• Botón de eliminar item (icono trash)
+• Subtotal en USD
+• Equivalente en Bs (calculado con tasa BCV del momento)
+• Botón principal: 'Finalizar por WhatsApp' — abre formulario 'Antes de enviar'
+? Los métodos de pago NO aparecen en el carrito. Se eliminan de esta vista y se mueven al formulario final.
+
+6.4 Formulario 'Antes de Enviar'
+Campos en orden:
+• Nombre completo (requerido)
+• WhatsApp con prefijo venezolano 58XXXXXXXXXX (requerido)
+• Referencia / Sector — Ej: El Paraíso, piso 2 (opcional)
+• Método de pago (requerido) — SELECT, NO chips decorativos
+
+Regla crítica — Métodos de pago
+El SELECT solo muestra los métodos que el dueño activó en Configuración > Métodos de Pago. Se consumen desde /api/config/payment-methods. CERO métodos hardcodeados. Si el dueño no activó ninguno, el campo no aparece y el pedido se envía sin indicar método.
+7. Lógica de Métodos de Pago en el Catálogo
+Este punto fue debatido y la decisión está sellada:
+
+7.1 Principio Rector
+El catálogo no decide qué métodos mostrar. El negocio decide. Si el dueño activó 'Efectivo Bs', aparece. Si no lo activó, no aparece. La lógica del sistema no filtra por tipo de método.
+7.2 Toggle de Modo de Pago (Configuración > Catálogo)
+Campo recomendado en el admin para Sprint futuro:
+OpciónComportamientoPago anticipadoSolo métodos digitales (Pago Móvil, Zelle, USDT, etc.)Pago contra entregaIncluye métodos en efectivoAmbosMuestra todos los métodos activos del negocio (comportamiento actual)
+? Este toggle va en Configuración > Catálogo, no en el catálogo público. El dueño define la política, el cliente elige dentro de esa política.
+
+8. Diseño Desktop
+El catálogo desktop no es una pantalla nueva. Es el mismo layout con adaptaciones de columnas y uso del espacio horizontal. Mobile-first, luego escala.
+8.1 Diferencias Mobile vs Desktop
+ComponenteMobileDesktopHeaderFull width stickyFull width sticky + max-width 1200px centradoGrid productos2 columnas3-4 columnasCarritoBottom sheet (desliza desde abajo)Panel lateral derecho fijo (sidebar) o modal centradoBottom bar carritoFixed bottom, full widthPuede omitirse si el panel lateral siempre está visibleBuscadorFull widthMax-width 600px centrado o alineado con el grid
+8.2 Layout Desktop Recomendado
+Dos opciones viables para desktop, ambas válidas:
+Opción A — Full width con panel lateral:
+• Layout dos columnas: grid de productos (70%) + panel carrito fijo derecho (30%)
+• El panel carrito siempre visible en desktop — no necesita bottom bar
+• Mismo patrón que el POS interno de ActivoPOS
+Opción B — Centrado tipo tienda:
+• Contenido centrado, max-width 1200px
+• Grid 3-4 columnas
+• Carrito como modal centrado al hacer click en el icono del header
+? Opción A es más consistente con la experiencia POS del dueño. Opción B es más familiar para el comprador. Decisión pendiente de Carlos.
+
+9. Pendientes de Desarrollo — Catálogo
+IDPendienteSprint sugeridoCAT-01Mover métodos de pago del carrito al formulario 'Antes de enviar' como SELECTPróximo sprintCAT-02Banner comprimido a 72px. Eliminar foto grande, descripción y gradiente.Próximo sprintCAT-03Bottom bar condicional: aparece solo con items en carrito, animación slide-upPróximo sprintCAT-04Sección 'Destacados' arriba del grid. Requiere campo featured=true en admin.Sprint futuroCAT-05Toggle modo de pago en Configuración > Catálogo (anticipado / contra entrega / ambos)Sprint futuroCAT-06Layout desktop: decidir entre Opción A (panel lateral) u Opción B (modal centrado)Decisión de CarlosCAT-07Confirmar que métodos de pago en formulario vienen de /api/config/payment-methods sin hardcodearAuditoría próximo sprint
+10. Reglas de Diseño Selladas
+No negociables en ningún sprint
+Estas decisiones fueron debatidas y cerradas. Requieren orden explícita de Carlos para modificarse.
+• Los precios siempre muestran USD Y Bs simultáneamente. Sin toggle, sin opción.
+• Los Bs se calculan dinámicamente con la tasa BCV del momento de la visita. Nunca se almacena total_bs de la venta original.
+• Stock se descuenta SOLO cuando el dueño marca el pedido como pagado en su panel admin. El catálogo público NO descuenta stock al recibir un pedido.
+• La URL del catálogo es pública, sin login. Cualquier persona con el link puede ver el catálogo.
+• Los precios en el pedido SIEMPRE vienen del DB del negocio. El cliente no puede manipular precios desde el frontend.
+• business_id NUNCA viene del request body. Solo desde la sesión autenticada del admin.
+
+ActivoPOS — SYNTIdev  |  Documento interno de arquitectura  |  No compartir externamente
+Generado: Junio 2026  |  Debatido y aprobado por Carlos Bolívar

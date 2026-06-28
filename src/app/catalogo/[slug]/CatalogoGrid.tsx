@@ -114,6 +114,10 @@ function getCategoryClass(categoryName: string | null | undefined): string {
 
 const FEATURED_KEY = '__destacados__'
 
+// EXCEPCIÓN DOCUMENTADA — Sprint 35.1
+// Colores de confeti para animación de celebración post-pedido.
+// Uso puramente decorativo/animación — no UI funcional ni semántico.
+// Basados en brand palette + colores vivos para efecto cotillón.
 const CONFETTI_COLORS = ['#0038BD','#FF6B35','#FFD700','#10B981','#F472B6','#8B5CF6','#EF4444','#06B6D4']
 
 /* ── Component ───────────────────────────────────────────────── */

@@ -486,11 +486,12 @@ export function CatalogoGrid({
             )}
           </div>
         ) : (
-          <div className={styles.productsGrid}>
-            {visible.map(p => (
+          <div className={styles.productsGrid} key={`${activeCategory ?? 'all'}|${activeSub ?? ''}`}>
+            {visible.map((p, i) => (
               <article
                 key={p.id}
                 className={styles.productCard}
+                style={{ animationDelay: `${Math.min(i, 16) * 30}ms` }}
                 onClick={() => openModal(p)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { calcTrend, getGreeting } from '@/lib/dashboard'
 
@@ -37,10 +37,10 @@ type StockRow   = { cnt: BigIntable }
 type RateRow    = { rate: string | number }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
 
-  const sp = req.nextUrl.searchParams
+    const sp = req.nextUrl.searchParams
   const raw = sp.get('period') ?? 'today'
   const period: Period = (['today', '7d', '30d', '12m'] as const).includes(raw as Period)
     ? (raw as Period)
@@ -57,11 +57,12 @@ export async function GET(req: NextRequest) {
 
   const { from: pFrom, to: pTo } = getPeriodBounds(period)
 
-  const paidToday     = { business_id: bid, status: 'paid' as const, sold_at: { gte: todayStart,     lt: tomorrowStart  } }
-  const paidYesterday = { business_id: bid, status: 'paid' as const, sold_at: { gte: yesterdayStart, lt: todayStart      } }
-  const paidMonth     = { business_id: bid, status: 'paid' as const, sold_at: { gte: monthStart                         } }
-  const paidPrevMonth = { business_id: bid, status: 'paid' as const, sold_at: { gte: prevMonthStart, lt: monthStart      } }
-  const paidPeriod    = { business_id: bid, status: 'paid' as const, sold_at: { gte: pFrom,          lt: pTo             } }
+  // business_id inyectado por el tenant layer en cada db.sale.* que use estos filtros
+  const paidToday     = { status: 'paid' as const, sold_at: { gte: todayStart,     lt: tomorrowStart  } }
+  const paidYesterday = { status: 'paid' as const, sold_at: { gte: yesterdayStart, lt: todayStart      } }
+  const paidMonth     = { status: 'paid' as const, sold_at: { gte: monthStart                         } }
+  const paidPrevMonth = { status: 'paid' as const, sold_at: { gte: prevMonthStart, lt: monthStart      } }
+  const paidPeriod    = { status: 'paid' as const, sold_at: { gte: pFrom,          lt: pTo             } }
 
   const [
     todayAgg, yesterdayAgg, monthAgg, prevMonthAgg, periodAgg,
@@ -72,15 +73,15 @@ export async function GET(req: NextRequest) {
     rateRows, creditAggToday, ordenesCount,
   ] = await Promise.all([
     // Revenue aggregates
-    prisma.sale.aggregate({ where: paidToday,     _sum: { total_usd: true, total_bs: true } }),
-    prisma.sale.aggregate({ where: paidYesterday, _sum: { total_usd: true, total_bs: true } }),
-    prisma.sale.aggregate({ where: paidMonth,     _sum: { total_usd: true, total_bs: true } }),
-    prisma.sale.aggregate({ where: paidPrevMonth, _sum: { total_usd: true, total_bs: true } }),
-    prisma.sale.aggregate({ where: paidPeriod,    _sum: { total_usd: true, total_bs: true } }),
+    db.sale.aggregate({ where: paidToday,     _sum: { total_usd: true, total_bs: true } }),
+    db.sale.aggregate({ where: paidYesterday, _sum: { total_usd: true, total_bs: true } }),
+    db.sale.aggregate({ where: paidMonth,     _sum: { total_usd: true, total_bs: true } }),
+    db.sale.aggregate({ where: paidPrevMonth, _sum: { total_usd: true, total_bs: true } }),
+    db.sale.aggregate({ where: paidPeriod,    _sum: { total_usd: true, total_bs: true } }),
     // Counts
-    prisma.sale.count({ where: paidToday }),
-    prisma.sale.count({ where: paidMonth }),
-    prisma.sale.count({ where: paidPeriod }),
+    db.sale.count({ where: paidToday }),
+    db.sale.count({ where: paidMonth }),
+    db.sale.count({ where: paidPeriod }),
     // Profit (revenue − COGS) via raw SQL
     prisma.$queryRaw<ProfitRow[]>`
       SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd,0)) AS profit
@@ -107,13 +108,13 @@ export async function GET(req: NextRequest) {
       WHERE s.business_id=${bid} AND s.status='paid'
         AND s.sold_at>=${pFrom} AND s.sold_at<${pTo}`,
     // Operativo
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: 'cancelled', updated_at: { gte: todayStart, lt: tomorrowStart } },
+    db.sale.aggregate({
+      where: { status: 'cancelled', updated_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
       _count: { id: true },
       _sum:   { total_usd: true },
     }),
-    prisma.sale.count({
-      where: { business_id: bid, origin: 'credit', created_at: { gte: todayStart, lt: tomorrowStart } },
+    db.sale.count({
+      where: { origin: 'credit', created_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
     }),
     // Payment methods breakdown for today
     prisma.$queryRaw<MethodRow[]>`
@@ -148,13 +149,13 @@ export async function GET(req: NextRequest) {
     // BCV rate
     prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
     // Ventas a crédito (pending) creadas hoy — para coherencia dashboard
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: 'pending', created_at: { gte: todayStart, lt: tomorrowStart } },
+    db.sale.aggregate({
+      where: { status: 'pending', created_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
       _sum:  { total_usd: true },
     }),
     // Órdenes recibidas hoy
-    prisma.order.count({
-      where: { business_id: bid, created_at: { gte: todayStart, lt: tomorrowStart } },
+    db.order.count({
+      where: { created_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
     }),
   ])
 
@@ -252,4 +253,8 @@ export async function GET(req: NextRequest) {
       count:       Number(m.cnt),
     })),
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

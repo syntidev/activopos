@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 type ChartPeriod = '7d' | '30d' | '12m'
@@ -22,10 +22,10 @@ type LowRow    = { cnt: string | number }
 type RateRow   = { rate: string | number }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
 
-  const sp = req.nextUrl.searchParams
+    const sp = req.nextUrl.searchParams
   const raw = sp.get('period') ?? '7d'
   const period: ChartPeriod = (['7d', '30d', '12m'] as const).includes(raw as ChartPeriod)
     ? (raw as ChartPeriod)
@@ -127,16 +127,16 @@ export async function GET(req: NextRequest) {
           AND COALESCE(inv.net_qty, 0) <= p.min_stock
       `),
 
-      prisma.sale.aggregate({
-        where:  { business_id: bid, status: 'paid', sold_at: { gte: todayStart, lt: tomorrowStart } },
+      db.sale.aggregate({
+        where:  { status: 'paid', sold_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
         _sum:   { total_usd: true },
         _count: { id: true },
       }),
 
-      prisma.sale.count({ where: { business_id: bid, status: 'pending' } }),
+      db.sale.count({ where: { status: 'pending' } }), // business_id inyectado
 
-      prisma.sale.findMany({
-        where: { business_id: bid, status: 'pending', client_id: { not: null } },
+      db.sale.findMany({
+        where: { status: 'pending', client_id: { not: null } }, // business_id inyectado
         select: {
           id: true, ticket_number: true, total_usd: true, created_at: true,
           client: { select: { name: true } },
@@ -210,4 +210,8 @@ export async function GET(req: NextRequest) {
     },
     cxc_pendientes: cxcPendientes,
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

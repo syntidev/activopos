@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -17,36 +18,40 @@ const cxpSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp  = req.nextUrl.searchParams
-  const cat = sp.get('categoria')
+    const sp  = req.nextUrl.searchParams
+    const cat = sp.get('categoria')
 
-  const gastos = await prisma.gasto.findMany({
-    where: {
-      business_id: session.businessId,
-      is_paid:     false,
-      ...(cat && CATEGORIAS.includes(cat as typeof CATEGORIAS[number])
-        ? { categoria: cat }
-        : {}),
-    },
-    orderBy: { fecha: 'asc' },
-  })
+    const gastos = await db.gasto.findMany({
+      where: {
+        // business_id inyectado por el tenant layer
+        is_paid: false,
+        ...(cat && CATEGORIAS.includes(cat as typeof CATEGORIAS[number])
+          ? { categoria: cat }
+          : {}),
+      },
+      orderBy: { fecha: 'asc' },
+    })
 
-  const total = Math.round(gastos.reduce((s, g) => s + Number(g.monto_usd), 0) * 100) / 100
+    const total = Math.round(gastos.reduce((s, g) => s + Number(g.monto_usd), 0) * 100) / 100
 
-  return NextResponse.json({
-    ok:   true,
-    cxp:  gastos.map(g => ({
-      ...g,
-      fecha:     g.fecha    instanceof Date ? g.fecha.toISOString().slice(0, 10)    : String(g.fecha).slice(0, 10),
-      due_date:  g.due_date instanceof Date ? g.due_date.toISOString().slice(0, 10) : (g.due_date ?? null),
-      monto_usd: Number(g.monto_usd),
-    })),
-    total_usd: total,
-  })
+    return NextResponse.json({
+      ok:   true,
+      cxp:  gastos.map(g => ({
+        ...g,
+        fecha:     g.fecha    instanceof Date ? g.fecha.toISOString().slice(0, 10)    : String(g.fecha).slice(0, 10),
+        due_date:  g.due_date instanceof Date ? g.due_date.toISOString().slice(0, 10) : (g.due_date ?? null),
+        monto_usd: Number(g.monto_usd),
+      })),
+      total_usd: total,
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: NextRequest) {

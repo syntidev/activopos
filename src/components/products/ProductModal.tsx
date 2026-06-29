@@ -171,6 +171,58 @@ const PRESET_GROUPS = [
   { id: 'colores',     label: 'Colores',     values: ['Negro','Blanco','Rojo','Azul','Verde','Amarillo','Naranja','Rosado','Gris','Morado'] },
 ] as const
 
+/* ── Client-side image compression (Canvas API, sin librerías) ── */
+const COMPRESS_THRESHOLD_KB = 800
+const COMPRESS_MAX_DIM      = 1600
+const COMPRESS_QUALITY      = 0.85
+
+async function compressImage(file: File): Promise<File> {
+  // Archivos pequeños se suben sin recomprimir (el backend ya genera webp)
+  if (file.size <= COMPRESS_THRESHOLD_KB * 1024) return file
+
+  return new Promise<File>((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+
+      let { width, height } = img
+      if (width > COMPRESS_MAX_DIM || height > COMPRESS_MAX_DIM) {
+        if (width > height) {
+          height = Math.round(height * (COMPRESS_MAX_DIM / width))
+          width  = COMPRESS_MAX_DIM
+        } else {
+          width  = Math.round(width * (COMPRESS_MAX_DIM / height))
+          height = COMPRESS_MAX_DIM
+        }
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width  = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { resolve(file); return }
+
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return }
+          resolve(new File([blob], file.name.replace(/\.\w+$/, '.webp'), {
+            type:         'image/webp',
+            lastModified: file.lastModified,
+          }))
+        },
+        'image/webp',
+        COMPRESS_QUALITY,
+      )
+    }
+
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) } // fallback: subir original
+    img.src = url
+  })
+}
+
 /* ── Component ── */
 
 export function ProductModal({
@@ -208,6 +260,7 @@ export function ProductModal({
   /* ── Sprint 5+10: images, availability, catalog visibility, variants ── */
   const [images, setImages]                     = useState<Array<string | null>>([null, null, null])
   const [uploadingSlot, setUploadingSlot]       = useState<number | null>(null)
+  const [imgError, setImgError]                 = useState<string | null>(null)
   const [isAvailable, setIsAvailable]           = useState(true)
   const [catalogVisibility, setCatalogVisibility] = useState<CatalogVisibility>('hidden')
   const [availability, setAvailability]         = useState<Availability>('in_stock')
@@ -388,18 +441,25 @@ export function ProductModal({
   /* ── Image upload ── */
   const handleImageUpload = async (slot: number, file: File) => {
     setUploadingSlot(slot)
+    setImgError(null)
     try {
+      const compressed = await compressImage(file)
       const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/products/upload-image', { method: 'POST', body: fd })
-      if (res.ok) {
-        const j = await res.json()
-        setImages(prev => {
-          const next = [...prev]
-          next[slot] = j.url as string
-          return next
-        })
+      fd.append('file', compressed)
+      const res = await fetch('/api/upload/image', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setImgError(err?.error ?? 'No se pudo subir la imagen')
+        return
       }
+      const j = await res.json()
+      setImages(prev => {
+        const next = [...prev]
+        next[slot] = j.url as string
+        return next
+      })
+    } catch {
+      setImgError('Error de conexión al subir la imagen')
     } finally {
       setUploadingSlot(null)
     }
@@ -789,7 +849,7 @@ export function ProductModal({
                           <input
                             ref={imgRefs[slot]}
                             type="file"
-                            accept="image/*"
+                            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                             className={styles.imgFileInput}
                             onChange={(e) => {
                               const file = e.target.files?.[0]
@@ -805,6 +865,7 @@ export function ProductModal({
                                 alt={`Foto ${slot + 1}`}
                                 className={styles.imgPreview}
                               />
+                              <span className={styles.imgFormatBadge}>WebP</span>
                               <button
                                 type="button"
                                 className={styles.imgRemoveBtn}
@@ -817,6 +878,7 @@ export function ProductModal({
                           ) : uploadingSlot === slot ? (
                             <div className={styles.imgUploading}>
                               <Loader2 size={20} className={styles.spinnerIcon} aria-label="Subiendo..." />
+                              <span className={styles.imgUploadingText}>Comprimiendo y subiendo…</span>
                             </div>
                           ) : (
                             <button
@@ -831,6 +893,7 @@ export function ProductModal({
                         </div>
                       ))}
                     </div>
+                    {imgError && <p className={mStyles.errorMsg}>{imgError}</p>}
                   </div>
 
                   {/* ── Categoría ── */}

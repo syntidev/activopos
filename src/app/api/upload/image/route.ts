@@ -7,7 +7,7 @@ import sharp from 'sharp'
 import { uploadLimiter, getClientIp } from '@/lib/rate-limit'
 
 const ALLOWED_FORMATS = new Set(['jpeg', 'png', 'webp'])
-const MAX_SIZE        = 2 * 1024 * 1024
+const MAX_SIZE        = 5 * 1024 * 1024 // 5MB — fotos de teléfono son 3-4MB
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 })
     }
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'El archivo no puede superar 2 MB' }, { status: 400 })
+      return NextResponse.json({ error: 'El archivo no puede superar 5 MB' }, { status: 400 })
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -44,20 +44,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Solo se aceptan JPG, PNG o WebP' }, { status: 400 })
     }
 
-    const filename  = `${randomUUID()}.webp`
-    const uploadDir = join(process.cwd(), 'public', 'uploads', String(session.businessId))
+    const filenameFull  = `${randomUUID()}.webp`
+    const filenameThumb = `${randomUUID()}_thumb.webp`
+    const uploadDir     = join(process.cwd(), 'public', 'uploads', String(session.businessId))
 
-    await mkdir(uploadDir, { recursive: true })
+    await mkdir(uploadDir, { recursive: true, mode: 0o755 })
 
-    const processed = await sharp(buffer)
-      .resize(800, 800, { fit: 'cover' })
-      .webp({ quality: 85 })
+    // Versión full para vitrina (1200px, retina) — fit:inside conserva aspect ratio, sin recortar
+    const { data: fullData, info: fullInfo } = await sharp(buffer)
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 88 })
+      .toBuffer({ resolveWithObject: true })
+
+    // Thumbnail para grid de cards (400px, cuadrado)
+    const thumbData = await sharp(buffer)
+      .resize(400, 400, { fit: 'cover' })
+      .webp({ quality: 75 })
       .toBuffer()
 
-    await writeFile(join(uploadDir, filename), processed)
+    await writeFile(join(uploadDir, filenameFull), fullData)
+    await writeFile(join(uploadDir, filenameThumb), thumbData)
 
     return NextResponse.json(
-      { ok: true, url: `/uploads/${session.businessId}/${filename}` },
+      {
+        ok:      true,
+        url:     `/uploads/${session.businessId}/${filenameFull}`,
+        thumb:   `/uploads/${session.businessId}/${filenameThumb}`,
+        format:  'webp',
+        size_kb: Math.round(fullData.length / 1024),
+        width:   fullInfo.width,
+        height:  fullInfo.height,
+      },
       { status: 201 },
     )
   } catch (err) {

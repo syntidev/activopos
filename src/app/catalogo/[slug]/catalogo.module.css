@@ -3,9 +3,17 @@
    src/app/catalogo/[slug]/catalogo.module.css
    ============================================================ */
 
-/* Root — fuerza tema light para vitrina pública */
+/* Root — fuerza tema light para vitrina pública.
+   height fijo + overflow-y:auto → .root es el scroll container propio.
+   Necesario porque globals.css aplica overflow-x:hidden a html/body, lo que
+   anula position:sticky en los headers. Con el scroll dentro de .root, los
+   headers sticky se anclan a este scrollport. (overflow-x:hidden conserva el
+   recorte horizontal; los fixed/modales no se afectan: .root no crea
+   containing block para position:fixed.) */
 .root {
-  min-height:     100dvh;
+  height:         100dvh;
+  overflow:       hidden auto;
+  overscroll-behavior-y: contain;
   background:     var(--color-bg);
   color:          var(--color-text-primary);
   font-family:    var(--font-sans);
@@ -25,6 +33,7 @@
   border-bottom:     1px solid var(--color-border-subtle);
   padding:           0 var(--space-4);
   height:            52px;
+  flex-shrink:       0;
   display:           flex;
   align-items:       center;
   justify-content:   space-between;
@@ -236,6 +245,7 @@
   align-items:     center;
   gap:             var(--space-1-5);
   height:          48px;
+  flex-shrink:     0;
   padding:         0 var(--space-3);
   background:      color-mix(in srgb, var(--color-white) 92%, transparent);
   backdrop-filter: blur(20px);

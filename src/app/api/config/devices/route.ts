@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 // Nombres que envía la UI — se mapean a los campos del modelo BusinessDevice al persistir
@@ -50,28 +48,27 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
-  let body: z.infer<typeof PostSchema>
   try {
-    body = PostSchema.parse(await req.json())
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const body = PostSchema.parse(await req.json())
+
+    const device = await db.businessDevice.create({
+      data: {
+        business_id:       session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
+        type:              body.tipo,
+        bank_name:         body.banco,
+        serial:            body.serial       ?? null,
+        commercial_number: body.nro_comercio ?? null,
+        is_active:         body.is_active    ?? true,
+      },
+    })
+
+    return NextResponse.json({ ok: true, device: toUI(device) }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
     if (err instanceof z.ZodError) return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     throw err
   }
-
-  const device = await prisma.businessDevice.create({
-    data: {
-      business_id:       session.businessId,
-      type:              body.tipo,
-      bank_name:         body.banco,
-      serial:            body.serial       ?? null,
-      commercial_number: body.nro_comercio ?? null,
-      is_active:         body.is_active    ?? true,
-    },
-  })
-
-  return NextResponse.json({ ok: true, device: toUI(device) }, { status: 201 })
 }

@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { PmType } from '@prisma/client'
 
@@ -38,59 +36,54 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
-  const body: unknown = await request.json()
-
-  let data: z.infer<typeof PostSchema>
   try {
-    data = PostSchema.parse(body)
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const data = PostSchema.parse(await request.json())
+
+    const maxOrder = await db.paymentMethod.aggregate({
+      // business_id inyectado por el tenant layer
+      _max: { sort_order: true },
+    })
+
+    const sort_order = (maxOrder._max.sort_order ?? 0) + 1
+
+    const method = await db.paymentMethod.create({
+      data: {
+        business_id: session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
+        name: data.name,
+        type: data.type,
+        sort_order,
+      },
+    })
+
+    return NextResponse.json({ ok: true, method }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
     if (err instanceof z.ZodError) return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     throw err
   }
-
-  const maxOrder = await prisma.paymentMethod.aggregate({
-    where: { business_id: session.businessId },
-    _max: { sort_order: true },
-  })
-
-  const sort_order = (maxOrder._max.sort_order ?? 0) + 1
-
-  const method = await prisma.paymentMethod.create({
-    data: {
-      business_id: session.businessId,
-      name: data.name,
-      type: data.type,
-      sort_order,
-    },
-  })
-
-  return NextResponse.json({ ok: true, method }, { status: 201 })
 }
 
 export async function PATCH(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
-  const body: unknown = await request.json()
-
-  let data: z.infer<typeof CobroSchema>
   try {
-    data = CobroSchema.parse(body)
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const data = CobroSchema.parse(await request.json())
+
+    // Business es la raíz del tenant (no tiene business_id) → no se filtra.
+    const updated = await db.business.update({
+      where:  { id: session.businessId },
+      data:   { cobro_data: data },
+      select: { id: true, cobro_data: true },
+    })
+
+    return NextResponse.json({ ok: true, cobro_data: updated.cobro_data })
   } catch (err) {
+    if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
     if (err instanceof z.ZodError) return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     throw err
   }
-
-  const updated = await prisma.business.update({
-    where:  { id: session.businessId },
-    data:   { cobro_data: data },
-    select: { id: true, cobro_data: true },
-  })
-
-  return NextResponse.json({ ok: true, cobro_data: updated.cobro_data })
 }

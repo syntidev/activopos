@@ -200,12 +200,19 @@ export default function ProductosPage() {
     try {
       const params = new URLSearchParams()
       if (debouncedSearch)  params.set('search', debouncedSearch)
-      if (selectedCategory) params.set('categoryId', selectedCategory)
+      if (selectedCategory) params.set('category_id', selectedCategory)
 
       const res = await fetch(`/api/products?${params}`)
       if (res.ok) {
         const data = await res.json()
-        setProducts(data.products ?? [])
+        // API devuelve stock como objeto { net_qty }; la UI lee stock_quantity (number)
+        const list: Product[] = (data.products ?? []).map(
+          (p: Product & { stock?: { net_qty?: number } }) => ({
+            ...p,
+            stock_quantity: p.stock?.net_qty ?? 0,
+          })
+        )
+        setProducts(list)
       }
     } catch {
       // Keep current list on network error

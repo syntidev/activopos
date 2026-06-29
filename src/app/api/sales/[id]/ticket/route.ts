@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 type RouteContext = { params: { id: string } }
 
@@ -24,92 +23,93 @@ function fmtDate(d: Date): string {
 }
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return new Response('No autorizado', { status: 401 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
 
-  const id = parseInt(params.id, 10)
-  if (isNaN(id)) return new Response('ID inválido', { status: 400 })
+    const id = parseInt(params.id, 10)
+    if (isNaN(id)) return new Response('ID inválido', { status: 400 })
 
-  const bid = session.businessId
+    const bid = session.businessId
 
-  const [sale, business] = await Promise.all([
-    prisma.sale.findFirst({
-      where: { id, business_id: bid },
-      include: {
-        items: {
-          select: {
-            product_name: true,
-            quantity:     true,
-            price_per_unit_usd: true,
-            subtotal_usd: true,
-            discount_usd: true,
+    const [sale, business] = await Promise.all([
+      db.sale.findFirst({
+        where: { id }, // business_id inyectado por el tenant layer
+        include: {
+          items: {
+            select: {
+              product_name: true,
+              quantity:     true,
+              price_per_unit_usd: true,
+              subtotal_usd: true,
+              discount_usd: true,
+            },
+            orderBy: { id: 'asc' },
           },
-          orderBy: { id: 'asc' },
+          payments: {
+            include: { payment_method: { select: { name: true } } },
+          },
+          cashier: { select: { name: true } },
         },
-        payments: {
-          include: { payment_method: { select: { name: true } } },
+      }),
+      // Business es la raíz del tenant (no tiene business_id) → no se filtra.
+      db.business.findUnique({
+        where:  { id: bid },
+        select: {
+          name:          true,
+          address:       true,
+          phone:         true,
+          ticket_footer: true,
+          catalog_slug:  true,
+          catalog_active: true,
+          iva_enabled:   true,
+          iva_pct:       true,
         },
-        cashier: { select: { name: true } },
-      },
-    }),
-    prisma.business.findUnique({
-      where:  { id: bid },
-      select: {
-        name:          true,
-        address:       true,
-        phone:         true,
-        ticket_footer: true,
-        catalog_slug:  true,
-        catalog_active: true,
-        iva_enabled:   true,
-        iva_pct:       true,
-      },
-    }),
-  ])
+      }),
+    ])
 
-  if (!sale)     return new Response('Venta no encontrada', { status: 404 })
-  if (!business) return new Response('Negocio no encontrado', { status: 404 })
+    if (!sale)     return new Response('Venta no encontrada', { status: 404 })
+    if (!business) return new Response('Negocio no encontrado', { status: 404 })
 
-  const totalUsd  = Number(sale.total_usd)
-  const totalBs   = Number(sale.total_bs)
-  const rate      = Number(sale.rate_used)
-  const ivaEnabled = business.iva_enabled
-  const ivaPct    = Number(business.iva_pct ?? 0)
+    const totalUsd  = Number(sale.total_usd)
+    const totalBs   = Number(sale.total_bs)
+    const rate      = Number(sale.rate_used)
+    const ivaEnabled = business.iva_enabled
+    const ivaPct    = Number(business.iva_pct ?? 0)
 
-  let subtotalUsd: number
-  let ivaAmount: number
-  if (ivaEnabled && ivaPct > 0) {
-    subtotalUsd = totalUsd / (1 + ivaPct / 100)
-    ivaAmount   = totalUsd - subtotalUsd
-  } else {
-    subtotalUsd = totalUsd
-    ivaAmount   = 0
-  }
+    let subtotalUsd: number
+    let ivaAmount: number
+    if (ivaEnabled && ivaPct > 0) {
+      subtotalUsd = totalUsd / (1 + ivaPct / 100)
+      ivaAmount   = totalUsd - subtotalUsd
+    } else {
+      subtotalUsd = totalUsd
+      ivaAmount   = 0
+    }
 
-  const itemsHtml = sale.items.map(item => {
-    const qty  = Number(item.quantity)
-    const name = esc(item.product_name).slice(0, 20)
-    const sub  = fmt2(Number(item.subtotal_usd))
-    const disc = Number(item.discount_usd)
-    const discLine = disc > 0
-      ? `<div class="row" style="font-size:9px;color:#555"><span>  Desc.:</span><span>-$${fmt2(disc)}</span></div>`
+    const itemsHtml = sale.items.map(item => {
+      const qty  = Number(item.quantity)
+      const name = esc(item.product_name).slice(0, 20)
+      const sub  = fmt2(Number(item.subtotal_usd))
+      const disc = Number(item.discount_usd)
+      const discLine = disc > 0
+        ? `<div class="row" style="font-size:9px;color:#555"><span>  Desc.:</span><span>-$${fmt2(disc)}</span></div>`
+        : ''
+      return `<div class="row"><span>${qty}&times; ${name}</span><span>$${sub}</span></div>${discLine}`
+    }).join('')
+
+    const paymentsHtml = sale.payments.map(p =>
+      `<div class="row"><span>Método: ${esc(p.payment_method.name)}</span><span>$${fmt2(Number(p.amount_usd))}</span></div>`
+    ).join('')
+
+    const catalogUrl = business.catalog_active && business.catalog_slug
+      ? `<div class="c" style="margin-top:4px;font-size:9px">activopos.com/c/${esc(business.catalog_slug)}</div>`
       : ''
-    return `<div class="row"><span>${qty}&times; ${name}</span><span>$${sub}</span></div>${discLine}`
-  }).join('')
 
-  const paymentsHtml = sale.payments.map(p =>
-    `<div class="row"><span>Método: ${esc(p.payment_method.name)}</span><span>$${fmt2(Number(p.amount_usd))}</span></div>`
-  ).join('')
+    const footerMsg = business.ticket_footer
+      ? `<div class="c" style="margin:4px 0">${esc(business.ticket_footer)}</div>`
+      : ''
 
-  const catalogUrl = business.catalog_active && business.catalog_slug
-    ? `<div class="c" style="margin-top:4px;font-size:9px">activopos.com/c/${esc(business.catalog_slug)}</div>`
-    : ''
-
-  const footerMsg = business.ticket_footer
-    ? `<div class="c" style="margin:4px 0">${esc(business.ticket_footer)}</div>`
-    : ''
-
-  const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -164,7 +164,11 @@ ${catalogUrl}
 </body>
 </html>`
 
-  return new Response(html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
-  })
+    return new Response(html, {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return new Response(e.message, { status: e.status })
+    throw e
+  }
 }

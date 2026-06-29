@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const pendingOrders = await prisma.order.count({
-    where: { business_id: session.businessId, status: 'received' },
-  })
+    const pendingOrders = await db.order.count({
+      where: { status: 'received' }, // business_id inyectado por el tenant layer
+    })
 
-  return NextResponse.json({ ok: true, pending_orders: pendingOrders })
+    return NextResponse.json({ ok: true, pending_orders: pendingOrders })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

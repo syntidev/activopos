@@ -444,6 +444,7 @@
 
 .productCard {
   position:                relative;
+  padding:                 8px;
   background:              var(--color-surface);
   border-radius:           14px;
   overflow:                hidden;
@@ -465,7 +466,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12),
               0 0 8px color-mix(in srgb, var(--biz-color, var(--color-brand)) 20%, transparent);
 }
-.productCard:active { transform: scale(0.98); transition-duration: 80ms; }
+.productCard:active { transform: scale(0.97); transition-duration: 100ms; }
 
 @keyframes cardEnter {
   from { opacity: 0; transform: translateY(16px); }
@@ -490,13 +491,14 @@
   .productCardAccent { transform: scaleX(1); }
 }
 
-/* Image — aspect 4:5 como LLEVA */
+/* Image — aspect 4:5 como LLEVA, radius 10px dentro de card 14px */
 .productImageWrap {
-  position:     relative;
-  aspect-ratio: 4 / 5;
-  overflow:     hidden;
-  background:   var(--color-surface-2);
-  flex-shrink:  0;
+  position:      relative;
+  aspect-ratio:  4 / 5;
+  overflow:      hidden;
+  border-radius: 10px;
+  background:    var(--color-surface-2);
+  flex-shrink:   0;
 }
 
 .productImage {
@@ -504,9 +506,11 @@
   height:     100%;
   object-fit: cover;
   display:    block;
-  transition: transform 300ms ease;
+  opacity:    0;
+  transition: opacity 300ms ease, transform 300ms ease;
 }
-.productCard:hover .productImage { transform: scale(1.03); }
+.productImageLoaded { opacity: 1; }
+.productCard:hover .productImageLoaded { transform: scale(1.03); }
 
 /* Placeholder sin imagen — con profundidad */
 .productImagePlaceholder {
@@ -538,15 +542,19 @@
 
 /* Badges sobre imagen */
 .productBadge {
-  position:      absolute;
-  top:           var(--space-2);
-  left:          var(--space-2);
-  font-size:     var(--text-2xs);
-  font-weight:   var(--weight-semibold);
-  padding:       3px var(--space-2);
-  border-radius: var(--radius-full);
-  letter-spacing:0.02em;
-  line-height:   1.4;
+  position:       absolute;
+  top:            6px;
+  left:           6px;
+  z-index:        3;
+  display:        inline-flex;
+  align-items:    center;
+  gap:            3px;
+  padding:        3px 8px;
+  border-radius:  6px;
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: 0.04em;
+  line-height:    1.4;
 }
 
 .badgePopular {
@@ -659,11 +667,21 @@
 
 /* card info below image */
 .productInfo {
-  padding:        var(--space-2-5) var(--space-3) var(--space-3);
+  position:       relative;
+  padding:        var(--space-2-5) var(--space-1) var(--space-2);
   display:        flex;
   flex-direction: column;
   gap:            var(--space-1);
   flex:           1;
+}
+.productInfo::before {
+  content:    '';
+  position:   absolute;
+  top:        0;
+  left:       10%;
+  right:      10%;
+  height:     1px;
+  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.06), transparent);
 }
 
 .productCategory {
@@ -687,25 +705,57 @@
   overflow:           hidden;
 }
 
-.productPrice {
+.productPriceRow {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--space-2);
+  margin-top:      auto;
+  padding:         var(--space-1) var(--space-1) 0;
+}
+
+.productPriceBlock {
   display:        flex;
   flex-direction: column;
   gap:            1px;
-  margin-top:     auto;
-  padding-top:    var(--space-1);
+  min-width:      0;
 }
 
 .priceUsd {
-  font-size:   var(--text-base);
-  font-weight: var(--weight-bold);
-  color:       var(--color-text-primary);
-  line-height: 1.2;
+  font-size:      var(--text-base);
+  font-weight:    var(--weight-bold);
+  color:          var(--color-text-primary);
+  letter-spacing: -0.01em;
+  line-height:    1.2;
 }
 
 .priceBs {
-  font-size: var(--text-2xs);
-  color:     var(--color-text-muted);
+  font-size:  var(--text-xs);
+  color:      var(--color-text-secondary);
+  margin-top: 1px;
 }
+
+/* Botón circular "+" — clon de .sc-add-btn */
+.addBtnCircle {
+  width:           36px;
+  height:          36px;
+  border-radius:   50%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  border:          none;
+  cursor:          pointer;
+  flex-shrink:     0;
+  background:      var(--biz-color, var(--color-brand));
+  color:           var(--color-white);
+  box-shadow:      0 2px 8px color-mix(in srgb, var(--biz-color, var(--color-brand)) 40%, transparent);
+  transition:      transform 200ms ease, box-shadow 200ms ease;
+}
+.addBtnCircle:hover {
+  transform:  scale(1.1);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--biz-color, var(--color-brand)) 50%, transparent);
+}
+.addBtnCircle:active { transform: scale(0.95); }
 
 .priceConsultar {
   font-size:   var(--text-xs);
@@ -804,11 +854,12 @@
 @media (min-width: 768px) { .modalHandle { display: none; } }
 
 .modalImageWrap {
-  position:    relative;
-  aspect-ratio:16/9;
-  overflow:    hidden;
-  flex-shrink: 0;
-  background:  var(--color-surface-2);
+  position:      relative;
+  aspect-ratio:  1 / 1;
+  overflow:      hidden;
+  flex-shrink:   0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background:    var(--color-surface-2);
 }
 
 .modalImage {
@@ -877,27 +928,37 @@
 .modalDesc {
   font-size:   var(--text-sm);
   color:       var(--color-text-secondary);
-  line-height: var(--leading-relaxed);
-  margin:      0;
+  line-height: 1.6;
+  margin:      var(--space-2) 0 var(--space-4);
 }
 
 .modalPrice {
   display:     flex;
   align-items: baseline;
-  gap:         var(--space-2);
+  gap:         var(--space-1);
   margin-top:  var(--space-1);
 }
 
-.modalPriceUsd {
-  font-size:   var(--text-3xl);
-  font-weight: var(--weight-bold);
-  color:       var(--color-text-primary);
-  line-height: 1.1;
+.modalPriceSymbol {
+  font-size:      var(--text-lg);
+  font-weight:    var(--weight-semibold);
+  color:          var(--color-text-primary);
+  vertical-align: super;
+  margin-right:   2px;
+}
+
+.modalPriceNumber {
+  font-size:      var(--text-3xl);
+  font-weight:    var(--weight-bold);
+  color:          var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height:    1.1;
 }
 
 .modalPriceBs {
-  font-size: var(--text-sm);
-  color:     var(--color-text-muted);
+  font-size:   var(--text-sm);
+  color:       var(--color-text-secondary);
+  margin-left: var(--space-2);
 }
 
 .modalPriceConsultar {
@@ -1475,18 +1536,20 @@
 /* ── FOOTER ──────────────────────────────────────────────────── */
 
 .footer {
-  padding:   var(--space-8) var(--space-4);
-  text-align:center;
-  font-size: var(--text-xs);
-  color:     var(--color-text-muted);
-  border-top:1px solid var(--color-border-subtle);
-  margin-top:auto;
+  padding:    var(--space-6) var(--space-4);
+  text-align: center;
+  font-size:  var(--text-xs);
+  color:      var(--color-text-secondary);
+  border-top: 1px solid var(--color-border-subtle);
+  margin-top: var(--space-8);
 }
 
 .footer a {
-  color:      var(--color-brand);
-  font-weight:var(--weight-medium);
+  color:           var(--biz-color, var(--color-brand));
+  font-weight:     var(--weight-semibold);
+  text-decoration: none;
 }
+.footer a:hover { text-decoration: underline; }
 
 /* ── CELEBRATION ─────────────────────────────────────────────── */
 
@@ -1605,9 +1668,16 @@
     transform:  none;
     box-shadow: var(--shadow-sm);
   }
-  .productCard:hover .productImage {
+  .productCard:hover .productImage,
+  .productCard:hover .productImageLoaded {
     transform: none;
   }
+  .productImage,
+  .productImageLoaded {
+    transition: none;
+    opacity:    1;
+  }
   .productCardAccent { transition: none; }
+  .addBtnCircle { transition: none; }
   .categoryTrack { scroll-behavior: auto; }
 }

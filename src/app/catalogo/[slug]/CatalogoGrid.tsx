@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect, type CSSProperties } from 'react'
+import { useState, useMemo, useRef, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
-  CheckCircle, Star, Archive, Menu,
+  CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -95,6 +95,13 @@ const BADGE_LABEL: Record<string, string> = {
   nuevo:       'Nuevo',
   promo:       'Promo',
   recomendado: 'Recomendado',
+}
+
+const BADGE_ICON: Record<string, ReactNode> = {
+  popular:     <Flame size={10} aria-hidden="true" />,
+  nuevo:       <Sparkles size={10} aria-hidden="true" />,
+  promo:       <Tag size={10} aria-hidden="true" />,
+  recomendado: <ThumbsUp size={10} aria-hidden="true" />,
 }
 
 function getCategoryClass(categoryName: string | null | undefined): string {
@@ -575,6 +582,8 @@ export function CatalogoGrid({
                       alt={p.name}
                       className={styles.productImage}
                       loading="lazy"
+                      ref={img => { if (img?.complete) img.classList.add(styles.productImageLoaded) }}
+                      onLoad={e => e.currentTarget.classList.add(styles.productImageLoaded)}
                     />
                   ) : (
                     <div
@@ -618,6 +627,7 @@ export function CatalogoGrid({
                     p.badge && p.badge !== 'none' &&
                     getBadgeClass(p.badge) && (
                     <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
+                      {BADGE_ICON[p.badge]}
                       {BADGE_LABEL[p.badge]}
                     </span>
                   )}
@@ -630,24 +640,40 @@ export function CatalogoGrid({
                   )}
                   <h2 className={styles.productName}>{p.name}</h2>
 
-                  <div className={styles.productPrice}>
-                    {p.catalogVisibility === 'on_request' ? (
-                      <span className={styles.priceConsultar}>Consultar precio</span>
-                    ) : p.availability === 'discontinued' ? (
-                      <span className={styles.priceDiscontinued}>No disponible</span>
-                    ) : p.priceUsd > 0 ? (
-                      <>
-                        <span className={styles.priceUsd}>
-                          ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </span>
-                        {p.priceBs && (
-                          <span className={styles.priceBs}>
-                            Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                  <div className={styles.productPriceRow}>
+                    <div className={styles.productPriceBlock}>
+                      {p.catalogVisibility === 'on_request' ? (
+                        <span className={styles.priceConsultar}>Consultar precio</span>
+                      ) : p.availability === 'discontinued' ? (
+                        <span className={styles.priceDiscontinued}>No disponible</span>
+                      ) : p.priceUsd > 0 ? (
+                        <>
+                          <span className={styles.priceUsd}>
+                            ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className={styles.priceConsultar}>Consultar precio</span>
+                          {p.priceBs && (
+                            <span className={styles.priceBs}>
+                              Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className={styles.priceConsultar}>Consultar precio</span>
+                      )}
+                    </div>
+                    {p.catalogVisibility !== 'on_request' &&
+                      p.availability !== 'discontinued' &&
+                      !p.outOfStock &&
+                      p.availability !== 'out_of_stock' &&
+                      p.priceUsd > 0 && (
+                      <button
+                        type="button"
+                        className={styles.addBtnCircle}
+                        onClick={e => { e.stopPropagation(); addToCart(p, 1) }}
+                        aria-label={`Agregar ${p.name} al carrito`}
+                      >
+                        <Plus size={16} aria-hidden="true" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -971,8 +997,9 @@ export function CatalogoGrid({
                   <span className={styles.modalPriceConsultar}>Consultar precio</span>
                 ) : selP.priceUsd > 0 ? (
                   <>
-                    <span className={styles.modalPriceUsd}>
-                      ${selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <span className={styles.modalPriceSymbol}>$</span>
+                    <span className={styles.modalPriceNumber}>
+                      {selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
                     {selP.priceBs && (
                       <span className={styles.modalPriceBs}>

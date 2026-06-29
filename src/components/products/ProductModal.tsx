@@ -446,6 +446,7 @@ export function ProductModal({
       const compressed = await compressImage(file)
       const fd = new FormData()
       fd.append('file', compressed)
+      fd.append('type', 'product')
       const res = await fetch('/api/upload/image', { method: 'POST', body: fd })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))

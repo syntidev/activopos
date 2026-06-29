@@ -3,9 +3,25 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/
+
 const PatchSchema = z.object({
-  theme: z.enum(['dark', 'light']),
+  theme:       z.enum(['dark', 'light']),
+  theme_color: z.string().regex(HEX_COLOR, 'Color inválido').optional(),
 })
+
+export async function GET() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
+  const business = await prisma.business.findUnique({
+    where:  { id: session.businessId },
+    select: { theme: true, theme_color: true },
+  })
+  if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
+
+  return NextResponse.json({ theme: business.theme, theme_color: business.theme_color })
+}
 
 export async function PATCH(request: Request) {
   const session = await getSession()
@@ -24,8 +40,11 @@ export async function PATCH(request: Request) {
 
   const updated = await prisma.business.update({
     where:  { id: session.businessId },
-    data:   { theme: data.theme },
-    select: { id: true, theme: true },
+    data:   {
+      theme: data.theme,
+      ...(data.theme_color ? { theme_color: data.theme_color } : {}),
+    },
+    select: { id: true, theme: true, theme_color: true },
   })
 
   return NextResponse.json({ ok: true, business: updated })

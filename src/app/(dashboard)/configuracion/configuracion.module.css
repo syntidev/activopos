@@ -227,6 +227,104 @@
   margin-top: var(--space-4);
 }
 
+/* ── Color de negocio (banner del catálogo) ── */
+.colorDesc {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-3);
+}
+
+.colorGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-3);
+  max-width: 320px;
+  margin: var(--space-3) 0 0;
+}
+
+.colorSwatch {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  border: 3px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 200ms ease, transform 200ms ease;
+}
+
+.colorSwatch:focus-visible {
+  outline: 2px solid var(--swatch-color);
+  outline-offset: 2px;
+}
+
+.colorSwatchInner {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--swatch-color);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 200ms ease;
+}
+
+.colorSwatch:hover .colorSwatchInner {
+  transform: scale(1.1);
+}
+
+.colorSwatchActive {
+  border-color: var(--swatch-color);
+}
+
+.colorSwatchActive .colorSwatchInner {
+  transform: scale(1.05);
+}
+
+.colorSwatchCheck {
+  position: absolute;
+  color: var(--color-white);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+}
+
+.colorSelectedLabel {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: var(--space-3) 0 0;
+}
+
+.colorSelectedSegment {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .colorSwatch,
+  .colorSwatchInner {
+    transition: none;
+  }
+
+  .colorSwatch:hover .colorSwatchInner,
+  .colorSwatchActive .colorSwatchInner {
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .colorSwatch {
+    width: 44px;
+    height: 44px;
+  }
+
+  .colorSwatchInner {
+    width: 32px;
+    height: 32px;
+  }
+}
+
 /* ── Logo upload ── */
 .logoArea {
   display: flex;

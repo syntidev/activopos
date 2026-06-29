@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
@@ -15,17 +16,21 @@ const createDraftSchema = z.object({
 /* ── GET /api/pos/drafts — list cashier's active drafts ── */
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
 
-  const drafts = await prisma.sale.findMany({
-    where:   { business_id: session.businessId, cashier_id: session.userId, status: 'draft' },
-    include: { items: true },
-    orderBy: { created_at: 'desc' },
-    take:    MAX_DRAFTS,
-  })
+    const drafts = await db.sale.findMany({
+      where:   { cashier_id: session.userId, status: 'draft' }, // business_id inyectado por el tenant layer
+      include: { items: true },
+      orderBy: { created_at: 'desc' },
+      take:    MAX_DRAFTS,
+    })
 
-  return NextResponse.json({ ok: true, drafts })
+    return NextResponse.json({ ok: true, drafts })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 /* ── POST /api/pos/drafts — create new empty draft ── */

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 type Context = { params: { id: string } }
@@ -14,10 +14,6 @@ const stockSchema = z.object({
 })
 
 export async function POST(req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
   const productId = Number(params.id)
   if (!Number.isFinite(productId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
@@ -31,15 +27,21 @@ export async function POST(req: NextRequest, { params }: Context) {
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 
-  const product = await prisma.product.findFirst({
-    where: { id: productId, business_id: session.businessId, active: true },
-    select: { id: true },
-  })
-  if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const notes = body.notes?.trim() || (body.type === 'entry' ? 'Entrada de inventario' : 'Ajuste manual')
+    // Validación (fuera del $transaction) → tenant layer
+    const product = await db.product.findFirst({
+      where: { id: productId, active: true }, // business_id inyectado
+      select: { id: true },
+    })
+    if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
 
-  const entry = await prisma.$transaction(async tx => {
+    const notes = body.notes?.trim() || (body.type === 'entry' ? 'Entrada de inventario' : 'Ajuste manual')
+
+    // $transaction en prisma base: business_id manual adentro
+    const entry = await prisma.$transaction(async tx => {
     const newEntry = await tx.inventoryEntry.create({
       data: {
         business_id:       session.businessId,
@@ -71,16 +73,20 @@ export async function POST(req: NextRequest, { params }: Context) {
     return newEntry
   })
 
-  return NextResponse.json(
-    {
-      ok: true,
-      entry: {
-        ...entry,
-        quantity:          Number(entry.quantity),
-        waste:             Number(entry.waste),
-        cost_per_unit_usd: entry.cost_per_unit_usd ? Number(entry.cost_per_unit_usd) : null,
+    return NextResponse.json(
+      {
+        ok: true,
+        entry: {
+          ...entry,
+          quantity:          Number(entry.quantity),
+          waste:             Number(entry.waste),
+          cost_per_unit_usd: entry.cost_per_unit_usd ? Number(entry.cost_per_unit_usd) : null,
+        },
       },
-    },
-    { status: 201 }
-  )
+      { status: 201 }
+    )
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect, type CSSProperties } from 'react'
 import { motion } from 'framer-motion'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
-  CheckCircle, Star, Archive, MapPin, Menu,
+  CheckCircle, Star, Archive, Menu,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -355,7 +355,15 @@ export function CatalogoGrid({
               {initials}
             </span>
           )}
-          <span className={styles.headerName}>{businessName}</span>
+          <span className={styles.headerInfo}>
+            <span className={styles.headerNameRow}>
+              <span className={styles.headerName}>{businessName}</span>
+              <span className={styles.headerStatusDot} aria-label="Abierto" title="Abierto" />
+            </span>
+            {businessCity && (
+              <span className={styles.headerCity}>{businessCity}</span>
+            )}
+          </span>
         </div>
 
         <button
@@ -372,36 +380,6 @@ export function CatalogoGrid({
           )}
         </button>
       </header>
-
-      {/* ── Hero ───────────────────────────────────────────────── */}
-      <section className={styles.hero} aria-label="Información del negocio">
-        <div className={styles.heroContent}>
-          {businessLogo ? (
-            <img
-              src={businessLogo}
-              alt=""
-              className={styles.heroLogoImg}
-            />
-          ) : (
-            <span className={styles.heroLogoInitials} aria-hidden="true">
-              {initials}
-            </span>
-          )}
-          <h1 className={styles.heroTitle}>{businessName}</h1>
-          <div className={styles.heroMeta}>
-            {businessCity && (
-              <span className={styles.heroMetaItem}>
-                <MapPin size={10} aria-hidden="true" />
-                {businessCity}
-              </span>
-            )}
-            <span className={styles.heroBadgeOpen}>
-              <span className={styles.heroDot} aria-hidden="true" />
-              Abierto
-            </span>
-          </div>
-        </div>
-      </section>
 
       {/* ── H2: Navegación + búsqueda expandible (sticky) ──────── */}
       <div className={styles.navBar}>
@@ -431,22 +409,22 @@ export function CatalogoGrid({
             <button
               type="button"
               className={styles.navIconBtn}
-              onClick={() => setSearchExpanded(true)}
-              aria-label="Buscar productos"
-            >
-              <Search size={18} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className={styles.navIconBtn}
               onClick={() => setCatMenuOpen(o => !o)}
               aria-label="Ver todas las categorías"
               aria-expanded={catMenuOpen}
             >
               <Menu size={18} aria-hidden="true" />
             </button>
+            <button
+              type="button"
+              className={styles.navIconBtn}
+              onClick={() => setSearchExpanded(true)}
+              aria-label="Buscar productos"
+            >
+              <Search size={18} aria-hidden="true" />
+            </button>
 
-            <div className={styles.categoryFixed}>
+            <div ref={categoryTrackRef} className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
               <button
                 role="tab"
                 aria-selected={activeCategory === null}
@@ -456,9 +434,6 @@ export function CatalogoGrid({
                 Todos
                 <span className={styles.categoryTabCount}>{products.length}</span>
               </button>
-            </div>
-
-            <div ref={categoryTrackRef} className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
               {hasFeatured && (
                 <button
                   role="tab"

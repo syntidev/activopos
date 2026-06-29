@@ -1,26 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 type Context = { params: { id: string } }
 
 export async function PATCH(_req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const id = parseInt(params.id, 10)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseInt(params.id, 10)
+    if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const notification = await prisma.notification.findFirst({
-    where: { id, business_id: session.businessId },
-  })
-  if (!notification) return NextResponse.json({ error: 'Notificación no encontrada' }, { status: 404 })
-  if (notification.read_at) return NextResponse.json({ ok: true, already_read: true })
+    const notification = await db.notification.findFirst({
+      where: { id }, // business_id inyectado por el tenant layer
+    })
+    if (!notification) return NextResponse.json({ error: 'Notificación no encontrada' }, { status: 404 })
+    if (notification.read_at) return NextResponse.json({ ok: true, already_read: true })
 
-  const updated = await prisma.notification.update({
-    where: { id },
-    data:  { read_at: new Date(), status: 'read' },
-  })
+    const updated = await db.notification.update({
+      where: { id }, // business_id inyectado por el tenant layer
+      data:  { read_at: new Date(), status: 'read' },
+    })
 
-  return NextResponse.json({ ok: true, notification: updated })
+    return NextResponse.json({ ok: true, notification: updated })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

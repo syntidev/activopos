@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkAndIncrementPinAttempts, clearPinAttempts } from '@/lib/pin-rate-limit'
 
 const schema = z.object({
@@ -13,38 +12,38 @@ const schema = z.object({
 type RouteContext = { params: { id: string } }
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-
   const saleId = parseInt(params.id, 10)
   if (isNaN(saleId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  // DB-backed rate limit — survives PM2 restarts
-  const limited = await checkAndIncrementPinAttempts(session.businessId, saleId)
-  if (limited) {
-    return NextResponse.json(
-      { error: 'Demasiados intentos. Espere 5 minutos.' },
-      { status: 429 }
-    )
-  }
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+
+    // DB-backed rate limit — survives PM2 restarts
+    const limited = await checkAndIncrementPinAttempts(session.businessId, saleId)
+    if (limited) {
+      return NextResponse.json(
+        { error: 'Demasiados intentos. Espere 5 minutos.' },
+        { status: 429 }
+      )
+    }
+
     const body = schema.parse(await req.json())
 
     const [sale, business, users] = await Promise.all([
-      prisma.sale.findFirst({
-        where: { id: saleId, business_id: session.businessId },
+      db.sale.findFirst({
+        where: { id: saleId }, // business_id inyectado por el tenant layer
         select: {
           id: true, status: true, discount_pct: true, rate_used: true,
           items: { select: { subtotal_usd: true } },
         },
       }),
-      prisma.business.findUnique({
+      // Business es la raíz del tenant (no tiene business_id) → no se filtra
+      db.business.findUnique({
         where:  { id: session.businessId },
         select: { max_discount_pct: true },
       }),
-      prisma.user.findMany({
-        where:  { business_id: session.businessId, is_active: true },
+      db.user.findMany({
+        where:  { is_active: true }, // business_id inyectado por el tenant layer
         select: { id: true, role: true, password: true },
       }),
     ])
@@ -95,8 +94,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const newTotalBs  = Math.round(newTotalUsd * Number(sale.rate_used) * 100) / 100
 
     // Atomic update: WHERE discount_pct = 0 prevents compounding under race condition
-    const result = await prisma.sale.updateMany({
-      where: { id: saleId, business_id: session.businessId, discount_pct: 0 },
+    const result = await db.sale.updateMany({
+      where: { id: saleId, discount_pct: 0 }, // business_id inyectado por el tenant layer
       data: {
         discount_pct:     body.discount_pct,
         discount_auth_by: authorizer.id,
@@ -119,6 +118,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       new_total_bs:  newTotalBs,
     })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

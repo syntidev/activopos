@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import type { TenantPrisma } from '@/lib/prisma-tenant'
 
 type RouteContext = { params: { id: string } }
 
@@ -23,63 +23,72 @@ const USER_SELECT = {
   updated_at: true,
 } as const
 
-async function resolveUser(id: number, businessId: number) {
-  return prisma.user.findFirst({ where: { id, business_id: businessId } })
+async function resolveUser(db: TenantPrisma, id: number) {
+  // business_id inyectado por el tenant layer
+  return db.user.findFirst({ where: { id } })
 }
 
 export async function PATCH(request: Request, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
-  const id = parseInt(params.id, 10)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
-  const body: unknown = await request.json()
-
-  let data: z.infer<typeof PatchSchema>
   try {
-    data = PatchSchema.parse(body)
-  } catch (err) {
-    if (err instanceof z.ZodError) return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
-    throw err
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const id = parseInt(params.id, 10)
+    if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+    const body: unknown = await request.json()
+
+    let data: z.infer<typeof PatchSchema>
+    try {
+      data = PatchSchema.parse(body)
+    } catch (err) {
+      if (err instanceof z.ZodError) return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+      throw err
+    }
+
+    if (session.userId === id) {
+      if (data.role !== undefined) return NextResponse.json({ error: 'No puedes cambiar tu propio rol' }, { status: 409 })
+      if (data.is_active === false) return NextResponse.json({ error: 'No puedes desactivarte a ti mismo' }, { status: 409 })
+    }
+
+    const target = await resolveUser(db, id)
+    if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+
+    const user = await db.user.update({
+      where: { id }, // business_id inyectado por el tenant layer
+      data,
+      select: USER_SELECT,
+    })
+
+    return NextResponse.json({ ok: true, user })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
   }
-
-  if (session.userId === id) {
-    if (data.role !== undefined) return NextResponse.json({ error: 'No puedes cambiar tu propio rol' }, { status: 409 })
-    if (data.is_active === false) return NextResponse.json({ error: 'No puedes desactivarte a ti mismo' }, { status: 409 })
-  }
-
-  const target = await resolveUser(id, session.businessId)
-  if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
-
-  const user = await prisma.user.update({
-    where: { id, business_id: session.businessId },
-    data,
-    select: USER_SELECT,
-  })
-
-  return NextResponse.json({ ok: true, user })
 }
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const id = parseInt(params.id, 10)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseInt(params.id, 10)
+    if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  if (session.userId === id) return NextResponse.json({ error: 'No puedes eliminarte a ti mismo' }, { status: 409 })
+    if (session.userId === id) return NextResponse.json({ error: 'No puedes eliminarte a ti mismo' }, { status: 409 })
 
-  const target = await resolveUser(id, session.businessId)
-  if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    const target = await resolveUser(db, id)
+    if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
-  const user = await prisma.user.update({
-    where: { id, business_id: session.businessId },
-    data: { is_active: false },
-    select: USER_SELECT,
-  })
+    const user = await db.user.update({
+      where: { id }, // business_id inyectado por el tenant layer
+      data: { is_active: false },
+      select: USER_SELECT,
+    })
 
-  return NextResponse.json({ ok: true, user })
+    return NextResponse.json({ ok: true, user })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

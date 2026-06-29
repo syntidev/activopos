@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import webpush from 'web-push'
 
 // VAPID keys must be set in environment variables:
@@ -24,25 +23,24 @@ const sendSchema = z.object({
 /* ── POST /api/push/send — send push notification to all business subscribers ── */
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
-  const publicKey  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-  const privateKey = process.env.VAPID_PRIVATE_KEY
-  const subject    = process.env.VAPID_SUBJECT ?? 'mailto:admin@activopos.com'
-
-  if (!publicKey || !privateKey) {
-    return NextResponse.json({ error: 'VAPID keys no configuradas. Genera con: npx web-push generate-vapid-keys' }, { status: 503 })
-  }
-
-  webpush.setVapidDetails(subject, publicKey, privateKey)
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const publicKey  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    const privateKey = process.env.VAPID_PRIVATE_KEY
+    const subject    = process.env.VAPID_SUBJECT ?? 'mailto:admin@activopos.com'
+
+    if (!publicKey || !privateKey) {
+      return NextResponse.json({ error: 'VAPID keys no configuradas. Genera con: npx web-push generate-vapid-keys' }, { status: 503 })
+    }
+
+    webpush.setVapidDetails(subject, publicKey, privateKey)
+
     const body = sendSchema.parse(await req.json())
 
-    const subscriptions = await prisma.pushSubscription.findMany({
-      where: { business_id: session.businessId },
+    const subscriptions = await db.pushSubscription.findMany({
+      // business_id inyectado por el tenant layer
     })
 
     if (subscriptions.length === 0) {
@@ -76,8 +74,8 @@ export async function POST(req: NextRequest) {
       }
     })
     if (expiredEndpoints.length > 0) {
-      await prisma.pushSubscription.deleteMany({
-        where: { business_id: session.businessId, endpoint: { in: expiredEndpoints } },
+      await db.pushSubscription.deleteMany({
+        where: { endpoint: { in: expiredEndpoints } }, // business_id inyectado por el tenant layer
       })
     }
 
@@ -86,6 +84,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, sent, failed })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

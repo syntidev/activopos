@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -13,19 +12,18 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
   const id = parseInt(params.id, 10)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const existing = await prisma.expenseCategory.findFirst({
-    where: { id, business_id: session.businessId },
-  })
-  if (!existing) return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 404 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const existing = await db.expenseCategory.findFirst({
+      where: { id }, // business_id inyectado por el tenant layer
+    })
+    if (!existing) return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 404 })
+
     const body = patchSchema.parse(await req.json())
 
     // Protect system "Otros" from deactivation
@@ -33,8 +31,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'La categoría "Otros" no puede desactivarse' }, { status: 409 })
     }
 
-    const updated = await prisma.expenseCategory.update({
-      where: { id },
+    const updated = await db.expenseCategory.update({
+      where: { id }, // business_id inyectado por el tenant layer
       data:  {
         ...(body.name   !== undefined ? { name: body.name }     : {}),
         ...(body.color  !== undefined ? { color: body.color }   : {}),
@@ -45,6 +43,9 @@ export async function PATCH(
 
     return NextResponse.json({ ok: true, category: updated })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

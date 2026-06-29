@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -14,23 +14,20 @@ const abonoSchema = z.object({
 })
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-
   const clientId = parseInt(params.id)
   if (isNaN(clientId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   try {
+    const { session, db } = await getAuthenticatedTenant()
     const body = await req.json()
     const data = abonoSchema.parse(body)
 
-    /* Verify sale belongs to this client + business and is still pending */
-    const sale = await prisma.sale.findFirst({
+    /* Verify sale belongs to this client (business_id inyectado por el tenant layer) */
+    const sale = await db.sale.findFirst({
       where: {
-        id:          data.sale_id,
-        client_id:   clientId,
-        business_id: session.businessId,
-        status:      'pending',
+        id:        data.sale_id,
+        client_id: clientId,
+        status:    'pending',
       },
       select: { id: true, total_usd: true },
     })
@@ -38,22 +35,22 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Venta no encontrada o ya cerrada' }, { status: 404 })
     }
 
-    /* Verify payment method belongs to this business */
-    const pm = await prisma.paymentMethod.findFirst({
-      where: { id: data.payment_method_id, business_id: session.businessId, is_active: true },
+    /* Verify payment method belongs to this business (business_id inyectado) */
+    const pm = await db.paymentMethod.findFirst({
+      where: { id: data.payment_method_id, is_active: true },
     })
     if (!pm) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
-    /* Active cash register — required to track abono in shift */
-    const activeRegister = await prisma.cashRegister.findFirst({
-      where: { business_id: session.businessId, closed_at: null },
+    /* Active cash register — required to track abono in shift (business_id inyectado) */
+    const activeRegister = await db.cashRegister.findFirst({
+      where: { closed_at: null },
       select: { id: true },
     })
     if (!activeRegister) {
       return NextResponse.json({ error: 'No hay turno de caja abierto' }, { status: 400 })
     }
 
-    /* Current BCV rate */
+    /* Current BCV rate — $queryRaw global (sin business_id), NO pasa por el tenant layer */
     type RateRow = { rate: string | number }
     const rateRows = await prisma.$queryRaw<RateRow[]>`
       SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1
@@ -61,7 +58,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const rateUsed = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
     const amountBs = data.amount_usd * rateUsed
 
-    const abono = await prisma.saleAbono.create({
+    // SaleAbono no tiene business_id — aislado vía sale ya validada arriba
+    const abono = await db.saleAbono.create({
       data: {
         sale_id:           data.sale_id,
         payment_method_id: data.payment_method_id,
@@ -80,13 +78,13 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     })
 
     /* Auto-mark as paid when fully settled */
-    const totalPaid = await prisma.saleAbono.aggregate({
+    const totalPaid = await db.saleAbono.aggregate({
       where: { sale_id: data.sale_id },
       _sum: { amount_usd: true },
     })
     if (Number(totalPaid._sum.amount_usd ?? 0) >= Number(sale.total_usd) - 0.001) {
-      await prisma.sale.update({
-        where: { id: data.sale_id, business_id: session.businessId },
+      await db.sale.update({
+        where: { id: data.sale_id }, // business_id inyectado por el tenant layer
         data:  { status: 'paid', sold_at: new Date() },
       })
     }
@@ -101,6 +99,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       },
     }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

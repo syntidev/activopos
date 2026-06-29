@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 // SSRF allowlist: only known push gateway hostnames accepted
 const PUSH_ENDPOINT_ALLOWLIST = [
@@ -36,10 +35,9 @@ const subscribeSchema = z.object({
 /* ── POST /api/push/subscribe — save or refresh a push subscription ── */
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+
     const body = subscribeSchema.parse(await req.json())
 
     if (!isAllowedEndpoint(body.endpoint)) {
@@ -47,13 +45,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Delete any previous subscription with same endpoint for this business
-    await prisma.pushSubscription.deleteMany({
-      where: { business_id: session.businessId, endpoint: body.endpoint },
+    await db.pushSubscription.deleteMany({
+      where: { endpoint: body.endpoint }, // business_id inyectado por el tenant layer
     })
 
-    const sub = await prisma.pushSubscription.create({
+    const sub = await db.pushSubscription.create({
       data: {
-        business_id: session.businessId,
+        business_id: session.businessId, // explícito: el tipo de create lo exige
         user_id:     session.userId,
         endpoint:    body.endpoint,
         p256dh:      body.keys.p256dh,
@@ -64,6 +62,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, id: sub.id }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
@@ -75,18 +76,20 @@ export async function POST(req: NextRequest) {
 /* ── DELETE /api/push/subscribe — remove a push subscription ── */
 
 export async function DELETE(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-
   try {
+    const { db } = await getAuthenticatedTenant()
+
     const body = z.object({ endpoint: z.string().url() }).parse(await req.json())
 
-    await prisma.pushSubscription.deleteMany({
-      where: { business_id: session.businessId, endpoint: body.endpoint },
+    await db.pushSubscription.deleteMany({
+      where: { endpoint: body.endpoint }, // business_id inyectado por el tenant layer
     })
 
     return NextResponse.json({ ok: true })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

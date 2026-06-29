@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
-import { CATALOG_WHERE_FILTER } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability } from '@/lib/catalog'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -51,7 +51,7 @@ export async function GET(
     return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
   }
 
-  const [products, rate] = await Promise.all([
+  const [products, rate, stockEntries] = await Promise.all([
     prisma.product.findMany({
       where: {
         business_id:        business.id,
@@ -70,6 +70,7 @@ export async function GET(
         images:             true,
         sale_mode:          true,
         base_unit_label:    true,
+        min_stock:          true,
         badge:              true,
         subcategory:        true,
         is_featured:        true,
@@ -80,7 +81,20 @@ export async function GET(
       orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
     }),
     getBcvRate(),
+    prisma.inventoryEntry.groupBy({
+      by:    ['product_id'],
+      where: { business_id: business.id },
+      _sum:  { quantity: true, waste: true },
+    }),
   ])
+
+  const stockMap = new Map<number, number>()
+  for (const e of stockEntries) {
+    stockMap.set(
+      e.product_id,
+      Number(e._sum.quantity ?? 0) - Number(e._sum.waste ?? 0),
+    )
+  }
 
   return NextResponse.json({
     ok:       true,
@@ -91,6 +105,8 @@ export async function GET(
     products: products.map(p => {
       const imgs     = parseImages(p.images)
       const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+      const netQty   = stockMap.get(p.id)
+      const isService = p.sale_mode === 'service'
       return {
         id:            p.id,
         name:          p.name,
@@ -105,7 +121,14 @@ export async function GET(
         badge:              p.badge ?? 'none',
         subcategory:        p.subcategory ?? null,
         is_featured:        p.is_featured,
-        availability:       p.availability,
+        stockQty:           isService ? null : (netQty ?? null),
+        outOfStock:         !isService && (netQty ?? 0) <= 0,
+        availability:       computeAvailability({
+          sale_mode:    p.sale_mode,
+          availability: p.availability ?? 'in_stock',
+          net_stock:    netQty ?? null,
+          min_stock:    p.min_stock !== null ? Number(p.min_stock) : null,
+        }),
         catalog_visibility: p.catalog_visibility,
       }
     }),

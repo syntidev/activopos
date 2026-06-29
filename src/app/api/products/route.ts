@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getBcvRate } from '@/lib/bcv'
 import { z } from 'zod'
 
@@ -63,105 +64,113 @@ function computeAvailability(
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    // Tenant layer: db ya filtra por business_id en cada query automáticamente.
+    const { session, db } = await getAuthenticatedTenant()
 
-  const sp              = req.nextUrl.searchParams
-  const search          = sp.get('search') ?? ''
-  const categoryId      = sp.get('category_id')
-  const showInactive    = sp.get('active') === 'false'
-  const lowStockOnly    = sp.get('low_stock') === 'true'
-  const availableFilter = sp.get('available')
-  const posFilter       = sp.get('pos') === 'true'
+    const sp              = req.nextUrl.searchParams
+    const search          = sp.get('search') ?? ''
+    const categoryId      = sp.get('category_id')
+    const showInactive    = sp.get('active') === 'false'
+    const lowStockOnly    = sp.get('low_stock') === 'true'
+    const availableFilter = sp.get('available')
+    const posFilter       = sp.get('pos') === 'true'
 
-  const [products, stockAgg, rate, biz] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        business_id: session.businessId,
-        active:      showInactive ? false : true,
-        ...(availableFilter === 'true'  ? { is_available: true  } : {}),
-        ...(availableFilter === 'false' ? { is_available: false } : {}),
-        ...(posFilter ? { available_in_pos: true } : {}),
-        ...(search
-          ? {
-              OR: [
-                { name:    { contains: search } },
-                { sku:     { contains: search } },
-                { barcode: { contains: search } },
-              ],
-            }
-          : {}),
-        ...(categoryId ? { category_id: parseInt(categoryId) } : {}),
-      },
-      include: {
-        category: true,
-        variants: {
-          where:   { is_active: true },
-          orderBy: [{ sort_order: 'asc' }, { valor: 'asc' }],
+    const [products, stockAgg, rate, biz] = await Promise.all([
+      db.product.findMany({
+        where: {
+          // business_id inyectado por el tenant layer
+          active: showInactive ? false : true,
+          ...(availableFilter === 'true'  ? { is_available: true  } : {}),
+          ...(availableFilter === 'false' ? { is_available: false } : {}),
+          ...(posFilter ? { available_in_pos: true } : {}),
+          ...(search
+            ? {
+                OR: [
+                  { name:    { contains: search } },
+                  { sku:     { contains: search } },
+                  { barcode: { contains: search } },
+                ],
+              }
+            : {}),
+          ...(categoryId ? { category_id: parseInt(categoryId) } : {}),
         },
-      },
-      orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
-    }),
-    prisma.inventoryEntry.groupBy({
-      by:    ['product_id'],
-      where: { business_id: session.businessId },
-      _sum:  { quantity: true, waste: true },
-    }),
-    getBcvRate(),
-    prisma.business.findUnique({
-      where:  { id: session.businessId },
-      select: { iva_enabled: true, iva_pct: true },
-    }),
-  ])
-
-  const ivaEnabled = biz?.iva_enabled ?? false
-  const ivaPct     = Number(biz?.iva_pct ?? 16)
-
-  const stockMap = new Map(
-    stockAgg.map(s => [
-      s.product_id,
-      {
-        quantity: Number(s._sum.quantity ?? 0),
-        waste:    Number(s._sum.waste    ?? 0),
-        net_qty:  Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0),
-      },
+        include: {
+          category: true,
+          variants: {
+            where:   { is_active: true },
+            orderBy: [{ sort_order: 'asc' }, { valor: 'asc' }],
+          },
+        },
+        orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
+      }),
+      db.inventoryEntry.groupBy({
+        by:   ['product_id'],
+        // business_id inyectado por el tenant layer
+        _sum: { quantity: true, waste: true },
+      }),
+      getBcvRate(),
+      // Business es la raíz del tenant (no tiene business_id) → no se filtra.
+      db.business.findUnique({
+        where:  { id: session.businessId },
+        select: { iva_enabled: true, iva_pct: true },
+      }),
     ])
-  )
 
-  const result = products
-    .map(p => {
-      const stock    = stockMap.get(p.id) ?? { quantity: 0, waste: 0, net_qty: 0 }
-      const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0) || null
-      const costUsd  = p.cost_per_unit_usd ? Number(p.cost_per_unit_usd) : null
-      return {
-        ...p,
-        images:             parseImages(p.images),
-        variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
-        price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
-        price_per_kg_usd:   p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null,
-        cost_per_unit_usd:  costUsd,
-        min_stock:          Number(p.min_stock),
-        stock,
-        price_bs:           priceUsd ? priceUsd * rate : null,
-        profit_usd:         priceUsd && costUsd ? priceUsd - costUsd : null,
-        price_with_iva_usd: ivaEnabled && priceUsd
-          ? Math.round(priceUsd * (1 + ivaPct / 100) * 10000) / 10000
-          : null,
-        iva_pct:            ivaEnabled ? ivaPct : null,
-        is_low_stock:       stock.net_qty < Number(p.min_stock),
-        availability:       computeAvailability(p.availability, p.sale_mode, stock.net_qty, Number(p.min_stock)),
-        catalog_visibility: p.catalog_visibility,
-      }
+    const ivaEnabled = biz?.iva_enabled ?? false
+    const ivaPct     = Number(biz?.iva_pct ?? 16)
+
+    const stockMap = new Map(
+      stockAgg.map(s => [
+        s.product_id,
+        {
+          quantity: Number(s._sum.quantity ?? 0),
+          waste:    Number(s._sum.waste    ?? 0),
+          net_qty:  Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0),
+        },
+      ])
+    )
+
+    const result = products
+      .map(p => {
+        const stock    = stockMap.get(p.id) ?? { quantity: 0, waste: 0, net_qty: 0 }
+        const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0) || null
+        const costUsd  = p.cost_per_unit_usd ? Number(p.cost_per_unit_usd) : null
+        return {
+          ...p,
+          images:             parseImages(p.images),
+          variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
+          price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
+          price_per_kg_usd:   p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null,
+          cost_per_unit_usd:  costUsd,
+          min_stock:          Number(p.min_stock),
+          stock,
+          price_bs:           priceUsd ? priceUsd * rate : null,
+          profit_usd:         priceUsd && costUsd ? priceUsd - costUsd : null,
+          price_with_iva_usd: ivaEnabled && priceUsd
+            ? Math.round(priceUsd * (1 + ivaPct / 100) * 10000) / 10000
+            : null,
+          iva_pct:            ivaEnabled ? ivaPct : null,
+          is_low_stock:       stock.net_qty < Number(p.min_stock),
+          availability:       computeAvailability(p.availability, p.sale_mode, stock.net_qty, Number(p.min_stock)),
+          catalog_visibility: p.catalog_visibility,
+        }
+      })
+      .filter(p => !lowStockOnly || p.is_low_stock)
+
+    return NextResponse.json({
+      ok:          true,
+      products:    result,
+      rate,
+      iva_enabled: ivaEnabled,
+      iva_pct:     ivaEnabled ? ivaPct : null,
     })
-    .filter(p => !lowStockOnly || p.is_low_stock)
-
-  return NextResponse.json({
-    ok:          true,
-    products:    result,
-    rate,
-    iva_enabled: ivaEnabled,
-    iva_pct:     ivaEnabled ? ivaPct : null,
-  })
+  } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    throw err
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import type { SessionPayload } from '@/lib/auth'
+import type { TenantPrisma } from '@/lib/prisma-tenant'
 import * as XLSX from 'xlsx'
 
 // Supported product types
@@ -71,8 +73,16 @@ function validateRow(
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  let session: SessionPayload
+  let db: TenantPrisma
+  try {
+    const t = await getAuthenticatedTenant()
+    session = t.session
+    db = t.db
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   let formData: FormData
@@ -133,15 +143,15 @@ export async function POST(req: NextRequest) {
       if (categoryCache.has(row.category)) {
         categoryId = categoryCache.get(row.category)!
       } else {
-        const existing = await prisma.category.findFirst({
-          where: { business_id: session.businessId, name: row.category },
+        const existing = await db.category.findFirst({
+          where: { name: row.category }, // business_id inyectado por el tenant layer
           select: { id: true },
         })
         if (existing) {
           categoryId = existing.id
         } else {
-          const newCat = await prisma.category.create({
-            data: { business_id: session.businessId, name: row.category },
+          const newCat = await db.category.create({
+            data: { business_id: session.businessId, name: row.category }, // business_id explícito (tipo de create)
           })
           categoryId = newCat.id
         }

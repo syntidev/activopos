@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { readCachedBcvRate } from '@/lib/bcv'
 
@@ -31,62 +31,65 @@ async function expireStale(businessId: number) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp     = req.nextUrl.searchParams
-  const bid    = session.businessId
-  const status = sp.get('status') ?? undefined
-  const page   = Math.max(1, parseInt(sp.get('page') ?? '1', 10))
-  const limit  = Math.max(1, Math.min(parseInt(sp.get('limit') ?? '20', 10), 100))
+    const sp     = req.nextUrl.searchParams
+    const bid    = session.businessId
+    const status = sp.get('status') ?? undefined
+    const page   = Math.max(1, parseInt(sp.get('page') ?? '1', 10))
+    const limit  = Math.max(1, Math.min(parseInt(sp.get('limit') ?? '20', 10), 100))
 
-  await expireStale(bid)
+    await expireStale(bid) // helper en prisma, business_id explícito
 
-  const where = {
-    business_id: bid,
-    ...(status ? { status: status as never } : {}),
-  }
+    const where = {
+      // business_id inyectado por el tenant layer
+      ...(status ? { status: status as never } : {}),
+    }
 
-  const [quotations, total] = await Promise.all([
-    prisma.quotation.findMany({
-      where,
-      orderBy: { created_at: 'desc' },
-      skip:  (page - 1) * limit,
-      take:  limit,
-      include: {
-        client: { select: { id: true, name: true, phone: true } },
-        items:  { select: { id: true, name: true, qty: true, price_usd: true, total_usd: true } },
-      },
-    }),
-    prisma.quotation.count({ where }),
-  ])
+    const [quotations, total] = await Promise.all([
+      db.quotation.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip:  (page - 1) * limit,
+        take:  limit,
+        include: {
+          client: { select: { id: true, name: true, phone: true } },
+          items:  { select: { id: true, name: true, qty: true, price_usd: true, total_usd: true } },
+        },
+      }),
+      db.quotation.count({ where }),
+    ])
 
-  return NextResponse.json({
-    ok: true,
-    quotations: quotations.map(q => ({
-      ...q,
-      subtotal_usd: Number(q.subtotal_usd),
-      total_usd:    Number(q.total_usd),
-      total_bs:     Number(q.total_bs),
-      rate_used:    Number(q.rate_used),
-      items: q.items.map(i => ({
-        ...i,
-        qty:       Number(i.qty),
-        price_usd: Number(i.price_usd),
-        total_usd: Number(i.total_usd),
+    return NextResponse.json({
+      ok: true,
+      quotations: quotations.map(q => ({
+        ...q,
+        subtotal_usd: Number(q.subtotal_usd),
+        total_usd:    Number(q.total_usd),
+        total_bs:     Number(q.total_bs),
+        rate_used:    Number(q.rate_used),
+        items: q.items.map(i => ({
+          ...i,
+          qty:       Number(i.qty),
+          price_usd: Number(i.price_usd),
+          total_usd: Number(i.total_usd),
+        })),
       })),
-    })),
-    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-  })
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
     const body = PostSchema.parse(await req.json())
     const bid  = session.businessId
     const rate = await readCachedBcvRate()
@@ -95,15 +98,16 @@ export async function POST(req: NextRequest) {
     const subtotal = body.items.reduce((s, i) => s + i.qty * i.price_usd, 0)
     const r2       = (x: number) => Math.round(x * 100) / 100
 
-    // Verify client belongs to this business before writing
+    // Verify client belongs to this business before writing (fuera del $transaction)
     if (body.client_id !== undefined) {
-      const owned = await prisma.client.findFirst({
-        where: { id: body.client_id, business_id: bid },
+      const owned = await db.client.findFirst({
+        where: { id: body.client_id }, // business_id inyectado
         select: { id: true },
       })
       if (!owned) return NextResponse.json({ error: 'Cliente inválido' }, { status: 400 })
     }
 
+    // $transaction en prisma base: business_id manual adentro
     const quotation = await prisma.$transaction(async tx => {
       const count  = await tx.quotation.count({ where: { business_id: bid } })
       const number = `QUO-${year}-${String(count + 1).padStart(4, '0')}`
@@ -153,6 +157,9 @@ export async function POST(req: NextRequest) {
       },
     }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

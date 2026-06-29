@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { prisma } from '@/lib/prisma'
 import { readCachedBcvRate } from '@/lib/bcv'
 
@@ -45,52 +46,54 @@ function formatQ(q: Awaited<ReturnType<typeof findQ>>) {
   }
 }
 
-async function findQ(id: number, businessId: number) {
-  return prisma.quotation.findFirst({
-    where:   { id, business_id: businessId },
+async function findQ(db: TenantPrisma, id: number) {
+  return db.quotation.findFirst({
+    where:   { id }, // business_id inyectado por el tenant layer
     include: INCLUDE,
   })
 }
 
 export async function GET(_req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const id = parseInt(params.id, 10)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseInt(params.id, 10)
+    if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  // Auto-expire if past valid_until
-  await prisma.quotation.updateMany({
-    where: { id, business_id: session.businessId, status: { in: ['draft', 'sent'] }, valid_until: { lt: new Date() } },
-    data:  { status: 'expired' },
-  })
+    // Auto-expire if past valid_until (business_id inyectado por el tenant layer)
+    await db.quotation.updateMany({
+      where: { id, status: { in: ['draft', 'sent'] }, valid_until: { lt: new Date() } },
+      data:  { status: 'expired' },
+    })
 
-  const q = await findQ(id, session.businessId)
-  if (!q) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
+    const q = await findQ(db, id)
+    if (!q) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
 
-  return NextResponse.json({ ok: true, quotation: formatQ(q) })
+    return NextResponse.json({ ok: true, quotation: formatQ(q) })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function PATCH(req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
   const id = parseInt(params.id, 10)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   try {
-    const body = PatchSchema.parse(await req.json())
-    const bid  = session.businessId
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-    const existing = await prisma.quotation.findFirst({ where: { id, business_id: bid } })
+    const body = PatchSchema.parse(await req.json())
+
+    const existing = await db.quotation.findFirst({ where: { id } }) // business_id inyectado
     if (!existing) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
 
-    // Verify client belongs to this business before writing
+    // Verify client belongs to this business before writing (fuera del $transaction)
     if (body.client_id !== undefined && body.client_id !== null) {
-      const owned = await prisma.client.findFirst({
-        where: { id: body.client_id, business_id: bid },
+      const owned = await db.client.findFirst({
+        where: { id: body.client_id }, // business_id inyectado
         select: { id: true },
       })
       if (!owned) return NextResponse.json({ error: 'Cliente inválido' }, { status: 400 })
@@ -105,6 +108,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
 
     const r2 = (x: number) => Math.round(x * 100) / 100
 
+    // $transaction en prisma base: business_id manual adentro
     const quotation = await prisma.$transaction(async tx => {
       if (body.items) {
         await tx.quotationItem.deleteMany({ where: { quotation_id: id } })
@@ -151,6 +155,9 @@ export async function PATCH(req: NextRequest, { params }: Context) {
 
     return NextResponse.json({ ok: true, quotation: formatQ(quotation) })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
@@ -160,22 +167,26 @@ export async function PATCH(req: NextRequest, { params }: Context) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const id = parseInt(params.id, 10)
-  if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseInt(params.id, 10)
+    if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const existing = await prisma.quotation.findFirst({
-    where: { id, business_id: session.businessId },
-    select: { id: true, status: true },
-  })
-  if (!existing) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
-  if (existing.status !== 'draft') {
-    return NextResponse.json({ error: 'Solo se pueden eliminar cotizaciones en estado draft' }, { status: 409 })
+    const existing = await db.quotation.findFirst({
+      where: { id }, // business_id inyectado por el tenant layer
+      select: { id: true, status: true },
+    })
+    if (!existing) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
+    if (existing.status !== 'draft') {
+      return NextResponse.json({ error: 'Solo se pueden eliminar cotizaciones en estado draft' }, { status: 409 })
+    }
+
+    await db.quotation.delete({ where: { id } }) // business_id inyectado por el tenant layer
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
   }
-
-  await prisma.quotation.delete({ where: { id } })
-  return NextResponse.json({ ok: true })
 }

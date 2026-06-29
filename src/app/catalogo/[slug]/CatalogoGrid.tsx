@@ -563,13 +563,13 @@ export function CatalogoGrid({
             {visible.map((p, i) => (
               <article
                 key={p.id}
-                className={styles.productCard}
+                className={`${styles.productCard} ${(p.outOfStock || p.availability === 'out_of_stock') ? styles.productCardOutOfStock : ''}`}
                 style={{ '--card-index': Math.min(i, 12) } as CSSProperties}
                 onClick={() => openModal(p)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
                 }}
-                tabIndex={0}
+                tabIndex={(p.outOfStock || p.availability === 'out_of_stock') ? -1 : 0}
                 role="button"
                 aria-label={`Ver detalle: ${p.name}`}
               >

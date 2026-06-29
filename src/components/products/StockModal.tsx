@@ -186,7 +186,9 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
                   </label>
                   <input
                     id="stock-qty"
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className={`${mStyles.input} ${errors.quantity ? mStyles.inputError : ''}`}
                     placeholder={product.sale_mode === 'weight' ? '0.000' : '0'}
                     value={quantity}
@@ -194,8 +196,6 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
                       setQuantity(e.target.value)
                       if (errors.quantity) setErrors((prev) => ({ ...prev, quantity: '' }))
                     }}
-                    min="0"
-                    step={product.sale_mode === 'weight' ? '0.001' : '1'}
                     autoFocus
                   />
                   {errors.quantity && <p className={mStyles.errorMsg}>{errors.quantity}</p>}
@@ -208,7 +208,9 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
                   </label>
                   <input
                     id="stock-cost"
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className={`${mStyles.input} ${errors.cost ? mStyles.inputError : ''}`}
                     placeholder="0.00"
                     value={cost}
@@ -216,8 +218,6 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
                       setCost(e.target.value)
                       if (errors.cost) setErrors((prev) => ({ ...prev, cost: '' }))
                     }}
-                    min="0"
-                    step="0.01"
                   />
                   {errors.cost && <p className={mStyles.errorMsg}>{errors.cost}</p>}
                 </div>

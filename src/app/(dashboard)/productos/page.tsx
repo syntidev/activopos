@@ -683,6 +683,7 @@ export default function ProductosPage() {
                   const stockLevel  = product.sale_mode === 'service' ? null : getStockLevel(product.stock_quantity, product.min_stock)
                   const utility     = product.cost_per_unit_usd !== null ? product.price_per_unit_usd - product.cost_per_unit_usd : null
                   const catBadgeClass = product.category ? CAT_BADGE[product.category.color] ?? styles.catGray : null
+                  const thumbSrc    = product.image_path ?? product.images?.[0] ?? null
 
                   return (
                     <tr
@@ -692,11 +693,13 @@ export default function ProductosPage() {
                       {/* PRODUCTO */}
                       <td className={styles.td}>
                         <div className={styles.productCell}>
-                          {product.image_path ? (
+                          {thumbSrc ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={product.image_path} alt={product.name} className={styles.productThumb} />
+                            <img src={thumbSrc} alt={product.name} className={styles.productThumb} />
                           ) : (
-                            <div className={styles.productThumbEmpty}><Package size={14} aria-hidden="true" /></div>
+                            <div className={styles.productThumbEmpty} aria-hidden="true">
+                              <span className={styles.productThumbInitial}>{product.name.charAt(0).toUpperCase()}</span>
+                            </div>
                           )}
                           <div className={styles.productInfo}>
                             <div className={styles.productNameRow}>

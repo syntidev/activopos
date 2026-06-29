@@ -60,7 +60,7 @@
   width:           32px;
   height:          32px;
   border-radius:   var(--radius-md);
-  background:      var(--color-brand);
+  background:      var(--biz-color, var(--color-brand));
   color:           var(--color-text-on-brand);
   display:         flex;
   align-items:     center;
@@ -135,7 +135,7 @@
   position:        absolute;
   top:             4px;
   right:           4px;
-  background:      var(--color-brand);
+  background:      var(--biz-color, var(--color-brand));
   color:           var(--color-text-on-brand);
   font-size:       10px;
   font-weight:     var(--weight-bold);
@@ -197,7 +197,7 @@
   cursor:          pointer;
   transition:      background var(--transition-fast), color var(--transition-fast);
 }
-.navIconBtn:hover { background: var(--color-brand-subtle); color: var(--color-brand); }
+.navIconBtn:hover { background: var(--color-brand-subtle); color: var(--biz-color, var(--color-brand)); }
 
 /* Búsqueda expandible (reemplaza chips al tocar la lupa) */
 .searchExpanded {
@@ -377,7 +377,7 @@
 }
 .catMenuItem:hover {
   background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 8%, transparent);
-  color:      var(--color-brand);
+  color:      var(--biz-color, var(--color-brand));
 }
 
 .catMenuCount {
@@ -426,7 +426,7 @@
 .subcatPillActive {
   background:   var(--color-brand-subtle);
   border-color: var(--color-brand-border);
-  color:        var(--color-brand);
+  color:        var(--biz-color, var(--color-brand));
 }
 
 /* ── PRODUCT GRID ────────────────────────────────────────────── */
@@ -706,7 +706,7 @@
   font-weight:    var(--weight-semibold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color:          var(--color-brand);
+  color:          var(--biz-color, var(--color-brand));
   margin:         0;
 }
 
@@ -1068,7 +1068,7 @@
 .btnAddCart {
   flex:            1;
   height:          var(--touch-large);
-  background:      var(--color-brand);
+  background:      var(--biz-color, var(--color-brand));
   color:           var(--color-text-on-brand);
   border:          none;
   border-radius:   var(--radius-md);
@@ -1319,7 +1319,7 @@
 .drawerItemSubtotal {
   font-size:   var(--text-xs);
   font-weight: var(--weight-semibold);
-  color:       var(--color-brand);
+  color:       var(--biz-color, var(--color-brand));
 }
 
 .drawerQtyCtrl {
@@ -1665,7 +1665,7 @@
   margin-top:      var(--space-2);
   height:          var(--touch-large);
   padding:         0 var(--space-6);
-  background:      var(--color-brand);
+  background:      var(--biz-color, var(--color-brand));
   color:           var(--color-text-on-brand);
   border:          none;
   border-radius:   var(--radius-md);

@@ -379,6 +379,28 @@ export default function ProductosPage() {
     })
   }, [products, statusFilter, sortKey, sortDir])
 
+  /* ── KPIs de inventario (inversión / estimado de venta) ── */
+  const kpis = useMemo(() => {
+    let inversion = 0
+    let estimadoVenta = 0
+    products.forEach(p => {
+      const cost  = Number(p.cost_per_unit_usd ?? 0)
+      const price = Number(p.price_per_unit_usd ?? 0)
+      const stock = Number(p.stock_quantity ?? 0)
+      if (stock > 0) {
+        inversion     += cost * stock
+        estimadoVenta += price * stock
+      }
+    })
+    const utilidadEstimada = estimadoVenta - inversion
+    return {
+      inversion,
+      estimadoVenta,
+      utilidadEstimada,
+      margen: estimadoVenta > 0 ? (utilidadEstimada / estimadoVenta) * 100 : 0,
+    }
+  }, [products])
+
   const handleSaveCategory = useCallback(async (name: string, color: string) => {
     const res = await fetch('/api/products/categories', {
       method: 'POST',
@@ -525,6 +547,32 @@ export default function ProductosPage() {
           </Button>
         </div>
       </div>
+
+      {/* ── KPIs de inventario (USD + Bs, regla monetaria sellada) ── */}
+      {!isLoading && products.length > 0 && (
+        <div className={styles.kpiRow}>
+          <div className={styles.kpiCard}>
+            <span className={styles.kpiLabel}>Inversión en inventario</span>
+            <span className={styles.kpiValue}>{fmtUsd(kpis.inversion)}</span>
+            <span className={styles.kpiValueBs}>{fmtBs(kpis.inversion, bcvRate)}</span>
+            <span className={styles.kpiSub}>Costo total de productos en stock</span>
+          </div>
+          <div className={styles.kpiCard}>
+            <span className={styles.kpiLabel}>Estimado de venta</span>
+            <span className={`${styles.kpiValue} ${styles.kpiSuccess}`}>{fmtUsd(kpis.estimadoVenta)}</span>
+            <span className={styles.kpiValueBs}>{fmtBs(kpis.estimadoVenta, bcvRate)}</span>
+            <span className={styles.kpiSub}>Si se vende todo el inventario</span>
+          </div>
+          <div className={styles.kpiCard}>
+            <span className={styles.kpiLabel}>Utilidad estimada</span>
+            <span className={`${styles.kpiValue} ${kpis.utilidadEstimada >= 0 ? styles.kpiSuccess : styles.kpiDanger}`}>
+              {fmtUsd(kpis.utilidadEstimada)}
+            </span>
+            <span className={styles.kpiValueBs}>{fmtBs(kpis.utilidadEstimada, bcvRate)}</span>
+            <span className={styles.kpiSub}>Margen: {kpis.margen.toFixed(1)}%</span>
+          </div>
+        </div>
+      )}
 
       {/* ── Filter row: search + status tabs + count ── */}
       <div className={styles.filterRow}>

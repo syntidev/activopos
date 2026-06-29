@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getBcvRate } from '@/lib/bcv'
 import { z } from 'zod'
@@ -93,20 +91,19 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
-  const id = parseId(params.id)
-  if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const id = parseId(params.id)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
     const body = await req.json()
     const { margin, is_active, ...data } = patchSchema.parse(body)
     if (is_active !== undefined) data.active = is_active
 
-    const existing = await prisma.product.findFirst({
-      where: { id, business_id: session.businessId },
+    const existing = await db.product.findFirst({
+      where: { id }, // business_id inyectado por el tenant layer
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
@@ -126,14 +123,17 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       patchData.images = images ? JSON.stringify(images) : null
     }
 
-    const product = await prisma.product.update({
-      where: { id },
+    const product = await db.product.update({
+      where: { id }, // business_id inyectado por el tenant layer
       data: patchData,
       include: { category: true },
     })
 
     return NextResponse.json({ ok: true, product })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
@@ -143,29 +143,34 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const id = parseId(params.id)
-  if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseId(params.id)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const [existing, salesCount] = await Promise.all([
-    prisma.product.findFirst({ where: { id, business_id: session.businessId } }),
-    prisma.saleItem.count({ where: { product_id: id } }),
-  ])
-  if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+    const [existing, salesCount] = await Promise.all([
+      db.product.findFirst({ where: { id } }), // business_id inyectado por el tenant layer
+      // SaleItem no tiene business_id; el producto se valida por ownership abajo
+      db.saleItem.count({ where: { product_id: id } }),
+    ])
+    if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-  if (salesCount > 0) {
-    return NextResponse.json(
-      {
-        error: 'Este producto tiene historial de ventas. Te recomendamos desactivarlo en lugar de eliminarlo.',
-        sales_count: salesCount,
-      },
-      { status: 409 }
-    )
+    if (salesCount > 0) {
+      return NextResponse.json(
+        {
+          error: 'Este producto tiene historial de ventas. Te recomendamos desactivarlo en lugar de eliminarlo.',
+          sales_count: salesCount,
+        },
+        { status: 409 }
+      )
+    }
+
+    await db.product.delete({ where: { id } }) // business_id inyectado por el tenant layer
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
   }
-
-  await prisma.product.delete({ where: { id } })
-  return NextResponse.json({ ok: true })
 }

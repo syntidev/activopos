@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -19,40 +18,36 @@ type RouteContext = { params: { id: string; variantId: string } }
 
 const parseId = (raw: string) => { const n = parseInt(raw); return isNaN(n) ? null : n }
 
-async function guardProduct(productId: number, businessId: number) {
-  return prisma.product.findFirst({
-    where:  { id: productId, business_id: businessId },
-    select: { id: true },
-  })
-}
-
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' },    { status: 403 })
-
-  const productId = parseId(params.id)
-  const variantId = parseId(params.variantId)
-  if (!productId || !variantId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
-  if (!await guardProduct(productId, session.businessId)) {
-    return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
-  }
-
-  const existing = await prisma.productVariant.findFirst({
-    where: { id: variantId, product_id: productId },
-  })
-  if (!existing) return NextResponse.json({ error: 'Variante no encontrada' }, { status: 404 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const productId = parseId(params.id)
+    const variantId = parseId(params.variantId)
+    if (!productId || !variantId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+    // Guard de propiedad: business_id inyectado por el tenant layer
+    const product = await db.product.findFirst({ where: { id: productId }, select: { id: true } })
+    if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+
+    // ProductVariant no tiene business_id — aislado vía product_id del producto ya validado
+    const existing = await db.productVariant.findFirst({
+      where: { id: variantId, product_id: productId },
+    })
+    if (!existing) return NextResponse.json({ error: 'Variante no encontrada' }, { status: 404 })
+
     const body    = patchSchema.parse(await req.json())
-    const variant = await prisma.productVariant.update({
+    const variant = await db.productVariant.update({
       where: { id: variantId },
       data:  body,
     })
 
     return NextResponse.json({ ok: true, variant: { ...variant, precio_extra: Number(variant.precio_extra) } })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
@@ -62,24 +57,27 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' },    { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const productId = parseId(params.id)
-  const variantId = parseId(params.variantId)
-  if (!productId || !variantId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const productId = parseId(params.id)
+    const variantId = parseId(params.variantId)
+    if (!productId || !variantId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  if (!await guardProduct(productId, session.businessId)) {
-    return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+    const product = await db.product.findFirst({ where: { id: productId }, select: { id: true } })
+    if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+
+    const existing = await db.productVariant.findFirst({
+      where: { id: variantId, product_id: productId },
+    })
+    if (!existing) return NextResponse.json({ error: 'Variante no encontrada' }, { status: 404 })
+
+    await db.productVariant.update({ where: { id: variantId }, data: { is_active: false } })
+
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
   }
-
-  const existing = await prisma.productVariant.findFirst({
-    where: { id: variantId, product_id: productId },
-  })
-  if (!existing) return NextResponse.json({ error: 'Variante no encontrada' }, { status: 404 })
-
-  await prisma.productVariant.update({ where: { id: variantId }, data: { is_active: false } })
-
-  return NextResponse.json({ ok: true })
 }

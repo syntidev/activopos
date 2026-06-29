@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getBcvRate } from '@/lib/bcv'
 import { z } from 'zod'
@@ -174,11 +172,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' },    { status: 403 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
     const body                = await req.json()
     const { margin, ...data } = productSchema.parse(body)
 
@@ -187,9 +184,9 @@ export async function POST(req: NextRequest) {
       data.availability = 'in_stock'
     }
 
-    const product = await prisma.product.create({
+    const product = await db.product.create({
       data: {
-        business_id:        session.businessId,
+        business_id:        session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
         name:               data.name,
         category_id:        data.category_id        ?? null,
         barcode:            data.barcode            ?? null,
@@ -232,6 +229,9 @@ export async function POST(req: NextRequest) {
       },
     }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

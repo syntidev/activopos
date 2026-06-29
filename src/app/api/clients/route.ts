@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 
@@ -58,16 +56,15 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+
     const body = await req.json()
     const data = clientSchema.parse(body)
 
-    const client = await prisma.client.create({
+    const client = await db.client.create({
       data: {
-        business_id: session.businessId,
+        business_id: session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
         name: data.name,
         phone: data.phone ?? null,
         email: data.email ?? null,
@@ -78,6 +75,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, client }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

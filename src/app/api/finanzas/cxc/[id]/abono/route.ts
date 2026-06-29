@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
@@ -18,19 +18,18 @@ const TX_404 = 'Venta no encontrada o ya pagada'
 type Context = { params: { id: string } }
 
 export async function POST(req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
   const saleId = parseInt(params.id, 10)
   if (isNaN(saleId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
     const body = abonoSchema.parse(await req.json())
 
-    // Verify payment method outside tx — no need to hold the transaction open during this lookup
-    const payMethod = await prisma.paymentMethod.findFirst({
-      where: { id: body.payment_method_id, business_id: session.businessId },
+    // Verify payment method outside tx (fuera del $transaction) → tenant layer
+    const payMethod = await db.paymentMethod.findFirst({
+      where: { id: body.payment_method_id }, // business_id inyectado
     })
     if (!payMethod) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
@@ -38,7 +37,8 @@ export async function POST(req: NextRequest, { params }: Context) {
     const rate     = await getBcvRate(session.businessId)
     const amountBs = Math.round(body.amount_usd * rate * 100) / 100
 
-    // CX-RACE fix: saldo check + create inside a single interactive transaction
+    // CX-RACE fix: saldo check + create inside a single interactive transaction.
+    // $transaction en prisma base: business_id manual adentro (la extension no se propaga al tx)
     const { abono, saldoFinal, nowPaid, ticketNumber } = await prisma.$transaction(async (tx) => {
       // Re-read sale + all abonos atomically inside the tx
       const sale = await tx.sale.findFirst({
@@ -98,6 +98,9 @@ export async function POST(req: NextRequest, { params }: Context) {
     }, { status: 201 })
 
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

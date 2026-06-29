@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido')
@@ -42,11 +42,11 @@ interface ProfitRow {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp     = req.nextUrl.searchParams
+    const sp     = req.nextUrl.searchParams
   const parsed = rangeSchema.safeParse({ from: sp.get('from'), to: sp.get('to') })
   if (!parsed.success) {
     return NextResponse.json({ error: 'Parámetros inválidos', issues: parsed.error.issues }, { status: 400 })
@@ -58,12 +58,13 @@ export async function GET(req: NextRequest) {
   const to   = new Date(`${toStr}T23:59:59.999Z`)
 
   const [salesAgg, profitRows, topProductsRaw, gastos, business] = await Promise.all([
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: 'paid', sold_at: { gte: from, lte: to } },
+    db.sale.aggregate({
+      where: { status: 'paid', sold_at: { gte: from, lte: to } }, // business_id inyectado
       _sum:   { total_usd: true, total_bs: true },
       _count: { id: true },
     }),
 
+    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
     prisma.$queryRaw<ProfitRow[]>`
       SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS profit
       FROM sale_items si
@@ -88,12 +89,13 @@ export async function GET(req: NextRequest) {
       ORDER BY total_usd DESC
       LIMIT 10`,
 
-    prisma.gasto.aggregate({
-      where: { business_id: bid, fecha: { gte: from, lte: to } },
+    db.gasto.aggregate({
+      where: { fecha: { gte: from, lte: to } }, // business_id inyectado
       _sum: { monto_usd: true },
     }),
 
-    prisma.business.findUnique({
+    // Business es la raíz del tenant (no tiene business_id) → no se filtra.
+    db.business.findUnique({
       where:  { id: bid },
       select: { name: true, logo_path: true },
     }),
@@ -226,4 +228,8 @@ export async function GET(req: NextRequest) {
   return new Response(html, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

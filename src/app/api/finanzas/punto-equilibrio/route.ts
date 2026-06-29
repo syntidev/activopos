@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
+    const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
   const from = new Date(year, month - 1, 1)
   const to   = new Date(year, month, 1)
   const bid  = session.businessId
   const now  = new Date()
 
   const [ventasAgg, costoRow, gastosAgg] = await Promise.all([
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } },
+    db.sale.aggregate({
+      where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
       _sum:  { total_usd: true },
       _count: { id: true },
     }),
 
+    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
     prisma.$queryRaw<{ costo: string | null }[]>`
       SELECT SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS costo
       FROM sale_items si
@@ -31,8 +32,8 @@ export async function GET(req: NextRequest) {
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}`,
 
-    prisma.gasto.aggregate({
-      where: { business_id: bid, fecha: { gte: from, lt: to } },
+    db.gasto.aggregate({
+      where: { fecha: { gte: from, lt: to } }, // business_id inyectado
       _sum:  { monto_usd: true },
     }),
   ])
@@ -107,4 +108,8 @@ export async function GET(req: NextRequest) {
     proyeccion_fin_mes_usd:   proyeccion,
     alcanzara_pe:             puntoEquilibrio > 0 ? proyeccion >= puntoEquilibrio : true,
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -22,11 +22,11 @@ interface CostRow {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const dateStr = req.nextUrl.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
+    const dateStr = req.nextUrl.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
   if (!dateSchema.safeParse(dateStr).success) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
   }
@@ -38,13 +38,13 @@ export async function GET(req: NextRequest) {
 
   const [paidAgg, creditAgg, costRow, byCategoryRaw, paymentMethodsRaw, registers, salesForRegs] =
     await Promise.all([
-      prisma.sale.aggregate({
-        where: { business_id: bid, status: 'paid', sold_at: { gte: dayStart, lt: dayEnd } },
+      db.sale.aggregate({
+        where: { status: 'paid', sold_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
         _sum:  { total_usd: true, total_bs: true },
       }),
 
-      prisma.sale.aggregate({
-        where: { business_id: bid, status: 'pending', created_at: { gte: dayStart, lt: dayEnd } },
+      db.sale.aggregate({
+        where: { status: 'pending', created_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
         _sum:  { total_usd: true },
       }),
 
@@ -84,14 +84,14 @@ export async function GET(req: NextRequest) {
         GROUP BY pm.id, pm.name
         ORDER BY total_usd DESC`,
 
-      prisma.cashRegister.findMany({
-        where:   { business_id: bid, opened_at: { gte: dayStart, lt: dayEnd } },
+      db.cashRegister.findMany({
+        where:   { opened_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
         select:  { id: true, opened_at: true, closed_at: true },
         orderBy: { opened_at: 'asc' },
       }),
 
-      prisma.sale.findMany({
-        where:  { business_id: bid, status: 'paid', sold_at: { gte: dayStart, lt: dayEnd } },
+      db.sale.findMany({
+        where:  { status: 'paid', sold_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
         select: { sold_at: true, total_usd: true },
       }),
     ])
@@ -149,4 +149,8 @@ export async function GET(req: NextRequest) {
       }
     }),
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

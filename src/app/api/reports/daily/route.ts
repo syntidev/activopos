@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -31,11 +31,11 @@ type RateRow = { rate: string | number }
 // P2: sin rate limit explícito — si se agrega, usar Redis (ioredis + rate-limiter-flexible)
 // para cluster-safety con PM2 multi-worker. RateLimiterMemory no comparte estado entre workers.
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const dateStr =
+    const dateStr =
     req.nextUrl.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
 
   if (!dateSchema.safeParse(dateStr).success) {
@@ -56,9 +56,9 @@ export async function GET(req: NextRequest) {
     cashRegister,
     rateRows,
   ] = await Promise.all([
-    prisma.sale.aggregate({
+    db.sale.aggregate({
       where: {
-        business_id: session.businessId,
+        // business_id inyectado por el tenant layer
         status:      'paid',
         sold_at:     { gte: dayStart, lt: dayEnd },
       },
@@ -66,7 +66,8 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
     }),
 
-    prisma.saleItem.aggregate({
+    // SaleItem no tiene business_id — aislado por la relación sale.business_id
+    db.saleItem.aggregate({
       where: {
         sale: {
           business_id: session.businessId,
@@ -77,7 +78,8 @@ export async function GET(req: NextRequest) {
       _sum: { quantity: true },
     }),
 
-    prisma.salePayment.findMany({
+    // SalePayment no tiene business_id — aislado por la relación sale.business_id
+    db.salePayment.findMany({
       where: {
         sale: {
           business_id: session.businessId,
@@ -139,9 +141,9 @@ export async function GET(req: NextRequest) {
       ORDER BY hour ASC
     `,
 
-    prisma.cashRegister.findFirst({
+    db.cashRegister.findFirst({
       where: {
-        business_id: session.businessId,
+        // business_id inyectado por el tenant layer
         opened_at:   { gte: dayStart, lt: dayEnd },
       },
       orderBy: { opened_at: 'desc' },
@@ -233,4 +235,8 @@ export async function GET(req: NextRequest) {
         }
       : null,
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { readCachedBcvRate } from '@/lib/bcv'
 import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
@@ -37,11 +37,11 @@ function generateInsight(
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
+    const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
   const from     = new Date(year, month - 1, 1)
   const to       = new Date(year, month, 1)
   const bid      = session.businessId
@@ -62,13 +62,14 @@ export async function GET(req: NextRequest) {
     inventarioRow,
   ] = await Promise.all([
     // Ventas pagas del período
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } },
+    db.sale.aggregate({
+      where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
       _sum:  { total_usd: true, total_bs: true },
     }),
 
-    // Abonos recibidos en el período (por created_at del abono)
-    prisma.saleAbono.aggregate({
+    // Abonos recibidos en el período — SaleAbono no tiene business_id,
+    // se aísla por la relación sale.business_id
+    db.saleAbono.aggregate({
       where: {
         sale:       { business_id: bid },
         created_at: { gte: from, lt: to },
@@ -88,15 +89,15 @@ export async function GET(req: NextRequest) {
         AND s.sold_at <  ${to}`,
 
     // Gastos operativos incurridos en el período (todos, pagados o no)
-    prisma.gasto.aggregate({
-      where: { business_id: bid, fecha: { gte: from, lt: to } },
+    db.gasto.aggregate({
+      where: { fecha: { gte: from, lt: to } }, // business_id inyectado
       _sum:  { monto_usd: true },
     }),
 
     // Cuentas pagadas en el período (gastos con paid_at en el período)
-    prisma.gasto.aggregate({
+    db.gasto.aggregate({
       where: {
-        business_id: bid,
+        // business_id inyectado por el tenant layer
         is_paid:     true,
         paid_at:     { gte: from, lt: to },
       },
@@ -104,32 +105,32 @@ export async function GET(req: NextRequest) {
     }),
 
     // CxC activas (ventas pendientes de cobro)
-    prisma.sale.aggregate({
-      where:  { business_id: bid, status: 'pending' },
+    db.sale.aggregate({
+      where:  { status: 'pending' }, // business_id inyectado
       _sum:   { total_usd: true },
       _count: { id: true },
     }),
 
     // CxC vencidas: ventas pendientes con due_date pasado
-    prisma.sale.count({
-      where: { business_id: bid, status: 'pending', due_date: { lt: now } },
+    db.sale.count({
+      where: { status: 'pending', due_date: { lt: now } }, // business_id inyectado
     }),
 
     // CxC por vencer en los próximos 7 días
-    prisma.sale.count({
-      where: { business_id: bid, status: 'pending', due_date: { gte: now, lte: vencer7 } },
+    db.sale.count({
+      where: { status: 'pending', due_date: { gte: now, lte: vencer7 } }, // business_id inyectado
     }),
 
     // CxP activas (gastos sin pagar)
-    prisma.gasto.aggregate({
-      where:  { business_id: bid, is_paid: false },
+    db.gasto.aggregate({
+      where:  { is_paid: false }, // business_id inyectado
       _sum:   { monto_usd: true },
       _count: { id: true },
     }),
 
     // CxP vencidas: gastos sin pagar con fecha pasada (fecha < hoy)
-    prisma.gasto.count({
-      where: { business_id: bid, is_paid: false, due_date: { lt: now, not: null } },
+    db.gasto.count({
+      where: { is_paid: false, due_date: { lt: now, not: null } }, // business_id inyectado
     }),
 
     // Inventario valorizado al costo y a precio de venta
@@ -256,4 +257,8 @@ export async function GET(req: NextRequest) {
     },
     insight: generateInsight(ventasUsd, margenBruto, margenNeto, utilidadNeta, cxcAgg._count.id, cxcUsd),
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

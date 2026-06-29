@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 // Nombres que envía la UI — se mapean a los campos del modelo BusinessDevice al persistir
 const DEVICE_TYPES_UI = ['debit', 'credit', 'biopago'] as const
@@ -32,16 +33,20 @@ function toUI(d: DBDevice) {
 }
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const devices = await prisma.businessDevice.findMany({
-    where:   { business_id: session.businessId },
-    orderBy: { created_at: 'asc' },
-  })
+    const devices = await db.businessDevice.findMany({
+      // business_id inyectado por el tenant layer
+      orderBy: { created_at: 'asc' },
+    })
 
-  return NextResponse.json({ ok: true, devices: devices.map(toUI) })
+    return NextResponse.json({ ok: true, devices: devices.map(toUI) })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: Request) {

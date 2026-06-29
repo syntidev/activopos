@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { PmType } from '@prisma/client'
 
 const PostSchema = z.object({
@@ -21,15 +22,19 @@ const CobroSchema = z.object({
 })
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const methods = await prisma.paymentMethod.findMany({
-    where: { business_id: session.businessId },
-    orderBy: { sort_order: 'asc' },
-  })
+    const methods = await db.paymentMethod.findMany({
+      // business_id inyectado por el tenant layer
+      orderBy: { sort_order: 'asc' },
+    })
 
-  return NextResponse.json({ ok: true, methods })
+    return NextResponse.json({ ok: true, methods })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(request: Request) {

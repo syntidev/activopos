@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getBcvRate } from '@/lib/bcv'
 import { z } from 'zod'
 
@@ -45,46 +46,50 @@ const parseId = (raw: string) => {
 }
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const id = parseId(params.id)
-  if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseId(params.id)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const [product, stockAgg, rate] = await Promise.all([
-    prisma.product.findFirst({
-      where: { id, business_id: session.businessId },
-      include: { category: true },
-    }),
-    prisma.inventoryEntry.aggregate({
-      where: { product_id: id, business_id: session.businessId },
-      _sum: { quantity: true, waste: true },
-    }),
-    getBcvRate(),
-  ])
+    const [product, stockAgg, rate] = await Promise.all([
+      db.product.findFirst({
+        where: { id }, // business_id inyectado por el tenant layer
+        include: { category: true },
+      }),
+      db.inventoryEntry.aggregate({
+        where: { product_id: id }, // business_id inyectado por el tenant layer
+        _sum: { quantity: true, waste: true },
+      }),
+      getBcvRate(),
+    ])
 
-  if (!product) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+    if (!product) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-  const qty = Number(stockAgg._sum.quantity ?? 0)
-  const waste = Number(stockAgg._sum.waste ?? 0)
-  const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0) || null
-  const costUsd = product.cost_per_unit_usd ? Number(product.cost_per_unit_usd) : null
+    const qty = Number(stockAgg._sum.quantity ?? 0)
+    const waste = Number(stockAgg._sum.waste ?? 0)
+    const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0) || null
+    const costUsd = product.cost_per_unit_usd ? Number(product.cost_per_unit_usd) : null
 
-  return NextResponse.json({
-    ok: true,
-    product: {
-      ...product,
-      price_per_unit_usd: product.price_per_unit_usd ? Number(product.price_per_unit_usd) : null,
-      price_per_kg_usd: product.price_per_kg_usd ? Number(product.price_per_kg_usd) : null,
-      cost_per_unit_usd: costUsd,
-      min_stock: Number(product.min_stock),
-      stock_alert_threshold: product.stock_alert_threshold,
-      stock: { quantity: qty, waste, net_qty: qty - waste },
-      price_bs: priceUsd ? priceUsd * rate : null,
-      profit_usd: priceUsd && costUsd ? priceUsd - costUsd : null,
-      is_low_stock: (qty - waste) < Number(product.min_stock),
-    },
-  })
+    return NextResponse.json({
+      ok: true,
+      product: {
+        ...product,
+        price_per_unit_usd: product.price_per_unit_usd ? Number(product.price_per_unit_usd) : null,
+        price_per_kg_usd: product.price_per_kg_usd ? Number(product.price_per_kg_usd) : null,
+        cost_per_unit_usd: costUsd,
+        min_stock: Number(product.min_stock),
+        stock_alert_threshold: product.stock_alert_threshold,
+        stock: { quantity: qty, waste, net_qty: qty - waste },
+        price_bs: priceUsd ? priceUsd * rate : null,
+        profit_usd: priceUsd && costUsd ? priceUsd - costUsd : null,
+        is_low_stock: (qty - waste) < Number(product.min_stock),
+      },
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {

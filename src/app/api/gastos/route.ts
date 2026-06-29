@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { readCachedBcvRate } from '@/lib/bcv'
 import { parsePeriodFromParams } from '@/lib/finanzas'
 
@@ -24,51 +25,55 @@ const PostSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp              = req.nextUrl.searchParams
-  const { year, month } = parsePeriodFromParams(sp)
-  const from            = new Date(year, month - 1, 1)
-  const to              = new Date(year, month, 1)
-  const tipo            = sp.get('tipo') // 'fijo' | 'variable'
+    const sp              = req.nextUrl.searchParams
+    const { year, month } = parsePeriodFromParams(sp)
+    const from            = new Date(year, month - 1, 1)
+    const to              = new Date(year, month, 1)
+    const tipo            = sp.get('tipo') // 'fijo' | 'variable'
 
-  const [gastos, rate] = await Promise.all([
-    prisma.gasto.findMany({
-      where: {
-        business_id: session.businessId,
-        fecha:       { gte: from, lt: to },
-        // 'fijo' = gasto recurrente con fecha de vencimiento; 'variable' = sin vencimiento
-        ...(tipo === 'fijo'     ? { due_date: { not: null } } : {}),
-        ...(tipo === 'variable' ? { due_date: null }          : {}),
-      },
-      orderBy: { fecha: 'desc' },
-    }),
-    readCachedBcvRate(),
-  ])
+    const [gastos, rate] = await Promise.all([
+      db.gasto.findMany({
+        where: {
+          // business_id inyectado por el tenant layer
+          fecha: { gte: from, lt: to },
+          // 'fijo' = gasto recurrente con fecha de vencimiento; 'variable' = sin vencimiento
+          ...(tipo === 'fijo'     ? { due_date: { not: null } } : {}),
+          ...(tipo === 'variable' ? { due_date: null }          : {}),
+        },
+        orderBy: { fecha: 'desc' },
+      }),
+      readCachedBcvRate(),
+    ])
 
-  const r2 = (x: number) => Math.round(x * 100) / 100
+    const r2 = (x: number) => Math.round(x * 100) / 100
 
-  return NextResponse.json({
-    ok: true,
-    rate,
-    gastos: gastos.map(g => ({
-      id:          g.id,
-      concepto:    g.concepto,
-      monto_usd:   Number(g.monto_usd),
-      monto_bs:    r2(Number(g.monto_usd) * rate),
-      categoria:   g.categoria,
-      category_id: g.category_id,
-      fecha:       g.fecha instanceof Date ? g.fecha.toISOString().slice(0, 10) : String(g.fecha).slice(0, 10),
-      notas:       g.notas,
-      is_paid:     g.is_paid,
-      paid_at:     g.paid_at,
-      due_date:    g.due_date instanceof Date ? g.due_date.toISOString().slice(0, 10) : (g.due_date ?? null),
-      supplier:    g.supplier,
-      created_at:  g.created_at,
-    })),
-  })
+    return NextResponse.json({
+      ok: true,
+      rate,
+      gastos: gastos.map(g => ({
+        id:          g.id,
+        concepto:    g.concepto,
+        monto_usd:   Number(g.monto_usd),
+        monto_bs:    r2(Number(g.monto_usd) * rate),
+        categoria:   g.categoria,
+        category_id: g.category_id,
+        fecha:       g.fecha instanceof Date ? g.fecha.toISOString().slice(0, 10) : String(g.fecha).slice(0, 10),
+        notas:       g.notas,
+        is_paid:     g.is_paid,
+        paid_at:     g.paid_at,
+        due_date:    g.due_date instanceof Date ? g.due_date.toISOString().slice(0, 10) : (g.due_date ?? null),
+        supplier:    g.supplier,
+        created_at:  g.created_at,
+      })),
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: NextRequest) {

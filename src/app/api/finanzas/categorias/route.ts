@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -18,25 +19,31 @@ const createSchema = z.object({
 })
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const count = await prisma.expenseCategory.count({ where: { business_id: session.businessId } })
-  if (count === 0) {
-    await prisma.expenseCategory.createMany({
-      data:           SYSTEM_CATEGORIES.map(c => ({ ...c, business_id: session.businessId })),
-      skipDuplicates: true,
+    const count = await db.expenseCategory.count() // business_id inyectado
+    if (count === 0) {
+      // En writes se mantiene business_id explícito (el tipo de createMany lo
+      // exige; la capa re-inyecta el mismo valor sin conflicto).
+      await db.expenseCategory.createMany({
+        data:           SYSTEM_CATEGORIES.map(c => ({ ...c, business_id: session.businessId })),
+        skipDuplicates: true,
+      })
+    }
+
+    const categories = await db.expenseCategory.findMany({
+      where: { active: true }, // business_id inyectado por el tenant layer
+      orderBy: [{ is_system: 'desc' }, { name: 'asc' }],
+      select: { id: true, name: true, color: true, is_system: true, active: true },
     })
+
+    return NextResponse.json({ ok: true, categories })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
   }
-
-  const categories = await prisma.expenseCategory.findMany({
-    where: { business_id: session.businessId, active: true },
-    orderBy: [{ is_system: 'desc' }, { name: 'asc' }],
-    select: { id: true, name: true, color: true, is_system: true, active: true },
-  })
-
-  return NextResponse.json({ ok: true, categories })
 }
 
 export async function POST(req: NextRequest) {

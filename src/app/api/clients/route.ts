@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 
 const clientSchema = z.object({
@@ -12,44 +13,48 @@ const clientSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const sp = req.nextUrl.searchParams
-  const search = sp.get('search')?.trim() ?? ''
-  const page = Math.max(1, parseInt(sp.get('page') ?? '1'))
-  const limit = Math.min(50, parseInt(sp.get('limit') ?? '20'))
-  const skip = (page - 1) * limit
+    const sp = req.nextUrl.searchParams
+    const search = sp.get('search')?.trim() ?? ''
+    const page = Math.max(1, parseInt(sp.get('page') ?? '1'))
+    const limit = Math.min(50, parseInt(sp.get('limit') ?? '20'))
+    const skip = (page - 1) * limit
 
-  const where = {
-    business_id: session.businessId,
-    is_active: true,
-    ...(search
-      ? {
-          OR: [
-            { name: { contains: search } },
-            { phone: { contains: search } },
-            { cedula: { contains: search } },
-          ],
-        }
-      : {}),
+    const where = {
+      // business_id inyectado por el tenant layer
+      is_active: true,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search } },
+              { phone: { contains: search } },
+              { cedula: { contains: search } },
+            ],
+          }
+        : {}),
+    }
+
+    const [clients, total] = await Promise.all([
+      db.client.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      db.client.count({ where }),
+    ])
+
+    return NextResponse.json({
+      ok: true,
+      clients,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
   }
-
-  const [clients, total] = await Promise.all([
-    prisma.client.findMany({
-      where,
-      orderBy: { name: 'asc' },
-      skip,
-      take: limit,
-    }),
-    prisma.client.count({ where }),
-  ])
-
-  return NextResponse.json({
-    ok: true,
-    clients,
-    pagination: { total, page, limit, pages: Math.ceil(total / limit) },
-  })
 }
 
 export async function POST(req: NextRequest) {

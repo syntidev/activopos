@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -19,60 +20,62 @@ const parseId = (raw: string) => {
 }
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const id = parseId(params.id)
-  if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseId(params.id)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const client = await prisma.client.findFirst({
-    where: { id, business_id: session.businessId },
-  })
-  if (!client) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+    const client = await db.client.findFirst({
+      where: { id }, // business_id inyectado por el tenant layer
+    })
+    if (!client) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-  const [recentSales, cxcAgg] = await Promise.all([
-    prisma.sale.findMany({
-      where: {
-        client_id: id,
-        business_id: session.businessId,
-        status: { not: 'cancelled' },
-      },
-      select: {
-        id: true,
-        ticket_number: true,
-        status: true,
-        total_usd: true,
-        total_bs: true,
-        sold_at: true,
-        created_at: true,
-      },
-      orderBy: { created_at: 'desc' },
-      take: 20,
-    }),
-    // Saldo CxC = suma de ventas pendientes (crédito sin pagar)
-    prisma.sale.aggregate({
-      where: {
-        client_id: id,
-        business_id: session.businessId,
-        status: 'pending',
-      },
-      _sum: { total_bs: true, total_usd: true },
-    }),
-  ])
+    const [recentSales, cxcAgg] = await Promise.all([
+      db.sale.findMany({
+        where: {
+          client_id: id,
+          status: { not: 'cancelled' },
+        },
+        select: {
+          id: true,
+          ticket_number: true,
+          status: true,
+          total_usd: true,
+          total_bs: true,
+          sold_at: true,
+          created_at: true,
+        },
+        orderBy: { created_at: 'desc' },
+        take: 20,
+      }),
+      // Saldo CxC = suma de ventas pendientes (crédito sin pagar)
+      db.sale.aggregate({
+        where: {
+          client_id: id,
+          status: 'pending',
+        },
+        _sum: { total_bs: true, total_usd: true },
+      }),
+    ])
 
-  return NextResponse.json({
+    return NextResponse.json({
     ok: true,
     client,
     cxc: {
       balance_bs: Number(cxcAgg._sum.total_bs ?? 0),
       balance_usd: Number(cxcAgg._sum.total_usd ?? 0),
     },
-    recentSales: recentSales.map(s => ({
-      ...s,
-      total_usd: Number(s.total_usd),
-      total_bs: Number(s.total_bs),
-    })),
-  })
+      recentSales: recentSales.map(s => ({
+        ...s,
+        total_usd: Number(s.total_usd),
+        total_bs: Number(s.total_bs),
+      })),
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {

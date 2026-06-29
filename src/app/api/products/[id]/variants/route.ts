@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 
 const variantSchema = z.object({
@@ -20,27 +21,32 @@ type RouteContext = { params: { id: string } }
 const parseId = (raw: string) => { const n = parseInt(raw); return isNaN(n) ? null : n }
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const id = parseId(params.id)
-  if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = parseId(params.id)
+    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const product = await prisma.product.findFirst({
-    where:  { id, business_id: session.businessId },
-    select: { id: true },
-  })
-  if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+    const product = await db.product.findFirst({
+      where:  { id }, // business_id inyectado por el tenant layer
+      select: { id: true },
+    })
+    if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
 
-  const variants = await prisma.productVariant.findMany({
-    where:   { product_id: id },
-    orderBy: [{ sort_order: 'asc' }, { valor: 'asc' }],
-  })
+    // ProductVariant no tiene business_id — aislado por el chequeo de propiedad del producto
+    const variants = await db.productVariant.findMany({
+      where:   { product_id: id },
+      orderBy: [{ sort_order: 'asc' }, { valor: 'asc' }],
+    })
 
-  return NextResponse.json({
-    ok:       true,
-    variants: variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
-  })
+    return NextResponse.json({
+      ok:       true,
+      variants: variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: NextRequest, { params }: RouteContext) {

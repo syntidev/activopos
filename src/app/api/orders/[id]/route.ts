@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -22,23 +23,27 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const id = Number(params.id)
-  if (!Number.isFinite(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const id = Number(params.id)
+    if (!Number.isFinite(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const order = await prisma.order.findFirst({
-    where: { id, business_id: session.businessId },
-    include: {
-      items: true,
-      client: { select: { id: true, name: true, phone: true } },
-    },
-  })
+    const order = await db.order.findFirst({
+      where: { id }, // business_id inyectado por el tenant layer
+      include: {
+        items: true,
+        client: { select: { id: true, name: true, phone: true } },
+      },
+    })
 
-  if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
+    if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
 
-  return NextResponse.json({ ok: true, order })
+    return NextResponse.json({ ok: true, order })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 /* ── PATCH /api/orders/[id] ── */

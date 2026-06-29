@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 type Context = { params: { id: string } }
 
 /* ── POST /api/orders/[id]/cancelar ── */
 
 export async function POST(_req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
   const orderId = Number(params.id)
   if (!Number.isFinite(orderId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   try {
-    const order = await prisma.order.findFirst({
-      where:  { id: orderId, business_id: session.businessId },
+    const { db } = await getAuthenticatedTenant()
+
+    const order = await db.order.findFirst({
+      where:  { id: orderId }, // business_id inyectado por el tenant layer
       select: { id: true, status: true },
     })
 
@@ -28,13 +26,16 @@ export async function POST(_req: NextRequest, { params }: Context) {
       )
     }
 
-    await prisma.order.update({
-      where: { id: orderId },
+    await db.order.update({
+      where: { id: orderId }, // business_id inyectado por el tenant layer
       data:  { status: 'cancelled' },
     })
 
     return NextResponse.json({ ok: true })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     console.error('cancelar POST error:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }

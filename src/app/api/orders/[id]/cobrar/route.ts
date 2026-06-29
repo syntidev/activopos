@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
@@ -15,9 +15,6 @@ const cobrarSchema = z.object({
 /* ── POST /api/orders/[id]/cobrar — convert Order to a paid Sale ── */
 
 export async function POST(req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
   const orderId = Number(params.id)
   if (!Number.isFinite(orderId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
@@ -28,17 +25,20 @@ export async function POST(req: NextRequest, { params }: Context) {
     return NextResponse.json({ error: 'Se requiere método de pago' }, { status: 400 })
   }
 
-  // Validate payment method belongs to this business
-  const pm = await prisma.paymentMethod.findFirst({
-    where: { id: body.payment_method_id, business_id: session.businessId, is_active: true },
-    select: { id: true },
-  })
-  if (!pm) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
-
-  // Network call must be outside the transaction
-  const rate = await getBcvRate()
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+
+    // Validar método de pago (fuera del $transaction) → tenant layer
+    const pm = await db.paymentMethod.findFirst({
+      where: { id: body.payment_method_id, is_active: true }, // business_id inyectado
+      select: { id: true },
+    })
+    if (!pm) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
+
+    // Network call must be outside the transaction
+    const rate = await getBcvRate()
+
+    // $transaction en prisma base: business_id manual adentro (la extension no se propaga al tx)
     const { saleId } = await prisma.$transaction(async (tx) => {
       const order = await tx.order.findFirst({
         where: { id: orderId, business_id: session.businessId },
@@ -138,6 +138,9 @@ export async function POST(req: NextRequest, { params }: Context) {
 
     return NextResponse.json({ ok: true, sale_id: saleId })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof Error) {
       if (err.message === 'ORDER_NOT_FOUND')   return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
       if (err.message === 'ALREADY_COBRADO')   return NextResponse.json({ error: 'Este pedido ya fue cobrado' }, { status: 409 })

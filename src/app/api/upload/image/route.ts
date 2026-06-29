@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
@@ -16,11 +16,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
   }
 
-  const session = await getSession()
-  if (!session)                   return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' },    { status: 403 })
-
   try {
+    // No hay query a DB — el aislamiento es por session.businessId en el path de storage
+    const { session } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
     const formData = await req.formData()
     const file     = formData.get('file')
     // type selecciona el subdirectorio del tenant; default 'product' (backward compatible)
@@ -81,6 +81,9 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     )
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     console.error('Upload error:', err)
     return NextResponse.json({ error: 'Error al subir la imagen' }, { status: 500 })
   }

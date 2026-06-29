@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -19,15 +18,14 @@ const querySchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
   try {
+    const { db } = await getAuthenticatedTenant()
+
     const params = Object.fromEntries(req.nextUrl.searchParams.entries())
     const query = querySchema.parse(params)
 
     const where = {
-      business_id: session.businessId,
+      // business_id inyectado por el tenant layer
       ...(query.status && { status: query.status }),
       ...(query.from || query.to
         ? {
@@ -41,7 +39,7 @@ export async function GET(req: NextRequest) {
     }
 
     const [sales, total] = await Promise.all([
-      prisma.sale.findMany({
+      db.sale.findMany({
         where,
         include: {
           items: true,
@@ -57,7 +55,7 @@ export async function GET(req: NextRequest) {
         take: query.limit,
         skip: (query.page - 1) * query.limit,
       }),
-      prisma.sale.count({ where }),
+      db.sale.count({ where }),
     ])
 
     return NextResponse.json({
@@ -71,6 +69,9 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Parámetros inválidos', details: err.issues },

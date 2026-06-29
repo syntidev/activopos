@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 type DailyRow = { date: string; total_usd: string | number }
@@ -13,45 +13,48 @@ function parseDate(str: string | null, fallback: Date): Date {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp  = req.nextUrl.searchParams
-  const bid = session.businessId
-  const now = new Date()
-  const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1)
-  const defaultTo   = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const sp  = req.nextUrl.searchParams
+    const bid = session.businessId
+    const now = new Date()
+    const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1)
+    const defaultTo   = new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
-  const from = parseDate(sp.get('from'), defaultFrom)
-  const to   = parseDate(sp.get('to'),   defaultTo)
+    const from = parseDate(sp.get('from'), defaultFrom)
+    const to   = parseDate(sp.get('to'),   defaultTo)
 
-  if (to <= from) {
-    return NextResponse.json({ error: 'Rango de fechas inválido' }, { status: 400 })
-  }
+    if (to <= from) {
+      return NextResponse.json({ error: 'Rango de fechas inválido' }, { status: 400 })
+    }
 
-  const days     = Math.ceil((to.getTime() - from.getTime()) / 86_400_000)
-  const prevFrom = new Date(from.getTime() - days * 86_400_000)
-  const prevTo   = from
+    const days     = Math.ceil((to.getTime() - from.getTime()) / 86_400_000)
+    const prevFrom = new Date(from.getTime() - days * 86_400_000)
+    const prevTo   = from
 
-  const [salesAgg, itemsAgg, payments, dailyRaw, hourlyRaw, prevAgg, costosRow, gastosOpAgg] = await Promise.all([
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } },
-      _sum:   { total_usd: true, total_bs: true },
-      _count: { id: true },
-    }),
+    const [salesAgg, itemsAgg, payments, dailyRaw, hourlyRaw, prevAgg, costosRow, gastosOpAgg] = await Promise.all([
+      db.sale.aggregate({
+        where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
+        _sum:   { total_usd: true, total_bs: true },
+        _count: { id: true },
+      }),
 
-    prisma.saleItem.aggregate({
-      where: { sale: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } } },
-      _sum: { quantity: true },
-    }),
+      // SaleItem no tiene business_id — aislado por la relación sale.business_id
+      db.saleItem.aggregate({
+        where: { sale: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } } },
+        _sum: { quantity: true },
+      }),
 
-    prisma.salePayment.findMany({
-      where: { sale: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } } },
-      include: { payment_method: { select: { id: true, name: true, type: true } } },
-    }),
+      // SalePayment no tiene business_id — aislado por la relación sale.business_id
+      db.salePayment.findMany({
+        where: { sale: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } } },
+        include: { payment_method: { select: { id: true, name: true, type: true } } },
+      }),
 
-    prisma.$queryRaw<DailyRow[]>`
+      // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
+      prisma.$queryRaw<DailyRow[]>`
       SELECT DATE(sold_at) AS date, SUM(total_usd) AS total_usd
       FROM sales
       WHERE business_id = ${bid}
@@ -72,13 +75,14 @@ export async function GET(req: NextRequest) {
       ORDER BY avg_usd DESC
       LIMIT 1`,
 
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: 'paid', sold_at: { gte: prevFrom, lt: prevTo } },
-      _sum:   { total_usd: true },
-      _count: { id: true },
-    }),
+      db.sale.aggregate({
+        where: { status: 'paid', sold_at: { gte: prevFrom, lt: prevTo } }, // business_id inyectado
+        _sum:   { total_usd: true },
+        _count: { id: true },
+      }),
 
-    prisma.$queryRaw<CostRow[]>`
+      // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
+      prisma.$queryRaw<CostRow[]>`
       SELECT SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
@@ -88,11 +92,11 @@ export async function GET(req: NextRequest) {
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}`,
 
-    prisma.gasto.aggregate({
-      where: { business_id: bid, fecha: { gte: from, lt: to } },
-      _sum:  { monto_usd: true },
-    }),
-  ])
+      db.gasto.aggregate({
+        where: { fecha: { gte: from, lt: to } }, // business_id inyectado
+        _sum:  { monto_usd: true },
+      }),
+    ])
 
   const r2 = (x: number) => Math.round(x * 100) / 100
 
@@ -180,4 +184,8 @@ export async function GET(req: NextRequest) {
     dias_activos:   dailyRaw.length,
     dias_sin_venta: Math.max(0, days - dailyRaw.length),
   })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

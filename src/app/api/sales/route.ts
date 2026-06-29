@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
@@ -36,10 +37,10 @@ const saleSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const params       = req.nextUrl.searchParams
+    const params       = req.nextUrl.searchParams
   const status       = params.get('status')
   const from         = params.get('from')
   const to           = params.get('to')
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
     : {}
 
   const where = {
-    business_id: session.businessId,
+    // business_id inyectado por el tenant layer
     ...(ticket
       ? { ticket_number: { contains: ticket } }
       : search
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [sales, total] = await Promise.all([
-    prisma.sale.findMany({
+    db.sale.findMany({
       where,
       include: {
         items: true,
@@ -95,10 +96,14 @@ export async function GET(req: NextRequest) {
       skip:    (page - 1) * limit,
       take:    limit,
     }),
-    prisma.sale.count({ where }),
+    db.sale.count({ where }),
   ])
 
   return NextResponse.json({ ok: true, sales, total, page, pages: Math.ceil(total / limit) })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 async function checkStockAlerts(businessId: number, productIds: number[], ticketNumber: string) {

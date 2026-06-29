@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
@@ -54,58 +53,61 @@ function buildQuarterRanges(n: number): Range[] {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const raw = req.nextUrl.searchParams.get('period') ?? 'month'
-  if (raw !== 'week' && raw !== 'month' && raw !== 'quarter') {
-    return NextResponse.json({ error: 'period debe ser week, month o quarter' }, { status: 400 })
-  }
-  const periodType = raw as PeriodType
-  const bid        = session.businessId
-
-  const ranges =
-    periodType === 'week'    ? buildWeekRanges(12)    :
-    periodType === 'quarter' ? buildQuarterRanges(8)  :
-                               buildMonthRanges(12)
-
-  const results = await Promise.all(
-    ranges.map(({ from, to }) =>
-      prisma.sale.aggregate({
-        where: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } },
-        _sum:   { total_usd: true },
-        _count: { id: true },
-      })
-    )
-  )
-
-  const r2 = (x: number) => Math.round(x * 100) / 100
-
-  const data = ranges.map(({ from, to, label }, i) => {
-    const agg   = results[i]
-    const total = Number(agg._sum.total_usd ?? 0)
-    const count = agg._count.id
-    return {
-      label,
-      from:           from.toISOString().slice(0, 10),
-      to:             to.toISOString().slice(0, 10),
-      total_usd:      r2(total),
-      count,
-      avg_ticket_usd: count > 0 ? r2(total / count) : 0,
+    const raw = req.nextUrl.searchParams.get('period') ?? 'month'
+    if (raw !== 'week' && raw !== 'month' && raw !== 'quarter') {
+      return NextResponse.json({ error: 'period debe ser week, month o quarter' }, { status: 400 })
     }
-  })
+    const periodType = raw as PeriodType
 
-  const maxUsd    = Math.max(...data.map(d => d.total_usd), 0)
-  const firstUsd  = data[0]?.total_usd ?? 0
-  const lastUsd   = data[data.length - 1]?.total_usd ?? 0
-  const growthPct = firstUsd > 0 ? r2(((lastUsd - firstUsd) / firstUsd) * 100) : 0
+    const ranges =
+      periodType === 'week'    ? buildWeekRanges(12)    :
+      periodType === 'quarter' ? buildQuarterRanges(8)  :
+                                 buildMonthRanges(12)
 
-  return NextResponse.json({
-    ok:          true,
-    period_type: periodType,
-    data,
-    max_usd:     r2(maxUsd),
-    growth_pct:  growthPct,
-  })
+    const results = await Promise.all(
+      ranges.map(({ from, to }) =>
+        db.sale.aggregate({
+          where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
+          _sum:   { total_usd: true },
+          _count: { id: true },
+        })
+      )
+    )
+
+    const r2 = (x: number) => Math.round(x * 100) / 100
+
+    const data = ranges.map(({ from, to, label }, i) => {
+      const agg   = results[i]
+      const total = Number(agg._sum.total_usd ?? 0)
+      const count = agg._count.id
+      return {
+        label,
+        from:           from.toISOString().slice(0, 10),
+        to:             to.toISOString().slice(0, 10),
+        total_usd:      r2(total),
+        count,
+        avg_ticket_usd: count > 0 ? r2(total / count) : 0,
+      }
+    })
+
+    const maxUsd    = Math.max(...data.map(d => d.total_usd), 0)
+    const firstUsd  = data[0]?.total_usd ?? 0
+    const lastUsd   = data[data.length - 1]?.total_usd ?? 0
+    const growthPct = firstUsd > 0 ? r2(((lastUsd - firstUsd) / firstUsd) * 100) : 0
+
+    return NextResponse.json({
+      ok:          true,
+      period_type: periodType,
+      data,
+      max_usd:     r2(maxUsd),
+      growth_pct:  growthPct,
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }

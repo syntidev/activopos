@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
@@ -12,18 +13,22 @@ const categorySchema = z.object({
 })
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const categories = await prisma.category.findMany({
-    where: { business_id: session.businessId, active: true },
-    include: {
-      _count: { select: { products: { where: { active: true } } } },
-    },
-    orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
-  })
+    const categories = await db.category.findMany({
+      where: { active: true }, // business_id inyectado por el tenant layer
+      include: {
+        _count: { select: { products: { where: { active: true } } } },
+      },
+      orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
+    })
 
-  return NextResponse.json({ ok: true, categories })
+    return NextResponse.json({ ok: true, categories })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
 const voidSchema = z.object({
@@ -11,24 +11,24 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
-  if (session.role !== 'admin' && session.role !== 'super_admin') {
-    return NextResponse.json(
-      { error: 'Solo administradores pueden anular ventas' },
-      { status: 403 }
-    )
-  }
-
   const saleId = parseInt(params.id, 10)
   if (isNaN(saleId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   try {
+    const { session, db } = await getAuthenticatedTenant()
+
+    if (session.role !== 'admin' && session.role !== 'super_admin') {
+      return NextResponse.json(
+        { error: 'Solo administradores pueden anular ventas' },
+        { status: 403 }
+      )
+    }
+
     const body = voidSchema.parse(await req.json())
 
-    const sale = await prisma.sale.findFirst({
-      where: { id: saleId, business_id: session.businessId },
+    // Lectura de validación (fuera del $transaction) → tenant layer
+    const sale = await db.sale.findFirst({
+      where: { id: saleId }, // business_id inyectado por el tenant layer
       include: { items: true },
     })
 
@@ -41,6 +41,7 @@ export async function PATCH(
 
     const wasPaid = sale.status === 'paid'
 
+    // $transaction en prisma base: business_id manual adentro (la extension no se propaga al tx)
     await prisma.$transaction(async (tx) => {
       await tx.sale.update({
         where: { id: saleId },
@@ -80,6 +81,9 @@ export async function PATCH(
 
     return NextResponse.json({ ok: true, message: 'Venta anulada correctamente' })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Datos inválidos', details: err.issues },

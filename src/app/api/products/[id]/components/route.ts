@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 const addSchema = z.object({
   component_id: z.number().int().positive(),
@@ -17,40 +16,43 @@ const parseId = (raw: string) => {
 }
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const { db } = await getAuthenticatedTenant()
 
-  const parentId = parseId(params.id)
-  if (!parentId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const parentId = parseId(params.id)
+    if (!parentId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const parent = await prisma.product.findFirst({
-    where: { id: parentId, business_id: session.businessId, active: true },
-    select: { id: true, name: true, product_type: true },
-  })
-  if (!parent) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+    const parent = await db.product.findFirst({
+      where: { id: parentId, active: true }, // business_id inyectado por el tenant layer
+      select: { id: true, name: true, product_type: true },
+    })
+    if (!parent) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
 
-  const components = await prisma.productComponent.findMany({
-    where: { parent_id: parentId, business_id: session.businessId },
-    include: {
-      component: {
-        select: { id: true, name: true, sale_mode: true, base_unit_label: true },
+    const components = await db.productComponent.findMany({
+      where: { parent_id: parentId }, // business_id inyectado por el tenant layer
+      include: {
+        component: {
+          select: { id: true, name: true, sale_mode: true, base_unit_label: true },
+        },
       },
-    },
-    orderBy: { id: 'asc' },
-  })
+      orderBy: { id: 'asc' },
+    })
 
-  return NextResponse.json({ ok: true, components })
+    return NextResponse.json({ ok: true, components })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
-  const parentId = parseId(params.id)
-  if (!parentId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+    const parentId = parseId(params.id)
+    if (!parentId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
     const body = addSchema.parse(await req.json())
 
     if (body.component_id === parentId) {
@@ -58,12 +60,12 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const [parent, component] = await Promise.all([
-      prisma.product.findFirst({
-        where: { id: parentId, business_id: session.businessId, active: true },
+      db.product.findFirst({
+        where: { id: parentId, active: true }, // business_id inyectado por el tenant layer
         select: { id: true, product_type: true },
       }),
-      prisma.product.findFirst({
-        where: { id: body.component_id, business_id: session.businessId, active: true },
+      db.product.findFirst({
+        where: { id: body.component_id, active: true }, // business_id inyectado por el tenant layer
         select: { id: true, product_type: true },
       }),
     ])
@@ -80,9 +82,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Un componente no puede ser combo ni fabricable (v1)' }, { status: 422 })
     }
 
-    const record = await prisma.productComponent.create({
+    const record = await db.productComponent.create({
       data: {
-        business_id:  session.businessId,
+        business_id:  session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
         parent_id:    parentId,
         component_id: body.component_id,
         quantity:     body.quantity,
@@ -95,6 +97,9 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ ok: true, component: record }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

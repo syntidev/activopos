@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 
@@ -21,17 +21,16 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
   const saleId = parseInt(params.id, 10)
   if (isNaN(saleId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
   try {
+    const { session, db } = await getAuthenticatedTenant()
     const body = paySchema.parse(await req.json())
 
-    const sale = await prisma.sale.findFirst({
-      where: { id: saleId, business_id: session.businessId },
+    // Lectura de validación (fuera del $transaction) → tenant layer
+    const sale = await db.sale.findFirst({
+      where: { id: saleId }, // business_id inyectado por el tenant layer
       include: {
         items: {
           select: {
@@ -76,6 +75,7 @@ export async function PATCH(
     const montoRecibidoUsd = Math.round(payTotalUsd * 100) / 100
     const vueltoUsd        = Math.max(0, Math.round((payTotalUsd - totalUsd) * 100) / 100)
 
+    // $transaction en prisma base: business_id manual adentro (la extension no se propaga al tx)
     const updated = await prisma.$transaction(async (tx) => {
       const paidSale = await tx.sale.update({
         where: { id: saleId },
@@ -177,6 +177,9 @@ export async function PATCH(
 
     return NextResponse.json({ ok: true, sale: updated })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Datos inválidos', details: err.issues },

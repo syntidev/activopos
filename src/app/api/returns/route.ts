@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { readCachedBcvRate } from '@/lib/bcv'
 
@@ -17,65 +17,67 @@ const PostSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp     = req.nextUrl.searchParams
-  const bid    = session.businessId
-  const status = sp.get('status') ?? undefined
-  const page   = Math.max(1, parseInt(sp.get('page') ?? '1', 10))
-  const limit  = Math.max(1, Math.min(parseInt(sp.get('limit') ?? '20', 10), 100))
+    const sp     = req.nextUrl.searchParams
+    const status = sp.get('status') ?? undefined
+    const page   = Math.max(1, parseInt(sp.get('page') ?? '1', 10))
+    const limit  = Math.max(1, Math.min(parseInt(sp.get('limit') ?? '20', 10), 100))
 
-  const where = {
-    business_id: bid,
-    ...(status ? { status: status as never } : {}),
-  }
+    const where = {
+      // business_id inyectado por el tenant layer
+      ...(status ? { status: status as never } : {}),
+    }
 
-  const [returns, total] = await Promise.all([
-    prisma.return.findMany({
-      where,
-      orderBy: { created_at: 'desc' },
-      skip:    (page - 1) * limit,
-      take:    limit,
-      include: {
-        sale:  { select: { id: true, ticket_number: true, sold_at: true } },
-        items: true,
-      },
-    }),
-    prisma.return.count({ where }),
-  ])
+    const [returns, total] = await Promise.all([
+      db.return.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip:    (page - 1) * limit,
+        take:    limit,
+        include: {
+          sale:  { select: { id: true, ticket_number: true, sold_at: true } },
+          items: true,
+        },
+      }),
+      db.return.count({ where }),
+    ])
 
-  return NextResponse.json({
-    ok: true,
-    returns: returns.map(r => ({
-      ...r,
-      total_usd: Number(r.total_usd),
-      total_bs:  Number(r.total_bs),
-      rate_used: Number(r.rate_used),
-      items: r.items.map(i => ({
-        ...i,
-        qty:       Number(i.qty),
-        price_usd: Number(i.price_usd),
-        total_usd: Number(i.total_usd),
+    return NextResponse.json({
+      ok: true,
+      returns: returns.map(r => ({
+        ...r,
+        total_usd: Number(r.total_usd),
+        total_bs:  Number(r.total_bs),
+        rate_used: Number(r.rate_used),
+        items: r.items.map(i => ({
+          ...i,
+          qty:       Number(i.qty),
+          price_usd: Number(i.price_usd),
+          total_usd: Number(i.total_usd),
+        })),
       })),
-    })),
-    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-  })
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
   try {
+    const { session, db } = await getAuthenticatedTenant()
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
     const body = PostSchema.parse(await req.json())
     const bid  = session.businessId
 
-    // Verify sale belongs to this business and is in a returnable state
-    const sale = await prisma.sale.findFirst({
-      where:   { id: body.sale_id, business_id: bid },
+    // Verify sale belongs to this business (fuera del $transaction) → tenant layer
+    const sale = await db.sale.findFirst({
+      where:   { id: body.sale_id }, // business_id inyectado
       include: { items: { select: { product_id: true, quantity: true, price_per_unit_usd: true } } },
     })
     if (!sale) {
@@ -96,8 +98,8 @@ export async function POST(req: NextRequest) {
     const soldMap = new Map<number, number>()
     for (const si of sale.items) soldMap.set(si.product_id, Number(si.quantity))
 
-    // Existing approved returns for this sale — scoped to this business
-    const existingReturns = await prisma.returnItem.findMany({
+    // ReturnItem no tiene business_id — se filtra por la relación return.business_id
+    const existingReturns = await db.returnItem.findMany({
       where: { return: { sale_id: body.sale_id, business_id: bid, status: 'approved' } },
       select: { product_id: true, qty: true },
     })
@@ -124,6 +126,7 @@ export async function POST(req: NextRequest) {
     const r2       = (x: number) => Math.round(x * 100) / 100
     const totalUsd = r2(body.items.reduce((s, i) => s + i.qty * (priceMap.get(i.product_id) ?? 0), 0))
 
+    // $transaction en prisma base: business_id manual adentro
     const result = await prisma.$transaction(async tx => {
       // TOCTOU guard: atomically claim the sale for this return
       const { count } = await tx.sale.updateMany({
@@ -192,6 +195,9 @@ export async function POST(req: NextRequest) {
       },
     }, { status: 201 })
   } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if ((err as { code?: string }).code === 'ALREADY_RETURNED') {
       return NextResponse.json({ error: 'Esta venta ya fue devuelta.' }, { status: 409 })
     }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import type { SessionPayload } from '@/lib/auth'
+import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { generateMonthlyPDF } from '@/lib/reports'
 
 const bodySchema = z.object({
@@ -9,8 +10,16 @@ const bodySchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  let session: SessionPayload
+  let db: TenantPrisma
+  try {
+    const t = await getAuthenticatedTenant()
+    session = t.session
+    db = t.db
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   const parsed = bodySchema.safeParse(await req.json())
@@ -20,8 +29,8 @@ export async function POST(req: NextRequest) {
 
   const { period } = parsed.data
 
-  // Upsert: crear registro si no existe, marcar como generating
-  const report = await prisma.monthlyReport.upsert({
+  // Upsert: crear registro si no existe, marcar como generating (business_id inyectado por la capa)
+  const report = await db.monthlyReport.upsert({
     where: {
       business_id_period: { business_id: session.businessId, period },
     },
@@ -42,8 +51,8 @@ export async function POST(req: NextRequest) {
       period
     )
 
-    const updated = await prisma.monthlyReport.update({
-      where: { id: report.id },
+    const updated = await db.monthlyReport.update({
+      where: { id: report.id }, // business_id inyectado por el tenant layer
       data: {
         status:           'ready',
         file_path:        filePath,
@@ -60,8 +69,8 @@ export async function POST(req: NextRequest) {
       expires_at:   expiresAt,
     })
   } catch (err) {
-    await prisma.monthlyReport.update({
-      where: { id: report.id },
+    await db.monthlyReport.update({
+      where: { id: report.id }, // business_id inyectado por el tenant layer
       data:  { status: 'failed' },
     })
     console.error('monthly/generate error:', err)

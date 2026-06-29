@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 
@@ -18,24 +19,28 @@ const findActiveRegister = (businessId: number) =>
   })
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    const { session, db } = await getAuthenticatedTenant()
 
-  const register = await findActiveRegister(session.businessId)
-  if (!register) {
-    return NextResponse.json({ error: 'No hay caja abierta' }, { status: 400 })
+    const register = await findActiveRegister(session.businessId)
+    if (!register) {
+      return NextResponse.json({ error: 'No hay caja abierta' }, { status: 400 })
+    }
+
+    const movements = await db.cashMovement.findMany({
+      where: { cash_register_id: register.id }, // business_id inyectado por el tenant layer
+      include: {
+        payment_method: { select: { id: true, name: true, type: true } },
+        user: { select: { name: true } },
+      },
+      orderBy: { created_at: 'desc' },
+    })
+
+    return NextResponse.json({ ok: true, movements })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
   }
-
-  const movements = await prisma.cashMovement.findMany({
-    where: { cash_register_id: register.id, cash_register: { business_id: session.businessId } },
-    include: {
-      payment_method: { select: { id: true, name: true, type: true } },
-      user: { select: { name: true } },
-    },
-    orderBy: { created_at: 'desc' },
-  })
-
-  return NextResponse.json({ ok: true, movements })
 }
 
 export async function POST(req: NextRequest) {

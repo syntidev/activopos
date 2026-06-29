@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import type { SessionPayload } from '@/lib/auth'
+import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { prisma } from '@/lib/prisma'
 import { readCachedBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
@@ -9,15 +11,24 @@ type Context = { params: { id: string } }
 /* ── POST /api/quotations/[id]/convert — Quotation → Sale (pending) ── */
 
 export async function POST(_req: NextRequest, { params }: Context) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-
   const id = parseInt(params.id, 10)
   if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-  const quotation = await prisma.quotation.findFirst({
-    where:   { id, business_id: session.businessId },
+  let session: SessionPayload
+  let db: TenantPrisma
+  try {
+    const t = await getAuthenticatedTenant()
+    session = t.session
+    db = t.db
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+
+  // Validación (fuera del $transaction) → tenant layer
+  const quotation = await db.quotation.findFirst({
+    where:   { id }, // business_id inyectado por el tenant layer
     include: { items: true },
   })
 
@@ -43,6 +54,7 @@ export async function POST(_req: NextRequest, { params }: Context) {
   const r2         = (x: number) => Math.round(x * 100) / 100
 
   try {
+    // $transaction en prisma base: business_id manual adentro
     const sale = await prisma.$transaction(async tx => {
       const products = await tx.product.findMany({
         where:  { id: { in: productIds }, business_id: session.businessId },

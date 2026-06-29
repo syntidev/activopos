@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
     const file     = formData.get('file')
+    // type selecciona el subdirectorio del tenant; default 'product' (backward compatible)
+    const type     = formData.get('type') === 'logo' ? 'logo' : 'products'
 
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 })
@@ -46,7 +48,8 @@ export async function POST(req: NextRequest) {
 
     const filenameFull  = `${randomUUID()}.webp`
     const filenameThumb = `${randomUUID()}_thumb.webp`
-    const uploadDir     = join(process.cwd(), 'public', 'uploads', String(session.businessId))
+    const uploadDir     = join(process.cwd(), 'storage', 'tenants', String(session.businessId), type)
+    const urlBase       = `/storage/tenants/${session.businessId}/${type}`
 
     await mkdir(uploadDir, { recursive: true, mode: 0o755 })
 
@@ -68,8 +71,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok:      true,
-        url:     `/uploads/${session.businessId}/${filenameFull}`,
-        thumb:   `/uploads/${session.businessId}/${filenameThumb}`,
+        url:     `${urlBase}/${filenameFull}`,
+        thumb:   `${urlBase}/${filenameThumb}`,
         format:  'webp',
         size_kb: Math.round(fullData.length / 1024),
         width:   fullInfo.width,

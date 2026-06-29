@@ -108,6 +108,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
     try {
       const fd = new FormData()
       fd.append('file', file)
+      fd.append('type', 'logo')
       const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: fd })
       if (!uploadRes.ok) { toast('Error al subir la imagen.', 'error'); setLogoPreview(prevPreview); return }
       const { url } = await uploadRes.json() as { url: string }

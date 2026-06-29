@@ -13,7 +13,7 @@ const PatchSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional(),
   logo_path: z.string()
-    .refine(v => v === null || v.startsWith('/uploads/'), 'Path inválido')
+    .refine(v => v === null || v.startsWith('/uploads/') || v.startsWith('/storage/tenants/'), 'Path inválido')
     .nullable()
     .optional(),
   rate_source:      z.enum(['bcv', 'manual']).optional(),

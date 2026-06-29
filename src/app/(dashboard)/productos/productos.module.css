@@ -529,13 +529,19 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  background: var(--color-brand-subtle);
+  background: var(--color-surface-3);
   border: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-muted);
   flex-shrink: 0;
+}
+
+.productThumbInitial {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  user-select: none;
 }
 
 .productInfo {

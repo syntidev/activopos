@@ -46,6 +46,7 @@ enum SaleStatus {
   paid
   cancelled
   returned
+  credit
 }
 
 enum SaleOrigin {
@@ -150,7 +151,8 @@ model Business {
   segment              String?  @default("retail") @db.VarChar(40)
   cobro_data           Json?
   whatsapp             String?  @db.VarChar(30)
-  max_discount_pct     Float    @default(0)
+  max_discount_pct              Float    @default(0)
+  allow_cashier_price_override  Boolean  @default(false)
   modules_enabled             String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics") @db.VarChar(500)
   notifications_last_read     DateTime?
   created_at                  DateTime  @default(now())

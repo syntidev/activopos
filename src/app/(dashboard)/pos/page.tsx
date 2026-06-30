@@ -30,12 +30,25 @@ export default function POSPage() {
   const [cartOpen, setCartOpen]           = useState(false)
   const [scannerOpen, setScannerOpen]     = useState(false)
   const [businessName, setBusinessName]   = useState('')
+  const [userRole, setUserRole]           = useState<'admin' | 'super_admin' | 'cashier'>('cashier')
 
   useEffect(() => {
     fetch('/api/config/business')
       .then(r => r.json())
       .then((j: { business?: { name?: string } }) => {
         if (j.business?.name) setBusinessName(j.business.name)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then((j: { user?: { role?: string } }) => {
+        const role = j.user?.role
+        if (role === 'admin' || role === 'super_admin' || role === 'cashier') {
+          setUserRole(role)
+        }
       })
       .catch(() => {})
   }, [])
@@ -181,6 +194,8 @@ export default function POSPage() {
           }}
           onDescuento={() => pos.setShowPinDescuento(true)}
           onCargo={() => pos.setShowCargo(true)}
+          userRole={userRole}
+          onPriceOverride={pos.overrideItemPrice}
         />
       </div>
 

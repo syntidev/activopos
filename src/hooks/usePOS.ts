@@ -18,6 +18,7 @@ import {
   aplicarDescuentoGlobal,
   aplicarCargoGlobal,
   buildSalePayload,
+  overridePrecioItem,
 } from '@/lib/pos'
 import type { ProductVariant } from '@/components/products/VariantSelector'
 import type { CreditTerms } from '@/components/pos/CreditoModal'
@@ -172,6 +173,15 @@ export function usePOS() {
     setTicket(prev => aplicarCargoGlobal(prev, pct))
   }, [])
 
+  const overrideItemPrice = useCallback((
+    productId: number,
+    variantId: number | undefined,
+    newPrice: number,
+    reason?: string
+  ) => {
+    setTicket(prev => overridePrecioItem(prev, productId, variantId, newPrice, reason))
+  }, [])
+
   const setClient = useCallback((client: ClientForPOS | null) => {
     setTicket(prev => ({
       ...prev,
@@ -324,6 +334,7 @@ export function usePOS() {
     cancelVariantSelector,
     updateQty,
     removeItem,
+    overrideItemPrice,
     applyDiscount,
     applyDiscountWithPin,
     applyCargo,

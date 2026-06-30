@@ -59,6 +59,8 @@ export interface TicketItem {
   variant_id?: number
   variant_label?: string
   precio_extra_usd: number
+  price_override_original?: number  // original price before manual override
+  override_reason?: string
 }
 
 export interface TicketState {
@@ -268,6 +270,29 @@ export const limpiarTicket = (rate: number, ivaPct = 0): TicketState => ({
 })
 
 export const ticketVacio = (ticket: TicketState): boolean => ticket.items.length === 0
+
+export const overridePrecioItem = (
+  ticket: TicketState,
+  productId: number,
+  variantId: number | undefined,
+  newPrice: number,
+  reason?: string
+): TicketState => {
+  const items = ticket.items.map(i => {
+    if (i.product_id !== productId) return i
+    if (variantId !== undefined && i.variant_id !== variantId) return i
+    const { usd, bs } = calcularSubtotalItem(i.quantity, newPrice, ticket.rate)
+    return {
+      ...i,
+      price_override_original: i.price_override_original ?? i.price_per_unit_usd,
+      override_reason:         reason,
+      price_per_unit_usd:      newPrice,
+      subtotal_usd:            usd,
+      subtotal_bs:             bs,
+    }
+  })
+  return { ...ticket, items }
+}
 
 // ── Conversión al payload de la API ───────────────────────────────────────────
 

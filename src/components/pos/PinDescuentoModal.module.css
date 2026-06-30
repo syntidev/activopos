@@ -4,53 +4,78 @@
   gap: var(--space-5);
 }
 
-/* ── Discount % input ── */
-.discountRow {
+/* ── Type toggle (same pattern as CargoModal / DescuentoModal) ── */
+.typeToggle {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.discountLabel {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
-}
-
-.discountInputWrap {
-  display: flex;
-  align-items: center;
-  gap: 0;
   background: var(--color-surface-2);
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  overflow: hidden;
-  transition: border-color var(--transition-fast);
+  padding: var(--space-0-5);
+  gap: var(--space-0-5);
 }
-.discountInputWrap:focus-within { border-color: var(--color-border-focus); }
 
-.discountInput {
+.typeBtn {
   flex: 1;
-  height: 44px;
-  padding: 0 var(--space-3);
+  height: 36px;
   background: none;
   border: none;
-  outline: none;
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-primary);
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   font-family: inherit;
-  text-align: right;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.discountSuffix {
-  padding: 0 var(--space-3) 0 var(--space-1);
+.typeBtnActive {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.typeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Value input ── */
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1.5px solid var(--color-brand);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--focus-ring);
+}
+
+.prefix {
+  flex-shrink: 0;
+  padding: 0 var(--space-3);
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
   color: var(--color-text-muted);
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
+.valueInput {
+  flex: 1;
+  height: 56px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.valueInput::-webkit-outer-spin-button,
+.valueInput::-webkit-inner-spin-button { -webkit-appearance: none; }
+.valueInput[type="number"] { -moz-appearance: textfield; }
+
+/* ── Preview ── */
 .previewRow {
   display: flex;
   justify-content: space-between;
@@ -149,6 +174,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .pinBoxes.shake { animation: none; }
-  .discountInputWrap,
-  .pinBox { transition: none; }
+  .pinBox,
+  .typeBtn,
+  .inputWrapper { transition: none; }
 }

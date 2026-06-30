@@ -19,13 +19,14 @@ export function PinDescuentoModal({
   totalUsd,
   onApply,
 }: PinDescuentoModalProps) {
-  const [discountPct, setDiscountPct] = useState(currentPct > 0 ? String(currentPct) : '')
-  const [pin, setPin]                 = useState<string[]>(['', '', '', ''])
-  const [isLoading, setIsLoading]     = useState(false)
-  const [errorMsg, setErrorMsg]       = useState('')
+  const [type, setType]           = useState<'pct' | 'fixed'>('pct')
+  const [value, setValue]         = useState(currentPct > 0 ? String(currentPct) : '')
+  const [pin, setPin]             = useState<string[]>(['', '', '', ''])
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg]   = useState('')
   const [rateLimited, setRateLimited] = useState(false)
-  const [shaking, setShaking]         = useState(false)
-  const [pinError, setPinError]       = useState(false)
+  const [shaking, setShaking]     = useState(false)
+  const [pinError, setPinError]   = useState(false)
 
   const pinRefs = [
     useRef<HTMLInputElement>(null),
@@ -34,10 +35,10 @@ export function PinDescuentoModal({
     useRef<HTMLInputElement>(null),
   ]
 
-  /* Reset on open */
   useEffect(() => {
     if (open) {
-      setDiscountPct(currentPct > 0 ? String(currentPct) : '')
+      setType('pct')
+      setValue(currentPct > 0 ? String(currentPct) : '')
       setPin(['', '', '', ''])
       setErrorMsg('')
       setRateLimited(false)
@@ -63,9 +64,7 @@ export function PinDescuentoModal({
     const next  = [...pin]
     next[idx]   = digit
     setPin(next)
-    if (digit && idx < 3) {
-      pinRefs[idx + 1].current?.focus()
-    }
+    if (digit && idx < 3) pinRefs[idx + 1].current?.focus()
   }
 
   const handlePinKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -74,11 +73,21 @@ export function PinDescuentoModal({
     }
   }
 
+  const num = parseFloat(value) || 0
+  // ponytail: convert fixed USD → pct so onApply signature stays unchanged
+  const pct        = type === 'pct' ? num : totalUsd > 0 ? (num / totalUsd) * 100 : 0
+  const previewUsd = totalUsd * (pct / 100)
+  const pinFull    = pin.every(d => d !== '')
+
   const handleSubmit = async () => {
-    const pct    = parseFloat(discountPct) || 0
     const pinStr = pin.join('')
-    if (pct <= 0 || pct > 99.99) { setErrorMsg('Ingresa un descuento entre 0.01% y 99.99%'); return }
-    if (pinStr.length < 4)       { setErrorMsg('Ingresa los 4 dígitos del PIN'); return }
+    if (pinStr.length < 4) { setErrorMsg('Ingresa los 4 dígitos del PIN'); return }
+    if (num <= 0)           { setErrorMsg('Ingresa un valor mayor a 0'); return }
+    if (type === 'pct' && num > 99.99) { setErrorMsg('El porcentaje debe ser menor a 100%'); return }
+    if (type === 'fixed' && totalUsd > 0 && num >= totalUsd) {
+      setErrorMsg('El descuento no puede igualar o superar el total')
+      return
+    }
 
     setIsLoading(true)
     setErrorMsg('')
@@ -98,10 +107,6 @@ export function PinDescuentoModal({
     }
   }
 
-  const pct        = parseFloat(discountPct) || 0
-  const previewAmt = totalUsd > 0 ? totalUsd * (pct / 100) : 0
-  const pinFull    = pin.every(d => d !== '')
-
   return (
     <Modal
       open={open}
@@ -116,7 +121,7 @@ export function PinDescuentoModal({
           <Button
             variant="primary"
             onClick={handleSubmit}
-            disabled={isLoading || pct <= 0 || !pinFull || rateLimited}
+            disabled={isLoading || num <= 0 || !pinFull || rateLimited}
           >
             {isLoading ? 'Verificando…' : 'Aplicar descuento'}
           </Button>
@@ -124,31 +129,49 @@ export function PinDescuentoModal({
       }
     >
       <div className={styles.body}>
-        {/* Discount % */}
-        <div className={styles.discountRow}>
-          <span className={styles.discountLabel}>Porcentaje de descuento</span>
-          <div className={styles.discountInputWrap}>
-            <input
-              type="number"
-              className={styles.discountInput}
-              placeholder="0"
-              value={discountPct}
-              onChange={(e) => setDiscountPct(e.target.value)}
-              min="0"
-              max="99.99"
-              step="0.01"
-              autoFocus
-              aria-label="Porcentaje de descuento"
-            />
-            <span className={styles.discountSuffix}>%</span>
-          </div>
-          {pct > 0 && totalUsd > 0 && (
-            <div className={styles.previewRow}>
-              <span>Descuento en subtotal</span>
-              <span className={styles.previewAmt}>−${previewAmt.toFixed(2)}</span>
-            </div>
-          )}
+        {/* Type toggle — same pattern as CargoModal */}
+        <div className={styles.typeToggle}>
+          <button
+            type="button"
+            className={`${styles.typeBtn}${type === 'pct' ? ` ${styles.typeBtnActive}` : ''}`}
+            onClick={() => { setType('pct'); setValue(''); setErrorMsg('') }}
+            disabled={isLoading}
+          >
+            Porcentaje (%)
+          </button>
+          <button
+            type="button"
+            className={`${styles.typeBtn}${type === 'fixed' ? ` ${styles.typeBtnActive}` : ''}`}
+            onClick={() => { setType('fixed'); setValue(''); setErrorMsg('') }}
+            disabled={isLoading}
+          >
+            Monto fijo ($)
+          </button>
         </div>
+
+        {/* Value input */}
+        <div className={styles.inputWrapper}>
+          <span className={styles.prefix}>{type === 'pct' ? '%' : '$'}</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            className={styles.valueInput}
+            placeholder="0"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            min="0"
+            step="0.01"
+            autoFocus
+            aria-label={type === 'pct' ? 'Porcentaje de descuento' : 'Monto del descuento en USD'}
+          />
+        </div>
+
+        {num > 0 && totalUsd > 0 && (
+          <div className={styles.previewRow}>
+            <span>Descuento en subtotal</span>
+            <span className={styles.previewAmt}>−${previewUsd.toFixed(2)}</span>
+          </div>
+        )}
 
         {/* PIN */}
         <div className={styles.pinSection}>

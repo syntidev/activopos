@@ -39,7 +39,8 @@ export function usePOS() {
   const [searchResults, setSearchResults] = useState<ProductForPOS[]>([])
   const [isSearching, setIsSearching]     = useState(false)
   const [cajaStatus, setCajaStatus]       = useState<'open' | 'closed' | 'loading'>('loading')
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [paymentMethods, setPaymentMethods]                 = useState<PaymentMethod[]>([])
+  const [allowCashierPriceOverride, setAllowCashierPriceOverride] = useState(false)
 
   /* ── Modal visibility ── */
   const [showCobro, setShowCobro]               = useState(false)
@@ -96,6 +97,7 @@ export function usePOS() {
         setIvaPct(pct)
         setTicket(prev => ({ ...prev, iva_pct: pct }))
       }
+      setAllowCashierPriceOverride(Boolean(json?.business?.allow_cashier_price_override))
     }
   }, [])
 
@@ -203,7 +205,7 @@ export function usePOS() {
 
   const postSale = async (
     currentTicket: TicketState,
-    status: 'paid' | 'quote' | 'pending',
+    status: 'paid' | 'quote' | 'pending' | 'credit',
     origin: 'pos' | 'quote' | 'credit',
     payments?: PaymentInput[],
     options?: QuoteOptions,
@@ -295,7 +297,7 @@ export function usePOS() {
   }
 
   const venderACredito = async (terms: CreditTerms): Promise<SaleResult> => {
-    const result = await postSale(ticket, 'pending', 'credit', undefined, undefined, terms)
+    const result = await postSale(ticket, 'credit', 'credit', undefined, undefined, terms)
     setTicket(limpiarTicket(rate, ivaPct))
     return result
   }
@@ -352,6 +354,7 @@ export function usePOS() {
     generarCotizacion,
     venderACredito,
     openCaja,
+    allowCashierPriceOverride,
     refreshCash: fetchCajaStatus,
   }
 }

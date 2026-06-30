@@ -56,7 +56,7 @@ async function getTuDiaData(businessId: number) {
     `,
     // CxC total pendiente
     prisma.sale.aggregate({
-      where:  { business_id: bid, status: 'pending' },
+      where:  { business_id: bid, status: 'credit' },
       _sum:   { total_usd: true },
       _count: { id: true },
     }),
@@ -64,7 +64,7 @@ async function getTuDiaData(businessId: number) {
     prisma.sale.aggregate({
       where: {
         business_id: bid,
-        status:      'pending',
+        status:      'credit',
         created_at:  {
           gte: new Date(todayStart.getTime() - 30 * 86_400_000),
           lt:  new Date(todayStart.getTime() - 29 * 86_400_000),

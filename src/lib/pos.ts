@@ -37,7 +37,7 @@ export interface QuoteOptions {
 export interface SaleResult {
   id: number
   ticket_number: string
-  status: 'quote' | 'pending' | 'paid'
+  status: 'quote' | 'pending' | 'paid' | 'credit'
   total_usd: number
   total_bs: number
 }

@@ -51,7 +51,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       db.sale.aggregate({
         where: {
           client_id: id,
-          status: 'pending',
+          status: 'credit',
         },
         _sum: { total_bs: true, total_usd: true },
       }),
@@ -119,7 +119,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     const pendingBalance = await db.sale.count({
-      where: { client_id: id, status: 'pending' }, // business_id inyectado
+      where: { client_id: id, status: 'credit' }, // business_id inyectado
     })
     if (pendingBalance > 0) {
       return NextResponse.json(

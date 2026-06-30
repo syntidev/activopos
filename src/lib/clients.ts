@@ -23,7 +23,7 @@ export async function getClientsWithBalance(businessId: number): Promise<ClientR
       SELECT client_id, SUM(total_usd) AS pending_usd
       FROM sales
       WHERE business_id = ${businessId}
-        AND status = 'pending'
+        AND status = 'credit'
         AND client_id IS NOT NULL
       GROUP BY client_id
     `,
@@ -32,7 +32,7 @@ export async function getClientsWithBalance(businessId: number): Promise<ClientR
       FROM sale_abonos sa
       JOIN sales s ON s.id = sa.sale_id
       WHERE s.business_id = ${businessId}
-        AND s.status = 'pending'
+        AND s.status = 'credit'
         AND s.client_id IS NOT NULL
       GROUP BY s.client_id
     `,
@@ -87,7 +87,7 @@ export async function getClientHistory(
   const sales: SaleHistoryItem[] = salesRaw.map((s) => {
     const abonosTotal = s.abonos.reduce((acc, a) => acc + Number(a.amount_usd), 0)
     const balanceRemaining =
-      s.status === 'pending'
+      s.status === 'credit'
         ? Math.max(0, Number(s.total_usd) - abonosTotal)
         : 0
     return {
@@ -110,7 +110,7 @@ export async function getClientHistory(
   })
 
   const pendingBalance = sales
-    .filter((s) => s.status === 'pending')
+    .filter((s) => s.status === 'credit')
     .reduce((acc, s) => acc + s.balance_remaining, 0)
 
   return {

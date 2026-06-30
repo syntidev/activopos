@@ -31,7 +31,7 @@ const saleSchema = z.object({
   items:             z.array(saleItemSchema).min(1),
   client_id:         z.number().int().positive().optional(),
   client_name:       z.string().max(120).optional(),
-  status:            z.enum(['quote', 'pending', 'paid']),
+  status:            z.enum(['quote', 'pending', 'paid', 'credit']),
   origin:            z.enum(['pos', 'quote', 'credit']),
   notes:             z.string().optional(),
   payments:          z.array(paymentSchema).optional(),
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
           ],
         }
       : {}),
-    ...(status    ? { status: status as 'quote' | 'pending' | 'paid' | 'cancelled' } : {}),
+    ...(status    ? { status: status as 'quote' | 'pending' | 'paid' | 'cancelled' | 'credit' } : {}),
     ...dateFilter,
     ...(cashierId ? { cashier_id: parseInt(cashierId, 10) } : {}),
     ...(clientId  ? { client_id:  parseInt(clientId,  10) } : {}),
@@ -166,31 +166,39 @@ export async function POST(req: NextRequest) {
     const hasOverride = body.items.some(i => i.unit_price_override != null)
     if (hasOverride) {
       if (session.role === 'cashier') {
-        if (!body.override_auth_pin) {
-          return NextResponse.json(
-            { error: 'Se requiere PIN de administrador para modificar precios' },
-            { status: 403 }
-          )
+        const bizConfig = await prisma.business.findUnique({
+          where:  { id: session.businessId },
+          select: { allow_cashier_price_override: true },
+        })
+        const cashierCanOverride = bizConfig?.allow_cashier_price_override ?? false
+
+        if (!cashierCanOverride) {
+          if (!body.override_auth_pin) {
+            return NextResponse.json(
+              { error: 'Se requiere PIN de administrador para modificar precios' },
+              { status: 403 }
+            )
+          }
+          // Rate limit keyed on (businessId, userId) — no saleId on creation flow
+          const limited = await checkAndIncrementPinAttempts(session.businessId, session.userId)
+          if (limited) {
+            return NextResponse.json(
+              { error: 'Demasiados intentos. Espere 5 minutos.' },
+              { status: 429 }
+            )
+          }
+          const authorizer = await verifyPin(session.businessId, body.override_auth_pin)
+          if (!authorizer) {
+            return NextResponse.json({ error: 'PIN incorrecto' }, { status: 401 })
+          }
+          if (authorizer.role === 'cashier') {
+            return NextResponse.json(
+              { error: 'El PIN ingresado no corresponde a un administrador' },
+              { status: 403 }
+            )
+          }
+          await clearPinAttempts(session.businessId, session.userId)
         }
-        // Rate limit keyed on (businessId, userId) — no saleId on creation flow
-        const limited = await checkAndIncrementPinAttempts(session.businessId, session.userId)
-        if (limited) {
-          return NextResponse.json(
-            { error: 'Demasiados intentos. Espere 5 minutos.' },
-            { status: 429 }
-          )
-        }
-        const authorizer = await verifyPin(session.businessId, body.override_auth_pin)
-        if (!authorizer) {
-          return NextResponse.json({ error: 'PIN incorrecto' }, { status: 401 })
-        }
-        if (authorizer.role === 'cashier') {
-          return NextResponse.json(
-            { error: 'El PIN ingresado no corresponde a un administrador' },
-            { status: 403 }
-          )
-        }
-        await clearPinAttempts(session.businessId, session.userId)
       }
       // admin / super_admin: no PIN required
     }
@@ -382,7 +390,7 @@ export async function POST(req: NextRequest) {
       // FIX 7: collect all deducted product IDs (simple + combo components) for stock alerts
       const componentAlertIds: number[] = []
 
-      if (body.status === 'paid') {
+      if (body.status === 'paid' || body.status === 'credit') {
         const inventoryDeductions: {
           business_id: number
           product_id:  number
@@ -447,7 +455,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Fire-and-forget: check stock_alert_threshold for all deducted products
-    if (body.status === 'paid') {
+    if (body.status === 'paid' || body.status === 'credit') {
       const simpleProductIds = sale.items
         .filter(i => i.variant_id == null)
         .map(i => i.product_id)

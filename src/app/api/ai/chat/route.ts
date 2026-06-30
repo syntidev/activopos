@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       where: { business_id: bid, status: { notIn: ['delivered', 'cancelled'] } },
     }),
     prisma.sale.count({
-      where: { business_id: bid, status: 'pending', origin: 'credit', due_date: { lt: now } },
+      where: { business_id: bid, status: 'credit', origin: 'credit', due_date: { lt: now } },
     }),
     prisma.$queryRaw<LowStockRow[]>`
       SELECT p.name, IFNULL(ie.net_qty, 0) AS net_qty

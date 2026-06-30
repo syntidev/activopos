@@ -27,6 +27,7 @@ const STATUS_LABELS: Record<SaleHistoryItem['status'], string> = {
   draft:     'Borrador',
   quote:     'Cotización',
   pending:   'Pendiente',
+  credit:    'Crédito',
   paid:      'Pagado',
   cancelled: 'Anulado',
   returned:  'Devuelta',
@@ -36,6 +37,7 @@ const STATUS_VARIANT: Record<SaleHistoryItem['status'], BadgeVariant> = {
   draft:     'info',
   quote:     'info',
   pending:   'warning',
+  credit:    'warning',
   paid:      'success',
   cancelled: 'danger',
   returned:  'danger',
@@ -298,7 +300,7 @@ export function ClienteHistorialModal({
                               </div>
 
                               {/* CxC section — only for pending sales */}
-                              {sale.status === 'pending' && (
+                              {sale.status === 'credit' && (
                                 <div className={styles.cxcSection}>
                                   {sale.abonos.length > 0 && (
                                     <ul className={styles.abonosList} role="list">

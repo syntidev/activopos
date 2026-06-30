@@ -23,7 +23,7 @@ export interface ClientRecord {
 export interface SaleHistoryItem {
   id: number
   ticket_number: string
-  status: 'quote' | 'pending' | 'paid' | 'cancelled' | 'draft' | 'returned'
+  status: 'quote' | 'pending' | 'paid' | 'cancelled' | 'draft' | 'returned' | 'credit'
   total_usd: number
   total_bs: number
   rate_used: number
@@ -62,20 +62,21 @@ export interface AbonoForm {
 }
 
 export interface BusinessConfig {
-  id:           number
-  name:         string
-  legal_name:   string | null
-  rif:          string | null
-  logo_path:    string | null
-  address:      string | null
-  city:         string | null
-  state:        string | null
-  phone:        string | null
-  email:        string | null
-  theme:        string
-  theme_color:  string
-  rate_source:  string
-  current_rate: number
+  id:                          number
+  name:                        string
+  legal_name:                  string | null
+  rif:                         string | null
+  logo_path:                   string | null
+  address:                     string | null
+  city:                        string | null
+  state:                       string | null
+  phone:                       string | null
+  email:                       string | null
+  theme:                       string
+  theme_color:                 string
+  rate_source:                 string
+  current_rate:                number
+  allow_cashier_price_override: boolean
 }
 
 export interface TicketConfig {

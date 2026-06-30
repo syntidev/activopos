@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       db.sale.findMany({
         where: {
           // business_id inyectado por el tenant layer
-          status: 'pending',
+          status: 'credit',
           created_at: { gte: from, lt: to },
         },
         orderBy: { created_at: 'asc' },

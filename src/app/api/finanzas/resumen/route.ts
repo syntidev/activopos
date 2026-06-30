@@ -106,19 +106,19 @@ export async function GET(req: NextRequest) {
 
     // CxC activas (ventas pendientes de cobro)
     db.sale.aggregate({
-      where:  { status: 'pending' }, // business_id inyectado
+      where:  { status: 'credit' }, // business_id inyectado
       _sum:   { total_usd: true },
       _count: { id: true },
     }),
 
     // CxC vencidas: ventas pendientes con due_date pasado
     db.sale.count({
-      where: { status: 'pending', due_date: { lt: now } }, // business_id inyectado
+      where: { status: 'credit', due_date: { lt: now } }, // business_id inyectado
     }),
 
     // CxC por vencer en los próximos 7 días
     db.sale.count({
-      where: { status: 'pending', due_date: { gte: now, lte: vencer7 } }, // business_id inyectado
+      where: { status: 'credit', due_date: { gte: now, lte: vencer7 } }, // business_id inyectado
     }),
 
     // CxP activas (gastos sin pagar)

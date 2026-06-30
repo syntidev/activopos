@@ -16,7 +16,7 @@ import styles from './ventas.module.css'
 
 /* ── Types ── */
 
-type SaleStatus = 'draft' | 'quote' | 'pending' | 'paid' | 'cancelled'
+type SaleStatus = 'draft' | 'quote' | 'pending' | 'paid' | 'cancelled' | 'credit'
 type SortDir    = 'asc' | 'desc'
 type SortKey    = 'ticket' | 'date' | 'client' | 'items' | 'total' | 'method' | 'status'
 type Period     = 'today' | '7d' | 'month' | 'custom'
@@ -65,6 +65,7 @@ const STATUS_LABELS: Record<SaleStatus, string> = {
   draft:     'Borrador',
   quote:     'Cotización',
   pending:   'Crédito',
+  credit:    'Crédito',
   paid:      'Pagado',
   cancelled: 'Anulado',
 }
@@ -73,6 +74,7 @@ const STATUS_VARIANT: Record<SaleStatus, BadgeVariant> = {
   draft:     'info',
   quote:     'info',
   pending:   'warning',
+  credit:    'warning',
   paid:      'success',
   cancelled: 'danger',
 }
@@ -126,7 +128,7 @@ function clientName(s: SaleRow): string {
 }
 
 function primaryPayment(s: SaleRow): string {
-  if (s.status === 'pending') return 'Crédito'
+  if (s.status === 'credit') return 'Crédito'
   if (s.payments.length === 0) return '—'
   if (s.payments.length === 1) return s.payments[0].payment_method.name
   return `${s.payments[0].payment_method.name} +${s.payments.length - 1}`

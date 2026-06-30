@@ -13,7 +13,7 @@ export interface SaleItemForPanel {
 export interface SaleSummary {
   id:             number
   ticket_number:  string
-  status:         'paid' | 'pending' | 'quote'
+  status:         'paid' | 'pending' | 'quote' | 'credit'
   total_usd:      number
   total_bs:       number
   due_date:       string | null
@@ -47,7 +47,7 @@ function buildWhatsappMessage(sale: SaleSummary, businessName: string): string {
   })
   const rate = Math.round(sale.rate).toLocaleString('es-VE')
 
-  if (sale.status === 'pending') {
+  if (sale.status === 'credit') {
     const due = sale.due_date
       ? new Date(sale.due_date + 'T00:00:00').toLocaleDateString('es-VE', {
           day: '2-digit', month: 'short', year: 'numeric',
@@ -91,7 +91,7 @@ export function SuccessTicketPanel({ sale, businessName, onClose }: Props) {
     window.open(`/api/sales/${sale.id}/ticket`, '_blank')
   }
 
-  const isCredit = sale.status === 'pending'
+  const isCredit = sale.status === 'credit'
   const totalUsd = `$${sale.total_usd.toFixed(2)}`
   const totalBs  = `Bs. ${sale.total_bs.toLocaleString('es-VE', {
     minimumFractionDigits: 2, maximumFractionDigits: 2,

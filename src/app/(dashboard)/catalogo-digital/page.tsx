@@ -40,10 +40,6 @@ const VIS_BADGE_CLASS: Record<CatalogVisibility, string> = {
   on_request: styles.visBadgeOnRequest,
 }
 
-function buildQrUrl(data: string): string {
-  return `https://chart.googleapis.com/chart?cht=qr&chs=256x256&chl=${encodeURIComponent(data)}`
-}
-
 /* ── Content ─────────────────────────────────────────────── */
 
 function CatalogoAdminContent() {
@@ -111,20 +107,12 @@ function CatalogoAdminContent() {
     }
   }
 
-  async function handleDownloadQr() {
+  function handleDownloadQr() {
     if (!data?.qr_data) return
-    const qrUrl = buildQrUrl(data.qr_data)
-    try {
-      const res  = await fetch(qrUrl)
-      const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url; a.download = 'qr-catalogo.png'
-      document.body.appendChild(a); a.click()
-      document.body.removeChild(a); URL.revokeObjectURL(url)
-    } catch {
-      window.open(qrUrl, '_blank')
-    }
+    const a = document.createElement('a')
+    a.href = data.qr_data
+    a.download = 'qr-catalogo.png'
+    a.click()
   }
 
   function toggleSelect(id: number) {
@@ -140,7 +128,7 @@ function CatalogoAdminContent() {
   if (!data)   return <div className={styles.loading}>Sin datos disponibles.</div>
 
   const { products_summary: sum, top_products: products } = data
-  const qrUrl = data.qr_data ? buildQrUrl(data.qr_data) : null
+  const qrUrl = data.qr_data ?? null
 
   return (
     <div className={styles.page}>

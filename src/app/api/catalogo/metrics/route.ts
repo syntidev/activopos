@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import QRCode from 'qrcode'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { MONTH_NAMES } from '@/lib/finanzas'
@@ -78,11 +79,15 @@ export async function GET() {
       if (g.catalog_visibility === 'on_request') visibilityCounts.on_request += count
     }
 
+    const qrData = catalogUrl
+      ? await QRCode.toDataURL(catalogUrl, { width: 300, margin: 2 })
+      : null
+
     return NextResponse.json({
       ok:          true,
       period:      monthLabel,
       catalog_url: catalogUrl,
-      qr_data:     catalogUrl,
+      qr_data:     qrData,
 
       // Sin tabla de tracking — sin fachada
       views: null,

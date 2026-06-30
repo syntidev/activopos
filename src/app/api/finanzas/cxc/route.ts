@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch all pending sales with abonos for this business
     const allPending = await db.sale.findMany({
-      where:   { status: 'pending' }, // business_id inyectado por el tenant layer
+      where:   { status: 'credit' }, // business_id inyectado por el tenant layer
       include: {
         client: { select: { id: true, name: true, phone: true, cedula: true } },
         abonos: { select: { amount_usd: true } },

@@ -5,7 +5,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
-  status: z.enum(['quote', 'pending', 'paid', 'cancelled']).optional(),
+  status: z.enum(['quote', 'pending', 'paid', 'cancelled', 'credit']).optional(),
   from: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)

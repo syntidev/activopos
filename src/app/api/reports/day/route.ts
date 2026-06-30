@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       }),
 
       db.sale.aggregate({
-        where: { status: 'pending', created_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
+        where: { status: 'credit', created_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
         _sum:  { total_usd: true },
       }),
 

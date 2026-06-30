@@ -45,7 +45,7 @@ export async function GET() {
       db.sale.findMany({
         where: {
           // business_id inyectado por el tenant layer
-          status:      'pending',
+          status:      'credit',
           origin:      'credit',
           due_date:    { lt: now },
         },

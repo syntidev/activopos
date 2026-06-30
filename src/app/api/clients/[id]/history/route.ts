@@ -59,7 +59,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     let balance_usd = 0
     for (const s of salesRaw) {
-      if (s.status === 'pending') {
+      if (s.status === 'credit') {
         const paid = s.abonos.reduce((acc, a) => acc + Number(a.amount_usd), 0)
         balance_usd += Math.max(0, Number(s.total_usd) - paid)
       }

@@ -37,7 +37,7 @@ export interface QuoteOptions {
 export interface SaleResult {
   id: number
   ticket_number: string
-  status: 'quote' | 'pending' | 'paid'
+  status: 'quote' | 'pending' | 'paid' | 'credit'
   total_usd: number
   total_bs: number
 }
@@ -59,6 +59,8 @@ export interface TicketItem {
   variant_id?: number
   variant_label?: string
   precio_extra_usd: number
+  price_override_original?: number  // original price before manual override
+  override_reason?: string
 }
 
 export interface TicketState {
@@ -85,12 +87,14 @@ export interface TicketTotals {
 
 // Tipo interno para la conversión al payload de la API de ventas
 interface SaleApiItem {
-  product_id: number
-  quantity: number
-  price_per_unit_usd: number
-  sale_mode: SaleMode
-  discount_usd: number
-  variant_id?: number
+  product_id:           number
+  quantity:             number
+  price_per_unit_usd:   number
+  sale_mode:            SaleMode
+  discount_usd:         number
+  variant_id?:          number
+  unit_price_override?: number
+  override_reason?:     string
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -269,6 +273,29 @@ export const limpiarTicket = (rate: number, ivaPct = 0): TicketState => ({
 
 export const ticketVacio = (ticket: TicketState): boolean => ticket.items.length === 0
 
+export const overridePrecioItem = (
+  ticket: TicketState,
+  productId: number,
+  variantId: number | undefined,
+  newPrice: number,
+  reason?: string
+): TicketState => {
+  const items = ticket.items.map(i => {
+    if (i.product_id !== productId) return i
+    if (variantId !== undefined && i.variant_id !== variantId) return i
+    const { usd, bs } = calcularSubtotalItem(i.quantity, newPrice, ticket.rate)
+    return {
+      ...i,
+      price_override_original: i.price_override_original ?? i.price_per_unit_usd,
+      override_reason:         reason,
+      price_per_unit_usd:      newPrice,
+      subtotal_usd:            usd,
+      subtotal_bs:             bs,
+    }
+  })
+  return { ...ticket, items }
+}
+
 // ── Conversión al payload de la API ───────────────────────────────────────────
 
 export const buildSalePayload = (
@@ -283,12 +310,14 @@ export const buildSalePayload = (
     const share = baseNet > 0 ? itemNet / baseNet : 1 / count
     const extraDiscount = round4(totals.discount_usd * share)
     return {
-      product_id:        i.product_id,
-      quantity:          i.quantity,
-      price_per_unit_usd: i.price_per_unit_usd,
-      sale_mode:         i.sale_mode,
-      discount_usd:      round4(Math.max(0, i.discount_usd + extraDiscount)),
-      ...(i.variant_id ? { variant_id: i.variant_id } : {}),
+      product_id:          i.product_id,
+      quantity:            i.quantity,
+      price_per_unit_usd:  i.price_per_unit_usd,
+      sale_mode:           i.sale_mode,
+      discount_usd:        round4(Math.max(0, i.discount_usd + extraDiscount)),
+      ...(i.variant_id            ? { variant_id:          i.variant_id }          : {}),
+      ...(i.price_override_original != null ? { unit_price_override: i.price_per_unit_usd } : {}),
+      ...(i.override_reason        ? { override_reason:     i.override_reason }     : {}),
     }
   })
 }

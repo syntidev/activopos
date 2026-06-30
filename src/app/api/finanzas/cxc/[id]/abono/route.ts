@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: Context) {
     const { abono, saldoFinal, nowPaid, ticketNumber } = await prisma.$transaction(async (tx) => {
       // Re-read sale + all abonos atomically inside the tx
       const sale = await tx.sale.findFirst({
-        where:   { id: saleId, business_id: session.businessId, status: 'pending' },
+        where:   { id: saleId, business_id: session.businessId, status: 'credit' },
         include: { abonos: { select: { amount_usd: true } } },
       })
       if (!sale) throw new Error(TX_404)

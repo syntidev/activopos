@@ -10,7 +10,7 @@ export async function GET() {
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const sales = await db.sale.findMany({
-      where:   { status: 'pending' }, // business_id inyectado por el tenant layer
+      where:   { status: 'credit' }, // business_id inyectado por el tenant layer
       include: { abonos: { select: { amount_usd: true } } },
     })
 

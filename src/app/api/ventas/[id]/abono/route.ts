@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     const [sale, pm, rate, activeRegister] = await Promise.all([
       prisma.sale.findFirst({
-        where: { id: saleId, business_id: session.businessId, status: 'pending' },
+        where: { id: saleId, business_id: session.businessId, status: 'credit' },
         select: { id: true, total_usd: true, ticket_number: true, client_id: true },
       }),
       prisma.paymentMethod.findFirst({

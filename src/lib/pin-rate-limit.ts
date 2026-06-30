@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
 
 const MAX_ATTEMPTS = 5
@@ -43,6 +44,27 @@ export const checkAndIncrementPinAttempts = async (
     })
     return false
   })
+}
+
+/**
+ * Verify a PIN against all active users in the business.
+ * Returns { id, role } of the matching user, or null if no match.
+ * Caller is responsible for checking role (admin/super_admin).
+ */
+export async function verifyPin(
+  businessId: number,
+  pin: string
+): Promise<{ id: number; role: string } | null> {
+  const users = await prisma.user.findMany({
+    where:  { business_id: businessId, is_active: true },
+    select: { id: true, role: true, password: true },
+  })
+  for (const user of users) {
+    if (await bcrypt.compare(pin, user.password)) {
+      return { id: user.id, role: user.role }
+    }
+  }
+  return null
 }
 
 /** Remove rate limit entry on successful PIN match. */

@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
     prisma.$queryRaw<CxcRow[]>`
       SELECT IFNULL(c.name, s.client_name) AS client_name, s.total_usd, s.created_at
       FROM sales s LEFT JOIN clients c ON c.id=s.client_id
-      WHERE s.business_id=${bid} AND s.status='pending'
+      WHERE s.business_id=${bid} AND s.status='credit'
       ORDER BY s.created_at ASC LIMIT 10`,
     // Stock bajo
     prisma.$queryRaw<StockRow[]>`
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
     prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
     // Ventas a crédito (pending) creadas hoy — para coherencia dashboard
     db.sale.aggregate({
-      where: { status: 'pending', created_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
+      where: { status: 'credit', created_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
       _sum:  { total_usd: true },
     }),
     // Órdenes recibidas hoy

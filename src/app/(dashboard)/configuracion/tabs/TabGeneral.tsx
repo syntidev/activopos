@@ -78,6 +78,9 @@ export function TabGeneral({ businessId: _businessId }: Props) {
   const [pwConfirm, setPwConfirm] = useState('')
   const [savingPw, setSavingPw]   = useState(false)
   const [pwError, setPwError]     = useState('')
+
+  const [allowOverride, setAllowOverride]     = useState(false)
+  const [savingOverride, setSavingOverride]   = useState(false)
   const [pwSuccess, setPwSuccess] = useState(false)
 
   const [showPwCurrent,  setShowPwCurrent]  = useState(false)
@@ -97,6 +100,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       setConfig({ ...body.business, current_rate: body.current_rate })
       setBcvAuto(body.business.rate_source === 'bcv')
       setManualRate(String(body.current_rate))
+      setAllowOverride(body.business.allow_cashier_price_override ?? false)
     } catch {
       toast('Error al cargar la configuración.', 'error')
     } finally {
@@ -217,6 +221,31 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       setPwError('Error de conexión. Intenta de nuevo.')
     } finally {
       setSavingPw(false)
+    }
+  }
+
+  const handleToggleOverride = async () => {
+    const next = !allowOverride
+    setAllowOverride(next)
+    setSavingOverride(true)
+    try {
+      const res = await fetch('/api/config/business', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ allow_cashier_price_override: next }),
+      })
+      if (!res.ok) throw new Error()
+      toast(
+        next
+          ? 'Cajeros pueden modificar precios sin PIN.'
+          : 'Modificación de precios requiere PIN.',
+        'success',
+      )
+    } catch {
+      setAllowOverride(!next)
+      toast('Error al guardar la configuración.', 'error')
+    } finally {
+      setSavingOverride(false)
     }
   }
 
@@ -394,6 +423,31 @@ export function TabGeneral({ businessId: _businessId }: Props) {
           >
             Guardar PIN
           </Button>
+        </div>
+      </div>
+
+      {/* ── Modificación de precios ── */}
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>
+          <Lock size={16} aria-hidden="true" />
+          Modificación de Precios
+        </h3>
+
+        <div className={styles.toggleRow}>
+          <div>
+            <p className={styles.toggleLabel}>Permitir a cajeros modificar precios sin PIN</p>
+            <p className={styles.toggleHint}>Cuando está activo, los cajeros pueden cambiar el precio de cualquier ítem sin autorización de administrador</p>
+          </div>
+          <button
+            type="button"
+            className={`${styles.toggleBtn} ${allowOverride ? styles.toggleBtnOn : ''}`}
+            onClick={() => void handleToggleOverride()}
+            aria-pressed={allowOverride}
+            aria-label={allowOverride ? 'Desactivar modificación libre de precios' : 'Activar modificación libre de precios'}
+            disabled={savingOverride}
+          >
+            <span className={`${styles.toggleKnob} ${allowOverride ? styles.toggleKnobOn : ''}`} />
+          </button>
         </div>
       </div>
 

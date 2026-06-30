@@ -72,7 +72,7 @@ export async function POST(_req: NextRequest, { params }: Context) {
           business_id:  session.businessId,
           cashier_id:   session.userId,
           ticket_number,
-          status:       'pending',
+          status:       'credit',
           origin:       'quote',
           total_usd,
           total_bs,

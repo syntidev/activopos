@@ -133,10 +133,10 @@ export async function GET(req: NextRequest) {
         _count: { id: true },
       }),
 
-      db.sale.count({ where: { status: 'pending' } }), // business_id inyectado
+      db.sale.count({ where: { status: 'credit' } }), // business_id inyectado
 
       db.sale.findMany({
-        where: { status: 'pending', client_id: { not: null } }, // business_id inyectado
+        where: { status: 'credit', client_id: { not: null } }, // business_id inyectado
         select: {
           id: true, ticket_number: true, total_usd: true, created_at: true,
           client: { select: { name: true } },

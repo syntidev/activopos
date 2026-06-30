@@ -924,6 +924,250 @@
   font-weight: var(--weight-semibold);
 }
 
+/* ── Price override display ── */
+
+.itemPriceOriginal {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+  margin-right: var(--space-1);
+}
+
+.itemPriceOverride {
+  color: var(--color-warning-text);
+  font-weight: var(--weight-semibold);
+}
+
+/* ── Pencil edit button ── */
+
+.priceEditBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: var(--space-1);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0.4;
+  transition:
+    opacity var(--transition-fast),
+    color var(--transition-fast),
+    background var(--transition-fast);
+  vertical-align: middle;
+}
+
+.ticketItem:hover .priceEditBtn,
+.ticketItem:focus-within .priceEditBtn {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .priceEditBtn { opacity: 1; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .priceEditBtn:hover {
+    color: var(--color-brand);
+    background: rgba(var(--brand-rgb), 0.08);
+  }
+}
+
+/* ── Popover backdrop ── */
+
+.popoverBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+}
+
+/* ── Price edit popover ── */
+
+.pricePopover {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 1);
+  width: 292px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.popoverTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.popoverPriceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2-5);
+  height: var(--touch-comfy);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.popoverPriceRow:focus-within {
+  border-color: var(--input-border-focus);
+  box-shadow: var(--focus-ring);
+}
+
+.popoverCurrency {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.popoverPriceInput {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-usd);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.popoverUnit {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.popoverReasonInput {
+  width: 100%;
+  height: var(--touch-min);
+  padding: 0 var(--space-3);
+  background: var(--input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.popoverReasonInput::placeholder { color: var(--input-placeholder); }
+
+.popoverReasonInput:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: var(--focus-ring);
+}
+
+.popoverPinSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.popoverPinHint {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.popoverPinBoxes {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.popoverPinBox {
+  width: 48px;
+  height: 52px;
+  text-align: center;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-sans);
+  background: var(--input-bg);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.popoverPinBox:focus {
+  border-color: var(--color-brand);
+  box-shadow: var(--focus-ring);
+}
+
+.popoverPinBoxError { border-color: var(--danger) !important; }
+
+.popoverError {
+  font-size: var(--text-xs);
+  color: var(--danger);
+  margin: 0;
+}
+
+.popoverActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.popoverCancel {
+  flex: 1;
+  height: var(--touch-min);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .popoverCancel:hover:not(:disabled) {
+    background: var(--color-surface-2);
+    border-color: var(--color-border-strong);
+  }
+}
+
+.popoverCancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.popoverSave {
+  flex: 1;
+  height: var(--touch-min);
+  background: var(--color-brand);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--brand-on);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .popoverSave:hover:not(:disabled) { background: var(--brand-hover); }
+}
+
+.popoverSave:disabled { opacity: 0.45; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  .priceEditBtn { transition: color var(--transition-fast), background var(--transition-fast); }
+}
+
 /* ── Reduced motion: remove transform animations, keep fades ── */
 
 @media (prefers-reduced-motion: reduce) {

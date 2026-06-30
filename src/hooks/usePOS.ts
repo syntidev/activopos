@@ -18,6 +18,7 @@ import {
   aplicarDescuentoGlobal,
   aplicarCargoGlobal,
   buildSalePayload,
+  overridePrecioItem,
 } from '@/lib/pos'
 import type { ProductVariant } from '@/components/products/VariantSelector'
 import type { CreditTerms } from '@/components/pos/CreditoModal'
@@ -38,7 +39,8 @@ export function usePOS() {
   const [searchResults, setSearchResults] = useState<ProductForPOS[]>([])
   const [isSearching, setIsSearching]     = useState(false)
   const [cajaStatus, setCajaStatus]       = useState<'open' | 'closed' | 'loading'>('loading')
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [paymentMethods, setPaymentMethods]                 = useState<PaymentMethod[]>([])
+  const [allowCashierPriceOverride, setAllowCashierPriceOverride] = useState(false)
 
   /* ── Modal visibility ── */
   const [showCobro, setShowCobro]               = useState(false)
@@ -56,7 +58,8 @@ export function usePOS() {
   const [showVariantSelector, setShowVariantSelector]       = useState(false)
   const [pendingVariantProduct, setPendingVariantProduct]   = useState<ProductForPOS | null>(null)
 
-  const searchTimer = useRef<NodeJS.Timeout | null>(null)
+  const searchTimer            = useRef<NodeJS.Timeout | null>(null)
+  const pendingOverridePinRef  = useRef<string | undefined>(undefined)
 
   const fetchCajaStatus = useCallback(async () => {
     const [rateRes, cajaRes, methodsRes, configRes] = await Promise.all([
@@ -94,6 +97,7 @@ export function usePOS() {
         setIvaPct(pct)
         setTicket(prev => ({ ...prev, iva_pct: pct }))
       }
+      setAllowCashierPriceOverride(Boolean(json?.business?.allow_cashier_price_override))
     }
   }, [])
 
@@ -172,6 +176,17 @@ export function usePOS() {
     setTicket(prev => aplicarCargoGlobal(prev, pct))
   }, [])
 
+  const overrideItemPrice = useCallback((
+    productId: number,
+    variantId: number | undefined,
+    newPrice: number,
+    reason?: string,
+    pin?: string
+  ) => {
+    setTicket(prev => overridePrecioItem(prev, productId, variantId, newPrice, reason))
+    if (pin) pendingOverridePinRef.current = pin
+  }, [])
+
   const setClient = useCallback((client: ClientForPOS | null) => {
     setTicket(prev => ({
       ...prev,
@@ -190,14 +205,16 @@ export function usePOS() {
 
   const postSale = async (
     currentTicket: TicketState,
-    status: 'paid' | 'quote' | 'pending',
+    status: 'paid' | 'quote' | 'pending' | 'credit',
     origin: 'pos' | 'quote' | 'credit',
     payments?: PaymentInput[],
     options?: QuoteOptions,
     creditTerms?: CreditTerms
   ): Promise<SaleResult> => {
-    const totals = calcularTotales(currentTicket)
-    const items  = buildSalePayload(currentTicket, totals)
+    const totals           = calcularTotales(currentTicket)
+    const items            = buildSalePayload(currentTicket, totals)
+    const overrideAuthPin  = pendingOverridePinRef.current
+    pendingOverridePinRef.current = undefined
 
     const res = await fetch('/api/sales', {
       method: 'POST',
@@ -214,6 +231,7 @@ export function usePOS() {
         due_date:     creditTerms?.due_date?.toISOString(),
         credit_days:  creditTerms?.credit_days,
         credit_notes: creditTerms?.credit_notes || undefined,
+        ...(overrideAuthPin ? { override_auth_pin: overrideAuthPin } : {}),
       }),
     })
 
@@ -279,7 +297,7 @@ export function usePOS() {
   }
 
   const venderACredito = async (terms: CreditTerms): Promise<SaleResult> => {
-    const result = await postSale(ticket, 'pending', 'credit', undefined, undefined, terms)
+    const result = await postSale(ticket, 'credit', 'credit', undefined, undefined, terms)
     setTicket(limpiarTicket(rate, ivaPct))
     return result
   }
@@ -324,6 +342,7 @@ export function usePOS() {
     cancelVariantSelector,
     updateQty,
     removeItem,
+    overrideItemPrice,
     applyDiscount,
     applyDiscountWithPin,
     applyCargo,
@@ -335,6 +354,7 @@ export function usePOS() {
     generarCotizacion,
     venderACredito,
     openCaja,
+    allowCashierPriceOverride,
     refreshCash: fetchCajaStatus,
   }
 }

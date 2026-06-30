@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       where: {
         id:        data.sale_id,
         client_id: clientId,
-        status:    'pending',
+        status:    'credit',
       },
       select: { id: true, total_usd: true },
     })

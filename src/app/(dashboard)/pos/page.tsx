@@ -196,6 +196,7 @@ export default function POSPage() {
           onCargo={() => pos.setShowCargo(true)}
           userRole={userRole}
           onPriceOverride={pos.overrideItemPrice}
+          allowCashierPriceOverride={pos.allowCashierPriceOverride}
         />
       </div>
 

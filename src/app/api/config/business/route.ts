@@ -19,7 +19,8 @@ const PatchSchema = z.object({
   rate_source:      z.enum(['bcv', 'manual']).optional(),
   rate:             z.number().positive().optional(),
   segment:          z.string().max(50).optional(),
-  max_discount_pct: z.number().min(0).max(100).optional(),
+  max_discount_pct:             z.number().min(0).max(100).optional(),
+  allow_cashier_price_override: z.boolean().optional(),
 })
 
 export async function GET() {
@@ -44,6 +45,7 @@ export async function GET() {
       rate_source: true,
       segment: true,
       max_discount_pct: true,
+      allow_cashier_price_override: true,
     },
   })
 
@@ -103,6 +105,7 @@ export async function PATCH(request: Request) {
       rate_source: true,
       segment: true,
       max_discount_pct: true,
+      allow_cashier_price_override: true,
     },
   })
 

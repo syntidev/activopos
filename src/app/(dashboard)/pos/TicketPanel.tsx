@@ -27,13 +27,14 @@ interface TicketPanelProps {
   onCargo: () => void
   userRole: 'admin' | 'super_admin' | 'cashier'
   onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
+  allowCashierPriceOverride?: boolean
 }
 
 export function TicketPanel({
   ticket, totals, isEmpty,
   onUpdateQty, onRemove, onClear, onSelectClient,
   onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo,
-  userRole, onPriceOverride,
+  userRole, onPriceOverride, allowCashierPriceOverride,
 }: TicketPanelProps) {
   const router = useRouter()
   const { discount_global_pct: discountPct, cargo_global_pct: cargoPct } = ticket
@@ -87,6 +88,7 @@ export function TicketPanel({
                 onRemove={onRemove}
                 userRole={userRole}
                 onPriceOverride={onPriceOverride}
+                allowCashierPriceOverride={allowCashierPriceOverride}
               />
             ))}
           </AnimatePresence>
@@ -171,9 +173,10 @@ interface RowProps {
   onRemove: (id: number) => void
   userRole: 'admin' | 'super_admin' | 'cashier'
   onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
+  allowCashierPriceOverride?: boolean
 }
 
-function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride }: RowProps) {
+function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride, allowCashierPriceOverride }: RowProps) {
   const qtyStep = item.sale_mode === 'weight' ? 0.1 : 1
   const net     = item.subtotal_usd - item.discount_usd
 
@@ -223,7 +226,7 @@ function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride 
   const handleSavePrice = () => {
     const parsed = parseFloat(newPrice)
     if (isNaN(parsed) || parsed <= 0) { setEditError('Ingresa un precio válido mayor a 0'); return }
-    if (userRole === 'cashier') {
+    if (userRole === 'cashier' && !allowCashierPriceOverride) {
       setEditStep('pin')
       setEditError('')
       setTimeout(() => pin0Ref.current?.focus(), 40)

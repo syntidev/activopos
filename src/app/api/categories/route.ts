@@ -7,9 +7,10 @@ import { z } from 'zod'
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
 
 const categorySchema = z.object({
-  name:       z.string().min(1).max(80),
-  color:      z.string().regex(HEX_COLOR).nullable().optional(),
-  sort_order: z.number().int().default(0),
+  name:                 z.string().min(1).max(80),
+  color:                z.string().regex(HEX_COLOR).nullable().optional(),
+  sort_order:           z.number().int().default(0),
+  requires_preparation: z.boolean().optional(),
 })
 
 export async function GET() {

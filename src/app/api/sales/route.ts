@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { createNotification } from '@/lib/notifications'
-import { verifyPin } from '@/lib/pin-rate-limit'
+import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 
 const saleItemSchema = z.object({
   product_id:          z.number().int().positive(),
@@ -163,7 +163,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate price override authorization before the transaction
-    // ponytail: no rate limit here — creation endpoint, brute force is self-limiting (each attempt creates a sale)
     const hasOverride = body.items.some(i => i.unit_price_override != null)
     if (hasOverride) {
       if (session.role === 'cashier') {
@@ -171,6 +170,14 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             { error: 'Se requiere PIN de administrador para modificar precios' },
             { status: 403 }
+          )
+        }
+        // Rate limit keyed on (businessId, userId) — no saleId on creation flow
+        const limited = await checkAndIncrementPinAttempts(session.businessId, session.userId)
+        if (limited) {
+          return NextResponse.json(
+            { error: 'Demasiados intentos. Espere 5 minutos.' },
+            { status: 429 }
           )
         }
         const authorizer = await verifyPin(session.businessId, body.override_auth_pin)
@@ -183,6 +190,7 @@ export async function POST(req: NextRequest) {
             { status: 403 }
           )
         }
+        await clearPinAttempts(session.businessId, session.userId)
       }
       // admin / super_admin: no PIN required
     }

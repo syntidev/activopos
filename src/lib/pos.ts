@@ -87,12 +87,14 @@ export interface TicketTotals {
 
 // Tipo interno para la conversión al payload de la API de ventas
 interface SaleApiItem {
-  product_id: number
-  quantity: number
-  price_per_unit_usd: number
-  sale_mode: SaleMode
-  discount_usd: number
-  variant_id?: number
+  product_id:           number
+  quantity:             number
+  price_per_unit_usd:   number
+  sale_mode:            SaleMode
+  discount_usd:         number
+  variant_id?:          number
+  unit_price_override?: number
+  override_reason?:     string
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -308,12 +310,14 @@ export const buildSalePayload = (
     const share = baseNet > 0 ? itemNet / baseNet : 1 / count
     const extraDiscount = round4(totals.discount_usd * share)
     return {
-      product_id:        i.product_id,
-      quantity:          i.quantity,
-      price_per_unit_usd: i.price_per_unit_usd,
-      sale_mode:         i.sale_mode,
-      discount_usd:      round4(Math.max(0, i.discount_usd + extraDiscount)),
-      ...(i.variant_id ? { variant_id: i.variant_id } : {}),
+      product_id:          i.product_id,
+      quantity:            i.quantity,
+      price_per_unit_usd:  i.price_per_unit_usd,
+      sale_mode:           i.sale_mode,
+      discount_usd:        round4(Math.max(0, i.discount_usd + extraDiscount)),
+      ...(i.variant_id            ? { variant_id:          i.variant_id }          : {}),
+      ...(i.price_override_original != null ? { unit_price_override: i.price_per_unit_usd } : {}),
+      ...(i.override_reason        ? { override_reason:     i.override_reason }     : {}),
     }
   })
 }

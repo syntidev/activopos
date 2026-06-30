@@ -77,6 +77,8 @@ function ticketToApiItems(ticket: TicketState) {
     quantity:     item.quantity,
     variant_id:   item.variant_id,
     discount_usd: item.discount_usd,
+    ...(item.price_override_original != null ? { unit_price_override: item.price_per_unit_usd } : {}),
+    ...(item.override_reason                 ? { override_reason:     item.override_reason }     : {}),
   }))
 }
 

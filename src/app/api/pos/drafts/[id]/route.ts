@@ -40,7 +40,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
           { status: 403 }
         )
       }
-      const limited = await checkAndIncrementPinAttempts(session.businessId, draftId)
+      // Rate limit keyed on userId — draftId would allow bypass by rotating drafts
+      const limited = await checkAndIncrementPinAttempts(session.businessId, session.userId)
       if (limited) {
         return NextResponse.json(
           { error: 'Demasiados intentos. Espere 5 minutos.' },
@@ -57,7 +58,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
           { status: 403 }
         )
       }
-      await clearPinAttempts(session.businessId, draftId)
+      await clearPinAttempts(session.businessId, session.userId)
     }
 
     // FIX 3: BCV rate fetched before transaction — avoids holding pool connection during network call

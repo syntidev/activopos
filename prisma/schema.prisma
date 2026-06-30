@@ -215,8 +215,9 @@ model Category {
   business_id Int
   name        String  @db.VarChar(80)
   color       String? @db.VarChar(20)
-  sort_order  Int     @default(0)
-  active      Boolean @default(true)
+  sort_order            Int     @default(0)
+  active                Boolean @default(true)
+  requires_preparation  Boolean @default(false)
 
   business Business  @relation(fields: [business_id], references: [id])
   products Product[]
@@ -578,6 +579,7 @@ model Order {
   rate_used      Decimal     @db.Decimal(10, 4)
   estimated_time Int?
   sale_id        Int?        @unique
+  send_to_kds    Boolean     @default(false)
   created_at     DateTime    @default(now())
   updated_at     DateTime    @updatedAt
 

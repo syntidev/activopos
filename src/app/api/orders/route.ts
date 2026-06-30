@@ -10,11 +10,12 @@ import { sendPushToBusinessSubscribers } from '@/lib/push-notify'
 /* ── Query schema ── */
 
 const querySchema = z.object({
-  status: z.enum(['received', 'preparing', 'ready', 'dispatched', 'delivered', 'cancelled']).optional(),
-  from:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  page:   z.coerce.number().int().min(1).default(1),
-  limit:  z.coerce.number().int().min(1).max(100).default(50),
+  status:      z.enum(['received', 'preparing', 'ready', 'dispatched', 'delivered', 'cancelled']).optional(),
+  from:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  send_to_kds: z.enum(['true', 'false']).optional(),
+  page:        z.coerce.number().int().min(1).default(1),
+  limit:       z.coerce.number().int().min(1).max(100).default(50),
 })
 
 /* ── Item schema ── */
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
     const where = {
       // business_id inyectado por el tenant layer
       ...(query.status && { status: query.status }),
+      ...(query.send_to_kds !== undefined && { send_to_kds: query.send_to_kds === 'true' }),
       ...(query.from || query.to
         ? {
             created_at: {

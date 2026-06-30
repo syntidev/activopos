@@ -142,6 +142,7 @@ export async function POST(
       sale_mode:          true,
       price_per_unit_usd: true,
       price_per_kg_usd:   true,
+      category:           { select: { requires_preparation: true } },
     },
   })
 
@@ -168,6 +169,8 @@ export async function POST(
       subtotal_usd: Math.round(item.qty * priceUsd * 100) / 100,
     }
   })
+
+  const needsKds = dbProducts.some(p => p.category?.requires_preparation === true)
 
   const rate = await getBcvRate()
 
@@ -219,6 +222,7 @@ export async function POST(
         total_usd:      totalUsd,
         total_bs:       totalBs,
         rate_used:      rate,
+        send_to_kds:    needsKds,
         items: {
           create: resolvedItems.map(item => ({
             product_id:         item.product_id,

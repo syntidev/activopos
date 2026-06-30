@@ -240,8 +240,8 @@ function KDSBoard() {
     if (!silent) setLoading(true)
     try {
       const [r1, r2] = await Promise.all([
-        fetch('/api/orders?status=received&limit=50'),
-        fetch('/api/orders?status=preparing&limit=50'),
+        fetch('/api/orders?status=received&send_to_kds=true&limit=50'),
+        fetch('/api/orders?status=preparing&send_to_kds=true&limit=50'),
       ])
       const all: Order[] = []
       if (r1.ok) { const d = await r1.json() as { orders?: Order[] }; all.push(...(d.orders ?? [])) }

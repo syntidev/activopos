@@ -26,7 +26,7 @@ interface TicketPanelProps {
   onDescuento: () => void
   onCargo: () => void
   userRole: 'admin' | 'super_admin' | 'cashier'
-  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string) => void
+  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
 }
 
 export function TicketPanel({
@@ -170,7 +170,7 @@ interface RowProps {
   onUpdateQty: (id: number, qty: number) => void
   onRemove: (id: number) => void
   userRole: 'admin' | 'super_admin' | 'cashier'
-  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string) => void
+  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
 }
 
 function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride }: RowProps) {
@@ -259,7 +259,7 @@ function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride 
           return
         }
       }
-      onPriceOverride(item.product_id, item.variant_id, price, reason || undefined)
+      onPriceOverride(item.product_id, item.variant_id, price, reason || undefined, pinStr)
       setEditOpen(false)
     } finally {
       setEditLoading(false)

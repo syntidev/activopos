@@ -57,7 +57,8 @@ export function usePOS() {
   const [showVariantSelector, setShowVariantSelector]       = useState(false)
   const [pendingVariantProduct, setPendingVariantProduct]   = useState<ProductForPOS | null>(null)
 
-  const searchTimer = useRef<NodeJS.Timeout | null>(null)
+  const searchTimer            = useRef<NodeJS.Timeout | null>(null)
+  const pendingOverridePinRef  = useRef<string | undefined>(undefined)
 
   const fetchCajaStatus = useCallback(async () => {
     const [rateRes, cajaRes, methodsRes, configRes] = await Promise.all([
@@ -177,9 +178,11 @@ export function usePOS() {
     productId: number,
     variantId: number | undefined,
     newPrice: number,
-    reason?: string
+    reason?: string,
+    pin?: string
   ) => {
     setTicket(prev => overridePrecioItem(prev, productId, variantId, newPrice, reason))
+    if (pin) pendingOverridePinRef.current = pin
   }, [])
 
   const setClient = useCallback((client: ClientForPOS | null) => {
@@ -206,8 +209,10 @@ export function usePOS() {
     options?: QuoteOptions,
     creditTerms?: CreditTerms
   ): Promise<SaleResult> => {
-    const totals = calcularTotales(currentTicket)
-    const items  = buildSalePayload(currentTicket, totals)
+    const totals           = calcularTotales(currentTicket)
+    const items            = buildSalePayload(currentTicket, totals)
+    const overrideAuthPin  = pendingOverridePinRef.current
+    pendingOverridePinRef.current = undefined
 
     const res = await fetch('/api/sales', {
       method: 'POST',
@@ -224,6 +229,7 @@ export function usePOS() {
         due_date:     creditTerms?.due_date?.toISOString(),
         credit_days:  creditTerms?.credit_days,
         credit_notes: creditTerms?.credit_notes || undefined,
+        ...(overrideAuthPin ? { override_auth_pin: overrideAuthPin } : {}),
       }),
     })
 

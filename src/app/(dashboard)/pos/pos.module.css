@@ -951,7 +951,7 @@
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   cursor: pointer;
-  opacity: 0.4;
+  opacity: 1;
   transition:
     opacity var(--transition-fast),
     color var(--transition-fast),

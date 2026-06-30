@@ -7,10 +7,18 @@ import { X, Tag, Check } from 'lucide-react'
 import mStyles from './modals.module.css'
 import styles from './CategoryModal.module.css'
 
+interface InitialData {
+  id?: number
+  name: string
+  color: string
+  requires_preparation: boolean
+}
+
 interface CategoryModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (name: string, color: string) => Promise<void>
+  initialData?: InitialData
+  onSave: (name: string, color: string, requiresPreparation: boolean) => Promise<void>
 }
 
 const COLORS: Array<{ key: string; label: string }> = [
@@ -35,22 +43,26 @@ const DOT_CLASS: Record<string, string> = {
   gray:   styles.dotGray,
 }
 
-export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
+export function CategoryModal({ isOpen, onClose, initialData, onSave }: CategoryModalProps) {
   useScrollLock(isOpen)
 
-  const [name, setName]         = useState('')
-  const [color, setColor]       = useState('blue')
-  const [error, setError]       = useState('')
-  const [isSaving, setIsSaving] = useState(false)
+  const [name, setName]                   = useState('')
+  const [color, setColor]                 = useState('blue')
+  const [requiresPrep, setRequiresPrep]   = useState(false)
+  const [error, setError]                 = useState('')
+  const [isSaving, setIsSaving]           = useState(false)
 
   useEffect(() => {
-    if (!isOpen) {
-      setName('')
-      setColor('blue')
+    if (isOpen) {
+      setName(initialData?.name ?? '')
+      setColor(initialData?.color ?? 'blue')
+      setRequiresPrep(initialData?.requires_preparation ?? false)
       setError('')
       setIsSaving(false)
     }
-  }, [isOpen])
+  }, [isOpen, initialData])
+
+  const isEdit = Boolean(initialData?.id)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,7 +74,7 @@ export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
     setError('')
     setIsSaving(true)
     try {
-      await onSave(trimmed, color)
+      await onSave(trimmed, color, requiresPrep)
       onClose()
     } catch {
       setError('Error al guardar. Intenta de nuevo.')
@@ -82,7 +94,7 @@ export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
           transition={{ duration: 0.15, ease: 'easeOut' }}
           aria-modal="true"
           role="dialog"
-          aria-label="Nueva categoría"
+          aria-label={isEdit ? 'Editar categoría' : 'Nueva categoría'}
         >
           <motion.div
             className={`${mStyles.modal} ${mStyles.modalSm}`}
@@ -96,7 +108,9 @@ export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
             <div className={mStyles.modalHeader}>
               <div className={styles.titleRow}>
                 <Tag size={16} className={styles.titleIcon} aria-hidden="true" />
-                <h2 className={mStyles.modalTitle}>Nueva Categoría</h2>
+                <h2 className={mStyles.modalTitle}>
+                  {isEdit ? 'Editar Categoría' : 'Nueva Categoría'}
+                </h2>
               </div>
               <button
                 className={mStyles.closeBtn}
@@ -162,6 +176,22 @@ export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
                     {name || 'Categoría'}
                   </span>
                 </div>
+
+                {/* Requires preparation */}
+                <label className={styles.checkRow}>
+                  <input
+                    type="checkbox"
+                    className={styles.checkInput}
+                    checked={requiresPrep}
+                    onChange={(e) => setRequiresPrep(e.target.checked)}
+                  />
+                  <span className={styles.checkText}>
+                    <span className={styles.checkLabel}>Requiere preparación</span>
+                    <span className={styles.checkHelp}>
+                      Los productos de esta categoría aparecerán en la pantalla de cocina antes de ser entregados.
+                    </span>
+                  </span>
+                </label>
               </div>
 
               {/* Footer */}
@@ -180,7 +210,7 @@ export function CategoryModal({ isOpen, onClose, onSave }: CategoryModalProps) {
                   disabled={isSaving || !name.trim()}
                 >
                   {isSaving && <span className={mStyles.spinner} aria-hidden="true" />}
-                  {isSaving ? 'Guardando...' : 'Crear Categoría'}
+                  {isSaving ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Crear Categoría'}
                 </button>
               </div>
             </form>

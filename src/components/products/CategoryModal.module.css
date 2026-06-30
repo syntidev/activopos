@@ -97,6 +97,44 @@
 .badge_cyan   { background: rgba(var(--cyan-rgb),   0.12); color: #67E8F9; border-color: rgba(var(--cyan-rgb),   0.3); }
 .badge_gray   { background: var(--color-surface-3); color: var(--color-text-secondary); border-color: var(--color-border); }
 
+/* ── Requires preparation checkbox ── */
+.checkRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.checkInput {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--color-brand);
+  cursor: pointer;
+}
+
+.checkText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.checkLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+}
+
+.checkHelp {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .dot { transition: none; }

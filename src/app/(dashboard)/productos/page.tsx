@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   ScanBarcode,
   X,
+  Pencil,
 } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
 import { Button } from '@/components/ui/Button'
@@ -32,6 +33,7 @@ interface Category {
   id: number
   name: string
   color: string
+  requires_preparation: boolean
 }
 
 interface Product {
@@ -151,7 +153,8 @@ export default function ProductosPage() {
   /* ── Modal states ── */
   const [showProductModal, setShowProductModal] = useState(false)
   const [editProduct, setEditProduct]     = useState<EditableProduct | null>(null)
-  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [showCategoryModal, setShowCategoryModal]   = useState(false)
+  const [editCategoryData, setEditCategoryData]     = useState<Category | null>(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [stockProduct, setStockProduct]   = useState<Product | null>(null)
 
@@ -401,18 +404,22 @@ export default function ProductosPage() {
     }
   }, [products])
 
-  const handleSaveCategory = useCallback(async (name: string, color: string) => {
-    const res = await fetch('/api/products/categories', {
-      method: 'POST',
+  const handleSaveCategory = useCallback(async (name: string, color: string, requiresPreparation: boolean) => {
+    const id     = editCategoryData?.id
+    const url    = id ? `/api/categories/${id}` : '/api/products/categories'
+    const method = id ? 'PATCH' : 'POST'
+    const res    = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, color }),
+      body: JSON.stringify({ name, color, requires_preparation: requiresPreparation }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err?.error ?? `Error ${res.status}`)
     }
+    setEditCategoryData(null)
     await fetchCategories()
-  }, [fetchCategories])
+  }, [editCategoryData, fetchCategories])
 
   const handleSaveStock = useCallback(async (
     productId: number,
@@ -631,16 +638,25 @@ export default function ProductosPage() {
             Todas las categorías
           </button>
           {categories.map((cat) => (
-            <button
-              key={cat.id}
-              role="tab"
-              type="button"
-              className={`${styles.catTab} ${selectedCategory === String(cat.id) ? styles.catTabActive : ''}`}
-              onClick={() => setSelectedCategory(String(cat.id))}
-              aria-selected={selectedCategory === String(cat.id)}
-            >
-              {cat.name}
-            </button>
+            <div key={cat.id} className={styles.catGroup}>
+              <button
+                role="tab"
+                type="button"
+                className={`${styles.catTab} ${selectedCategory === String(cat.id) ? styles.catTabActive : ''}`}
+                onClick={() => setSelectedCategory(String(cat.id))}
+                aria-selected={selectedCategory === String(cat.id)}
+              >
+                {cat.name}
+              </button>
+              <button
+                type="button"
+                className={styles.catEditBtn}
+                onClick={() => { setEditCategoryData(cat); setShowCategoryModal(true) }}
+                aria-label={`Editar categoría ${cat.name}`}
+              >
+                <Pencil size={12} aria-hidden="true" />
+              </button>
+            </div>
           ))}
         </div>
       )}
@@ -853,7 +869,8 @@ export default function ProductosPage() {
 
       <CategoryModal
         isOpen={showCategoryModal}
-        onClose={() => setShowCategoryModal(false)}
+        onClose={() => { setShowCategoryModal(false); setEditCategoryData(null) }}
+        initialData={editCategoryData ?? undefined}
         onSave={handleSaveCategory}
       />
 

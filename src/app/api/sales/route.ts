@@ -6,14 +6,18 @@ import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { createNotification } from '@/lib/notifications'
+import { verifyPin } from '@/lib/pin-rate-limit'
 
 const saleItemSchema = z.object({
-  product_id:   z.number().int().positive(),
-  quantity:     z.number().positive(),
-  sale_mode:    z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
-  discount_usd: z.number().min(0).default(0),
-  variant_id:   z.number().int().positive().optional(),
+  product_id:          z.number().int().positive(),
+  quantity:            z.number().positive(),
+  sale_mode:           z.enum(['unit', 'weight', 'service', 'length', 'volume', 'package']),
+  discount_usd:        z.number().min(0).default(0),
+  variant_id:          z.number().int().positive().optional(),
   // price_per_unit_usd NOT accepted from client — SEC-01: always fetched from DB
+  // unit_price_override accepted only after admin PIN validation (see POST handler)
+  unit_price_override: z.number().positive().optional(),
+  override_reason:     z.string().max(255).optional(),
 })
 
 const paymentSchema = z.object({
@@ -24,16 +28,17 @@ const paymentSchema = z.object({
 })
 
 const saleSchema = z.object({
-  items:        z.array(saleItemSchema).min(1),
-  client_id:    z.number().int().positive().optional(),
-  client_name:  z.string().max(120).optional(),
-  status:       z.enum(['quote', 'pending', 'paid']),
-  origin:       z.enum(['pos', 'quote', 'credit']),
-  notes:        z.string().optional(),
-  payments:     z.array(paymentSchema).optional(),
-  due_date:     z.string().datetime().optional(),
-  credit_days:  z.number().int().positive().optional(),
-  credit_notes: z.string().max(500).optional(),
+  items:             z.array(saleItemSchema).min(1),
+  client_id:         z.number().int().positive().optional(),
+  client_name:       z.string().max(120).optional(),
+  status:            z.enum(['quote', 'pending', 'paid']),
+  origin:            z.enum(['pos', 'quote', 'credit']),
+  notes:             z.string().optional(),
+  payments:          z.array(paymentSchema).optional(),
+  due_date:          z.string().datetime().optional(),
+  credit_days:       z.number().int().positive().optional(),
+  credit_notes:      z.string().max(500).optional(),
+  override_auth_pin: z.string().min(1).max(20).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -157,6 +162,31 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Validate price override authorization before the transaction
+    // ponytail: no rate limit here — creation endpoint, brute force is self-limiting (each attempt creates a sale)
+    const hasOverride = body.items.some(i => i.unit_price_override != null)
+    if (hasOverride) {
+      if (session.role === 'cashier') {
+        if (!body.override_auth_pin) {
+          return NextResponse.json(
+            { error: 'Se requiere PIN de administrador para modificar precios' },
+            { status: 403 }
+          )
+        }
+        const authorizer = await verifyPin(session.businessId, body.override_auth_pin)
+        if (!authorizer) {
+          return NextResponse.json({ error: 'PIN incorrecto' }, { status: 401 })
+        }
+        if (authorizer.role === 'cashier') {
+          return NextResponse.json(
+            { error: 'El PIN ingresado no corresponde a un administrador' },
+            { status: 403 }
+          )
+        }
+      }
+      // admin / super_admin: no PIN required
+    }
+
     const rate = await getBcvRate()
 
     const { sale, componentAlertIds } = await prisma.$transaction(async (tx) => {
@@ -233,9 +263,11 @@ export async function POST(req: NextRequest) {
         }
 
         // SEC-01: price always from DB — variant price_usd takes priority over product price
-        const priceUsd = variant?.price_usd != null
+        // unit_price_override accepted only after admin authorization validated above
+        const dbPrice = variant?.price_usd != null
           ? Number(variant.price_usd)
           : Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        const priceUsd = item.unit_price_override ?? dbPrice
         if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
 
         const subtotal_usd =
@@ -255,18 +287,20 @@ export async function POST(req: NextRequest) {
             : null
 
         return {
-          product_id:         item.product_id,
-          product_name:       product.name,
-          sale_mode:          item.sale_mode,
-          unit_label:         product.base_unit_label,
-          quantity:           item.quantity,
-          price_per_unit_usd: priceUsd,
-          subtotal_usd:       Math.round(subtotal_usd * 10000) / 10000,
-          subtotal_bs:        Math.round(subtotal_bs * 100) / 100,
-          rate_used:          rate,
-          discount_usd:       item.discount_usd,
+          product_id:          item.product_id,
+          product_name:        product.name,
+          sale_mode:           item.sale_mode,
+          unit_label:          product.base_unit_label,
+          quantity:            item.quantity,
+          price_per_unit_usd:  priceUsd,
+          subtotal_usd:        Math.round(subtotal_usd * 10000) / 10000,
+          subtotal_bs:         Math.round(subtotal_bs * 100) / 100,
+          rate_used:           rate,
+          discount_usd:        item.discount_usd,
           recipe_snapshot,
-          variant_id:         item.variant_id ?? null,
+          variant_id:          item.variant_id ?? null,
+          unit_price_override: item.unit_price_override ?? null,
+          override_reason:     item.override_reason ?? null,
         }
       })
 

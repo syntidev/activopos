@@ -4,10 +4,17 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
+import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
+
+const patchItemSchema = draftItemSchema.extend({
+  unit_price_override: z.number().positive().optional(),
+  override_reason:     z.string().max(255).optional(),
+})
 
 const patchSchema = z.object({
-  items: z.array(draftItemSchema).min(0),
-  notes: z.string().max(500).optional(),
+  items:             z.array(patchItemSchema).min(0),
+  notes:             z.string().max(500).optional(),
+  override_auth_pin: z.string().min(1).max(20).optional(),
 })
 
 type Context = { params: { id: string } }
@@ -24,6 +31,35 @@ export async function PATCH(req: NextRequest, { params }: Context) {
   try {
     const body = patchSchema.parse(await req.json())
 
+    // Validate price override authorization before the transaction
+    const hasOverride = body.items.some(i => i.unit_price_override != null)
+    if (hasOverride && session.role === 'cashier') {
+      if (!body.override_auth_pin) {
+        return NextResponse.json(
+          { error: 'Se requiere PIN de administrador para modificar precios' },
+          { status: 403 }
+        )
+      }
+      const limited = await checkAndIncrementPinAttempts(session.businessId, draftId)
+      if (limited) {
+        return NextResponse.json(
+          { error: 'Demasiados intentos. Espere 5 minutos.' },
+          { status: 429 }
+        )
+      }
+      const authorizer = await verifyPin(session.businessId, body.override_auth_pin)
+      if (!authorizer) {
+        return NextResponse.json({ error: 'PIN incorrecto' }, { status: 401 })
+      }
+      if (authorizer.role === 'cashier') {
+        return NextResponse.json(
+          { error: 'El PIN ingresado no corresponde a un administrador' },
+          { status: 403 }
+        )
+      }
+      await clearPinAttempts(session.businessId, draftId)
+    }
+
     // FIX 3: BCV rate fetched before transaction — avoids holding pool connection during network call
     const rate = await getBcvRate()
 
@@ -38,6 +74,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         product_id: number; product_name: string; sale_mode: string; unit_label: string
         quantity: number; price_per_unit_usd: number; subtotal_usd: number
         subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number
+        unit_price_override?: number | null; override_reason?: string | null
       }[] = []
 
       if (body.items.length > 0) {
@@ -51,20 +88,23 @@ export async function PATCH(req: NextRequest, { params }: Context) {
 
         saleItemsData = body.items.map(item => {
           const p        = productMap.get(item.product_id)!
-          const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+          const dbPrice  = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+          const priceUsd = item.unit_price_override ?? dbPrice
           if (priceUsd <= 0) throw new Error('PRICE_MISSING')
           const subtotal_usd = Math.max(0, item.quantity * priceUsd - item.discount_usd)
           return {
-            product_id:         item.product_id,
-            product_name:       p.name,
-            sale_mode:          p.sale_mode,
-            unit_label:         p.unit_label,
-            quantity:           item.quantity,
-            price_per_unit_usd: priceUsd,
-            subtotal_usd:       Math.round(subtotal_usd * 100) / 100,
-            subtotal_bs:        Math.round(subtotal_usd * rate * 100) / 100,
-            rate_used:          rate,
-            discount_usd:       item.discount_usd,
+            product_id:          item.product_id,
+            product_name:        p.name,
+            sale_mode:           p.sale_mode,
+            unit_label:          p.unit_label,
+            quantity:            item.quantity,
+            price_per_unit_usd:  priceUsd,
+            subtotal_usd:        Math.round(subtotal_usd * 100) / 100,
+            subtotal_bs:         Math.round(subtotal_usd * rate * 100) / 100,
+            rate_used:           rate,
+            discount_usd:        item.discount_usd,
+            unit_price_override: item.unit_price_override ?? null,
+            override_reason:     item.override_reason ?? null,
             ...(item.variant_id != null && { variant_id: item.variant_id }),
           }
         })

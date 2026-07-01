@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { ArrowRight, Upload } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -16,6 +16,7 @@ interface StepProps {
 
 export default function Step2Negocio({ data, update, onNext }: StepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showValidationHint, setShowValidationHint] = useState(false)
 
   const subSegments = data.segment ? SUB_SEGMENTS[data.segment] ?? [] : []
   const needsOther   = data.subSegment === 'otro'
@@ -32,6 +33,14 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
     data.segment !== '' &&
     data.subSegment !== '' &&
     (!needsOther || data.subSegmentOther.trim().length > 0)
+
+  // Solo para el mensaje de feedback — no participa en isValid
+  const missingLabels: string[] = []
+  if (data.businessName.trim().length < 2) missingLabels.push('Nombre del negocio')
+  if (data.city.trim().length === 0) missingLabels.push('Ciudad')
+  if (data.segment === '') missingLabels.push('Tipo de negocio')
+  if (data.segment !== '' && data.subSegment === '') missingLabels.push('Sub-segmento')
+  if (needsOther && data.subSegmentOther.trim().length === 0) missingLabels.push('Detalle del segmento')
 
   return (
     <>
@@ -125,9 +134,25 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
         )}
       </div>
 
-      <Button fullWidth size="lg" rightIcon={<ArrowRight size={16} />} disabled={!isValid} onClick={onNext}>
-        Continuar
-      </Button>
+      <div className={styles.continueWrap}>
+        <Button fullWidth size="lg" rightIcon={<ArrowRight size={16} />} disabled={!isValid} onClick={onNext}>
+          Continuar
+        </Button>
+        {/* Botón nativo disabled no emite click — esta capa intercepta el toque para mostrar el feedback */}
+        {!isValid && (
+          <div
+            className={styles.disabledOverlay}
+            onClick={() => setShowValidationHint(true)}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+
+      {showValidationHint && !isValid && missingLabels.length > 0 && (
+        <p className={styles.fieldError} role="alert">
+          Completa: {missingLabels.join(', ')}
+        </p>
+      )}
     </>
   )
 }

@@ -68,6 +68,16 @@
   color: var(--color-danger-text);
 }
 
+.continueWrap {
+  position: relative;
+}
+
+.disabledOverlay {
+  position: absolute;
+  inset: 0;
+  cursor: not-allowed;
+}
+
 .footerLink {
   text-align: center;
   font-size: var(--text-sm);

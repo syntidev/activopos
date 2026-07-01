@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { ExternalLink, Download, Eye, EyeOff, MessageSquare } from 'lucide-react'
+import { ExternalLink, Download, Eye, EyeOff, MessageSquare, QrCode, X } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './catalogo-admin.module.css'
 
@@ -49,6 +49,7 @@ function CatalogoAdminContent() {
   const [selected,    setSelected]    = useState<number[]>([])
   const [updating,    setUpdating]    = useState(false)
   const [togglingId,  setTogglingId]  = useState<number | null>(null)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -152,8 +153,8 @@ function CatalogoAdminContent() {
             </a>
           )}
           {qrUrl && (
-            <button className={styles.qrBtn} onClick={handleDownloadQr}>
-              <Download size={14} aria-hidden="true" />
+            <button className={styles.qrBtn} onClick={() => setQrModalOpen(true)}>
+              <QrCode size={14} aria-hidden="true" />
               QR
             </button>
           )}
@@ -179,25 +180,6 @@ function CatalogoAdminContent() {
           <span className={`${styles.kpiValue} ${styles.kpiWarning}`}>{sum.on_request}</span>
         </div>
       </div>
-
-      {/* ── QR card ── */}
-      {qrUrl && (
-        <div className={styles.qrCard}>
-          <div className={styles.qrBody}>
-            <img src={qrUrl} alt="QR del catálogo" width={140} height={140} className={styles.qrImg} />
-            <div className={styles.qrInfo}>
-              <h2 className={styles.qrTitle}>Código QR del catálogo</h2>
-              {data.catalog_url && (
-                <p className={styles.qrUrl}>{data.catalog_url}</p>
-              )}
-              <button className={styles.qrDownloadBtn} onClick={handleDownloadQr}>
-                <Download size={14} aria-hidden="true" />
-                Descargar QR
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Top productos ── */}
       {products.length > 0 && (
@@ -292,6 +274,47 @@ function CatalogoAdminContent() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* ── QR modal ── */}
+      {qrModalOpen && qrUrl && (
+        <>
+          <div
+            className={styles.qrModalBackdrop}
+            onClick={() => setQrModalOpen(false)}
+          />
+          <div className={styles.qrModal}>
+            <div className={styles.qrModalHeader}>
+              <h3 className={styles.qrModalTitle}>Código QR del catálogo</h3>
+              <button
+                className={styles.qrModalClose}
+                onClick={() => setQrModalOpen(false)}
+                aria-label="Cerrar"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <div className={styles.qrModalBody}>
+              <img
+                src={qrUrl}
+                alt="QR del catálogo"
+                width={200}
+                height={200}
+                className={styles.qrModalImg}
+              />
+              <p className={styles.qrModalUrl}>{data?.catalog_url}</p>
+            </div>
+            <div className={styles.qrModalFooter}>
+              <button
+                className={styles.qrModalDownload}
+                onClick={handleDownloadQr}
+              >
+                <Download size={14} aria-hidden="true" />
+                Descargar PNG
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
     </div>

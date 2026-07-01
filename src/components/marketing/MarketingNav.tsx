@@ -39,7 +39,7 @@ export default function MarketingNav() {
         aria-label="Navegación principal"
       >
         <Link href="/" className={styles.logo} onClick={close} aria-label="ActivoPOS — inicio">
-          <img src="/logo.svg" alt="" aria-hidden="true" className={styles.logoImg} />
+          <img src="/activopos-3d.svg" alt="" aria-hidden="true" className={styles.logoImg} />
           <span className={styles.logoName}>
             <span className={styles.logoA}>Activo</span>
             <span className={styles.logoB}>POS</span>
@@ -86,7 +86,7 @@ export default function MarketingNav() {
         <div className={styles.drawerPanel}>
           <div className={styles.drawerHeader}>
             <Link href="/" className={styles.drawerLogo} onClick={close}>
-              <img src="/logo.svg" alt="" aria-hidden="true" className={styles.logoImg} />
+              <img src="/activopos-3d.svg" alt="" aria-hidden="true" className={styles.logoImg} />
               <span className={styles.logoName}>
                 <span className={styles.logoA}>Activo</span>
                 <span className={styles.logoB}>POS</span>

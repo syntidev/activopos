@@ -233,7 +233,7 @@ export default function EscritorioPage() {
       <div className={styles.header}>
         <div>
           <div className={styles.brandMark} aria-hidden="true">
-            <img src="/logo.svg" alt="" className={styles.brandMarkLogo} />
+            <img src="/activopos-3d.svg" alt="" className={styles.brandMarkLogo} />
             <span className={styles.brandMarkName}>
               <span className={styles.brandMarkActivo}>Activo</span>
               <span className={styles.brandMarkPOS}>POS</span>

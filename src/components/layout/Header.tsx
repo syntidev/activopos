@@ -235,7 +235,7 @@ export function Header({
 
         {/* Mobile: brand in center */}
         <div className={styles.mobileBrand} aria-label="ActivoPOS">
-          <img src="/logo.svg" alt="ActivoPOS" className={styles.mobileBrandLogo} />
+          <img src="/activopos-3d.svg" alt="ActivoPOS" className={styles.mobileBrandLogo} />
           <span className={styles.mobileBrandName}>
             <span className={styles.mobileBrandActivo}>Activo</span>
             <span className={styles.mobileBrandPOS}>POS</span>

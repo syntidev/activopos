@@ -186,7 +186,7 @@ function NavContent({
       {/* Logo */}
       <div className={styles.logoWrapper}>
         <div className={styles.logoRow} aria-label="ActivoPOS">
-          <img src="/logo.svg" alt="ActivoPOS" className={styles.logoImg} />
+          <img src="/activopos-3d.svg" alt="ActivoPOS" className={styles.logoImg} />
           <AnimatePresence initial={false}>
             {!collapsed && (
               <motion.span key="logo-name" className={styles.logoName} {...LABEL_MOTION}>

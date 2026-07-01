@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle, Plus, FileText, Pencil } from 'lucide-react'
+import { CheckCircle, Plus, FileText, Pencil, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, useToast } from '@/components/ui'
 import { GastoModal } from '@/components/finanzas/GastoModal'
@@ -35,6 +35,7 @@ export function CxPSection({ month }: { month: string }) {
   const [editCxP,       setEditCxP]       = useState<CxPItem | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [loading,       setLoading]       = useState(true)
+  const [search,        setSearch]        = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -67,6 +68,13 @@ export function CxPSection({ month }: { month: string }) {
     setShowEditModal(true)
   }
 
+  const filtered = search
+    ? items.filter(i =>
+        i.concepto.toLowerCase().includes(search.toLowerCase()) ||
+        i.categoria.toLowerCase().includes(search.toLowerCase())
+      )
+    : items
+
   if (loading) return <div className={styles.loading}>Cargando cuentas por pagar…</div>
 
   return (
@@ -86,6 +94,29 @@ export function CxPSection({ month }: { month: string }) {
         </Button>
       </div>
 
+      {/* ── Search ── */}
+      <div className={styles.searchWrap}>
+        <Search size={15} className={styles.searchIcon} aria-hidden="true" />
+        <input
+          type="search"
+          placeholder="Proveedor o descripción…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className={styles.searchInput}
+          aria-label="Buscar cuentas por pagar"
+        />
+        {search && (
+          <button
+            type="button"
+            className={styles.searchClear}
+            onClick={() => setSearch('')}
+            aria-label="Limpiar búsqueda"
+          >
+            <X size={13} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
       {/* ── Table ── */}
       {!items.length ? (
         <EmptyState
@@ -93,6 +124,8 @@ export function CxPSection({ month }: { month: string }) {
           title="Sin cuentas por pagar"
           description="No hay deudas pendientes."
         />
+      ) : !filtered.length ? (
+        <EmptyState icon={FileText} title="Sin resultados para la búsqueda" />
       ) : (
         <div className={styles.catSection}>
           <div className={styles.finTableWrap}>
@@ -108,7 +141,7 @@ export function CxPSection({ month }: { month: string }) {
                 </tr>
               </thead>
               <tbody>
-                {items.map(item => {
+                {filtered.map(item => {
                   const urgente = isUrgente(item.fecha)
                   return (
                     <tr key={item.id}>

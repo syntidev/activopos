@@ -132,6 +132,7 @@ function ReporteDiaContent() {
   type SortDir = 'asc' | 'desc'
   const [prodSortKey, setProdSortKey] = useState<ProductSortKey | null>(null)
   const [prodSortDir, setProdSortDir] = useState<SortDir>('asc')
+  const [prodSearch,  setProdSearch]  = useState('')
   const initRef = useRef(false)
 
   const handleProdSort = (key: ProductSortKey) => {
@@ -228,6 +229,9 @@ function ReporteDiaContent() {
   const maxPayment    = activeData ? Math.max(...activeData.byPaymentMethod.map(p => p.totalUsd), 0) : 0
   const avgTicket     = activeData && activeData.salesCount > 0 ? activeData.totalUsd / activeData.salesCount : 0
   const activeRate    = activeData?.rate ?? 1
+  const filteredProducts = (activeData?.topProducts ?? []).filter(p =>
+    !prodSearch || p.name.toLowerCase().includes(prodSearch.toLowerCase())
+  )
 
   return (
     <div className={`${styles.page} page-container`}>
@@ -311,6 +315,25 @@ function ReporteDiaContent() {
           {activeData.topProducts.length > 0 && (
             <div className={styles.sectionCard}>
               <h2 className={styles.sectionTitle}>{rangeMode ? 'Top productos del período' : 'Top productos del día'}</h2>
+              <div className={styles.sectionSearchRow}>
+                <div className={styles.tabSearchWrap}>
+                  <Search size={13} className={styles.tabSearchIcon} aria-hidden="true" />
+                  <input
+                    type="search"
+                    className={styles.tabSearchInput}
+                    value={prodSearch}
+                    onChange={e => setProdSearch(e.target.value)}
+                    placeholder="Buscar producto…"
+                    aria-label="Buscar producto"
+                  />
+                </div>
+              </div>
+              {filteredProducts.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <Package size={32} className={styles.emptyIcon} aria-hidden="true" />
+                  <p>Sin productos que coincidan con la búsqueda.</p>
+                </div>
+              ) : (
               <div className={styles.tableScroll}>
                 <table className={styles.reportTable}>
                   <thead>
@@ -338,7 +361,7 @@ function ReporteDiaContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[...activeData.topProducts].sort((a, b) => {
+                    {[...filteredProducts].sort((a, b) => {
                       if (!prodSortKey) return 0
                       const ua = a.quantity > 0 ? a.totalUsd / a.quantity : 0
                       const ub = b.quantity > 0 ? b.totalUsd / b.quantity : 0
@@ -366,6 +389,7 @@ function ReporteDiaContent() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           )}
 
@@ -555,6 +579,7 @@ function CierresTab() {
   const [noAccess, setNoAccess] = useState(false)
   const [from,     setFrom]     = useState('')
   const [to,       setTo]       = useState('')
+  const [search,   setSearch]   = useState('')
   const initRef = useRef(false)
 
   const fetchHistory = useCallback(async (f: string, t: string) => {
@@ -592,14 +617,29 @@ function CierresTab() {
     )
   }
 
+  const filtered = search
+    ? history.filter(h => h.cashierName.toLowerCase().includes(search.toLowerCase()))
+    : history
+
   return (
     <div className={styles.tabInner}>
       <div className={styles.tabSectionHeader}>
         <h2 className={styles.tabSectionTitle}>Cierres de Caja</h2>
       </div>
 
-      {/* Date filters */}
+      {/* Filters */}
       <div className={styles.tabFilters}>
+        <div className={styles.tabSearchWrap}>
+          <Search size={13} className={styles.tabSearchIcon} aria-hidden="true" />
+          <input
+            type="search"
+            className={styles.tabSearchInput}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar cajero…"
+            aria-label="Buscar cajero"
+          />
+        </div>
         <input
           type="date"
           className={styles.tabDateInput}
@@ -619,8 +659,8 @@ function CierresTab() {
         <Button variant="primary" size="sm" onClick={() => fetchHistory(from, to)} loading={loading}>
           Filtrar
         </Button>
-        {(from || to) && (
-          <button className={styles.tabClearBtn} onClick={() => { setFrom(''); setTo(''); fetchHistory('', '') }} type="button" aria-label="Limpiar fechas">
+        {(search || from || to) && (
+          <button className={styles.tabClearBtn} onClick={() => { setSearch(''); setFrom(''); setTo(''); fetchHistory('', '') }} type="button" aria-label="Limpiar filtros">
             <X size={12} aria-hidden="true" /> Limpiar
           </button>
         )}
@@ -635,6 +675,11 @@ function CierresTab() {
         <div className={styles.emptyState}>
           <Calculator size={32} className={styles.emptyIcon} aria-hidden="true" />
           <p>Sin cierres de caja registrados.</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className={styles.emptyState}>
+          <Calculator size={32} className={styles.emptyIcon} aria-hidden="true" />
+          <p>Sin resultados para la búsqueda.</p>
         </div>
       ) : (
         <div className={styles.tableScroll}>
@@ -651,7 +696,7 @@ function CierresTab() {
               </tr>
             </thead>
             <tbody>
-              {history.map((h, i) => {
+              {filtered.map((h, i) => {
                 const rate           = h.rateAtOpen > 0 ? h.rateAtOpen : 1
                 const esperadoUsd    = h.efectivoEsperado / rate
                 const contadoUsd     = h.efectivoContado != null ? h.efectivoContado / rate : null

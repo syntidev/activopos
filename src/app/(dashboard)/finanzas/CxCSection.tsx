@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, FileText } from 'lucide-react'
+import { Plus, FileText, Search, X } from 'lucide-react'
 import { EmptyState } from '@/components/ui'
 import { AbonoModal } from '@/components/finanzas/AbonoModal'
 import type { SaleForAbono } from '@/components/finanzas/AbonoModal'
@@ -46,6 +46,7 @@ export function CxCSection({ rate }: { rate: number }) {
   const [selected, setSelected] = useState<SaleForAbono | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [filter,   setFilter]   = useState<FilterKey>('todo')
+  const [search,   setSearch]   = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -68,13 +69,20 @@ export function CxCSection({ rate }: { rate: number }) {
   useEffect(() => { load() }, [load])
 
   /* ── Derived groups ── */
+  const searched = search
+    ? items.filter(i =>
+        i.client_name.toLowerCase().includes(search.toLowerCase()) ||
+        i.ticket_number.toLowerCase().includes(search.toLowerCase())
+      )
+    : items
+
   const grouped = {
-    vencido:    items.filter(i => i.bucket === 'vencido'),
-    por_vencer: items.filter(i => i.bucket === 'por_vencer'),
-    vigente:    items.filter(i => i.bucket === 'vigente'),
+    vencido:    searched.filter(i => i.bucket === 'vencido'),
+    por_vencer: searched.filter(i => i.bucket === 'por_vencer'),
+    vigente:    searched.filter(i => i.bucket === 'vigente'),
   }
 
-  const filtered = filter === 'todo' ? items : grouped[filter]
+  const filtered = filter === 'todo' ? searched : grouped[filter]
 
   if (loading) return <div className={styles.loading}>Cargando cuentas por cobrar…</div>
 
@@ -113,6 +121,29 @@ export function CxCSection({ rate }: { rate: number }) {
           </span>
           <span className={styles.miniKpiCount}>{grouped.vigente.length} factura{grouped.vigente.length !== 1 ? 's' : ''}</span>
         </div>
+      </div>
+
+      {/* ── Search ── */}
+      <div className={styles.searchWrap}>
+        <Search size={15} className={styles.searchIcon} aria-hidden="true" />
+        <input
+          type="search"
+          placeholder="Cliente o ticket…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className={styles.searchInput}
+          aria-label="Buscar cuentas por cobrar"
+        />
+        {search && (
+          <button
+            type="button"
+            className={styles.searchClear}
+            onClick={() => setSearch('')}
+            aria-label="Limpiar búsqueda"
+          >
+            <X size={13} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* ── Filter row ── */}

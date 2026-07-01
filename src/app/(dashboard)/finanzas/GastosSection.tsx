@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Receipt, Tag, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Receipt, Tag, Pencil, Trash2, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui'
 import { GastoModal } from '@/components/finanzas/GastoModal'
@@ -61,6 +61,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
   const [showManageCats, setShowManageCats] = useState(false)
   const [loading,        setLoading]        = useState(true)
   const [editGasto,      setEditGasto]      = useState<Gasto | null>(null)
+  const [search,         setSearch]         = useState('')
 
   const loadCats = useCallback(async () => {
     try {
@@ -101,6 +102,13 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
     setEditGasto(g)
     setShowModal(true)
   }
+
+  const filteredGastos = search
+    ? gastos.filter(g =>
+        g.concepto.toLowerCase().includes(search.toLowerCase()) ||
+        (catMap.get(g.category_id ?? -1)?.name ?? g.categoria).toLowerCase().includes(search.toLowerCase())
+      )
+    : gastos
 
   const totalPeriodo = gastos.reduce((s, g) => s + Number(g.monto_usd), 0)
   const totalFijo    = gastos.filter(g => g.due_date !== null).reduce((s, g) => s + Number(g.monto_usd), 0)
@@ -147,7 +155,27 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
 
       {/* ── Header ── */}
       <div className={styles.sectionHeader}>
-        <span />
+        <div className={styles.searchWrap}>
+          <Search size={15} className={styles.searchIcon} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Descripción o categoría…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className={styles.searchInput}
+            aria-label="Buscar gastos"
+          />
+          {search && (
+            <button
+              type="button"
+              className={styles.searchClear}
+              onClick={() => setSearch('')}
+              aria-label="Limpiar búsqueda"
+            >
+              <X size={13} aria-hidden="true" />
+            </button>
+          )}
+        </div>
         <div className={styles.headerBtns}>
           <Button
             type="button"
@@ -184,6 +212,8 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
             </Button>
           }
         />
+      ) : !filteredGastos.length ? (
+        <EmptyState icon={Receipt} title="Sin resultados para la búsqueda" />
       ) : (
         <div className={styles.finTableWrap}>
           <table className={styles.finTable}>
@@ -199,7 +229,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
               </tr>
             </thead>
             <tbody>
-              {gastos.map(g => {
+              {filteredGastos.map(g => {
                 const cat      = g.category_id ? catMap.get(g.category_id) : null
                 const catColor = cat?.color ?? FALLBACK_COLORS[g.categoria] ?? '#94A3B8'
                 const catLabel = cat?.name  ?? g.categoria

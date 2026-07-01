@@ -10,6 +10,8 @@ import {
   Clock,
   Package,
   DollarSign,
+  Search,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -292,6 +294,7 @@ function PedidosContent() {
   const [dragOverCol, setDragOverCol] = useState<OrderStatus | null>(null)
   const [modalOpen, setModalOpen]   = useState(false)
   const [cobrarOrder, setCobrarOrder] = useState<Order | null>(null)
+  const [search, setSearch]         = useState('')
   const draggingRef = useRef<Order | null>(null)
 
   const fetchOrders = useCallback(async () => {
@@ -433,10 +436,21 @@ function PedidosContent() {
     }
   }
 
-  /* ── Orders by column ── */
+  /* ── Search + orders by column ── */
+
+  const filteredOrders = search
+    ? orders.filter((o) => {
+        const q = search.toLowerCase()
+        return (
+          o.order_number.toLowerCase().includes(q) ||
+          (o.client_name ?? '').toLowerCase().includes(q) ||
+          o.items.some((it) => it.product_name.toLowerCase().includes(q))
+        )
+      })
+    : orders
 
   const byStatus = (status: OrderStatus) =>
-    orders.filter((o) => o.status === status)
+    filteredOrders.filter((o) => o.status === status)
 
   return (
     <div className={`${styles.page} page-container-full`}>
@@ -447,6 +461,27 @@ function PedidosContent() {
           <p className={styles.pageSubtitle}>
             {loading ? 'Cargando...' : `${orders.length} pedidos activos`}
           </p>
+        </div>
+        <div className={styles.searchWrap}>
+          <Search size={15} className={styles.searchIcon} aria-hidden="true" />
+          <input
+            type="search"
+            placeholder="Cliente, número de pedido o producto…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={styles.searchInput}
+            aria-label="Buscar pedidos"
+          />
+          {search && (
+            <button
+              type="button"
+              className={styles.searchClear}
+              onClick={() => setSearch('')}
+              aria-label="Limpiar búsqueda"
+            >
+              <X size={13} aria-hidden="true" />
+            </button>
+          )}
         </div>
         <Button
           variant="primary"

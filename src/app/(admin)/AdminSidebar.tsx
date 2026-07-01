@@ -6,9 +6,9 @@ import { Building2, BarChart3, Settings, LogOut, Zap } from 'lucide-react'
 import styles from './admin.module.css'
 
 const NAV = [
-  { href: '/admin/businesses', icon: Building2, label: 'Negocios'    },
-  { href: '/admin/stats',      icon: BarChart3,  label: 'Estadísticas' },
-  { href: '/admin/settings',   icon: Settings,   label: 'Config global' },
+  { href: '/businesses',     icon: Building2, label: 'Negocios'    },
+  { href: '/stats',          icon: BarChart3,  label: 'Estadísticas' },
+  { href: '/admin/settings', icon: Settings,   label: 'Config global' },
 ]
 
 export function AdminSidebar() {

@@ -4,6 +4,7 @@ import { verifyToken } from '@/lib/auth'
 // Prefijos públicos — todos con slash final para evitar bypass tipo /catalogo-admin
 const PUBLIC_PREFIXES = [
   '/login',
+  '/registro',
   '/api/auth/',
   '/catalogo/',
   '/api/catalog/',

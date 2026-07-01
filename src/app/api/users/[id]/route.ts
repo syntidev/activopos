@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 
@@ -63,6 +64,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     return NextResponse.json({ ok: true, user })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    // El email de User es @@unique global — puede colisionar con otro negocio al editar
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      return NextResponse.json({ error: 'Ese email ya está en uso en otro negocio' }, { status: 409 })
+    }
     throw e
   }
 }

@@ -22,6 +22,12 @@ export const onboardingLimiter = new RateLimiterMemory({
   duration: 3600, // en 1 hora
 })
 
+// Separado de onboardingLimiter — probar slugs no debe agotar el límite de registro
+export const slugCheckLimiter = new RateLimiterMemory({
+  points:   20,   // 20 verificaciones por IP
+  duration: 3600, // en 1 hora
+})
+
 export const aiChatLimiter = new RateLimiterMemory({
   points:   20,   // 20 mensajes por minuto por usuario
   duration: 60,

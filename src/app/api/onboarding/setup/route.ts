@@ -136,10 +136,13 @@ export async function POST(req: NextRequest) {
     throw err
   }
 
+  // Normalizado — el email es ahora @@unique global, mayúsculas/espacios no deben crear cuentas duplicadas
+  const email = data.email.toLowerCase().trim()
+
   // Slug and email uniqueness (outside transaction — fail-fast)
   const [slugTaken, emailTaken] = await Promise.all([
     prisma.business.findFirst({ where: { catalog_slug: data.business_slug }, select: { id: true } }),
-    prisma.user.findFirst({ where: { email: data.email }, select: { id: true } }),
+    prisma.user.findFirst({ where: { email }, select: { id: true } }),
   ])
 
   if (slugTaken) {
@@ -185,7 +188,7 @@ export async function POST(req: NextRequest) {
         data: {
           business_id: biz.id,
           name:        data.owner_name,
-          email:       data.email,
+          email,
           password:    hashed,
           role:        'admin',
         },
@@ -242,10 +245,13 @@ export async function POST(req: NextRequest) {
     user = result.user
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-      // Slug duplicado en race condition (TOCTOU entre check y insert)
+      // Slug/email duplicados en race condition (TOCTOU entre check y insert)
       const target = (e.meta?.target as string[] | undefined) ?? []
       if (target.includes('catalog_slug')) {
         return NextResponse.json({ error: 'El slug ya está en uso', field: 'business_slug' }, { status: 409 })
+      }
+      if (target.includes('email')) {
+        return NextResponse.json({ error: 'Ya tienes una cuenta con ese correo. Inicia sesión.', field: 'email' }, { status: 409 })
       }
     }
     // Cualquier otro error de Prisma (valor fuera de rango, tipo inválido, etc.) → 400 genérico, nunca 500 sin manejar

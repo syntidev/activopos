@@ -13,6 +13,7 @@ interface StepProps {
   slug:         string
   status:       SubmitStatus
   errorMessage: string | null
+  warnings:     string[]
   onRetry:      () => void
   onGoDashboard: () => void
   loadingGo:    boolean
@@ -66,7 +67,7 @@ function Confetti() {
 }
 
 export default function Step7Bienvenida({
-  businessName, slug, status, errorMessage, onRetry, onGoDashboard, loadingGo,
+  businessName, slug, status, errorMessage, warnings, onRetry, onGoDashboard, loadingGo,
 }: StepProps) {
   if (status === 'submitting') {
     return (
@@ -113,6 +114,16 @@ export default function Step7Bienvenida({
         <h1 className={styles.celebrateTitle}>¡Todo listo!</h1>
         <p className={styles.celebrateBiz}>{businessName}</p>
         <p className={styles.celebrateUrl}>activopos.com/catalogo/{slug}</p>
+
+        {warnings.length > 0 && (
+          <div className={styles.setupWarning}>
+            <AlertTriangle size={16} aria-hidden="true" />
+            <span>
+              Algunos datos no se guardaron ({warnings.join(', ')}).
+              Puedes completarlos en Configuración.
+            </span>
+          </div>
+        )}
 
         <div className={styles.checklist}>
           <div className={styles.checklistItem}>☐ Sube tu primer producto</div>

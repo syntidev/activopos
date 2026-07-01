@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { Prisma } from '@prisma/client'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 const PostSchema = z.object({
@@ -89,6 +90,10 @@ export async function POST(request: Request) {
   } catch (err) {
     if (err instanceof TenantError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    // El email de User es @@unique global — puede colisionar con otro negocio aunque el pre-check (scoped a este negocio) haya pasado
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      return NextResponse.json({ error: 'Ese email ya está en uso en otro negocio' }, { status: 409 })
     }
     throw err
   }

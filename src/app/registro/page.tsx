@@ -19,28 +19,30 @@ import styles from './registro.module.css'
 
 const TOTAL_STEPS = 7
 
-async function submitLogo(file: File | null): Promise<void> {
-  if (!file) return
+// Devuelven boolean (no lanzan) para que runSubmit pueda distinguir éxito real de fallo silencioso
+async function submitLogo(file: File | null): Promise<boolean> {
+  if (!file) return true
   const formData = new FormData()
   formData.append('file', file)
   formData.append('type', 'logo')
 
   const res = await fetch('/api/upload/image', { method: 'POST', body: formData })
-  if (!res.ok) return
+  if (!res.ok) return false
   const json = await res.json() as { url?: string }
-  if (!json.url) return
+  if (!json.url) return false
 
-  await fetch('/api/config/business', {
+  const patchRes = await fetch('/api/config/business', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ logo_path: json.url }),
   })
+  return patchRes.ok
 }
 
-async function submitPaymentExtras(data: OnboardingState): Promise<void> {
+async function submitPaymentExtras(data: OnboardingState): Promise<boolean> {
   const extras = data.paymentMethods.filter(id => !SEEDED_PAYMENT_IDS.has(id))
 
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     extras.map(id => {
       const name = id === 'binance' ? 'Binance Pay / USDT' : 'Transferencia bancaria'
       const type = id === 'binance' ? 'binance' : 'transfer'
@@ -51,12 +53,13 @@ async function submitPaymentExtras(data: OnboardingState): Promise<void> {
       })
     })
   )
+  const extrasOk = results.every(r => r.status === 'fulfilled' && r.value.ok)
 
   const d = data.paymentDetails
   const hasDetails = d.pagoMovilBanco || d.pagoMovilTelefono || d.pagoMovilCedula || d.zelleContacto || d.binanceId
-  if (!hasDetails) return
+  if (!hasDetails) return extrasOk
 
-  await fetch('/api/config/payment-methods', {
+  const patchRes = await fetch('/api/config/payment-methods', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -67,16 +70,18 @@ async function submitPaymentExtras(data: OnboardingState): Promise<void> {
       binance_id:          d.binanceId,
     }),
   })
+  return extrasOk && patchRes.ok
 }
 
-async function submitCategories(categories: string[]): Promise<void> {
-  await Promise.allSettled(
+async function submitCategories(categories: string[]): Promise<boolean> {
+  const results = await Promise.allSettled(
     categories.map((name, i) => fetch('/api/categories', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, sort_order: i }),
     }))
   )
+  return results.every(r => r.status === 'fulfilled' && r.value.ok)
 }
 
 interface SetupError {
@@ -93,6 +98,7 @@ export default function RegistroPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [errorField, setErrorField]     = useState<'business_slug' | 'email' | null>(null)
   const [goingToDashboard, setGoingToDashboard] = useState(false)
+  const [warnings, setWarnings]         = useState<string[]>([])
 
   const update = useCallback((patch: Partial<OnboardingState>) => {
     setData(prev => ({ ...prev, ...patch }))
@@ -137,13 +143,21 @@ export default function RegistroPage() {
         return
       }
 
-      // Sesión ya autenticada por /setup — mejores esfuerzos, no bloquean el éxito
-      await Promise.allSettled([
+      // Sesión ya autenticada por /setup — mejores esfuerzos, no bloquean el éxito.
+      // El negocio ya existe: un fallo aquí es una advertencia, no motivo para status('error').
+      const [logoResult, paymentsResult, categoriesResult] = await Promise.allSettled([
         submitLogo(data.logoFile),
         submitPaymentExtras(data),
         submitCategories(data.categories),
       ])
 
+      const failed = (r: PromiseSettledResult<boolean>) => r.status === 'rejected' || !r.value
+      const newWarnings: string[] = []
+      if (failed(logoResult))       newWarnings.push('logo')
+      if (failed(paymentsResult))   newWarnings.push('métodos de pago')
+      if (failed(categoriesResult)) newWarnings.push('categorías')
+
+      setWarnings(newWarnings)
       setStatus('success')
     } catch {
       setErrorMessage('Error de conexión. Intenta de nuevo.')
@@ -230,6 +244,7 @@ export default function RegistroPage() {
                 slug={data.slug}
                 status={status}
                 errorMessage={errorMessage}
+                warnings={warnings}
                 onRetry={handleRetry}
                 onGoDashboard={() => void handleGoDashboard()}
                 loadingGo={goingToDashboard}

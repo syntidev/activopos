@@ -207,6 +207,7 @@ model User {
   push_subscriptions PushSubscription[]
 
   @@unique([business_id, email])
+  @@unique([email])
   @@map("users")
 }
 

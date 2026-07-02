@@ -164,6 +164,10 @@ model Business {
   notifications_last_read     DateTime?
   ai_tokens_used_month        Int       @default(0)
   ai_tokens_limit_month       Int       @default(100)
+  // valores: "ticket" | "invoice"
+  // ticket = negocio de productos → genera ticket térmico 58mm
+  // invoice = negocio de servicios → genera PDF carta A4
+  pos_mode                    String    @default("ticket")
   created_at                  DateTime  @default(now())
   updated_at                  DateTime  @updatedAt
 

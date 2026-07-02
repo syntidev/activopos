@@ -396,6 +396,7 @@ export async function POST(req: NextRequest) {
           product_id:  number
           quantity:    number
           waste:       number
+          entry_type:  string
           notes:       string
           created_by:  number
         }[] = []
@@ -415,6 +416,7 @@ export async function POST(req: NextRequest) {
                 product_id:  item.product_id,
                 quantity:    -item.quantity,
                 waste:       0,
+                entry_type:  'sale',
                 notes:       `VENTA #${ticket_number}`,
                 created_by:  session.userId,
               })
@@ -427,6 +429,7 @@ export async function POST(req: NextRequest) {
                 product_id:  comp.component_id,
                 quantity:    -(item.quantity * comp.quantity),
                 waste:       0,
+                entry_type:  'sale',
                 notes:       `VENTA #${ticket_number} (componente de ${product.name})`,
                 created_by:  session.userId,
               })

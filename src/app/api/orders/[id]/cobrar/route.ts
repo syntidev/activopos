@@ -121,6 +121,7 @@ export async function POST(req: NextRequest, { params }: Context) {
         product_id:  item.product_id,
         quantity:    -Number(item.quantity),
         waste:       0,
+        entry_type:  'sale',
         notes:       `VENTA #${ticket_number} (pedido ${order.order_number})`,
         created_by:  session.userId,
       }))

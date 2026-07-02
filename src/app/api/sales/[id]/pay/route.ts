@@ -110,6 +110,7 @@ export async function PATCH(
         product_id:  number
         quantity:    number
         waste:       number
+        entry_type:  string
         notes:       string
         created_by:  number
       }[] = []
@@ -129,6 +130,7 @@ export async function PATCH(
               product_id:  item.product_id,
               quantity:    -Number(item.quantity),
               waste:       0,
+              entry_type:  'sale',
               notes:       `VENTA #${sale.ticket_number}`,
               created_by:  session.userId,
             })
@@ -146,6 +148,7 @@ export async function PATCH(
               product_id:  comp.component_id,
               quantity:    -(Number(item.quantity) * comp.quantity),
               waste:       0,
+              entry_type:  'sale',
               notes:       `VENTA #${sale.ticket_number} (componente)`,
               created_by:  session.userId,
             })

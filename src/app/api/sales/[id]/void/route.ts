@@ -55,6 +55,7 @@ export async function PATCH(
             product_id: item.product_id,
             quantity: Number(item.quantity),
             waste: 0,
+            entry_type: 'void_reversal',
             notes: `ANULACION #${sale.ticket_number}`,
             created_by: session.userId,
           })),

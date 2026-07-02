@@ -2,7 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { Crown, Calendar, ExternalLink, AlertCircle, Rocket, Check, X, MessageCircle } from 'lucide-react'
+import { BILLING_CYCLES, type BillingCycleKey } from '@/lib/plan-limits'
 import styles from './TabPlan.module.css'
+
+const CYCLE_LABEL: Record<BillingCycleKey, string> = {
+  mensual:    'Mensual',
+  trimestral: 'Trimestral',
+  semestral:  'Semestral',
+  anual:      'Anual',
+}
+
+const CYCLE_PERIOD_LABEL: Record<BillingCycleKey, string> = {
+  mensual:    'mes',
+  trimestral: 'trimestre',
+  semestral:  'semestre',
+  anual:      'año',
+}
+
+const CYCLE_ORDER: BillingCycleKey[] = ['mensual', 'trimestral', 'semestral', 'anual']
+
+function fmtMoney(n: number): string {
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 
 type PlanTier = 'trial' | 'inicio' | 'pro' | 'business'
 
@@ -76,6 +97,44 @@ function FeatureRow({ label, enabled, requiredPlan }: { label: string; enabled: 
   )
 }
 
+function BillingCycleSelector({ plan }: { plan: Exclude<PlanTier, 'trial'> }) {
+  const [selectedCycle, setSelectedCycle] = useState<BillingCycleKey>('mensual')
+
+  const amounts  = BILLING_CYCLES[plan][selectedCycle]
+  const hasSavings = amounts.savingsAmount > 0
+
+  return (
+    <div className={styles.billingBox}>
+      <p className={styles.usageBoxTitle}>Ciclo de facturación</p>
+
+      <div className={styles.cycleTabs} role="tablist" aria-label="Ciclo de facturación">
+        {CYCLE_ORDER.map(cycle => (
+          <button
+            key={cycle}
+            type="button"
+            role="tab"
+            aria-selected={selectedCycle === cycle}
+            className={`${styles.cycleTab} ${selectedCycle === cycle ? styles.cycleTabActive : ''}`}
+            onClick={() => setSelectedCycle(cycle)}
+          >
+            {CYCLE_LABEL[cycle]}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.cycleSummary}>
+        <span className={styles.cycleMonthly}>{fmtMoney(amounts.monthlyEquivalent)}/mes</span>
+        <span className={styles.cycleTotal}>Total {fmtMoney(amounts.totalAmount)}</span>
+        {hasSavings && (
+          <span className={styles.cycleSavings}>
+            Ahorras {fmtMoney(amounts.savingsAmount)}/{CYCLE_PERIOD_LABEL[selectedCycle]}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function PlanUsageSection({ businessId }: { businessId: number }) {
   const [data,    setData]    = useState<PlanUsageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -139,6 +198,8 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
         <FeatureRow label="Catálogo digital" enabled={data.usage.catalog_enabled} requiredPlan="Pro o superior" />
         <FeatureRow label="Asistente IA"     enabled={data.usage.ai_enabled}      requiredPlan="Business" />
       </div>
+
+      {data.plan !== 'trial' && <BillingCycleSelector plan={data.plan} />}
 
       {showExpiryAlert && (
         <div className={styles.expiryAlert}>

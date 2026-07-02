@@ -1,7 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { readFile } from 'fs/promises'
+import path from 'path'
+import sharp from 'sharp'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 type Context = { params: { id: string } }
+
+interface Logo {
+  dataUrl: string
+  width:   number
+  height:  number
+}
+
+// Logo es decorativo — si falla la lectura/conversión, se omite en vez de romper el PDF
+async function loadLogo(logoPath: string): Promise<Logo | null> {
+  try {
+    const resolved = path.resolve(process.cwd(), '.' + logoPath)
+    if (!resolved.startsWith(path.resolve(process.cwd()) + path.sep)) return null
+
+    const buffer = await readFile(resolved)
+    const png    = await sharp(buffer).resize(160, 160, { fit: 'inside' }).png().toBuffer()
+    const meta   = await sharp(png).metadata()
+
+    const width  = 22
+    const height = meta.width && meta.height ? (width * meta.height) / meta.width : 12
+
+    return { dataUrl: `data:image/png;base64,${png.toString('base64')}`, width, height }
+  } catch {
+    return null
+  }
+}
 
 export async function GET(_req: NextRequest, { params }: Context) {
   try {
@@ -15,45 +43,81 @@ export async function GET(_req: NextRequest, { params }: Context) {
       include: {
         client:   { select: { name: true, phone: true, email: true } },
         items:    true,
-        business: { select: { name: true, phone: true, address: true } },
+        business: {
+          select: {
+            name: true, phone: true, address: true,
+            rif: true, email: true, quotation_footer: true, logo_path: true,
+          },
+        },
       },
     })
     if (!quotation) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
+
+    const logo = quotation.business.logo_path ? await loadLogo(quotation.business.logo_path) : null
 
     const { jsPDF } = await import('jspdf')
     const doc  = new jsPDF({ unit: 'mm', format: 'a4' })
     const r2   = (x: number) => Math.round(x * 100) / 100
     const rate = Number(quotation.rate_used) || 1
 
+    if (logo) doc.addImage(logo.dataUrl, 'PNG', 15, 12, logo.width, logo.height)
+
     // Header
     doc.setFontSize(18)
     doc.setFont('helvetica', 'bold')
     doc.text('COTIZACIÓN', 105, 20, { align: 'center' })
+
+    let y = 28
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
-    doc.text(quotation.business.name, 105, 28, { align: 'center' })
-    if (quotation.business.phone) doc.text(`Tel: ${quotation.business.phone}`, 105, 34, { align: 'center' })
+    doc.text(quotation.business.name, 105, y, { align: 'center' })
+
+    doc.setFontSize(9)
+    if (quotation.business.rif) {
+      y += 5
+      doc.text(`RIF: ${quotation.business.rif}`, 105, y, { align: 'center' })
+    }
+    if (quotation.business.address) {
+      y += 5
+      doc.text(quotation.business.address, 105, y, { align: 'center' })
+    }
+    if (quotation.business.phone) {
+      y += 5
+      doc.text(`Tel: ${quotation.business.phone}`, 105, y, { align: 'center' })
+    }
+    if (quotation.business.email) {
+      y += 5
+      doc.text(`Correo: ${quotation.business.email}`, 105, y, { align: 'center' })
+    }
 
     // Meta
+    y += 12
     doc.setFontSize(10)
-    doc.text(`N° ${quotation.number}`, 15, 48)
-    doc.text(`Fecha: ${quotation.created_at.toISOString().slice(0, 10)}`, 15, 54)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`N° ${quotation.number}`, 15, y)
+    doc.text(`Estado: ${quotation.status.toUpperCase()}`, 140, y)
+    y += 6
+    doc.text(`Fecha: ${quotation.created_at.toISOString().slice(0, 10)}`, 15, y)
     if (quotation.valid_until) {
-      doc.text(`Válida hasta: ${quotation.valid_until.toISOString().slice(0, 10)}`, 15, 60)
+      y += 6
+      doc.text(`Válida hasta: ${quotation.valid_until.toISOString().slice(0, 10)}`, 15, y)
     }
-    doc.text(`Estado: ${quotation.status.toUpperCase()}`, 140, 48)
 
     // Client
+    y += 10
     if (quotation.client) {
       doc.setFont('helvetica', 'bold')
-      doc.text('Cliente:', 15, 70)
+      doc.text('Cliente:', 15, y)
       doc.setFont('helvetica', 'normal')
-      doc.text(quotation.client.name, 35, 70)
-      if (quotation.client.phone) doc.text(`Tel: ${quotation.client.phone}`, 35, 76)
+      doc.text(quotation.client.name, 35, y)
+      if (quotation.client.phone) {
+        y += 6
+        doc.text(`Tel: ${quotation.client.phone}`, 35, y)
+      }
     }
 
     // Items table
-    let y = 90
+    y += 14
     doc.setFont('helvetica', 'bold')
     doc.text('Descripción', 15, y)
     doc.text('Cant.', 110, y, { align: 'right' })
@@ -100,6 +164,15 @@ export async function GET(_req: NextRequest, { params }: Context) {
       doc.text('Notas:', 15, y)
       doc.setFont('helvetica', 'normal')
       doc.text(quotation.notes.slice(0, 200), 15, y + 6)
+    }
+
+    // Condiciones del negocio — debajo de los totales, alineado a la izquierda
+    if (quotation.business.quotation_footer) {
+      y += 14
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'italic')
+      const footerLines = doc.splitTextToSize(quotation.business.quotation_footer, 180)
+      doc.text(footerLines, 15, y)
     }
 
     const pdfBytes  = doc.output('arraybuffer')

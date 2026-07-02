@@ -140,6 +140,7 @@ model Business {
   theme_color          String   @default("#2563EB")
   ticket_prefix        String   @default("ACT") @db.VarChar(10)
   ticket_footer        String?  @db.Text
+  quotation_footer     String?  @db.Text
   currency_default     String   @default("USD")
   rate_source          String   @default("bcv")
   subscription_active      Boolean   @default(true)

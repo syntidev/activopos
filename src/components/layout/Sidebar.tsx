@@ -27,6 +27,7 @@ import {
   Bell,
   ChefHat,
   Receipt,
+  Truck,
   type LucideIcon,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
@@ -109,6 +110,13 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/finanzas',  icon: TrendingUp, label: 'Finanzas',          moduleKey: 'finanzas',  colorKey: 'caja'         },
       { href: '/analytics', icon: Activity,   label: 'Pulso del Negocio', moduleKey: 'analytics', colorKey: 'inteligencia' },
+    ],
+  },
+  {
+    label: 'PROVEEDORES',
+    adminOnly: true,
+    items: [
+      { href: '/proveedores', icon: Truck, label: 'Proveedores', colorKey: 'inventario' },
     ],
   },
   {

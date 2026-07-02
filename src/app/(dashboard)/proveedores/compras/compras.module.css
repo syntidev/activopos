@@ -1,0 +1,162 @@
+.filterRow {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.searchBox { flex: 1; min-width: 200px; }
+
+.select {
+  height: 48px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  min-width: 200px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.statusReceived { background: var(--color-success-subtle); color: var(--color-success-text); }
+.statusPending  { background: var(--color-warning-subtle); color: var(--color-warning-text); }
+.statusCancelled{ background: var(--color-danger-subtle);  color: var(--color-danger-text); }
+
+/* ── Modal: buscador de productos ── */
+.itemsBox {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.itemSearchRow {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  position: relative;
+}
+
+.itemSearchRow > div { flex: 1; }
+
+.productSuggestions {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  z-index: var(--z-dropdown);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.productSuggestion {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.productSuggestion:hover { background: var(--color-surface-2); }
+
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.itemsTable th {
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.itemsTable td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.itemQtyInput,
+.itemCostInput {
+  width: 70px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
+.itemRemoveBtn {
+  background: none;
+  border: none;
+  color: var(--color-danger-text);
+  cursor: pointer;
+  padding: var(--space-1);
+  display: flex;
+}
+
+.emptyItems {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.totalsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.totalsRow + .totalsRow {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.totalLabel {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.totalValue {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+}
+
+.totalValueBs {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}

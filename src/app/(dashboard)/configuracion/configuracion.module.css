@@ -765,6 +765,57 @@
   color: var(--color-text-primary);
 }
 
+/* ── Pos mode radio options ── */
+.posModeOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 480px) {
+  .posModeOptions { grid-template-columns: 1fr; }
+}
+
+.posModeOption {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1.5px solid var(--input-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.posModeOption:hover { border-color: var(--color-brand); }
+
+.posModeOptionActive {
+  border-color: var(--color-brand);
+  background: var(--color-brand-subtle);
+}
+
+.posModeOption span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.posModeOption strong {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.posModeOption small {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.posModeRadio {
+  margin-top: 2px;
+  accent-color: var(--color-brand);
+  flex-shrink: 0;
+}
+
 /* ── Select ── */
 .select {
   height: var(--touch-comfy);

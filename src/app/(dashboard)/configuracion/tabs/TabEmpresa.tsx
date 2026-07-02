@@ -10,6 +10,12 @@ import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
 
+type PosMode = 'ticket' | 'invoice'
+
+// BusinessConfig (src/types) todavía no declara pos_mode — se ensancha localmente
+// en vez de tocar el tipo compartido, ya que GET/PATCH ya lo devuelven de verdad.
+type BusinessConfigWithPosMode = BusinessConfig & { pos_mode?: PosMode }
+
 interface EmpresaForm {
   name:             string
   legal_name:       string
@@ -20,10 +26,12 @@ interface EmpresaForm {
   phone:            string
   email:            string
   quotation_footer: string
+  pos_mode:         PosMode
 }
 
 const EMPTY_FORM: EmpresaForm = {
   name: '', legal_name: '', rif: '', address: '', city: '', state: '', phone: '', email: '', quotation_footer: '',
+  pos_mode: 'ticket',
 }
 
 export function TabEmpresa({ businessId: _businessId }: Props) {
@@ -43,7 +51,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
     try {
       const res  = await fetch('/api/config/business')
       if (!res.ok) throw new Error()
-      const body = await res.json() as { ok: boolean; business: BusinessConfig }
+      const body = await res.json() as { ok: boolean; business: BusinessConfigWithPosMode }
       const b    = body.business
       setForm({
         name:       b.name       ?? '',
@@ -57,6 +65,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         // GET /api/config/business no selecciona quotation_footer todavía (fuera de este scope) —
         // el formulario no puede pre-poblarse; el guardado sí funciona vía PATCH.
         quotation_footer: '',
+        pos_mode: b.pos_mode ?? 'ticket',
       })
       setLogoPath(b.logo_path)
     } catch {
@@ -90,6 +99,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
           // Sin || null: el schema no tiene .nullable() para este campo — enviar null
           // aquí produciría 400 "Datos inválidos". String vacío sí es válido y permite borrar el texto.
           quotation_footer: form.quotation_footer.trim(),
+          pos_mode: form.pos_mode,
         }),
       })
       if (!res.ok) throw new Error()
@@ -223,6 +233,41 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
 
         <div className={styles.formFields}>
           <Input label="Dirección" value={form.address} onChange={set('address')} placeholder="Av. Principal, Local 1" hint="Opcional" />
+
+          <div className={styles.fieldGroup} role="radiogroup" aria-label="Tipo de documento de venta">
+            <span className={styles.label}>Tipo de documento de venta</span>
+            <div className={styles.posModeOptions}>
+              <label className={`${styles.posModeOption} ${form.pos_mode === 'ticket' ? styles.posModeOptionActive : ''}`}>
+                <input
+                  type="radio"
+                  name="pos_mode"
+                  value="ticket"
+                  checked={form.pos_mode === 'ticket'}
+                  onChange={() => setForm(prev => ({ ...prev, pos_mode: 'ticket' }))}
+                  className={styles.posModeRadio}
+                />
+                <span>
+                  <strong>Ticket térmico (58mm)</strong>
+                  <small>Para tiendas y retail</small>
+                </span>
+              </label>
+              <label className={`${styles.posModeOption} ${form.pos_mode === 'invoice' ? styles.posModeOptionActive : ''}`}>
+                <input
+                  type="radio"
+                  name="pos_mode"
+                  value="invoice"
+                  checked={form.pos_mode === 'invoice'}
+                  onChange={() => setForm(prev => ({ ...prev, pos_mode: 'invoice' }))}
+                  className={styles.posModeRadio}
+                />
+                <span>
+                  <strong>Factura de servicio (A4)</strong>
+                  <small>Para talleres, clínicas, gestorías</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className={styles.fieldRow}>
             <Input label="Ciudad" value={form.city}  onChange={set('city')}  placeholder="Caracas" hint="Opcional" />
             <Input label="Estado" value={form.state} onChange={set('state')} placeholder="Miranda" hint="Opcional" />

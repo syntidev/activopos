@@ -1,8 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Printer, MessageCircle, ArrowRight } from 'lucide-react'
 import styles from './SuccessTicketPanel.module.css'
+
+type PosMode = 'ticket' | 'invoice'
 
 export interface SaleItemForPanel {
   name:      string
@@ -82,13 +85,25 @@ function buildWhatsappMessage(sale: SaleSummary, businessName: string): string {
 }
 
 export function SuccessTicketPanel({ sale, businessName, onClose }: Props) {
+  const [posMode, setPosMode] = useState<PosMode>('ticket')
+
+  useEffect(() => {
+    fetch('/api/config/business')
+      .then(r => r.ok ? r.json() : null)
+      .then((j: { ok: boolean; business?: { pos_mode?: PosMode } } | null) => {
+        if (j?.business?.pos_mode) setPosMode(j.business.pos_mode)
+      })
+      .catch(() => {})
+  }, [])
+
   const handleWhatsApp = () => {
     const msg = buildWhatsappMessage(sale, businessName)
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   const handlePrint = () => {
-    window.open(`/api/sales/${sale.id}/ticket`, '_blank')
+    const endpoint = posMode === 'invoice' ? 'invoice' : 'ticket'
+    window.open(`/api/sales/${sale.id}/${endpoint}`, '_blank')
   }
 
   const isCredit = sale.status === 'credit'
@@ -177,7 +192,7 @@ export function SuccessTicketPanel({ sale, businessName, onClose }: Props) {
               onClick={handlePrint}
             >
               <Printer size={16} strokeWidth={1.75} aria-hidden="true" />
-              Imprimir ticket
+              {posMode === 'invoice' ? 'Imprimir factura' : 'Imprimir ticket'}
             </button>
 
             <button

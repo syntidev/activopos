@@ -3,6 +3,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { Prisma } from '@prisma/client'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 
 const PostSchema = z.object({
   name:     z.string().min(2).max(255),
@@ -71,6 +72,9 @@ export async function POST(request: Request) {
     })
 
     if (duplicate) return NextResponse.json({ error: 'Email ya registrado en este negocio' }, { status: 409 })
+
+    const planCheck = await checkPlanLimit('create_user')
+    if (!planCheck.allowed) return NextResponse.json({ error: planCheck.reason }, { status: 403 })
 
     const credential = data.password ?? data.pin ?? ''
     const hashed = await bcrypt.hash(credential, 10)

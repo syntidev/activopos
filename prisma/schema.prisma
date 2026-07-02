@@ -149,7 +149,7 @@ model Business {
   settings             Json?
   iva_enabled          Boolean  @default(false)
   iva_pct              Decimal  @default(16) @db.Decimal(5, 2)
-  catalog_plan         String?  @db.VarChar(30)
+  catalog_plan         String?  @default("trial") @db.VarChar(30)
   catalog_slug         String?  @unique @db.VarChar(80)
   catalog_active       Boolean  @default(false)
   catalog_title        String?  @db.VarChar(150)
@@ -161,6 +161,8 @@ model Business {
   allow_cashier_price_override  Boolean  @default(false)
   modules_enabled             String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics") @db.VarChar(500)
   notifications_last_read     DateTime?
+  ai_tokens_used_month        Int       @default(0)
+  ai_tokens_limit_month       Int       @default(100)
   created_at                  DateTime  @default(now())
   updated_at                  DateTime  @updatedAt
 

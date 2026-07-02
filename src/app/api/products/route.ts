@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 import { getBcvRate } from '@/lib/bcv'
 import { z } from 'zod'
 
@@ -183,6 +184,9 @@ export async function POST(req: NextRequest) {
     if (data.sale_mode === 'service') {
       data.availability = 'in_stock'
     }
+
+    const planCheck = await checkPlanLimit('create_product')
+    if (!planCheck.allowed) return NextResponse.json({ error: planCheck.reason }, { status: 403 })
 
     const product = await db.product.create({
       data: {

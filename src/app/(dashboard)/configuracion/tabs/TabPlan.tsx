@@ -148,7 +148,7 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
       )}
 
       <a
-        href={`https://wa.me/584143345985?text=${contactMsg}`}
+        href={`https://wa.me/584243244788?text=${contactMsg}`}
         target="_blank"
         rel="noopener noreferrer"
         className={styles.contactBtn}
@@ -289,7 +289,7 @@ export function TabPlan({ businessId }: { businessId: number }) {
 
         {/* Renew CTA */}
         <a
-          href={`https://wa.me/584143345985?text=${waMsg}`}
+          href={`https://wa.me/584243244788?text=${waMsg}`}
           target="_blank"
           rel="noopener noreferrer"
           className={styles.renewBtn}

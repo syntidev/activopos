@@ -48,6 +48,7 @@ export async function POST(req: NextRequest, { params }: Context) {
         product_id:        productId,
         quantity:          body.quantity,
         waste:             0,
+        entry_type:        'adjustment',
         cost_per_unit_usd: body.cost_per_unit ?? null,
         supplier:          body.supplier?.trim() || null,
         notes,

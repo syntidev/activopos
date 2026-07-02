@@ -117,6 +117,7 @@ export async function POST(req: NextRequest) {
             product_id:        i.product_id,
             quantity:          i.qty,
             waste:             0,
+            entry_type:        'purchase',
             cost_per_unit_usd: i.cost_usd,
             supplier:          supplier.name,
             notes:             purchaseNote,

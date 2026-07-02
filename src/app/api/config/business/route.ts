@@ -21,6 +21,7 @@ const PatchSchema = z.object({
   segment:          z.string().max(50).optional(),
   max_discount_pct:             z.number().min(0).max(100).optional(),
   allow_cashier_price_override: z.boolean().optional(),
+  quotation_footer: z.string().optional(),
 })
 
 export async function GET() {

@@ -13,3 +13,39 @@ const PLAN_ORDER: PlanTier[] = ['trial', 'inicio', 'pro', 'business']
 export function nextPlanTier(plan: PlanTier): PlanTier | undefined {
   return PLAN_ORDER[PLAN_ORDER.indexOf(plan) + 1]
 }
+
+export type BillingCycleKey = 'mensual' | 'trimestral' | 'semestral' | 'anual'
+
+export interface BillingCycleAmounts {
+  totalAmount:       number
+  monthlyEquivalent: number
+  savingsAmount:     number
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+function computeCycle(monthlyPrice: number, months: number, discountPct: number): BillingCycleAmounts {
+  const fullPrice   = monthlyPrice * months
+  const totalAmount = round2(fullPrice * (1 - discountPct / 100))
+  return {
+    totalAmount,
+    monthlyEquivalent: round2(totalAmount / months),
+    savingsAmount:     round2(fullPrice - totalAmount),
+  }
+}
+
+function buildCycles(monthlyPrice: number): Record<BillingCycleKey, BillingCycleAmounts> {
+  return {
+    mensual:    computeCycle(monthlyPrice, 1,  0),
+    trimestral: computeCycle(monthlyPrice, 3,  10),
+    semestral:  computeCycle(monthlyPrice, 6,  15),
+    anual:      computeCycle(monthlyPrice, 12, 20),
+  }
+}
+
+// trial no tiene precio — solo los planes de pago tienen ciclo de facturación
+export const BILLING_CYCLES: Record<Exclude<PlanTier, 'trial'>, Record<BillingCycleKey, BillingCycleAmounts>> = {
+  inicio:   buildCycles(9),
+  pro:      buildCycles(19),
+  business: buildCycles(29),
+}

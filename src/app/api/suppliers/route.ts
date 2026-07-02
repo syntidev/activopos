@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 
 const supplierSchema = z.object({
   name:    z.string().trim().min(1).max(150),
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest) {
       }
       throw err
     }
+
+    const planCheck = await checkPlanLimit('create_supplier')
+    if (!planCheck.allowed) return NextResponse.json({ error: planCheck.reason }, { status: 403 })
 
     const supplier = await db.supplier.create({
       data: {

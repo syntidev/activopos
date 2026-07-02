@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Plus, Search, ShoppingBag, X } from 'lucide-react'
+import { Plus, Search, ShoppingBag, Truck, X } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -112,6 +112,12 @@ function ComprasContent() {
       .catch(() => {})
   }, [])
 
+  const activeSupplier = supplierFilter !== 'all' ? suppliers.find(s => String(s.id) === supplierFilter) : undefined
+
+  function clearSupplierFilter() {
+    setSupplierFilter('all')
+  }
+
   // Sin endpoint de texto libre en /api/purchases — filtro cliente-side sobre lo ya cargado
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -219,6 +225,16 @@ function ComprasContent() {
           {suppliers.map(s => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
         </select>
       </div>
+
+      {supplierFilter !== 'all' && (
+        <div className={styles.activeFilterBanner}>
+          <Truck size={14} aria-hidden="true" />
+          <span>Mostrando compras de: <strong>{activeSupplier?.name ?? `Proveedor #${supplierFilter}`}</strong></span>
+          <button type="button" className={styles.clearFilterBtn} onClick={clearSupplierFilter}>
+            <X size={13} aria-hidden="true" /> limpiar
+          </button>
+        </div>
+      )}
 
       {error ? (
         <div className={proveedoresStyles.tableWrap}>

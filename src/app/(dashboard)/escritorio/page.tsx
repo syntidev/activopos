@@ -14,8 +14,25 @@ import {
   ChevronRight,
   Clock,
   TriangleAlert,
+  PartyPopper,
+  Check,
+  Circle,
+  Copy,
+  X,
 } from 'lucide-react'
 import styles from './escritorio.module.css'
+
+const NEW_TENANT_WINDOW_DAYS = 7
+const WELCOME_DISMISSED_KEY  = 'welcome_dismissed'
+const CATALOG_SHARED_KEY     = 'catalog_shared'
+
+interface WelcomeStep {
+  key:   string
+  label: string
+  done:  boolean
+  href?: string
+  onAction?: () => void
+}
 
 type Period = 'hoy' | '7dias' | 'mes' | 'trimestre'
 
@@ -141,6 +158,14 @@ export default function EscritorioPage() {
   const [todayVentas,  setTodayVentas]  = useState<TodayVentas | null>(null)
   const [gastosAlert,  setGastosAlert]  = useState<{ count: number } | null>(null)
 
+  const [welcomeDismissed, setWelcomeDismissed] = useState(true) // true por defecto — evita flash mientras se resuelve localStorage
+  const [isNewTenant,      setIsNewTenant]       = useState(false)
+  const [hasLogo,          setHasLogo]           = useState(false)
+  const [hasProducts,      setHasProducts]       = useState(false)
+  const [catalogActive,    setCatalogActive]     = useState(false)
+  const [catalogSlug,      setCatalogSlug]       = useState<string | null>(null)
+  const [catalogShared,    setCatalogShared]     = useState(false)
+
   const fetchOperativo = useCallback(async () => {
     try {
       const res = await fetch('/api/dashboard/charts?period=7d')
@@ -201,6 +226,55 @@ export default function EscritorioPage() {
   useEffect(() => { void fetchOperativo() }, [fetchOperativo])
   useEffect(() => { void fetchAnalytics(period) }, [fetchAnalytics, period])
 
+  /* Checklist de bienvenida — solo se resuelve si el usuario no lo ocultó antes */
+  useEffect(() => {
+    if (localStorage.getItem(WELCOME_DISMISSED_KEY) === 'true') return
+    setCatalogShared(localStorage.getItem(CATALOG_SHARED_KEY) === 'true')
+
+    Promise.all([
+      fetch('/api/config/business').then(r => r.ok ? r.json() : null),
+      fetch('/api/config/catalog').then(r => r.ok ? r.json() : null),
+      fetch('/api/products').then(r => r.ok ? r.json() : null),
+    ]).then(([bizJson, catJson, prodJson]: [
+      { ok: boolean; business?: { created_at: string; logo_path: string | null; catalog_active: boolean } } | null,
+      { ok: boolean; catalog_slug?: string | null } | null,
+      { ok: boolean; products?: unknown[] } | null,
+    ]) => {
+      if (bizJson?.ok && bizJson.business) {
+        const b = bizJson.business
+        const daysSince = (Date.now() - new Date(b.created_at).getTime()) / 86_400_000
+        setIsNewTenant(daysSince < NEW_TENANT_WINDOW_DAYS)
+        setHasLogo(b.logo_path !== null)
+        setCatalogActive(b.catalog_active)
+        setWelcomeDismissed(false)
+      }
+      if (catJson?.ok) setCatalogSlug(catJson.catalog_slug ?? null)
+      if (prodJson?.ok) setHasProducts((prodJson.products?.length ?? 0) > 0)
+    }).catch(() => {})
+  }, [])
+
+  function dismissWelcome() {
+    localStorage.setItem(WELCOME_DISMISSED_KEY, 'true')
+    setWelcomeDismissed(true)
+  }
+
+  function handleShareCatalog() {
+    if (!catalogSlug) return
+    const url = `${window.location.origin}/catalogo/${catalogSlug}`
+    void navigator.clipboard.writeText(url)
+    localStorage.setItem(CATALOG_SHARED_KEY, 'true')
+    setCatalogShared(true)
+  }
+
+  const welcomeSteps: WelcomeStep[] = [
+    { key: 'cuenta',   label: 'Crea tu cuenta',              done: true },
+    { key: 'logo',     label: 'Sube tu logo',                done: hasLogo,       href: '/configuracion' },
+    { key: 'producto', label: 'Crea tu primer producto',     done: hasProducts,   href: '/productos' },
+    { key: 'catalogo', label: 'Activa tu catálogo',          done: catalogActive, href: '/catalogo-digital' },
+    { key: 'compartir', label: 'Comparte tu link de ventas', done: catalogShared, onAction: handleShareCatalog },
+  ]
+  const showWelcome = isNewTenant && !welcomeDismissed
+
   /* Gastos próximos a vencer — alert banner */
   useEffect(() => {
     fetch('/api/gastos/alerts')
@@ -228,6 +302,67 @@ export default function EscritorioPage() {
 
   return (
     <div className={`${styles.page} page-container`}>
+
+      {/* ── Bienvenida (solo tenants nuevos, no descartada) ── */}
+      {showWelcome && (
+        <div className={styles.welcomeCard}>
+          <button
+            type="button"
+            className={styles.welcomeDismiss}
+            onClick={dismissWelcome}
+            aria-label="Ocultar bienvenida"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+
+          <div className={styles.welcomeHead}>
+            <PartyPopper size={20} className={styles.welcomeIcon} aria-hidden="true" />
+            <div>
+              <p className={styles.welcomeTitle}>¡Bienvenido a ActivoPOS!</p>
+              <p className={styles.welcomeSubtitle}>Completa estos pasos para empezar:</p>
+            </div>
+          </div>
+
+          <ul className={styles.welcomeList} role="list">
+            {welcomeSteps.map((step, i) => {
+              const content = (
+                <>
+                  {step.done
+                    ? <Check size={15} className={styles.welcomeStepIconDone} aria-hidden="true" />
+                    : <Circle size={15} className={styles.welcomeStepIconTodo} aria-hidden="true" />}
+                  <span className={step.done ? styles.welcomeStepLabelDone : styles.welcomeStepLabel}>
+                    {step.label}
+                  </span>
+                  {step.key === 'compartir' && !step.done && <Copy size={13} className={styles.welcomeStepCopyIcon} aria-hidden="true" />}
+                </>
+              )
+              const itemStyle = { animationDelay: `${i * 60}ms` }
+
+              if (step.done) {
+                return (
+                  <li key={step.key} className={styles.welcomeStep} style={itemStyle}>{content}</li>
+                )
+              }
+              if (step.href) {
+                return (
+                  <li key={step.key} style={itemStyle}>
+                    <Link href={step.href} className={styles.welcomeStep}>{content}</Link>
+                  </li>
+                )
+              }
+              return (
+                <li key={step.key} style={itemStyle}>
+                  <button type="button" className={styles.welcomeStepBtn} onClick={step.onAction}>{content}</button>
+                </li>
+              )
+            })}
+          </ul>
+
+          <button type="button" className={styles.welcomeHideLink} onClick={dismissWelcome}>
+            Ocultar esto
+          </button>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className={styles.header}>

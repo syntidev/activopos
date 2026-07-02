@@ -1,8 +1,164 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Crown, Calendar, ExternalLink, AlertCircle } from 'lucide-react'
+import { Crown, Calendar, ExternalLink, AlertCircle, Rocket, Check, X, MessageCircle } from 'lucide-react'
 import styles from './TabPlan.module.css'
+
+type PlanTier = 'trial' | 'inicio' | 'pro' | 'business'
+
+interface PlanUsageData {
+  plan:           PlanTier
+  status:         'active' | 'trial' | 'expired' | 'suspended'
+  expires_at:     string | null
+  days_remaining: number | null
+  usage: {
+    products:        { used: number; limit: number }
+    users:            { used: number; limit: number }
+    catalog_enabled:  boolean
+    ai_enabled:       boolean
+  }
+}
+
+const PLAN_BADGE_CLASS: Record<PlanTier, string> = {
+  trial:    styles.planBadgeTrial,
+  inicio:   styles.planBadgeInicio,
+  pro:      styles.planBadgePro,
+  business: styles.planBadgeBusiness,
+}
+
+const PLAN_LABEL: Record<PlanTier, string> = {
+  trial:    'TRIAL',
+  inicio:   'INICIO',
+  pro:      'PRO',
+  business: 'BUSINESS',
+}
+
+function usageBarClass(used: number, limit: number): string {
+  if (limit === -1) return styles.usageBarFillOk
+  const pct = (used / limit) * 100
+  if (pct > 90) return styles.usageBarFillDanger
+  if (pct >= 70) return styles.usageBarFillWarning
+  return styles.usageBarFillOk
+}
+
+function UsageRow({ label, used, limit }: { label: string; used: number; limit: number }) {
+  if (limit === -1) {
+    return (
+      <div className={styles.usageRow}>
+        <span className={styles.usageLabel}>{label}</span>
+        <span className={styles.usageValue}>{used} · ilimitado</span>
+      </div>
+    )
+  }
+  const pct = Math.min(100, (used / limit) * 100)
+  return (
+    <div className={styles.usageRow}>
+      <div className={styles.usageHead}>
+        <span className={styles.usageLabel}>{label}</span>
+        <span className={styles.usageValue}>{used} / {limit}</span>
+      </div>
+      <div className={styles.usageBarTrack}>
+        <div className={`${styles.usageBarFill} ${usageBarClass(used, limit)}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function FeatureRow({ label, enabled, requiredPlan }: { label: string; enabled: boolean; requiredPlan: string }) {
+  return (
+    <div className={styles.featureRow}>
+      {enabled
+        ? <Check size={15} className={styles.featureIconOn} aria-hidden="true" />
+        : <X size={15} className={styles.featureIconOff} aria-hidden="true" />}
+      <span className={enabled ? styles.featureLabelOn : styles.featureLabelOff}>{label}</span>
+      {!enabled && <span className={styles.featureHint}>(en plan {requiredPlan})</span>}
+    </div>
+  )
+}
+
+function PlanUsageSection({ businessId }: { businessId: number }) {
+  const [data,    setData]    = useState<PlanUsageData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(false)
+    fetch('/api/plan')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then((j: PlanUsageData & { ok: boolean }) => { if (j.ok) setData(j); else setError(true) })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [businessId])
+
+  if (loading) {
+    return (
+      <div className={styles.skeletonCard}>
+        <div className={styles.skeletonLine} />
+        <div className={`${styles.skeletonLine} ${styles.skeletonLineMd}`} />
+        <div className={`${styles.skeletonLine} ${styles.skeletonLineSm}`} />
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className={styles.errorState}>
+        <AlertCircle size={18} aria-hidden="true" />
+        No se pudo cargar la información de uso del plan
+      </div>
+    )
+  }
+
+  const contactMsg = encodeURIComponent(
+    `Hola ActivoPOS, quiero cambiar mi plan. Mi negocio ID es ${businessId}. Plan actual: ${data.plan}.`
+  )
+  const showExpiryAlert = data.days_remaining !== null && data.days_remaining >= 0 && data.days_remaining < 7
+
+  return (
+    <div className={styles.usageCard}>
+      <div className={styles.usageCardHead}>
+        <Rocket size={18} aria-hidden="true" />
+        <h3 className={styles.usageCardTitle}>Tu Plan Actual</h3>
+        <span className={`${styles.planBadge} ${PLAN_BADGE_CLASS[data.plan]}`}>{PLAN_LABEL[data.plan]}</span>
+      </div>
+
+      <p className={styles.usageExpiry}>
+        {data.expires_at
+          ? `Vence el ${new Date(data.expires_at.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' })}`
+          : 'Sin vencimiento'}
+      </p>
+
+      <div className={styles.usageBox}>
+        <p className={styles.usageBoxTitle}>Uso actual</p>
+        <UsageRow label="Productos" used={data.usage.products.used} limit={data.usage.products.limit} />
+        <UsageRow label="Usuarios"  used={data.usage.users.used}    limit={data.usage.users.limit} />
+      </div>
+
+      <div className={styles.featuresBox}>
+        <FeatureRow label="Catálogo digital" enabled={data.usage.catalog_enabled} requiredPlan="Pro o superior" />
+        <FeatureRow label="Asistente IA"     enabled={data.usage.ai_enabled}      requiredPlan="Business" />
+      </div>
+
+      {showExpiryAlert && (
+        <div className={styles.expiryAlert}>
+          <AlertCircle size={15} aria-hidden="true" />
+          Quedan {data.days_remaining} {data.days_remaining === 1 ? 'día' : 'días'} para el vencimiento de tu plan.
+        </div>
+      )}
+
+      <a
+        href={`https://wa.me/584143345985?text=${contactMsg}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.contactBtn}
+      >
+        <MessageCircle size={15} aria-hidden="true" />
+        Contactar para cambiar plan
+      </a>
+    </div>
+  )
+}
 
 interface SubscriptionData {
   subscription_active:     boolean
@@ -142,6 +298,8 @@ export function TabPlan({ businessId }: { businessId: number }) {
           Reportar pago / Renovar
         </a>
       </div>
+
+      <PlanUsageSection businessId={businessId} />
     </div>
   )
 }

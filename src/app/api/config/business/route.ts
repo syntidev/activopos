@@ -46,6 +46,8 @@ export async function GET() {
       segment: true,
       max_discount_pct: true,
       allow_cashier_price_override: true,
+      created_at: true,
+      catalog_active: true,
     },
   })
 

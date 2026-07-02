@@ -1,17 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, Search, Truck } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { useToast } from '@/components/ui/Toast'
 import type { Supplier } from './types'
 import styles from './proveedores.module.css'
-
-// CLI-A: sin /api/suppliers todavía. La lista arranca vacía y el modal
-// actualiza este estado local — reemplazar por fetch/POST reales cuando exista.
-const INITIAL_SUPPLIERS: Supplier[] = []
 
 interface SupplierFormState {
   name:    string
@@ -24,21 +21,46 @@ interface SupplierFormState {
 
 const EMPTY_FORM: SupplierFormState = { name: '', rif: '', phone: '', email: '', address: '', notes: '' }
 
-function fmtUsd(n: number) {
-  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
+interface SuppliersResponse { ok: boolean; suppliers?: Supplier[]; error?: string }
+interface SupplierResponse  { ok: boolean; supplier?: Supplier;   error?: string }
 
 export default function ProveedoresPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(INITIAL_SUPPLIERS)
+  const { toast } = useToast()
+
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState<string | null>(null)
   const [search, setSearch]       = useState('')
+
   const [modalOpen, setModalOpen] = useState(false)
+  const [saving, setSaving]       = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm]           = useState<SupplierFormState>(EMPTY_FORM)
 
-  const filtered = suppliers.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    (s.rif ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  const loadSuppliers = useCallback(async (q: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const url = q.trim() ? `/api/suppliers?q=${encodeURIComponent(q.trim())}` : '/api/suppliers'
+      const res = await fetch(url)
+      const json = await res.json() as SuppliersResponse
+      if (!res.ok || !json.ok) {
+        setError(json.error ?? 'No se pudo cargar la lista de proveedores')
+        return
+      }
+      setSuppliers(json.suppliers ?? [])
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  // Carga inicial + debounce de búsqueda contra la API (query real, no filtro local)
+  useEffect(() => {
+    const timer = setTimeout(() => { void loadSuppliers(search) }, 350)
+    return () => clearTimeout(timer)
+  }, [search, loadSuppliers])
 
   function openCreate() {
     setEditingId(null)
@@ -52,38 +74,58 @@ export default function ProveedoresPage() {
     setModalOpen(true)
   }
 
-  function handleSave() {
-    if (form.name.trim().length < 2) return
+  async function handleSave() {
+    if (form.name.trim().length < 1) return
+    setSaving(true)
 
-    if (editingId !== null) {
-      setSuppliers(prev => prev.map(s => s.id === editingId
-        ? { ...s, name: form.name.trim(), rif: form.rif || undefined, phone: form.phone || undefined, email: form.email || undefined, address: form.address || undefined, notes: form.notes || undefined }
-        : s
-      ))
-    } else {
-      const newSupplier: Supplier = {
-        id:        Date.now(),
-        name:      form.name.trim(),
-        rif:       form.rif || undefined,
-        phone:     form.phone || undefined,
-        email:     form.email || undefined,
-        address:   form.address || undefined,
-        notes:     form.notes || undefined,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        total_purchases_usd: 0,
-      }
-      setSuppliers(prev => [newSupplier, ...prev])
+    const body = {
+      name:    form.name.trim(),
+      rif:     form.rif || undefined,
+      phone:   form.phone || undefined,
+      email:   form.email || undefined,
+      address: form.address || undefined,
+      notes:   form.notes || undefined,
     }
-    setModalOpen(false)
+
+    try {
+      const res = editingId !== null
+        ? await fetch(`/api/suppliers/${editingId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        : await fetch('/api/suppliers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+
+      const json = await res.json() as SupplierResponse
+      if (!res.ok || !json.ok) {
+        toast(json.error ?? 'No se pudo guardar el proveedor', 'error')
+        return
+      }
+
+      toast(editingId !== null ? 'Proveedor actualizado' : 'Proveedor creado', 'success')
+      setModalOpen(false)
+      void loadSuppliers(search)
+    } catch {
+      toast('Error de conexión. Intenta de nuevo.', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function handleDelete(id: number) {
+  async function handleDelete(id: number) {
     if (!confirm('¿Eliminar este proveedor? Esta acción no se puede deshacer.')) return
-    setSuppliers(prev => prev.filter(s => s.id !== id))
+
+    try {
+      const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' })
+      const json = await res.json() as SupplierResponse
+      if (!res.ok || !json.ok) {
+        toast(json.error ?? 'No se pudo eliminar el proveedor', 'error')
+        return
+      }
+      toast('Proveedor eliminado', 'success')
+      void loadSuppliers(search)
+    } catch {
+      toast('Error de conexión. Intenta de nuevo.', 'error')
+    }
   }
 
-  const isValid = form.name.trim().length >= 2
+  const isValid = form.name.trim().length >= 1
 
   return (
     <div className={styles.page}>
@@ -101,17 +143,30 @@ export default function ProveedoresPage() {
         />
       </div>
 
-      {filtered.length === 0 ? (
+      {error ? (
+        <div className={styles.tableWrap}>
+          <div className={styles.emptyState}>
+            <p className={styles.emptyTitle}>No se pudo cargar</p>
+            <p className={styles.emptyDesc}>{error}</p>
+          </div>
+        </div>
+      ) : loading ? (
+        <div className={styles.tableWrap}>
+          <div className={styles.emptyState}>
+            <p className={styles.emptyDesc}>Cargando proveedores…</p>
+          </div>
+        </div>
+      ) : suppliers.length === 0 ? (
         <div className={styles.tableWrap}>
           <div className={styles.emptyState}>
             <Truck size={32} className={styles.emptyIcon} aria-hidden="true" />
             <p className={styles.emptyTitle}>
-              {suppliers.length === 0 ? 'Sin proveedores registrados' : 'Sin resultados'}
+              {search.trim() ? 'Sin resultados' : 'Sin proveedores registrados'}
             </p>
             <p className={styles.emptyDesc}>
-              {suppliers.length === 0
-                ? 'Agrega tu primer proveedor para empezar a registrar compras.'
-                : 'Prueba con otro nombre o RIF.'}
+              {search.trim()
+                ? 'Prueba con otro nombre o RIF.'
+                : 'Agrega tu primer proveedor para empezar a registrar compras.'}
             </p>
           </div>
         </div>
@@ -124,22 +179,20 @@ export default function ProveedoresPage() {
                   <th>Proveedor</th>
                   <th>RIF</th>
                   <th>Teléfono</th>
-                  <th>Compras</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(s => (
+                {suppliers.map(s => (
                   <tr key={s.id}>
                     <td className={styles.tdName}>{s.name}</td>
                     <td>{s.rif ?? '—'}</td>
                     <td>{s.phone ?? '—'}</td>
-                    <td>{fmtUsd(s.total_purchases_usd ?? 0)}</td>
                     <td>
                       <div className={styles.rowActions}>
                         <Link href={`/proveedores/compras?supplier=${s.id}`} className={styles.actionLink}>Ver compras</Link>
                         <button type="button" className={styles.actionLink} onClick={() => openEdit(s)}>Editar</button>
-                        <button type="button" className={`${styles.actionLink} ${styles.actionDanger}`} onClick={() => handleDelete(s.id)}>Eliminar</button>
+                        <button type="button" className={`${styles.actionLink} ${styles.actionDanger}`} onClick={() => void handleDelete(s.id)}>Eliminar</button>
                       </div>
                     </td>
                   </tr>
@@ -149,11 +202,10 @@ export default function ProveedoresPage() {
           </div>
 
           <div className={styles.cardList}>
-            {filtered.map(s => (
+            {suppliers.map(s => (
               <div key={s.id} className={styles.card}>
                 <div className={styles.cardHeader}>
                   <span className={styles.cardName}>{s.name}</span>
-                  <span>{fmtUsd(s.total_purchases_usd ?? 0)}</span>
                 </div>
                 <div className={styles.cardMeta}>
                   <span>RIF: {s.rif ?? '—'}</span>
@@ -162,7 +214,7 @@ export default function ProveedoresPage() {
                 <div className={styles.cardActions}>
                   <Link href={`/proveedores/compras?supplier=${s.id}`} className={styles.actionLink}>Ver compras</Link>
                   <button type="button" className={styles.actionLink} onClick={() => openEdit(s)}>Editar</button>
-                  <button type="button" className={`${styles.actionLink} ${styles.actionDanger}`} onClick={() => handleDelete(s.id)}>Eliminar</button>
+                  <button type="button" className={`${styles.actionLink} ${styles.actionDanger}`} onClick={() => void handleDelete(s.id)}>Eliminar</button>
                 </div>
               </div>
             ))}
@@ -177,7 +229,7 @@ export default function ProveedoresPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button disabled={!isValid} onClick={handleSave}>Guardar Proveedor</Button>
+            <Button disabled={!isValid} loading={saving} onClick={() => void handleSave()}>Guardar Proveedor</Button>
           </>
         }
       >

@@ -11,18 +11,19 @@ import styles from '../configuracion.module.css'
 interface Props { businessId: number }
 
 interface EmpresaForm {
-  name:       string
-  legal_name: string
-  rif:        string
-  address:    string
-  city:       string
-  state:      string
-  phone:      string
-  email:      string
+  name:             string
+  legal_name:       string
+  rif:              string
+  address:          string
+  city:             string
+  state:            string
+  phone:            string
+  email:            string
+  quotation_footer: string
 }
 
 const EMPTY_FORM: EmpresaForm = {
-  name: '', legal_name: '', rif: '', address: '', city: '', state: '', phone: '', email: '',
+  name: '', legal_name: '', rif: '', address: '', city: '', state: '', phone: '', email: '', quotation_footer: '',
 }
 
 export function TabEmpresa({ businessId: _businessId }: Props) {
@@ -53,6 +54,9 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         state:      b.state      ?? '',
         phone:      b.phone      ?? '',
         email:      b.email      ?? '',
+        // GET /api/config/business no selecciona quotation_footer todavía (fuera de este scope) —
+        // el formulario no puede pre-poblarse; el guardado sí funciona vía PATCH.
+        quotation_footer: '',
       })
       setLogoPath(b.logo_path)
     } catch {
@@ -64,7 +68,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
 
   useEffect(() => { void fetchConfig() }, [fetchConfig])
 
-  const set = (field: keyof EmpresaForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set = (field: keyof EmpresaForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }))
 
   const handleSave = async () => {
@@ -83,6 +87,9 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
           state:      form.state.trim()      || null,
           phone:      form.phone.trim()      || null,
           email:      form.email.trim()      || null,
+          // Sin || null: el schema no tiene .nullable() para este campo — enviar null
+          // aquí produciría 400 "Datos inválidos". String vacío sí es válido y permite borrar el texto.
+          quotation_footer: form.quotation_footer.trim(),
         }),
       })
       if (!res.ok) throw new Error()
@@ -227,6 +234,19 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         <div className={styles.fieldRow}>
           <Input label="Teléfono" value={form.phone} onChange={set('phone')} placeholder="0412-0000000" hint="Opcional" />
           <Input label="Correo"   type="email" value={form.email} onChange={set('email')} placeholder="info@empresa.com" hint="Opcional" />
+        </div>
+
+        <div className={styles.formDivider} />
+
+        <div className={styles.fieldGroup}>
+          <label className={styles.label} htmlFor="quotation_footer">Condiciones de cotización</label>
+          <textarea
+            id="quotation_footer"
+            className={styles.textarea}
+            value={form.quotation_footer}
+            onChange={set('quotation_footer')}
+            placeholder="Ej: Precios válidos por 3 días. Forma de pago: transferencia o efectivo."
+          />
         </div>
 
         <div className={styles.saveRow}>

@@ -22,6 +22,7 @@ const PatchSchema = z.object({
   max_discount_pct:             z.number().min(0).max(100).optional(),
   allow_cashier_price_override: z.boolean().optional(),
   quotation_footer: z.string().optional(),
+  pos_mode: z.enum(['ticket', 'invoice']).optional(),
 })
 
 export async function GET() {
@@ -50,6 +51,7 @@ export async function GET() {
       created_at: true,
       catalog_active: true,
       quotation_footer: true,
+      pos_mode: true,
     },
   })
 

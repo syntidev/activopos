@@ -39,6 +39,12 @@ enum OrderOrigin {
   pos
 }
 
+enum PurchaseStatus {
+  received
+  pending
+  cancelled
+}
+
 enum SaleStatus {
   draft
   quote
@@ -178,6 +184,8 @@ model Business {
   notifications      Notification[]
   push_subscriptions PushSubscription[]
   business_devices   BusinessDevice[]
+  suppliers          Supplier[]
+  purchases          Purchase[]
 
   @@map("businesses")
 }
@@ -269,6 +277,7 @@ model Product {
   variants          ProductVariant[]
   components        ProductComponent[] @relation("ComboComponents")
   usedIn            ProductComponent[] @relation("ComponentUsedIn")
+  purchase_items    PurchaseItem[]
 
   @@map("products")
 }
@@ -786,4 +795,58 @@ model PushSubscription {
 
   @@index([business_id])
   @@map("push_subscriptions")
+}
+
+model Supplier {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  name        String   @db.VarChar(150)
+  rif         String?  @db.VarChar(20)
+  phone       String?  @db.VarChar(20)
+  email       String?  @db.VarChar(100)
+  address     String?  @db.VarChar(255)
+  notes       String?  @db.Text
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  business  Business   @relation(fields: [business_id], references: [id])
+  purchases Purchase[]
+
+  @@index([business_id])
+  @@map("suppliers")
+}
+
+model Purchase {
+  id          Int            @id @default(autoincrement())
+  business_id Int
+  supplier_id Int
+  reference   String?        @db.VarChar(50)
+  notes       String?        @db.Text
+  status      PurchaseStatus @default(received)
+  total_usd   Decimal        @db.Decimal(12, 2)
+  created_at  DateTime       @default(now())
+
+  business Business       @relation(fields: [business_id], references: [id])
+  supplier Supplier       @relation(fields: [supplier_id], references: [id])
+  items    PurchaseItem[]
+
+  @@index([business_id])
+  @@index([supplier_id])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id          Int     @id @default(autoincrement())
+  purchase_id Int
+  product_id  Int
+  qty         Decimal @db.Decimal(10, 3)
+  cost_usd    Decimal @db.Decimal(12, 4)
+
+  purchase Purchase @relation(fields: [purchase_id], references: [id])
+  product  Product  @relation(fields: [product_id], references: [id])
+
+  @@index([purchase_id])
+  @@index([product_id])
+  @@map("purchase_items")
 }

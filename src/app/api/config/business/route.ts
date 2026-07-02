@@ -49,6 +49,7 @@ export async function GET() {
       allow_cashier_price_override: true,
       created_at: true,
       catalog_active: true,
+      quotation_footer: true,
     },
   })
 

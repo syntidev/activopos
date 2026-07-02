@@ -77,6 +77,7 @@ export interface BusinessConfig {
   rate_source:                 string
   current_rate:                number
   allow_cashier_price_override: boolean
+  pos_mode?:                   'ticket' | 'invoice'
 }
 
 export interface TicketConfig {

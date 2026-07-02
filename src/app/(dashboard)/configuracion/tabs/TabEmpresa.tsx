@@ -12,10 +12,6 @@ interface Props { businessId: number }
 
 type PosMode = 'ticket' | 'invoice'
 
-// BusinessConfig (src/types) todavía no declara pos_mode — se ensancha localmente
-// en vez de tocar el tipo compartido, ya que GET/PATCH ya lo devuelven de verdad.
-type BusinessConfigWithPosMode = BusinessConfig & { pos_mode?: PosMode }
-
 interface EmpresaForm {
   name:             string
   legal_name:       string
@@ -51,7 +47,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
     try {
       const res  = await fetch('/api/config/business')
       if (!res.ok) throw new Error()
-      const body = await res.json() as { ok: boolean; business: BusinessConfigWithPosMode }
+      const body = await res.json() as { ok: boolean; business: BusinessConfig }
       const b    = body.business
       setForm({
         name:       b.name       ?? '',

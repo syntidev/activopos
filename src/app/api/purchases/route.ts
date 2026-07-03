@@ -126,6 +126,23 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      // Compra a crédito (mercancía recibida sin pagar) → genera deuda en CxP
+      if (data.status === 'pending') {
+        await tx.gasto.create({
+          data: {
+            business_id: session.businessId,
+            concepto:    `Compra proveedor${data.reference ? ` #${data.reference}` : ''} — ${data.items.length} producto(s)`,
+            monto_usd:   totalUsd,
+            categoria:   'proveedor',
+            is_paid:     false,
+            due_date:    null,
+            supplier:    supplier.name,
+            created_by:  session.userId,
+            fecha:       new Date(),
+          },
+        })
+      }
+
       return { ...created, items }
     })
 

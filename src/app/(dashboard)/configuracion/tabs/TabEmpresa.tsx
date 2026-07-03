@@ -58,7 +58,6 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         state:      b.state      ?? '',
         phone:      b.phone      ?? '',
         email:      b.email      ?? '',
-        // GET /api/config/business no selecciona quotation_footer todavía (fuera de este scope) —
         // el formulario no puede pre-poblarse; el guardado sí funciona vía PATCH.
         quotation_footer: '',
         pos_mode: b.pos_mode ?? 'ticket',

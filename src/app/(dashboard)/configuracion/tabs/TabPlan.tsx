@@ -173,6 +173,7 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
     `Hola ActivoPOS, quiero cambiar mi plan. Mi negocio ID es ${businessId}. Plan actual: ${data.plan}.`
   )
   const showExpiryAlert = data.days_remaining !== null && data.days_remaining >= 0 && data.days_remaining < 7
+  const isUpgradeable   = data.plan === 'trial' || data.plan === 'inicio'
 
   return (
     <div className={styles.usageCard}>
@@ -215,7 +216,7 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
         className={styles.contactBtn}
       >
         <MessageCircle size={15} aria-hidden="true" />
-        Contactar para cambiar plan
+        {isUpgradeable ? 'Mejorar plan' : 'Contactar para cambiar plan'}
       </a>
     </div>
   )

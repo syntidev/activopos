@@ -313,14 +313,14 @@
   --sidebar-text:           #64748B;
   --sidebar-text-hover:     #1E293B;
   --sidebar-section-label:  #CBD5E1;
-  --sidebar-active-bg:      #F0FDF9;
-  --sidebar-active-text:    #0D9488;
-  --sidebar-active-border:  #14B8A6;
+  --sidebar-active-bg:      #EEF2FF;
+  --sidebar-active-text:    #0038BD;
+  --sidebar-active-border:  #0038BD;
   --sidebar-hover-bg:       #F8FAFC;
-  --sidebar-dot:            #14B8A6;
+  --sidebar-dot:            #0038BD;
 
   /* Toggle de caja en sidebar */
-  --toggle-on-bg:   #14B8A6;
+  --toggle-on-bg:   #0038BD;
   --toggle-off-bg:  #E2E8F0;
   --toggle-thumb:   #FFFFFF;
 
@@ -335,7 +335,7 @@
   --border-card:        #E8EEF6;
   --border-card-hover:  #D0DCF0;
   --border-input:       #E2E8F0;
-  --border-input-focus: #14B8A6;
+  --border-input-focus: #0038BD;
   --border-divider:     #F1F5F9;
 
   /* Tabla — cabecera neutral, no tinte de marca */
@@ -349,8 +349,8 @@
   --badge-text: #64748B;
 
   /* BCV ticker */
-  --bcv-bg:   #F0FDF9;
-  --bcv-text: #0D9488;
+  --bcv-bg:   #EEF2FF;
+  --bcv-text: #0038BD;
   --bcv-sub:  #94A3B8;
 
   /* Scrollbar */
@@ -522,14 +522,14 @@
   --sidebar-text:           #94A3B8;
   --sidebar-text-hover:     #F1F5F9;
   --sidebar-section-label:  rgba(255, 255, 255, 0.2);
-  --sidebar-active-bg:      rgba(20, 184, 166, 0.14);
-  --sidebar-active-text:    #5EEAD4;
-  --sidebar-active-border:  #14B8A6;
+  --sidebar-active-bg:      rgba(0, 56, 189, 0.12);
+  --sidebar-active-text:    #4D7AFF;
+  --sidebar-active-border:  #0038BD;
   --sidebar-hover-bg:       rgba(255, 255, 255, 0.05);
-  --sidebar-dot:            #5EEAD4;
+  --sidebar-dot:            #4D7AFF;
 
   /* Toggle de caja en sidebar */
-  --toggle-on-bg:  #14B8A6;
+  --toggle-on-bg:  #0038BD;
   --toggle-off-bg: #1E293B;
   --toggle-thumb:  #FFFFFF;
 
@@ -544,12 +544,12 @@
   --border-card:        #1E2E42;
   --border-card-hover:  #2A3F5A;
   --border-input:       #1E293B;
-  --border-input-focus: #14B8A6;
+  --border-input-focus: #0038BD;
   --border-divider:     #1E293B;
 
   /* Tabla dark — usa brand-rgb correcto */
   --table-header-bg:   rgba(var(--brand-rgb), 0.08);
-  --table-header-text: #5EEAD4;
+  --table-header-text: #4D7AFF;
   --table-row-hover:   rgba(var(--brand-rgb), 0.04);
   --table-border:      #1E2E42;
 
@@ -558,8 +558,8 @@
   --badge-text: #94A3B8;
 
   /* BCV ticker */
-  --bcv-bg:   rgba(20, 184, 166, 0.10);
-  --bcv-text: #5EEAD4;
+  --bcv-bg:   rgba(0, 56, 189, 0.10);
+  --bcv-text: #4D7AFF;
   --bcv-sub:  #64748B;
 
   /* Scrollbar */

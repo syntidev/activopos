@@ -1,6 +1,6 @@
 # SYSTEM_MAP — ActivoPOS
-# Actualizado: 2026-07-02 | Sprint 44.5 (CLI-C)
-# Sprints cubiertos: 1-44
+# Actualizado: 2026-07-02 | Sprint 52 (CLI-D)
+# Sprints cubiertos: 1-52
 # Fuente: código real — NO editar a mano (regenerar con el prompt CLI-C)
 
 ---
@@ -9,13 +9,13 @@
 
 | Campo              | Valor                                                                          |
 |--------------------|----------------------------------------------------------------------------------|
-| Último sprint      | Sprint 44.5 (Proveedores, Planes, entry_type, SYSTEM_MAP)                        |
-| Último commit      | `792b7cf` fix(inventory/CLI-A): agregar entry_type a InventoryEntry              |
-| TypeScript         | ✅ 0 errores — `npx tsc --noEmit` (verificado 2026-07-02)                        |
-| Build              | ✅ Limpio — `npm run build` (verificado 2026-07-02)                              |
-| Puerto VPS         | 3003 (PM2 — según SYSTEM_MAP previo Sprint 33, no re-verificado en este sprint)  |
+| Último sprint      | Sprint 52 (pos_mode + factura de servicio, quotation PDF profesional, PWA/SEO fixes) |
+| Último commit      | `1bbcc85` fix(tokens): sidebar y acentos migrados de teal a Persian Blue #0038BD  |
+| TypeScript         | ✅ 0 errores — `npx tsc --noEmit` (verificado 2026-07-02, deploy VPS)             |
+| Build              | ✅ Limpio — `npm run build` (verificado 2026-07-02, deploy VPS)                   |
+| VPS                | ✅ online — puerto 3003 (PM2, `activopos` proceso id 9), `/login` → 200 (verificado 2026-07-02) |
 | Multi-tenant       | Prisma Client Extension (`src/lib/prisma-tenant.ts`) — scope automático por `business_id`, derivado del DMMF en runtime, fail-closed |
-| Módulos nuevos     | `/registro` (onboarding self-service), Proveedores/Compras, Planes (límites + enforcement parcial) |
+| Módulos nuevos     | `/registro` (onboarding self-service, verificado E2E en producción), Proveedores/Compras, Planes (límites + enforcement parcial), `pos_mode` (ticket térmico vs factura de servicio A4), cotización PDF profesional |
 
 ---
 
@@ -46,6 +46,9 @@
 | `entry_type` en InventoryEntry | Distingue `purchase`/`adjustment`/`sale`/`return` en el origen de cada movimiento de stock. Solo `purchases` y `products/[id]/stock` lo setean explícitamente — ver gap en §7. | `prisma/schema.prisma`, `src/app/api/purchases/route.ts`, `src/app/api/products/[id]/stock/route.ts` |
 | Planes (límites + enforcement parcial) | `PLAN_LIMITS` (trial/inicio/pro/business) + `checkPlanLimit()` centralizado. Solo enforced en `create_product` y `create_user` — ver gap en §7. | `src/lib/plan-limits.ts`, `src/lib/plan-guard.ts`, `src/app/api/plan/`, `src/app/api/admin/tenants/[id]/plan/` |
 | Admin Panel expandido      | Tenants + stats + detalle, panel `super_admin`-only | `src/app/api/admin/`, área `(admin)` (no auditada en este sprint) |
+| `pos_mode` + factura de servicio | `Business.pos_mode` (ticket térmico 58mm / factura A4) — toggle en Configuración, `SuccessTicketPanel` abre `sales/[id]/ticket` o `sales/[id]/invoice` según corresponda. Cierra el gap "sin punto de decisión de documento" reportado en sesión anterior. | `src/app/api/sales/[id]/invoice/route.ts`, `src/components/pos/SuccessTicketPanel.tsx`, `src/app/(dashboard)/configuracion/tabs/TabEmpresa.tsx` |
+| Cotización PDF profesional | RIF, dirección, correo y `quotation_footer` (condiciones) del negocio ahora en el PDF de cotización — cierra gap reportado en sesión anterior. Encoding de tildes **no confirmado** como corregido. | `src/app/api/quotations/[id]/pdf/route.ts` |
+| Billing cycles | `BILLING_CYCLES` (mensual/trimestral/semestral/anual con descuentos) en `plan-limits.ts`, selector en `TabPlan` | `src/lib/plan-limits.ts`, `src/app/(dashboard)/configuracion/tabs/TabPlan.tsx` |
 
 ---
 
@@ -65,7 +68,7 @@
 `suppliers` · `suppliers/[id]` · `purchases` · `purchases/[id]`
 
 ### Ventas / Caja / Pedidos
-`sales` · `sales/[id]` · `sales/[id]/pay` · `sales/[id]/void` · `sales/[id]/authorize-discount` · `sales/[id]/ticket` · `sales/items/price-override` · `cash` · `cash/open` · `cash/close` · `cash/status` · `cash/history` · `cash/movement` · `orders` · `orders/[id]` · `orders/[id]/cobrar` · `orders/[id]/cancelar` · `orders/[id]/whatsapp` · `pos/drafts` · `pos/drafts/[id]` · `kds/orders` · `ventas/[id]/abono`
+`sales` · `sales/[id]` · `sales/[id]/pay` · `sales/[id]/void` · `sales/[id]/authorize-discount` · `sales/[id]/ticket` · `sales/[id]/invoice` (PDF carta, Sprint 51) · `sales/items/price-override` · `cash` · `cash/open` · `cash/close` · `cash/status` · `cash/history` · `cash/movement` · `orders` · `orders/[id]` · `orders/[id]/cobrar` · `orders/[id]/cancelar` · `orders/[id]/whatsapp` · `pos/drafts` · `pos/drafts/[id]` · `kds/orders` · `ventas/[id]/abono`
 
 ### Catálogo público
 `catalog/[slug]` · `catalog/[slug]/order` · `catalogo/metrics`
@@ -146,8 +149,8 @@ Relaciones clave nuevas/relevantes:
 
 | ID  | Severidad | Descripción | Sprint |
 |-----|-----------|--------------|--------|
-| DT-01 | P1 | `entry_type` de `InventoryEntry` solo se setea en `purchases` (`'purchase'`) y `products/[id]/stock` (`'adjustment'`). `sales/route.ts`, `sales/[id]/pay`, `sales/[id]/void`, `orders/[id]/cobrar` crean `InventoryEntry` de venta/reversa sin `entry_type` → caen al default `'adjustment'`, indistinguibles de un ajuste manual real. | 44.5 |
-| DT-02 | P1 | `checkPlanLimit()` define 5 acciones (`create_product`, `create_user`, `access_catalog`, `access_ai`, `create_supplier`) pero solo `create_product` y `create_user` están invocadas en un endpoint real. `access_catalog`, `access_ai` y `create_supplier` (incl. `POST /api/suppliers`) no aplican ningún límite pese a estar definidos en `PLAN_LIMITS`. | 44.5 |
+| ~~DT-01~~ | ~~P1~~ | ✅ **CERRADO Sprint 50** (`b797989`) — `entry_type='sale'` ahora se setea en `sales/route.ts`, `sales/[id]/pay`, `sales/[id]/void` y `orders/[id]/cobrar`. | 44.5→50 |
+| DT-02 | P1 | `checkPlanLimit()` define 5 acciones. `create_supplier` cerrado Sprint 50 (`cb672c7`, `POST /api/suppliers`). **`access_catalog` y `access_ai` siguen sin invocarse en ningún endpoint real** — un tenant `trial` puede usar catálogo digital e IA sin bloqueo. | 44.5, parcial 50 |
 | DT-03 | P2 | `Proveedores` es el único módulo de negocio en el Sidebar sin `moduleKey` — no participa del sistema de toggle de módulos por plan/config, a diferencia de POS/Inventario/Caja/Catálogo/Finanzas/Analytics/KDS. | 44.5 |
 | DT-04 | P2 | `products/import` e `products/import-excel` crean `InventoryEntry` sin `entry_type` explícito (heredan el default `'adjustment'`) — razonable, pero no confirmado como intencional. | 44.5 |
 | DT-05 | P2 | `RateLimiterMemory` (todos los limiters) no es cluster-safe — pendiente Redis en producción (comentario propio del código, `rate-limit.ts:3`). | histórico |
@@ -164,6 +167,8 @@ Relaciones clave nuevas/relevantes:
 - ✅ Pedido de catálogo (`POST /api/catalog/[slug]/order`) → `Order` → visible en `/pedidos` (`GET /api/orders`) → botón Cobrar → `POST /api/orders/[id]/cobrar` → crea `Sale` + descuenta stock.
 - ✅ Compra a proveedor (`POST /api/purchases`) → `$transaction` atómica → `InventoryEntry` con `entry_type='purchase'` → stock del producto aumenta.
 - ✅ Venta pagada (`status='paid'`) → descuenta stock, aparece en `reports/day` (filtro `status:'paid'` confirmado). Venta a crédito (`status='credit'`) → aparece en `finanzas/cxc` (no las pagadas — comportamiento correcto, CxC = solo deuda pendiente).
-- ⚠️ `GET /api/plan` devuelve uso real; enforcement de plan solo cubre creación de productos/usuarios (ver DT-02).
+- ⚠️ `GET /api/plan` devuelve uso real; enforcement de plan cubre creación de productos/usuarios/proveedores (ver DT-02 — catálogo e IA aún sin bloqueo).
+- ✅ **Registro E2E en producción (Sprint 52)**: flujo completo verificado con Playwright contra `activopos.com` — 7 pasos → `POST /api/onboarding/setup` (201) → redirect `/escritorio` con sesión activa, sin errores 4xx/5xx propios del flujo. Ver `.doc/HANDOFF_Sprint52_Sesion_2Jul2026.md`.
+- ✅ **Cobro → documento correcto según `pos_mode` (Sprint 51)**: venta con `pos_mode='invoice'` abre `GET /api/sales/[id]/invoice` (PDF carta); con `pos_mode='ticket'` (default) abre `GET /api/sales/[id]/ticket` (térmico 58mm).
 
-Para verificación E2E real en navegador (Playwright), ver skill `webapp-testing` / agente `e2e-runner` — no ejecutado en esta auditoría (solo lectura de código).
+Para verificación E2E real en navegador (Playwright), ver skill `webapp-testing` / agente `e2e-runner` — ejecutado en Sprint 52 solo para `/registro` (ver arriba); el resto de flujos sigue verificado por lectura de código.

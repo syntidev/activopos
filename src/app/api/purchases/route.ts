@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
             due_date:    null,
             supplier:    supplier.name,
             created_by:  session.userId,
-            fecha:       new Date(),
+            fecha:       new Date(new Date().toISOString().slice(0, 10)),
           },
         })
       }

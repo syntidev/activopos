@@ -76,7 +76,7 @@
   flex-shrink: 0;
 }
 
-/* ── Grid 2 columnas (65% / 35%) ── */
+/* ── Grid 2 columnas (50% / 50%) ── */
 .grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -86,7 +86,7 @@
 
 @media (min-width: 900px) {
   .grid {
-    grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 

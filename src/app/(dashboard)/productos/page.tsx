@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Plus,
   Search,
@@ -143,6 +144,7 @@ function TableSkeleton() {
 /* ── Main page ── */
 
 export default function ProductosPage() {
+  const router = useRouter()
   const [products, setProducts]           = useState<Product[]>([])
   const [categories, setCategories]       = useState<Category[]>([])
   const [isLoading, setIsLoading]         = useState(true)
@@ -547,7 +549,7 @@ export default function ProductosPage() {
             variant="primary"
             className={styles.btnPrimaryAction}
             leftIcon={<Plus size={16} />}
-            onClick={() => { setEditProduct(null); setShowProductModal(true) }}
+            onClick={() => router.push('/productos/nuevo')}
             aria-label="Crear nuevo producto"
           >
             Nuevo
@@ -722,7 +724,7 @@ export default function ProductosPage() {
                         <Button
                           variant="primary"
                           leftIcon={<Plus size={15} />}
-                          onClick={() => { setEditProduct(null); setShowProductModal(true) }}
+                          onClick={() => router.push('/productos/nuevo')}
                         >
                           Nuevo Producto
                         </Button>

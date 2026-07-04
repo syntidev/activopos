@@ -48,7 +48,7 @@ interface PlanSelectProps {
   plan:     string
 }
 
-const PLANS = ['trial', 'starter', 'pro'] as const
+const PLANS = ['trial', 'inicio', 'pro', 'business'] as const
 
 export function PlanSelect({ tenantId, plan }: PlanSelectProps) {
   const router = useRouter()

@@ -289,6 +289,12 @@
   --color-black:       #000000;
   --color-teal-subtle: rgba(0, 56, 189, 0.06);
   --whatsapp-dark:     #1DA851;
+
+  /* KPI icon circles (dashboard) — sólidos vibrantes sobre círculo blanco */
+  --kpi-icon-green:  #22C55E;
+  --kpi-icon-orange: var(--cta);
+  --kpi-icon-blue:   var(--brand);
+  --kpi-icon-purple: #8B5CF6;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -300,7 +306,7 @@
 [data-theme="light"] {
 
   /* Fondos */
-  --bg-base:        #F4F5FA;
+  --bg-base:        #F0F0F7;
   --bg-card:        #FFFFFF;
   --bg-card-hover:  #F8FAFC;
   --bg-input:       #FFFFFF;
@@ -366,6 +372,10 @@
   --shadow-card-elevated:       0 2px 6px rgba(47, 43, 61, 0.08);
   --shadow-card-elevated-hover: 0 4px 16px rgba(47, 43, 61, 0.12);
   --border-card-subtle:         rgba(47, 43, 61, 0.06);
+
+  /* Elevación KPI dashboard — sombra fuerte para separar de la capa base */
+  --shadow-kpi:       0 4px 24px rgba(47, 43, 61, 0.10);
+  --shadow-kpi-hover: 0 8px 32px rgba(47, 43, 61, 0.16);
 
   /* Sombras v1 light overrides */
   --shadow-xs: 0 1px 2px 0 rgba(0,0,0,0.04);
@@ -581,6 +591,10 @@
   --shadow-card-elevated:       0 2px 6px rgba(0, 0, 0, 0.35);
   --shadow-card-elevated-hover: 0 4px 20px rgba(0, 0, 0, 0.5);
   --border-card-subtle:         rgba(255, 255, 255, 0.08);
+
+  /* Elevación KPI dashboard */
+  --shadow-kpi:       0 4px 24px rgba(0, 0, 0, 0.40);
+  --shadow-kpi-hover: 0 8px 32px rgba(0, 0, 0, 0.55);
 
   /* Semántico dark — verde real, diferente al brand teal */
   --success:      #4ADE80;

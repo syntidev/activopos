@@ -220,85 +220,108 @@ a.welcomeStep:hover,
   font-weight: var(--weight-semibold);
 }
 
-/* ── KPI grid ── */
+/* ── KPI grid — asimétrico: hero Cobrado (2 filas, izq) + 3 métricas ── */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-3);
+  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-areas:
+    "cobrado credito tickets"
+    "cobrado utilidad utilidad";
+  gap: var(--space-4);
 }
 
-/* ── KPI card — white ── */
-.kpiCardWhite {
-  background:    var(--bg-card);
-  border-radius: var(--radius-xl);
-  padding:       var(--space-4);
-  display:       flex;
+.kpiCobrado  { grid-area: cobrado; }
+.kpiCredito  { grid-area: credito; }
+.kpiTickets  { grid-area: tickets; }
+.kpiUtilidad { grid-area: utilidad; }
+
+/* ── KPI card ── */
+.kpiCard {
+  background:     var(--bg-card);
+  border-radius:  var(--radius-xl);
+  padding:        var(--space-6);
+  display:        flex;
   flex-direction: column;
-  box-shadow:    var(--shadow-card);
-  transition:    box-shadow var(--transition-base);
+  gap:            var(--space-4);
+  box-shadow:     var(--shadow-kpi);
+  transition:     box-shadow 200ms ease, transform 200ms ease;
 }
 
-.kpiCardWhite:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
+.kpiCard:hover {
+  box-shadow: var(--shadow-kpi-hover);
+  transform:  translateY(-2px);
 }
 
-/* ── KPI border modifiers — semantic Stripe pattern ── */
-.kpiBorderBrand   { border-left: 4px solid var(--brand); }
-.kpiBorderCyan    { border-left: 4px solid var(--info); }
-.kpiBorderPurple  { border-left: 4px solid rgb(var(--purple-rgb)); }
-.kpiBorderSuccess { border-left: 4px solid var(--color-success); }
-.kpiBorderDanger  { border-left: 4px solid var(--color-danger); }
+/* Hero (Cobrado): más alto → separa círculo arriba y cifra abajo */
+.kpiCobrado { justify-content: space-between; }
 
-/* ── KPI icon colors — semantic ── */
-.kpiIconBrand   { color: var(--brand); }
-.kpiIconCyan    { color: var(--info); }
-.kpiIconPurple  { color: rgb(var(--purple-rgb)); }
-.kpiIconSuccess { color: var(--color-success); }
-.kpiIconDanger  { color: var(--color-danger); }
-
-.kpiWhiteHead {
+/* ── Círculo de ícono ── */
+.kpiIconCircle {
+  width:  48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--space-3);
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
 }
 
-.kpiWhiteLabel {
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: var(--tracking-wider);
+.kpiCircleGreen  { background: var(--kpi-icon-green);  }
+.kpiCircleOrange { background: var(--kpi-icon-orange); }
+.kpiCircleBlue   { background: var(--kpi-icon-blue);   }
+.kpiCirclePurple { background: var(--kpi-icon-purple); }
+
+/* ── Cuerpo ── */
+.kpiBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.kpiLabel {
+  font-size: 0.6875rem; /* 11px */
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
 
-.kpiWhiteValue {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-bold);
+.kpiValue {
+  font-size: 2rem; /* 32px */
+  font-weight: var(--weight-extrabold);
+  letter-spacing: -0.03em;
   color: var(--text-primary);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  letter-spacing: var(--tracking-tight);
 }
 
-.kpiWhiteSub {
-  font-size: var(--text-2xs);
-  color: var(--text-tertiary);
-  margin-top: var(--space-1);
+/* Hero: cifra un paso mayor para jerarquía real */
+.kpiCobrado .kpiValue { font-size: 2.5rem; /* 40px */ }
+
+.kpiSub {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
+/* ── Delta — pill ── */
 .kpiTrend {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  margin-top: var(--space-2);
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-semibold);
   align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
 }
 
-.kpiTrendUp   { color: var(--success-text); }
-.kpiTrendDown { color: var(--danger-text); }
-.kpiTrendFlat { color: var(--text-tertiary); }
+.kpiTrendUp   { background: var(--success-soft); color: var(--success-text); }
+.kpiTrendDown { background: var(--danger-soft);  color: var(--danger-text);  }
+.kpiTrendFlat { background: var(--badge-bg);     color: var(--text-tertiary); }
 
 /* ── Row 2 — 2 columns ── */
 .row2 {
@@ -642,18 +665,30 @@ a.welcomeStep:hover,
 }
 
 /* ── Responsive ── */
-@media (max-width: 1200px) {
-  .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1000px) {
+  .kpiGrid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "cobrado  cobrado"
+      "credito  tickets"
+      "utilidad utilidad";
+  }
 }
 
 @media (max-width: 768px) {
   .row2   { grid-template-columns: 1fr; }
-  .kpiGrid { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
   .header { flex-direction: column; align-items: flex-start; }
 }
 
-@media (max-width: 640px) {
-  .kpiGrid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 560px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "cobrado"
+      "credito"
+      "tickets"
+      "utilidad";
+  }
   .periodTabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -662,10 +697,6 @@ a.welcomeStep:hover,
   .ctaRow { flex-direction: column; align-items: flex-start; }
   .ctaBtn { width: 100%; justify-content: center; }
 }
-
-/* ── Warning KPI variant (crédito pendiente) ── */
-.kpiBorderWarning { border-left: 3px solid var(--warning); }
-.kpiIconWarning   { color: var(--warning-text); }
 
 /* ── Resumen del día ── */
 .daySummary {

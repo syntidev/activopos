@@ -407,92 +407,96 @@ export default function EscritorioPage() {
         </div>
       )}
 
-      {/* ── KPI grid ── */}
+      {/* ── KPI grid — asimétrico, íconos en círculos de color ── */}
       <div className={styles.kpiGrid}>
 
-        {/* KPI 1 — Cobrado */}
+        {/* KPI 1 — Cobrado (hero) */}
         <div
-          className={`${styles.kpiCardWhite} ${styles.kpiBorderBrand}`}
+          className={`${styles.kpiCard} ${styles.kpiCobrado}`}
           aria-busy={loading}
           aria-label="Cobrado"
         >
-          <div className={styles.kpiWhiteHead}>
-            <span className={styles.kpiWhiteLabel}>Cobrado</span>
-            <DollarSign size={16} className={styles.kpiIconBrand} aria-hidden="true" />
+          <div className={`${styles.kpiIconCircle} ${styles.kpiCircleGreen}`} aria-hidden="true">
+            <DollarSign size={22} />
           </div>
-          {loading ? (
-            <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
-          ) : (
-            <>
-              <span className={styles.kpiWhiteValue}>{fmtUsd(v?.total_usd ?? 0)}</span>
-              <span className={styles.kpiWhiteSub}>{fmtBsVal(v?.total_bs ?? 0)}</span>
-              <DeltaBadge pct={delta} />
-            </>
-          )}
+          <div className={styles.kpiBody}>
+            <span className={styles.kpiLabel}>Cobrado</span>
+            {loading ? (
+              <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
+            ) : (
+              <>
+                <span className={styles.kpiValue}>{fmtUsd(v?.total_usd ?? 0)}</span>
+                <span className={styles.kpiSub}>{fmtBsVal(v?.total_bs ?? 0)}</span>
+                <DeltaBadge pct={delta} />
+              </>
+            )}
+          </div>
         </div>
 
         {/* KPI 2 — Crédito pendiente (all-time outstanding) */}
-        <div
-          className={`${styles.kpiCardWhite} ${styles.kpiBorderWarning}`}
-          aria-label="Crédito pendiente"
-        >
-          <div className={styles.kpiWhiteHead}>
-            <span className={styles.kpiWhiteLabel}>Crédito pendiente</span>
-            <Clock size={16} className={styles.kpiIconWarning} aria-hidden="true" />
+        <div className={`${styles.kpiCard} ${styles.kpiCredito}`} aria-label="Crédito pendiente">
+          <div className={`${styles.kpiIconCircle} ${styles.kpiCircleOrange}`} aria-hidden="true">
+            <Clock size={22} />
           </div>
-          {creditData === null ? (
-            <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
-          ) : (
-            <>
-              <span className={styles.kpiWhiteValue}>{fmtUsd(creditData.total)}</span>
-              <span className={styles.kpiWhiteSub}>
-                {creditData.count}{creditData.count >= 100 ? '+' : ''}&nbsp;
-                {creditData.count === 1 ? 'venta' : 'ventas'} a cobrar
-              </span>
-            </>
-          )}
+          <div className={styles.kpiBody}>
+            <span className={styles.kpiLabel}>Crédito pendiente</span>
+            {creditData === null ? (
+              <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
+            ) : (
+              <>
+                <span className={styles.kpiValue}>{fmtUsd(creditData.total)}</span>
+                <span className={styles.kpiSub}>
+                  {creditData.count}{creditData.count >= 100 ? '+' : ''}&nbsp;
+                  {creditData.count === 1 ? 'venta' : 'ventas'} a cobrar
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* KPI 3 — Tickets cobrados */}
-        <div className={`${styles.kpiCardWhite} ${styles.kpiBorderPurple}`} aria-busy={loading} aria-label="Tickets cobrados">
-          <div className={styles.kpiWhiteHead}>
-            <span className={styles.kpiWhiteLabel}>Tickets cobrados</span>
-            <ShoppingCart size={16} className={styles.kpiIconPurple} aria-hidden="true" />
+        <div className={`${styles.kpiCard} ${styles.kpiTickets}`} aria-busy={loading} aria-label="Tickets cobrados">
+          <div className={`${styles.kpiIconCircle} ${styles.kpiCircleBlue}`} aria-hidden="true">
+            <ShoppingCart size={22} />
           </div>
-          {loading ? (
-            <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
-          ) : (
-            <>
-              <span className={styles.kpiWhiteValue}>{fmtNum(v?.count ?? 0)}</span>
-              <span className={styles.kpiWhiteSub}>transacciones pagadas</span>
-            </>
-          )}
+          <div className={styles.kpiBody}>
+            <span className={styles.kpiLabel}>Tickets cobrados</span>
+            {loading ? (
+              <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
+            ) : (
+              <>
+                <span className={styles.kpiValue}>{fmtNum(v?.count ?? 0)}</span>
+                <span className={styles.kpiSub}>transacciones pagadas</span>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* KPI 4 — Utilidad neta */}
-        <div
-          className={`${styles.kpiCardWhite} ${utilityIsNeg ? styles.kpiBorderDanger : styles.kpiBorderSuccess}`}
-          aria-busy={loading}
-          aria-label="Utilidad neta"
-        >
-          <div className={styles.kpiWhiteHead}>
-            <span className={styles.kpiWhiteLabel}>Utilidad neta</span>
-            <TrendingUp size={16} className={utilityIsNeg ? styles.kpiIconDanger : styles.kpiIconSuccess} aria-hidden="true" />
+        {/* KPI 4 — Utilidad neta (ancha) */}
+        <div className={`${styles.kpiCard} ${styles.kpiUtilidad}`} aria-busy={loading} aria-label="Utilidad neta">
+          <div
+            className={`${styles.kpiIconCircle} ${utilityIsNeg ? styles.kpiCircleOrange : styles.kpiCirclePurple}`}
+            aria-hidden="true"
+          >
+            {utilityIsNeg ? <AlertTriangle size={22} /> : <TrendingUp size={22} />}
           </div>
-          {loading ? (
-            <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
-          ) : (
-            <>
-              <span className={styles.kpiWhiteValue}>
-                {fmtUsd(summary?.resultado?.utilidad_neta_usd ?? 0)}
-              </span>
-              <span className={styles.kpiWhiteSub}>
-                {v && v.total_usd > 0
-                  ? `${(((summary?.resultado?.utilidad_neta_usd ?? 0) / v.total_usd) * 100).toFixed(1)}% margen`
-                  : 'sin ventas'}
-              </span>
-            </>
-          )}
+          <div className={styles.kpiBody}>
+            <span className={styles.kpiLabel}>Utilidad neta</span>
+            {loading ? (
+              <div className={`${styles.skeleton} ${styles.skeletonKpiVal}`} />
+            ) : (
+              <>
+                <span className={styles.kpiValue}>
+                  {fmtUsd(summary?.resultado?.utilidad_neta_usd ?? 0)}
+                </span>
+                <span className={styles.kpiSub}>
+                  {v && v.total_usd > 0
+                    ? `${(((summary?.resultado?.utilidad_neta_usd ?? 0) / v.total_usd) * 100).toFixed(1)}% margen`
+                    : 'sin ventas'}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

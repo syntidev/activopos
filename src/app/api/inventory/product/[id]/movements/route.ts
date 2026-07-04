@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+const DEFAULT_LIMIT = 20
+const MAX_LIMIT = 100
 
 type RouteContext = { params: { id: string } }
 
@@ -18,8 +21,11 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const productId = parseInt(params.id, 10)
     if (isNaN(productId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-    const dateStr = req.nextUrl.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
-    if (!dateSchema.safeParse(dateStr).success) {
+    const page  = Math.max(parseInt(req.nextUrl.searchParams.get('page') ?? '1', 10) || 1, 1)
+    const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT, 1), MAX_LIMIT)
+
+    const dateStr = req.nextUrl.searchParams.get('date')
+    if (dateStr && !dateSchema.safeParse(dateStr).success) {
       return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
     }
 
@@ -29,30 +35,40 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     })
     if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
 
-    const [year, month, day] = dateStr.split('-').map(Number) as [number, number, number]
-    const dayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-    const dayEnd   = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0))
+    const where: Prisma.InventoryEntryWhereInput = { product_id: productId } // business_id inyectado por el tenant layer
+    if (dateStr) {
+      const [year, month, day] = dateStr.split('-').map(Number) as [number, number, number]
+      where.created_at = {
+        gte: new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0)),
+        lt:  new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0)),
+      }
+    }
 
-    const entries = await db.inventoryEntry.findMany({
-      where: {
-        // business_id inyectado por el tenant layer
-        product_id:  productId,
-        entered_at:  { gte: dayStart, lt: dayEnd },
-      },
-      select: {
-        id:                true,
-        quantity:          true,
-        cost_per_unit_usd: true,
-        supplier:          true,
-        notes:             true,
-        entered_at:        true,
-        user: { select: { name: true } },
-      },
-      orderBy: { entered_at: 'asc' },
-    })
+    const [total, entries] = await Promise.all([
+      db.inventoryEntry.count({ where }),
+      db.inventoryEntry.findMany({
+        where,
+        select: {
+          id:                true,
+          quantity:          true,
+          cost_per_unit_usd: true,
+          supplier:          true,
+          notes:             true,
+          entered_at:        true,
+          user: { select: { name: true } },
+        },
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ])
 
     return NextResponse.json({
-      ok: true,
+      ok:    true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
       movements: entries.map(e => {
         const qty = Number(e.quantity)
         return {

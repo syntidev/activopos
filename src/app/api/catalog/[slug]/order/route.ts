@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
+import { isCatalogLive } from '@/lib/catalog'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -119,10 +120,13 @@ export async function POST(
 
   const business = await prisma.business.findFirst({
     where: { catalog_slug: parsedSlug.data, catalog_active: true, active: true },
-    select: { id: true, name: true, phone: true, ticket_prefix: true },
+    select: {
+      id: true, name: true, phone: true, ticket_prefix: true,
+      catalog_plan: true, subscription_active: true, subscription_expires_at: true,
+    },
   })
 
-  if (!business) {
+  if (!business || !isCatalogLive(business)) {
     return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
   }
 

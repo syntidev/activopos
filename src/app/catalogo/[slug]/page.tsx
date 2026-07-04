@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
-import { CATALOG_WHERE_FILTER, computeAvailability } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
 import styles from './catalogo.module.css'
 
 interface PageProps {
@@ -30,6 +30,9 @@ async function getBusiness(slug: string) {
       catalog_title: true,
       catalog_desc:  true,
       theme_color:   true,
+      catalog_plan:            true,
+      subscription_active:     true,
+      subscription_expires_at: true,
     },
   })
 }
@@ -61,7 +64,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CatalogoPage({ params }: PageProps) {
   const business = await getBusiness(params.slug)
-  if (!business) notFound()
+  if (!business || !isCatalogLive(business)) notFound()
 
   const [products, rate, stockEntries, paymentMethods] = await Promise.all([
     prisma.product.findMany({

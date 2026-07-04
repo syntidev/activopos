@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
-import { CATALOG_WHERE_FILTER, computeAvailability } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -44,12 +44,18 @@ export async function GET(
       catalog_title: true,
       catalog_desc:  true,
       theme_color:   true,
+      catalog_plan:            true,
+      subscription_active:     true,
+      subscription_expires_at: true,
     },
   })
 
-  if (!business) {
+  if (!business || !isCatalogLive(business)) {
     return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
   }
+
+  // No filtrar campos de suscripción al público
+  const { catalog_plan, subscription_active, subscription_expires_at, ...publicBusiness } = business
 
   const [products, rate, stockEntries] = await Promise.all([
     prisma.product.findMany({
@@ -99,8 +105,8 @@ export async function GET(
   return NextResponse.json({
     ok:       true,
     business: {
-      ...business,
-      catalog_title: business.catalog_title ?? business.name,
+      ...publicBusiness,
+      catalog_title: publicBusiness.catalog_title ?? publicBusiness.name,
     },
     products: products.map(p => {
       const imgs     = parseImages(p.images)

@@ -1,4 +1,22 @@
+import { PLAN_LIMITS, type PlanTier } from './plan-limits'
+
 export type Availability = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued'
+
+// El catálogo público solo está vivo si el plan lo incluye y la suscripción está vigente.
+// Se revalida en cada lectura — un negocio que baja de plan o cuya suscripción expira
+// deja de servir catálogo, aunque catalog_active haya quedado en true.
+export function isCatalogLive(business: {
+  catalog_plan:            string | null
+  subscription_active:     boolean
+  subscription_expires_at: Date | null
+}): boolean {
+  const plan   = (business.catalog_plan as PlanTier | null) ?? 'trial'
+  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.trial
+  if (!limits.catalog)            return false
+  if (!business.subscription_active) return false
+  if (business.subscription_expires_at && new Date() > business.subscription_expires_at) return false
+  return true
+}
 
 export function computeAvailability(product: {
   sale_mode:    string

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   AlertTriangle, ArrowDownToLine, ChevronLeft, ChevronRight,
-  Clock, DollarSign, FileDown, Layers, Package, Plus, ScanBarcode,
+  Clock, DollarSign, FileDown, Layers, Package, PackageMinus, Plus, ScanBarcode,
   Search, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
@@ -32,6 +32,7 @@ interface InventoryEntry {
   id: number
   quantity: number
   waste: number
+  entry_type: string
   cost_per_unit_usd: number | null
   supplier: string | null
   notes: string | null
@@ -40,7 +41,7 @@ interface InventoryEntry {
   user: { id: number; name: string } | null
 }
 
-type EntryType = 'all' | 'entrada' | 'ajuste'
+type EntryType = 'all' | 'entrada' | 'ajuste' | 'consumo'
 type StockStatus = 'ok' | 'low' | 'out'
 
 /* ── Helpers ── */
@@ -56,7 +57,8 @@ function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
 }
 
-function getEntryType(e: InventoryEntry): 'entrada' | 'ajuste' {
+function getEntryType(e: InventoryEntry): 'entrada' | 'ajuste' | 'consumo' {
+  if (e.entry_type === 'internal_use') return 'consumo'
   return e.waste > 0 ? 'ajuste' : 'entrada'
 }
 
@@ -280,6 +282,176 @@ function EntryModal({ product, onClose, onSaved }: ModalProps) {
   )
 }
 
+/* ── Consumo interno modal ── */
+
+interface ConsumeModalProps {
+  products: Product[]
+  onClose: () => void
+  onSaved: (entry: InventoryEntry) => void
+}
+
+function ConsumeModal({ products, onClose, onSaved }: ConsumeModalProps) {
+  const { toast } = useToast()
+  const [productId, setProductId] = useState('')
+  const [qty, setQty]             = useState('')
+  const [notes, setNotes]         = useState('')
+  const [saving, setSaving]       = useState(false)
+  const [err, setErr]             = useState<Record<string, string>>({})
+
+  const product   = products.find(p => p.id === Number(productId)) ?? null
+  const isWeight   = product?.sale_mode === 'weight'
+
+  function validate(): boolean {
+    const e: Record<string, string> = {}
+    const q = parseFloat(qty)
+    if (!productId) e.product = 'Selecciona un producto'
+    if (!qty.trim())              e.qty = 'La cantidad es requerida'
+    else if (isNaN(q) || q <= 0)  e.qty = 'Cantidad inválida'
+    else if (!isWeight && !Number.isInteger(q)) e.qty = 'Debe ser un número entero'
+    if (!notes.trim()) e.notes = 'La nota es obligatoria'
+    setErr(e)
+    return Object.keys(e).length === 0
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!product || !validate()) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id:  product.id,
+          quantity:    -Math.abs(parseFloat(qty)),
+          entry_type:  'internal_use',
+          notes:       notes.trim(),
+        }),
+      })
+      const data = await res.json() as { ok?: boolean; entry?: InventoryEntry; error?: string }
+      if (res.ok && data.entry) {
+        onSaved(data.entry)
+        toast(`Consumo interno registrado: -${parseFloat(qty).toFixed(isWeight ? 3 : 0)} ${product.base_unit_label}`, 'success')
+      } else {
+        toast(data.error ?? 'Error al registrar', 'error')
+      }
+    } catch {
+      toast('Error de conexión', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className={styles.overlay}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        onClick={e => { if (e.target === e.currentTarget && !saving) onClose() }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Registrar consumo interno"
+      >
+        <motion.div
+          className={styles.modal}
+          initial={{ opacity: 0, y: 14, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ duration: 0.18, ease: [0, 0, 0.2, 1] }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className={styles.modalHeader}>
+            <div>
+              <h2 className={styles.modalTitle}>Consumo Interno</h2>
+              <p className={styles.modalSub}>Descuenta stock sin generar una venta</p>
+            </div>
+            <button
+              className={styles.modalClose}
+              onClick={onClose}
+              disabled={saving}
+              aria-label="Cerrar"
+              type="button"
+            >
+              <X size={17} aria-hidden="true" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className={styles.modalForm}>
+            <div className={styles.field}>
+              <label htmlFor="consume-product" className={styles.label}>Producto *</label>
+              <select
+                id="consume-product"
+                className={`${styles.histSelect} ${err.product ? styles.inputErr : ''}`}
+                value={productId}
+                onChange={e => { setProductId(e.target.value); setErr(p => ({ ...p, product: '' })) }}
+                disabled={saving}
+              >
+                <option value="">— Selecciona un producto —</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.stock.net_qty.toFixed(p.sale_mode === 'weight' ? 3 : 0)} {p.base_unit_label} disp.)
+                  </option>
+                ))}
+              </select>
+              {err.product && <p className={styles.fieldErr}>{err.product}</p>}
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="consume-qty" className={styles.label}>
+                Cantidad a consumir{product ? ` (${product.base_unit_label})` : ''} *
+              </label>
+              <input
+                id="consume-qty"
+                type="number"
+                className={`${styles.input} ${err.qty ? styles.inputErr : ''}`}
+                value={qty}
+                onChange={e => { setQty(e.target.value); setErr(p => ({ ...p, qty: '' })) }}
+                min="0"
+                step={isWeight ? '0.001' : '1'}
+                placeholder={isWeight ? '0.000' : '0'}
+                disabled={saving || !product}
+              />
+              {err.qty && <p className={styles.fieldErr}>{err.qty}</p>}
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="consume-notes" className={styles.label}>Nota *</label>
+              <input
+                id="consume-notes"
+                type="text"
+                className={`${styles.input} ${err.notes ? styles.inputErr : ''}`}
+                value={notes}
+                onChange={e => { setNotes(e.target.value); setErr(p => ({ ...p, notes: '' })) }}
+                maxLength={300}
+                placeholder="Ej: Usado en producción del día"
+                disabled={saving}
+              />
+              {err.notes && <p className={styles.fieldErr}>{err.notes}</p>}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <Button variant="secondary" onClick={onClose} disabled={saving}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={saving}
+                disabled={!productId || !qty.trim() || !notes.trim()}
+              >
+                {saving ? 'Guardando…' : 'Registrar consumo'}
+              </Button>
+            </div>
+          </form>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 /* ── Product side panel ── */
 
 interface PanelProps {
@@ -406,12 +578,18 @@ function ProductPanel({ product, todayMoves, onClose, onRegisterEntry }: PanelPr
                   const t = getEntryType(e)
                   const qty = t === 'ajuste'
                     ? `-${e.waste.toFixed(isW ? 3 : 0)}`
-                    : `+${e.quantity.toFixed(isW ? 3 : 0)}`
+                    : t === 'consumo'
+                      ? e.quantity.toFixed(isW ? 3 : 0) // ya negativo
+                      : `+${e.quantity.toFixed(isW ? 3 : 0)}`
+                  const badgeClass = t === 'ajuste'
+                    ? styles.typeBadgeAjuste
+                    : t === 'consumo'
+                      ? styles.typeBadgeConsumo
+                      : styles.typeBadgeEntrada
+                  const badgeLetter = t === 'entrada' ? 'E' : t === 'ajuste' ? 'A' : 'C'
                   return (
                     <li key={e.id} className={styles.movItem}>
-                      <span className={`${styles.typeBadgeEntrada} ${t === 'ajuste' ? styles.typeBadgeAjuste : ''}`}>
-                        {t === 'entrada' ? 'E' : 'A'}
-                      </span>
+                      <span className={badgeClass}>{badgeLetter}</span>
                       <span className={styles.movQty}>{qty}&nbsp;{product.base_unit_label}</span>
                       <span className={styles.movTime}>{fmtTime(e.entered_at)}</span>
                     </li>
@@ -458,6 +636,7 @@ function InventarioContent() {
   const [loading, setLoading]               = useState(true)
   const [panelProduct, setPanelProduct]     = useState<Product | null>(null)
   const [entryProduct, setEntryProduct]     = useState<Product | null>(null)
+  const [showConsumeModal, setShowConsumeModal] = useState(false)
   const [scannerActive, setScannerActive]   = useState(false)
   const [isScanning, setIsScanning]         = useState(false)
 
@@ -553,6 +732,7 @@ function InventarioContent() {
       if (histSearch && !e.product.name.toLowerCase().includes(histSearch.toLowerCase())) return false
       if (histType === 'entrada' && getEntryType(e) !== 'entrada') return false
       if (histType === 'ajuste'  && getEntryType(e) !== 'ajuste')  return false
+      if (histType === 'consumo' && getEntryType(e) !== 'consumo') return false
       const day = e.entered_at.slice(0, 10)
       if (histFrom && day < histFrom) return false
       if (histTo   && day > histTo)   return false
@@ -570,6 +750,10 @@ function InventarioContent() {
   )
   const totalAjustes = useMemo(() =>
     filteredEntries.filter(e => getEntryType(e) === 'ajuste').length,
+    [filteredEntries]
+  )
+  const totalConsumo = useMemo(() =>
+    filteredEntries.filter(e => getEntryType(e) === 'consumo').reduce((s, e) => s + e.quantity, 0),
     [filteredEntries]
   )
   const valorFiltrado = useMemo(() =>
@@ -606,6 +790,18 @@ function InventarioContent() {
     setPanelProduct(null)
   }
 
+  function handleConsumeSaved(entry: InventoryEntry) {
+    setEntries(prev => [entry, ...prev])
+    setProducts(prev =>
+      prev.map(p =>
+        p.id === entry.product.id
+          ? { ...p, stock: { net_qty: p.stock.net_qty + entry.quantity } } // quantity ya negativa
+          : p
+      )
+    )
+    setShowConsumeModal(false)
+  }
+
   function handleFilterChange<T>(setter: (v: T) => void) {
     return (v: T) => { setter(v); setHistPage(0) }
   }
@@ -619,15 +815,26 @@ function InventarioContent() {
           <h1 className={styles.pageTitle}>Inventario</h1>
           <p className={styles.pageSubtitle}>Registra entradas de stock para tus productos</p>
         </div>
-        <button
-          className={styles.scanBtn}
-          onClick={() => setScannerActive(s => !s)}
-          type="button"
-          aria-label="Escanear código de barras"
-        >
-          <ScanBarcode size={16} aria-hidden="true" />
-          Escanear
-        </button>
+        <div className={styles.pageHeaderActions}>
+          <button
+            className={styles.consumeBtn}
+            onClick={() => setShowConsumeModal(true)}
+            type="button"
+            aria-label="Registrar consumo interno"
+          >
+            <PackageMinus size={16} aria-hidden="true" />
+            Consumo Interno
+          </button>
+          <button
+            className={styles.scanBtn}
+            onClick={() => setScannerActive(s => !s)}
+            type="button"
+            aria-label="Escanear código de barras"
+          >
+            <ScanBarcode size={16} aria-hidden="true" />
+            Escanear
+          </button>
+        </div>
       </div>
 
       {scannerActive && (
@@ -819,6 +1026,7 @@ function InventarioContent() {
                 <option value="all">Todos los tipos</option>
                 <option value="entrada">Entrada</option>
                 <option value="ajuste">Ajuste / Merma</option>
+                <option value="consumo">Consumo interno</option>
               </select>
               <input
                 type="date"
@@ -881,7 +1089,13 @@ function InventarioContent() {
                         const isWt     = e.product.base_unit_label !== 'und'
                         const qty      = type === 'ajuste'
                           ? `-${e.waste.toFixed(isWt ? 3 : 0)}`
-                          : `+${e.quantity.toFixed(isWt ? 3 : 0)}`
+                          : type === 'consumo'
+                            ? e.quantity.toFixed(isWt ? 3 : 0) // ya negativo
+                            : `+${e.quantity.toFixed(isWt ? 3 : 0)}`
+                        const typeLabel = type === 'entrada' ? 'Entrada' : type === 'ajuste' ? 'Ajuste' : 'Consumo interno'
+                        const typeBadgeClass = type === 'entrada'
+                          ? styles.typeBadgeEntrada
+                          : type === 'ajuste' ? styles.typeBadgeAjuste : styles.typeBadgeConsumo
                         return (
                           <tr key={e.id} className={styles.tr}>
                             <td className={styles.td}>
@@ -895,9 +1109,7 @@ function InventarioContent() {
                               <span className={styles.productUnit}>{e.product.base_unit_label}</span>
                             </td>
                             <td className={styles.td}>
-                              <span className={type === 'entrada' ? styles.typeBadgeEntrada : styles.typeBadgeAjuste}>
-                                {type === 'entrada' ? 'Entrada' : 'Ajuste'}
-                              </span>
+                              <span className={typeBadgeClass}>{typeLabel}</span>
                             </td>
                             <td className={`${styles.td} ${styles.tdNum}`}>
                               <span className={type === 'entrada' ? styles.stockOk : styles.stockLow}>
@@ -939,6 +1151,11 @@ function InventarioContent() {
                   <div className={styles.totalItem}>
                     <span className={styles.totalLabel}>Ajustes registrados</span>
                     <span className={styles.totalValue}>{totalAjustes}</span>
+                  </div>
+                  <div className={styles.totalDivider} aria-hidden="true" />
+                  <div className={styles.totalItem}>
+                    <span className={styles.totalLabel}>Consumo interno</span>
+                    <span className={styles.totalValueRed}>{totalConsumo.toFixed(0)} und</span>
                   </div>
                   <div className={styles.totalDivider} aria-hidden="true" />
                   <div className={styles.totalItem}>
@@ -1000,6 +1217,15 @@ function InventarioContent() {
           product={entryProduct}
           onClose={() => setEntryProduct(null)}
           onSaved={handleSaved}
+        />
+      )}
+
+      {/* ── Consumo interno modal ── */}
+      {showConsumeModal && (
+        <ConsumeModal
+          products={products}
+          onClose={() => setShowConsumeModal(false)}
+          onSaved={handleConsumeSaved}
         />
       )}
     </div>

@@ -33,7 +33,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/escritorio')
+      router.push(data.user?.role === 'super_admin' ? '/businesses' : '/escritorio')
       router.refresh()
     } catch {
       setError('Error de conexión. Intenta de nuevo.')

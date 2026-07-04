@@ -840,7 +840,7 @@ export default function ProductosPage() {
                             <Package size={15} aria-hidden="true" />
                           </button>
                           <button type="button" className={styles.rowActionBtn} title="Editar producto"
-                            aria-label={`Editar ${product.name}`} onClick={() => openEdit(product)}>
+                            aria-label={`Editar ${product.name}`} onClick={() => router.push(`/productos/${product.id}/editar`)}>
                             <Edit2 size={15} aria-hidden="true" />
                           </button>
                           <button type="button" className={`${styles.rowActionBtn} ${styles.rowActionDanger}`}

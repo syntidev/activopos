@@ -396,6 +396,7 @@ model SaleItem {
   unit_label         String  @db.VarChar(20)
   quantity           Decimal @db.Decimal(10, 3)
   price_per_unit_usd Decimal @db.Decimal(10, 4)
+  cost_per_unit_usd  Decimal? @db.Decimal(10, 4)
   subtotal_usd       Decimal @db.Decimal(10, 2)
   subtotal_bs        Decimal @db.Decimal(12, 2)
   rate_used          Decimal @db.Decimal(10, 4)

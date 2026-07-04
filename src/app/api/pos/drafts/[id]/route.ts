@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       // Fetch prices from DB (anti-tampering)
       let saleItemsData: {
         product_id: number; product_name: string; sale_mode: string; unit_label: string
-        quantity: number; price_per_unit_usd: number; subtotal_usd: number
+        quantity: number; price_per_unit_usd: number; cost_per_unit_usd: number; subtotal_usd: number
         subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number
         unit_price_override?: number | null; override_reason?: string | null
       }[] = []
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         const productIds = Array.from(new Set(body.items.map(i => i.product_id)))
         const products   = await tx.product.findMany({
           where:  { id: { in: productIds }, business_id: session.businessId, active: true },
-          select: { id: true, name: true, sale_mode: true, unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true },
+          select: { id: true, name: true, sale_mode: true, unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true },
         })
         if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
         const productMap = new Map(products.map(p => [p.id, p]))
@@ -100,6 +100,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
             unit_label:          p.unit_label,
             quantity:            item.quantity,
             price_per_unit_usd:  priceUsd,
+            cost_per_unit_usd:   Number(p.cost_per_unit_usd ?? 0),
             subtotal_usd:        Math.round(subtotal_usd * 100) / 100,
             subtotal_bs:         Math.round(subtotal_usd * rate * 100) / 100,
             rate_used:           rate,

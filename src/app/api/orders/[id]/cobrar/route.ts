@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: Context) {
       const products   = await tx.product.findMany({
         where:  { id: { in: productIds }, business_id: session.businessId },
         select: { id: true, sale_mode: true, base_unit_label: true,
-                  price_per_unit_usd: true, price_per_kg_usd: true },
+                  price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true },
       })
       const productMap = new Map(products.map(p => [p.id, p]))
       if (products.length !== productIds.length) throw new Error('PRODUCTS_CHANGED')
@@ -73,6 +73,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           unit_label:         p?.base_unit_label ?? 'und',
           quantity:           Number(item.quantity),
           price_per_unit_usd: priceUsd,
+          cost_per_unit_usd:  p ? Number(p.cost_per_unit_usd ?? 0) : 0,
           subtotal_usd,
           subtotal_bs,
           rate_used:          rate,

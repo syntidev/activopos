@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
         select: {
           id: true, name: true, base_unit_label: true,
           product_type: true, unit_type: true, unit_step: true,
-          price_per_unit_usd: true, price_per_kg_usd: true,
+          price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true,
           components: {
             select: {
               id: true, component_id: true, quantity: true, unit_label: true,
@@ -309,6 +309,7 @@ export async function POST(req: NextRequest) {
           unit_label:          product.base_unit_label,
           quantity:            item.quantity,
           price_per_unit_usd:  priceUsd,
+          cost_per_unit_usd:   Number(product.cost_per_unit_usd ?? 0),
           subtotal_usd:        Math.round(subtotal_usd * 10000) / 10000,
           subtotal_bs:         Math.round(subtotal_bs * 100) / 100,
           rate_used:           rate,

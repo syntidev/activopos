@@ -17,8 +17,10 @@ async function main() {
   const catalogFields = {
     catalog_slug:   'demo',
     catalog_active: true,
+    catalog_plan:   'pro',
     catalog_title:  'Tienda Demo',
     catalog_desc:   'Catálogo de prueba de ActivoPOS — explora nuestros productos',
+    segment:        'retail',
   }
 
   const business = await prisma.business.upsert({
@@ -223,6 +225,173 @@ async function main() {
           ...(badgeUpdate ? { badge: p.badge ?? 'none', is_featured: p.is_featured ?? false } : {}),
         },
       })
+    }
+  }
+
+  // ── Datos demo: clientes, ventas, gastos, tasa ───────────────────────
+  // Idempotente por prefijo de ticket propio (el negocio demo ya tenía 344 ventas
+  // de pruebas previas, todas anteriores a julio — sin esto el dashboard "hoy/7
+  // días" y el P&L "mes" se ven vacíos frente al cliente).
+  const demoSalesCount = await prisma.sale.count({
+    where: { business_id: business.id, ticket_number: { startsWith: 'DEMO-' } },
+  })
+
+  if (demoSalesCount === 0) {
+    const DEMO_RATE = 45.00
+    const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min
+    const pick = <T,>(arr: T[]): T => arr[randomInt(0, arr.length - 1)]
+
+    const clientDefs = [
+      { name: 'Ferretería El Tornillo', phone: '04141234567', email: 'tornillo@example.com' },
+      { name: 'Panadería Doña Rosa',    phone: '04241234567', email: null },
+      { name: 'Distribuidora JM',       phone: '04121234567', email: 'jm@example.com' },
+    ]
+    const clients = []
+    for (const c of clientDefs) {
+      const existing = await prisma.client.findFirst({ where: { business_id: business.id, name: c.name } })
+      clients.push(existing ?? await prisma.client.create({ data: { business_id: business.id, ...c } }))
+    }
+
+    // Solo el catálogo demo real — business_id=1 acumuló cientos de productos de
+    // prueba de otras sesiones (CLIC21_VA01_Base, etc.) sin cost_per_unit_usd.
+    const catalogNames = ['Camisa Polo', ...seedProducts.map(p => p.name)]
+    const allProducts  = await prisma.product.findMany({
+      where: { business_id: business.id, name: { in: catalogNames } },
+    })
+    const paidMethods  = await prisma.paymentMethod.findMany({
+      where: { business_id: business.id, name: { in: ['Efectivo USD', 'Pago Móvil', 'Zelle'] } },
+    })
+    // Los roles pueden derivar con el uso (p. ej. impersonación) — el email es el identificador estable.
+    const cashierUser = await prisma.user.findFirstOrThrow({ where: { business_id: business.id, email: 'cajero@activopos.com' } })
+    const adminUser   = await prisma.user.findFirstOrThrow({ where: { business_id: business.id, email: 'admin@activopos.com' } })
+
+    const TOTAL_SALES  = 50
+    const CREDIT_COUNT = 10 // 20%
+    const statuses: Array<'paid' | 'credit'> = [
+      ...Array(TOTAL_SALES - CREDIT_COUNT).fill('paid' as const),
+      ...Array(CREDIT_COUNT).fill('credit' as const),
+    ]
+    for (let i = statuses.length - 1; i > 0; i--) {
+      const j = randomInt(0, i)
+      ;[statuses[i], statuses[j]] = [statuses[j], statuses[i]]
+    }
+
+    for (let i = 0; i < TOTAL_SALES; i++) {
+      const status  = statuses[i]
+      const daysAgo = i < 5 ? 0 : i < 15 ? randomInt(1, 6) : randomInt(7, 29)
+      const soldAt  = new Date(Date.now() - daysAgo * 86_400_000)
+      soldAt.setHours(randomInt(8, 20), randomInt(0, 59), 0, 0)
+
+      const itemCount     = randomInt(1, 3)
+      const lineItems     = Array.from({ length: itemCount }, () => {
+        const product = pick(allProducts)
+        const qty     = Number(product.price_per_unit_usd) > 20 ? randomInt(1, 2) : randomInt(1, 3)
+        return { product, qty }
+      })
+
+      let totalUsd = lineItems.reduce((sum, li) => sum + Number(li.product.price_per_unit_usd ?? 0) * li.qty, 0)
+      if (totalUsd < 5) totalUsd += 5
+      if (totalUsd > 150) lineItems.length = 1
+      totalUsd = lineItems.reduce((sum, li) => sum + Number(li.product.price_per_unit_usd ?? 0) * li.qty, 0)
+      const totalBs = totalUsd * DEMO_RATE
+
+      const client = status === 'credit'
+        ? pick(clients)
+        : (randomInt(0, 2) === 0 ? pick(clients) : null)
+
+      let dueDate: Date | null    = null
+      let creditDays: number | null = null
+      if (status === 'credit') {
+        creditDays = randomInt(5, 30)
+        dueDate    = new Date(soldAt.getTime() + creditDays * 86_400_000)
+      }
+
+      const sale = await prisma.sale.create({
+        data: {
+          business_id:   business.id,
+          cashier_id:    cashierUser.id,
+          ticket_number: `DEMO-${String(1000 + i)}`,
+          status,
+          origin:        status === 'credit' ? 'credit' : 'pos',
+          total_usd:     totalUsd,
+          total_bs:      totalBs,
+          rate_used:     DEMO_RATE,
+          client_id:     client?.id,
+          client_name:   client?.name,
+          sold_at:       status === 'paid' ? soldAt : null,
+          due_date:      dueDate,
+          credit_days:   creditDays,
+          created_at:    soldAt,
+          items: {
+            create: lineItems.map(li => ({
+              product_id:         li.product.id,
+              product_name:       li.product.name,
+              sale_mode:          li.product.sale_mode,
+              unit_label:         li.product.unit_label,
+              quantity:           li.qty,
+              price_per_unit_usd: li.product.price_per_unit_usd ?? 0,
+              cost_per_unit_usd:  li.product.cost_per_unit_usd ?? 0,
+              subtotal_usd:       Number(li.product.price_per_unit_usd ?? 0) * li.qty,
+              subtotal_bs:        Number(li.product.price_per_unit_usd ?? 0) * li.qty * DEMO_RATE,
+              rate_used:          DEMO_RATE,
+            })),
+          },
+        },
+      })
+
+      if (status === 'paid') {
+        await prisma.salePayment.create({
+          data: {
+            sale_id:           sale.id,
+            payment_method_id: pick(paidMethods).id,
+            amount_usd:        totalUsd,
+            amount_bs:         totalBs,
+            rate_used:         DEMO_RATE,
+          },
+        })
+      }
+    }
+    console.log(`✅ ${TOTAL_SALES} ventas demo creadas (${TOTAL_SALES - CREDIT_COUNT} pagadas, ${CREDIT_COUNT} a crédito, 3 clientes con CxC)`)
+
+    // ── Gastos operativos del mes ────────────────────────────────────────
+    const now          = new Date()
+    const daysElapsed   = now.getDate()
+    const expenseCats  = await prisma.expenseCategory.findMany({ where: { business_id: business.id } })
+    const gastoDefs = [
+      { concepto: 'Alquiler del local',   monto: 300.00, categoria: 'Alquiler',           dia: 1  },
+      { concepto: 'Electricidad y agua',  monto:  45.00, categoria: 'Servicios públicos', dia: 3  },
+      { concepto: 'Nómina quincenal',     monto: 250.00, categoria: 'Nómina',             dia: 5  },
+      { concepto: 'Compra de insumos',    monto: 120.00, categoria: 'Insumos',             dia: 8  },
+      { concepto: 'Publicidad en redes',  monto:  60.00, categoria: 'Marketing',           dia: 10 },
+    ]
+    for (const g of gastoDefs) {
+      const existingGasto = await prisma.gasto.findFirst({ where: { business_id: business.id, concepto: g.concepto } })
+      if (existingGasto) continue
+      const dia   = Math.min(g.dia, daysElapsed)
+      const fecha = new Date(now.getFullYear(), now.getMonth(), dia)
+      await prisma.gasto.create({
+        data: {
+          business_id: business.id,
+          concepto:    g.concepto,
+          monto_usd:   g.monto,
+          categoria:   g.categoria,
+          category_id: expenseCats.find(c => c.name === g.categoria)?.id,
+          fecha,
+          is_paid:     true,
+          paid_at:     fecha,
+          created_by:  adminUser.id,
+        },
+      })
+    }
+    console.log('✅ 5 gastos operativos del mes creados')
+
+    // ── Tasa BCV demo (fallback si la API externa falla) ─────────────────
+    const existingDemoRate = await prisma.dollarRate.findFirst({ where: { business_id: business.id, source: 'bcv-demo' } })
+    if (!existingDemoRate) {
+      await prisma.dollarRate.create({
+        data: { business_id: business.id, rate: DEMO_RATE, source: 'bcv-demo' },
+      })
+      console.log(`✅ Tasa BCV demo: ${DEMO_RATE}`)
     }
   }
 

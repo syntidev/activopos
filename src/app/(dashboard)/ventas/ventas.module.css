@@ -381,6 +381,22 @@
   font-size: var(--text-xs);
 }
 
+.utilidadPos {
+  font-weight: var(--weight-semibold);
+  color:       var(--color-success-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.utilidadNeg {
+  font-weight: var(--weight-semibold);
+  color:       var(--color-danger-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.utilidadNull {
+  color: var(--color-text-muted);
+}
+
 /* ── Pagination ── */
 .pagination {
   display:         flex;

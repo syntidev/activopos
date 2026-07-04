@@ -18,7 +18,7 @@ import styles from './ventas.module.css'
 
 type SaleStatus = 'draft' | 'quote' | 'pending' | 'paid' | 'cancelled' | 'credit'
 type SortDir    = 'asc' | 'desc'
-type SortKey    = 'ticket' | 'date' | 'client' | 'items' | 'total' | 'method' | 'status'
+type SortKey    = 'ticket' | 'date' | 'client' | 'items' | 'total' | 'method' | 'status' | 'utilidad'
 type Period     = 'today' | '7d' | 'month' | 'custom'
 type StatusFilt = '' | 'paid' | 'pending' | 'cancelled'
 
@@ -57,6 +57,8 @@ interface SaleRow {
   cashier:       { id: number; name: string } | null
   items:         SaleItemRow[]
   payments:      SalePaymentRow[]
+  /** Ausente en la respuesta para cashier (despojado server-side, ver d56598c) */
+  utilidad_usd?: number | null
 }
 
 /* ── Helpers ── */
@@ -145,6 +147,7 @@ function sortSales(sales: SaleRow[], key: SortKey | null, dir: SortDir): SaleRow
     if (key === 'total')  cmp = a.total_usd - b.total_usd
     if (key === 'method') cmp = primaryPayment(a).localeCompare(primaryPayment(b))
     if (key === 'status') cmp = a.status.localeCompare(b.status)
+    if (key === 'utilidad') cmp = (a.utilidad_usd ?? -Infinity) - (b.utilidad_usd ?? -Infinity)
     return dir === 'asc' ? cmp : -cmp
   })
 }
@@ -451,6 +454,9 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                       <SortTh label="Cliente" col="client" current={sortKey} dir={sortDir} onClick={handleSort} />
                       <SortTh label="Ítems"   col="items"  current={sortKey} dir={sortDir} onClick={handleSort} />
                       <SortTh label="Total"   col="total"  current={sortKey} dir={sortDir} onClick={handleSort} />
+                      {isAdmin && (
+                        <SortTh label="Utilidad" col="utilidad" current={sortKey} dir={sortDir} onClick={handleSort} />
+                      )}
                       <SortTh label="Método"  col="method" current={sortKey} dir={sortDir} onClick={handleSort} />
                       <SortTh label="Estado"  col="status" current={sortKey} dir={sortDir} onClick={handleSort} />
                     </tr>
@@ -490,6 +496,17 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                         <td className={styles.td}>
                           <span className={styles.totalCell}>{fmtUsd(sale.total_usd)}</span>
                         </td>
+                        {isAdmin && (
+                          <td className={styles.td}>
+                            {sale.utilidad_usd == null ? (
+                              <span className={styles.utilidadNull}>—</span>
+                            ) : (
+                              <span className={sale.utilidad_usd >= 0 ? styles.utilidadPos : styles.utilidadNeg}>
+                                {sale.utilidad_usd < 0 ? '−' : ''}{fmtUsd(sale.utilidad_usd)}
+                              </span>
+                            )}
+                          </td>
+                        )}
                         <td className={styles.td}>
                           <span className={styles.methodCell}>{primaryPayment(sale)}</span>
                         </td>

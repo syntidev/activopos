@@ -8,13 +8,15 @@ import { CxCSection }      from './CxCSection'
 import { CxPSection }      from './CxPSection'
 import { GastosSection }   from './GastosSection'
 import { ResumenSection }  from './ResumenSection'
+import { PylSection }      from './PylSection'
 import styles from './finanzas.module.css'
 
 const TABS = [
-  { key: 'resumen', label: 'Resumen'     },
-  { key: 'gastos',  label: 'Gastos'      },
-  { key: 'cxc',     label: 'Por Cobrar'  },
-  { key: 'cxp',     label: 'Por Pagar'   },
+  { key: 'resumen', label: 'Resumen'               },
+  { key: 'pyl',     label: 'Estado de Resultados'  },
+  { key: 'gastos',  label: 'Gastos'                },
+  { key: 'cxc',     label: 'Por Cobrar'            },
+  { key: 'cxp',     label: 'Por Pagar'             },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -96,6 +98,9 @@ export default function FinanzasPage() {
       <div className={styles.tabContent} role="tabpanel">
         <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
           {tab === 'resumen' && <ResumenSection month={month} rate={rate} />}
+        </ErrorBoundary>
+        <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
+          {tab === 'pyl'     && <PylSection rate={rate} />}
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
           {tab === 'gastos'  && <GastosSection month={month} rate={rate} />}

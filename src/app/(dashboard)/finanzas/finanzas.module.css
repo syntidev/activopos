@@ -428,6 +428,141 @@
 .kpiIconBrand   { color: var(--color-brand); }
 .kpiIconMuted   { color: var(--color-text-secondary); }
 
+/* ── P&L (Estado de Resultados) ── */
+.pylPeriodRow {
+  display:      flex;
+  gap:          var(--space-2);
+  margin-bottom: var(--space-4);
+  overflow-x:   auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.pylPeriodBtn {
+  height:         36px;
+  padding:        0 var(--space-4);
+  background:     var(--color-surface);
+  border:         1px solid var(--color-border);
+  border-radius:  var(--radius-full);
+  font-size:      var(--text-sm);
+  font-family:    var(--font-sans);
+  font-weight:    var(--weight-medium);
+  color:          var(--color-text-secondary);
+  cursor:         pointer;
+  white-space:    nowrap;
+  transition:     background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.pylPeriodBtn:hover { color: var(--color-text-primary); }
+
+.pylPeriodBtnActive {
+  background:  var(--color-brand);
+  border-color: var(--color-brand);
+  color:       var(--color-text-on-brand);
+}
+
+.pylGrid {
+  display:               grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:                   var(--space-4);
+}
+
+@media (max-width: 767px) {
+  .pylGrid { grid-template-columns: 1fr; }
+}
+
+.pylCard {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-1);
+  padding:        var(--space-5);
+  background:     var(--color-surface);
+  border-radius:  var(--radius-xl);
+  box-shadow:     var(--shadow-card);
+  min-width:      0;
+}
+
+.pylCardSuccess     { box-shadow: 0 0 14px rgba(var(--success-rgb), 0.14); }
+.pylCardSuccessDark { box-shadow: 0 0 14px rgba(var(--success-rgb), 0.22); }
+.pylCardWarning     { box-shadow: 0 0 14px rgba(var(--warning-rgb), 0.14); }
+.pylCardDanger      { box-shadow: 0 0 14px rgba(var(--danger-rgb), 0.15); }
+.pylCardInfo        { box-shadow: 0 0 14px rgba(var(--info-rgb), 0.14); }
+.pylCardMuted       { justify-content: center; }
+
+.pylCardLabel {
+  display:        flex;
+  align-items:    center;
+  gap:            var(--space-1-5);
+  font-size:      var(--text-xs);
+  font-weight:    var(--weight-medium);
+  color:          var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.pylAlertIcon { color: var(--color-danger); flex-shrink: 0; }
+
+.pylCardValue {
+  font-size:      var(--text-2xl);
+  font-weight:    var(--weight-bold);
+  color:          var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+.pylCardSub {
+  font-size: var(--text-sm);
+  color:     var(--color-text-muted);
+}
+
+.pylFormula {
+  font-size: var(--text-xs);
+  color:     var(--color-text-muted);
+  font-style: italic;
+}
+
+.pylMarginBadge {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            var(--space-1-5);
+  width:          fit-content;
+  padding:        var(--space-1-5) var(--space-3);
+  border-radius:  var(--radius-full);
+  font-size:      var(--text-lg);
+  font-weight:    var(--weight-bold);
+}
+
+.pylMarginBadgePos {
+  background: var(--color-success-subtle);
+  color:      var(--color-success-text);
+}
+
+.pylMarginBadgeNeg {
+  background: var(--color-danger-subtle);
+  color:      var(--color-danger-text);
+}
+
+.pylSkeletonCard {
+  height:        104px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    var(--color-surface-2) 50%,
+    var(--color-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: pylSkeletonPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pylSkeletonPulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pylSkeletonCard { animation: none; opacity: 0.6; }
+}
+
 .kpiBody {
   display:        flex;
   flex-direction: column;

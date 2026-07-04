@@ -81,6 +81,20 @@
   color: var(--brand);
 }
 
+.navBadge {
+  margin-left: auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background: #f87171;
+  color: #fff;
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  line-height: 16px;
+  text-align: center;
+}
+
 .sidebarFooter {
   margin-top: auto;
   padding: var(--space-3) var(--space-2) 0;
@@ -307,6 +321,8 @@
 .badgeActive  { background: rgba(22,163,74,0.15);  color: #4ade80; }
 .badgeTrial   { background: rgba(251,191,36,0.15); color: #fbbf24; }
 .badgeInactive{ background: rgba(113,113,122,0.15);color: #71717a; }
+.badgeDanger  { background: rgba(239,68,68,0.15);  color: #f87171; }
+.badgeInfo    { background: rgba(var(--brand-rgb), 0.15); color: var(--brand-l); }
 
 /* ── Action link ── */
 .actionLink {

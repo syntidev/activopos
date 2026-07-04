@@ -11,7 +11,7 @@ const NAV = [
   { href: '/invoices',       icon: Receipt,   label: 'Facturas'      },
   { href: '/tickets',        icon: Headset,   label: 'Tickets'       },
   { href: '/stats',          icon: BarChart3, label: 'Estadísticas'  },
-  { href: '/admin/settings', icon: Settings,  label: 'Config global' },
+  { href: '/settings',       icon: Settings,  label: 'Config global' },
 ]
 
 export function AdminSidebar() {

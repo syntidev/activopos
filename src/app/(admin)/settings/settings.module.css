@@ -1,0 +1,66 @@
+.section {
+  margin-bottom: var(--space-8);
+}
+
+.sectionTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: #e4e4e7;
+  margin: 0 0 var(--space-1);
+}
+
+.sectionSubtitle {
+  font-size: var(--text-xs);
+  color: #52525b;
+  margin: 0 0 var(--space-3);
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-4);
+  background: #111113;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.infoLabel {
+  font-size: var(--text-xs);
+  color: #52525b;
+  margin: 0 0 var(--space-1);
+}
+
+.infoValue {
+  font-size: var(--text-sm);
+  color: #e4e4e7;
+  margin: 0;
+}
+
+.rateCard {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  background: #111113;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.rateValue {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: #e4e4e7;
+  letter-spacing: -0.02em;
+}
+
+.rateUnit {
+  font-size: var(--text-sm);
+  color: #52525b;
+}
+
+.rateNote {
+  font-size: var(--text-xs);
+  color: #52525b;
+  margin: var(--space-2) 0 0;
+}

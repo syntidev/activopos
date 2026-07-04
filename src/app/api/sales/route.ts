@@ -43,7 +43,7 @@ const saleSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
 
     const params       = req.nextUrl.searchParams
   const status       = params.get('status')
@@ -104,7 +104,17 @@ export async function GET(req: NextRequest) {
     db.sale.count({ where }),
   ])
 
+  // Costo y utilidad son datos financieros — cashier no tiene acceso (mismo
+  // criterio que /api/finanzas/*), se despojan en vez de bloquear el endpoint
+  // completo (cashier sí necesita el historial de ventas para POS/Caja).
+  const isCashier = session.role === 'cashier'
+
   const salesWithUtilidad = sales.map(sale => {
+    if (isCashier) {
+      const { items, ...rest } = sale
+      return { ...rest, items: items.map(({ cost_per_unit_usd, ...item }) => item) }
+    }
+
     const hasCostGap = sale.items.some(i => i.cost_per_unit_usd === null)
     const utilidad_usd = hasCostGap
       ? null

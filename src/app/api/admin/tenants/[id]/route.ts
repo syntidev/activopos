@@ -53,7 +53,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
 const PatchSchema = z.object({
   active: z.boolean().optional(),
-  plan:   z.enum(['trial', 'starter', 'pro']).optional(),
+  plan:   z.enum(['trial', 'inicio', 'pro', 'business']).optional(),
 })
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {

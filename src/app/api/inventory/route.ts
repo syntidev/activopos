@@ -5,12 +5,19 @@ import { z } from 'zod'
 
 const entrySchema = z.object({
   product_id: z.number().int().positive(),
-  quantity: z.number().positive(),
+  quantity: z.number().refine(n => n !== 0, { message: 'quantity no puede ser cero' }),
+  entry_type: z.enum(['adjustment', 'internal_use']).default('adjustment'),
   waste: z.number().min(0).default(0),
   cost_per_unit_usd: z.number().min(0).nullable().optional(),
   supplier: z.string().max(120).nullable().optional(),
   notes: z.string().nullable().optional(),
-})
+}).refine(
+  (data) => (data.entry_type === 'internal_use' ? data.quantity < 0 : data.quantity > 0),
+  {
+    message: "quantity debe ser negativa cuando entry_type es 'internal_use', positiva en cualquier otro caso",
+    path: ['quantity'],
+  },
+)
 
 export async function GET(req: NextRequest) {
   try {
@@ -66,6 +73,7 @@ export async function POST(req: NextRequest) {
           business_id:       session.businessId,
           product_id:        data.product_id,
           quantity:          data.quantity,
+          entry_type:        data.entry_type,
           waste:             data.waste,
           cost_per_unit_usd: data.cost_per_unit_usd ?? null,
           supplier:          data.supplier ?? null,

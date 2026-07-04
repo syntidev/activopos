@@ -186,6 +186,8 @@ model Business {
   monthly_reports    MonthlyReport[]
   quotations         Quotation[]
   returns            Return[]
+  invoices           Invoice[]
+  support_tickets    SupportTicket[]
   expense_categories ExpenseCategory[]
   product_components ProductComponent[]
   notifications      Notification[]
@@ -717,6 +719,47 @@ model ReturnItem {
   return Return @relation(fields: [return_id], references: [id], onDelete: Cascade)
 
   @@map("return_items")
+}
+
+model Invoice {
+  id             Int       @id @default(autoincrement())
+  business_id    Int
+  invoice_number String    @unique @db.VarChar(30)
+  amount_usd     Decimal   @db.Decimal(10, 2)
+  channel        String    @db.VarChar(60)
+  reference      String?   @db.VarChar(120)
+  period         String?   @db.VarChar(60)
+  // valores: "pending" | "pending_review" | "paid" | "rejected"
+  status         String    @default("pending") @db.VarChar(20)
+  admin_notes    String?   @db.Text
+  reviewed_by    Int?
+  reviewed_at    DateTime?
+  created_at     DateTime  @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id])
+  @@index([status])
+  @@map("invoices")
+}
+
+model SupportTicket {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  subject     String   @db.VarChar(200)
+  message     String   @db.Text
+  // valores: "billing" | "technical" | "general"
+  category    String   @default("general") @db.VarChar(20)
+  // valores: "open" | "answered" | "closed"
+  status      String   @default("open") @db.VarChar(20)
+  admin_reply String?  @db.Text
+  created_at  DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id])
+  @@index([status])
+  @@map("support_tickets")
 }
 
 model ProductComponent {

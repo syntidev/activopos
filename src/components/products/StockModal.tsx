@@ -1,11 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Package } from 'lucide-react'
 import mStyles from './modals.module.css'
 import styles from './StockModal.module.css'
+
+interface SupplierOption {
+  id: number
+  name: string
+}
 
 interface StockProduct {
   id: number
@@ -39,6 +45,8 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
   const [notes, setNotes]       = useState('')
   const [errors, setErrors]     = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [suppliers, setSuppliers]             = useState<SupplierOption[]>([])
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false)
 
   useEffect(() => {
     if (!isOpen) {
@@ -53,6 +61,16 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
       setCost(product.cost_per_unit_usd.toString())
     }
   }, [isOpen, product])
+
+  useEffect(() => {
+    if (!isOpen) return
+    setLoadingSuppliers(true)
+    fetch('/api/suppliers')
+      .then((res) => (res.ok ? res.json() : { suppliers: [] }))
+      .then((data) => setSuppliers(data.suppliers ?? []))
+      .catch(() => setSuppliers([]))
+      .finally(() => setLoadingSuppliers(false))
+  }, [isOpen])
 
   const unit = product?.sale_mode === 'weight' ? 'kg' : 'und'
 
@@ -227,15 +245,25 @@ export function StockModal({ isOpen, product, onClose, onSave }: StockModalProps
                   <label className={mStyles.label} htmlFor="stock-supplier">
                     Proveedor <span className={styles.optional}>(opcional)</span>
                   </label>
-                  <input
-                    id="stock-supplier"
-                    type="text"
-                    className={mStyles.input}
-                    placeholder="Nombre del proveedor"
-                    value={supplier}
-                    onChange={(e) => setSupplier(e.target.value)}
-                    maxLength={120}
-                  />
+                  {!loadingSuppliers && suppliers.length === 0 ? (
+                    <p className={mStyles.errorMsg}>
+                      No tienes proveedores registrados.{' '}
+                      <Link href="/proveedores">Crea un proveedor primero</Link>
+                    </p>
+                  ) : (
+                    <select
+                      id="stock-supplier"
+                      className={mStyles.select}
+                      value={supplier}
+                      onChange={(e) => setSupplier(e.target.value)}
+                      disabled={loadingSuppliers}
+                    >
+                      <option value="">— Sin proveedor —</option>
+                      {suppliers.map((s) => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Notes */}

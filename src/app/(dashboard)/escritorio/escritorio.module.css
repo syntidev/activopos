@@ -252,8 +252,9 @@ a.welcomeStep:hover,
   transform:  translateY(-2px);
 }
 
-/* Hero (Cobrado): más alto → separa círculo arriba y cifra abajo */
-.kpiCobrado { justify-content: space-between; }
+/* Hero (Cobrado): card ocupa 2 filas de grid — agrupa ícono+cifra centrados
+   verticalmente en vez de separarlos a los extremos (dejaba hueco visible) */
+.kpiCobrado { justify-content: center; }
 
 /* ── Círculo de ícono ── */
 .kpiIconCircle {

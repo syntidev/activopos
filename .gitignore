@@ -46,3 +46,7 @@ scripts/recon_*.mjs
 storage/
 .playwright-mcp/
 public/uploads/
+
+graphify-out/
+pos-*.png
+pos-*.jpg

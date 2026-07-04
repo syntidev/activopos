@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { Search } from 'lucide-react'
 import styles from './admin.module.css'
 
 interface SuspendToggleProps {
@@ -81,5 +82,55 @@ export function PlanSelect({ tenantId, plan }: PlanSelectProps) {
     >
       {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
     </select>
+  )
+}
+
+export function BusinessFilters() {
+  const router       = useRouter()
+  const pathname     = usePathname()
+  const searchParams = useSearchParams()
+  const debounceRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const [q, setQ] = useState(searchParams.get('q') ?? '')
+
+  function updateParams(next: Record<string, string>) {
+    const params = new URLSearchParams(searchParams.toString())
+    for (const [key, value] of Object.entries(next)) {
+      if (value) params.set(key, value)
+      else params.delete(key)
+    }
+    params.delete('page')
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value
+    setQ(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => updateParams({ q: value }), 350)
+  }
+
+  return (
+    <div className={styles.filterBar}>
+      <div className={styles.searchField}>
+        <Search size={14} aria-hidden="true" />
+        <input
+          type="text"
+          value={q}
+          onChange={handleSearchChange}
+          placeholder="Buscar por nombre..."
+          aria-label="Buscar negocio por nombre"
+        />
+      </div>
+      <select
+        className={styles.planSelect}
+        value={searchParams.get('plan') ?? ''}
+        onChange={e => updateParams({ plan: e.target.value })}
+        aria-label="Filtrar por plan"
+      >
+        <option value="">Todos los planes</option>
+        {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
+      </select>
+    </div>
   )
 }

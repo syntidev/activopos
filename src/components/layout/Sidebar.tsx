@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useSidebarNotifications, type SidebarCounts } from '@/hooks/useSidebarNotifications'
@@ -29,6 +29,9 @@ import {
   Receipt,
   Truck,
   Shield,
+  ArrowRightLeft,
+  FileText,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
@@ -61,13 +64,19 @@ interface NavItem {
   moduleKey?: string
   colorKey?: string
   badgeKey?: 'pending_orders'
+  /** Oculta el item a cashier aunque el grupo sea visible (item con datos de costo) */
+  adminOnly?: boolean
 }
 
 interface NavGroup {
   label: string
   adminOnly?: boolean
+  /** Grupo plegable — estado persiste en localStorage */
+  collapsible?: boolean
   items: NavItem[]
 }
+
+const COLLAPSED_GROUPS_KEY = 'activopos:sidebar:collapsedGroups'
 
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -87,8 +96,11 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'INVENTARIO',
+    collapsible: true,
     items: [
-      { href: '/productos', icon: Package, label: 'Productos', moduleKey: 'inventory', colorKey: 'inventario' },
+      { href: '/productos',  icon: Package,        label: 'Productos',   moduleKey: 'inventory', colorKey: 'inventario' },
+      { href: '/inventario', icon: ArrowRightLeft, label: 'Movimientos', colorKey: 'inventario', adminOnly: true },
+      { href: '/proveedores', icon: Truck,          label: 'Proveedores', colorKey: 'inventario', adminOnly: true },
     ],
   },
   {
@@ -99,27 +111,24 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: 'FINANZAS',
+    adminOnly: true,
+    collapsible: true,
+    items: [
+      { href: '/finanzas',     icon: TrendingUp, label: 'Finanzas',     moduleKey: 'finanzas', colorKey: 'caja' },
+      { href: '/cotizaciones', icon: FileText,   label: 'Cotizaciones',                        colorKey: 'caja' },
+    ],
+  },
+  {
     label: 'CATÁLOGO',
     adminOnly: true,
     items: [
       { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalog', colorKey: 'inventario' },
     ],
   },
-  {
-    label: 'FINANZAS',
-    adminOnly: true,
-    items: [
-      { href: '/finanzas',  icon: TrendingUp, label: 'Finanzas',          moduleKey: 'finanzas',  colorKey: 'caja'         },
-      { href: '/analytics', icon: Activity,   label: 'Pulso del Negocio', moduleKey: 'analytics', colorKey: 'inteligencia' },
-    ],
-  },
-  {
-    label: 'PROVEEDORES',
-    adminOnly: true,
-    items: [
-      { href: '/proveedores', icon: Truck, label: 'Proveedores', colorKey: 'inventario' },
-    ],
-  },
+  /* ── Grupos preservados: no listados en la nueva estructura pedida,
+     mantenidos para no perder acceso a KDS / Analytics / Tu Día (ninguna
+     ruta se elimina — ver nota en el commit) ── */
   {
     label: 'RESTAURANTE',
     adminOnly: true,
@@ -131,7 +140,8 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'INTELIGENCIA',
     adminOnly: true,
     items: [
-      { href: '/tu-dia', icon: Sparkles, label: 'Tu Día', colorKey: 'inteligencia' },
+      { href: '/analytics', icon: Activity,  label: 'Pulso del Negocio', moduleKey: 'analytics', colorKey: 'inteligencia' },
+      { href: '/tu-dia',    icon: Sparkles,  label: 'Tu Día',                                    colorKey: 'inteligencia' },
     ],
   },
   {
@@ -156,6 +166,12 @@ const GROUP_LABEL_MOTION = {
   exit:    { opacity: 0, height: 0,      transition: { duration: 0.1 } },
 }
 
+const GROUP_LIST_MOTION = {
+  initial: { opacity: 0, height: 0 },
+  animate: { opacity: 1, height: 'auto', transition: { duration: 0.18, ease: 'easeOut' } },
+  exit:    { opacity: 0, height: 0,      transition: { duration: 0.14, ease: 'easeIn' } },
+} as const
+
 /* ── Inner content — extracted so React keeps stable component identity ── */
 interface NavContentProps {
   pathname: string
@@ -173,6 +189,9 @@ interface NavContentProps {
   showMobileInfo?: boolean
   session?: SessionUser | null
   isImpersonating?: boolean
+  isAdmin: boolean
+  collapsedGroups: Set<string>
+  onToggleGroup: (label: string) => void
 }
 
 function NavContent({
@@ -191,6 +210,9 @@ function NavContent({
   showMobileInfo = false,
   session,
   isImpersonating = false,
+  isAdmin,
+  collapsedGroups,
+  onToggleGroup,
 }: NavContentProps) {
   return (
     <div className={styles.inner}>
@@ -215,24 +237,56 @@ function NavContent({
       <nav className={styles.nav} aria-label="Menú principal">
         {visibleGroups.map((group) => {
           const visibleItems = group.items.filter(item =>
-            !item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)
+            (!item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)) &&
+            (!item.adminOnly || isAdmin)
           )
           if (visibleItems.length === 0) return null
+
+          const isGroupCollapsed = !!group.collapsible && !collapsed && collapsedGroups.has(group.label)
+          const listId = `group-list-${group.label}`
+
           return (
           <div key={group.label} className={styles.group}>
             <AnimatePresence initial={false}>
               {!collapsed && (
-                <motion.p
-                  key={`gl-${group.label}`}
-                  className={styles.groupLabel}
-                  {...GROUP_LABEL_MOTION}
-                >
-                  {group.label}
-                </motion.p>
+                group.collapsible ? (
+                  <motion.button
+                    key={`gl-${group.label}`}
+                    type="button"
+                    className={styles.groupLabelBtn}
+                    onClick={() => onToggleGroup(group.label)}
+                    aria-expanded={!isGroupCollapsed}
+                    aria-controls={listId}
+                    {...GROUP_LABEL_MOTION}
+                  >
+                    <span className={styles.groupLabelText}>{group.label}</span>
+                    <ChevronDown
+                      size={12}
+                      className={`${styles.groupChevron} ${isGroupCollapsed ? styles.groupChevronCollapsed : ''}`}
+                      aria-hidden="true"
+                    />
+                  </motion.button>
+                ) : (
+                  <motion.p
+                    key={`gl-${group.label}`}
+                    className={styles.groupLabel}
+                    {...GROUP_LABEL_MOTION}
+                  >
+                    {group.label}
+                  </motion.p>
+                )
               )}
             </AnimatePresence>
 
-            <ul className={styles.groupList} role="list">
+            <AnimatePresence initial={false}>
+              {!isGroupCollapsed && (
+            <motion.ul
+              id={listId}
+              key={`ul-${group.label}`}
+              className={styles.groupList}
+              role="list"
+              {...(group.collapsible ? GROUP_LIST_MOTION : {})}
+            >
               {visibleItems.map((item) => {
                 const Icon = item.icon
                 const isActive =
@@ -278,7 +332,9 @@ function NavContent({
                   </li>
                 )
               })}
-            </ul>
+            </motion.ul>
+              )}
+            </AnimatePresence>
           </div>
           )
         })}
@@ -414,11 +470,30 @@ export function Sidebar({
   const pathname = usePathname()
   const router = useRouter()
   const [showNotif, setShowNotif] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const { items: notifItems, unread: notifUnread, loading: notifLoading, markAllRead } = useNotifications()
 
   const sidebarCounts = useSidebarNotifications()
   const isAdmin = session?.role === 'admin' || session?.role === 'super_admin'
   const visibleGroups = NAV_GROUPS.filter((g) => !g.adminOnly || isAdmin)
+
+  /* ── Grupos colapsables — estado persistido en localStorage ── */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(COLLAPSED_GROUPS_KEY)
+      if (raw) setCollapsedGroups(new Set(JSON.parse(raw) as string[]))
+    } catch { /* localStorage no disponible o valor corrupto — usar default expandido */ }
+  }, [])
+
+  const toggleGroup = useCallback((label: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      try { localStorage.setItem(COLLAPSED_GROUPS_KEY, JSON.stringify(Array.from(next))) } catch { /* quota o modo privado */ }
+      return next
+    })
+  }, [])
 
   const formatRate = (rate: number) =>
     rate.toLocaleString('es-VE', {
@@ -453,6 +528,9 @@ export function Sidebar({
     sidebarCounts,
     session,
     isImpersonating,
+    isAdmin,
+    collapsedGroups,
+    onToggleGroup: toggleGroup,
   }
 
   return (

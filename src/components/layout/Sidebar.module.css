@@ -141,6 +141,53 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  overflow: hidden;
+}
+
+/* ── Group label — collapsible variant (button) ── */
+.groupLabelBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sidebar-group-label);
+  margin-top: var(--space-6);
+  padding: var(--space-2-5) var(--space-4) var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.groupLabelBtn:hover {
+  color: var(--sidebar-text-hover);
+}
+
+.groupLabelBtn:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+.groupLabelText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.groupChevron {
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.groupChevronCollapsed {
+  transform: rotate(-90deg);
 }
 
 /* ── Nav item ── */

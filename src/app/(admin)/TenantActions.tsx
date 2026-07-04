@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
+import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
 import styles from './admin.module.css'
 
 interface SuspendToggleProps {
@@ -48,7 +49,7 @@ interface PlanSelectProps {
   plan:     string
 }
 
-const PLANS = ['trial', 'inicio', 'pro', 'business'] as const
+const PLANS = Object.keys(PLAN_LIMITS) as PlanTier[]
 
 export function PlanSelect({ tenantId, plan }: PlanSelectProps) {
   const router = useRouter()

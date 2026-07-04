@@ -53,3 +53,8 @@ export function setImpersonationCookie(token: string) {
 export function clearImpersonationCookie() {
   cookies().delete(COOKIE_NAME)
 }
+
+/** true si hay una cookie de impersonación firmada y vigente. Server-only. */
+export async function isImpersonating(): Promise<boolean> {
+  return (await readImpersonation()) !== null
+}

@@ -10,10 +10,11 @@ import styles from './DashboardShell.module.css'
 
 interface DashboardShellProps {
   session: SessionUser
+  isImpersonating: boolean
   children: ReactNode
 }
 
-export function DashboardShell({ session, children }: DashboardShellProps) {
+export function DashboardShell({ session, isImpersonating, children }: DashboardShellProps) {
   const [bcvRate, setBcvRate]               = useState<number | null>(null)
   const [isCollapsed, setIsCollapsed]       = useState(false)
   const [isMobileOpen, setIsMobileOpen]     = useState(false)
@@ -70,6 +71,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
       <div className={styles.root}>
         <Sidebar
           session={session}
+          isImpersonating={isImpersonating}
           bcvRate={bcvRate}
           isCollapsed={isCollapsed}
           isMobileOpen={isMobileOpen}

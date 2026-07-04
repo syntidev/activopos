@@ -172,6 +172,7 @@ interface NavContentProps {
   sidebarCounts?: SidebarCounts
   showMobileInfo?: boolean
   session?: SessionUser | null
+  isImpersonating?: boolean
 }
 
 function NavContent({
@@ -189,6 +190,7 @@ function NavContent({
   sidebarCounts,
   showMobileInfo = false,
   session,
+  isImpersonating = false,
 }: NavContentProps) {
   return (
     <div className={styles.inner}>
@@ -282,7 +284,7 @@ function NavContent({
         })}
       </nav>
 
-      {session?.role === 'super_admin' && (
+      {session?.role === 'super_admin' && !isImpersonating && (
         <>
           <div className={styles.divider} />
           <Link
@@ -390,6 +392,7 @@ function NavContent({
 /* ── Sidebar ── */
 interface SidebarProps {
   session: SessionUser | null
+  isImpersonating: boolean
   bcvRate: number | null
   isCollapsed: boolean
   isMobileOpen: boolean
@@ -399,6 +402,7 @@ interface SidebarProps {
 
 export function Sidebar({
   session,
+  isImpersonating,
   bcvRate,
   isCollapsed,
   isMobileOpen,
@@ -448,6 +452,7 @@ export function Sidebar({
     enabledModules,
     sidebarCounts,
     session,
+    isImpersonating,
   }
 
   return (

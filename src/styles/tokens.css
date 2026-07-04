@@ -310,13 +310,13 @@
   /* Sidebar — con autoridad (border derecho más marcado) */
   --sidebar-bg:             #FAFBFC;
   --sidebar-border:         #E2E8F0;
-  --sidebar-text:           #64748B;
-  --sidebar-text-hover:     #1E293B;
-  --sidebar-section-label:  #CBD5E1;
-  --sidebar-active-bg:      #EEF2FF;
+  --sidebar-text:           #6B7280;
+  --sidebar-text-hover:     #1a1a2e;
+  --sidebar-section-label:  #9CA3AF;
+  --sidebar-active-bg:      rgba(0, 56, 189, 0.08);
   --sidebar-active-text:    #0038BD;
   --sidebar-active-border:  #0038BD;
-  --sidebar-hover-bg:       #F8FAFC;
+  --sidebar-hover-bg:       rgba(0, 56, 189, 0.04);
   --sidebar-dot:            #0038BD;
 
   /* Toggle de caja en sidebar */
@@ -440,7 +440,7 @@
   --sidebar-item-bg-hover:      var(--sidebar-hover-bg);
   --sidebar-item-bg-active:     var(--sidebar-active-bg);
   --sidebar-item-border-active: var(--sidebar-active-border);
-  --sidebar-rate-text:          var(--success-text);
+  --sidebar-rate-text:          var(--sidebar-text);
 
   /* Input v1 alias */
   --input-bg:           var(--bg-input);
@@ -660,7 +660,7 @@
   --sidebar-item-bg-hover:      var(--sidebar-hover-bg);
   --sidebar-item-bg-active:     var(--sidebar-active-bg);
   --sidebar-item-border-active: var(--sidebar-active-border);
-  --sidebar-rate-text:          var(--success-text);
+  --sidebar-rate-text:          var(--sidebar-text);
 
   /* Input v1 alias */
   --input-bg:           var(--bg-input);

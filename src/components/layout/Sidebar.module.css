@@ -127,8 +127,10 @@
 .groupLabel {
   font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-widest);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--sidebar-group-label);
+  margin-top: var(--space-6);
   padding: var(--space-2-5) var(--space-4) var(--space-1);
   white-space: nowrap;
   overflow: hidden;
@@ -150,7 +152,7 @@
   padding: 0 var(--space-3);
   color: var(--sidebar-text);
   text-decoration: none;
-  border-left: 2px solid transparent;
+  border-left: 3px solid transparent;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
@@ -171,24 +173,16 @@
   outline-offset: -2px;
 }
 
-/* ── Active state — gradient gives depth vs flat fill ── */
+/* ── Active state — flat brand-tinted fill ── */
 .navItemActive {
   color: var(--sidebar-text-active);
-  background: linear-gradient(
-    to right,
-    rgba(var(--accent-rgb), 0.22) 0%,
-    rgba(var(--accent-rgb), 0.07) 100%
-  );
+  background: var(--sidebar-item-bg-active);
   border-left-color: var(--sidebar-item-border-active);
-}
-
-.navItemActive:hover {
-  background: linear-gradient(
-    to right,
-    rgba(var(--accent-rgb), 0.26) 0%,
-    rgba(var(--accent-rgb), 0.10) 100%
-  );
-  color: var(--sidebar-text-active);
+  font-weight: var(--weight-semibold);
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out),
+    border-left-color 150ms var(--ease-out);
 }
 
 /* ── Icon wrapper ── */
@@ -321,7 +315,7 @@
   min-width: 16px;
   height: 16px;
   padding: 0 3px;
-  background: var(--color-brand);
+  background: var(--cta);
   color: #fff;
   border-radius: var(--radius-full);
   font-size: 9px;

@@ -1,9 +1,23 @@
 /* ── Base card ── */
 .card {
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  display: flex;
+  background:     var(--color-surface);
+  border:         1px solid var(--border-card-subtle);
+  border-radius:  var(--radius-lg);
+  padding:        var(--space-5);
+  display:        flex;
   flex-direction: column;
+  box-shadow:     var(--shadow-card-elevated);
+  transition:     box-shadow 200ms ease, transform 200ms ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-elevated-hover);
+  transform:  translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .card:hover { transform: none; }
 }
 
 /* ── Hero: fondo sólido brand ── */

@@ -300,7 +300,7 @@
 [data-theme="light"] {
 
   /* Fondos */
-  --bg-base:        #F4F6FA;
+  --bg-base:        #F4F5FA;
   --bg-card:        #FFFFFF;
   --bg-card-hover:  #F8FAFC;
   --bg-input:       #FFFFFF;
@@ -362,6 +362,11 @@
   --shadow-card:  0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);
 
+  /* Elevación de cards (KpiCard) — 3 capas: fondo / card / hover */
+  --shadow-card-elevated:       0 2px 6px rgba(47, 43, 61, 0.08);
+  --shadow-card-elevated-hover: 0 4px 16px rgba(47, 43, 61, 0.12);
+  --border-card-subtle:         rgba(47, 43, 61, 0.06);
+
   /* Sombras v1 light overrides */
   --shadow-xs: 0 1px 2px 0 rgba(0,0,0,0.04);
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
@@ -373,7 +378,8 @@
   --accent-rgb: var(--brand-rgb);
 
   /* Color de fondo */
-  --color-bg:          var(--bg-base);
+  --color-page-bg:     var(--bg-base);
+  --color-bg:          var(--color-page-bg);
   --color-surface:     var(--bg-card);
   --color-surface-2:   #F1F5F9;
   --color-surface-3:   var(--bg-input);
@@ -571,6 +577,11 @@
   --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.5);
 
+  /* Elevación de cards (KpiCard) — 3 capas: fondo / card / hover */
+  --shadow-card-elevated:       0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-card-elevated-hover: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --border-card-subtle:         rgba(255, 255, 255, 0.08);
+
   /* Semántico dark — verde real, diferente al brand teal */
   --success:      #4ADE80;
   --success-soft: rgba(22, 163, 74, 0.14);
@@ -593,7 +604,8 @@
   --accent-rgb: var(--brand-rgb);
 
   /* Color de fondo */
-  --color-bg:          var(--bg-base);
+  --color-page-bg:     var(--bg-base);
+  --color-bg:          var(--color-page-bg);
   --color-surface:     var(--bg-card);
   --color-surface-2:   var(--bg-card-hover);
   --color-surface-3:   var(--bg-input);

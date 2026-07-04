@@ -12,6 +12,7 @@ function createPrismaClient() {
     password: process.env.DB_PASSWORD ?? '',
     database: process.env.DB_NAME ?? 'activopos',
     connectionLimit: parseInt(process.env.DB_POOL ?? '5'),
+    allowPublicKeyRetrieval: true,
   })
 
   return new PrismaClient({

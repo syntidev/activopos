@@ -7,6 +7,7 @@ const adapter = new PrismaMariaDb({
   user:     process.env.DB_USER     ?? 'root',
   password: process.env.DB_PASSWORD ?? '',
   database: process.env.DB_NAME     ?? 'activopos',
+  allowPublicKeyRetrieval: true,
 })
 
 const prisma = new PrismaClient({ adapter })

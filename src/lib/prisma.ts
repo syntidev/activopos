@@ -6,13 +6,16 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
+  const host = process.env.DB_HOST ?? '127.0.0.1'
+  const isLoopback = host === '127.0.0.1' || host === 'localhost'
+
   const adapter = new PrismaMariaDb({
-    host: process.env.DB_HOST ?? '127.0.0.1',
+    host,
     user: process.env.DB_USER ?? 'root',
     password: process.env.DB_PASSWORD ?? '',
     database: process.env.DB_NAME ?? 'activopos',
     connectionLimit: parseInt(process.env.DB_POOL ?? '5'),
-    allowPublicKeyRetrieval: true,
+    ...(isLoopback ? { allowPublicKeyRetrieval: true } : {}),
   })
 
   return new PrismaClient({

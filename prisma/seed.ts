@@ -2,12 +2,15 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 import bcrypt from 'bcryptjs'
 
+const dbHost      = process.env.DB_HOST ?? '127.0.0.1'
+const isLoopback  = dbHost === '127.0.0.1' || dbHost === 'localhost'
+
 const adapter = new PrismaMariaDb({
-  host:     process.env.DB_HOST     ?? '127.0.0.1',
+  host:     dbHost,
   user:     process.env.DB_USER     ?? 'root',
   password: process.env.DB_PASSWORD ?? '',
   database: process.env.DB_NAME     ?? 'activopos',
-  allowPublicKeyRetrieval: true,
+  ...(isLoopback ? { allowPublicKeyRetrieval: true } : {}),
 })
 
 const prisma = new PrismaClient({ adapter })

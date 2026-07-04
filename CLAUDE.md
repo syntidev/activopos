@@ -277,44 +277,32 @@ CLI-D: /playwright + /impeccable craft + /frontend-design + e2e-testing
 
 ## 🎨 SISTEMA VISUAL
 
-### Cards — sistema A+C glow (aprobado, no modificar)
-```css
-/* Dark mode */
-background:
-  linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
-  linear-gradient(135deg,
-    rgba(var(--accent-rgb), 0.85) 0%,
-    rgba(255,255,255,0.18) 45%,
-    rgba(var(--accent-rgb), 0.25) 100%
-  ) border-box;
-border: 1px solid transparent;
-box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.12);
+### Cards — sistema de elevación (estándar activo)
+- background: #FFFFFF
+- border-radius: 16px
+- box-shadow: 0 2px 8px rgba(47,43,61,0.10), 0 0 1px rgba(47,43,61,0.06)
+- border: none — sin borde, solo sombra
+- padding: 20px 24px
+- hover: translateY(-2px) + sombra más pronunciada
 
-/* Light mode */
-background:
-  linear-gradient(#ffffff, #ffffff) padding-box,
-  linear-gradient(135deg,
-    rgba(var(--accent-rgb), 0.6) 0%,
-    rgba(255,255,255,0.2) 45%,
-    rgba(var(--accent-rgb), 0.15) 100%
-  ) border-box;
-box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.08);
-```
+### Fondo de página dashboard
+- background: #EEEDF4 — contraste visible con cards blancas
 
-### Hero card (KPI principal)
-```css
-background: var(--color-brand);
-box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.35);
-```
+### KPIs — íconos con círculo de color
+- cobrado → bg #DCFCE7, ícono DollarSign, color #16A34A
+- crédito → bg #FEF3C7, ícono Clock, color #D97706  
+- tickets → bg #DBEAFE, ícono ShoppingCart, color #2563EB
+- utilidad → bg #F3E8FF, ícono TrendingUp, color #9333EA
 
-### Reglas de tema
-- Dark mode: entrada por defecto, toggle en Configuración
-- `data-theme="dark"` | `data-theme="light"` en `<html>`
-- Inline script en `layout.tsx` aplica tema antes del primer paint (evita flash)
-- Temas por segmento (10 colores) → documentados en ACTIVOPOS_MASTER.md para Sprint 10
-- NUNCA reutilizar el intento fallido de 10 segmentos con hydration mismatch
+### Regla CSS irrompible
+PROHIBIDO crear valores CSS en .module.css sin verificar primero
+si existe token en tokens.css. Si no existe → crear token primero,
+luego consumirlo. NUNCA duplicar valores entre módulos.
 
----
+### Componentes del dashboard
+- El dashboard usa escritorio.module.css — NO KpiCard.module.css
+- KpiCard.tsx es consumido por caja/ y reportes/ únicamente
+- Cambios visuales del dashboard van en escritorio/page.tsx y escritorio.module.css
 
 ## 🗂️ ESTRUCTURA DEL PROYECTO
 

@@ -197,7 +197,7 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
             {/* Body */}
             <div className={mStyles.modalBody}>
               {/* Download template */}
-              <a href="/plantilla-productos.xlsx" download className={styles.downloadBtn}>
+              <a href="/api/products/import-excel/template" download className={styles.downloadBtn}>
                 <Download size={16} aria-hidden="true" />
                 Descargar plantilla .xlsx
               </a>

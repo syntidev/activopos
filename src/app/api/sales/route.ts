@@ -104,7 +104,20 @@ export async function GET(req: NextRequest) {
     db.sale.count({ where }),
   ])
 
-  return NextResponse.json({ ok: true, sales, total, page, pages: Math.ceil(total / limit) })
+  const salesWithUtilidad = sales.map(sale => {
+    const hasCostGap = sale.items.some(i => i.cost_per_unit_usd === null)
+    const utilidad_usd = hasCostGap
+      ? null
+      : Math.round(
+          sale.items.reduce(
+            (acc, i) => acc + (Number(i.subtotal_usd) - Number(i.cost_per_unit_usd) * Number(i.quantity)),
+            0
+          ) * 100
+        ) / 100
+    return { ...sale, utilidad_usd }
+  })
+
+  return NextResponse.json({ ok: true, sales: salesWithUtilidad, total, page, pages: Math.ceil(total / limit) })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
     throw e

@@ -10,6 +10,7 @@ import {
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
 import { useScanner } from '@/hooks/useScanner'
+import { StockModal } from '@/components/products/StockModal'
 import styles from './inventario.module.css'
 
 /* ── Types ── */
@@ -459,9 +460,10 @@ interface PanelProps {
   todayMoves: InventoryEntry[]
   onClose: () => void
   onRegisterEntry: (p: Product) => void
+  onAdjustStock: (p: Product) => void
 }
 
-function ProductPanel({ product, todayMoves, onClose, onRegisterEntry }: PanelProps) {
+function ProductPanel({ product, todayMoves, onClose, onRegisterEntry, onAdjustStock }: PanelProps) {
   const isW      = product.sale_mode === 'weight'
   const status   = getStockStatus(product)
   const price    = product.price_per_unit_usd
@@ -613,9 +615,8 @@ function ProductPanel({ product, todayMoves, onClose, onRegisterEntry }: PanelPr
             <button
               className={styles.panelBtnSecondary}
               type="button"
-              disabled
-              title="Próximamente"
-              aria-label="Ajustar stock — próximamente"
+              onClick={() => onAdjustStock(product)}
+              aria-label={`Ajustar stock de ${product.name}`}
             >
               Ajustar stock
             </button>
@@ -636,6 +637,7 @@ function InventarioContent() {
   const [loading, setLoading]               = useState(true)
   const [panelProduct, setPanelProduct]     = useState<Product | null>(null)
   const [entryProduct, setEntryProduct]     = useState<Product | null>(null)
+  const [stockProduct, setStockProduct]     = useState<Product | null>(null)
   const [showConsumeModal, setShowConsumeModal] = useState(false)
   const [scannerActive, setScannerActive]   = useState(false)
   const [isScanning, setIsScanning]         = useState(false)
@@ -800,6 +802,32 @@ function InventarioContent() {
       )
     )
     setShowConsumeModal(false)
+  }
+
+  /* ── StockModal (compartido con productos/page.tsx) → POST /api/inventory ── */
+  async function handleAdjustStock(
+    productId: number,
+    type: 'entry' | 'adjust',
+    quantity: number,
+    costPerUnit: number | null,
+    supplier: string,
+    notes: string,
+  ) {
+    const res = await fetch('/api/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id:        productId,
+        quantity,
+        cost_per_unit_usd: costPerUnit,
+        supplier:          supplier.trim() || null,
+        notes:             notes.trim() || (type === 'entry' ? 'Entrada de inventario' : 'Ajuste manual'),
+      }),
+    })
+    const data = await res.json() as { ok?: boolean; entry?: InventoryEntry; error?: string }
+    if (!res.ok || !data.entry) throw new Error(data.error ?? 'Error al guardar')
+    handleSaved(data.entry)
+    toast(`Stock actualizado: +${quantity} ${data.entry.product.base_unit_label}`, 'success')
   }
 
   function handleFilterChange<T>(setter: (v: T) => void) {
@@ -1207,6 +1235,7 @@ function InventarioContent() {
             todayMoves={panelTodayMoves}
             onClose={() => setPanelProduct(null)}
             onRegisterEntry={p => setEntryProduct(p)}
+            onAdjustStock={p => setStockProduct(p)}
           />
         )}
       </AnimatePresence>
@@ -1219,6 +1248,24 @@ function InventarioContent() {
           onSaved={handleSaved}
         />
       )}
+
+      {/* ── Ajustar stock (StockModal compartido con productos/page.tsx) ── */}
+      <StockModal
+        isOpen={!!stockProduct}
+        product={
+          stockProduct
+            ? {
+                id:                stockProduct.id,
+                name:              stockProduct.name,
+                stock_quantity:    stockProduct.stock.net_qty,
+                sale_mode:         stockProduct.sale_mode as 'unit' | 'weight' | 'service',
+                cost_per_unit_usd: stockProduct.cost_per_unit_usd,
+              }
+            : null
+        }
+        onClose={() => setStockProduct(null)}
+        onSave={handleAdjustStock}
+      />
 
       {/* ── Consumo interno modal ── */}
       {showConsumeModal && (

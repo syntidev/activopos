@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
+import { readImpersonation } from './impersonation'
 
 const rawSecret = process.env.JWT_SECRET
 if (!rawSecret) {
@@ -39,7 +40,18 @@ export async function verifyToken(token: string): Promise<SessionPayload | null>
 export async function getSession(): Promise<SessionPayload | null> {
   const token = cookies().get(COOKIE_NAME)?.value
   if (!token) return null
-  return verifyToken(token)
+  const session = await verifyToken(token)
+  if (!session) return null
+
+  // Impersonación: solo un super_admin con cookie firmada válida ve su businessId
+  // sobrescrito hacia el tenant objetivo. Cualquier otro rol ignora la cookie
+  // (fail-closed: una cookie forjada nunca cambia el scope de un no-super_admin).
+  if (session.role === 'super_admin') {
+    const imp = await readImpersonation()
+    if (imp) return { ...session, businessId: imp.businessId }
+  }
+
+  return session
 }
 
 export function setSessionCookie(token: string) {

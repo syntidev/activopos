@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Search } from 'lucide-react'
+import { Search, LogIn } from 'lucide-react'
 import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
 import styles from './admin.module.css'
 
@@ -83,6 +83,45 @@ export function PlanSelect({ tenantId, plan }: PlanSelectProps) {
     >
       {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
     </select>
+  )
+}
+
+interface ImpersonateButtonProps {
+  tenantId:   number
+  tenantName: string
+}
+
+export function ImpersonateButton({ tenantId, tenantName }: ImpersonateButtonProps) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  async function handleClick() {
+    if (!confirm(`¿Entrar al panel de "${tenantName}" como administrador?`)) return
+
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/admin/impersonate/${tenantId}`, { method: 'POST' })
+      if (res.ok) {
+        router.push('/escritorio')
+        router.refresh()
+      } else {
+        setLoading(false)
+      }
+    } catch {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={`${styles.actionLink} ${styles.actionBtn}`}
+      onClick={handleClick}
+      disabled={loading}
+    >
+      <LogIn size={14} aria-hidden="true" />
+      {loading ? 'Entrando...' : 'Entrar como cliente'}
+    </button>
   )
 }
 

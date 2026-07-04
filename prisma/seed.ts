@@ -141,7 +141,7 @@ async function main() {
         description:        'Camisa polo de algodón, disponible en varias tallas y colores',
         sale_mode:          'unit',
         price_per_unit_usd: 15.00,
-        cost_per_unit_usd:  8.00,
+        cost_per_unit_usd:  9.75,
         has_variants:       true,
         is_available:       true,
         available_in_pos:   true,
@@ -165,32 +165,32 @@ async function main() {
   } else {
     await prisma.product.update({
       where: { id: existingPolo.id },
-      data:  { category_id: catIds['Ropa'], badge: 'popular', is_featured: true },
+      data:  { category_id: catIds['Ropa'], badge: 'popular', is_featured: true, price_per_unit_usd: 15.00, cost_per_unit_usd: 9.75 },
     })
   }
 
   // ── Resto de productos por categoría (idempotente) ───────────────────
   const seedProducts = [
     // Ropa
-    { name: 'Pantalón Jean',        cat: 'Ropa',       price: 22.00, cost: 12.00, desc: 'Jean de mezclilla corte slim, resistente y cómodo' },
-    { name: 'Zapatos Deportivos',   cat: 'Ropa',       price: 35.00, cost: 18.00, desc: 'Calzado deportivo con suela antideslizante' },
-    { name: 'Vestido Casual',       cat: 'Ropa',       price: 25.00, cost: 13.00, desc: 'Vestido de tela liviana, ideal para el día a día' },
-    { name: 'Chaqueta de Cuero',    cat: 'Ropa',       price: 89.00, cost: 45.00, desc: 'Chaqueta de cuero genuino con forro interior' },
-    { name: 'Gorra Cap',            cat: 'Ropa',       price: 12.00, cost:  6.00, desc: 'Gorra estilo cap ajustable con visera plana' },
+    { name: 'Pantalón Jean',        cat: 'Ropa',       price: 22.00, cost: 14.30, desc: 'Jean de mezclilla corte slim, resistente y cómodo' },
+    { name: 'Zapatos Deportivos',   cat: 'Ropa',       price: 35.00, cost: 22.75, desc: 'Calzado deportivo con suela antideslizante' },
+    { name: 'Vestido Casual',       cat: 'Ropa',       price: 25.00, cost: 16.25, desc: 'Vestido de tela liviana, ideal para el día a día' },
+    { name: 'Chaqueta de Cuero',    cat: 'Ropa',       price: 89.00, cost: 57.85, desc: 'Chaqueta de cuero genuino con forro interior' },
+    { name: 'Gorra Cap',            cat: 'Ropa',       price: 12.00, cost:  7.80, desc: 'Gorra estilo cap ajustable con visera plana' },
     // Alimentos
-    { name: 'Arepa con Pollo',      cat: 'Alimentos',  price:  3.50, cost:  1.50, desc: 'Arepa rellena de pollo mechado con guasacaca',         badge: 'recomendado', is_featured: true },
-    { name: 'Jugo Natural',         cat: 'Alimentos',  price:  2.00, cost:  0.80, desc: 'Jugo fresco del día: parchita, guayaba o naranja' },
-    { name: 'Torta de Chocolate',   cat: 'Alimentos',  price: 15.00, cost:  7.00, desc: 'Torta húmeda de chocolate con ganache artesanal',      badge: 'promo' },
-    { name: 'Café Espresso',        cat: 'Alimentos',  price:  1.50, cost:  0.50, desc: 'Espresso doble de granos venezolanos seleccionados' },
+    { name: 'Arepa con Pollo',      cat: 'Alimentos',  price:  3.50, cost:  2.28, desc: 'Arepa rellena de pollo mechado con guasacaca',         badge: 'recomendado', is_featured: true },
+    { name: 'Jugo Natural',         cat: 'Alimentos',  price:  2.00, cost:  1.30, desc: 'Jugo fresco del día: parchita, guayaba o naranja' },
+    { name: 'Torta de Chocolate',   cat: 'Alimentos',  price: 15.00, cost:  9.75, desc: 'Torta húmeda de chocolate con ganache artesanal',      badge: 'promo' },
+    { name: 'Café Espresso',        cat: 'Alimentos',  price:  1.50, cost:  0.98, desc: 'Espresso doble de granos venezolanos seleccionados' },
     // Tecnología
-    { name: 'Audífonos Bluetooth',  cat: 'Tecnología', price: 35.00, cost: 18.00, desc: 'Audífonos inalámbricos con cancelación de ruido',     badge: 'nuevo' },
-    { name: 'Cable USB-C',          cat: 'Tecnología', price:  8.00, cost:  3.00, desc: 'Cable USB-C 3A para carga rápida, 1 metro' },
-    { name: 'Funda iPhone',         cat: 'Tecnología', price: 12.00, cost:  5.00, desc: 'Funda de silicona premium, varios modelos disponibles' },
-    { name: 'Cargador Inalámbrico', cat: 'Tecnología', price: 25.00, cost: 12.00, desc: 'Cargador Qi 15W compatible con iPhone y Android' },
+    { name: 'Audífonos Bluetooth',  cat: 'Tecnología', price: 35.00, cost: 22.75, desc: 'Audífonos inalámbricos con cancelación de ruido',     badge: 'nuevo' },
+    { name: 'Cable USB-C',          cat: 'Tecnología', price:  8.00, cost:  5.20, desc: 'Cable USB-C 3A para carga rápida, 1 metro' },
+    { name: 'Funda iPhone',         cat: 'Tecnología', price: 12.00, cost:  7.80, desc: 'Funda de silicona premium, varios modelos disponibles' },
+    { name: 'Cargador Inalámbrico', cat: 'Tecnología', price: 25.00, cost: 16.25, desc: 'Cargador Qi 15W compatible con iPhone y Android' },
     // Servicios
-    { name: 'Corte de Cabello',     cat: 'Servicios',  price:  8.00, cost:  2.00, desc: 'Corte clásico o moderno con lavado incluido',         svc: true },
-    { name: 'Manicure',             cat: 'Servicios',  price: 12.00, cost:  4.00, desc: 'Manicure completo con esmaltado semipermanente',       svc: true },
-    { name: 'Delivery Express',     cat: 'Servicios',  price:  5.00, cost:  2.00, desc: 'Entrega a domicilio en radio de 5 km',                 svc: true },
+    { name: 'Corte de Cabello',     cat: 'Servicios',  price:  8.00, cost:  5.20, desc: 'Corte clásico o moderno con lavado incluido',         svc: true },
+    { name: 'Manicure',             cat: 'Servicios',  price: 12.00, cost:  7.80, desc: 'Manicure completo con esmaltado semipermanente',       svc: true },
+    { name: 'Delivery Express',     cat: 'Servicios',  price:  5.00, cost:  3.25, desc: 'Entrega a domicilio en radio de 5 km',                 svc: true },
   ] as Array<{
     name: string; cat: string; price: number; cost: number; desc: string;
     svc?: boolean; badge?: string; is_featured?: boolean
@@ -225,7 +225,9 @@ async function main() {
       await prisma.product.update({
         where: { id: exists.id },
         data:  {
-          category_id: catIds[p.cat],
+          category_id:        catIds[p.cat],
+          price_per_unit_usd: p.price,
+          cost_per_unit_usd:  p.cost,
           ...(badgeUpdate ? { badge: p.badge ?? 'none', is_featured: p.is_featured ?? false } : {}),
         },
       })
@@ -359,20 +361,21 @@ async function main() {
 
     // ── Gastos operativos del mes ────────────────────────────────────────
     const now          = new Date()
-    const daysElapsed   = now.getDate()
     const expenseCats  = await prisma.expenseCategory.findMany({ where: { business_id: business.id } })
     const gastoDefs = [
-      { concepto: 'Alquiler del local',   monto: 300.00, categoria: 'Alquiler',           dia: 1  },
-      { concepto: 'Electricidad y agua',  monto:  45.00, categoria: 'Servicios públicos', dia: 3  },
-      { concepto: 'Nómina quincenal',     monto: 250.00, categoria: 'Nómina',             dia: 5  },
-      { concepto: 'Compra de insumos',    monto: 120.00, categoria: 'Insumos',             dia: 8  },
-      { concepto: 'Publicidad en redes',  monto:  60.00, categoria: 'Marketing',           dia: 10 },
+      { concepto: 'Alquiler del local',   monto: 100.00, categoria: 'Alquiler',           dia: 1  },
+      { concepto: 'Electricidad y agua',  monto:  25.00, categoria: 'Servicios públicos', dia: 3  },
+      { concepto: 'Nómina quincenal',     monto:  40.00, categoria: 'Nómina',             dia: 5  },
+      { concepto: 'Compra de insumos',    monto:  90.00, categoria: 'Insumos',             dia: 8  },
+      { concepto: 'Publicidad en redes',  monto:  45.00, categoria: 'Marketing',           dia: 10 },
     ]
     for (const g of gastoDefs) {
       const existingGasto = await prisma.gasto.findFirst({ where: { business_id: business.id, concepto: g.concepto } })
       if (existingGasto) continue
-      const dia   = Math.min(g.dia, daysElapsed)
-      const fecha = new Date(now.getFullYear(), now.getMonth(), dia)
+      // Sin clamp: un gasto con día futuro dentro del mes queda con fecha futura
+      // y simplemente no se cuenta en el P&L "mes" hasta que esa fecha llegue —
+      // clampearlo a hoy sobreestima el gasto acumulado en los primeros días del mes.
+      const fecha = new Date(now.getFullYear(), now.getMonth(), g.dia)
       await prisma.gasto.create({
         data: {
           business_id: business.id,

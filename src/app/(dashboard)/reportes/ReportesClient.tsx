@@ -70,6 +70,52 @@ function fmtDateTime(iso: string): string {
 
 function getInvType(e: InvEntry): 'entrada' | 'ajuste' { return e.waste > 0 ? 'ajuste' : 'entrada' }
 
+/* Genera un .xlsx en el navegador y dispara la descarga — mismo dynamic import
+   que ya usa handleExport (PDF) en ReporteDiaContent. Se usa donde no existe
+   un endpoint de exportación dedicado (Ventas, Cierres). */
+async function downloadXlsxFromRows(filename: string, sheetName: string, rows: Record<string, unknown>[]) {
+  const XLSX = await import('xlsx')
+  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Sin datos': '' }])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, sheetName)
+  const raw = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as number[]
+  const blob = new Blob([new Uint8Array(raw)], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/* Descarga un blob desde un endpoint real de exportación (mismo patrón que
+   handleExportExcel en ReporteDiaContent, reusado para /api/inventory/export) */
+async function downloadBlobFromUrl(url: string, filename: string): Promise<void> {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('export failed')
+  const blob = await res.blob()
+  const objUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objUrl
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(objUrl)
+}
+
+interface SalesExportRow {
+  ticket_number: string
+  status: string
+  total_usd: number
+  total_bs: number
+  sold_at: string | null
+  created_at: string
+  client_name: string | null
+  client: { name: string } | null
+  payments: Array<{ payment_method: { name: string } }>
+}
+
 /* ── Shared sub-components ── */
 
 interface KpiProps {
@@ -190,18 +236,21 @@ function ReporteDiaContent() {
   }, [data, toast, businessName])
 
   const handleExportExcel = useCallback(async () => {
+    if (rangeMode && !rangeData) { toast('Selecciona un rango de fechas válido', 'error'); return }
     setExportingExcel(true)
     try {
-      const res = await fetch(`/api/reports/export-excel?date=${date}`)
+      const query    = rangeMode && rangeData ? `from=${rangeData.from}&to=${rangeData.to}` : `date=${date}`
+      const filename = rangeMode && rangeData ? `reporte-${rangeData.from}_a_${rangeData.to}.xlsx` : `reporte-${date}.xlsx`
+      const res = await fetch(`/api/reports/export-excel?${query}`)
       if (!res.ok) { toast('Error al exportar', 'error'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url; a.download = `reporte-${date}.xlsx`; a.click()
+      a.href = url; a.download = filename; a.click()
       URL.revokeObjectURL(url)
     } catch { toast('Error al exportar', 'error') }
     finally { setExportingExcel(false) }
-  }, [date, toast])
+  }, [date, rangeMode, rangeData, toast])
 
   const fetchRange = useCallback(async (from: string, to: string) => {
     if (!from || !to || from > to) { toast('Selecciona un rango de fechas válido', 'error'); return }
@@ -419,6 +468,7 @@ function InvMovTab() {
   const [from,     setFrom]     = useState('')
   const [to,       setTo]       = useState('')
   const [page,     setPage]     = useState(0)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     if (loaded) return
@@ -450,11 +500,40 @@ function InvMovTab() {
 
   function resetFilters() { setSearch(''); setTipo('all'); setFrom(''); setTo(''); setPage(0) }
 
+  const handleExportInv = useCallback(async () => {
+    setExporting(true)
+    try {
+      const q = new URLSearchParams()
+      if (from) q.set('from', from)
+      if (to) q.set('to', to)
+      if (tipo === 'entrada') q.set('type', 'entry')
+      if (tipo === 'ajuste')  q.set('type', 'adjust')
+      if (search.trim()) q.set('product', search.trim())
+      await downloadBlobFromUrl(`/api/inventory/export?${q.toString()}`, `inventario-${todayStr()}.xlsx`)
+      toast('Excel generado', 'success')
+    } catch {
+      toast('Error al exportar', 'error')
+    } finally {
+      setExporting(false)
+    }
+  }, [from, to, tipo, search, toast])
+
   return (
     <div className={styles.tabInner}>
       <div className={styles.tabSectionHeader}>
         <h2 className={styles.tabSectionTitle}>Movimientos de inventario</h2>
         <span className={styles.tabCountBadge}>{filtered.length}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<FileSpreadsheet size={14} aria-hidden="true" />}
+          onClick={handleExportInv}
+          loading={exporting}
+          disabled={filtered.length === 0}
+          aria-label="Exportar Excel"
+        >
+          Exportar Excel
+        </Button>
       </div>
 
       {/* Filters */}
@@ -580,6 +659,7 @@ function CierresTab() {
   const [from,     setFrom]     = useState('')
   const [to,       setTo]       = useState('')
   const [search,   setSearch]   = useState('')
+  const [exporting, setExporting] = useState(false)
   const initRef = useRef(false)
 
   const fetchHistory = useCallback(async (f: string, t: string) => {
@@ -621,10 +701,49 @@ function CierresTab() {
     ? history.filter(h => h.cashierName.toLowerCase().includes(search.toLowerCase()))
     : history
 
+  const handleExportCierres = useCallback(async () => {
+    setExporting(true)
+    try {
+      const rows = filtered.map(h => {
+        const rate        = h.rateAtOpen > 0 ? h.rateAtOpen : 1
+        const esperadoUsd  = h.efectivoEsperado / rate
+        const contadoUsd   = h.efectivoContado != null ? h.efectivoContado / rate : null
+        const difUsd       = h.diferencia != null ? h.diferencia / rate : null
+        return {
+          'Cajero':         h.cashierName,
+          'Apertura':       fmtDateTime(h.openedAt),
+          'Cierre':         h.closedAt ? fmtDateTime(h.closedAt) : 'Abierta',
+          'Ventas':         h.salesCount,
+          'Ventas USD':     Math.round(h.totalVentasUsd * 100) / 100,
+          'Esperado USD':   Math.round(esperadoUsd * 100) / 100,
+          'Contado USD':    contadoUsd != null ? Math.round(contadoUsd * 100) / 100 : '',
+          'Diferencia USD': difUsd != null ? Math.round(difUsd * 100) / 100 : '',
+        }
+      })
+      await downloadXlsxFromRows(`cierres-caja-${todayStr()}.xlsx`, 'Cierres', rows)
+      toast('Excel generado', 'success')
+    } catch {
+      toast('Error al exportar', 'error')
+    } finally {
+      setExporting(false)
+    }
+  }, [filtered, toast])
+
   return (
     <div className={styles.tabInner}>
       <div className={styles.tabSectionHeader}>
         <h2 className={styles.tabSectionTitle}>Cierres de Caja</h2>
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<FileSpreadsheet size={14} aria-hidden="true" />}
+          onClick={handleExportCierres}
+          loading={exporting}
+          disabled={filtered.length === 0}
+          aria-label="Exportar Excel"
+        >
+          Exportar Excel
+        </Button>
       </div>
 
       {/* Filters */}
@@ -765,7 +884,42 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 /* ── Main tabbed UI ── */
 
 function ReportesInner({ isAdmin }: { isAdmin: boolean }) {
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<Tab>('dia')
+  const [exportingVentas, setExportingVentas] = useState(false)
+
+  /* Ventas es <VentasPage> embebido — sus filtros internos no son accesibles
+     desde aquí sin tocar VentasPage.tsx (fuera de scope). Export independiente:
+     ventas pagadas del mes actual, no pretende reflejar el filtro visible. */
+  const handleExportVentas = useCallback(async () => {
+    setExportingVentas(true)
+    try {
+      const d = new Date()
+      const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+      const to   = todayStr()
+      const q = new URLSearchParams({
+        from, to, use_created_at: '1', status: 'paid', limit: '2000', page: '1',
+      })
+      const res = await fetch(`/api/sales?${q.toString()}`)
+      const json = await res.json() as { ok?: boolean; sales?: SalesExportRow[] }
+      if (!res.ok || !json.sales) { toast('Error al exportar ventas', 'error'); return }
+      const rows = json.sales.map(s => ({
+        'Ticket':    s.ticket_number,
+        'Fecha':     (s.sold_at ?? s.created_at).slice(0, 16).replace('T', ' '),
+        'Cliente':   s.client?.name ?? s.client_name ?? '',
+        'Total USD': s.total_usd,
+        'Total Bs':  s.total_bs,
+        'Método':    s.payments[0]?.payment_method?.name ?? '',
+        'Estado':    s.status,
+      }))
+      await downloadXlsxFromRows(`ventas-${from}_${to}.xlsx`, 'Ventas', rows)
+      toast('Excel generado — ventas pagadas del mes actual', 'success')
+    } catch {
+      toast('Error al exportar', 'error')
+    } finally {
+      setExportingVentas(false)
+    }
+  }, [toast])
 
   return (
     <div className={styles.tabRoot}>
@@ -793,6 +947,18 @@ function ReportesInner({ isAdmin }: { isAdmin: boolean }) {
       )}
       {activeTab === 'ventas' && (
         <div className={styles.tabPaneFluid}>
+          <div className={styles.tabSectionHeader}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<FileSpreadsheet size={14} aria-hidden="true" />}
+              onClick={handleExportVentas}
+              loading={exportingVentas}
+              aria-label="Exportar ventas del mes actual a Excel"
+            >
+              Exportar Excel (mes actual)
+            </Button>
+          </div>
           <VentasPage isAdmin={isAdmin} />
         </div>
       )}

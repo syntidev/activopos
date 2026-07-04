@@ -226,6 +226,17 @@ export async function POST(req: NextRequest) {
       // admin / super_admin: no PIN required
     }
 
+    // SEC: payment_method_id debe pertenecer al mismo tenant — nunca confiar en el id del cliente
+    if (body.payments && body.payments.length > 0) {
+      const paymentMethodIds = Array.from(new Set(body.payments.map(p => p.payment_method_id)))
+      const validMethods = await prisma.paymentMethod.count({
+        where: { id: { in: paymentMethodIds }, business_id: session.businessId },
+      })
+      if (validMethods !== paymentMethodIds.length) {
+        return NextResponse.json({ error: 'Método de pago no válido para este negocio' }, { status: 403 })
+      }
+    }
+
     const rate = await getBcvRate()
 
     const { sale, componentAlertIds } = await prisma.$transaction(async (tx) => {

@@ -57,6 +57,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'La venta está anulada' }, { status: 409 })
     }
 
+    // SEC: payment_method_id debe pertenecer al mismo tenant — nunca confiar en el id del cliente
+    const paymentMethodIds = Array.from(new Set(body.payments.map(p => p.payment_method_id)))
+    const validMethods = await prisma.paymentMethod.count({
+      where: { id: { in: paymentMethodIds }, business_id: session.businessId },
+    })
+    if (validMethods !== paymentMethodIds.length) {
+      return NextResponse.json({ error: 'Método de pago no válido para este negocio' }, { status: 403 })
+    }
+
     const rate         = await getBcvRate()
     const totalBs      = Number(sale.total_bs)
     const totalUsd     = Number(sale.total_usd)

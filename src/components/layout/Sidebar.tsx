@@ -28,6 +28,7 @@ import {
   ChefHat,
   Receipt,
   Truck,
+  Shield,
   type LucideIcon,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
@@ -280,6 +281,29 @@ function NavContent({
           )
         })}
       </nav>
+
+      {session?.role === 'super_admin' && (
+        <>
+          <div className={styles.divider} />
+          <Link
+            href="/businesses"
+            className={`${styles.navItem} ${styles.adminPanelLink}`}
+            title={collapsed ? 'Panel Admin' : undefined}
+            onClick={() => { onCloseMobile?.(); onCloseNotifications?.() }}
+          >
+            <span className={styles.iconWrapper}>
+              <Shield size={18} strokeWidth={1.75} aria-hidden="true" />
+            </span>
+            <AnimatePresence initial={false}>
+              {!collapsed && (
+                <motion.span key="admin-panel-label" className={styles.navLabel} {...LABEL_MOTION}>
+                  Panel Admin
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Link>
+        </>
+      )}
 
       {/* Footer */}
       <div className={styles.sidebarFooter}>

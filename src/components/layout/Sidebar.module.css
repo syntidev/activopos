@@ -230,6 +230,16 @@
   display: block;
 }
 
+/* ── Panel Admin link (super_admin only) ── */
+.adminPanelLink {
+  color: var(--color-brand);
+}
+
+.adminPanelLink:hover {
+  background-color: var(--color-brand-subtle);
+  color: var(--color-brand);
+}
+
 /* ── Footer ── */
 .sidebarFooter {
   flex-shrink: 0;

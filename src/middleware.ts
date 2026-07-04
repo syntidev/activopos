@@ -20,9 +20,13 @@ const PUBLIC_EXACT = new Set([
   '/api/reports/monthly/mark-pending', // n8n: marca todos como pending (x-api-key)
 ])
 
+// URLs del route-group (admin): /businesses y /stats no viven bajo /admin,
+// así que se listan explícitamente para que el middleware las cubra (defense-in-depth)
 const SUPER_ADMIN_ONLY = [
   '/admin',
   '/api/admin',
+  '/businesses',
+  '/stats',
 ]
 
 const ADMIN_ONLY = [

@@ -109,8 +109,10 @@ export async function POST(req: NextRequest) {
         }))
       }
 
-      // Al registrar la compra como recibida → incrementar stock (mismo patrón que el POS, en positivo)
-      if (data.status === 'received') {
+      // Decisión de negocio: la mercancía está físicamente en el local apenas se
+      // registra la compra — pending Y received suman stock. Solo cancelled no.
+      // El estado pending/received afecta el pago (CxP), NO el inventario.
+      if (data.status !== 'cancelled') {
         await tx.inventoryEntry.createMany({
           data: data.items.map(i => ({
             business_id:       session.businessId,
@@ -138,6 +140,7 @@ export async function POST(req: NextRequest) {
             due_date:    null,
             supplier:    supplier.name,       // legacy texto
             supplier_id: data.supplier_id,    // FK — la CxP hereda el proveedor de la compra
+            purchase_id: created.id,          // FK — para cerrar esta CxP al anular la compra
             created_by:  session.userId,
             fecha:       new Date(new Date().toISOString().slice(0, 10)),
           },

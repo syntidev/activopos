@@ -553,6 +553,7 @@ model Gasto {
   due_date    DateTime?
   supplier    String?   @db.VarChar(150) // legacy texto libre — preservar hasta migrar UI
   supplier_id Int?      // FK a Supplier — reemplaza el texto libre para CxP trazables
+  purchase_id Int?      // FK a Purchase — CxP generada por una compra (para cerrarla al anular)
   created_by  Int
   created_at  DateTime  @default(now())
 
@@ -560,8 +561,10 @@ model Gasto {
   creator          User             @relation(fields: [created_by], references: [id])
   expense_category ExpenseCategory? @relation(fields: [category_id], references: [id])
   supplier_ref     Supplier?        @relation(fields: [supplier_id], references: [id])
+  purchase         Purchase?        @relation(fields: [purchase_id], references: [id])
 
   @@index([supplier_id])
+  @@index([purchase_id])
   @@map("gastos")
 }
 
@@ -886,6 +889,7 @@ model Purchase {
   business Business       @relation(fields: [business_id], references: [id])
   supplier Supplier       @relation(fields: [supplier_id], references: [id])
   items    PurchaseItem[]
+  gastos   Gasto[]
 
   @@index([business_id])
   @@index([supplier_id])

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Plus, FileText, X, Search, Calendar, Check,
-  User, ChevronRight, Package,
+  User, ChevronRight, Package, FileDown,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './cotizaciones.module.css'
@@ -479,21 +479,33 @@ function CotizacionesContent() {
                       <span className={styles.muted}>{fmtDate(q.created_at)}</span>
                     </td>
                     <td className={`${styles.td} ${styles.tdAction}`}>
-                      {q.status === 'draft' && (
-                        <button
-                          className={styles.convertBtn}
-                          onClick={() => handleConvert(q)}
-                          disabled={converting === q.id}
-                          type="button"
-                          aria-label={`Convertir cotización ${q.number} a venta`}
-                        >
-                          {converting === q.id
-                            ? <span className={styles.spinnerSm} aria-hidden="true" />
-                            : <Check size={12} aria-hidden="true" />}
-                          Convertir a venta
-                          {converting !== q.id && <ChevronRight size={12} aria-hidden="true" />}
-                        </button>
-                      )}
+                      <div className={styles.actionsRow}>
+                        {q.status !== 'expired' && (
+                          <button
+                            className={styles.pdfBtn}
+                            onClick={() => window.open(`/api/quotations/${q.id}/pdf`, '_blank')}
+                            type="button"
+                            aria-label={`Descargar PDF de cotización ${q.number}`}
+                          >
+                            <FileDown size={14} aria-hidden="true" />
+                          </button>
+                        )}
+                        {q.status === 'draft' && (
+                          <button
+                            className={styles.convertBtn}
+                            onClick={() => handleConvert(q)}
+                            disabled={converting === q.id}
+                            type="button"
+                            aria-label={`Convertir cotización ${q.number} a venta`}
+                          >
+                            {converting === q.id
+                              ? <span className={styles.spinnerSm} aria-hidden="true" />
+                              : <Check size={12} aria-hidden="true" />}
+                            Convertir a venta
+                            {converting !== q.id && <ChevronRight size={12} aria-hidden="true" />}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

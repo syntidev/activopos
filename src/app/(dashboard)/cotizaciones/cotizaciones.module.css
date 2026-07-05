@@ -142,6 +142,32 @@
 .statusRejected { background: var(--color-danger-subtle); color: var(--color-danger-text); border: 1px solid var(--color-danger-border); }
 .statusExpired  { background: var(--color-warning-subtle); color: var(--color-warning-text); border: 1px solid var(--color-warning-border); }
 
+/* ── Actions row (PDF + Convertir) ── */
+.actionsRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pdfBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.pdfBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
 /* ── Convert button ── */
 .convertBtn {
   display: inline-flex;

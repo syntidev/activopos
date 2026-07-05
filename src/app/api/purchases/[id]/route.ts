@@ -8,7 +8,7 @@ type RouteContext = { params: { id: string } }
 const patchSchema = z.object({
   reference: z.string().trim().max(50).nullable().optional(),
   notes:     z.string().trim().nullable().optional(),
-  status:    z.literal('cancelled').optional(), // única transición permitida por este route
+  status:    z.enum(['received', 'cancelled']).optional(), // 'pending' nunca es destino — es el estado inicial
 })
 
 export async function GET(_req: Request, { params }: RouteContext) {
@@ -74,12 +74,59 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     })
     if (!existing) return NextResponse.json({ error: 'Compra no encontrada' }, { status: 404 })
 
-    // ── Anulación con rollback atómico ──────────────────────────────────────
-    if (data.status === 'cancelled') {
-      if (existing.status === 'cancelled') {
-        return NextResponse.json({ error: 'La compra ya está anulada' }, { status: 409 })
+    // Estado terminal — cancelled nunca transiciona a nada
+    if (data.status !== undefined && existing.status === 'cancelled') {
+      return NextResponse.json({ error: 'La compra está anulada — no se puede modificar' }, { status: 400 })
+    }
+
+    // ── pending → received: confirma la compra. NUNCA toca inventario — el
+    // stock ya se sumó en POST (Sprint 64). Solo garantiza que exista la CxP
+    // (sin duplicar si ya existe) y actualiza el status. ────────────────────
+    if (data.status === 'received') {
+      if (existing.status !== 'pending') {
+        return NextResponse.json({ error: 'Solo una compra pending puede pasar a received' }, { status: 400 })
       }
 
+      const bid = session.businessId
+      const purchase = await prisma.$transaction(async tx => {
+        const existingGasto = await tx.gasto.findFirst({
+          where: { purchase_id: id, business_id: bid },
+          select: { id: true },
+        })
+
+        if (!existingGasto) {
+          const supplier = await tx.supplier.findFirst({ where: { id: existing.supplier_id }, select: { name: true } })
+          await tx.gasto.create({
+            data: {
+              business_id: bid,
+              concepto:    `Compra proveedor${existing.reference ? ` #${existing.reference}` : ''}`,
+              monto_usd:   existing.total_usd,
+              categoria:   'proveedor',
+              is_paid:     false,
+              due_date:    null,
+              supplier:    supplier?.name ?? null,
+              supplier_id: existing.supplier_id,
+              purchase_id: id,
+              created_by:  session.userId,
+              fecha:       new Date(new Date().toISOString().slice(0, 10)),
+            },
+          })
+        }
+        // Si ya existe la CxP → no se toca, no se duplica.
+
+        return tx.purchase.update({
+          where: { id, business_id: bid },
+          data:  { status: 'received' },
+        })
+      })
+
+      return NextResponse.json({ ok: true, purchase: { ...purchase, total_usd: Number(purchase.total_usd) } })
+    }
+
+    // ── Anulación con rollback atómico ──────────────────────────────────────
+    // (existing.status === 'cancelled' ya fue rechazado arriba con 400 — este
+    // branch solo se alcanza con pending/received vivos)
+    if (data.status === 'cancelled') {
       // Cantidad a revertir por producto (un producto puede repetirse en items)
       const reverseByProduct = new Map<number, number>()
       for (const it of existing.items) {

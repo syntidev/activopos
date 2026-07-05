@@ -13,7 +13,7 @@ const purchaseSchema = z.object({
   supplier_id: z.number().int().positive(),
   reference:   z.string().trim().max(50).optional(),
   notes:       z.string().trim().optional(),
-  status:      z.enum(['received', 'pending', 'cancelled']).default('received'),
+  status:      z.enum(['received', 'pending']).default('received'), // cancelled solo vía PATCH
   items:       z.array(itemSchema).min(1),
 })
 
@@ -110,23 +110,21 @@ export async function POST(req: NextRequest) {
       }
 
       // Decisión de negocio: la mercancía está físicamente en el local apenas se
-      // registra la compra — pending Y received suman stock. Solo cancelled no.
-      // El estado pending/received afecta el pago (CxP), NO el inventario.
-      if (data.status !== 'cancelled') {
-        await tx.inventoryEntry.createMany({
-          data: data.items.map(i => ({
-            business_id:       session.businessId,
-            product_id:        i.product_id,
-            quantity:          i.qty,
-            waste:             0,
-            entry_type:        'purchase',
-            cost_per_unit_usd: i.cost_usd,
-            supplier:          supplier.name,
-            notes:             purchaseNote,
-            created_by:        session.userId,
-          })),
-        })
-      }
+      // registra la compra — pending Y received suman stock (cancelled solo
+      // se alcanza vía PATCH, nunca al crear — ver zod status arriba).
+      await tx.inventoryEntry.createMany({
+        data: data.items.map(i => ({
+          business_id:       session.businessId,
+          product_id:        i.product_id,
+          quantity:          i.qty,
+          waste:             0,
+          entry_type:        'purchase',
+          cost_per_unit_usd: i.cost_usd,
+          supplier:          supplier.name,
+          notes:             purchaseNote,
+          created_by:        session.userId,
+        })),
+      })
 
       // Compra a crédito (mercancía recibida sin pagar) → genera deuda en CxP
       if (data.status === 'pending') {

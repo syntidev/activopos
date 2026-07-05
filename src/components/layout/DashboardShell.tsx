@@ -43,12 +43,18 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
       .catch(() => {})
   }, [])
 
-  /* ── BCV polling every 5 min ── */
+  /* Polling 30s + refetch al volver al tab/ventana — alimenta el pill USD/VES
+     del footer del Sidebar. Antes: 5 min sin refetch en focus, por lo que
+     cambiar la tasa (Configuración o modal del Header) no se reflejaba aquí
+     hasta la siguiente vuelta del timer o un reload manual. */
   useEffect(() => {
     void fetchBcvRate()
-    timerRef.current = setInterval(fetchBcvRate, 5 * 60 * 1000)
+    timerRef.current = setInterval(fetchBcvRate, 30_000)
+    const handleFocus = () => { void fetchBcvRate() }
+    window.addEventListener('focus', handleFocus)
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
+      window.removeEventListener('focus', handleFocus)
     }
   }, [fetchBcvRate])
 

@@ -270,7 +270,20 @@ export function Header({
     } catch { /* graceful — badge cae al prop bcvRate */ }
   }, [])
 
-  useEffect(() => { void fetchRateInfo() }, [fetchRateInfo])
+  /* Fetch inicial + polling 30s + refetch al volver al tab/ventana — sin esto
+     el badge queda desincronizado si la tasa se cambia en Configuración o
+     desde otra pestaña (bug reportado: toast dice "actualizado" pero el
+     número visible no cambia hasta recargar la página). */
+  useEffect(() => {
+    void fetchRateInfo()
+    const interval = setInterval(() => { void fetchRateInfo() }, 30_000)
+    const handleFocus = () => { void fetchRateInfo() }
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [fetchRateInfo])
 
   /* ── Business brand (desktop left) ── */
   const [biz, setBiz] = useState<BizInfo | null>(null)

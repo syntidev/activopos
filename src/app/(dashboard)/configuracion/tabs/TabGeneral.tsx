@@ -65,6 +65,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
   const [rateSource, setRateSource] = useState<'bcv' | 'parallel' | 'manual'>('bcv')
   const [manualRate, setManualRate] = useState('')
   const [savingRate, setSavingRate] = useState(false)
+  const [liveRate, setLiveRate]     = useState<number | null>(null)
 
   const [iva, setIva]           = useState<IvaConfig>({ iva_enabled: false, iva_pct: 16 })
   const [savingIva, setSavingIva] = useState(false)
@@ -120,6 +121,31 @@ export function TabGeneral({ businessId: _businessId }: Props) {
 
   useEffect(() => { void fetchConfig(); void fetchIva() }, [fetchConfig, fetchIva])
 
+  /* Ticker de tasa vivo — separado de `config` a propósito: `config` alimenta
+     inputs editables (nombre, dirección, etc.) y sobreescribirlo cada 30s
+     borraría ediciones en curso. `liveRate` solo actualiza el número mostrado,
+     usando la misma fuente que el badge del Header/Sidebar. No toca
+     rateSource/manualRate para no resetear una selección de toggle sin guardar. */
+  const fetchLiveRate = useCallback(async () => {
+    try {
+      const res = await fetch('/api/rates/bcv')
+      if (!res.ok) return
+      const j = await res.json() as { ok?: boolean; rate?: number }
+      if (j.ok && typeof j.rate === 'number') setLiveRate(j.rate)
+    } catch { /* mantiene el último valor conocido */ }
+  }, [])
+
+  useEffect(() => {
+    void fetchLiveRate()
+    const interval = setInterval(() => { void fetchLiveRate() }, 30_000)
+    const handleFocus = () => { void fetchLiveRate() }
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [fetchLiveRate])
+
   const handleSaveIva = async () => {
     setSavingIva(true)
     try {
@@ -157,6 +183,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       if (!res.ok) throw new Error()
       toast('Tasa actualizada correctamente.', 'success')
       await fetchConfig()
+      void fetchLiveRate() // refleja el cambio en el ticker sin esperar el próximo poll de 30s
     } catch {
       toast('Error al guardar la tasa.', 'error')
     } finally {
@@ -278,7 +305,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
 
         <div className={styles.rateDisplay}>
           <span className={styles.rateValue}>
-            {(config?.current_rate ?? 0).toLocaleString('es-VE', {
+            {(liveRate ?? config?.current_rate ?? 0).toLocaleString('es-VE', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}

@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
+import { storeManualRate, releaseManualRate } from '@/lib/bcv'
+
+const RATE_MIN = 10
+const RATE_MAX = 10_000
 
 const PatchSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -17,7 +21,10 @@ const PatchSchema = z.object({
     .nullable()
     .optional(),
   rate_source:      z.enum(['bcv', 'parallel', 'manual']).optional(),
+  // rate / custom_rate: valor de tasa manual. NO es columna de Business — se
+  // persiste en DollarRate vía storeManualRate(). custom_rate es alias de rate.
   rate:             z.number().positive().optional(),
+  custom_rate:      z.number().min(RATE_MIN).max(RATE_MAX).nullable().optional(),
   segment:          z.string().max(50).optional(),
   max_discount_pct:             z.number().min(0).max(100).optional(),
   allow_cashier_price_override: z.boolean().optional(),
@@ -82,14 +89,23 @@ export async function PATCH(request: Request) {
     throw err
   }
 
-  const { rate, ...businessFields } = data
+  const { rate, custom_rate, ...businessFields } = data
+  const manualRate = rate ?? custom_rate ?? null
 
-  if (businessFields.rate_source === 'manual' && rate !== undefined) {
-    // SEC-002: DollarRate no tiene business_id — crear tasas aquí afectaría todos los tenants.
-    return NextResponse.json(
-      { error: 'Use el endpoint /api/rates/bcv para actualizar la tasa' },
-      { status: 400 },
-    )
+  // La tasa manual se persiste en DollarRate (fuente única de verdad, global),
+  // NO como columna de Business. Antes esto devolvía 400 (SEC-002) porque no
+  // había mecanismo seguro; ahora storeManualRate/releaseManualRate lo proveen.
+  if (businessFields.rate_source === 'manual') {
+    if (manualRate === null) {
+      return NextResponse.json({ error: 'rate requerido para tasa manual' }, { status: 400 })
+    }
+    if (manualRate < RATE_MIN || manualRate > RATE_MAX) {
+      return NextResponse.json({ error: `Tasa fuera de rango (${RATE_MIN} - ${RATE_MAX})` }, { status: 400 })
+    }
+    await storeManualRate(manualRate)
+  } else if (businessFields.rate_source === 'bcv' || businessFields.rate_source === 'parallel') {
+    // Cambiar a BCV/paralelo libera cualquier override manual activo.
+    await releaseManualRate()
   }
 
   const updated = await prisma.business.update({

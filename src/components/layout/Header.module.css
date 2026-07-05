@@ -363,14 +363,26 @@
   outline-offset: 2px;
 }
 
+/* Mobile-first: columna — input y botón apilados a ancho completo, evita que
+   "Aplicar tasa manual" (nowrap) desborde el modal (max-width 380px) en 375px.
+   Desktop (≥768px): vuelve a fila, cabe cómodo en ese ancho de modal. */
 .rateInputRow {
   display: flex;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .rateInputRow {
+    flex-direction: row;
+    gap: var(--space-2);
+  }
 }
 
 .rateInputWrap {
   display: flex;
   align-items: center;
+  width: 100%;
   flex: 1;
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
@@ -410,19 +422,15 @@
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
+  width: 100%;
   transition: background-color var(--transition-fast);
 }
 .rateApplyBtn:hover:not(:disabled) { background: var(--color-brand-hover); }
 .rateApplyBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* Mobile: "Aplicar tasa manual" (nowrap) no cabe junto al input en 375px —
-   envuelve a su propia línea a ancho completo. Desktop intacto (>480px). */
-@media (max-width: 480px) {
-  .rateInputRow {
-    flex-wrap: wrap;
-  }
+@media (min-width: 768px) {
   .rateApplyBtn {
-    width: 100%;
+    width: auto;
   }
 }
 

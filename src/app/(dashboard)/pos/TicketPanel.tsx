@@ -28,13 +28,14 @@ interface TicketPanelProps {
   userRole: 'admin' | 'super_admin' | 'cashier'
   onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
+  pendingSaleActive?: boolean
 }
 
 export function TicketPanel({
   ticket, totals, isEmpty,
   onUpdateQty, onRemove, onClear, onSelectClient,
   onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo,
-  userRole, onPriceOverride, allowCashierPriceOverride,
+  userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive,
 }: TicketPanelProps) {
   const router = useRouter()
   const { discount_global_pct: discountPct, cargo_global_pct: cargoPct } = ticket
@@ -89,6 +90,7 @@ export function TicketPanel({
                 userRole={userRole}
                 onPriceOverride={onPriceOverride}
                 allowCashierPriceOverride={allowCashierPriceOverride}
+                pendingSaleActive={pendingSaleActive}
               />
             ))}
           </AnimatePresence>
@@ -174,9 +176,10 @@ interface RowProps {
   userRole: 'admin' | 'super_admin' | 'cashier'
   onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
+  pendingSaleActive?: boolean
 }
 
-function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride, allowCashierPriceOverride }: RowProps) {
+function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive }: RowProps) {
   const qtyStep = item.sale_mode === 'weight' ? 0.1 : 1
   const net     = item.subtotal_usd - item.discount_usd
 
@@ -208,6 +211,7 @@ function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride,
   }, [editOpen])
 
   const openEdit = () => {
+    if (pendingSaleActive) return // venta ya registrada en DB — precio fijado
     const rect  = pencilRef.current?.getBoundingClientRect()
     const width = 292
     if (rect) {
@@ -413,8 +417,9 @@ function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride,
               type="button"
               className={styles.priceEditBtn}
               onClick={openEdit}
+              disabled={pendingSaleActive}
               aria-label={`Editar precio de ${item.product_name}`}
-              title="Editar precio"
+              title={pendingSaleActive ? 'Precio fijado — reinicia la venta para cambiar' : 'Editar precio'}
             >
               <Pencil size={11} aria-hidden="true" />
             </button>

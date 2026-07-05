@@ -968,8 +968,13 @@
   .priceEditBtn { opacity: 1; }
 }
 
+.priceEditBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .priceEditBtn:hover {
+  .priceEditBtn:hover:not(:disabled) {
     color: var(--color-brand);
     background: rgba(var(--brand-rgb), 0.08);
   }

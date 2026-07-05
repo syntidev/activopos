@@ -183,9 +183,13 @@ export function usePOS() {
     reason?: string,
     pin?: string
   ) => {
+    // Defensa en profundidad: la venta ya existe en DB (postSale vía pending) —
+    // el precio mostrado ya no puede divergir del facturado. El lápiz de
+    // TicketPanel se deshabilita visualmente; esto cubre cualquier otro path.
+    if (pendingSaleId !== null) return
     setTicket(prev => overridePrecioItem(prev, productId, variantId, newPrice, reason))
     if (pin) pendingOverridePinRef.current = pin
-  }, [])
+  }, [pendingSaleId])
 
   const setClient = useCallback((client: ClientForPOS | null) => {
     setTicket(prev => ({
@@ -335,6 +339,7 @@ export function usePOS() {
     showPinDescuento,    setShowPinDescuento,
     showCargo,           setShowCargo,
     showCreditoModal,    setShowCreditoModal,
+    pendingSaleId,
     showVariantSelector,
     pendingVariantProduct,
     addProduct,

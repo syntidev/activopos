@@ -197,6 +197,7 @@ export default function POSPage() {
           userRole={userRole}
           onPriceOverride={pos.overrideItemPrice}
           allowCashierPriceOverride={pos.allowCashierPriceOverride}
+          pendingSaleActive={pos.pendingSaleId !== null}
         />
       </div>
 

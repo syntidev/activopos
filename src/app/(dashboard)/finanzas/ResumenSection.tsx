@@ -43,32 +43,137 @@ function safePct(value: number, base: number, decimals = 1): string {
   return `${pct.toFixed(decimals)}%`
 }
 
-function computePE(er: ER, month: string) {
-  const sin_margen = er.margen_bruto_pct <= 0
-  const pe = !sin_margen
-    ? er.gastos_operativos / (er.margen_bruto_pct / 100)
-    : 0
+/* ── Punto de Equilibrio: datos del servidor (no del reloj del navegador) ── */
 
-  const [y, m] = month.split('-').map(Number)
-  const today      = new Date()
-  const dayOfMonth = today.getDate()
-  const daysInMonth = new Date(y, m, 0).getDate()
-  const pctElapsed  = dayOfMonth / daysInMonth
-  const projected   = pctElapsed > 0 ? er.ventas_netas / pctElapsed : 0
+interface PEResponse {
+  ok:                      boolean
+  period_label:            string
+  ventas_usd:              number
+  gastos_fijos_usd:        number
+  margen_contribucion_pct: number
+  punto_equilibrio_usd:    number | null
+  superado:                boolean
+  progreso_pct:            number
+  faltante_usd:            number | null
+  excedente_usd:           number | null
+  sin_margen:              boolean
+  mensaje:                 string | null
+  dias_transcurridos:      number
+  dias_totales:            number
+  proyeccion_fin_mes_usd:  number
+  alcanzara_pe:            boolean
+}
 
-  const barPct = pe > 0 ? Math.min((er.ventas_netas / pe) * 100, 100) : 100
+function PuntoEquilibrioCard({ month }: { month: string }) {
+  const [pe,      setPe]      = useState<PEResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(false)
 
-  type PEStatus = 'success' | 'progress' | 'risk'
-  let status: PEStatus
-  if (er.ventas_netas >= pe) {
-    status = 'success'
-  } else if (projected >= pe) {
-    status = 'progress'
-  } else {
-    status = 'risk'
+  useEffect(() => {
+    const ctrl = new AbortController()
+    setLoading(true); setPe(null); setError(false)
+    fetch(`/api/finanzas/punto-equilibrio?month=${month}`, { signal: ctrl.signal })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json() })
+      .then((j: PEResponse) => { if (j.ok) setPe(j); else setError(true) })
+      .catch((e: unknown) => { if ((e as Error).name !== 'AbortError') setError(true) })
+      .finally(() => setLoading(false))
+    return () => ctrl.abort()
+  }, [month])
+
+  if (loading) {
+    return (
+      <div className={styles.peCard}>
+        <div className={styles.peContent}>
+          <p className={styles.peCaption}>Calculando punto de equilibrio…</p>
+        </div>
+      </div>
+    )
+  }
+  if (error || !pe) return null
+
+  // Margen negativo/cero — el endpoint ya trae el mensaje
+  if (pe.sin_margen) {
+    return (
+      <div className={styles.peCard}>
+        <div className={`${styles.peStatusRow} ${styles.peStatusRisk}`}>
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span>{pe.mensaje ?? 'El costo de ventas supera los ingresos — revisa tus precios'}</span>
+        </div>
+      </div>
+    )
   }
 
-  return { pe, projected, dayOfMonth, daysInMonth, barPct, status, sin_margen }
+  // Sin datos suficientes — no inventar un número
+  if (pe.punto_equilibrio_usd === null) {
+    return (
+      <div className={styles.peCard}>
+        <div className={styles.peContent}>
+          <p className={styles.peCaption}>Sin datos suficientes para calcular</p>
+        </div>
+      </div>
+    )
+  }
+
+  const status: 'success' | 'progress' | 'risk' =
+    pe.superado ? 'success' : pe.alcanzara_pe ? 'progress' : 'risk'
+  const peBarClass =
+    status === 'success'  ? styles.peBarSuccess  :
+    status === 'progress' ? styles.peBarProgress :
+    styles.peBarRisk
+  const peStatusClass =
+    status === 'success'  ? styles.peStatusSuccess  :
+    status === 'progress' ? styles.peStatusProgress :
+    styles.peStatusRisk
+
+  return (
+    <div className={styles.peCard}>
+      <svg className={styles.peSvgBg} viewBox="0 0 120 80" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <line x1="0" y1="55" x2="120" y2="55" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3"/>
+        <line x1="0" y1="80" x2="120" y2="0" stroke="currentColor" strokeWidth="1.5"/>
+        <circle cx="82" cy="19" r="3" fill="currentColor"/>
+      </svg>
+      <div className={styles.peContent}>
+        <h3 className={styles.peTitle}>Punto de Equilibrio — {pe.period_label}</h3>
+
+        <div className={styles.peStatsRow}>
+          <div className={styles.peStat}>
+            <span className={styles.peStatLabel}>Gastos fijos</span>
+            <span className={styles.peStatValue}>{fmtUsd(pe.gastos_fijos_usd)}</span>
+          </div>
+          <div className={styles.peStat}>
+            <span className={styles.peStatLabel}>Margen contribución</span>
+            <span className={styles.peStatValue}>{fmtPct(pe.margen_contribucion_pct)}</span>
+          </div>
+          <div className={styles.peStat}>
+            <span className={styles.peStatLabel}>Punto de equilibrio</span>
+            <span className={styles.peStatValue}>{fmtUsd(pe.punto_equilibrio_usd)}</span>
+          </div>
+        </div>
+
+        <div className={styles.peBar}>
+          <div className={`${styles.peBarFill} ${peBarClass}`} style={{ width: `${pe.progreso_pct}%` }} />
+        </div>
+
+        <p className={styles.peCaption}>
+          Ventas actuales: {fmtUsd(pe.ventas_usd)} / PE: {fmtUsd(pe.punto_equilibrio_usd)}
+          {' '}· Día {pe.dias_transcurridos} de {pe.dias_totales}
+          {' '}· Proyección: {fmtUsd(pe.proyeccion_fin_mes_usd)}
+        </p>
+
+        <div className={`${styles.peStatusRow} ${peStatusClass}`}>
+          {status === 'success' && (
+            <><CheckCircle size={14} aria-hidden="true" /> Superado — Excedente: {fmtUsd(pe.excedente_usd ?? 0)}</>
+          )}
+          {status === 'progress' && (
+            <><Clock size={14} aria-hidden="true" /> En progreso — Faltan {fmtUsd(pe.faltante_usd ?? 0)} para cubrir gastos</>
+          )}
+          {status === 'risk' && (
+            <><AlertTriangle size={14} aria-hidden="true" /> En riesgo — Proyección ({fmtUsd(pe.proyeccion_fin_mes_usd)}) no alcanza el PE</>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /* ── Gráfico de utilidad diaria ── */
@@ -224,7 +329,6 @@ export function ResumenSection({ month, rate }: Props) {
 
   const er     = data.estado_resultados
   const isPos  = er.utilidad_neta >= 0
-  const peData = computePE(er, month)
 
   const chartData = [
     { name: 'Ingresos', value: er.ventas_netas,          key: 'income'  },
@@ -258,16 +362,6 @@ export function ResumenSection({ month, rate }: Props) {
   /* P&L bars — proportional to ventas_netas */
   const barW = (n: number) =>
     er.ventas_netas > 0 ? `${Math.min((Math.abs(n) / er.ventas_netas) * 100, 100)}%` : '0%'
-
-  const peBarClass =
-    peData.status === 'success'  ? styles.peBarSuccess  :
-    peData.status === 'progress' ? styles.peBarProgress :
-    styles.peBarRisk
-
-  const peStatusClass =
-    peData.status === 'success'  ? styles.peStatusSuccess  :
-    peData.status === 'progress' ? styles.peStatusProgress :
-    styles.peStatusRisk
 
   return (
     <>
@@ -384,65 +478,8 @@ export function ResumenSection({ month, rate }: Props) {
         </div>
       </div>
 
-      {/* ── Punto de Equilibrio ── */}
-      {peData.sin_margen ? (
-        <div className={styles.peCard}>
-          <div className={`${styles.peStatusRow} ${styles.peStatusRisk}`}>
-            <AlertTriangle size={16} aria-hidden="true" />
-            <span>El costo de ventas supera los ingresos — revisa tus precios</span>
-          </div>
-        </div>
-      ) : peData.pe > 0 && (
-        <div className={styles.peCard}>
-          <svg className={styles.peSvgBg} viewBox="0 0 120 80" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-            <line x1="0" y1="55" x2="120" y2="55" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3"/>
-            <line x1="0" y1="80" x2="120" y2="0" stroke="currentColor" strokeWidth="1.5"/>
-            <circle cx="82" cy="19" r="3" fill="currentColor"/>
-          </svg>
-          <div className={styles.peContent}>
-            <h3 className={styles.peTitle}>
-              Punto de Equilibrio — {new Date(month + '-01').toLocaleDateString('es-VE', { month: 'long', year: 'numeric' })}
-            </h3>
-
-            <div className={styles.peStatsRow}>
-              <div className={styles.peStat}>
-                <span className={styles.peStatLabel}>Gastos fijos</span>
-                <span className={styles.peStatValue}>{fmtUsd(er.gastos_operativos)}</span>
-              </div>
-              <div className={styles.peStat}>
-                <span className={styles.peStatLabel}>Margen contribución</span>
-                <span className={styles.peStatValue}>{fmtPct(er.margen_bruto_pct)}</span>
-              </div>
-              <div className={styles.peStat}>
-                <span className={styles.peStatLabel}>Punto de equilibrio</span>
-                <span className={styles.peStatValue}>{fmtUsd(peData.pe)}</span>
-              </div>
-            </div>
-
-            <div className={styles.peBar}>
-              <div className={`${styles.peBarFill} ${peBarClass}`} style={{ width: `${peData.barPct}%` }} />
-            </div>
-
-            <p className={styles.peCaption}>
-              Ventas actuales: {fmtUsd(er.ventas_netas)} / PE: {fmtUsd(peData.pe)}
-              {' '}· Día {peData.dayOfMonth} de {peData.daysInMonth}
-              {' '}· Proyección: {fmtUsd(peData.projected)}
-            </p>
-
-            <div className={`${styles.peStatusRow} ${peStatusClass}`}>
-              {peData.status === 'success' && (
-                <><CheckCircle size={14} aria-hidden="true" /> Superado — Excedente: {fmtUsd(er.ventas_netas - peData.pe)}</>
-              )}
-              {peData.status === 'progress' && (
-                <><Clock size={14} aria-hidden="true" /> En progreso — Faltan {fmtUsd(peData.pe - er.ventas_netas)} para cubrir gastos</>
-              )}
-              {peData.status === 'risk' && (
-                <><AlertTriangle size={14} aria-hidden="true" /> En riesgo — Proyección ({fmtUsd(peData.projected)}) no alcanza el PE</>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Punto de Equilibrio (datos server-side, no del navegador) ── */}
+      <PuntoEquilibrioCard month={month} />
 
       {/* ── Gráfico comparativo ── */}
       <div className={styles.chartCard}>

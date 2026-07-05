@@ -224,7 +224,8 @@
 
 .rateModal {
   width: 100%;
-  max-width: 380px;
+  max-width: min(380px, calc(100vw - 32px));
+  box-sizing: border-box;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);

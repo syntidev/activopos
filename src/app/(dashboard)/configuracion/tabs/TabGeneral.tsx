@@ -64,9 +64,10 @@ export function TabGeneral({ businessId: _businessId }: Props) {
   const { rate: liveRate, refreshRate } = useRate()
   const [config, setConfig]         = useState<BusinessConfig | null>(null)
   const [loading, setLoading]       = useState(true)
-  const [rateSource, setRateSource] = useState<'bcv' | 'parallel' | 'manual'>('bcv')
+  const [rateSource, setRateSource] = useState<'bcv' | 'manual'>('bcv')
   const [manualRate, setManualRate] = useState('')
   const [savingRate, setSavingRate] = useState(false)
+  const [parallelRate, setParallelRate] = useState<number | null>(null)
 
   const [iva, setIva]           = useState<IvaConfig>({ iva_enabled: false, iva_pct: 16 })
   const [savingIva, setSavingIva] = useState(false)
@@ -100,8 +101,9 @@ export function TabGeneral({ businessId: _businessId }: Props) {
         current_rate: number
       }
       setConfig({ ...body.business, current_rate: body.current_rate })
-      const source = body.business.rate_source
-      setRateSource(source === 'parallel' || source === 'manual' ? source : 'bcv')
+      // 'parallel' ya no es seleccionable en este selector — normaliza a 'bcv'
+      // si un negocio existente lo tenía guardado (self-heals al guardar de nuevo).
+      setRateSource(body.business.rate_source === 'manual' ? 'manual' : 'bcv')
       setManualRate(String(body.current_rate))
       setAllowOverride(body.business.allow_cashier_price_override ?? false)
     } catch {
@@ -120,7 +122,22 @@ export function TabGeneral({ businessId: _businessId }: Props) {
     } catch { /* keep defaults */ }
   }, [])
 
-  useEffect(() => { void fetchConfig(); void fetchIva() }, [fetchConfig, fetchIva])
+  // Tasa paralela — solo para pre-cargar el campo Manual como sugerencia inicial.
+  // Nunca se muestra al usuario (regla: sin mencionar "paralelo" en la UI).
+  const fetchParallelRate = useCallback(async () => {
+    try {
+      const res  = await fetch('/api/rates/bcv')
+      if (!res.ok) return
+      const body = await res.json() as { ok?: boolean; paralelo?: number | null }
+      if (body.ok && typeof body.paralelo === 'number') setParallelRate(body.paralelo)
+    } catch { /* sin sugerencia — el usuario escribe la tasa manualmente */ }
+  }, [])
+
+  useEffect(() => {
+    void fetchConfig()
+    void fetchIva()
+    void fetchParallelRate()
+  }, [fetchConfig, fetchIva, fetchParallelRate])
 
   const handleSaveIva = async () => {
     setSavingIva(true)
@@ -296,18 +313,24 @@ export function TabGeneral({ businessId: _businessId }: Props) {
             <p className={styles.toggleLabel}>Fuente de la tasa</p>
             <p className={styles.toggleHint}>
               {rateSource === 'bcv' && 'Consulta ve.dolarapi.com (oficial BCV) cada hora automáticamente'}
-              {rateSource === 'parallel' && 'Consulta ve.dolarapi.com (paralelo) cada hora automáticamente'}
               {rateSource === 'manual' && 'Ingresa la tasa manualmente, sin actualización automática'}
             </p>
           </div>
           <select
             className={styles.segmentSelect}
             value={rateSource}
-            onChange={(e) => setRateSource(e.target.value as 'bcv' | 'parallel' | 'manual')}
+            onChange={(e) => {
+              const next = e.target.value as 'bcv' | 'manual'
+              // Al pasar de BCV → Manual, sugiere la tasa de referencia de mercado
+              // como punto de partida — el usuario puede aceptarla o cambiarla.
+              if (next === 'manual' && rateSource !== 'manual' && parallelRate != null) {
+                setManualRate(String(parallelRate))
+              }
+              setRateSource(next)
+            }}
             aria-label="Fuente de la tasa de cambio"
           >
             <option value="bcv">BCV (oficial)</option>
-            <option value="parallel">Paralelo</option>
             <option value="manual">Manual</option>
           </select>
         </div>
@@ -321,6 +344,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
             placeholder="Ej: 36.50"
             value={manualRate}
             onChange={(e) => setManualRate(e.target.value)}
+            hint="Tasa de referencia de mercado. Puedes ajustarla."
           />
         )}
 

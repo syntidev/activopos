@@ -77,20 +77,22 @@ export async function GET(req: NextRequest) {
       _sum: { amount_usd: true },
     }),
 
-    // Costo de ventas: qty * cost_per_unit para ventas pagas del período
+    // COGS: qty * costo capturado EN LA VENTA (si.cost_per_unit_usd), no el costo
+    // actual del producto — el costo histórico de la venta no debe moverse si el
+    // producto se recotiza después. Fuente única de COGS (GAP-2 / decisión Compra≠Gasto).
     prisma.$queryRaw<{ costo: string | null }[]>`
-      SELECT SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS costo
+      SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
-      JOIN products p ON p.id = si.product_id
       WHERE s.business_id = ${bid}
         AND s.status = 'paid'
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}`,
 
-    // Gastos operativos incurridos en el período (todos, pagados o no)
+    // Gastos operativos incurridos en el período (pagados o no), EXCLUYENDO
+    // categoria='proveedor' — esas compras son COGS al vender, no OPEX (GAP-2).
     db.gasto.aggregate({
-      where: { fecha: { gte: from, lt: to } }, // business_id inyectado
+      where: { fecha: { gte: from, lt: to }, categoria: { not: 'proveedor' } }, // business_id inyectado
       _sum:  { monto_usd: true },
     }),
 

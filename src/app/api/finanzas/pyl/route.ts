@@ -71,8 +71,11 @@ export async function GET(req: NextRequest) {
           AND s.sold_at >= ${from}
           AND s.sold_at <  ${toExclusive}`,
 
+      // OPEX excluye categoria='proveedor': una compra de inventario a crédito es
+      // COGS al vender (via SaleItem), NO gasto operativo. Contarla aquí duplicaría
+      // el costo (GAP-2). Decisión de negocio: Compra ≠ Gasto.
       db.gasto.aggregate({
-        where: { fecha: { gte: from, lt: toExclusive } }, // business_id inyectado por el tenant layer
+        where: { fecha: { gte: from, lt: toExclusive }, categoria: { not: 'proveedor' } }, // business_id inyectado por el tenant layer
         _sum:  { monto_usd: true },
       }),
     ])

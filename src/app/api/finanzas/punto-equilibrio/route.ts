@@ -21,19 +21,21 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
     }),
 
-    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
+    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
+    // COGS desde si.cost_per_unit_usd (costo capturado en la venta), fuente única (GAP-2).
     prisma.$queryRaw<{ costo: string | null }[]>`
-      SELECT SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS costo
+      SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
-      JOIN products p ON p.id = si.product_id
       WHERE s.business_id = ${bid}
         AND s.status = 'paid'
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}`,
 
+    // Costos fijos excluyen categoria='proveedor' — esas compras ya cuentan como
+    // costo variable vía COGS; contarlas aquí las duplicaría en el break-even (GAP-2).
     db.gasto.aggregate({
-      where: { fecha: { gte: from, lt: to } }, // business_id inyectado
+      where: { fecha: { gte: from, lt: to }, categoria: { not: 'proveedor' } }, // business_id inyectado
       _sum:  { monto_usd: true },
     }),
   ])

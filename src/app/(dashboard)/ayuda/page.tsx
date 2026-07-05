@@ -6,14 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
   Package,
+  Boxes,
   ShoppingCart,
   RotateCcw,
   Users,
+  Truck,
+  ClipboardList,
   BarChart2,
   Wallet,
   DollarSign,
   UserCog,
   Settings,
+  QrCode,
   MessageCircle,
   Send,
   X,
@@ -33,14 +37,24 @@ interface HelpTopic {
 }
 
 const HELP_TOPICS: Record<string, HelpTopic> = {
-  Inventario: {
+  Productos: {
     steps: [
       'Ve a Productos → botón "Nuevo Producto".',
-      'Ingresa nombre, precio USD y categoría.',
-      'Opcionalmente sube una foto y agrega código de barras.',
-      'Guarda y aparece en el listado de inventario.',
+      'Escribe el nombre, el precio en USD y el costo (para saber tu ganancia real).',
+      'Escoge si se vende por unidad o por peso (kg).',
+      'Si tiene tallas, colores u otras variantes, actívalas y agrégalas.',
+      'Guarda — ya puedes venderlo desde el Punto de Venta.',
     ],
-    tip: 'El stock se controla desde "Ajustar Stock" en cada producto.',
+    tip: 'Agrégale el código de barras para venderlo más rápido con el escáner.',
+  },
+  Inventario: {
+    steps: [
+      'Ve a Inventario y busca el producto.',
+      'Presiona "Entrada" cuando te llegue mercancía nueva y anota cantidad y costo.',
+      'Usa "Ajuste" si algo se dañó, se perdió o hiciste un conteo distinto.',
+      'Usa "Consumo interno" si sacaste producto para uso propio del negocio.',
+    ],
+    tip: 'Cada movimiento queda guardado — revisa el historial completo desde cada producto.',
   },
   'Ventas (POS)': {
     steps: [
@@ -75,6 +89,15 @@ const HELP_TOPICS: Record<string, HelpTopic> = {
     ],
     tip: 'Filtra por cajero para ver el rendimiento de cada empleado.',
   },
+  'Catálogo Digital': {
+    steps: [
+      'Ve a Catálogo Digital para ver tu tienda en línea.',
+      'Descarga el código QR o copia el enlace para compartirlo por WhatsApp o redes.',
+      'Desde cada producto, activa "Mostrar en catálogo" para que salga publicado.',
+      'Los pedidos que hagan tus clientes llegan directo al módulo Pedidos.',
+    ],
+    tip: 'El stock del catálogo se actualiza solo — si se acaba un producto, nadie lo puede pedir.',
+  },
   'Gestión de Caja': {
     steps: [
       'Ve a Gestión de Caja y abre un turno con el monto inicial en efectivo.',
@@ -90,6 +113,23 @@ const HELP_TOPICS: Record<string, HelpTopic> = {
       'Las ventas a crédito aparecen en Cuentas por Cobrar.',
     ],
     tip: 'Cobra las deudas desde el perfil del cliente o desde Finanzas directamente.',
+  },
+  Proveedores: {
+    steps: [
+      'Ve a Proveedores → botón "Nuevo".',
+      'Escribe el nombre, RIF y teléfono del proveedor.',
+      'Guarda — ya queda disponible para usarlo al registrar una Compra.',
+    ],
+    tip: 'Búscalo por nombre o RIF cuando tu lista de proveedores crezca.',
+  },
+  Compras: {
+    steps: [
+      'Ve a Proveedores → pestaña Compras → "Nueva Compra".',
+      'Elige el proveedor y agrega los productos con cantidad y costo.',
+      'Marca "Recibida" si ya tienes la mercancía, o "Pendiente" si quedaste a deber.',
+      'Guarda — si quedó recibida, tu stock sube automático.',
+    ],
+    tip: 'Una compra pendiente aparece como deuda en Finanzas → Cuentas por Pagar.',
   },
   Usuarios: {
     steps: [
@@ -121,9 +161,15 @@ interface HelpCard {
 const HELP_CARDS: HelpCard[] = [
   {
     icon: Package,
+    title: 'Productos',
+    description: 'Registro, precio, costo, variantes y código de barras.',
+    keywords: ['producto', 'productos', 'registro', 'variante', 'talla', 'codigo de barra', 'costo', 'precio'],
+  },
+  {
+    icon: Boxes,
     title: 'Inventario',
-    description: 'Registro, unidades, edición y eliminación de productos.',
-    keywords: ['inventario', 'producto', 'stock', 'unidades', 'registro', 'eliminar'],
+    description: 'Entradas de mercancía, ajustes y consumo interno.',
+    keywords: ['inventario', 'stock', 'entrada', 'mercancia', 'ajuste', 'consumo interno', 'movimientos'],
   },
   {
     icon: ShoppingCart,
@@ -150,6 +196,12 @@ const HELP_CARDS: HelpCard[] = [
     keywords: ['reporte', 'exportar', 'pdf', 'análisis', 'historial', 'ventas'],
   },
   {
+    icon: QrCode,
+    title: 'Catálogo Digital',
+    description: 'Tu tienda en línea con QR, enlace y pedidos.',
+    keywords: ['catalogo', 'catálogo', 'qr', 'enlace', 'tienda en linea', 'pedidos', 'digital'],
+  },
+  {
     icon: Wallet,
     title: 'Gestión de Caja',
     description: 'Control del efectivo en la tienda o negocio.',
@@ -160,6 +212,18 @@ const HELP_CARDS: HelpCard[] = [
     title: 'Finanzas',
     description: 'Cobranza, CxP, cobros parciales e ingresos/gastos.',
     keywords: ['finanzas', 'cobranza', 'gasto', 'ingreso', 'deuda', 'cobro'],
+  },
+  {
+    icon: Truck,
+    title: 'Proveedores',
+    description: 'Registro y búsqueda de tus proveedores.',
+    keywords: ['proveedor', 'proveedores', 'rif', 'contacto proveedor'],
+  },
+  {
+    icon: ClipboardList,
+    title: 'Compras',
+    description: 'Registro de compras a proveedor, recibidas o pendientes.',
+    keywords: ['compra', 'compras', 'comprar mercancia', 'cuentas por pagar', 'cxp'],
   },
   {
     icon: UserCog,
@@ -280,6 +344,9 @@ const BOT_RULES: BotRule[] = [
   { keywords: ['escaner','escanear','camara','codigo de barra','barcode'], response: 'El escáner de cámara está disponible en el POS, Productos e Inventario. Toca el ícono de escáner en el header (solo en móvil). Apunta la cámara al código de barras del producto.' },
   { keywords: ['talla','variante','color','tallas','zapato','ropa'], response: 'Las variantes (talla, color, modelo) se configuran en cada producto. Abre el producto, activa el toggle "Este producto tiene variantes" y selecciona las tallas: ropa adulto (XS-XXXL), ropa niño (2-16), zapato adulto (35-44), zapato niño (18-34).' },
   { keywords: ['inventario','stock','entrada','mercancia'], response: 'Para registrar mercancía: ve a Inventario y haz clic en "Entrada" en el producto correspondiente. Ingresa cantidad y costo. El sistema actualiza el stock y el costo automáticamente.' },
+  { keywords: ['crear producto','nuevo producto','agregar producto','producto nuevo'], response: 'Para crear un producto: ve a Productos → "Nuevo Producto". Ponle nombre, precio en USD y costo. Escoge si se vende por unidad o por peso, y si tiene tallas o variantes actívalas ahí mismo.' },
+  { keywords: ['proveedor','proveedores'], response: 'Para registrar un proveedor: ve a Proveedores → "Nuevo". Con nombre, RIF y teléfono basta. Ya lo puedes usar al registrar una compra.' },
+  { keywords: ['compra','compras','comprar mercancia'], response: 'Para registrar una compra: ve a Proveedores → pestaña Compras → "Nueva Compra". Elige el proveedor, agrega productos con cantidad y costo, y marca si ya la pagaste (Recibida) o quedó a deber (Pendiente).' },
   { keywords: ['caja','abrir caja','cerrar caja','arqueo'], response: 'Para abrir la caja: ve a Gestión de Caja y presiona "Abrir caja" con el monto inicial. Al cerrar: cuenta el efectivo real, ingresa el monto y el sistema calcula la diferencia.' },
   { keywords: ['pedido','pedidos','catalogo','whatsapp','orden'], response: 'Los pedidos del catálogo digital llegan al módulo Pedidos en formato kanban: Recibido → Preparando → Listo → Despachado. Puedes cobrar cada pedido directamente desde la tarjeta.' },
   { keywords: ['cliente','clientes','credito','cxc','deuda'], response: 'Para vender a crédito: en el POS selecciona "Crédito" como método de pago. La deuda queda en el módulo Finanzas → CxC. Para abonar: ve a Clientes → selecciona el cliente → Registrar abono.' },

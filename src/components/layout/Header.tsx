@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X } from 'lucide-react'
@@ -554,14 +555,18 @@ export function Header({
         </div>
       )}
 
-      {/* Modal Tasa del día */}
-      {rateModalOpen && rate != null && (
+      {/* Modal Tasa del día — portal directo a document.body: garantiza que
+          .rateOverlay (position:fixed) se posicione contra el viewport real,
+          sin depender de si algún ancestro (header u otro wrapper) crea un
+          containing block vía backdrop-filter/transform. */}
+      {rateModalOpen && rate != null && createPortal(
         <RateModal
           info={{ rate, source: source ?? 'bcv', manual_active: manualActive, bcv_rate: bcvRate ?? rate, parallel_rate: parallelRate }}
           isAdmin={isAdmin}
           onClose={() => setRateModalOpen(false)}
           onChanged={refreshRate}
-        />
+        />,
+        document.body
       )}
     </>
   )

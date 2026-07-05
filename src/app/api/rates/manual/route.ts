@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
     if (data.rate <= RATE_MIN || data.rate >= RATE_MAX) {
       return NextResponse.json({ error: `Tasa fuera de rango (${RATE_MIN} - ${RATE_MAX})` }, { status: 400 })
     }
-    await storeManualRate(data.rate)
+    await storeManualRate(data.rate, session.businessId)
   } else {
-    await releaseManualRate()
+    await releaseManualRate(session.businessId)
   }
 
   const active   = await getActiveRate(session.businessId)

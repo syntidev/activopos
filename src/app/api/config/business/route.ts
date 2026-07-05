@@ -102,10 +102,10 @@ export async function PATCH(request: Request) {
     if (manualRate < RATE_MIN || manualRate > RATE_MAX) {
       return NextResponse.json({ error: `Tasa fuera de rango (${RATE_MIN} - ${RATE_MAX})` }, { status: 400 })
     }
-    await storeManualRate(manualRate)
+    await storeManualRate(manualRate, session.businessId)
   } else if (businessFields.rate_source === 'bcv' || businessFields.rate_source === 'parallel') {
-    // Cambiar a BCV/paralelo libera cualquier override manual activo.
-    await releaseManualRate()
+    // Cambiar a BCV/paralelo libera cualquier override manual activo del negocio.
+    await releaseManualRate(session.businessId)
   }
 
   const updated = await prisma.business.update({

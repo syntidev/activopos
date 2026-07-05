@@ -154,51 +154,45 @@ export function getParallelRate(): Promise<number | null> {
 }
 
 // ── Tasa manual override (patrón SYNTImeat) ──────────────────────────────────
-// DollarRate es global/compartida entre tenants (ver prisma-tenant.ts): la tasa
-// manual se guarda con business_id = null igual que BCV. DB es la única fuente de
-// verdad — sin cache en memoria.
+// SEGURIDAD: la tasa manual es POR NEGOCIO — se scopea con business_id. BCV/paralelo
+// son globales (tasa nacional, igual para todos), pero un override manual es una
+// decisión de UN tenant y NUNCA debe afectar a otros. Por eso storeManualRate y
+// releaseManualRate exigen businessId. DB es la única fuente de verdad.
 
-// Desactiva la manual anterior y crea una nueva activa. Atómico bajo PM2 cluster.
-export async function storeManualRate(rate: number): Promise<void> {
+// Desactiva la manual anterior del negocio y crea una nueva activa. Atómico bajo PM2.
+export async function storeManualRate(rate: number, businessId: number): Promise<void> {
   await prisma.$transaction([
     prisma.dollarRate.updateMany({
-      where: { source: 'manual', is_active: true },
+      where: { source: 'manual', is_active: true, business_id: businessId },
       data:  { is_active: false },
     }),
     prisma.dollarRate.create({
-      data: { rate, source: 'manual', is_active: true, business_id: null },
+      data: { rate, source: 'manual', is_active: true, business_id: businessId },
     }),
   ])
 }
 
-// Desactiva la manual y reactiva la última BCV conocida (para que getActiveRate
-// vuelva a BCV sin depender de un fetch inmediato).
-export async function releaseManualRate(): Promise<void> {
-  const lastBcv = await prisma.dollarRate.findFirst({
-    where: { source: 'bcv' },
-    orderBy: { fetched_at: 'desc' },
-    select: { id: true },
+// Desactiva la manual del negocio. getActiveRate cae automáticamente a BCV (global)
+// al no encontrar manual activo para ese business_id.
+export async function releaseManualRate(businessId: number): Promise<void> {
+  await prisma.dollarRate.updateMany({
+    where: { source: 'manual', is_active: true, business_id: businessId },
+    data:  { is_active: false },
   })
-  await prisma.$transaction([
-    prisma.dollarRate.updateMany({
-      where: { source: 'manual', is_active: true },
-      data:  { is_active: false },
-    }),
-    ...(lastBcv
-      ? [prisma.dollarRate.update({ where: { id: lastBcv.id }, data: { is_active: true } })]
-      : []),
-  ])
 }
 
-// Tasa efectiva del sistema: manual override activo tiene prioridad; si no,
-// BCV (fetch con fallback dual + fallback a DB). Nunca lanza.
+// Tasa efectiva del sistema: manual override del negocio tiene prioridad; si no,
+// BCV (global, fetch con fallback dual + fallback a DB). Nunca lanza. Sin businessId
+// (contexto público) no hay manual posible → BCV.
 export async function getActiveRate(businessId?: number): Promise<{ rate: number; source: string }> {
-  const manual = await prisma.dollarRate.findFirst({
-    where: { source: 'manual', is_active: true },
-    orderBy: { fetched_at: 'desc' },
-    select: { rate: true },
-  })
-  if (manual) return { rate: parseFloat(manual.rate.toString()), source: 'manual' }
+  if (businessId !== undefined) {
+    const manual = await prisma.dollarRate.findFirst({
+      where: { source: 'manual', is_active: true, business_id: businessId },
+      orderBy: { fetched_at: 'desc' },
+      select: { rate: true },
+    })
+    if (manual) return { rate: parseFloat(manual.rate.toString()), source: 'manual' }
+  }
 
   const rate = await getBcvRate(businessId)
   return { rate, source: 'bcv' }

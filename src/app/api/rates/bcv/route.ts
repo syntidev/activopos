@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getBcvRate, readCachedBcvRate, getOtherRate, getActiveRate } from '@/lib/bcv'
+import { getBcvRate, readCachedBcvRate, getOtherRate, getActiveRate, getParallelRate } from '@/lib/bcv'
 import { getSession } from '@/lib/auth'
 import { ratesLimiter, getClientIp } from '@/lib/rate-limit'
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     // BCV real siempre, como referencia (aunque haya override manual activo).
     const [bcvResult, paraleloResult, usdtResult] = await Promise.allSettled([
       session?.businessId ? getBcvRate(session.businessId) : readCachedBcvRate(),
-      getOtherRate('paralelo'),
+      getParallelRate(),
       getOtherRate('usdt'),
     ])
 
@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       bcv_rate:      bcv,                  // BCV real de referencia
       bcv,                                 // backward compat (admin BcvRateSection lee .bcv)
       paralelo,
+      parallel_rate: paralelo,             // sugerencia para el campo manual del frontend
       usdt,
     })
   } catch (err) {

@@ -387,7 +387,7 @@ function PedidosContent() {
       const res = await fetch(`/api/orders/${order.id}/whatsapp`)
       if (res.ok) {
         const data = await res.json()
-        window.open(data.url, '_blank', 'noopener,noreferrer')
+        window.open(data.whatsapp_url, '_blank', 'noopener,noreferrer')
       }
     } catch {
       toast('Error al generar enlace', 'error')

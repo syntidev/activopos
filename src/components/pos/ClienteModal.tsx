@@ -49,7 +49,7 @@ export function ClienteModal({ open, onClose, onSelect, selectedId }: ClienteMod
     setSearching(true)
     timer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/clients?q=${encodeURIComponent(query.trim())}&limit=8`)
+        const res = await fetch(`/api/clients?search=${encodeURIComponent(query.trim())}&limit=8`)
         const data = await res.json()
         setResults(data.clients ?? [])
       } catch { setResults([]) }

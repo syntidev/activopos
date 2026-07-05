@@ -415,6 +415,17 @@
 .rateApplyBtn:hover:not(:disabled) { background: var(--color-brand-hover); }
 .rateApplyBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 
+/* Mobile: "Aplicar tasa manual" (nowrap) no cabe junto al input en 375px —
+   envuelve a su propia línea a ancho completo. Desktop intacto (>480px). */
+@media (max-width: 480px) {
+  .rateInputRow {
+    flex-wrap: wrap;
+  }
+  .rateApplyBtn {
+    width: 100%;
+  }
+}
+
 .rateErr {
   font-size: var(--text-xs);
   color: var(--color-danger-text);

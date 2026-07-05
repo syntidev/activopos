@@ -7,6 +7,7 @@ interface RateState {
   source: string | null
   manualActive: boolean
   bcvRate: number | null
+  parallelRate: number | null
 }
 
 interface RateContextValue extends RateState {
@@ -25,7 +26,7 @@ const POLL_INTERVAL = 60_000
  */
 export function RateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<RateState>({
-    rate: null, source: null, manualActive: false, bcvRate: null,
+    rate: null, source: null, manualActive: false, bcvRate: null, parallelRate: null,
   })
 
   const refreshRate = useCallback(async () => {
@@ -34,6 +35,7 @@ export function RateProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return
       const j = await res.json() as {
         ok?: boolean; rate?: number; source?: string; manual_active?: boolean; bcv_rate?: number
+        parallel_rate?: number | null
       }
       if (j.ok && typeof j.rate === 'number') {
         setState({
@@ -41,6 +43,7 @@ export function RateProvider({ children }: { children: ReactNode }) {
           source:       j.source ?? 'bcv',
           manualActive: !!j.manual_active,
           bcvRate:      typeof j.bcv_rate === 'number' ? j.bcv_rate : j.rate,
+          parallelRate: typeof j.parallel_rate === 'number' ? j.parallel_rate : null,
         })
       }
     } catch { /* mantiene el último valor conocido */ }

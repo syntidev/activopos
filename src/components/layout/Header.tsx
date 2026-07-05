@@ -62,6 +62,7 @@ interface RateInfo {
   source: string
   manual_active: boolean
   bcv_rate: number
+  parallel_rate: number | null
 }
 
 const fmtRateEs = (n: number) =>
@@ -106,6 +107,12 @@ function RateModal({ info, isAdmin, onClose, onChanged }: RateModalProps) {
   const handleToggle = (checked: boolean) => {
     setManualOn(checked)
     setErr('')
+    // Encender desde OFF: sugiere la tasa paralela como punto de partida
+    // (el usuario puede aceptarla o escribir otra). Antes el input quedaba
+    // vacío — placeholder "0.00" se leía como "Bs. 0.00" ya cargado.
+    if (checked && !info.manual_active && info.parallel_rate != null) {
+      setRateInput(String(info.parallel_rate))
+    }
     // Apagar el override manual persiste de inmediato (vuelve a BCV)
     if (!checked && info.manual_active) void submit(false)
   }
@@ -252,7 +259,7 @@ export function Header({
   /* ── Tasa del día (badge + modal) — RateContext es la única fuente; ya no
      hay fetch/poll/listener local, así que Header, Sidebar y Configuración
      quedan sincronizados al instante al llamar refreshRate() desde cualquiera. */
-  const { rate, source, manualActive, bcvRate, refreshRate } = useRate()
+  const { rate, source, manualActive, bcvRate, parallelRate, refreshRate } = useRate()
   const [rateModalOpen, setRateModalOpen] = useState(false)
 
   /* ── Business brand (desktop left) ── */
@@ -550,7 +557,7 @@ export function Header({
       {/* Modal Tasa del día */}
       {rateModalOpen && rate != null && (
         <RateModal
-          info={{ rate, source: source ?? 'bcv', manual_active: manualActive, bcv_rate: bcvRate ?? rate }}
+          info={{ rate, source: source ?? 'bcv', manual_active: manualActive, bcv_rate: bcvRate ?? rate, parallel_rate: parallelRate }}
           isAdmin={isAdmin}
           onClose={() => setRateModalOpen(false)}
           onChanged={refreshRate}

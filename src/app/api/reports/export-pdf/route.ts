@@ -64,12 +64,13 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
     }),
 
-    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
+    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
+    // Costo histórico desde si.cost_per_unit_usd (capturado al vender), no el
+    // costo actual del producto — mismo patrón que day/range (GAP-R1).
     prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS profit
+      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS profit
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
-      JOIN products p ON p.id = si.product_id
       WHERE s.business_id = ${bid}
         AND s.status = 'paid'
         AND s.sold_at >= ${from}

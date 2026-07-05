@@ -74,7 +74,7 @@ export interface BusinessConfig {
   email:                       string | null
   theme:                       string
   theme_color:                 string
-  rate_source:                 string
+  rate_source:                 'bcv' | 'parallel' | 'manual' | string
   current_rate:                number
   allow_cashier_price_override: boolean
   pos_mode?:                   'ticket' | 'invoice'

@@ -62,7 +62,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
 
   const [config, setConfig]         = useState<BusinessConfig | null>(null)
   const [loading, setLoading]       = useState(true)
-  const [bcvAuto, setBcvAuto]       = useState(true)
+  const [rateSource, setRateSource] = useState<'bcv' | 'parallel' | 'manual'>('bcv')
   const [manualRate, setManualRate] = useState('')
   const [savingRate, setSavingRate] = useState(false)
 
@@ -98,7 +98,8 @@ export function TabGeneral({ businessId: _businessId }: Props) {
         current_rate: number
       }
       setConfig({ ...body.business, current_rate: body.current_rate })
-      setBcvAuto(body.business.rate_source === 'bcv')
+      const source = body.business.rate_source
+      setRateSource(source === 'parallel' || source === 'manual' ? source : 'bcv')
       setManualRate(String(body.current_rate))
       setAllowOverride(body.business.allow_cashier_price_override ?? false)
     } catch {
@@ -139,8 +140,8 @@ export function TabGeneral({ businessId: _businessId }: Props) {
   const handleSaveRate = async () => {
     setSavingRate(true)
     try {
-      const body: Record<string, unknown> = { rate_source: bcvAuto ? 'bcv' : 'manual' }
-      if (!bcvAuto) {
+      const body: Record<string, unknown> = { rate_source: rateSource }
+      if (rateSource === 'manual') {
         const r = parseFloat(manualRate)
         if (!r || r <= 0) {
           toast('Ingresa una tasa válida mayor a cero.', 'error')
@@ -289,21 +290,26 @@ export function TabGeneral({ businessId: _businessId }: Props) {
 
         <div className={styles.toggleRow}>
           <div>
-            <p className={styles.toggleLabel}>Actualización automática BCV</p>
-            <p className={styles.toggleHint}>Consulta ve.dolarapi.com cada hora automáticamente</p>
+            <p className={styles.toggleLabel}>Fuente de la tasa</p>
+            <p className={styles.toggleHint}>
+              {rateSource === 'bcv' && 'Consulta ve.dolarapi.com (oficial BCV) cada hora automáticamente'}
+              {rateSource === 'parallel' && 'Consulta ve.dolarapi.com (paralelo) cada hora automáticamente'}
+              {rateSource === 'manual' && 'Ingresa la tasa manualmente, sin actualización automática'}
+            </p>
           </div>
-          <button
-            type="button"
-            className={`${styles.toggleBtn} ${bcvAuto ? styles.toggleBtnOn : ''}`}
-            onClick={() => setBcvAuto(v => !v)}
-            aria-pressed={bcvAuto}
-            aria-label={bcvAuto ? 'Desactivar BCV automático' : 'Activar BCV automático'}
+          <select
+            className={styles.segmentSelect}
+            value={rateSource}
+            onChange={(e) => setRateSource(e.target.value as 'bcv' | 'parallel' | 'manual')}
+            aria-label="Fuente de la tasa de cambio"
           >
-            <span className={`${styles.toggleKnob} ${bcvAuto ? styles.toggleKnobOn : ''}`} />
-          </button>
+            <option value="bcv">BCV (oficial)</option>
+            <option value="parallel">Paralelo</option>
+            <option value="manual">Manual</option>
+          </select>
         </div>
 
-        {!bcvAuto && (
+        {rateSource === 'manual' && (
           <Input
             label="Tasa manual (Bs / USD)"
             type="number"

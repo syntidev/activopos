@@ -142,7 +142,7 @@ model Business {
   ticket_footer        String?  @db.Text
   quotation_footer     String?  @db.Text
   currency_default     String   @default("USD")
-  rate_source          String   @default("bcv")
+  rate_source          String   @default("bcv") // 'bcv' | 'parallel' | 'manual'
   subscription_active      Boolean   @default(true)
   subscription_expires_at  DateTime?
   onboarding_completed Boolean  @default(false)

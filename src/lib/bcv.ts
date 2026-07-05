@@ -117,6 +117,11 @@ export async function readCachedBcvRate(): Promise<number> {
   return FALLBACK_RATE
 }
 
+// Alias con nombre simétrico a getBcvRate() — misma fuente/caché que getOtherRate('paralelo').
+export function getParallelRate(): Promise<number | null> {
+  return getOtherRate('paralelo')
+}
+
 export function formatBs(usd: number, rate: number): string {
   return (usd * rate).toLocaleString('es-VE', {
     minimumFractionDigits: 2,

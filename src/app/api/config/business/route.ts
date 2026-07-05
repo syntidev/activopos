@@ -16,7 +16,7 @@ const PatchSchema = z.object({
     .refine(v => v === null || v.startsWith('/uploads/') || v.startsWith('/storage/tenants/'), 'Path inválido')
     .nullable()
     .optional(),
-  rate_source:      z.enum(['bcv', 'manual']).optional(),
+  rate_source:      z.enum(['bcv', 'parallel', 'manual']).optional(),
   rate:             z.number().positive().optional(),
   segment:          z.string().max(50).optional(),
   max_discount_pct:             z.number().min(0).max(100).optional(),

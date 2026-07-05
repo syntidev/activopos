@@ -58,7 +58,7 @@ export async function POST(_req: NextRequest, { params }: Context) {
     const sale = await prisma.$transaction(async tx => {
       const products = await tx.product.findMany({
         where:  { id: { in: productIds }, business_id: session.businessId },
-        select: { id: true, sale_mode: true, base_unit_label: true },
+        select: { id: true, sale_mode: true, base_unit_label: true, cost_per_unit_usd: true },
       })
       const productMap = new Map(products.map(p => [p.id, p]))
 
@@ -91,6 +91,7 @@ export async function POST(_req: NextRequest, { params }: Context) {
                 unit_label:         p?.base_unit_label ?? 'und',
                 quantity:           Number(i.qty),
                 price_per_unit_usd: priceUsd,
+                cost_per_unit_usd:  Number(p?.cost_per_unit_usd ?? 0),
                 subtotal_usd:       subtotalUsd,
                 subtotal_bs:        r2(subtotalUsd * rate),
                 rate_used:          rate,
@@ -100,6 +101,21 @@ export async function POST(_req: NextRequest, { params }: Context) {
           },
         },
         select: { id: true, ticket_number: true },
+      })
+
+      // status='credit' descuenta stock — misma regla que sales/route.ts (paid|credit).
+      // Mismo patrón: entry_type='sale', notes con el ticket, sin reference_id
+      // (InventoryEntry no tiene esa columna).
+      await tx.inventoryEntry.createMany({
+        data: quotation.items.map(i => ({
+          business_id: session.businessId,
+          product_id:  i.product_id as number,
+          quantity:    -Number(i.qty),
+          waste:       0,
+          entry_type:  'sale',
+          notes:       `VENTA #${newSale.ticket_number}`,
+          created_by:  session.userId,
+        })),
       })
 
       await tx.quotation.update({

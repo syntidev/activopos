@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck } from 'lucide-react'
+import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { CajaToggle } from './CajaToggle'
 import styles from './Header.module.css'
@@ -55,6 +55,159 @@ interface HeaderProps {
   onToggleMobile: () => void
 }
 
+/* ── Tasa del día ── */
+
+interface RateInfo {
+  rate: number
+  source: string
+  manual_active: boolean
+  bcv_rate: number
+}
+
+const fmtRateEs = (n: number) =>
+  n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+interface RateModalProps {
+  info: RateInfo
+  isAdmin: boolean
+  onClose: () => void
+  onChanged: () => Promise<void>
+}
+
+function RateModal({ info, isAdmin, onClose, onChanged }: RateModalProps) {
+  const [manualOn,  setManualOn]  = useState(info.manual_active)
+  const [rateInput, setRateInput] = useState(info.manual_active ? String(info.rate) : '')
+  const [saving,    setSaving]    = useState(false)
+  const [err,       setErr]       = useState('')
+
+  const submit = useCallback(async (active: boolean, rate?: number) => {
+    setSaving(true); setErr('')
+    try {
+      const payload = active && rate != null ? { rate, active: true } : { active: false }
+      const res = await fetch('/api/rates/manual', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        setErr(j?.error ?? 'No se pudo actualizar la tasa')
+        return
+      }
+      await onChanged()
+      onClose()
+    } catch {
+      setErr('Error de conexión')
+    } finally {
+      setSaving(false)
+    }
+  }, [onChanged, onClose])
+
+  const handleToggle = (checked: boolean) => {
+    setManualOn(checked)
+    setErr('')
+    // Apagar el override manual persiste de inmediato (vuelve a BCV)
+    if (!checked && info.manual_active) void submit(false)
+  }
+
+  const handleApply = () => {
+    const n = parseFloat(rateInput)
+    if (isNaN(n) || n <= 0) { setErr('Ingresa una tasa válida'); return }
+    void submit(true, n)
+  }
+
+  return (
+    <div
+      className={styles.rateOverlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Tasa del día"
+      onClick={(e) => { if (e.target === e.currentTarget && !saving) onClose() }}
+    >
+      <div className={styles.rateModal}>
+        <div className={styles.rateModalHeader}>
+          <h2 className={styles.rateModalTitle}>Tasa del día</h2>
+          <button type="button" className={styles.rateModalClose} onClick={onClose} disabled={saving} aria-label="Cerrar">
+            <X size={17} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* BCV de referencia */}
+        <div className={styles.rateInfoBox}>
+          <span className={styles.rateInfoLabel}>BCV oficial (referencia)</span>
+          <span className={styles.rateInfoValue}>Bs. {fmtRateEs(info.bcv_rate)}</span>
+        </div>
+
+        {/* Tasa activa actual */}
+        <div className={styles.rateActiveRow}>
+          <span className={styles.rateInfoLabel}>Tasa activa del sistema</span>
+          <span className={`${styles.rateActiveValue} ${info.manual_active ? styles.rateActiveManual : ''}`}>
+            Bs. {fmtRateEs(info.rate)}
+            <span className={styles.rateSourceTag}>{info.manual_active ? 'Manual' : 'BCV'}</span>
+          </span>
+        </div>
+
+        {isAdmin ? (
+          <>
+            <label className={styles.rateToggleRow}>
+              <span className={styles.rateToggleText}>Usar tasa manual</span>
+              <span className={styles.rateToggle}>
+                <input
+                  type="checkbox"
+                  className={styles.rateToggleInput}
+                  checked={manualOn}
+                  onChange={(e) => handleToggle(e.target.checked)}
+                  disabled={saving}
+                />
+                <span className={styles.rateToggleTrack} />
+                <span className={styles.rateToggleThumb} />
+              </span>
+            </label>
+
+            {manualOn && (
+              <div className={styles.rateInputRow}>
+                <div className={styles.rateInputWrap}>
+                  <span className={styles.rateInputPrefix}>Bs.</span>
+                  <input
+                    type="number"
+                    className={styles.rateInput}
+                    value={rateInput}
+                    onChange={(e) => { setRateInput(e.target.value); setErr('') }}
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    aria-label="Tasa manual en bolívares"
+                    autoFocus
+                    disabled={saving}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className={styles.rateApplyBtn}
+                  onClick={handleApply}
+                  disabled={saving || !rateInput.trim()}
+                >
+                  {saving ? 'Aplicando…' : 'Aplicar tasa manual'}
+                </button>
+              </div>
+            )}
+
+            {err && <p className={styles.rateErr}>{err}</p>}
+          </>
+        ) : (
+          <p className={styles.rateReadonlyNote}>Solo un administrador puede cambiar la tasa.</p>
+        )}
+
+        <div className={styles.rateFooter}>
+          <button type="button" className={styles.rateCancelBtn} onClick={onClose} disabled={saving}>
+            {isAdmin && manualOn ? 'Cancelar' : 'Cerrar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const PAGE_TITLES: Array<[string, string]> = [
   ['/escritorio',    'Escritorio'],
   ['/pos',           'Punto de Venta'],
@@ -94,6 +247,30 @@ export function Header({
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  const isAdmin = session?.role === 'admin' || session?.role === 'super_admin'
+
+  /* ── Tasa del día (badge + modal) ── */
+  const [rateInfo, setRateInfo]         = useState<RateInfo | null>(null)
+  const [rateModalOpen, setRateModalOpen] = useState(false)
+
+  const fetchRateInfo = useCallback(async () => {
+    try {
+      const res = await fetch('/api/rates/bcv')
+      if (!res.ok) return
+      const j = await res.json() as Partial<RateInfo> & { ok?: boolean }
+      if (j.ok && typeof j.rate === 'number') {
+        setRateInfo({
+          rate:          j.rate,
+          source:        j.source ?? 'bcv',
+          manual_active: !!j.manual_active,
+          bcv_rate:      typeof j.bcv_rate === 'number' ? j.bcv_rate : j.rate,
+        })
+      }
+    } catch { /* graceful — badge cae al prop bcvRate */ }
+  }, [])
+
+  useEffect(() => { void fetchRateInfo() }, [fetchRateInfo])
 
   /* ── Business brand (desktop left) ── */
   const [biz, setBiz] = useState<BizInfo | null>(null)
@@ -244,17 +421,20 @@ export function Header({
 
         {/* Right: BCV rate + caja + notif + theme + user */}
         <div className={styles.right}>
-          {bcvRate && (
+          {(rateInfo?.rate ?? bcvRate) != null && (
             <>
-              <div
-                className={styles.bcvPill}
-                title="Tasa BCV oficial"
-                aria-label={`Tasa BCV: ${formatRate(bcvRate)} bolívares por dólar`}
+              <button
+                type="button"
+                className={`${styles.bcvPill} ${rateInfo?.manual_active ? styles.bcvPillManual : ''}`}
+                onClick={() => setRateModalOpen(true)}
+                title={rateInfo?.manual_active ? 'Tasa manual activa — clic para configurar' : 'Tasa BCV oficial — clic para configurar'}
+                aria-label={`Tasa ${rateInfo?.manual_active ? 'manual' : 'BCV'}: ${formatRate(rateInfo?.rate ?? bcvRate ?? 0)} bolívares por dólar. Abrir configuración de tasa.`}
               >
                 <span className={styles.bcvCurrency}>USD/VES</span>
-                <span className={styles.bcvAmount}>{formatRate(bcvRate)}</span>
+                <span className={styles.bcvAmount}>{formatRate(rateInfo?.rate ?? bcvRate ?? 0)}</span>
                 <span className={styles.bcvBs}>Bs</span>
-              </div>
+                {rateInfo?.manual_active && <span className={styles.bcvManualDot} aria-hidden="true" />}
+              </button>
               <div className={styles.separator} aria-hidden="true" />
             </>
           )}
@@ -382,6 +562,16 @@ export function Header({
             )}
           </div>
         </div>
+      )}
+
+      {/* Modal Tasa del día */}
+      {rateModalOpen && rateInfo && (
+        <RateModal
+          info={rateInfo}
+          isAdmin={isAdmin}
+          onClose={() => setRateModalOpen(false)}
+          onChanged={fetchRateInfo}
+        />
       )}
     </>
   )

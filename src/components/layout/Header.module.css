@@ -174,6 +174,279 @@
   opacity: 0.7;
 }
 
+/* ── Badge clickeable (tasa) ── */
+.bcvPill {
+  cursor: pointer;
+  font-family: inherit;
+  position: relative;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--duration-instant) var(--ease-out);
+}
+
+.bcvPill:hover { background-color: var(--color-success-border); }
+.bcvPill:active { transform: translateY(1px); }
+.bcvPill:focus-visible {
+  outline: 2px solid var(--color-success-text);
+  outline-offset: 2px;
+}
+
+/* Estado manual: paleta warning (distinta de BCV/success) */
+.bcvPillManual {
+  background-color: var(--color-warning-subtle);
+  border-color: var(--color-warning-border);
+}
+.bcvPillManual:hover { background-color: var(--color-warning-border); }
+.bcvPillManual .bcvCurrency,
+.bcvPillManual .bcvAmount,
+.bcvPillManual .bcvBs {
+  color: var(--color-warning-text);
+}
+.bcvPillManual:focus-visible { outline-color: var(--color-warning-text); }
+
+.bcvManualDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-warning-text);
+  flex-shrink: 0;
+}
+
+/* ── Modal Tasa del día ── */
+.rateOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.rateModal {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.rateModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rateModalTitle {
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.rateModalClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+.rateModalClose:hover { background: var(--color-surface-2); color: var(--color-text-primary); }
+
+.rateInfoBox,
+.rateActiveRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+}
+
+.rateInfoLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.rateInfoValue {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rateActiveValue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success-text);
+  font-variant-numeric: tabular-nums;
+}
+.rateActiveManual { color: var(--color-warning-text); }
+
+.rateSourceTag {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: 1px var(--space-1-5);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.rateToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding-top: var(--space-1);
+}
+
+.rateToggleText {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+}
+
+.rateToggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.rateToggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.rateToggleTrack {
+  position: absolute;
+  inset: 0;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.rateToggleThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-fast);
+}
+
+.rateToggleInput:checked ~ .rateToggleTrack { background: var(--color-brand); }
+.rateToggleInput:checked ~ .rateToggleThumb { transform: translateX(18px); }
+.rateToggleInput:focus-visible ~ .rateToggleTrack {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.rateInputRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.rateInputWrap {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+}
+.rateInputWrap:focus-within { border-color: var(--color-brand); }
+
+.rateInputPrefix {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-right: var(--space-1);
+}
+
+.rateInput {
+  flex: 1;
+  min-width: 0;
+  height: var(--touch-min);
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.rateApplyBtn {
+  height: var(--touch-min);
+  padding: 0 var(--space-4);
+  background: var(--color-brand);
+  color: var(--color-text-on-brand);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+.rateApplyBtn:hover:not(:disabled) { background: var(--color-brand-hover); }
+.rateApplyBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.rateErr {
+  font-size: var(--text-xs);
+  color: var(--color-danger-text);
+  margin: 0;
+}
+
+.rateReadonlyNote {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.rateFooter {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rateCancelBtn {
+  height: 38px;
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+.rateCancelBtn:hover { background: var(--color-surface-2); color: var(--color-text-primary); }
+
 /* ── User info ── */
 .userInfo {
   display: flex;

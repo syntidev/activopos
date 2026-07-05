@@ -103,12 +103,13 @@ function PuntoEquilibrioCard({ month }: { month: string }) {
     )
   }
 
-  // Sin datos suficientes — no inventar un número
+  // Sin datos suficientes — muestra el mensaje del servidor (ej. "Sin ventas
+  // registradas en este período"), no inventa un número.
   if (pe.punto_equilibrio_usd === null) {
     return (
       <div className={styles.peCard}>
         <div className={styles.peContent}>
-          <p className={styles.peCaption}>Sin datos suficientes para calcular</p>
+          <p className={styles.peCaption}>{pe.mensaje ?? 'Sin datos suficientes para calcular'}</p>
         </div>
       </div>
     )

@@ -50,6 +50,33 @@ export async function GET(req: NextRequest) {
     ? r2(((ventasUsd - costoVariable) / ventasUsd) * 100)
     : 0
 
+  const diasTotalesMes = Math.floor((to.getTime() - from.getTime()) / 86_400_000)
+
+  // Sin ventas en el período — distinto de "margen negativo": no hay pérdida, no hay datos.
+  if (ventasUsd === 0) {
+    return NextResponse.json({
+      ok:                       true,
+      period_label:             periodLabel,
+      ventas_usd:               0,
+      costo_variable_usd:       r2(costoVariable),
+      gastos_fijos_usd:         r2(gastosFijos),
+      margen_contribucion_pct:  0,
+      punto_equilibrio_usd:     null,
+      superado:                 false,
+      progreso_pct:             0,
+      faltante_usd:             null,
+      excedente_usd:            null,
+      sin_datos:                true,
+      sin_margen:               false,
+      mensaje:                  'Sin ventas registradas en este período',
+      dias_transcurridos:       now.getMonth() + 1 === month && now.getFullYear() === year ? now.getDate() : diasTotalesMes,
+      dias_totales:             diasTotalesMes,
+      ventas_diarias_promedio:  0,
+      proyeccion_fin_mes_usd:   0,
+      alcanzara_pe:             false,
+    })
+  }
+
   // Early return: margen negativo o cero — empresa no puede alcanzar PE con precios actuales
   if (margenContribPct <= 0) {
     return NextResponse.json({

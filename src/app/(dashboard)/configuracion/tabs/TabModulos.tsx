@@ -88,20 +88,25 @@ export function TabModulos({ businessId: _businessId }: Props) {
   const toggleOptional = async (key: string) => {
     setOptSaving(prev => ({ ...prev, [key]: true }))
     const isOn = enabled.has(key)
-    setEnabled(prev => {
-      const next = new Set(prev)
-      if (isOn) next.delete(key)
-      else next.add(key)
-      return next
-    })
+    const next = new Set(enabled)
+    if (isOn) next.delete(key)
+    else next.add(key)
+    setEnabled(next)
     try {
-      await fetch('/api/config/modules', {
+      const res = await fetch('/api/config/business/modules', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, enabled: !isOn }),
+        body: JSON.stringify({ modules: Array.from(next) }),
       })
+      if (!res.ok) throw new Error()
     } catch {
-      // endpoint may not exist yet — UI state already updated optimistically
+      setEnabled(prev => {
+        const reverted = new Set(prev)
+        if (isOn) reverted.add(key)
+        else reverted.delete(key)
+        return reverted
+      })
+      toast('Error al guardar el módulo', 'error')
     } finally {
       setOptSaving(prev => ({ ...prev, [key]: false }))
     }

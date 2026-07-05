@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FileSpreadsheet, Check } from 'lucide-react'
+import { FileSpreadsheet, Check, Tag } from 'lucide-react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Button }          from '@/components/ui/Button'
 import { CxCSection }      from './CxCSection'
@@ -9,14 +9,16 @@ import { CxPSection }      from './CxPSection'
 import { GastosSection }   from './GastosSection'
 import { ResumenSection }  from './ResumenSection'
 import { PylSection }      from './PylSection'
+import { TabCategorias }   from '../configuracion/tabs/TabCategorias'
 import styles from './finanzas.module.css'
 
 const TABS = [
-  { key: 'resumen', label: 'Resumen'               },
-  { key: 'pyl',     label: 'Estado de Resultados'  },
-  { key: 'gastos',  label: 'Gastos'                },
-  { key: 'cxc',     label: 'Por Cobrar'            },
-  { key: 'cxp',     label: 'Por Pagar'             },
+  { key: 'resumen',    label: 'Resumen'               },
+  { key: 'pyl',        label: 'Estado de Resultados'  },
+  { key: 'gastos',     label: 'Gastos'                },
+  { key: 'cxc',        label: 'Por Cobrar'            },
+  { key: 'cxp',        label: 'Por Pagar'             },
+  { key: 'categorias', label: 'Categorías', Icon: Tag },
 ] as const
 
 type TabKey = typeof TABS[number]['key']
@@ -82,17 +84,21 @@ export default function FinanzasPage() {
       </div>
 
       <div className={styles.tabsRow} role="tablist">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            className={`${styles.tab} ${tab === t.key ? styles.tabActive : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
+        {TABS.map(t => {
+          const Icon = 'Icon' in t ? t.Icon : null
+          return (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={tab === t.key}
+              className={`${styles.tab} ${tab === t.key ? styles.tabActive : ''}`}
+              onClick={() => setTab(t.key)}
+            >
+              {Icon && <Icon size={14} aria-hidden="true" />}
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       <div className={styles.tabContent} role="tabpanel">
@@ -110,6 +116,10 @@ export default function FinanzasPage() {
         </ErrorBoundary>
         <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
           {tab === 'cxp'     && <CxPSection month={month} />}
+        </ErrorBoundary>
+        <ErrorBoundary fallback={<div className={styles.sectionError}>Error al cargar esta sección</div>}>
+          {/* businessId no se usa dentro de TabCategorias (endpoint ya es tenant-scoped server-side) */}
+          {tab === 'categorias' && <TabCategorias businessId={0} />}
         </ErrorBoundary>
       </div>
     </div>

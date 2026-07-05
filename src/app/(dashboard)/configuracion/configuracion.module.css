@@ -221,6 +221,17 @@
   margin: var(--space-4) 0;
 }
 
+/* ── Compact variants (solo TabGeneral — agrupa varias secciones en 1 card) ── */
+.formCardCompact {
+  composes: formCard;
+  padding: var(--space-5);
+}
+
+.formDividerCompact {
+  composes: formDivider;
+  margin: var(--space-3) 0;
+}
+
 .saveRow {
   display: flex;
   justify-content: flex-end;

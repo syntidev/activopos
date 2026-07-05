@@ -289,8 +289,8 @@ export function TabGeneral({ businessId: _businessId }: Props) {
         <p className={styles.pageSubtitle}>Tasa de cambio BCV y PIN de seguridad</p>
       </div>
 
-      {/* ── Tasa del Dólar ── */}
-      <div className={styles.formCard}>
+      {/* ── Sistema ── */}
+      <div className={styles.formCardCompact}>
         <h3 className={styles.formCardTitle}>
           <RefreshCw size={16} aria-hidden="true" />
           Tasa del Dólar
@@ -353,10 +353,10 @@ export function TabGeneral({ businessId: _businessId }: Props) {
             Guardar tasa
           </Button>
         </div>
-      </div>
 
-      {/* ── IVA ── */}
-      <div className={styles.formCard}>
+        <div className={styles.formDividerCompact} />
+
+        {/* ── IVA ── */}
         <h3 className={styles.formCardTitle}>
           <Percent size={16} aria-hidden="true" />
           Impuesto al Valor Agregado (IVA)
@@ -416,10 +416,10 @@ export function TabGeneral({ businessId: _businessId }: Props) {
             Guardar IVA
           </Button>
         </div>
-      </div>
 
-      {/* ── PIN de Seguridad ── */}
-      <div className={styles.formCard}>
+        <div className={styles.formDividerCompact} />
+
+        {/* ── PIN de Seguridad ── */}
         <h3 className={styles.formCardTitle}>
           <Lock size={16} aria-hidden="true" />
           PIN de Seguridad
@@ -457,10 +457,10 @@ export function TabGeneral({ businessId: _businessId }: Props) {
             Guardar PIN
           </Button>
         </div>
-      </div>
 
-      {/* ── Modificación de precios ── */}
-      <div className={styles.formCard}>
+        <div className={styles.formDividerCompact} />
+
+        {/* ── Modificación de precios ── */}
         <h3 className={styles.formCardTitle}>
           <Lock size={16} aria-hidden="true" />
           Modificación de Precios
@@ -484,8 +484,8 @@ export function TabGeneral({ businessId: _businessId }: Props) {
         </div>
       </div>
 
-      {/* ── Cambiar contraseña ── */}
-      <div className={styles.formCard}>
+      {/* ── Cuenta ── */}
+      <div className={styles.formCardCompact}>
         <h3 className={styles.formCardTitle}>
           <KeyRound size={16} aria-hidden="true" />
           Cambiar Contraseña

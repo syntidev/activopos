@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getBcvRate, readCachedBcvRate, getOtherRate } from '@/lib/bcv'
+import { getBcvRate, readCachedBcvRate, getOtherRate, getActiveRate } from '@/lib/bcv'
 import { getSession } from '@/lib/auth'
 import { ratesLimiter, getClientIp } from '@/lib/rate-limit'
 
@@ -13,33 +13,29 @@ export async function GET(req: NextRequest) {
   const session = await getSession() // puede ser null — endpoint semi-público
 
   try {
+    // Tasa activa (manual override o BCV) — es la que el sistema debe usar.
+    const active = await getActiveRate(session?.businessId)
+
+    // BCV real siempre, como referencia (aunque haya override manual activo).
     const [bcvResult, paraleloResult, usdtResult] = await Promise.allSettled([
-      session?.businessId
-        ? getBcvRate(session.businessId)
-        : readCachedBcvRate(),
+      session?.businessId ? getBcvRate(session.businessId) : readCachedBcvRate(),
       getOtherRate('paralelo'),
       getOtherRate('usdt'),
     ])
 
-    // BCV es obligatorio — si falla, devolver error
-    if (bcvResult.status === 'rejected') {
-      return NextResponse.json(
-        { error: 'No se pudo obtener la tasa BCV', ok: false },
-        { status: 500 },
-      )
-    }
-
-    const bcv      = bcvResult.value
+    const bcv      = bcvResult.status === 'fulfilled' ? bcvResult.value : null
     const paralelo = paraleloResult.status === 'fulfilled' ? paraleloResult.value : null
     const usdt     = usdtResult.status === 'fulfilled' ? usdtResult.value : null
 
     return NextResponse.json({
-      ok:       true,
-      bcv,
+      ok:            true,
+      rate:          active.rate,          // tasa activa (manual o bcv)
+      source:        active.source,        // 'manual' | 'bcv'
+      manual_active: active.source === 'manual',
+      bcv_rate:      bcv,                  // BCV real de referencia
+      bcv,                                 // backward compat (admin BcvRateSection lee .bcv)
       paralelo,
       usdt,
-      rate:     bcv,    // backward compat
-      source:   'bcv',
     })
   } catch (err) {
     console.error('rates/bcv GET failed:', err)

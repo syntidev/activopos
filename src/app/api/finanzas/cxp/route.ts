@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
           ? { categoria: cat }
           : {}),
       },
+      include: { supplier_ref: { select: { id: true, name: true } } },
       orderBy: { fecha: 'asc' },
     })
 
@@ -40,11 +41,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok:   true,
-      cxp:  gastos.map(g => ({
+      cxp:  gastos.map(({ supplier_ref, ...g }) => ({
         ...g,
         fecha:     g.fecha    instanceof Date ? g.fecha.toISOString().slice(0, 10)    : String(g.fecha).slice(0, 10),
         due_date:  g.due_date instanceof Date ? g.due_date.toISOString().slice(0, 10) : (g.due_date ?? null),
         monto_usd: Number(g.monto_usd),
+        supplier:  supplier_ref ? { id: supplier_ref.id, name: supplier_ref.name } : null,
       })),
       total_usd: total,
     })

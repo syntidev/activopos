@@ -136,7 +136,8 @@ export async function POST(req: NextRequest) {
             categoria:   'proveedor',
             is_paid:     false,
             due_date:    null,
-            supplier:    supplier.name,
+            supplier:    supplier.name,       // legacy texto
+            supplier_id: data.supplier_id,    // FK — la CxP hereda el proveedor de la compra
             created_by:  session.userId,
             fecha:       new Date(new Date().toISOString().slice(0, 10)),
           },

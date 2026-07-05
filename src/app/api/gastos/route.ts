@@ -22,6 +22,7 @@ const PostSchema = z.object({
   paid_at:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
   due_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
   supplier:    z.string().max(150).nullish(),
+  supplier_id: z.number().int().positive().nullish(),
 })
 
 export async function GET(req: NextRequest) {
@@ -44,6 +45,7 @@ export async function GET(req: NextRequest) {
           ...(tipo === 'fijo'     ? { due_date: { not: null } } : {}),
           ...(tipo === 'variable' ? { due_date: null }          : {}),
         },
+        include: { supplier_ref: { select: { id: true, name: true } } },
         orderBy: { fecha: 'desc' },
       }),
       readCachedBcvRate(),
@@ -66,7 +68,8 @@ export async function GET(req: NextRequest) {
         is_paid:     g.is_paid,
         paid_at:     g.paid_at,
         due_date:    g.due_date instanceof Date ? g.due_date.toISOString().slice(0, 10) : (g.due_date ?? null),
-        supplier:    g.supplier,
+        supplier:    g.supplier_ref ? { id: g.supplier_ref.id, name: g.supplier_ref.name } : null,
+        supplier_legacy: g.supplier, // texto libre previo a la migración a FK
         created_at:  g.created_at,
       })),
     })
@@ -99,6 +102,17 @@ export async function POST(req: NextRequest) {
     validatedCategoryId = cat.id
   }
 
+  // supplier_id debe pertenecer al mismo tenant — anti IDOR cross-tenant
+  let validatedSupplierId: number | null = null
+  if (body.supplier_id) {
+    const sup = await prisma.supplier.findFirst({
+      where:  { id: body.supplier_id, business_id: session.businessId },
+      select: { id: true },
+    })
+    if (!sup) return NextResponse.json({ error: 'Proveedor inválido' }, { status: 400 })
+    validatedSupplierId = sup.id
+  }
+
   const fecha   = body.fecha   ? new Date(body.fecha)   : new Date()
   const is_paid = body.is_paid ?? true
   const paid_at = body.paid_at ? new Date(body.paid_at) : (is_paid ? fecha : null)
@@ -117,6 +131,7 @@ export async function POST(req: NextRequest) {
       paid_at,
       due_date,
       supplier:     body.supplier ?? null,
+      supplier_id:  validatedSupplierId,
       created_by:   session.userId,
     },
   })

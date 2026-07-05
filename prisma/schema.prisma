@@ -551,14 +551,17 @@ model Gasto {
   is_paid     Boolean   @default(true)
   paid_at     DateTime?
   due_date    DateTime?
-  supplier    String?   @db.VarChar(150)
+  supplier    String?   @db.VarChar(150) // legacy texto libre — preservar hasta migrar UI
+  supplier_id Int?      // FK a Supplier — reemplaza el texto libre para CxP trazables
   created_by  Int
   created_at  DateTime  @default(now())
 
   business         Business         @relation(fields: [business_id], references: [id])
   creator          User             @relation(fields: [created_by], references: [id])
   expense_category ExpenseCategory? @relation(fields: [category_id], references: [id])
+  supplier_ref     Supplier?        @relation(fields: [supplier_id], references: [id])
 
+  @@index([supplier_id])
   @@map("gastos")
 }
 
@@ -864,6 +867,7 @@ model Supplier {
 
   business  Business   @relation(fields: [business_id], references: [id])
   purchases Purchase[]
+  gastos    Gasto[]
 
   @@index([business_id])
   @@map("suppliers")

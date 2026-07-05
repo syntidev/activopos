@@ -215,8 +215,8 @@ a.welcomeStep:hover,
 .periodTab:hover { color: var(--text-primary); }
 
 .periodTabActive {
-  background: var(--brand-dark);
-  color: var(--brand-on);
+  background: var(--brand-soft);
+  color: var(--brand);
   font-weight: var(--weight-semibold);
 }
 

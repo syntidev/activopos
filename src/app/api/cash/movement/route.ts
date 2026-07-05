@@ -7,8 +7,8 @@ import { getBcvRate } from '@/lib/bcv'
 
 const movementSchema = z.object({
   type: z.enum(['in', 'out']),
-  amount_bs: z.number().positive(),
-  amount_usd: z.number().positive(),
+  amount_bs: z.number().min(0),
+  amount_usd: z.number().min(0),
   concept: z.string().min(3).max(150),
   payment_method_id: z.number().int().positive().optional(),
 })
@@ -56,6 +56,20 @@ export async function POST(req: NextRequest) {
     }
 
     const rate = await getBcvRate()
+
+    // Validación cruzada — tolerancia ±5% por redondeo y spread BCV/paralelo.
+    // Cero-cero se deja pasar (movimiento en cero puede ser válido para notas).
+    if (!(body.amount_usd === 0 && body.amount_bs === 0)) {
+      const expectedBs = body.amount_usd * rate
+      const tolerance   = expectedBs * 0.05
+      const diff        = Math.abs(body.amount_bs - expectedBs)
+      if (diff > tolerance) {
+        return NextResponse.json(
+          { error: 'Los montos USD y Bs son inconsistentes con la tasa actual' },
+          { status: 400 },
+        )
+      }
+    }
 
     const movement = await prisma.cashMovement.create({
       data: {

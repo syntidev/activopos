@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       where: {
         // business_id inyectado por el tenant layer
         is_paid: false,
+        status: { not: 'cancelled' }, // las CxP anuladas (soft delete) no aparecen en la UI
         ...(cat && CATEGORIAS.includes(cat as typeof CATEGORIAS[number])
           ? { categoria: cat }
           : {}),

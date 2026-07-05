@@ -118,9 +118,16 @@ export async function PATCH(req: Request, { params }: RouteContext) {
           })),
         })
 
-        // Cerrar la CxP ligada (si existe y sigue sin pagar) — sin registros huérfanos
-        await tx.gasto.deleteMany({
+        // Cerrar la CxP ligada (si existe y sigue sin pagar) — SOFT DELETE con
+        // trazabilidad: nunca se borra un registro financiero, se marca cancelled.
+        await tx.gasto.updateMany({
           where: { purchase_id: id, business_id: bid, is_paid: false },
+          data: {
+            status:           'cancelled',
+            cancelled_reason: 'compra_anulada',
+            cancelled_at:     new Date(),
+            cancelled_by:     session.userId, // desde sesión, nunca del body
+          },
         })
 
         return tx.purchase.update({

@@ -554,6 +554,10 @@ model Gasto {
   supplier    String?   @db.VarChar(150) // legacy texto libre — preservar hasta migrar UI
   supplier_id Int?      // FK a Supplier — reemplaza el texto libre para CxP trazables
   purchase_id Int?      // FK a Purchase — CxP generada por una compra (para cerrarla al anular)
+  status           String    @default("pending") @db.VarChar(20) // pending | paid | cancelled
+  cancelled_reason String?   @db.VarChar(150)
+  cancelled_at     DateTime?
+  cancelled_by     Int?      // user que anuló — soft delete con trazabilidad
   created_by  Int
   created_at  DateTime  @default(now())
 

@@ -1,6 +1,6 @@
 # SYSTEM_MAP — ActivoPOS
-# Actualizado: 2026-07-02 | Sprint 52 (CLI-D)
-# Sprints cubiertos: 1-52
+# Actualizado: 2026-07-05 | Sprint 63 (CLI-C)
+# Sprints cubiertos: 1-63
 # Fuente: código real — NO editar a mano (regenerar con el prompt CLI-C)
 
 ---
@@ -9,13 +9,13 @@
 
 | Campo              | Valor                                                                          |
 |--------------------|----------------------------------------------------------------------------------|
-| Último sprint      | Sprint 52 (pos_mode + factura de servicio, quotation PDF profesional, PWA/SEO fixes) |
-| Último commit      | `1bbcc85` fix(tokens): sidebar y acentos migrados de teal a Persian Blue #0038BD  |
-| TypeScript         | ✅ 0 errores — `npx tsc --noEmit` (verificado 2026-07-02, deploy VPS)             |
-| Build              | ✅ Limpio — `npm run build` (verificado 2026-07-02, deploy VPS)                   |
-| VPS                | ✅ online — puerto 3003 (PM2, `activopos` proceso id 9), `/login` → 200 (verificado 2026-07-02) |
+| Último sprint      | Sprint 53-63 (páginas dedicadas producto nuevo/editar, dashboard + sidebar rediseñados, P&L, tasa manual/paralela + `RateContext` global, inventario `internal_use`, admin invoices/tickets backend real, fix costos/opex del seed demo) |
+| Último commit      | `da09392` feat(config): manual pre-cargado con tasa paralela — sin etiqueta visible |
+| TypeScript         | ✅ 0 errores — `npx tsc --noEmit` (verificado 2026-07-05)                          |
+| Build              | ✅ Limpio — `npm run build` (verificado 2026-07-05)                                |
+| VPS                | ✅ online — puerto 3001 (PM2, `activopos` proceso id 9), sincronizado a `da09392` (verificado 2026-07-05), `GET /api/rates/bcv` responde |
 | Multi-tenant       | Prisma Client Extension (`src/lib/prisma-tenant.ts`) — scope automático por `business_id`, derivado del DMMF en runtime, fail-closed |
-| Módulos nuevos     | `/registro` (onboarding self-service, verificado E2E en producción), Proveedores/Compras, Planes (límites + enforcement parcial), `pos_mode` (ticket térmico vs factura de servicio A4), cotización PDF profesional |
+| Módulos nuevos     | `/productos/nuevo` y `/productos/[id]/editar` (páginas dedicadas, `useProductForm()`), dashboard + sidebar rediseñados (grupos colapsables), P&L (`/api/finanzas/pyl`), tasa manual/paralela + `RateContext`, inventario `entry_type='internal_use'` (consumo interno), admin invoices/tickets backend real |
 
 ---
 
@@ -52,6 +52,21 @@
 
 ---
 
+## 2.1 MÓDULOS NUEVOS (Sprints 53-63)
+
+| Módulo                    | Descripción                                                              | Archivos clave |
+|----------------------------|--------------------------------------------------------------------------|----------------|
+| Producto — páginas dedicadas | `/productos/nuevo` y `/productos/[id]/editar` reemplazan el modal; lógica de formulario extraída a `useProductForm()`. Grid 50/50, layout compartido. | `src/hooks/useProductForm.ts`, `src/components/products/ProductFormLayout.tsx`, `src/app/(dashboard)/productos/nuevo/page.tsx`, `src/app/(dashboard)/productos/[id]/editar/page.tsx` |
+| Dashboard + Sidebar rediseño | Grid asimétrico con elevación real (`escritorio.module.css`), componentes huérfanos `DashboardCharts`/`DashboardOperativo` eliminados. Sidebar reorganizado en grupos colapsables, Inventario linkado. | `src/app/(dashboard)/escritorio/`, `src/components/layout/Sidebar.tsx` |
+| Finanzas — Estado de Resultados (P&L) | `GET /api/finanzas/pyl?period=hoy\|7dias\|mes\|anio` (o `from`/`to`) — `ingresos`/`cogs`/`opex`/`utilidad_bruta`/`utilidad_neta`/`margen_bruto` desde `sale_items.cost_per_unit_usd` (nuevo campo, migración `20260705000001_add_sale_item_cost`) y `gastos`. Bloqueado para `cashier`. | `src/app/api/finanzas/pyl/route.ts` |
+| Tasa manual/paralela + `RateContext` | `POST /api/rates/manual` guarda tasa manual scopeada por `business_id` (fix HIGH de leak cross-tenant, `e94d1f0`). `GET /api/rates/bcv` ahora expone `manual_active`, `bcv_rate`, `parallel_rate`. `RateContext` global sustituye el polling manual por refetch inmediato (`CustomEvent`) + polling 30s + refetch en focus — sin F5. | `src/app/api/rates/manual/route.ts`, `src/app/api/rates/bcv/route.ts`, `src/context/RateContext.tsx` |
+| Inventario — consumo interno | `POST /api/inventory` acepta `entry_type: 'adjustment' \| 'internal_use'`; Zod exige `quantity` negativa cuando es `internal_use`. Modal de consumo interno conectado en `/inventario`. `GET /api/inventory/product/[id]/movements` paginado. | `src/app/api/inventory/route.ts`, `src/app/(dashboard)/inventario/` |
+| Admin — invoices/tickets backend real | Elimina la fachada de mock data del Sprint 54: `admin/invoices` y `admin/tickets` ahora sirven datos reales. Impersonación de tenant vía cookie firmada `jose` (`admin/impersonate/[businessId]`). | `src/app/api/admin/invoices/route.ts`, `src/app/api/admin/tickets/route.ts`, `src/app/api/admin/impersonate/[businessId]/route.ts` |
+| Historial — utilidad por venta | Columna de utilidad (`price - cost`) en historial de ventas, visible solo para `admin` (oculta a `cashier`, ver §7 seguridad). | `src/app/(dashboard)/ventas/VentasPage.tsx` |
+| Seed demo — costos/opex corregidos | Costos de catálogo demo recalculados a ~35% margen (antes 45-75%, no era el problema real); gastos operativos mensuales reducidos 775→300 USD y sin clamp de fecha (un gasto con día futuro ya no se cuenta antes de tiempo en el P&L "mes"). | `prisma/seed.ts` |
+
+---
+
 ## 3. ENDPOINTS API — MAPA COMPLETO
 
 ### Auth
@@ -77,7 +92,7 @@
 `clients` · `clients/[id]` · `clients/[id]/abono` · `clients/[id]/history` · `returns` · `returns/[id]/approve` · `returns/[id]/reject` · `quotations` · `quotations/[id]` · `quotations/[id]/convert` · `quotations/[id]/pdf`
 
 ### Finanzas
-`finanzas/resumen` · `finanzas/daily` · `finanzas/cxc` · `finanzas/cxc/[id]/abono` · `finanzas/cxc/summary` · `finanzas/cxp` · `finanzas/cxp/[id]` · `finanzas/cxp/summary` · `finanzas/categorias` · `finanzas/categorias/[id]` · `finanzas/punto-equilibrio` · `finanzas/export` · `finanzas/export-excel` · `gastos` · `gastos/[id]` · `gastos/alerts`
+`finanzas/resumen` · `finanzas/daily` · `finanzas/cxc` · `finanzas/cxc/[id]/abono` · `finanzas/cxc/summary` · `finanzas/cxp` · `finanzas/cxp/[id]` · `finanzas/cxp/summary` · `finanzas/categorias` · `finanzas/categorias/[id]` · `finanzas/punto-equilibrio` · `finanzas/pyl` (Estado de Resultados, Sprint 63) · `finanzas/export` · `finanzas/export-excel` · `gastos` · `gastos/[id]` · `gastos/alerts`
 
 ### Reportes / Analytics
 `reports/daily` · `reports/day` · `reports/range` · `reports/sales` · `reports/export-excel` · `reports/export-pdf` · `reports/monthly` · `reports/monthly/generate` · `reports/monthly/pending` · `reports/monthly/mark-pending` · `analytics/summary` · `analytics/top-products` · `analytics/trends` · `dashboard/kpis` · `dashboard/charts`
@@ -86,13 +101,13 @@
 `plan` · `plan/check` · `admin/tenants/[id]/plan`
 
 ### Admin
-`admin/stats` · `admin/tenants` · `admin/tenants/[id]`
+`admin/stats` · `admin/tenants` · `admin/tenants/[id]` · `admin/tenants/[id]/plan` · `admin/invoices` (backend real, Sprint 63) · `admin/tickets` (backend real, Sprint 63) · `admin/impersonate` · `admin/impersonate/[businessId]`
 
 ### Configuración
 `config/business` · `config/business/modules` · `config/catalog` · `config/cobros/data` · `config/delivery` · `config/devices` · `config/devices/[id]` · `config/iva` · `config/payment-methods` · `config/payment-methods/[id]` · `config/pin` · `config/subscription` · `config/theme` · `config/ticket` · `payment-methods`
 
 ### Usuarios / Sistema
-`users` · `users/[id]` · `users/[id]/reset-pin` · `users/change-password` · `notifications` · `notifications/[id]/read` · `notifications/counts` · `notifications/history` · `notifications/push` · `notifications/read-all` · `push/send` · `push/subscribe` · `rates/bcv` · `upload/image` · `r/[token]` · `ai/chat`
+`users` · `users/[id]` · `users/[id]/reset-pin` · `users/change-password` · `notifications` · `notifications/[id]/read` · `notifications/counts` · `notifications/history` · `notifications/push` · `notifications/read-all` · `push/send` · `push/subscribe` · `rates/bcv` (expone `manual_active`/`bcv_rate`/`parallel_rate`, Sprint 63) · `rates/manual` (Sprint 63) · `upload/image` · `r/[token]` · `ai/chat`
 
 ---
 
@@ -106,6 +121,9 @@ Relaciones clave nuevas/relevantes:
 - `Order N─1 Client?`, `Order 1─1 Sale?` (vía `orders/[id]/cobrar`) — `Order.items` con precios resueltos server-side
 - `Sale 1─N SaleItem`, `1─N SalePayment`, `1─N SaleAbono`
 - `User` — `@@unique([business_id, email])` **y** `@@unique([email])` (fix Sprint 44 P0: unicidad global de email)
+- `SaleItem.cost_per_unit_usd` (nuevo, Sprint 63) — snapshot del costo al momento de la venta, insumo de `finanzas/pyl`
+
+**Migraciones recientes** (`prisma/migrations/`, más nuevas primero): `20260705000001_add_sale_item_cost` · `20260704000001_add_invoice_ticket_models` · `20260624000002_add_subscription_expires_at` · `20260624000001_add_returned_sale_status` · `20260624000001_add_business_devices`. Ver DT-08 — los deploys de este sprint (63) aplicaron el schema en VPS vía `db push`, no `migrate deploy`.
 
 ---
 
@@ -155,6 +173,8 @@ Relaciones clave nuevas/relevantes:
 | DT-04 | P2 | `products/import` e `products/import-excel` crean `InventoryEntry` sin `entry_type` explícito (heredan el default `'adjustment'`) — razonable, pero no confirmado como intencional. | 44.5 |
 | DT-05 | P2 | `RateLimiterMemory` (todos los limiters) no es cluster-safe — pendiente Redis en producción (comentario propio del código, `rate-limit.ts:3`). | histórico |
 | DT-06 | P2 | `pdf-report.ts` y `pdf-reports.ts` coexisten en `src/lib/` — nombre casi idéntico, no auditado si hay duplicación real. | histórico |
+| ~~DT-07~~ | ~~HIGH~~ | ✅ **CERRADO Sprint 63** (`e94d1f0`) — tasa manual (`POST /api/rates/manual`) no estaba scopeada por `business_id`, permitía leak cross-tenant. | 63 |
+| DT-08 | P2 | El deploy VPS de este sprint usó `npx prisma db push` en vez de `migrate deploy` para aplicar `20260705000001_add_sale_item_cost` (y migraciones previas) — `db push` no escribe en `_prisma_migrations`. Riesgo: un futuro `migrate deploy` podría intentar re-aplicar esa migración y fallar por drift. Verificar `npx prisma migrate status` en VPS antes del próximo deploy con `migrate deploy`. | 63 |
 
 *Ver `.doc/CONNECTIVITY_AUDIT_Jul2026.md` para el detalle y evidencia de cada gap.*
 
@@ -170,5 +190,8 @@ Relaciones clave nuevas/relevantes:
 - ⚠️ `GET /api/plan` devuelve uso real; enforcement de plan cubre creación de productos/usuarios/proveedores (ver DT-02 — catálogo e IA aún sin bloqueo).
 - ✅ **Registro E2E en producción (Sprint 52)**: flujo completo verificado con Playwright contra `activopos.com` — 7 pasos → `POST /api/onboarding/setup` (201) → redirect `/escritorio` con sesión activa, sin errores 4xx/5xx propios del flujo. Ver `.doc/HANDOFF_Sprint52_Sesion_2Jul2026.md`.
 - ✅ **Cobro → documento correcto según `pos_mode` (Sprint 51)**: venta con `pos_mode='invoice'` abre `GET /api/sales/[id]/invoice` (PDF carta); con `pos_mode='ticket'` (default) abre `GET /api/sales/[id]/ticket` (térmico 58mm).
+
+- ✅ **P&L (Sprint 63)**: `GET /api/finanzas/pyl?period=mes` verificado contra datos reales de producción — `ingresos - cogs = utilidad_bruta`, `utilidad_bruta - opex = utilidad_neta` (query directa a `sale_items`/`gastos`, resultado positivo tras fix de costos/opex del seed).
+- ✅ **Tasa manual scopeada por tenant (Sprint 63)**: `POST /api/rates/manual` confirmado con `business_id` de `getSession()`, no del body — cierra el leak cross-tenant de DT-07.
 
 Para verificación E2E real en navegador (Playwright), ver skill `webapp-testing` / agente `e2e-runner` — ejecutado en Sprint 52 solo para `/registro` (ver arriba); el resto de flujos sigue verificado por lectura de código.

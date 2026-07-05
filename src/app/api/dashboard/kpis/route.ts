@@ -84,27 +84,27 @@ export async function GET(req: NextRequest) {
     db.sale.count({ where: paidPeriod }),
     // Profit (revenue − COGS) via raw SQL
     prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id
+      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
+      FROM sale_items si JOIN sales s ON s.id=si.sale_id
       WHERE s.business_id=${bid} AND s.status='paid'
         AND s.sold_at>=${todayStart} AND s.sold_at<${tomorrowStart}`,
     prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id
+      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
+      FROM sale_items si JOIN sales s ON s.id=si.sale_id
       WHERE s.business_id=${bid} AND s.status='paid'
         AND s.sold_at>=${yesterdayStart} AND s.sold_at<${todayStart}`,
     prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id
+      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
+      FROM sale_items si JOIN sales s ON s.id=si.sale_id
       WHERE s.business_id=${bid} AND s.status='paid' AND s.sold_at>=${monthStart}`,
     prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id
+      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
+      FROM sale_items si JOIN sales s ON s.id=si.sale_id
       WHERE s.business_id=${bid} AND s.status='paid'
         AND s.sold_at>=${prevMonthStart} AND s.sold_at<${monthStart}`,
     prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id
+      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
+      FROM sale_items si JOIN sales s ON s.id=si.sale_id
       WHERE s.business_id=${bid} AND s.status='paid'
         AND s.sold_at>=${pFrom} AND s.sold_at<${pTo}`,
     // Operativo

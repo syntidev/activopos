@@ -73,10 +73,9 @@ export async function GET(req: NextRequest) {
             s.sold_at,
             s.total_usd,
             s.total_bs,
-            COALESCE(SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)), 0) AS profit
+            COALESCE(SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd, 0)), 0) AS profit
           FROM sales s
           LEFT JOIN sale_items si ON si.sale_id = s.id
-          LEFT JOIN products   p  ON p.id = si.product_id
           WHERE s.business_id = ${bid}
             AND s.status      = 'paid'
             AND s.sold_at    >= '${fromIso}'

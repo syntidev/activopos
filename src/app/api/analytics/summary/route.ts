@@ -81,19 +81,24 @@ export async function GET(req: NextRequest) {
         _count: { id: true },
       }),
 
-      // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
+      // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
+      // Costo histórico desde si.cost_per_unit_usd (capturado al vender), no el
+      // costo actual del producto — mismo patrón que finanzas/pyl (GAP-A1).
       prisma.$queryRaw<CostRow[]>`
-      SELECT SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS costo
+      SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
-      JOIN products p ON p.id = si.product_id
       WHERE s.business_id = ${bid}
         AND s.status = 'paid'
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}`,
 
+      // categoria='proveedor' excluida: esa compra de inventario ya cuenta como
+      // costo variable vía SaleItem al venderse — contarla aquí la duplicaría
+      // (mismo fix aplicado en finanzas/pyl, resumen, punto-equilibrio y
+      // reports/export-pdf — GAP-GASTOS).
       db.gasto.aggregate({
-        where: { fecha: { gte: from, lt: to } }, // business_id inyectado
+        where: { fecha: { gte: from, lt: to }, categoria: { not: 'proveedor' } }, // business_id inyectado
         _sum:  { monto_usd: true },
       }),
     ])

@@ -89,8 +89,11 @@ export async function GET(req: NextRequest) {
       ORDER BY total_usd DESC
       LIMIT 10`,
 
+    // categoria='proveedor' excluida: esa compra de inventario ya cuenta como
+    // costo variable vía SaleItem al venderse — contarla aquí la duplicaría
+    // (mismo fix aplicado en finanzas/pyl, resumen y punto-equilibrio — GAP-R2).
     db.gasto.aggregate({
-      where: { fecha: { gte: from, lte: to } }, // business_id inyectado
+      where: { fecha: { gte: from, lte: to }, categoria: { not: 'proveedor' } }, // business_id inyectado
       _sum: { monto_usd: true },
     }),
 

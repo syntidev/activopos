@@ -49,10 +49,9 @@ export async function GET(req: NextRequest) {
       }),
 
       prisma.$queryRaw<CostRow[]>`
-        SELECT SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS costo_usd
+        SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo_usd
         FROM sale_items si
         JOIN sales s ON s.id = si.sale_id
-        LEFT JOIN products p ON p.id = si.product_id
         WHERE s.business_id = ${bid}
           AND s.status = 'paid'
           AND s.sold_at >= ${dayStart}
@@ -61,7 +60,7 @@ export async function GET(req: NextRequest) {
       prisma.$queryRaw<CategoryRow[]>`
         SELECT COALESCE(c.name, 'Sin categoría')                    AS category,
                SUM(si.subtotal_usd)                                  AS vendido_usd,
-               SUM(si.quantity * IFNULL(p.cost_per_unit_usd, 0))     AS costo_usd
+               SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0))    AS costo_usd
         FROM sale_items si
         JOIN sales s ON s.id = si.sale_id
         LEFT JOIN products p ON p.id = si.product_id

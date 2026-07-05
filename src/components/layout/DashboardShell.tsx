@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { ToastProvider } from '@/components/ui'
+import { useRate } from '@/context/RateContext'
 import type { SessionUser } from '@/types'
 import type { ReactNode } from 'react'
 import styles from './DashboardShell.module.css'
@@ -15,23 +16,10 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ session, isImpersonating, children }: DashboardShellProps) {
-  const [bcvRate, setBcvRate]               = useState<number | null>(null)
+  const { rate: bcvRate }                   = useRate()
   const [isCollapsed, setIsCollapsed]       = useState(false)
   const [isMobileOpen, setIsMobileOpen]     = useState(false)
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const fetchBcvRate = useCallback(async () => {
-    try {
-      const res = await fetch('/api/rates/bcv')
-      if (res.ok) {
-        const data = await res.json() as { rate?: number }
-        if (data.rate) setBcvRate(data.rate)
-      }
-    } catch {
-      /* keep previous rate on failure */
-    }
-  }, [])
 
   /* ── Fetch enabled modules once on mount ── */
   useEffect(() => {
@@ -42,21 +30,6 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
       })
       .catch(() => {})
   }, [])
-
-  /* Polling 30s + refetch al volver al tab/ventana — alimenta el pill USD/VES
-     del footer del Sidebar. Antes: 5 min sin refetch en focus, por lo que
-     cambiar la tasa (Configuración o modal del Header) no se reflejaba aquí
-     hasta la siguiente vuelta del timer o un reload manual. */
-  useEffect(() => {
-    void fetchBcvRate()
-    timerRef.current = setInterval(fetchBcvRate, 30_000)
-    const handleFocus = () => { void fetchBcvRate() }
-    window.addEventListener('focus', handleFocus)
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [fetchBcvRate])
 
   /* ── Close mobile drawer on desktop resize ── */
   useEffect(() => {
@@ -96,7 +69,6 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
         <div className={`${styles.mainWrapper} ${isCollapsed ? styles.mainCollapsed : ''}`}>
           <Header
             session={session}
-            bcvRate={bcvRate}
             isCollapsed={isCollapsed}
             onToggleCollapse={handleToggleCollapse}
             onToggleMobile={handleToggleMobile}

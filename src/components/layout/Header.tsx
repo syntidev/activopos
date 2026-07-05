@@ -6,6 +6,7 @@ import { useTheme } from 'next-themes'
 import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { CajaToggle } from './CajaToggle'
+import { useRate } from '@/context/RateContext'
 import styles from './Header.module.css'
 
 interface BizInfo { name: string; logo_path: string | null }
@@ -49,7 +50,6 @@ function relativeTime(iso: string): string {
 
 interface HeaderProps {
   session: SessionUser | null
-  bcvRate: number | null
   isCollapsed: boolean
   onToggleCollapse: () => void
   onToggleMobile: () => void
@@ -237,7 +237,6 @@ const ROLE_CLASSES: Record<SessionUser['role'], string> = {
 
 export function Header({
   session,
-  bcvRate,
   isCollapsed,
   onToggleCollapse,
   onToggleMobile,
@@ -250,45 +249,11 @@ export function Header({
 
   const isAdmin = session?.role === 'admin' || session?.role === 'super_admin'
 
-  /* ── Tasa del día (badge + modal) ── */
-  const [rateInfo, setRateInfo]         = useState<RateInfo | null>(null)
+  /* ── Tasa del día (badge + modal) — RateContext es la única fuente; ya no
+     hay fetch/poll/listener local, así que Header, Sidebar y Configuración
+     quedan sincronizados al instante al llamar refreshRate() desde cualquiera. */
+  const { rate, source, manualActive, bcvRate, refreshRate } = useRate()
   const [rateModalOpen, setRateModalOpen] = useState(false)
-
-  const fetchRateInfo = useCallback(async () => {
-    try {
-      const res = await fetch('/api/rates/bcv')
-      if (!res.ok) return
-      const j = await res.json() as Partial<RateInfo> & { ok?: boolean }
-      if (j.ok && typeof j.rate === 'number') {
-        setRateInfo({
-          rate:          j.rate,
-          source:        j.source ?? 'bcv',
-          manual_active: !!j.manual_active,
-          bcv_rate:      typeof j.bcv_rate === 'number' ? j.bcv_rate : j.rate,
-        })
-      }
-    } catch { /* graceful — badge cae al prop bcvRate */ }
-  }, [])
-
-  /* Fetch inicial + polling 30s + refetch al volver al tab/ventana — sin esto
-     el badge queda desincronizado si la tasa se cambia en Configuración o
-     desde otra pestaña (bug reportado: toast dice "actualizado" pero el
-     número visible no cambia hasta recargar la página). */
-  useEffect(() => {
-    void fetchRateInfo()
-    const interval = setInterval(() => { void fetchRateInfo() }, 30_000)
-    const handleFocus = () => { void fetchRateInfo() }
-    // Refetch inmediato al guardar tasa desde Configuración — el polling de
-    // 30s deja al usuario viendo el número viejo justo después de guardar.
-    const handleRateUpdated = () => { void fetchRateInfo() }
-    window.addEventListener('focus', handleFocus)
-    window.addEventListener('rate-updated', handleRateUpdated)
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener('focus', handleFocus)
-      window.removeEventListener('rate-updated', handleRateUpdated)
-    }
-  }, [fetchRateInfo])
 
   /* ── Business brand (desktop left) ── */
   const [biz, setBiz] = useState<BizInfo | null>(null)
@@ -439,19 +404,19 @@ export function Header({
 
         {/* Right: BCV rate + caja + notif + theme + user */}
         <div className={styles.right}>
-          {(rateInfo?.rate ?? bcvRate) != null && (
+          {rate != null && (
             <>
               <button
                 type="button"
-                className={`${styles.bcvPill} ${rateInfo?.manual_active ? styles.bcvPillManual : ''}`}
+                className={`${styles.bcvPill} ${manualActive ? styles.bcvPillManual : ''}`}
                 onClick={() => setRateModalOpen(true)}
-                title={rateInfo?.manual_active ? 'Tasa manual activa — clic para configurar' : 'Tasa BCV oficial — clic para configurar'}
-                aria-label={`Tasa ${rateInfo?.manual_active ? 'manual' : 'BCV'}: ${formatRate(rateInfo?.rate ?? bcvRate ?? 0)} bolívares por dólar. Abrir configuración de tasa.`}
+                title={manualActive ? 'Tasa manual activa — clic para configurar' : 'Tasa BCV oficial — clic para configurar'}
+                aria-label={`Tasa ${manualActive ? 'manual' : 'BCV'}: ${formatRate(rate)} bolívares por dólar. Abrir configuración de tasa.`}
               >
                 <span className={styles.bcvCurrency}>USD/VES</span>
-                <span className={styles.bcvAmount}>{formatRate(rateInfo?.rate ?? bcvRate ?? 0)}</span>
+                <span className={styles.bcvAmount}>{formatRate(rate)}</span>
                 <span className={styles.bcvBs}>Bs</span>
-                {rateInfo?.manual_active && <span className={styles.bcvManualDot} aria-hidden="true" />}
+                {manualActive && <span className={styles.bcvManualDot} aria-hidden="true" />}
               </button>
               <div className={styles.separator} aria-hidden="true" />
             </>
@@ -583,12 +548,12 @@ export function Header({
       )}
 
       {/* Modal Tasa del día */}
-      {rateModalOpen && rateInfo && (
+      {rateModalOpen && rate != null && (
         <RateModal
-          info={rateInfo}
+          info={{ rate, source: source ?? 'bcv', manual_active: manualActive, bcv_rate: bcvRate ?? rate }}
           isAdmin={isAdmin}
           onClose={() => setRateModalOpen(false)}
-          onChanged={fetchRateInfo}
+          onChanged={refreshRate}
         />
       )}
     </>

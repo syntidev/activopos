@@ -5,6 +5,7 @@ import { RefreshCw, Lock, Percent, KeyRound, Eye, EyeOff } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { Input }    from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
+import { useRate }  from '@/context/RateContext'
 import type { BusinessConfig, IvaConfig } from '@/types'
 import styles from '../configuracion.module.css'
 
@@ -60,12 +61,12 @@ function PwField({
 export function TabGeneral({ businessId: _businessId }: Props) {
   const { toast } = useToast()
 
+  const { rate: liveRate, refreshRate } = useRate()
   const [config, setConfig]         = useState<BusinessConfig | null>(null)
   const [loading, setLoading]       = useState(true)
   const [rateSource, setRateSource] = useState<'bcv' | 'parallel' | 'manual'>('bcv')
   const [manualRate, setManualRate] = useState('')
   const [savingRate, setSavingRate] = useState(false)
-  const [liveRate, setLiveRate]     = useState<number | null>(null)
 
   const [iva, setIva]           = useState<IvaConfig>({ iva_enabled: false, iva_pct: 16 })
   const [savingIva, setSavingIva] = useState(false)
@@ -121,31 +122,6 @@ export function TabGeneral({ businessId: _businessId }: Props) {
 
   useEffect(() => { void fetchConfig(); void fetchIva() }, [fetchConfig, fetchIva])
 
-  /* Ticker de tasa vivo — separado de `config` a propósito: `config` alimenta
-     inputs editables (nombre, dirección, etc.) y sobreescribirlo cada 30s
-     borraría ediciones en curso. `liveRate` solo actualiza el número mostrado,
-     usando la misma fuente que el badge del Header/Sidebar. No toca
-     rateSource/manualRate para no resetear una selección de toggle sin guardar. */
-  const fetchLiveRate = useCallback(async () => {
-    try {
-      const res = await fetch('/api/rates/bcv')
-      if (!res.ok) return
-      const j = await res.json() as { ok?: boolean; rate?: number }
-      if (j.ok && typeof j.rate === 'number') setLiveRate(j.rate)
-    } catch { /* mantiene el último valor conocido */ }
-  }, [])
-
-  useEffect(() => {
-    void fetchLiveRate()
-    const interval = setInterval(() => { void fetchLiveRate() }, 30_000)
-    const handleFocus = () => { void fetchLiveRate() }
-    window.addEventListener('focus', handleFocus)
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener('focus', handleFocus)
-    }
-  }, [fetchLiveRate])
-
   const handleSaveIva = async () => {
     setSavingIva(true)
     try {
@@ -183,8 +159,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       if (!res.ok) throw new Error()
       toast('Tasa actualizada correctamente.', 'success')
       await fetchConfig()
-      void fetchLiveRate() // refleja el cambio en el ticker sin esperar el próximo poll de 30s
-      window.dispatchEvent(new CustomEvent('rate-updated')) // refetch inmediato del badge del Header
+      void refreshRate() // sincroniza Header/Sidebar al instante — misma fuente, sin CustomEvent
     } catch {
       toast('Error al guardar la tasa.', 'error')
     } finally {

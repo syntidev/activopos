@@ -278,10 +278,15 @@ export function Header({
     void fetchRateInfo()
     const interval = setInterval(() => { void fetchRateInfo() }, 30_000)
     const handleFocus = () => { void fetchRateInfo() }
+    // Refetch inmediato al guardar tasa desde Configuración — el polling de
+    // 30s deja al usuario viendo el número viejo justo después de guardar.
+    const handleRateUpdated = () => { void fetchRateInfo() }
     window.addEventListener('focus', handleFocus)
+    window.addEventListener('rate-updated', handleRateUpdated)
     return () => {
       clearInterval(interval)
       window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('rate-updated', handleRateUpdated)
     }
   }, [fetchRateInfo])
 

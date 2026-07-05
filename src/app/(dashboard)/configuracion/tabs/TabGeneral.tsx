@@ -184,6 +184,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       toast('Tasa actualizada correctamente.', 'success')
       await fetchConfig()
       void fetchLiveRate() // refleja el cambio en el ticker sin esperar el próximo poll de 30s
+      window.dispatchEvent(new CustomEvent('rate-updated')) // refetch inmediato del badge del Header
     } catch {
       toast('Error al guardar la tasa.', 'error')
     } finally {

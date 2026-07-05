@@ -417,7 +417,7 @@ export default function EscritorioPage() {
           aria-label="Cobrado"
         >
           <div className={`${styles.kpiIconCircle} ${styles.kpiCircleGreen}`} aria-hidden="true">
-            <DollarSign size={22} />
+            <DollarSign size={18} />
           </div>
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel}>Cobrado</span>
@@ -436,7 +436,7 @@ export default function EscritorioPage() {
         {/* KPI 2 — Crédito pendiente (all-time outstanding) */}
         <div className={`${styles.kpiCard} ${styles.kpiCredito}`} aria-label="Crédito pendiente">
           <div className={`${styles.kpiIconCircle} ${styles.kpiCircleOrange}`} aria-hidden="true">
-            <Clock size={22} />
+            <Clock size={18} />
           </div>
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel}>Crédito pendiente</span>
@@ -457,7 +457,7 @@ export default function EscritorioPage() {
         {/* KPI 3 — Tickets cobrados */}
         <div className={`${styles.kpiCard} ${styles.kpiTickets}`} aria-busy={loading} aria-label="Tickets cobrados">
           <div className={`${styles.kpiIconCircle} ${styles.kpiCircleBlue}`} aria-hidden="true">
-            <ShoppingCart size={22} />
+            <ShoppingCart size={18} />
           </div>
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel}>Tickets cobrados</span>
@@ -478,7 +478,7 @@ export default function EscritorioPage() {
             className={`${styles.kpiIconCircle} ${utilityIsNeg ? styles.kpiCircleOrange : styles.kpiCirclePurple}`}
             aria-hidden="true"
           >
-            {utilityIsNeg ? <AlertTriangle size={22} /> : <TrendingUp size={22} />}
+            {utilityIsNeg ? <AlertTriangle size={18} /> : <TrendingUp size={18} />}
           </div>
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel}>Utilidad neta</span>
@@ -500,8 +500,10 @@ export default function EscritorioPage() {
         </div>
       </div>
 
-      {/* ── Resumen del día ── */}
-      {todayVentas !== null && (
+      {/* ── Resumen del día — solo cuando el período activo es "Hoy": el mensaje
+          usa new Date() (hoy), mostrarlo con otro período activo (7 días/mes/
+          trimestre) lo desincroniza visualmente del resto del dashboard ── */}
+      {period === 'hoy' && todayVentas !== null && (
         <div className={styles.daySummary} aria-label="Resumen del día">
           <span className={styles.daySummaryText}>
             Vendiste&nbsp;<strong>{fmtUsd(todayVentas.totalUsd)}</strong>&nbsp;hoy

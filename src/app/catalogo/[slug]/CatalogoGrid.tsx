@@ -166,6 +166,7 @@ export function CatalogoGrid({
   const [cartBumping,    setCartBumping]    = useState(false)
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [infoOpen,       setInfoOpen]       = useState(false)
+  const [visibleCount,   setVisibleCount]   = useState(10)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
@@ -229,6 +230,12 @@ export function CatalogoGrid({
     const byCat = activeCategory ? products.filter(p => p.categoryName === activeCategory) : products
     return activeSub ? byCat.filter(p => p.subcategory === activeSub) : byCat
   }, [products, query, activeCategory, activeSub])
+
+  // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
+  useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query])
+
+  const paged     = visible.slice(0, visibleCount)
+  const remaining = visible.length - visibleCount
 
   // Cart computed
   const totalItems  = cart.reduce((acc, i) => acc + i.qty, 0)
@@ -681,7 +688,7 @@ export function CatalogoGrid({
           </div>
         ) : (
           <div className={styles.productsGrid} key={`${activeCategory ?? 'all'}|${activeSub ?? ''}`}>
-            {visible.map((p, i) => (
+            {paged.map((p, i) => (
               <article
                 key={p.id}
                 className={`${styles.productCard} ${(p.outOfStock || p.availability === 'out_of_stock') ? styles.productCardOutOfStock : ''}`}
@@ -800,6 +807,19 @@ export function CatalogoGrid({
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {remaining > 0 && (
+          <div className={styles.loadMoreWrap}>
+            <button
+              type="button"
+              className={styles.loadMoreBtn}
+              onClick={() => setVisibleCount(v => v + 10)}
+            >
+              <span>Ver 10 más</span>
+              <span className={styles.loadMoreCount}>{remaining} restantes</span>
+            </button>
           </div>
         )}
       </main>

@@ -842,6 +842,49 @@
 @media (min-width: 1024px) { .productsGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 1280px) { .productsGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 
+/* ── LOAD MORE — patrón SYNTImeat ────────────────────────────── */
+
+.loadMoreWrap {
+  display:         flex;
+  justify-content: center;
+  padding:         var(--space-4) 0 var(--space-6);
+}
+
+.loadMoreBtn {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--space-2);
+  height:        40px;
+  padding:       0 var(--space-5);
+  border-radius: var(--radius-2xl);
+  border:        var(--border-width-normal) solid var(--biz-color, var(--color-brand));
+  background:    var(--color-white);
+  font-size:     13px;
+  font-weight:   var(--weight-semibold);
+  color:         var(--biz-color, var(--color-brand));
+  cursor:        pointer;
+  transition:    var(--transition-fast);
+}
+
+.loadMoreBtn:hover {
+  background: var(--biz-color, var(--color-brand));
+  color:      var(--color-white);
+}
+
+.loadMoreCount {
+  background:    var(--biz-color, var(--color-brand));
+  color:         var(--color-white);
+  font-size:     11px;
+  font-weight:   var(--weight-bold);
+  padding:       2px var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+.loadMoreBtn:hover .loadMoreCount {
+  background: var(--color-white);
+  color:      var(--biz-color, var(--color-brand));
+}
+
 /* ── PRODUCT CARD ────────────────────────────────────────────── */
 
 .productCard {

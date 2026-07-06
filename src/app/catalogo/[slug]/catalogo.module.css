@@ -2226,26 +2226,28 @@
 .waFabText { letter-spacing: var(--tracking-wide); }
 
 /* ── Volver al inicio ────────────────────────────────────────── */
+/* Lado derecho en todos los tamaños, apilado por encima del FAB de WhatsApp.
+   Relleno con el color del catálogo (--biz-color). */
 .backTopBtn {
   position:        fixed;
-  bottom:          max(var(--space-5), env(safe-area-inset-bottom, var(--space-5)));
-  left:            var(--space-5);
-  z-index:         var(--z-sticky);
+  right:           var(--space-5);
+  bottom:          calc(max(var(--space-5), env(safe-area-inset-bottom, var(--space-5))) + 64px);
+  z-index:         var(--z-toast);
   width:           44px;
   height:          44px;
   display:         flex;
   align-items:     center;
   justify-content: center;
-  background:      var(--color-surface);
-  color:           var(--biz-color, var(--color-brand));
-  border:          1px solid var(--color-border);
+  background:      var(--biz-color, var(--color-brand));
+  color:           var(--color-white);
+  border:          none;
   border-radius:   var(--radius-full);
   box-shadow:      var(--shadow-lg);
   cursor:          pointer;
   opacity:         0;
   transform:       translateY(12px);
   pointer-events:  none;
-  transition:      opacity var(--transition-base), transform var(--transition-base), background var(--transition-fast);
+  transition:      opacity var(--transition-base), transform var(--transition-base), filter var(--transition-fast);
 }
 
 .backTopBtnVisible {
@@ -2254,7 +2256,7 @@
   pointer-events: auto;
 }
 
-.backTopBtn:hover  { background: var(--color-surface-2); transform: translateY(-2px); }
+.backTopBtn:hover  { filter: brightness(0.93); transform: translateY(-2px); }
 .backTopBtn:active { transform: scale(0.94); }
 .backTopBtn:focus-visible {
   outline:        2px solid var(--biz-color, var(--color-brand));

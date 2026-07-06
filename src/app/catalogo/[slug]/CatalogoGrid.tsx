@@ -44,6 +44,17 @@ interface CartItem {
   image_url:  string | null
 }
 
+interface DeliveryZone {
+  nombre: string
+  precio: number
+}
+
+interface DeliveryInfo {
+  enabled:     boolean
+  fee_default?: number
+  zones?:      DeliveryZone[]
+}
+
 interface Props {
   products:       CatalogProduct[]
   categories:     string[]
@@ -139,6 +150,9 @@ export function CatalogoGrid({
   const [cPhone,         setCPhone]         = useState('')
   const [cRef,           setCRef]           = useState('')
   const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
+  const [delivery,       setDelivery]       = useState<DeliveryInfo | null>(null)
+  const [zoneIdx,        setZoneIdx]        = useState(-1)
+  const [zoneAddress,    setZoneAddress]    = useState('')
   const [submitting,     setSubmitting]     = useState(false)
   const [submitted,      setSubmitted]      = useState(false)
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
@@ -294,10 +308,36 @@ export function CatalogoGrid({
     return () => clearTimeout(t)
   }, [checkoutOpen])
 
+  // Zona de delivery — se consulta cada vez que se abre "Antes de enviar"
+  useEffect(() => {
+    if (!checkoutOpen) return
+    fetch(`/api/public/delivery/${slug}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((j: DeliveryInfo | null) => { if (j) setDelivery(j) })
+      .catch(() => {})
+  }, [checkoutOpen, slug])
+
+  const hasZones     = !!delivery?.enabled && (delivery.zones?.length ?? 0) > 0
+  const hasFreeZone  = !!delivery?.enabled && (delivery.zones?.length ?? 0) === 0
+  const deliveryCost = hasZones
+    ? (zoneIdx >= 0 ? delivery!.zones![zoneIdx].precio : 0)
+    : hasFreeZone
+      ? (delivery!.fee_default ?? 0)
+      : 0
+  const checkoutTotalUsd = subtotalUsd + deliveryCost
+
   const handleCheckout = async () => {
     if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
+    if (hasZones && zoneIdx < 0) return
     setSubmitting(true)
     try {
+      const baseRef = cRef.trim() || 'Sin especificar'
+      const referenceWithZone = hasZones
+        ? `${baseRef} · Zona: ${delivery!.zones![zoneIdx].nombre} · Costo delivery: ${fmtUsd(delivery!.zones![zoneIdx].precio)}`
+        : hasFreeZone
+          ? `${baseRef}${zoneAddress.trim() ? ` · Dirección: ${zoneAddress.trim()}` : ''} · Costo delivery: ${fmtUsd(delivery!.fee_default ?? 0)}`
+          : baseRef
+
       const res = await fetch(`/api/catalog/${slug}/order`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -305,7 +345,7 @@ export function CatalogoGrid({
           items:              cart.map(i => ({ product_id: i.product_id, qty: i.qty })),
           customer_name:      cName.trim(),
           customer_phone:     cPhone.trim(),
-          customer_reference: cRef.trim() || 'Sin especificar',
+          customer_reference: referenceWithZone,
           payment_method:     cPayment,
         }),
       })
@@ -323,6 +363,7 @@ export function CatalogoGrid({
           setCartOpen(false)
           setCName(''); setCPhone(''); setCRef('')
           setCPayment(paymentMethods[0]?.name ?? '')
+          setZoneIdx(-1); setZoneAddress('')
         }, 3000)
       }
     } catch { /* user stays in form */ }
@@ -845,13 +886,61 @@ export function CatalogoGrid({
                   </select>
                 </div>
               )}
+
+              {hasZones && (
+                <div className={styles.checkoutFieldGroup}>
+                  <label className={styles.checkoutLabel} htmlFor="co-zone">
+                    Zona de entrega <span className={styles.checkoutRequired}>*</span>
+                  </label>
+                  <select
+                    id="co-zone"
+                    className={styles.checkoutSelect}
+                    value={zoneIdx}
+                    onChange={e => setZoneIdx(Number(e.target.value))}
+                    disabled={submitting}
+                  >
+                    <option value={-1} disabled>Selecciona tu zona…</option>
+                    {delivery!.zones!.map((z, i) => (
+                      <option key={z.nombre} value={i}>{z.nombre} — {fmtUsd(z.precio)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {hasFreeZone && (
+                <div className={styles.checkoutFieldGroup}>
+                  <label className={styles.checkoutLabel} htmlFor="co-zone-address">
+                    Dirección de entrega
+                  </label>
+                  <input
+                    id="co-zone-address"
+                    type="text"
+                    className={styles.checkoutInput}
+                    value={zoneAddress}
+                    onChange={e => setZoneAddress(e.target.value)}
+                    placeholder="Calle, casa/edificio, referencia"
+                    disabled={submitting}
+                  />
+                </div>
+              )}
+
+              {(hasZones || hasFreeZone) && (
+                <div className={styles.checkoutTotalRow}>
+                  <span className={styles.checkoutTotalLabel}>Total con delivery</span>
+                  <span className={styles.checkoutTotalValue}>{fmtUsd(checkoutTotalUsd)}</span>
+                </div>
+              )}
             </div>
             <div className={styles.checkoutActions}>
               <button
                 type="button"
                 className={styles.sendBtn}
                 onClick={handleCheckout}
-                disabled={submitting || !cName.trim() || !cPhone.trim() || (paymentMethods.length > 0 && !cPayment)}
+                disabled={
+                  submitting || !cName.trim() || !cPhone.trim() ||
+                  (paymentMethods.length > 0 && !cPayment) ||
+                  (hasZones && zoneIdx < 0)
+                }
               >
                 <MessageCircle size={18} aria-hidden="true" />
                 {submitting ? 'Enviando…' : 'Enviar por WhatsApp'}

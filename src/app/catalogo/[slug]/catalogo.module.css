@@ -1468,6 +1468,27 @@
   font-weight:var(--weight-normal);
 }
 
+/* ── Total con delivery ── */
+.checkoutTotalRow {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  padding-top:     var(--space-3);
+  border-top:      1px solid var(--color-border-subtle);
+}
+
+.checkoutTotalLabel {
+  font-size:   var(--text-sm);
+  color:       var(--color-text-secondary);
+}
+
+.checkoutTotalValue {
+  font-size:   var(--text-lg);
+  font-weight: var(--weight-bold);
+  color:       var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
 .checkoutInput,
 .checkoutSelect {
   height:        42px;

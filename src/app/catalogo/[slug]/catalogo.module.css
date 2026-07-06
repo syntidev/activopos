@@ -140,7 +140,8 @@
 
 .stickyCartBtn:hover { background: var(--color-surface-2); }
 
-/* Botón ⓘ — mismas dimensiones que el carrito */
+/* Botón ⓘ — mismas dimensiones que el carrito. margin-left:auto agrupa
+   ⓘ + carrito en el extremo derecho sin envolverlos en un wrapper. */
 .infoBtn {
   background:      none;
   border:          none;
@@ -150,6 +151,7 @@
   color:           var(--color-text-primary);
   transition:      background var(--transition-fast);
   flex-shrink:     0;
+  margin-left:     auto;
   display:         flex;
   align-items:     center;
   justify-content: center;
@@ -163,35 +165,24 @@
 .infoOverlay {
   position:        fixed;
   inset:           0;
-  z-index:         90;
-  background:      rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
+  z-index:         200;
+  background:      rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
 }
 
 .infoPanel {
-  position:      fixed;
-  bottom:        0;
-  left:          0;
-  right:         0;
-  z-index:       91;
+  position:      relative;
   background:    var(--color-white);
-  border-radius: 20px 20px 0 0;
-  padding:       20px 20px 40px;
-  max-height:    85vh;
+  border-radius: 20px;
+  padding:       24px;
+  width:         90%;
+  max-width:     420px;
+  max-height:    80vh;
   overflow-y:    auto;
-  box-shadow:    0 -4px 24px rgba(0, 0, 0, 0.12);
-}
-
-@media (min-width: 768px) {
-  .infoPanel {
-    left:          auto;
-    right:         0;
-    top:           0;
-    bottom:        0;
-    border-radius: 0;
-    width:         360px;
-    max-height:    100vh;
-  }
+  box-shadow:    0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .infoPanelClose {

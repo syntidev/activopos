@@ -1256,9 +1256,14 @@ export function CatalogoGrid({
 
       {/* ── Panel de información del negocio ────────────────────── */}
       {infoOpen && (
-        <>
-          <div className={styles.infoOverlay} onClick={() => setInfoOpen(false)} aria-hidden="true" />
-          <div className={styles.infoPanel} role="dialog" aria-modal="true" aria-label="Información del negocio">
+        <div className={styles.infoOverlay} onClick={() => setInfoOpen(false)}>
+          <div
+            className={styles.infoPanel}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Información del negocio"
+            onClick={e => e.stopPropagation()}
+          >
             <button
               type="button"
               className={styles.infoPanelClose}
@@ -1358,7 +1363,7 @@ export function CatalogoGrid({
               Compartir catálogo
             </button>
           </div>
-        </>
+        </div>
       )}
     </>
   )

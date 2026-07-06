@@ -29,7 +29,7 @@ async function getTuDiaData(businessId: number) {
   const monthStart  = new Date(now.getFullYear(), now.getMonth(), 1)
   const bid         = businessId
 
-  const [salesHoy, salesAyer, topRows, cxcAgg, cxcVenceAgg, productCount] = await Promise.all([
+  const [salesHoy, salesAyer, topRows, cxcAgg, cxcVenceRows, productCount] = await Promise.all([
     // Ventas de hoy (cantidad + monto)
     prisma.sale.aggregate({
       where: { business_id: bid, status: 'paid', sold_at: { gte: todayStart, lt: tomorrow } },
@@ -60,19 +60,23 @@ async function getTuDiaData(businessId: number) {
       _sum:   { total_usd: true },
       _count: { id: true },
     }),
-    // CxC que vence mañana: created_at hace ~29-30 días (vencimiento = +30d)
-    prisma.sale.aggregate({
-      where: {
-        business_id: bid,
-        status:      'credit',
-        created_at:  {
-          gte: new Date(todayStart.getTime() - 30 * 86_400_000),
-          lt:  new Date(todayStart.getTime() - 29 * 86_400_000),
-        },
-      },
-      _sum:   { total_usd: true },
-      _count: { id: true },
-    }),
+    // CxC que vence mañana: due_date real. Si due_date es null (ventas legacy)
+    // pero hay credit_days, cae a created_at + credit_days. Sin due_date NI
+    // credit_days no hay forma de saber cuándo vence — se excluye en vez de
+    // asumir un default (eso reintroduciría la misma heurística por otra puerta).
+    prisma.$queryRaw<{ total_usd: string | null }[]>`
+      SELECT SUM(total_usd) AS total_usd
+      FROM   sales
+      WHERE  business_id = ${bid}
+        AND  status = 'credit'
+        AND  (
+          (due_date IS NOT NULL AND due_date >= ${tomorrow} AND due_date < ${new Date(tomorrow.getTime() + 86_400_000)})
+          OR
+          (due_date IS NULL AND credit_days IS NOT NULL
+            AND DATE_ADD(created_at, INTERVAL credit_days DAY) >= ${tomorrow}
+            AND DATE_ADD(created_at, INTERVAL credit_days DAY) <  ${new Date(tomorrow.getTime() + 86_400_000)})
+        )
+    `,
     // Productos activos (para el estado sin ventas)
     prisma.product.count({
       where: { business_id: bid, active: true },
@@ -84,8 +88,8 @@ async function getTuDiaData(businessId: number) {
   const ayerUsd     = Number(salesAyer._sum.total_usd ?? 0)
   const trend       = ayerUsd > 0 ? ((totalUsd - ayerUsd) / ayerUsd) * 100 : 0
   const topProduct  = topRows[0]?.name ?? null
-  const cxcUsd      = Number(cxcAgg._sum.total_usd     ?? 0)
-  const cxcVenceUsd = Number(cxcVenceAgg._sum.total_usd ?? 0)
+  const cxcUsd      = Number(cxcAgg._sum.total_usd ?? 0)
+  const cxcVenceUsd = parseFloat(String(cxcVenceRows[0]?.total_usd ?? '0')) || 0
 
   return {
     now,

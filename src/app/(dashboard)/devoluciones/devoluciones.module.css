@@ -90,7 +90,7 @@
   background: var(--color-surface);
   border: 1px solid rgba(var(--brand-rgb), 0.18);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
+  padding: var(--space-3-5) var(--space-4-5);
   box-shadow: 0 1px 6px rgba(0,0,0,0.04);
 }
 
@@ -398,7 +398,7 @@
 }
 
 .tableWrap { overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; }
+.table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 .thead { background: var(--color-surface-2); }
 
 .th {

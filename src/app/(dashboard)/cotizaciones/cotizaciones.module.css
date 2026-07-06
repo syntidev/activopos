@@ -59,7 +59,7 @@
 
 .tableWrap { overflow-x: auto; }
 
-.table { width: 100%; border-collapse: collapse; }
+.table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 
 .thead { background: var(--color-surface-2); }
 

@@ -200,13 +200,10 @@ export default function EscritorioPage() {
 
   /* Fetch credit pending — outstanding balance, runs once on mount */
   useEffect(() => {
-    fetch('/api/sales?status=pending&limit=100')
+    fetch('/api/dashboard/credit-summary')
       .then(r => r.ok ? r.json() : null)
-      .then((j: { ok: boolean; sales: Array<{ total_usd: number }> } | null) => {
-        if (j?.ok) {
-          const total = j.sales.reduce((s, sale) => s + Number(sale.total_usd), 0)
-          setCreditData({ total, count: j.sales.length })
-        }
+      .then((j: { ok: boolean; total_usd: number; count: number } | null) => {
+        if (j?.ok) setCreditData({ total: j.total_usd, count: j.count })
       })
       .catch(() => {})
   }, [])
@@ -466,7 +463,7 @@ export default function EscritorioPage() {
               <>
                 <span className={styles.kpiValue}>{fmtUsd(creditData.total)}</span>
                 <span className={styles.kpiSub}>
-                  {creditData.count}{creditData.count >= 100 ? '+' : ''}&nbsp;
+                  {creditData.count}&nbsp;
                   {creditData.count === 1 ? 'venta' : 'ventas'} a cobrar
                 </span>
               </>

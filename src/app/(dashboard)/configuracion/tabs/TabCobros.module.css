@@ -51,9 +51,10 @@
 /* ── Form card container ── */
 .formCard {
   background: var(--color-surface);
-  border: 1px solid rgba(var(--brand-rgb), 0.20);
+  border: none;
   border-radius: var(--radius-lg);
   padding: var(--space-3-5) var(--space-4-5);
+  box-shadow: var(--shadow-elevation);
   margin-bottom: var(--space-6);
   box-shadow: var(--shadow-sm), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
 }
@@ -440,10 +441,10 @@
 
 .cobrosCard {
   background: var(--color-surface);
-  border: 1px solid rgba(var(--brand-rgb), 0.18);
+  border: none;
   border-radius: var(--radius-lg);
   padding: var(--space-3-5) var(--space-4-5);
-  box-shadow: var(--shadow-sm), 0 0 0 0.5px rgba(var(--brand-rgb), 0.06);
+  box-shadow: var(--shadow-elevation);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

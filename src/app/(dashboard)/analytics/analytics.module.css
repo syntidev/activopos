@@ -81,9 +81,9 @@
   gap:            var(--space-1);
   padding:        var(--space-3-5) var(--space-4-5);
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-xl);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
 }
 
 .kpiLabel {
@@ -132,10 +132,10 @@
 
 .chartSection {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-xl);
   padding:       var(--space-5);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
 }
 
 .sectionTitle {
@@ -167,10 +167,10 @@
 
 .section {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-xl);
   padding:       var(--space-5);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
 }
 
 /* ── Top productos table ─────────────────────────────────── */
@@ -292,10 +292,10 @@
   gap:           var(--space-5);
   padding:       var(--space-4) var(--space-5);
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-xl);
   flex-wrap:     wrap;
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
 }
 
 .insightItem {

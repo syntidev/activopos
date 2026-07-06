@@ -76,9 +76,9 @@
   gap:           var(--space-4);
   padding:       var(--space-3-5) var(--space-4-5);
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-xl);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
   transition:    box-shadow var(--transition-fast);
 }
 
@@ -144,10 +144,10 @@
 
 .sectionCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-xl);
   overflow:      hidden;
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
 }
 
 .sectionTitle {
@@ -383,8 +383,9 @@
   gap:           var(--space-3);
   padding:       var(--space-4) var(--space-5);
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-xl);
+  box-shadow:    var(--shadow-elevation);
   flex-wrap:     wrap;
 }
 

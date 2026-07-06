@@ -51,9 +51,10 @@
 /* ── Section / table ── */
 .section {
   background: var(--color-surface);
-  border: 1px solid rgba(var(--brand-rgb), 0.18);
+  border: none;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-elevation);
   box-shadow: 0 1px 6px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(var(--brand-rgb), 0.06);
 }
 
@@ -252,7 +253,7 @@
 
 .modal {
   background: var(--color-surface);
-  border: 1px solid rgba(var(--brand-rgb), 0.22);
+  border: none;
   border-radius: var(--radius-xl);
   box-shadow: 0 20px 60px rgba(0,0,0,0.28);
   width: 100%;

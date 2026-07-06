@@ -1314,10 +1314,10 @@
   display:               grid;
   grid-template-columns: 1fr 1fr 1fr;
   background:            var(--color-surface);
-  border:                1px solid rgba(var(--brand-rgb), 0.15);
+  border:                none;
   border-radius:         var(--radius-lg);
   overflow:              hidden;
-  box-shadow:            0 1px 4px rgba(0,0,0,0.05);
+  box-shadow:            var(--shadow-elevation);
 }
 
 .gastoKpiCell {

@@ -99,11 +99,11 @@
 /* ── Form cards ── */
 .formCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-lg);
   padding:       var(--space-3-5) var(--space-4-5);
   margin-bottom: var(--space-6);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
 }
 
 .formCardTitle {
@@ -574,13 +574,13 @@
 
 .summaryCard {
   background:    var(--color-surface);
-  border:        1px solid rgba(var(--brand-rgb), 0.20);
+  border:        none;
   border-radius: var(--radius-lg);
   padding:       var(--space-5);
   display:       flex;
   flex-direction: column;
   gap:           var(--space-1);
-  box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
+  box-shadow:    var(--shadow-elevation);
 }
 
 .summaryCount {

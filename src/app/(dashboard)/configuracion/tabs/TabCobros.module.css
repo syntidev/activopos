@@ -53,7 +53,7 @@
   background: var(--color-surface);
   border: 1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-lg);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-3-5) var(--space-4-5);
   margin-bottom: var(--space-6);
   box-shadow: var(--shadow-sm), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
 }
@@ -442,7 +442,7 @@
   background: var(--color-surface);
   border: 1px solid rgba(var(--brand-rgb), 0.18);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  padding: var(--space-3-5) var(--space-4-5);
   box-shadow: var(--shadow-sm), 0 0 0 0.5px rgba(var(--brand-rgb), 0.06);
   display: flex;
   flex-direction: column;

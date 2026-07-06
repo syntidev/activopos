@@ -14,7 +14,7 @@
   background:    var(--color-surface);
   border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-xl);
-  padding:       var(--space-6);
+  padding:       var(--space-3-5) var(--space-4-5);
   box-shadow:    var(--shadow-card-brand);
   display:       flex;
   flex-direction: column;

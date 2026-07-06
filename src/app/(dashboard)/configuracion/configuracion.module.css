@@ -7,7 +7,7 @@
 /* ── Layout principal ── */
 .configLayout {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 240px minmax(0, 1fr);
   min-height: calc(100vh - 56px);
   overflow-x: hidden;
   width: 100%;
@@ -17,7 +17,7 @@
   border-right: 1px solid var(--color-border);
   background: var(--color-surface);
   padding: var(--space-4);
-  width: 260px;
+  width: 240px;
   flex-direction: column;
   gap: var(--space-1);
   display: flex;
@@ -37,8 +37,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: 0 var(--space-4);
-  height: var(--touch-min);
+  padding: var(--space-2) var(--space-4);
+  min-height: var(--touch-min);
   border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--color-text-secondary);
@@ -73,7 +73,7 @@
 
 .configContent {
   flex: 1;
-  padding: var(--space-8);
+  padding: var(--space-6);
   overflow-y: auto;
 }
 
@@ -101,7 +101,7 @@
   background:    var(--color-surface);
   border:        1px solid rgba(var(--brand-rgb), 0.20);
   border-radius: var(--radius-lg);
-  padding:       var(--space-6);
+  padding:       var(--space-3-5) var(--space-4-5);
   margin-bottom: var(--space-6);
   box-shadow:    0 2px 8px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(var(--brand-rgb), 0.08);
 }
@@ -1423,7 +1423,7 @@
 }
 
 /* ── Mobile responsive ── */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .configLayout {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;

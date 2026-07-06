@@ -103,7 +103,7 @@
   border-radius: var(--radius-xl);
   border: none;
   box-shadow: var(--shadow-card-elevated);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-3-5) var(--space-4-5);
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -130,7 +130,7 @@
   .title { font-size: var(--text-base); }
   .grid { gap: var(--space-4); }
   .column { gap: var(--space-4); }
-  .card { padding: var(--space-4); gap: var(--space-4); }
+  .card { padding: var(--space-3) var(--space-3-5); gap: var(--space-4); }
   /* Botón cancelar oculto en móvil — el back del header cubre esa acción */
   .cancelHideMobile { display: none; }
 }

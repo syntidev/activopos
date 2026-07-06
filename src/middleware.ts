@@ -20,6 +20,8 @@ const PUBLIC_PREFIXES = [
 const PUBLIC_EXACT = new Set([
   '/',
   '/landing.html',
+  '/sitemap.xml',
+  '/robots.txt',
   '/api/reports/monthly/pending',      // n8n: lista pending (x-api-key)
   '/api/reports/monthly/mark-pending', // n8n: marca todos como pending (x-api-key)
 ])

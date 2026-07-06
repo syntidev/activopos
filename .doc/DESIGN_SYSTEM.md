@@ -489,3 +489,317 @@ Este documento `.md` y ese `.html` son la misma verdad — complementarios.
 *ActivoPOS · SYNTIdev · Design System v1.0*
 *Generado: 2026-07-05 | Aprobado: Carlos Bolívar*
 *Próxima revisión: cuando se agregue un módulo nuevo o se apruebe cambio visual*
+
+---
+
+## 13. MOBILE-FIRST — OBLIGATORIO
+
+**Filosofía:** definir el layout mínimo primero, agregar complejidad hacia arriba.
+Nunca al revés.
+
+### Breakpoints sellados
+```css
+/* Mobile base — se define sin @media query */
+/* Tablet */   @media (min-width: 768px)  { ... }
+/* Desktop */  @media (min-width: 1024px) { ... }
+/* Wide */     @media (min-width: 1280px) { ... }
+```
+
+### Sidebar por breakpoint
+```css
+/* Mobile (<768px): oculto, drawer activado por hamburguesa */
+.sidebar { display: none; }
+.sidebarOpen { display: flex; position: absolute; z-index: 50;
+               height: 100%; box-shadow: 4px 0 24px rgba(0,0,0,.15); }
+
+/* Tablet (768-1024px): colapsado, solo íconos */
+@media (min-width: 768px) {
+  .sidebar { display: flex; width: 56px; min-width: 56px; }
+  .navLabel, .navText, .sectionLabel { display: none; }
+}
+
+/* Desktop (≥1024px): completo */
+@media (min-width: 1024px) {
+  .sidebar { width: 220px; min-width: 220px; }
+  .navLabel, .navText, .sectionLabel { display: block; }
+}
+```
+
+### Grids por breakpoint
+```css
+/* Mobile: 1 columna siempre */
+.kpiGrid { grid-template-columns: 1fr; }
+.row2    { grid-template-columns: 1fr; }
+.row3    { grid-template-columns: 1fr; }
+
+/* Tablet: 2 columnas */
+@media (min-width: 768px) {
+  .kpiGrid { grid-template-columns: 1fr 1fr; }
+  .row2    { grid-template-columns: 1fr 1fr; }
+}
+
+/* Desktop: layout completo asimétrico */
+@media (min-width: 1024px) {
+  .kpiGrid { grid-template-columns: 1.5fr 1fr 1fr; }
+  .row2    { grid-template-columns: 1fr 1fr 1fr; }
+  .row3    { grid-template-columns: 1fr 1fr; }
+}
+```
+
+### Tipografía por breakpoint
+```css
+/* Mobile */
+.kpiValueHero { font-size: 22px; }
+.kpiValue     { font-size: 16px; }
+.greeting     { font-size: 18px; }
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .kpiValueHero { font-size: 30px; }
+  .kpiValue     { font-size: 20px; }
+  .greeting     { font-size: 24px; }
+}
+```
+
+### Padding por breakpoint
+```css
+/* Mobile */
+.content { padding: 12px; }
+.card    { padding: 14px 16px; }
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .content { padding: 20px 24px; }
+  .card    { padding: 18px 22px; }
+}
+```
+
+### Topbar por breakpoint
+```css
+/* Mobile: ocultar pills y usuario, mostrar solo hamburguesa + módulo + campana */
+@media (max-width: 767px) {
+  .bcvPill, .cajaPill, .userName, .superAdmin { display: none; }
+  .topbar { padding: 0 12px; }
+}
+```
+
+### Tablas en mobile
+```css
+/* NUNCA overflow-x oculto en tablas — siempre scroll horizontal */
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table {
+  min-width: 600px;  /* ancho mínimo que activa el scroll */
+  width: 100%;
+  table-layout: fixed;
+}
+```
+
+---
+
+## 14. CONTRATO DE OVERFLOW — REGLAS EXACTAS
+
+### Cuándo usar cada valor
+
+| Caso | Propiedad | Valor | Razón |
+|------|-----------|-------|-------|
+| Página principal | overflow | hidden (x) + auto (y) | Evita scroll horizontal global |
+| Sidebar | overflow-y | auto | Scroll si nav es larga |
+| Contenido del módulo | overflow-y | auto | Scroll vertical del módulo |
+| Tabla | overflow-x | auto en wrapper | Scroll horizontal solo en tabla |
+| Modal | overflow-y | auto | Scroll dentro del modal |
+| Cards | overflow | hidden | Corta contenido desbordado |
+| Topbar | overflow | hidden | Nunca hace scroll |
+
+### Estructura de scroll sellada
+```css
+/* Shell principal — NUNCA cambia */
+.shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;  /* el scroll lo maneja cada zona */
+}
+
+.sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+.mainArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;  /* NUNCA overflow-x: visible en content */
+}
+```
+
+### PROHIBICIONES de overflow
+```
+PROHIBIDO: overflow: visible en contenedores de layout
+PROHIBIDO: overflow: hidden en .content — mata el scroll vertical
+PROHIBIDO: overflow-x: scroll global — solo en wrapper de tabla
+PROHIBIDO: width > 100% en cualquier elemento directo de .content
+PROHIBIDO: min-width hardcodeado en contenedores de grid
+           → usar minmax(0, 1fr) en lugar de 1fr para evitar overflow
+```
+
+### Grid overflow fix (obligatorio en TODOS los grids)
+```css
+/* MAL — causa overflow silencioso */
+.grid { grid-template-columns: 1fr 1fr; }
+
+/* BIEN — clampea el contenido */
+.grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+```
+
+---
+
+## 15. ESTRATEGIA DE APLICACIÓN — ORDEN DE EJECUCIÓN
+
+### Por qué este orden y no otro
+`Sidebar.tsx` y `Header.tsx` son componentes globales. Si se tocan PRIMERO,
+todos los módulos heredan el nuevo layout automáticamente. Si se tocan DESPUÉS,
+hay riesgo de conflicto entre el layout nuevo y los CSS modules de cada módulo.
+
+### Fase 1 — Fundación (CLI-B solo, sin paralelo)
+**Archivos:** `Sidebar.tsx` + `Sidebar.module.css` + `Header.tsx` + `Header.module.css`
+**Qué hace:** layout estructural completo — sidebar blanco, Abrir Caja toggle,
+topbar limpio sin CTAs, mobile-first, overflow contract
+**Criterio de éxito:** todos los módulos existentes cargan sin layout roto
+**Duración estimada:** 1 sesión
+**NADIE más toca CSS hasta que Fase 1 esté certificada por Carlos**
+
+### Fase 2 — Escritorio (CLI-B)
+**Archivos:** `escritorio/page.tsx` + `escritorio.module.css`
+**Qué hace:** grid asimétrico KPIs, fila de acciones rápidas, mobile-first,
+dual currency visible, panel inventario + top productos
+**Criterio de éxito:** 0 scroll en desktop para ver el tablero completo,
+móvil muestra toda la info en 1 scroll máximo
+
+### Fase 3 — Módulos por prioridad de demo (CLI-B, uno por sesión)
+Orden obligatorio — no saltar:
+```
+1. Historial de ventas    → tabla full width, badges de estado, dual currency
+2. Inventario/Productos   → grid 4 columnas desktop / 2 tablet / 1 mobile
+3. Finanzas               → grid 2 columnas, KPI hero, tabla P&L
+4. Clientes               → tabla + card detalle
+5. Caja / Reportes        → KPIs + tabla + export
+6. Configuración          → panel lateral 240px + contenido
+7. Catálogo               → ya tiene diseño propio — solo mobile-first
+```
+
+### Regla del policía aplicada al diseño
+Ningún módulo de Fase 3 se toca hasta que el anterior tenga:
+- ✅ Aprobación visual de Carlos en desktop
+- ✅ Aprobación visual de Carlos en mobile
+- ✅ npx tsc --noEmit = 0 errores
+- ✅ npm run build exitoso
+
+### Ejecución en paralelo — cuándo sí y cuándo no
+```
+Fase 1: CLI-B SOLO — layout global, riesgo de colisión alto
+Fase 2: CLI-B solo — depende del resultado de Fase 1
+Fase 3: CLI-B (frontend) + CLI-A (si hay ajuste de API) en paralelo
+        SOLO si los archivos no se solapan
+```
+
+### Prompt de arranque para Fase 1 (copiar a CLI-B)
+```
+Ejecuta Fase 1 del rediseño visual de ActivoPOS — Fundación del layout global.
+
+/impeccable craft
+/frontend-design:frontend-design
+/ui-ux-pro-max:ui-ux-pro-max
+/coding-standards
+/ponytail ultra
+
+PASO 0 — GRAPHIFY (obligatorio):
+graphify explain "Sidebar.tsx"
+graphify explain "Header.tsx"
+graphify path "Sidebar.tsx" "escritorio/page.tsx"
+graphify query "layout dashboard sidebar header"
+
+PASO 1 — LEE COMPLETO antes de escribir una línea:
+- CLAUDE.md
+- .doc/DESIGN_SYSTEM.md  ← especificación visual inapelable
+- .doc/DESIGN_SYSTEM.html ← abrir en browser, referencia visual
+- src/components/layout/Sidebar.tsx
+- src/components/layout/Sidebar.module.css (o el nombre real)
+- src/components/layout/Header.tsx
+- src/components/layout/Header.module.css (o el nombre real)
+- src/app/(dashboard)/layout.tsx
+
+Declara al inicio:
+- Ruta exacta de Sidebar.module.css
+- Ruta exacta de Header.module.css
+- Si el toggle "Abrir Caja" existe en el código actual y dónde
+
+PASO 2 — MODIFICAR (solo estos 4 archivos):
+
+Sidebar.tsx + Sidebar.module.css:
+- Estructura: logo → toggle Abrir Caja → secciones nav → pie con tasa
+- Mobile-first: oculto en <768px, íconos en 768-1024px, completo en ≥1024px
+- Nav activo: background var(--brand-soft), color var(--brand), border-right 2px var(--brand)
+- Sin box-shadow externo, sin borde distinto a border-right: 1px solid #E5E7EB
+- Overflow: overflow-y auto, overflow-x hidden
+- Todos los grids usan minmax(0, 1fr)
+
+Header.tsx + Header.module.css:
+- Height: 48px exacto, flex-shrink: 0
+- Contenido: hamburguesa + nombre módulo + [flex] + pills + íconos + usuario
+- ELIMINAR botones de acción del header (Nueva venta, Agregar gasto)
+- Pills: BCV pill + Caja pill — colores semánticos del Design System
+- overflow: hidden
+
+PASO 3 — VERIFICAR:
+npx tsc --noEmit
+Abrir localhost — verificar que TODOS los módulos cargan sin layout roto
+Verificar en mobile (DevTools 375px): sidebar oculto, topbar compacto
+
+PASO 4 — COMMIT:
+git add src/components/layout/Sidebar.tsx
+git add src/components/layout/[Sidebar.module.css — ruta real]
+git add src/components/layout/Header.tsx
+git add src/components/layout/[Header.module.css — ruta real]
+git commit -m "style(layout): Fase 1 — sidebar blanco + topbar limpio mobile-first
+
+- Sidebar: Abrir Caja toggle, nav activo brand-soft, mobile-first
+- Header: 48px, sin CTAs de acción, pills BCV y Caja
+- Mobile: sidebar oculto <768px, colapsado 768-1024px
+🤖 Agente: CLI-B | Sprint: 74 | Fecha: 2026-07-05"
+git push origin main
+git log --oneline -3
+
+graphify update .
+
+CRITERIO DE ÉXITO (verificable, no subjetivo):
+✅ Sidebar sin box-shadow externo ni borde card
+✅ Toggle Abrir Caja visible en sidebar
+✅ Nav activo: fondo #DCE6FF + texto #0038BD
+✅ Header height 48px, sin botones de acción
+✅ Mobile 375px: sidebar oculto, layout no roto
+✅ Tablet 768px: sidebar 56px con solo íconos
+✅ npx tsc --noEmit = 0 errores
+✅ npm run build exitoso
+✅ Todos los módulos existentes cargan sin error visual
+```
+
+---
+
+*ActivoPOS · Design System v1.1 — Mobile-first + Overflow Contract + Estrategia de aplicación*
+*Actualizado: 2026-07-05*

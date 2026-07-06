@@ -13,7 +13,7 @@
   background: var(--color-surface);
   border: 1px solid rgba(var(--brand-rgb), 0.18);
   border-radius: var(--radius-xl);
-  padding: var(--space-10) var(--space-8);
+  padding: var(--space-3-5) var(--space-4-5);
   display: flex;
   flex-direction: column;
   align-items: center;

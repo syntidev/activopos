@@ -4,9 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X } from 'lucide-react'
+import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X, Store } from 'lucide-react'
 import type { SessionUser } from '@/types'
-import { CajaToggle } from './CajaToggle'
 import { useRate } from '@/context/RateContext'
 import styles from './Header.module.css'
 
@@ -272,6 +271,16 @@ export function Header({
       .catch(() => {})
   }, [])
 
+  /* ── Caja pill (estado, solo lectura) — la acción "Abrir Caja" vive en
+     el sidebar; este pill solo refleja abierta/cerrada y navega a /caja ── */
+  const [cajaOpen, setCajaOpen] = useState<boolean | null>(null)
+  useEffect(() => {
+    fetch('/api/cash/status')
+      .then(r => r.ok ? r.json() : null)
+      .then((j: { isOpen?: boolean } | null) => { if (j) setCajaOpen(!!j.isOpen) })
+      .catch(() => {})
+  }, [])
+
   /* ── Notifications ── */
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
@@ -430,10 +439,22 @@ export function Header({
             </>
           )}
 
-          {/* Caja status toggle — hidden on mobile, shown in sidebar drawer instead */}
-          <div className={styles.cajaToggleWrap}>
-            <CajaToggle />
-          </div>
+          {/* Caja pill — solo estado; el toggle de acción vive en el sidebar */}
+          {cajaOpen !== null && (
+            <>
+              <button
+                type="button"
+                className={`${styles.cajaPill} ${cajaOpen ? styles.cajaPillOpen : styles.cajaPillClosed}`}
+                onClick={() => router.push('/caja')}
+                aria-label={cajaOpen ? 'Caja abierta — ir a Gestión de Caja' : 'Caja cerrada — ir a Gestión de Caja'}
+                title={cajaOpen ? 'Caja abierta' : 'Caja cerrada'}
+              >
+                <Store size={13} aria-hidden="true" />
+                {cajaOpen ? 'Caja abierta' : 'Caja cerrada'}
+              </button>
+              <div className={styles.separator} aria-hidden="true" />
+            </>
+          )}
 
           {/* Notification bell */}
           <button

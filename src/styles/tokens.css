@@ -140,7 +140,7 @@
   /* Layout */
   --sidebar-width:      220px;
   --sidebar-collapsed:  64px;
-  --header-height:      56px;
+  --header-height:      48px;
   --pos-ticket-width:   340px;
   --touch-min:          44px;
   --touch-comfy:        48px;
@@ -319,7 +319,7 @@
   --sidebar-text:           #6B7280;
   --sidebar-text-hover:     #1a1a2e;
   --sidebar-section-label:  #9CA3AF;
-  --sidebar-active-bg:      rgba(0, 56, 189, 0.08);
+  --sidebar-active-bg:      var(--brand-soft);
   --sidebar-active-text:    #0038BD;
   --sidebar-active-border:  #0038BD;
   --sidebar-hover-bg:       rgba(0, 56, 189, 0.04);
@@ -532,17 +532,17 @@
   --bg-overlay:     rgba(0, 0, 0, 0.60);
   --bg-banner:      #132035;
 
-  /* Sidebar — NAVY en dark */
-  --sidebar-bg:             #0F172A;
-  --sidebar-border:         #1E293B;
-  --sidebar-text:           #94A3B8;
-  --sidebar-text-hover:     #F1F5F9;
-  --sidebar-section-label:  rgba(255, 255, 255, 0.2);
-  --sidebar-active-bg:      rgba(0, 56, 189, 0.12);
-  --sidebar-active-text:    #4D7AFF;
+  /* Sidebar — SIEMPRE blanco, ignora tema (Design System v1.1) */
+  --sidebar-bg:             #FAFBFC;
+  --sidebar-border:         #E2E8F0;
+  --sidebar-text:           #6B7280;
+  --sidebar-text-hover:     #1a1a2e;
+  --sidebar-section-label:  #9CA3AF;
+  --sidebar-active-bg:      var(--brand-soft);
+  --sidebar-active-text:    #0038BD;
   --sidebar-active-border:  #0038BD;
-  --sidebar-hover-bg:       rgba(255, 255, 255, 0.05);
-  --sidebar-dot:            #4D7AFF;
+  --sidebar-hover-bg:       rgba(0, 56, 189, 0.04);
+  --sidebar-dot:            #0038BD;
 
   /* Toggle de caja en sidebar */
   --toggle-on-bg:  #0038BD;

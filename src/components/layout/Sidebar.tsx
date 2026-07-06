@@ -231,6 +231,12 @@ function NavContent({
         </div>
       </div>
 
+      {/* Abrir Caja — vive en el sidebar para todas las franjas (antes solo
+          aparecía en el header desktop y en el footer del drawer móvil) */}
+      <div className={styles.cajaTopWrap}>
+        <CajaToggle />
+      </div>
+
       <div className={styles.divider} />
 
       {/* Navigation */}
@@ -419,9 +425,6 @@ function NavContent({
                 {ROLE_LABELS[session.role]}
               </span>
             </div>
-            <div className={styles.mobileCajaWrap}>
-              <CajaToggle />
-            </div>
           </div>
         )}
 
@@ -472,6 +475,19 @@ export function Sidebar({
   const [showNotif, setShowNotif] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const { items: notifItems, unread: notifUnread, loading: notifLoading, markAllRead } = useNotifications()
+
+  /* ── Tablet (768-1023px): rail dockeado auto-colapsado a solo íconos,
+     independiente del toggle manual de escritorio (isCollapsed) ── */
+  const [isTabletAutoCollapsed, setIsTabletAutoCollapsed] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px) and (max-width: 1023px)')
+    const update = () => setIsTabletAutoCollapsed(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  const effectiveCollapsed = isCollapsed || isTabletAutoCollapsed
+  const railWidth = isTabletAutoCollapsed ? 56 : (isCollapsed ? 64 : 220)
 
   const sidebarCounts = useSidebarNotifications()
   const isAdmin = session?.role === 'admin' || session?.role === 'super_admin'
@@ -538,11 +554,11 @@ export function Sidebar({
       {/* Desktop sidebar — always mounted, animates width */}
       <motion.aside
         className={styles.sidebar}
-        animate={{ width: isCollapsed ? 64 : 220 }}
+        animate={{ width: railWidth }}
         transition={{ type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }}
         aria-label="Barra lateral"
       >
-        <NavContent {...sharedProps} collapsed={isCollapsed} onLogout={handleLogout} />
+        <NavContent {...sharedProps} collapsed={effectiveCollapsed} onLogout={handleLogout} />
       </motion.aside>
 
       {/* Mobile drawer — mounts on demand, slides from left */}

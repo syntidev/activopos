@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
         FROM sale_items si
         JOIN sales s ON s.id = si.sale_id
         WHERE s.business_id = ${bid}
-          AND s.status = 'paid'
+          AND s.status IN ('paid', 'partial_return')
           AND s.sold_at >= ${from}
           AND s.sold_at <  ${toExclusive}`,
 

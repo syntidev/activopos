@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const [ventasAgg, costoRow, gastosAgg] = await Promise.all([
     db.sale.aggregate({
-      where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
+      where: { status: { in: ['paid', 'partial_return'] }, sold_at: { gte: from, lt: to } }, // business_id inyectado
       _sum:  { total_usd: true },
       _count: { id: true },
     }),
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
       WHERE s.business_id = ${bid}
-        AND s.status = 'paid'
+        AND s.status IN ('paid', 'partial_return')
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}`,
 

@@ -61,9 +61,10 @@ export async function GET(req: NextRequest) {
     cxpVencidasCount,
     inventarioRow,
   ] = await Promise.all([
-    // Ventas pagas del período
+    // Ventas pagas del período (incluye partial_return: sigue siendo ingreso
+    // reconocido — solo la porción devuelta se resta vía COGS/inventario)
     db.sale.aggregate({
-      where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
+      where: { status: { in: ['paid', 'partial_return'] }, sold_at: { gte: from, lt: to } }, // business_id inyectado
       _sum:  { total_usd: true, total_bs: true },
     }),
 
@@ -85,7 +86,7 @@ export async function GET(req: NextRequest) {
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
       WHERE s.business_id = ${bid}
-        AND s.status = 'paid'
+        AND s.status IN ('paid', 'partial_return')
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}`,
 

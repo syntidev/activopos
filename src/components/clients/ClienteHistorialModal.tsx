@@ -24,23 +24,25 @@ interface ClienteHistorialModalProps {
 }
 
 const STATUS_LABELS: Record<SaleHistoryItem['status'], string> = {
-  draft:     'Borrador',
-  quote:     'Cotización',
-  pending:   'Pendiente',
-  credit:    'Crédito',
-  paid:      'Pagado',
-  cancelled: 'Anulado',
-  returned:  'Devuelta',
+  draft:          'Borrador',
+  quote:          'Cotización',
+  pending:        'Pendiente',
+  credit:         'Crédito',
+  paid:           'Pagado',
+  cancelled:      'Anulado',
+  returned:       'Devuelta',
+  partial_return: 'Devolución parcial',
 }
 
 const STATUS_VARIANT: Record<SaleHistoryItem['status'], BadgeVariant> = {
-  draft:     'info',
-  quote:     'info',
-  pending:   'warning',
-  credit:    'warning',
-  paid:      'success',
-  cancelled: 'danger',
-  returned:  'danger',
+  draft:          'info',
+  quote:          'info',
+  pending:        'warning',
+  credit:         'warning',
+  paid:           'success',
+  cancelled:      'danger',
+  returned:       'danger',
+  partial_return: 'warning',
 }
 
 function fmtDate(d: Date | string | null): string {

@@ -23,7 +23,7 @@ export interface ClientRecord {
 export interface SaleHistoryItem {
   id: number
   ticket_number: string
-  status: 'quote' | 'pending' | 'paid' | 'cancelled' | 'draft' | 'returned' | 'credit'
+  status: 'quote' | 'pending' | 'paid' | 'cancelled' | 'draft' | 'returned' | 'partial_return' | 'credit'
   total_usd: number
   total_bs: number
   rate_used: number

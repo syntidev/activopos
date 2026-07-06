@@ -52,6 +52,7 @@ enum SaleStatus {
   paid
   cancelled
   returned
+  partial_return
   credit
 }
 

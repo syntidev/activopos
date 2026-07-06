@@ -122,6 +122,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Total vs parcial: TOTAL solo si, tras esta devolución, cada ítem vendido
+    // queda devuelto en su cantidad completa. Si queda algo sin devolver (un
+    // producto no incluido, o una cantidad parcial), la venta sigue visible
+    // en el P&L como partial_return.
+    const requestedMap = new Map<number, number>()
+    for (const i of body.items) {
+      requestedMap.set(i.product_id, (requestedMap.get(i.product_id) ?? 0) + i.qty)
+    }
+    let isFullReturn = true
+    for (const [productId, soldQty] of Array.from(soldMap)) {
+      const totalReturned = (returnedMap.get(productId) ?? 0) + (requestedMap.get(productId) ?? 0)
+      if (Math.abs(totalReturned - soldQty) > 0.001) { isFullReturn = false; break }
+    }
+    const newSaleStatus = isFullReturn ? 'returned' : 'partial_return'
+
     const rate     = await readCachedBcvRate()
     const r2       = (x: number) => Math.round(x * 100) / 100
     const totalUsd = r2(body.items.reduce((s, i) => s + i.qty * (priceMap.get(i.product_id) ?? 0), 0))
@@ -131,7 +146,7 @@ export async function POST(req: NextRequest) {
       // TOCTOU guard: atomically claim the sale for this return
       const { count } = await tx.sale.updateMany({
         where: { id: body.sale_id, business_id: bid, status: 'paid' },
-        data:  { status: 'returned' },
+        data:  { status: newSaleStatus },
       })
       if (count === 0) {
         throw Object.assign(new Error('ALREADY_RETURNED'), { code: 'ALREADY_RETURNED' })
@@ -170,6 +185,7 @@ export async function POST(req: NextRequest) {
             product_id:  i.product_id,
             quantity:    i.qty,
             waste:       0,
+            entry_type:  'return',
             notes:       `DEVOLUCIÓN #${ret.id}`,
             created_by:  session.userId,
           })),

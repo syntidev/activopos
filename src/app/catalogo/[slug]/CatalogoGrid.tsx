@@ -104,28 +104,13 @@ const BADGE_ICON: Record<string, ReactNode> = {
   recomendado: <ThumbsUp size={10} aria-hidden="true" />,
 }
 
-function getCategoryClass(categoryName: string | null | undefined): string {
-  if (!categoryName) return styles.gradDefault
-  const key = categoryName
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-  const map: Record<string, string> = {
-    ropa:       styles.gradRopa,
-    alimentos:  styles.gradAlimentos,
-    tecnologia: styles.gradTech,
-    servicios:  styles.gradServicios,
-  }
-  return map[key] ?? styles.gradDefault
-}
-
 const FEATURED_KEY = '__destacados__'
 
 // EXCEPCIÓN DOCUMENTADA — Sprint 35.1
 // Colores de confeti para animación de celebración post-pedido.
 // Uso puramente decorativo/animación — no UI funcional ni semántico.
-// Basados en brand palette + colores vivos para efecto cotillón.
-const CONFETTI_COLORS = ['#0038BD','#FF6B35','#FFD700','#10B981','#F472B6','#8B5CF6','#EF4444','#06B6D4']
+// Sin brand de ActivoPOS (#0038BD prohibido en catálogo) — paleta genérica.
+const CONFETTI_COLORS = ['#3B82F6','#FF6B35','#FFD700','#10B981','#F472B6','#8B5CF6','#EF4444','#06B6D4']
 
 /* ── Component ───────────────────────────────────────────────── */
 
@@ -587,7 +572,7 @@ export function CatalogoGrid({
                     />
                   ) : (
                     <div
-                      className={`${styles.productImagePlaceholder} ${getCategoryClass(p.categoryName)}`}
+                      className={`${styles.productImagePlaceholder} ${styles.gradDefault}`}
                       aria-hidden="true"
                     >
                       <span className={styles.productInitial}>
@@ -944,7 +929,7 @@ export function CatalogoGrid({
                 />
               ) : (
                 <div
-                  className={`${styles.modalImagePlaceholder} ${getCategoryClass(selP.categoryName)}`}
+                  className={`${styles.modalImagePlaceholder} ${styles.gradDefault}`}
                   aria-hidden="true"
                 >
                   <span className={styles.modalInitial}>

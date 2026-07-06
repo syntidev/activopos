@@ -184,7 +184,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className={styles.footer}>
         <p>
-          Catálogo digital con{' '}
+          Impulsado por{' '}
           <a href="https://activopos.com" target="_blank" rel="noopener noreferrer">
             ActivoPOS
           </a>

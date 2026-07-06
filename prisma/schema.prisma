@@ -298,7 +298,7 @@ model InventoryEntry {
   product_id        Int
   quantity          Decimal  @db.Decimal(10, 3)
   waste             Decimal  @default(0) @db.Decimal(10, 3)
-  entry_type        String   @default("adjustment") // purchase | adjustment | sale | return
+  entry_type        String   @default("adjustment") // purchase | adjustment | sale | return | reservation
   cost_per_unit_usd Decimal? @db.Decimal(10, 4)
   supplier          String?  @db.VarChar(120)
   notes             String?  @db.Text

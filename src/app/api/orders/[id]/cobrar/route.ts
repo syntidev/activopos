@@ -116,18 +116,35 @@ export async function POST(req: NextRequest, { params }: Context) {
         select: { id: true },
       })
 
-      // Inventory deduction
-      const deductions = order.items.map(item => ({
-        business_id: session.businessId,
-        product_id:  item.product_id,
-        quantity:    -Number(item.quantity),
-        waste:       0,
-        entry_type:  'sale',
-        notes:       `VENTA #${ticket_number} (pedido ${order.order_number})`,
-        created_by:  session.userId,
-      }))
-      if (deductions.length > 0) {
-        await tx.inventoryEntry.createMany({ data: deductions })
+      // Stock ya fue descontado como 'reservation' al crear el pedido en catálogo —
+      // reclasificar esas entries a 'sale' en vez de volver a descontar (GAP-CATALOGO-1).
+      const reservationUpdate = await tx.inventoryEntry.updateMany({
+        where: {
+          business_id: session.businessId,
+          entry_type:  'reservation',
+          product_id:  { in: productIds },
+          notes:       { endsWith: order.order_number },
+        },
+        data: {
+          entry_type: 'sale',
+          notes:      `VENTA #${ticket_number} (pedido ${order.order_number})`,
+        },
+      })
+
+      if (reservationUpdate.count === 0) {
+        // Pedido legacy sin reserva previa — descuenta ahora (comportamiento anterior)
+        const deductions = order.items.map(item => ({
+          business_id: session.businessId,
+          product_id:  item.product_id,
+          quantity:    -Number(item.quantity),
+          waste:       0,
+          entry_type:  'sale',
+          notes:       `VENTA #${ticket_number} (pedido ${order.order_number})`,
+          created_by:  session.userId,
+        }))
+        if (deductions.length > 0) {
+          await tx.inventoryEntry.createMany({ data: deductions })
+        }
       }
 
       await tx.order.update({

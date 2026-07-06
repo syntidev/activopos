@@ -178,8 +178,43 @@ export async function POST(
 
   const rate = await getBcvRate()
 
-  const order = await prisma.$transaction(async (tx) => {
+  // Reservas automáticas se atribuyen al admin del negocio — la ruta es pública, sin sesión
+  const adminUser = await prisma.user.findFirst({
+    where:   { business_id: business.id, is_active: true, role: { in: ['admin', 'super_admin'] } },
+    orderBy: { id: 'asc' },
+    select:  { id: true },
+  })
+  if (!adminUser) {
+    return NextResponse.json({ error: 'Catálogo no disponible' }, { status: 500 })
+  }
+
+  let order: { id: number; order_number: string; total_usd: unknown; total_bs: unknown }
+  try {
+    order = await prisma.$transaction(async (tx) => {
+    // Row lock: serializa pedidos concurrentes sobre el mismo producto (previene sobreventa).
+    // Va antes de generateOrderNumber para que su lectura también quede serializada
+    // cuando dos pedidos comparten producto.
+    for (const productId of uniqueProductIds) {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`
+    }
+
     const order_number = await generateOrderNumber(business.id, business.ticket_prefix, tx)
+
+    const stockAgg = await tx.inventoryEntry.groupBy({
+      by:    ['product_id'],
+      where: { business_id: business.id, product_id: { in: uniqueProductIds } },
+      _sum:  { quantity: true, waste: true },
+    })
+    const stockMap = new Map(
+      stockAgg.map(s => [s.product_id, Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0)]),
+    )
+
+    for (const item of resolvedItems) {
+      const available = stockMap.get(item.product_id) ?? 0
+      if (available < item.qty) {
+        throw new Error(`STOCK_INSUFICIENTE:${item.product_name}`)
+      }
+    }
 
     const totalUsd = Math.round(
       resolvedItems.reduce((s, i) => s + i.subtotal_usd, 0) * 100,
@@ -212,7 +247,7 @@ export async function POST(
       body.notes ?? '',
     ].filter(Boolean).join('\n')
 
-    return tx.order.create({
+    const newOrder = await tx.order.create({
       data: {
         business_id:    business.id,
         order_number,
@@ -244,7 +279,30 @@ export async function POST(
         total_bs:     true,
       },
     })
-  })
+
+    await tx.inventoryEntry.createMany({
+      data: resolvedItems.map(item => ({
+        business_id: business.id,
+        product_id:  item.product_id,
+        quantity:    -Number(item.qty),
+        waste:       0,
+        entry_type:  'reservation',
+        notes:       `Reserva pedido catálogo #${order_number}`,
+        created_by:  adminUser.id,
+      })),
+    })
+
+    return newOrder
+    })
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('STOCK_INSUFICIENTE:')) {
+      return NextResponse.json(
+        { error: `Stock insuficiente: ${err.message.split(':')[1]}` },
+        { status: 409 },
+      )
+    }
+    throw err
+  }
 
   const bizPhone = business.phone?.replace(/\D/g, '') ?? ''
   const waMessage = buildWaMessage(

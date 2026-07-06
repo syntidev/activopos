@@ -803,3 +803,330 @@ CRITERIO DE ÉXITO (verificable, no subjetivo):
 
 *ActivoPOS · Design System v1.1 — Mobile-first + Overflow Contract + Estrategia de aplicación*
 *Actualizado: 2026-07-05*
+
+---
+
+## 16. CATÁLOGO DIGITAL — SISTEMA VISUAL INDEPENDIENTE
+
+### Principio fundamental
+El catálogo es la tienda pública del negocio cliente — no la interfaz de ActivoPOS.
+Sus reglas visuales son OPUESTAS al dashboard en varios puntos.
+
+```
+Dashboard:   brand #0038BD fijo, sidebar, fondo #EEEDF4
+Catálogo:    --tenant-color variable, sin sidebar, fondo #FFFFFF
+```
+
+### Variables de tenant (ya existen en el sistema)
+```css
+--tenant-color:        [color elegido por el negocio en Configuración → Tema Visual]
+--tenant-color-soft:   [versión 15% opacidad del tenant-color]
+--tenant-color-dark:   [versión darken 10% del tenant-color]
+```
+
+### Layout del catálogo — 4 pantallas
+
+#### Pantalla 1 — HOME
+```
+[HEADER]
+  Logo negocio (izq) + nombre negocio + búsqueda (cen) + carrito badge (der)
+  height: 56px, bg: #FFFFFF, border-bottom: 1px solid #F3F4F6
+  sticky top: 0, z-index: 50
+
+[HERO BANNER]
+  Imagen de portada del negocio (full-width)
+  Overlay oscuro 40% + nombre negocio + tagline
+  height: 200px mobile / 320px desktop
+  CTA "Ver productos" → --tenant-color
+
+[CATEGORÍAS]
+  Scroll horizontal en mobile, grid en desktop
+  Ícono circular 48px + label debajo
+  Activa: bg --tenant-color, texto blanco
+  Inactiva: bg #F3F4F6, texto #6B7280
+
+[DESTACADOS]
+  Label "Productos destacados" + grid 2 col mobile / 4 col desktop
+  Solo productos con badge "Recomendado" o "Popular"
+
+[GRID GENERAL]
+  grid 2 columnas mobile / 3-4 columnas desktop
+  Ver especificaciones de card producto abajo
+```
+
+#### Pantalla 2 — GRID DE PRODUCTOS
+```css
+/* Grid */
+grid-template-columns: repeat(2, 1fr);          /* mobile */
+@media (min-width: 768px)  { repeat(3, 1fr); }  /* tablet */
+@media (min-width: 1024px) { repeat(4, 1fr); }  /* desktop */
+gap: 12px;
+padding: 0 16px;
+```
+
+**Card de producto:**
+```css
+background: #FFFFFF;
+border-radius: 12px;
+box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+overflow: hidden;
+cursor: pointer;
+transition: transform 0.15s;
+/* hover */ transform: translateY(-2px);
+```
+
+**Imagen del producto:**
+```css
+aspect-ratio: 1 / 1;    /* cuadrada siempre */
+width: 100%;
+object-fit: cover;
+background: #F9FAFB;    /* placeholder si no hay imagen */
+```
+
+**Placeholder sin imagen:**
+```css
+background: #F3F4F6;
+display: flex;
+align-items: center;
+justify-content: center;
+/* Letra inicial del producto */
+font-size: 32px;
+font-weight: 700;
+color: #D1D5DB;
+/* NO colores rosados/verdes por categoría — solo gris neutro */
+```
+
+**Info de la card:**
+```css
+padding: 10px 12px;
+```
+- Categoría: font-size 10px, color --tenant-color, font-weight 600, uppercase
+- Nombre: font-size 13px, font-weight 600, color #0F172A, max 2 líneas
+- Precio USD: font-size 16px, font-weight 700, color #0F172A
+- Precio Bs: font-size 11px, color #9CA3AF (debajo del USD)
+- Botón `+`: círculo 32px, bg --tenant-color, color #FFFFFF, posición absolute bottom-right
+
+**Badges sobre la imagen:**
+```css
+/* Popular / Recomendado — esquina superior izquierda */
+background: --tenant-color; color: #FFFFFF;
+font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+
+/* Sin stock — esquina superior derecha */
+background: rgba(0,0,0,0.6); color: #FFFFFF;
+font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+
+/* Cantidad disponible — esquina superior derecha */
+background: rgba(0,0,0,0.5); color: #FFFFFF;
+font-size: 10px; padding: 3px 8px; border-radius: 4px;
+```
+
+#### Pantalla 3 — DETALLE DEL PRODUCTO (modal / página)
+```
+[IMAGEN]
+  Cuadrada 1:1, full-width en mobile
+  border-radius: 0 en mobile / 16px en modal desktop
+
+[CONTENIDO]
+  Categoría → tenant-color
+  Nombre → font-size 22px, font-weight 700
+  Descripción → font-size 14px, color #6B7280
+  Precio USD → font-size 28px, font-weight 800, color #0F172A
+  Precio Bs → font-size 14px, color #9CA3AF
+
+[VARIACIONES — si aplica]
+  Chips horizontales: borde --tenant-color inactivo
+                      bg --tenant-color activo + texto blanco
+
+[BOTÓN AGREGAR]
+  width: 100%
+  background: --tenant-color
+  color: #FFFFFF
+  height: 48px
+  border-radius: 12px
+  font-size: 15px, font-weight: 700
+  texto: "Agregar · $X.XX"
+  ícono carrito a la izquierda
+```
+
+#### Pantalla 4 — CARRITO + CHECKOUT WHATSAPP
+```
+[HEADER CARRITO]
+  "Mi Pedido" + "Shopping Bag" + X cerrar
+
+[ITEMS]
+  thumbnail 48×48 cuadrado + nombre + precio c/u + Bs c/u
+  controles cantidad: [−] [N] [+]
+  precio total del item en --tenant-color
+
+[TOTALES]
+  Subtotal → USD
+  Equivalente Bs → gris
+  border-top: 1px solid #F3F4F6
+
+[BOTÓN FINALIZAR]
+  "Finalizar por WhatsApp"
+  bg: #25D366 (verde WhatsApp — excepción permitida, color de marca externa)
+  ícono WhatsApp
+  width: 100%, height: 48px
+
+[MODAL CHECKOUT]
+  fondo blur/overlay
+  campos: Nombre, WhatsApp (58XXXXXXXXXX), Referencia/Sector, Método de pago
+  "Enviar por WhatsApp" → bg --tenant-color
+  "Cancelar" → ghost, texto gris
+```
+
+### Bottom navigation — mobile únicamente
+```css
+/* Solo visible en mobile (<768px) */
+position: sticky;
+bottom: 0;
+height: 56px;
+background: #FFFFFF;
+border-top: 1px solid #F3F4F6;
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+
+/* Items: Home / Categorías / Carrito / Buscar */
+/* Activo: color --tenant-color */
+/* Inactivo: color #9CA3AF */
+```
+
+### Prohibiciones específicas del catálogo
+```
+PROHIBIDO: usar #0038BD (brand ActivoPOS) en el catálogo
+PROHIBIDO: sidebar en cualquier breakpoint
+PROHIBIDO: fondo #EEEDF4 — el catálogo es siempre #FFFFFF
+PROHIBIDO: placeholders de color rosado/verde por categoría — usar #F3F4F6 neutro
+PROHIBIDO: mostrar el precio solo en Bs — siempre USD primero
+PROHIBIDO: botón + en color #16A34A hardcodeado — usar --tenant-color
+PROHIBIDO: tocar la lógica de carrito/checkout — está certificada
+```
+
+### Powered by ActivoPOS
+```css
+/* Footer sutil — siempre presente */
+.poweredBy {
+  text-align: center;
+  padding: 16px;
+  font-size: 11px;
+  color: #9CA3AF;
+}
+/* "Impulsado por ActivoPOS" — sin logo grande, sin intrusión */
+```
+
+---
+
+### Prompt CLI-B — Rediseño visual catálogo (copiar directo)
+
+```
+Ejecuta rediseño visual del catálogo digital de ActivoPOS.
+Backend certificado — PROHIBIDO tocar lógica, APIs, carrito, checkout.
+Solo CSS y estructura visual.
+
+/impeccable craft
+/frontend-design:frontend-design
+/ui-ux-pro-max:ui-ux-pro-max
+/coding-standards
+/ponytail ultra
+
+PASO 0 — GRAPHIFY (obligatorio):
+graphify explain "CatalogoGrid.tsx"
+graphify path "catalogo/[slug]/page.tsx" "CatalogoGrid.tsx"
+graphify query "catalogo tenant-color tema visual"
+
+PASO 1 — LEE COMPLETO antes de escribir una línea:
+- CLAUDE.md
+- .doc/DESIGN_SYSTEM.md sección 16 — Catálogo Digital
+- .doc/DESIGN_SYSTEM.html — abrir en browser
+- src/app/catalogo/[slug]/page.tsx
+- src/app/catalogo/[slug]/CatalogoGrid.tsx
+- src/app/catalogo/[slug]/catalogo.module.css
+- src/app/catalogo/catalogo-landing.module.css
+- src/app/catalogo/layout.tsx
+
+Declara al inicio:
+- Cómo se pasa --tenant-color al catálogo (CSS variable, prop, context)
+- Si existe modal de detalle o es página separada
+- Si el carrito es componente separado o está en CatalogoGrid.tsx
+
+PASO 2 — MODIFICAR (solo archivos CSS y estructura visual):
+
+2a. CatalogoGrid.tsx + catalogo.module.css:
+- Grid: 2 col mobile → 3 col tablet → 4 col desktop (minmax(0,1fr))
+- Card producto: border-radius 12px, sombra suave, overflow hidden
+- Imagen: aspect-ratio 1/1, object-fit cover
+- Placeholder sin imagen: bg #F3F4F6, letra inicial gris — NO colores por categoría
+- Categoría label: color var(--tenant-color), uppercase, 10px
+- Precio USD: 16px, font-weight 700, negro
+- Precio Bs: 11px, gris debajo
+- Botón +: círculo 32px, bg var(--tenant-color) — NO #16A34A hardcodeado
+- Badges Popular/Recomendado: bg var(--tenant-color)
+- Badge Sin stock: rgba(0,0,0,0.6) sobre imagen
+
+2b. Pantalla HOME del catálogo (si existe):
+- Header: logo negocio + búsqueda + carrito, height 56px, sticky
+- Hero banner: imagen portada full-width, overlay + nombre negocio
+- Categorías: íconos circulares scroll horizontal en mobile
+- Sección destacados separada del grid general
+
+2c. Modal detalle del producto (si existe):
+- Imagen cuadrada full-width en mobile
+- Botón Agregar: width 100%, bg var(--tenant-color), height 48px
+
+2d. Bottom navigation mobile:
+- Solo en <768px: sticky bottom, 4 items, activo var(--tenant-color)
+
+2e. Footer:
+- "Impulsado por ActivoPOS" — texto sutil, 11px, gris, centrado
+
+PASO 3 — PROHIBICIONES ABSOLUTAS:
+- PROHIBIDO tocar: carrito, checkout, WhatsApp flow, APIs, Prisma
+- PROHIBIDO usar #0038BD en el catálogo
+- PROHIBIDO sidebar en cualquier breakpoint
+- PROHIBIDO fondo #EEEDF4 en catálogo
+- PROHIBIDO colores hardcodeados — usar var(--tenant-color)
+- PROHIBIDO inline styles
+- PROHIBIDO Tailwind
+
+PASO 4 — VERIFICAR:
+npx tsc --noEmit
+Abrir localhost con un slug real en 375px (mobile) y 1280px (desktop)
+Verificar: grid 2 col en mobile, imágenes cuadradas, tenant-color aplicado
+Verificar: no hay overflow horizontal en ningún breakpoint
+
+PASO 5 — COMMIT:
+git add src/app/catalogo/[slug]/CatalogoGrid.tsx
+git add src/app/catalogo/[slug]/catalogo.module.css
+git add src/app/catalogo/catalogo-landing.module.css
+git add [cualquier otro archivo modificado — listar explícitamente]
+git commit -m "style(catalogo): rediseño visual — grid responsive, tenant-color, mobile-first
+
+- Grid 2/3/4 col por breakpoint
+- Imagen cuadrada 1:1 con placeholder neutro
+- Botón + y badges usan tenant-color
+- Bottom nav mobile
+- Footer Powered by ActivoPOS
+🤖 Agente: CLI-B | Sprint: 75 | Fecha: 2026-07-05"
+git push origin main
+git log --oneline -3
+
+graphify update .
+
+CRITERIO DE ÉXITO (verificable, no subjetivo):
+✅ Grid 2 columnas en 375px sin overflow horizontal
+✅ Imágenes cuadradas 1:1 — sin deformación
+✅ Placeholder sin imagen: gris neutro — NO rosado ni verde
+✅ Botón + usa var(--tenant-color) — NO #16A34A hardcodeado
+✅ Badges Popular/Recomendado usan var(--tenant-color)
+✅ Footer "Impulsado por ActivoPOS" visible
+✅ npx tsc --noEmit = 0 errores
+✅ npm run build exitoso
+✅ Carrito y checkout funcionan igual que antes — sin regresión
+```
+
+---
+
+*ActivoPOS · Design System v1.2 — Sección Catálogo Digital agregada*
+*Actualizado: 2026-07-05*

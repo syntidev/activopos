@@ -79,7 +79,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         ...CATALOG_WHERE_FILTER,
       },
       include: {
-        category: { select: { name: true } },
+        category: { select: { name: true, color: true, sort_order: true } },
       },
       orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
     }),
@@ -115,6 +115,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       name:         p.name,
       description:  p.description,
       image:        imgs[0] ?? null,
+      images:       imgs,
       categoryName: p.category?.name ?? null,
       priceUsd,
       priceBs,
@@ -134,13 +135,20 @@ export default async function CatalogoPage({ params }: PageProps) {
     }
   })
 
-  const categories = Array.from(
-    new Set(
-      catalogProducts
-        .map(p => p.categoryName)
-        .filter((c): c is string => c !== null),
-    ),
+  // Categorías ordenadas por sort_order + mapa de color por categoría.
+  // Se deriva de `products` (crudo) porque trae category.sort_order/color.
+  const catMeta = new Map<string, { sortOrder: number; color: string | null }>()
+  for (const p of products) {
+    const c = p.category
+    if (c?.name && !catMeta.has(c.name)) {
+      catMeta.set(c.name, { sortOrder: c.sort_order, color: c.color })
+    }
+  }
+  const categories = Array.from(catMeta.keys()).sort(
+    (a, b) => (catMeta.get(a)!.sortOrder - catMeta.get(b)!.sortOrder) || a.localeCompare(b),
   )
+  const categoryColors: Record<string, string | null> = {}
+  Array.from(catMeta.entries()).forEach(([name, meta]) => { categoryColors[name] = meta.color })
 
   const displayTitle = business.catalog_title ?? business.name
   const location     = [business.city, business.state].filter(Boolean).join(', ')
@@ -161,6 +169,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       <CatalogoGrid
         products={catalogProducts}
         categories={categories}
+        categoryColors={categoryColors}
         slug={params.slug}
         rate={rate}
         paymentMethods={paymentMethods as PaymentMethod[]}

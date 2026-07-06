@@ -648,6 +648,18 @@
   height:          100%;
   object-fit:      cover;
   object-position: center;
+  transform-origin: center;
+  animation:       kenBurns 12s ease-out forwards;
+  will-change:     transform;
+}
+
+@keyframes kenBurns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroBannerImg { animation: none; }
 }
 
 .heroOverlay {
@@ -842,6 +854,119 @@
 @media (min-width: 1024px) { .productsGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 1280px) { .productsGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 
+/* ── CATEGORY SHOWCASE — tiles grandes (≤4 categorías) ───────── */
+
+.catShowcase {
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.catShowcaseGrid {
+  display:               grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:                   var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .catShowcaseGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.catTile {
+  position:      relative;
+  aspect-ratio:  1 / 1;
+  border-radius: var(--radius-lg);
+  overflow:      hidden;
+  border:        none;
+  cursor:        pointer;
+  background:    var(--color-surface-2);
+  text-align:    left;
+  padding:       0;
+  transition:    transform 200ms ease, box-shadow 200ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.catTile:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14); }
+.catTile:active { transform: scale(0.97); transition-duration: 100ms; }
+.catTile:focus-visible {
+  outline:        2px solid var(--tile-accent, var(--biz-color, var(--color-brand)));
+  outline-offset: 2px;
+}
+
+.catTileImg {
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  transition: transform 400ms ease;
+}
+.catTile:hover .catTileImg { transform: scale(1.05); }
+
+.catTilePlaceholder {
+  position: absolute;
+  inset:    0;
+}
+
+.catTileOverlay {
+  position:   absolute;
+  inset:      0;
+  background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.08) 55%, transparent 100%);
+}
+
+.catTileInfo {
+  position:       absolute;
+  bottom:         0;
+  left:           0;
+  right:          0;
+  padding:        var(--space-3);
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+
+.catTileName {
+  color:       var(--color-white);
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-bold);
+  line-height: 1.2;
+}
+
+.catTileCount {
+  color:     rgba(255, 255, 255, 0.7);
+  font-size: var(--text-xs);
+}
+
+@media (min-width: 768px) {
+  .catTileName  { font-size: var(--text-base); }
+}
+
+/* ── CATEGORY SECTION — vitrina apilada + scroll-spy ─────────── */
+
+.catSection {
+  padding:       var(--space-2) var(--space-4) var(--space-4);
+  scroll-margin-top: 112px;
+}
+
+.catSection .productsGrid { padding: 0; }
+
+.catSectionTitle {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--space-2);
+  margin:        0 0 var(--space-3);
+  padding-left:  var(--space-2-5);
+  border-left:   3px solid var(--section-accent, var(--biz-color, var(--color-brand)));
+  font-size:     var(--text-lg);
+  font-weight:   var(--weight-bold);
+  color:         var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.catSectionCount {
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-medium);
+  color:       var(--color-text-muted);
+}
+
 /* ── LOAD MORE — patrón SYNTImeat ────────────────────────────── */
 
 .loadMoreWrap {
@@ -937,7 +1062,7 @@
   right:            0;
   height:           2.5px;
   z-index:          2;
-  background:       var(--biz-color, var(--color-brand));
+  background:       var(--accent-cat, var(--biz-color, var(--color-brand)));
   transform:        scaleX(0);
   transform-origin: left;
   transition:       transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -1492,6 +1617,68 @@
   border-top:      1px solid var(--color-border-subtle);
   background:      var(--color-surface);
   flex-shrink:     0;
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-2-5);
+}
+
+.modalFooter > .btnWhatsapp,
+.modalFooter > .btnDisabled,
+.modalFooter > .modalActions { flex: 1; }
+
+.modalShareBtn {
+  flex-shrink:     0;
+  width:           var(--touch-large);
+  height:          var(--touch-large);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--color-surface-2);
+  color:           var(--color-text-secondary);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius-md);
+  cursor:          pointer;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+}
+.modalShareBtn:hover  { background: var(--color-surface-3); color: var(--color-text-primary); }
+.modalShareBtn:active { transform: scale(0.96); }
+.modalShareBtn:focus-visible {
+  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline-offset: 2px;
+}
+
+/* ── Modal — galería de miniaturas ───────────────────────────── */
+.modalThumbs {
+  display:    flex;
+  gap:        var(--space-2);
+  padding:    var(--space-3) var(--space-5) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.modalThumbs::-webkit-scrollbar { display: none; }
+
+.modalThumb {
+  flex-shrink:   0;
+  width:         56px;
+  height:        56px;
+  border-radius: var(--radius-md);
+  overflow:      hidden;
+  border:        2px solid transparent;
+  padding:       0;
+  cursor:        pointer;
+  background:    var(--color-surface-2);
+  opacity:       0.6;
+  transition:    opacity var(--transition-fast), border-color var(--transition-fast);
+}
+.modalThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.modalThumb:hover { opacity: 0.85; }
+.modalThumbActive {
+  opacity:      1;
+  border-color: var(--biz-color, var(--color-brand));
+}
+.modalThumb:focus-visible {
+  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline-offset: 2px;
 }
 
 .modalActions {
@@ -1955,6 +2142,15 @@
 .checkoutInput::placeholder { color: var(--color-text-muted); }
 .checkoutInput:disabled,
 .checkoutSelect:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.checkoutInputError,
+.checkoutInputError:focus { border-color: var(--color-danger); }
+
+.checkoutFieldError {
+  font-size: var(--text-xs);
+  color:     var(--color-danger-text);
+  line-height: 1.35;
+}
 
 .checkoutActions {
   display:        flex;

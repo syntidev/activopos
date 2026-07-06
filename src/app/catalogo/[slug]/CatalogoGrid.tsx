@@ -16,6 +16,7 @@ export interface CatalogProduct {
   name:              string
   description:       string | null
   image:             string | null
+  images:            string[]
   categoryName:      string | null
   priceUsd:          number
   priceBs:           number | null
@@ -59,6 +60,7 @@ interface DeliveryInfo {
 interface Props {
   products:       CatalogProduct[]
   categories:     string[]
+  categoryColors: Record<string, string | null>
   slug:           string
   rate:           number
   paymentMethods: PaymentMethod[]
@@ -80,6 +82,12 @@ function fmtUsd(n: number): string {
 
 function fmtBs(n: number): string {
   return `Bs. ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+// Validación simple de celular venezolano: acepta 0412…, 412…, 58412…
+function isValidVePhone(raw: string): boolean {
+  const digits = raw.replace(/\D/g, '')
+  return /^(?:58|0)?(412|414|416|422|424|426)\d{7}$/.test(digits)
 }
 
 function getInitials(name: string): string {
@@ -132,6 +140,7 @@ const CONFETTI_COLORS = ['#3B82F6','#FF6B35','#FFD700','#10B981','#F472B6','#8B5
 export function CatalogoGrid({
   products,
   categories,
+  categoryColors,
   slug,
   rate,
   paymentMethods,
@@ -155,6 +164,7 @@ export function CatalogoGrid({
   const [checkoutOpen,   setCheckoutOpen]   = useState(false)
   const [cName,          setCName]          = useState('')
   const [cPhone,         setCPhone]         = useState('')
+  const [phoneError,     setPhoneError]     = useState(false)
   const [cRef,           setCRef]           = useState('')
   const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
   const [delivery,       setDelivery]       = useState<DeliveryInfo | null>(null)
@@ -167,6 +177,9 @@ export function CatalogoGrid({
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [infoOpen,       setInfoOpen]       = useState(false)
   const [visibleCount,   setVisibleCount]   = useState(10)
+  const [spyCategory,    setSpyCategory]    = useState<string | null>(null)
+  const [sectionCounts,  setSectionCounts]  = useState<Record<string, number>>({})
+  const [modalImageIndex, setModalImageIndex] = useState(0)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
@@ -199,14 +212,20 @@ export function CatalogoGrid({
     return map
   }, [products])
 
+  // Categoría de contexto para el bar de subcategorías: en modo filtrado es
+  // activeCategory; en browse sigue a la sección visible (scroll-spy).
+  const subcatContext = activeCategory && activeCategory !== FEATURED_KEY
+    ? activeCategory
+    : spyCategory
+
   const subcategoriesForActive = useMemo(() => {
-    if (!activeCategory || activeCategory === FEATURED_KEY) return []
+    if (!subcatContext) return []
     const subs = new Set<string>()
     for (const p of products) {
-      if (p.categoryName === activeCategory && p.subcategory) subs.add(p.subcategory)
+      if (p.categoryName === subcatContext && p.subcategory) subs.add(p.subcategory)
     }
     return Array.from(subs).sort()
-  }, [products, activeCategory])
+  }, [products, subcatContext])
 
   useEffect(() => { setActiveSub(null) }, [activeCategory])
 
@@ -237,6 +256,51 @@ export function CatalogoGrid({
   const paged     = visible.slice(0, visibleCount)
   const remaining = visible.length - visibleCount
 
+  // ── Modo browse: vitrina apilada por categoría con scroll-spy ──
+  // Activo solo sin filtro de categoría real ni búsqueda; Destacados y
+  // subcategorías siguen usando el grid filtrado único de arriba.
+  const browseMode = activeCategory === null && !query.trim()
+
+  const ORPHAN_KEY = '__otros__'
+
+  const sections = useMemo(() => {
+    const byCat = new Map<string, CatalogProduct[]>()
+    for (const cat of categories) byCat.set(cat, [])
+    const orphans: CatalogProduct[] = []
+    for (const p of products) {
+      const list = p.categoryName ? byCat.get(p.categoryName) : undefined
+      if (list) list.push(p)
+      else orphans.push(p)
+    }
+    const out = categories
+      .map(name => ({ key: name, name, color: categoryColors[name] ?? null, items: byCat.get(name) ?? [] }))
+      .filter(s => s.items.length > 0)
+    if (orphans.length) out.push({ key: ORPHAN_KEY, name: 'Otros', color: null, items: orphans })
+    return out
+  }, [products, categories, categoryColors])
+
+  const catSectionRefs = useRef<Map<string, HTMLElement>>(new Map())
+
+  // Scroll-spy: resalta el tab de la sección más visible (solo en browse)
+  useEffect(() => {
+    if (!browseMode || sections.length < 2) return
+    const observer = new IntersectionObserver(
+      entries => {
+        let best: IntersectionObserverEntry | null = null
+        for (const e of entries) {
+          if (e.isIntersecting && (!best || e.intersectionRatio > best.intersectionRatio)) best = e
+        }
+        if (best) {
+          const key = best.target.getAttribute('data-cat-key')
+          if (key) setSpyCategory(key === ORPHAN_KEY ? null : key)
+        }
+      },
+      { rootMargin: '-12% 0px -70% 0px', threshold: [0, 0.15, 0.4] },
+    )
+    Array.from(catSectionRefs.current.values()).forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [browseMode, sections])
+
   // Cart computed
   const totalItems  = cart.reduce((acc, i) => acc + i.qty, 0)
   const subtotalUsd = cart.reduce((acc, i) => acc + i.qty * i.price_usd, 0)
@@ -262,11 +326,10 @@ export function CatalogoGrid({
     setTimeout(() => setCartBumping(false), 300)
   }
 
-  // Scroll-to-center the active category chip
-  const selectCategory = (cat: string | null) => {
-    setActiveCategory(cat)
+  // Centra el chip activo dentro del track horizontal
+  const centerChip = (cat: string) => {
     const track = categoryTrackRef.current
-    if (!track || cat === null) return
+    if (!track) return
     const activeBtn = track.querySelector<HTMLElement>(`[data-category="${cat}"]`)
     if (!activeBtn) return
     const trackRect = track.getBoundingClientRect()
@@ -274,6 +337,31 @@ export function CatalogoGrid({
     const scrollLeft = track.scrollLeft + (btnRect.left - trackRect.left)
       - (trackRect.width / 2) + (btnRect.width / 2)
     track.scrollTo({ left: scrollLeft, behavior: 'smooth' })
+  }
+
+  // Entra en modo filtrado (Destacados / desde el menú de categorías)
+  const selectCategory = (cat: string | null) => {
+    setActiveCategory(cat)
+    if (cat && cat !== FEATURED_KEY) centerChip(cat)
+  }
+
+  // Navegación pura (paradigma food): scrollea a la sección sin filtrar
+  const scrollToSection = (cat: string | null) => {
+    setActiveCategory(null)
+    setActiveSub(null)
+    setQuery('')
+    if (cat === null) {
+      setSpyCategory(null)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    setSpyCategory(cat)
+    centerChip(cat)
+    // Espera un frame por si venimos de modo filtrado y la sección aún no montó
+    requestAnimationFrame(() => {
+      const el = catSectionRefs.current.get(cat)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   const updateCartQty = (productId: number, delta: number) => {
@@ -286,7 +374,13 @@ export function CatalogoGrid({
     })
   }
 
-  const openModal  = (p: CatalogProduct) => { setSelectedProduct(p); setModalQty(1) }
+  // Resaltado del tab: en browse sigue al scroll-spy; Destacados es filtro real
+  const tabActive = (cat: string | null): boolean => {
+    if (cat === FEATURED_KEY) return activeCategory === FEATURED_KEY
+    return browseMode && spyCategory === cat
+  }
+
+  const openModal  = (p: CatalogProduct) => { setSelectedProduct(p); setModalQty(1); setModalImageIndex(0) }
   const closeModal = () => setSelectedProduct(null)
 
   // Scroll lock
@@ -343,6 +437,7 @@ export function CatalogoGrid({
 
   const handleCheckout = async () => {
     if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
+    if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
     if (hasZones && zoneIdx < 0) return
     setSubmitting(true)
     try {
@@ -386,6 +481,117 @@ export function CatalogoGrid({
   }
 
   const selP = selectedProduct
+
+  // Card de producto — compartida entre secciones browse y grid filtrado.
+  // accentColor pinta el borde superior (--accent-cat); cae a --biz-color.
+  const renderProductCard = (p: CatalogProduct, i: number, accentColor?: string | null) => {
+    const isOut = p.outOfStock || p.availability === 'out_of_stock'
+    const cardStyle: CSSProperties = { '--card-index': Math.min(i, 12) } as CSSProperties
+    if (accentColor) (cardStyle as Record<string, string>)['--accent-cat'] = accentColor
+    return (
+      <article
+        key={p.id}
+        className={`${styles.productCard} ${isOut ? styles.productCardOutOfStock : ''}`}
+        style={cardStyle}
+        onClick={() => openModal(p)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
+        }}
+        tabIndex={isOut ? -1 : 0}
+        role="button"
+        aria-label={`Ver detalle: ${p.name}`}
+      >
+        <div className={styles.productImageWrap}>
+          <span className={styles.productCardAccent} aria-hidden="true" />
+          {p.image ? (
+            <img
+              src={p.image}
+              alt={p.name}
+              className={styles.productImage}
+              loading="lazy"
+              ref={img => { if (img?.complete) img.classList.add(styles.productImageLoaded) }}
+              onLoad={e => e.currentTarget.classList.add(styles.productImageLoaded)}
+            />
+          ) : (
+            <div className={`${styles.productImagePlaceholder} ${styles.gradDefault}`} aria-hidden="true">
+              <span className={styles.productInitial}>{p.name.charAt(0).toUpperCase()}</span>
+            </div>
+          )}
+
+          {p.availability === 'discontinued' ? (
+            <div className={styles.badgeDiscontinued} aria-label="Descontinuado">
+              <span><Archive size={10} aria-hidden="true" />&nbsp;Descontinuado</span>
+            </div>
+          ) : p.catalogVisibility === 'on_request' ? (
+            <div className={styles.badgeOnRequest} aria-label="Bajo pedido">Consultar</div>
+          ) : isOut ? (
+            <span className={styles.badgeSinStock}>Sin stock</span>
+          ) : p.availability === 'low_stock' ? (
+            <span className={styles.badgeLowStock}>Pocas unidades</span>
+          ) : p.isService ? (
+            <span className={styles.badgeDisponible}>Disponible</span>
+          ) : p.stockQty !== null && p.stockQty > 0 ? (
+            <span className={styles.badgeStock}>
+              {p.stockQty <= 5 ? `Últimas ${p.stockQty}` : `${p.stockQty} uds.`}
+            </span>
+          ) : null}
+
+          {p.catalogVisibility !== 'on_request' &&
+            !p.outOfStock &&
+            !p.isService &&
+            p.badge && p.badge !== 'none' &&
+            getBadgeClass(p.badge) && (
+            <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
+              {BADGE_ICON[p.badge]}
+              {BADGE_LABEL[p.badge]}
+            </span>
+          )}
+        </div>
+
+        <div className={styles.productInfo}>
+          {p.categoryName && <p className={styles.productCategory}>{p.categoryName}</p>}
+          <h2 className={styles.productName}>{p.name}</h2>
+
+          <div className={styles.productPriceRow}>
+            <div className={styles.productPriceBlock}>
+              {p.catalogVisibility === 'on_request' ? (
+                <span className={styles.priceConsultar}>Consultar precio</span>
+              ) : p.availability === 'discontinued' ? (
+                <span className={styles.priceDiscontinued}>No disponible</span>
+              ) : p.priceUsd > 0 ? (
+                <>
+                  <span className={styles.priceUsd}>
+                    ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                  {p.priceBs && (
+                    <span className={styles.priceBs}>
+                      Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className={styles.priceConsultar}>Consultar precio</span>
+              )}
+            </div>
+            {p.catalogVisibility !== 'on_request' &&
+              p.availability !== 'discontinued' &&
+              !p.outOfStock &&
+              p.availability !== 'out_of_stock' &&
+              p.priceUsd > 0 && (
+              <button
+                type="button"
+                className={styles.addBtnCircle}
+                onClick={e => { e.stopPropagation(); addToCart(p, 1) }}
+                aria-label={`Agregar ${p.name} al carrito`}
+              >
+                <Plus size={16} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </div>
+      </article>
+    )
+  }
 
   return (
     <>
@@ -484,9 +690,9 @@ export function CatalogoGrid({
             <div ref={categoryTrackRef} className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
               <button
                 role="tab"
-                aria-selected={activeCategory === null}
-                className={`${styles.categoryTab} ${activeCategory === null ? styles.categoryTabActive : ''}`}
-                onClick={() => selectCategory(null)}
+                aria-selected={tabActive(null)}
+                className={`${styles.categoryTab} ${tabActive(null) ? styles.categoryTabActive : ''}`}
+                onClick={() => scrollToSection(null)}
               >
                 Todos
                 <span className={styles.categoryTabCount}>{products.length}</span>
@@ -495,8 +701,8 @@ export function CatalogoGrid({
                 <button
                   role="tab"
                   data-category={FEATURED_KEY}
-                  aria-selected={activeCategory === FEATURED_KEY}
-                  className={`${styles.categoryTab} ${activeCategory === FEATURED_KEY ? styles.categoryTabActive : ''}`}
+                  aria-selected={tabActive(FEATURED_KEY)}
+                  className={`${styles.categoryTab} ${tabActive(FEATURED_KEY) ? styles.categoryTabActive : ''}`}
                   onClick={() => selectCategory(FEATURED_KEY)}
                 >
                   <Star size={13} aria-hidden="true" />
@@ -509,9 +715,9 @@ export function CatalogoGrid({
                   key={cat}
                   role="tab"
                   data-category={cat}
-                  aria-selected={activeCategory === cat}
-                  className={`${styles.categoryTab} ${activeCategory === cat ? styles.categoryTabActive : ''}`}
-                  onClick={() => selectCategory(cat)}
+                  aria-selected={tabActive(cat)}
+                  className={`${styles.categoryTab} ${tabActive(cat) ? styles.categoryTabActive : ''}`}
+                  onClick={() => scrollToSection(cat)}
                 >
                   {cat}
                   <span className={styles.categoryTabCount}>{categoryCounts.get(cat) ?? 0}</span>
@@ -528,7 +734,7 @@ export function CatalogoGrid({
                     type="button"
                     role="menuitem"
                     className={styles.catMenuItem}
-                    onClick={() => { selectCategory(null); setCatMenuOpen(false) }}
+                    onClick={() => { scrollToSection(null); setCatMenuOpen(false) }}
                   >
                     Todos
                     <span className={styles.catMenuCount}>{products.length}</span>
@@ -550,7 +756,7 @@ export function CatalogoGrid({
                       type="button"
                       role="menuitem"
                       className={styles.catMenuItem}
-                      onClick={() => { selectCategory(cat); setCatMenuOpen(false) }}
+                      onClick={() => { scrollToSection(cat); setCatMenuOpen(false) }}
                     >
                       {cat}
                       <span className={styles.catMenuCount}>{categoryCounts.get(cat) ?? 0}</span>
@@ -564,7 +770,7 @@ export function CatalogoGrid({
       </div>
 
       {/* ── Hero banner — solo en vista inicial (sin filtro ni búsqueda) ── */}
-      {activeCategory === null && !query && (
+      {browseMode && (
         <section className={styles.heroBanner} aria-label="Presentación del negocio">
           {heroCover && (
             <img src={heroCover} alt={businessName} className={styles.heroBannerImg} />
@@ -589,8 +795,40 @@ export function CatalogoGrid({
         </section>
       )}
 
+      {/* ── Category showcase — hasta 4 tiles (clamp anti-desbordamiento) ── */}
+      {browseMode && categories.length > 0 && (
+        <section className={styles.catShowcase} aria-label="Categorías">
+          <div className={styles.catShowcaseGrid}>
+            {categories.slice(0, 4).map(cat => {
+              const first = products.find(p => p.categoryName === cat && p.image)
+              const count = categoryCounts.get(cat) ?? 0
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  className={styles.catTile}
+                  onClick={() => scrollToSection(cat)}
+                  style={categoryColors[cat] ? ({ '--tile-accent': categoryColors[cat] } as CSSProperties) : undefined}
+                >
+                  {first?.image ? (
+                    <img src={first.image} alt="" className={styles.catTileImg} loading="lazy" aria-hidden="true" />
+                  ) : (
+                    <div className={`${styles.catTilePlaceholder} ${styles.gradDefault}`} aria-hidden="true" />
+                  )}
+                  <div className={styles.catTileOverlay} />
+                  <div className={styles.catTileInfo}>
+                    <span className={styles.catTileName}>{cat}</span>
+                    <span className={styles.catTileCount}>{count} producto{count !== 1 ? 's' : ''}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── Destacados — showcase de vista inicial ─────────────── */}
-      {hasFeatured && activeCategory === null && !query && (
+      {hasFeatured && browseMode && (
         <section className={styles.featuredSection} data-section="featured" aria-label="Productos destacados">
           <div className={styles.featuredHeader}>
             <Star size={16} aria-hidden="true" />
@@ -641,14 +879,14 @@ export function CatalogoGrid({
         </section>
       )}
 
-      {/* ── Subcategory pills ──────────────────────────────────── */}
+      {/* ── Subcategory pills — filtran la categoría en contexto ── */}
       {!searchExpanded && !query && subcategoriesForActive.length > 0 && (
         <div className={styles.subcatScroll}>
           <div className={styles.subcatTrack} role="group" aria-label="Subcategorías">
             <button
               type="button"
               className={`${styles.subcatPill} ${activeSub === null ? styles.subcatPillActive : ''}`}
-              onClick={() => setActiveSub(null)}
+              onClick={() => { setActiveCategory(null); setActiveSub(null) }}
             >
               Todas
             </button>
@@ -657,7 +895,7 @@ export function CatalogoGrid({
                 key={sub}
                 type="button"
                 className={`${styles.subcatPill} ${activeSub === sub ? styles.subcatPillActive : ''}`}
-                onClick={() => setActiveSub(sub)}
+                onClick={() => { if (subcatContext) { setActiveCategory(subcatContext); setActiveSub(sub) } }}
               >
                 {sub}
               </button>
@@ -674,6 +912,48 @@ export function CatalogoGrid({
             <h2 className={styles.emptyTitle}>Catálogo en construcción</h2>
             <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
           </div>
+        ) : browseMode ? (
+          // Vitrina apilada por categoría — paginación independiente por sección
+          sections.map(section => {
+            const limit = sectionCounts[section.key] ?? 10
+            const shown = section.items.slice(0, limit)
+            const left  = section.items.length - limit
+            return (
+              <section
+                key={section.key}
+                className={styles.catSection}
+                data-cat-key={section.key}
+                ref={el => {
+                  if (el) catSectionRefs.current.set(section.key, el)
+                  else catSectionRefs.current.delete(section.key)
+                }}
+                aria-label={section.name}
+              >
+                <h2
+                  className={styles.catSectionTitle}
+                  style={section.color ? ({ '--section-accent': section.color } as CSSProperties) : undefined}
+                >
+                  {section.name}
+                  <span className={styles.catSectionCount}>{section.items.length}</span>
+                </h2>
+                <div className={styles.productsGrid}>
+                  {shown.map((p, i) => renderProductCard(p, i, section.color))}
+                </div>
+                {left > 0 && (
+                  <div className={styles.loadMoreWrap}>
+                    <button
+                      type="button"
+                      className={styles.loadMoreBtn}
+                      onClick={() => setSectionCounts(s => ({ ...s, [section.key]: (s[section.key] ?? 10) + 10 }))}
+                    >
+                      <span>Ver 10 más</span>
+                      <span className={styles.loadMoreCount}>{left} restantes</span>
+                    </button>
+                  </div>
+                )}
+              </section>
+            )
+          })
         ) : visible.length === 0 ? (
           <div className={styles.empty}>
             {query ? (
@@ -687,140 +967,23 @@ export function CatalogoGrid({
             )}
           </div>
         ) : (
-          <div className={styles.productsGrid} key={`${activeCategory ?? 'all'}|${activeSub ?? ''}`}>
-            {paged.map((p, i) => (
-              <article
-                key={p.id}
-                className={`${styles.productCard} ${(p.outOfStock || p.availability === 'out_of_stock') ? styles.productCardOutOfStock : ''}`}
-                style={{ '--card-index': Math.min(i, 12) } as CSSProperties}
-                onClick={() => openModal(p)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
-                }}
-                tabIndex={(p.outOfStock || p.availability === 'out_of_stock') ? -1 : 0}
-                role="button"
-                aria-label={`Ver detalle: ${p.name}`}
-              >
-                {/* Image */}
-                <div className={styles.productImageWrap}>
-                  <span className={styles.productCardAccent} aria-hidden="true" />
-                  {p.image ? (
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className={styles.productImage}
-                      loading="lazy"
-                      ref={img => { if (img?.complete) img.classList.add(styles.productImageLoaded) }}
-                      onLoad={e => e.currentTarget.classList.add(styles.productImageLoaded)}
-                    />
-                  ) : (
-                    <div
-                      className={`${styles.productImagePlaceholder} ${styles.gradDefault}`}
-                      aria-hidden="true"
-                    >
-                      <span className={styles.productInitial}>
-                        {p.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Status badge (top right) */}
-                  {p.availability === 'discontinued' ? (
-                    <div className={styles.badgeDiscontinued} aria-label="Descontinuado">
-                      <span>
-                        <Archive size={10} aria-hidden="true" />
-                        &nbsp;Descontinuado
-                      </span>
-                    </div>
-                  ) : p.catalogVisibility === 'on_request' ? (
-                    <div className={styles.badgeOnRequest} aria-label="Bajo pedido">
-                      Consultar
-                    </div>
-                  ) : (p.outOfStock || p.availability === 'out_of_stock') ? (
-                    <span className={styles.badgeSinStock}>Sin stock</span>
-                  ) : p.availability === 'low_stock' ? (
-                    <span className={styles.badgeLowStock}>Pocas unidades</span>
-                  ) : p.isService ? (
-                    <span className={styles.badgeDisponible}>Disponible</span>
-                  ) : p.stockQty !== null && p.stockQty > 0 ? (
-                    <span className={styles.badgeStock}>
-                      {p.stockQty <= 5 ? `Últimas ${p.stockQty}` : `${p.stockQty} uds.`}
-                    </span>
-                  ) : null}
-
-                  {/* Product badge (top left) */}
-                  {p.catalogVisibility !== 'on_request' &&
-                    !p.outOfStock &&
-                    !p.isService &&
-                    p.badge && p.badge !== 'none' &&
-                    getBadgeClass(p.badge) && (
-                    <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
-                      {BADGE_ICON[p.badge]}
-                      {BADGE_LABEL[p.badge]}
-                    </span>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className={styles.productInfo}>
-                  {p.categoryName && (
-                    <p className={styles.productCategory}>{p.categoryName}</p>
-                  )}
-                  <h2 className={styles.productName}>{p.name}</h2>
-
-                  <div className={styles.productPriceRow}>
-                    <div className={styles.productPriceBlock}>
-                      {p.catalogVisibility === 'on_request' ? (
-                        <span className={styles.priceConsultar}>Consultar precio</span>
-                      ) : p.availability === 'discontinued' ? (
-                        <span className={styles.priceDiscontinued}>No disponible</span>
-                      ) : p.priceUsd > 0 ? (
-                        <>
-                          <span className={styles.priceUsd}>
-                            ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </span>
-                          {p.priceBs && (
-                            <span className={styles.priceBs}>
-                              Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className={styles.priceConsultar}>Consultar precio</span>
-                      )}
-                    </div>
-                    {p.catalogVisibility !== 'on_request' &&
-                      p.availability !== 'discontinued' &&
-                      !p.outOfStock &&
-                      p.availability !== 'out_of_stock' &&
-                      p.priceUsd > 0 && (
-                      <button
-                        type="button"
-                        className={styles.addBtnCircle}
-                        onClick={e => { e.stopPropagation(); addToCart(p, 1) }}
-                        aria-label={`Agregar ${p.name} al carrito`}
-                      >
-                        <Plus size={16} aria-hidden="true" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-
-        {remaining > 0 && (
-          <div className={styles.loadMoreWrap}>
-            <button
-              type="button"
-              className={styles.loadMoreBtn}
-              onClick={() => setVisibleCount(v => v + 10)}
-            >
-              <span>Ver 10 más</span>
-              <span className={styles.loadMoreCount}>{remaining} restantes</span>
-            </button>
-          </div>
+          <>
+            <div className={styles.productsGrid} key={`${activeCategory ?? 'all'}|${activeSub ?? ''}`}>
+              {paged.map((p, i) => renderProductCard(p, i))}
+            </div>
+            {remaining > 0 && (
+              <div className={styles.loadMoreWrap}>
+                <button
+                  type="button"
+                  className={styles.loadMoreBtn}
+                  onClick={() => setVisibleCount(v => v + 10)}
+                >
+                  <span>Ver 10 más</span>
+                  <span className={styles.loadMoreCount}>{remaining} restantes</span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -962,12 +1125,18 @@ export function CatalogoGrid({
                 <input
                   id="co-phone"
                   type="tel"
-                  className={styles.checkoutInput}
+                  className={`${styles.checkoutInput} ${phoneError ? styles.checkoutInputError : ''}`}
                   value={cPhone}
-                  onChange={e => setCPhone(e.target.value)}
-                  placeholder="58XXXXXXXXXX"
+                  onChange={e => { setCPhone(e.target.value); if (phoneError) setPhoneError(false) }}
+                  placeholder="0412XXXXXXX"
+                  aria-invalid={phoneError}
                   disabled={submitting}
                 />
+                {phoneError && (
+                  <span className={styles.checkoutFieldError}>
+                    Número inválido. Usa un celular venezolano (0412, 0414, 0416, 0424, 0426).
+                  </span>
+                )}
               </div>
               <div className={styles.checkoutFieldGroup}>
                 <label className={styles.checkoutLabel} htmlFor="co-ref">
@@ -1127,7 +1296,7 @@ export function CatalogoGrid({
             <div className={styles.modalImageWrap}>
               {selP.image ? (
                 <img
-                  src={selP.image}
+                  src={selP.images[modalImageIndex] ?? selP.image}
                   alt={selP.name}
                   className={styles.modalImage}
                 />
@@ -1168,6 +1337,24 @@ export function CatalogoGrid({
                 <span className={styles.badgeLowStock}>Pocas unidades</span>
               )}
             </div>
+
+            {/* Galería de miniaturas — solo si hay más de una imagen */}
+            {selP.images.length > 1 && (
+              <div className={styles.modalThumbs} role="group" aria-label="Imágenes del producto">
+                {selP.images.map((src, idx) => (
+                  <button
+                    key={src}
+                    type="button"
+                    className={`${styles.modalThumb} ${idx === modalImageIndex ? styles.modalThumbActive : ''}`}
+                    onClick={() => setModalImageIndex(idx)}
+                    aria-label={`Ver imagen ${idx + 1}`}
+                    aria-pressed={idx === modalImageIndex}
+                  >
+                    <img src={src} alt="" loading="lazy" aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Scrollable body */}
             <div className={styles.modalBody}>
@@ -1269,6 +1456,16 @@ export function CatalogoGrid({
                   Consultar precio
                 </a>
               )}
+              <button
+                type="button"
+                className={styles.modalShareBtn}
+                onClick={() => {
+                  navigator.share?.({ title: selP.name, url: window.location.href }).catch(() => {})
+                }}
+                aria-label={`Compartir ${selP.name}`}
+              >
+                <Share2 size={18} aria-hidden="true" />
+              </button>
             </div>
           </div>
         </>

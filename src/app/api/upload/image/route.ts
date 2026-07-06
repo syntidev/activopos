@@ -23,8 +23,11 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData()
     const file     = formData.get('file')
-    // type selecciona el subdirectorio del tenant; default 'product' (backward compatible)
-    const type     = formData.get('type') === 'logo' ? 'logo' : 'products'
+    // type selecciona el subdirectorio del tenant; default 'products' (backward compatible)
+    const rawType  = formData.get('type')
+    const type     = rawType === 'logo' ? 'logo'
+                   : rawType === 'catalog_cover' ? 'catalog_cover'
+                   : 'products'
 
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 })

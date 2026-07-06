@@ -78,6 +78,8 @@ export interface BusinessConfig {
   current_rate:                number
   allow_cashier_price_override: boolean
   pos_mode?:                   'ticket' | 'invoice'
+  catalog_instagram?:          string | null
+  catalog_hours?:              string | null
 }
 
 export interface TicketConfig {

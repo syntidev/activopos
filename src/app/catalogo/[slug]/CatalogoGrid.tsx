@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
+  Info, AtSign, Phone, Share2,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -67,6 +68,8 @@ interface Props {
   businessCity:   string | null
   businessDesc:   string | null
   heroCover?:     string | null
+  businessHours:     string | null
+  businessInstagram: string | null
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -138,6 +141,8 @@ export function CatalogoGrid({
   businessCity,
   businessDesc,
   heroCover,
+  businessHours,
+  businessInstagram,
 }: Props) {
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -160,6 +165,7 @@ export function CatalogoGrid({
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
   const [cartBumping,    setCartBumping]    = useState(false)
   const [searchExpanded, setSearchExpanded] = useState(false)
+  const [infoOpen,       setInfoOpen]       = useState(false)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
@@ -400,6 +406,15 @@ export function CatalogoGrid({
             )}
           </span>
         </div>
+
+        <button
+          type="button"
+          className={styles.infoBtn}
+          onClick={() => setInfoOpen(true)}
+          aria-label="Información del negocio"
+        >
+          <Info size={20} aria-hidden="true" />
+        </button>
 
         <button
           type="button"
@@ -1235,6 +1250,113 @@ export function CatalogoGrid({
                 </a>
               )}
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Panel de información del negocio ────────────────────── */}
+      {infoOpen && (
+        <>
+          <div className={styles.infoOverlay} onClick={() => setInfoOpen(false)} aria-hidden="true" />
+          <div className={styles.infoPanel} role="dialog" aria-modal="true" aria-label="Información del negocio">
+            <button
+              type="button"
+              className={styles.infoPanelClose}
+              onClick={() => setInfoOpen(false)}
+              aria-label="Cerrar información"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+
+            {/* Header del negocio */}
+            <div className={styles.infoBizHeader}>
+              {businessLogo ? (
+                <img src={businessLogo} alt={businessName} className={styles.infoBizLogo} />
+              ) : (
+                <div className={styles.infoBizInitials} aria-hidden="true">{initials}</div>
+              )}
+              <div>
+                <h2 className={styles.infoBizName}>{businessName}</h2>
+                {businessDesc && <p className={styles.infoBizDesc}>{businessDesc}</p>}
+                {businessCity && <p className={styles.infoBizCity}>{businessCity}</p>}
+              </div>
+            </div>
+
+            {/* Métodos de pago */}
+            {paymentMethods.length > 0 && (
+              <div className={styles.infoSection}>
+                <p className={styles.infoSectionLabel}>Métodos de pago</p>
+                <div className={styles.infoPayMethods}>
+                  {paymentMethods.map(m => (
+                    <span key={m.id} className={styles.infoPayPill}>{m.name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contáctanos */}
+            {(businessPhone || businessInstagram) && (
+              <div className={styles.infoSection}>
+                <p className={styles.infoSectionLabel}>Contáctanos</p>
+                <div className={styles.infoContacts}>
+                  {businessPhone && (
+                    <a
+                      href={`https://wa.me/${businessPhone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.infoContactBtn}
+                      style={{ '--btn-color': '#25D366' } as CSSProperties}
+                    >
+                      <MessageCircle size={18} aria-hidden="true" />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                  {businessInstagram && (
+                    <a
+                      href={`https://instagram.com/${businessInstagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.infoContactBtn}
+                      style={{ '--btn-color': '#E1306C' } as CSSProperties}
+                    >
+                      <AtSign size={18} aria-hidden="true" />
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                  {businessPhone && (
+                    <a
+                      href={`tel:+${businessPhone}`}
+                      className={styles.infoContactBtn}
+                      style={{ '--btn-color': 'var(--biz-color)' } as CSSProperties}
+                    >
+                      <Phone size={18} aria-hidden="true" />
+                      <span>Llamar</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Horario */}
+            {businessHours && (
+              <div className={styles.infoSection}>
+                <p className={styles.infoSectionLabel}>Horario de atención</p>
+                <p className={styles.infoHours}>{businessHours}</p>
+              </div>
+            )}
+
+            {/* Compartir */}
+            <button
+              type="button"
+              className={styles.infoShareBtn}
+              onClick={() => {
+                navigator.share?.({ title: businessName, url: window.location.href })
+                  .catch(() => {})
+              }}
+            >
+              <Share2 size={16} aria-hidden="true" />
+              Compartir catálogo
+            </button>
           </div>
         </>
       )}

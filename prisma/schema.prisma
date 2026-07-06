@@ -156,6 +156,9 @@ model Business {
   catalog_active       Boolean  @default(false)
   catalog_title        String?  @db.VarChar(150)
   catalog_desc         String?  @db.Text
+  catalog_hours        String?  @db.Text
+  catalog_instagram    String?  @db.VarChar(80)
+  catalog_cover_path   String?
   segment              String?  @default("retail") @db.VarChar(40)
   cobro_data           Json?
   whatsapp             String?  @db.VarChar(30)

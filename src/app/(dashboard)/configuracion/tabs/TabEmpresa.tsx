@@ -23,11 +23,14 @@ interface EmpresaForm {
   email:            string
   quotation_footer: string
   pos_mode:         PosMode
+  catalog_instagram: string
+  catalog_hours:     string
 }
 
 const EMPTY_FORM: EmpresaForm = {
   name: '', legal_name: '', rif: '', address: '', city: '', state: '', phone: '', email: '', quotation_footer: '',
   pos_mode: 'ticket',
+  catalog_instagram: '', catalog_hours: '',
 }
 
 export function TabEmpresa({ businessId: _businessId }: Props) {
@@ -61,6 +64,8 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         // el formulario no puede pre-poblarse; el guardado sí funciona vía PATCH.
         quotation_footer: '',
         pos_mode: b.pos_mode ?? 'ticket',
+        catalog_instagram: b.catalog_instagram ?? '',
+        catalog_hours:     b.catalog_hours ?? '',
       })
       setLogoPath(b.logo_path)
     } catch {
@@ -95,6 +100,8 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
           // aquí produciría 400 "Datos inválidos". String vacío sí es válido y permite borrar el texto.
           quotation_footer: form.quotation_footer.trim(),
           pos_mode: form.pos_mode,
+          catalog_instagram: form.catalog_instagram.trim().replace(/^@+/, '') || null,
+          catalog_hours:     form.catalog_hours.trim() || null,
         }),
       })
       if (!res.ok) throw new Error()
@@ -287,6 +294,30 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
             onChange={set('quotation_footer')}
             placeholder="Ej: Precios válidos por 3 días. Forma de pago: transferencia o efectivo."
           />
+        </div>
+
+        <div className={styles.formDivider} />
+
+        <div className={styles.formFields}>
+          <Input
+            label="Instagram (opcional)"
+            value={form.catalog_instagram}
+            onChange={set('catalog_instagram')}
+            placeholder="@mitienda o mitienda"
+            hint="Solo el nombre de usuario, sin @"
+          />
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor="catalog_hours">Horario de atención</label>
+            <textarea
+              id="catalog_hours"
+              className={styles.textarea}
+              value={form.catalog_hours}
+              onChange={set('catalog_hours')}
+              placeholder="Lun-Vie 08:00-18:00 · Sab 09:00-14:00 · Dom Cerrado"
+            />
+            <p className={styles.logoDropHint}>Texto libre. Tus clientes lo verán en la info del catálogo.</p>
+          </div>
         </div>
 
         <div className={styles.saveRow}>

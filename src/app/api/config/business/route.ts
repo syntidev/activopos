@@ -30,6 +30,12 @@ const PatchSchema = z.object({
   allow_cashier_price_override: z.boolean().optional(),
   quotation_footer: z.string().optional(),
   pos_mode: z.enum(['ticket', 'invoice']).optional(),
+  catalog_instagram: z.string().max(80).nullable().optional(),
+  catalog_hours:     z.string().max(2000).nullable().optional(),
+  catalog_cover_path: z.string()
+    .refine(v => v === null || v.startsWith('/uploads/') || v.startsWith('/storage/tenants/'), 'Path inválido')
+    .nullable()
+    .optional(),
 })
 
 export async function GET() {
@@ -59,6 +65,9 @@ export async function GET() {
       catalog_active: true,
       quotation_footer: true,
       pos_mode: true,
+      catalog_instagram: true,
+      catalog_hours: true,
+      catalog_cover_path: true,
     },
   })
 

@@ -140,6 +140,200 @@
 
 .stickyCartBtn:hover { background: var(--color-surface-2); }
 
+/* Botón ⓘ — mismas dimensiones que el carrito */
+.infoBtn {
+  background:      none;
+  border:          none;
+  cursor:          pointer;
+  padding:         var(--space-2);
+  border-radius:   var(--radius-md);
+  color:           var(--color-text-primary);
+  transition:      background var(--transition-fast);
+  flex-shrink:     0;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  min-width:       var(--touch-min);
+  min-height:      var(--touch-min);
+}
+.infoBtn:hover { background: var(--color-surface-2); }
+
+/* ── PANEL DE INFORMACIÓN DEL NEGOCIO ────────────────────────── */
+
+.infoOverlay {
+  position:        fixed;
+  inset:           0;
+  z-index:         90;
+  background:      rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.infoPanel {
+  position:      fixed;
+  bottom:        0;
+  left:          0;
+  right:         0;
+  z-index:       91;
+  background:    var(--color-white);
+  border-radius: 20px 20px 0 0;
+  padding:       20px 20px 40px;
+  max-height:    85vh;
+  overflow-y:    auto;
+  box-shadow:    0 -4px 24px rgba(0, 0, 0, 0.12);
+}
+
+@media (min-width: 768px) {
+  .infoPanel {
+    left:          auto;
+    right:         0;
+    top:           0;
+    bottom:        0;
+    border-radius: 0;
+    width:         360px;
+    max-height:    100vh;
+  }
+}
+
+.infoPanelClose {
+  position:        absolute;
+  top:             16px;
+  right:           16px;
+  width:           32px;
+  height:          32px;
+  border:          none;
+  background:      var(--color-surface-2);
+  border-radius:   50%;
+  cursor:          pointer;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  color:           var(--color-text-secondary);
+}
+
+.infoBizHeader {
+  display:     flex;
+  align-items: center;
+  gap:         14px;
+  margin-bottom: 20px;
+  padding-top: 8px;
+}
+
+.infoBizLogo {
+  width:         56px;
+  height:        56px;
+  border-radius: 12px;
+  object-fit:    cover;
+  flex-shrink:   0;
+}
+
+.infoBizInitials {
+  width:           56px;
+  height:          56px;
+  border-radius:   12px;
+  background:      var(--biz-color, var(--color-brand));
+  color:           var(--color-white);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-size:       20px;
+  font-weight:     800;
+  flex-shrink:     0;
+}
+
+.infoBizName {
+  font-size:   17px;
+  font-weight: 700;
+  color:       var(--color-text-primary);
+  margin:      0 0 3px;
+}
+
+.infoBizDesc {
+  font-size:   13px;
+  color:       var(--color-text-secondary);
+  margin:      0 0 2px;
+  line-height: 1.4;
+}
+
+.infoBizCity {
+  font-size: 12px;
+  color:     var(--color-text-muted);
+  margin:    0;
+}
+
+.infoSection { margin-bottom: 20px; }
+
+.infoSectionLabel {
+  font-size:      10px;
+  font-weight:    700;
+  color:          var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin:         0 0 10px;
+}
+
+.infoPayMethods {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       6px;
+}
+
+.infoPayPill {
+  padding:       4px 12px;
+  background:    var(--color-surface-2);
+  border-radius: 20px;
+  font-size:     12px;
+  font-weight:   500;
+  color:         var(--color-text-secondary);
+  border:        1px solid var(--color-border-subtle);
+}
+
+.infoContacts {
+  display:   flex;
+  gap:       10px;
+  flex-wrap: wrap;
+}
+
+.infoContactBtn {
+  display:         flex;
+  align-items:     center;
+  gap:             6px;
+  padding:         8px 14px;
+  background:      var(--btn-color, var(--color-brand));
+  color:           var(--color-white);
+  border-radius:   8px;
+  font-size:       13px;
+  font-weight:     600;
+  text-decoration: none;
+  transition:      opacity 0.15s;
+}
+.infoContactBtn:hover { opacity: 0.88; }
+
+.infoHours {
+  font-size:   13px;
+  color:       var(--color-text-secondary);
+  line-height: 1.6;
+  margin:      0;
+  white-space: pre-line;
+}
+
+.infoShareBtn {
+  width:           100%;
+  height:          44px;
+  background:      none;
+  border:          1px solid var(--color-border);
+  border-radius:   10px;
+  font-size:       13px;
+  font-weight:     600;
+  color:           var(--color-text-secondary);
+  cursor:          pointer;
+  margin-top:      8px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             6px;
+}
+.infoShareBtn:hover { background: var(--color-surface-2); }
+
 .cartCount {
   position:        absolute;
   top:             4px;

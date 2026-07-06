@@ -29,6 +29,9 @@ async function getBusiness(slug: string) {
       state:         true,
       catalog_title: true,
       catalog_desc:  true,
+      catalog_hours:     true,
+      catalog_instagram: true,
+      catalog_cover_path: true,
       theme_color:   true,
       catalog_plan:            true,
       subscription_active:     true,
@@ -165,6 +168,9 @@ export default async function CatalogoPage({ params }: PageProps) {
         businessLogo={business.logo_path}
         businessCity={location || null}
         businessDesc={business.catalog_desc ?? null}
+        businessHours={business.catalog_hours ?? null}
+        businessInstagram={business.catalog_instagram ?? null}
+        heroCover={business.catalog_cover_path ?? null}
       />
 
       {/* ── WhatsApp FAB ────────────────────────────────────────── */}

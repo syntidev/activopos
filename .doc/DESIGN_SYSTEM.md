@@ -1,383 +1,491 @@
-# DESIGN_SYSTEM.md — ActivoPOS
-# Sistema de diseño, tokens y principios visuales
-# Versión: 1.0 | Junio 2026
+# ActivoPOS — Design System v1.0
+# Árbitro visual del ecosistema. Leer COMPLETO antes de tocar cualquier archivo CSS o TSX.
+# Fecha: 2026-07-05 | Aprobado por: Carlos Bolívar
+# Referencia visual: .doc/DESIGN_SYSTEM.html (abrir en browser para ver renderizado)
 
 ---
 
-## FILOSOFÍA
+## REGLA MAESTRA
 
-ActivoPOS se ve como Venko en escala y respira como SportBar en energía.
-**Más comercial que SportBar. Más vivo que Venko.**
-
-- Plano y limpio — sin glassmorphism, sin gradientes decorativos
-- Legible en un local con luz de bodega o en un estadio
-- El cajero tiene 3 segundos — cada acción crítica visible sin scroll
-- Touch targets mínimo 44px — funciona en tablet con dedos
-- Dark/Light: el negocio elige — ninguno es más importante
+Antes de escribir UNA SOLA línea de CSS o TSX con elementos visuales:
+1. Abrir `.doc/DESIGN_SYSTEM.html` en browser — verificar el componente que vas a replicar
+2. Leer la sección correspondiente de este documento
+3. Usar SOLO los tokens de `src/styles/tokens.css` — PROHIBIDO hardcodear hex
+4. Si el token no existe → crearlo en `tokens.css` PRIMERO, luego consumirlo
+5. NUNCA duplicar valores entre módulos
 
 ---
 
-## TOKENS CSS
+## 1. LAYOUT — ESTRUCTURA OBLIGATORIA
 
-### `src/styles/tokens.css`
+### Tres zonas irrompibles
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ ZONA A: SIDEBAR (220px fijo)                            │
+│ ZONA B: TOPBAR (48px altura)          [contenido →]     │
+│ ZONA C: CONTENIDO (flex:1, overflow-y:auto)             │
+└─────────────────────────────────────────────────────────┘
+```
+
+### ZONA A — Sidebar
+```css
+width: 220px;
+min-width: 220px;
+background: #FAFBFC;           /* var(--sidebar-bg) */
+border-right: 1px solid #E5E7EB; /* var(--sidebar-border) */
+display: flex;
+flex-direction: column;
+overflow-y: auto;
+```
+
+**Estructura interna obligatoria (de arriba a abajo):**
+1. Logo ActivoPOS — sin fondo card, sin sombra, sin borde
+2. Toggle "Abrir Caja" — dentro del sidebar, bg #F0FDF4, borde #BBF7D0
+3. Secciones de nav con label PRINCIPAL / VENTAS / INVENTARIO / CAJA / FINANZAS / SISTEMA
+4. Pie: tasa USD/VES desde RateContext
+
+**Nav item activo:**
+```css
+background: #DCE6FF;  /* var(--brand-soft) */
+color: #0038BD;        /* var(--brand) */
+font-weight: 600;
+border-right: 2px solid #0038BD; /* var(--brand) */
+```
+
+**Nav item hover:**
+```css
+background: rgba(0, 0, 0, 0.04);
+color: #374151;
+```
+
+**Label de sección:**
+```css
+font-size: 10px;
+color: #9CA3AF;
+font-weight: 700;
+letter-spacing: 0.8px;
+text-transform: uppercase;
+padding: 10px 16px 4px;
+```
+
+**PROHIBIDO en sidebar:**
+- box-shadow externo
+- border distinto a border-right: 1px solid #E5E7EB
+- background distinto a #FAFBFC
+- Cualquier tema de color — sidebar SIEMPRE blanco independiente del tema
+
+### ZONA B — Topbar
+```css
+height: 48px;
+background: #FFFFFF;
+border-bottom: 1px solid #E5E7EB;
+display: flex;
+align-items: center;
+padding: 0 20px;
+gap: 12px;
+flex-shrink: 0;
+```
+
+**Contenido del topbar (de izquierda a derecha):**
+1. Toggle sidebar móvil (hamburguesa)
+2. Nombre del módulo actual — font-size: 15px, font-weight: 600
+3. [espacio flex]
+4. Pill USD/VES — bg #FEF3C7, border #FDE68A, text #92400E
+5. Pill Caja — bg #DCFCE7, border #BBF7D0, text #15803D
+6. Ícono campana
+7. Ícono dark mode
+8. Nombre usuario
+9. Badge Super Admin (solo si aplica) — color #0038BD
+
+**PROHIBIDO en topbar:**
+- Botones de acción (Nueva venta, Agregar gasto, etc.) — esos van en el área de contenido
+- Altura distinta a 48px
+
+### ZONA C — Contenido
+```css
+flex: 1;
+overflow-y: auto;
+padding: 20px 24px;
+background: #EEEDF4;  /* var(--bg-base) */
+```
+
+**Ancho máximo del contenido:**
+```css
+max-width: 1280px;
+margin: 0 auto;
+width: 100%;
+```
+
+---
+
+## 2. GRIDS — ESTÁNDAR POR MÓDULO
+
+| Módulo | Grid | Columnas |
+|--------|------|----------|
+| Escritorio KPIs | asimétrico | 1.5fr 1fr 1fr |
+| Escritorio fila 2 | simétrico | 1fr 1fr 1fr |
+| Escritorio fila 3 | simétrico | 1fr 1fr |
+| Finanzas | simétrico | 1fr 1fr |
+| Productos lista | 4 columnas | repeat(4, 1fr) |
+| Historial / Inventario | tabla full | width: 100%, table-layout: fixed |
+| Configuración | panel + contenido | 240px 1fr |
+
+**PROHIBIDO:**
+- Tablas con width: 800px hardcodeado
+- Tablas con width: 1000px hardcodeado
+- Cualquier ancho fijo distinto a los definidos arriba
+- overflow-x sin scroll wrapper explícito
+
+---
+
+## 3. CARDS — 6 TIPOS, CADA UNO CON SU FUNCIÓN
+
+### Base común a TODAS las cards
+```css
+background: #FFFFFF;
+border-radius: 16px;
+box-shadow: 0 2px 8px rgba(47,43,61,0.10), 0 0 1px rgba(47,43,61,0.06);
+border: none;
+```
+
+### Tipo A — KPI con ícono circular (módulos generales)
+```css
+padding: 14px 18px;
+display: flex;
+align-items: center;
+gap: 14px;
+transition: transform 0.15s;
+```
+```css
+/* hover */
+transform: translateY(-1px);
+box-shadow: 0 4px 14px rgba(47,43,61,.12);
+```
+**Ícono:** círculo 40-46px, border-radius: 50%, color semántico según métrica
+**Label:** font-size: 10px, color: #9CA3AF, uppercase, letter-spacing: 0.5px
+**Valor:** font-size: 20-22px, font-weight: 700, color: #0F172A
+**Sub:** font-size: 10px, color: #9CA3AF
+
+**Colores de ícono por métrica (irrompible):**
+```
+cobrado/ingresos → bg #DCFCE7, icon color #16A34A
+crédito/pendiente → bg #FEF3C7, icon color #D97706
+tickets/órdenes → bg #DBEAFE, icon color #2563EB
+utilidad/margen → bg #F3E8FF, icon color #9333EA
+gastos/costos → bg #FEE2E2, icon color #EF4444
+```
+
+### Tipo B — KPI Hero (métrica principal del módulo)
+```css
+background: #0038BD;  /* var(--brand) */
+border-radius: 16px;
+box-shadow: 0 4px 16px rgba(0,56,189,0.30);
+padding: 18px 22px;
+display: flex;
+flex-direction: column;
+gap: 6px;
+```
+**Label:** font-size: 10px, color: rgba(255,255,255,0.6), uppercase
+**Valor:** font-size: 28-32px, font-weight: 800, color: #FFFFFF
+**Sub (Bs):** font-size: 11px, color: rgba(255,255,255,0.55)
+**Delta chip:** bg rgba(255,255,255,0.2), color: #FFFFFF
+
+### Tipo C — Card colored background (alerta / estado crítico)
+```css
+/* Alerta inventario */
+background: #FEF3C7;
+border-radius: 16px;
+padding: 14px 18px;
+box-shadow: none;
+```
+**REGLA:** el color de fondo comunica urgencia. Solo 3 colores permitidos:
+- Amarillo #FEF3C7 → alerta / stock bajo / pendiente
+- Rojo #FEE2E2 → crítico / vencido / pérdida
+- Verde #DCFCE7 → positivo / completado / activo
+
+### Tipo D — Panel con tabla (rankings, CxP, CxC, top productos)
+```css
+padding: 0;
+overflow: hidden;
+```
+**Header del panel:**
+```css
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 12px 18px;
+border-bottom: 1px solid #F9FAFB;
+border-left: 3px solid #0038BD;  /* acento brand */
+padding-left: 15px;
+```
+**Link "Ver más":** font-size: 11px, color: #0038BD, sin subrayado
+
+### Tipo E — Movimiento / transacción (row con estado)
+```css
+/* Row individual */
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 7px 0;
+border-bottom: 1px solid #F9FAFB;
+```
+**Ícono de método de pago:** 32px × 32px, border-radius: 8px, color semántico
+**Nombre:** font-size: 12px, font-weight: 500
+**Subtítulo (tiempo · método):** font-size: 10px, color: #9CA3AF
+**Monto:** font-size: 12-13px, font-weight: 700, color semántico
+**Badge estado:** pill redondeado, font-size: 9px
+
+**Colores por método de pago:**
+```
+Pago Móvil → bg #DCFCE7, icon color #16A34A
+Zelle → bg #DBEAFE, icon color #2563EB
+Binance / USDT → bg #FEF3C7, icon color #F59E0B
+Efectivo → bg #F3E8FF, icon color #9333EA
+Efectivo USD → bg #DCFCE7, icon color #16A34A
+Débito → bg #F1F5F9, icon color #6B7280
+```
+
+### Tipo F — Métricas por módulo (war room)
+```css
+padding: 14px 16px;
+```
+**Header:** ícono 28×28 con border-radius: 7px + título módulo + subtítulo período
+**Métricas:** rows con label izquierda / valor derecha, border-bottom: 1px solid #F9FAFB
+
+---
+
+## 4. DUAL CURRENCY — REGLA ABSOLUTA
+
+**Todo valor monetario muestra USD Y Bs simultáneamente. Sin toggle. Sin excepción.**
+
+```
+Formato obligatorio en cards KPI:
+  Línea 1: $1,190.50          ← USD, font-weight: 700, color: #0F172A
+  Línea 2: Bs 56,967          ← Bs, font-size: 10-11px, color: #9CA3AF
+
+Formato en tablas:
+  Columna USD | Columna Bs    ← dos columnas separadas, nunca una sola
+
+Formato en rows de transacción:
+  $12.40 · Bs 593             ← inline separado por ·
+```
+
+**La tasa siempre proviene de RateContext — NUNCA calculada localmente.**
+
+---
+
+## 5. PALETA FUNCIONAL — COLOR ENCODES MEANING
+
+### Brand
+```css
+--brand:        #0038BD;  /* nav activa, botón primario, hero card, barras */
+--brand-light:  #4D7AFF;  /* hover states, links secundarios */
+--brand-dark:   #002FA0;  /* hover del botón primario */
+--brand-darker: #001D7A;  /* activo presionado */
+--brand-soft:   #DCE6FF;  /* fondo nav activa, fondo tab activo, chips */
+```
+
+### CTA (uso exclusivo)
+```css
+--cta:        #EF8E01;  /* SOLO: Procesar Pago, Declarar Cierre, Ir al POS */
+--cta-hover:  #D97900;
+--cta-active: #B56700;
+```
+**REGLA:** máximo UN botón CTA carrot por pantalla. Si hay dos acciones importantes,
+la secundaria usa --brand, no --cta.
+
+### Semántico
+```css
+--success:     #16A34A;  --success-bg: #DCFCE7;
+--danger:      #EF4444;  --danger-bg:  #FEE2E2;
+--warning:     #F59E0B;  --warning-bg: #FEF3C7;
+--info:        #2563EB;  --info-bg:    #DBEAFE;
+--purple:      #9333EA;  --purple-bg:  #F3E8FF;
+```
+
+### Superficie (3 niveles)
+```css
+--bg-base:     #EEEDF4;  /* fondo de página */
+--sidebar-bg:  #FAFBFC;  /* sidebar */
+--card-bg:     #FFFFFF;  /* cards */
+```
+
+---
+
+## 6. TIPOGRAFÍA
 
 ```css
-:root {
-  /* ── Tipografía ── */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+/* Valores KPI principal */
+font-size: 24-32px; font-weight: 800; color: #0F172A;
 
-  /* ── Escalas de fuente ── */
-  --text-xs:   0.75rem;   /* 12px */
-  --text-sm:   0.875rem;  /* 14px */
-  --text-base: 1rem;      /* 16px */
-  --text-lg:   1.125rem;  /* 18px */
-  --text-xl:   1.25rem;   /* 20px */
-  --text-2xl:  1.5rem;    /* 24px */
-  --text-3xl:  1.875rem;  /* 30px */
-  --text-4xl:  2.25rem;   /* 36px */
+/* Valores KPI secundario */
+font-size: 18-22px; font-weight: 700; color: #0F172A;
 
-  /* ── Pesos ── */
-  --font-normal:  400;
-  --font-medium:  500;
-  --font-semibold: 600;
-  --font-bold:    700;
+/* Label de métrica */
+font-size: 10px; font-weight: 600; color: #9CA3AF;
+text-transform: uppercase; letter-spacing: 0.5px;
 
-  /* ── Espaciado (escala 4px) ── */
-  --space-1:  0.25rem;  /* 4px  */
-  --space-2:  0.5rem;   /* 8px  */
-  --space-3:  0.75rem;  /* 12px */
-  --space-4:  1rem;     /* 16px */
-  --space-5:  1.25rem;  /* 20px */
-  --space-6:  1.5rem;   /* 24px */
-  --space-8:  2rem;     /* 32px */
-  --space-10: 2.5rem;   /* 40px */
-  --space-12: 3rem;     /* 48px */
-  --space-16: 4rem;     /* 64px */
+/* Texto de tabla */
+font-size: 13px; color: #374151;
 
-  /* ── Radios ── */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
+/* Texto secundario / subtítulo */
+font-size: 11-12px; color: #6B7280;
 
-  /* ── Transiciones ── */
-  --transition-fast:   150ms ease;
-  --transition-normal: 200ms ease;
-  --transition-slow:   300ms ease;
+/* Texto muted / tiempo */
+font-size: 10px; color: #9CA3AF;
 
-  /* ── Sidebar ── */
-  --sidebar-width: 220px;
-  --sidebar-collapsed: 60px;
+/* Título de sección */
+font-size: 13px; font-weight: 600; color: #0F172A;
 
-  /* ── Touch target mínimo ── */
-  --touch-min: 44px;
-}
+/* Label de nav sección */
+font-size: 10px; font-weight: 700; color: #9CA3AF;
+text-transform: uppercase; letter-spacing: 0.8px;
 ```
 
-### `src/styles/themes/dark.css`
+---
+
+## 7. BADGES Y ESTADOS
 
 ```css
-.dark, [data-theme="dark"] {
-  /* Fondos */
-  --color-bg:          #0D1117;
-  --color-surface:     #161B22;
-  --color-surface-2:   #1C2128;
-  --color-surface-3:   #21262D;
+/* Base */
+font-size: 9-10px; font-weight: 600;
+padding: 2px 8px; border-radius: 20px;
 
-  /* Marca */
-  --color-brand:       #2563EB;
-  --color-brand-light: #3B82F6;
-  --color-brand-dark:  #1D4ED8;
-
-  /* Texto */
-  --color-text-primary:   #F0F6FC;
-  --color-text-secondary: #8B949E;
-  --color-text-muted:     #484F58;
-
-  /* Bordes */
-  --color-border:       #30363D;
-  --color-border-light: #21262D;
-
-  /* Estados */
-  --color-success:      #1D9E75;
-  --color-success-bg:   rgba(29, 158, 117, 0.1);
-  --color-warning:      #D97706;
-  --color-warning-bg:   rgba(217, 119, 6, 0.1);
-  --color-danger:       #EF4444;
-  --color-danger-bg:    rgba(239, 68, 68, 0.1);
-  --color-info:         #3B82F6;
-  --color-info-bg:      rgba(59, 130, 246, 0.1);
-
-  /* Sidebar */
-  --sidebar-bg:         #0D1117;
-  --sidebar-text:       #8B949E;
-  --sidebar-text-active:#F0F6FC;
-  --sidebar-item-hover: rgba(255,255,255,0.05);
-  --sidebar-item-active:rgba(37, 99, 235, 0.15);
-  --sidebar-accent:     #2563EB;
-
-  /* POS */
-  --pos-card-bg:        #161B22;
-  --pos-card-hover:     #1C2128;
-  --pos-ticket-bg:      #0D1117;
-
-  /* KPI cards */
-  --kpi-bg:            #161B22;
-  --kpi-border:        #30363D;
-
-  /* Moneda */
-  --color-usd:         #F0F6FC;
-  --color-bs:          #8B949E;
-  --color-rate:        #1D9E75;
-}
+/* Pagado */      background: #DCFCE7; color: #15803D;
+/* Crédito */     background: #FEF3C7; color: #92400E;
+/* Vencido */     background: #FEE2E2; color: #B91C1C;
+/* Pendiente */   background: #DBEAFE; color: #1D4ED8;
+/* Cotización */  background: #F3E8FF; color: #7E22CE;
+/* Activo */      background: #DCFCE7; color: #15803D;
+/* Inactivo */    background: #F1F5F9; color: #6B7280;
+/* Sin stock */   background: #FEE2E2; color: #B91C1C;
+/* Stock bajo */  background: #FEF3C7; color: #92400E;
+/* En stock */    background: #DCFCE7; color: #15803D;
+/* PRO */         background: #0038BD; color: #FFFFFF;
 ```
 
-### `src/styles/themes/light.css`
+---
+
+## 8. BOTONES — JERARQUÍA VISUAL
+
+### Primario (acción principal del módulo)
+```css
+background: #0038BD; color: #FFFFFF;
+padding: 8px 16px; border-radius: 8px; border: none;
+font-size: 13px; font-weight: 600;
+/* hover */ background: #002FA0;
+```
+
+### CTA (cobro / cierre — UN solo por pantalla)
+```css
+background: #EF8E01; color: #FFFFFF;
+padding: 8px 16px; border-radius: 8px; border: none;
+font-size: 13px; font-weight: 700;
+/* hover */ background: #D97900;
+```
+
+### Secundario
+```css
+background: #FFFFFF; color: #374151;
+padding: 8px 14px; border-radius: 8px;
+border: 1px solid #E5E7EB;
+font-size: 13px; font-weight: 500;
+/* hover */ background: #F8FAFC;
+```
+
+### Peligroso (destructivo)
+```css
+background: #FFFFFF; color: #EF4444;
+border: 1px solid #EF4444;
+padding: 8px 14px; border-radius: 8px;
+font-size: 13px; font-weight: 600;
+```
+
+---
+
+## 9. TABS DE PERÍODO
 
 ```css
-.light, [data-theme="light"] {
-  /* Fondos */
-  --color-bg:          #F6F8FA;
-  --color-surface:     #FFFFFF;
-  --color-surface-2:   #F6F8FA;
-  --color-surface-3:   #EAEEF2;
+/* Tab inactivo */
+padding: 5px 14px; border-radius: 20px;
+background: transparent; border: none;
+font-size: 12px; color: #6B7280; font-weight: 500;
+cursor: pointer;
+/* hover */ background: #F3F4F6;
 
-  /* Marca */
-  --color-brand:       #2563EB;
-  --color-brand-light: #3B82F6;
-  --color-brand-dark:  #1D4ED8;
+/* Tab activo */
+background: #DCE6FF;  /* var(--brand-soft) */
+color: #0038BD;        /* var(--brand) */
+font-weight: 600;
+```
 
-  /* Texto */
-  --color-text-primary:   #1C2128;
-  --color-text-secondary: #57606A;
-  --color-text-muted:     #8C959F;
+**PROHIBIDO:** fondo sólido oscuro (#0038BD o similar) en tab activo.
 
-  /* Bordes */
-  --color-border:       #D0D7DE;
-  --color-border-light: #EAEEF2;
+---
 
-  /* Estados */
-  --color-success:      #1A7F64;
-  --color-success-bg:   rgba(26, 127, 100, 0.1);
-  --color-warning:      #B45309;
-  --color-warning-bg:   rgba(180, 83, 9, 0.1);
-  --color-danger:       #CF222E;
-  --color-danger-bg:    rgba(207, 34, 46, 0.1);
-  --color-info:         #2563EB;
-  --color-info-bg:      rgba(37, 99, 235, 0.1);
+## 10. ACCIÓN RÁPIDA — ÁREA DE CONTENIDO
 
-  /* Sidebar */
-  --sidebar-bg:         #1C2128;    /* sidebar siempre oscuro en light mode */
-  --sidebar-text:       #8B949E;
-  --sidebar-text-active:#F0F6FC;
-  --sidebar-item-hover: rgba(255,255,255,0.05);
-  --sidebar-item-active:rgba(37, 99, 235, 0.2);
-  --sidebar-accent:     #3B82F6;
+**Los botones de acción del módulo NO van en el topbar.**
+**Van en el área de contenido, debajo del saludo / título de página.**
 
-  /* POS */
-  --pos-card-bg:        #FFFFFF;
-  --pos-card-hover:     #F6F8FA;
-  --pos-ticket-bg:      #F6F8FA;
+```
+[+ Nueva venta] [Gasto] [Compra]    ← fila de acciones
+```
 
-  /* KPI cards */
-  --kpi-bg:            #FFFFFF;
-  --kpi-border:        #D0D7DE;
-
-  /* Moneda */
-  --color-usd:         #1C2128;
-  --color-bs:          #57606A;
-  --color-rate:        #1A7F64;
-}
+Estructura:
+```css
+display: flex;
+gap: 8px;
+margin-bottom: 16px;
 ```
 
 ---
 
-## SIDEBAR
+## 11. RESPONSIVE
 
-### Estructura de navegación
+```css
+/* Desktop (>1024px): layout completo */
+.sidebar { display: flex; width: 220px; }
 
-```
-┌─────────────────────┐
-│  Activo●POS  [logo] │
-├─────────────────────┤
-│  PRINCIPAL          │
-│  ▶ Escritorio       │← activo
-├─────────────────────┤
-│  VENTAS             │
-│    Punto de Venta   │
-│    Cotizaciones     │
-│    Clientes         │
-├─────────────────────┤
-│  INVENTARIO         │
-│    Productos        │
-│    Devoluciones     │
-├─────────────────────┤
-│  CAJA               │
-│    Gestión de Caja  │
-│    Reportes         │
-├─────────────────────┤
-│  FINANZAS           │
-│    Finanzas         │
-├─────────────────────┤
-│  ─────────────────  │
-│  ADMINISTRACIÓN     │
-│    Usuarios         │
-│    Configuración    │
-│    Ayuda            │
-├─────────────────────┤
-│  USD/VES 36.50 Bs   │← tasa BCV
-│  [↪ Salir]          │
-└─────────────────────┘
-```
+/* Tablet (768-1024px): sidebar colapsado */
+.sidebar { width: 56px; }
+.nav-item span { display: none; }
+.nav-label { display: none; }
 
-### Grupos y permisos
-
-| Grupo          | Ítems                           | Roles que ven         |
-|----------------|---------------------------------|-----------------------|
-| PRINCIPAL      | Escritorio                      | admin, cashier        |
-| VENTAS         | POS, Cotizaciones, Clientes     | admin, cashier        |
-| INVENTARIO     | Productos, Devoluciones         | admin, cashier*       |
-| CAJA           | Gestión de Caja, Reportes       | admin, cashier        |
-| FINANZAS       | Finanzas                        | admin only            |
-| ADMINISTRACIÓN | Usuarios, Configuración, Ayuda  | admin only            |
-
-*cashier ve Productos pero sin columna de costos ni margen
-
----
-
-## COMPONENTES UI
-
-### Button
-
-```typescript
-// Variantes: primary | secondary | ghost | danger | success
-// Tamaños: sm | md | lg
-// Estado: loading (spinner) | disabled
-
-<Button variant="primary" size="md" loading={false}>
-  Guardar
-</Button>
-```
-
-### Badge
-
-```typescript
-// Variantes: success | warning | danger | info | neutral
-// Usos: estado de venta, estado de stock, rol de usuario
-
-<Badge variant="success">Pagado</Badge>
-<Badge variant="warning">Pendiente</Badge>
-<Badge variant="danger">Anulado</Badge>
-```
-
-### KpiCard
-
-```typescript
-// Componente para métricas del dashboard y caja
-
-<KpiCard
-  label="Ventas Hoy"
-  value="$142.50"
-  subvalue="Bs. 5,204.25"
-  trend="+12%"
-  trendDirection="up"
-  icon={<TrendingUp />}
-/>
+/* Mobile (<768px): sidebar oculto, topbar con hamburguesa */
+.sidebar { display: none; }
+/* Grid 2 columnas → 1 columna */
+/* KPI hero → full width */
+/* Padding: 12px en lugar de 24px */
 ```
 
 ---
 
-## TIPOGRAFÍA
+## 12. PROHIBICIONES ABSOLUTAS (no negociables)
 
-- **Fuente:** Inter — `next/font/google`
-- **Tamaño base:** 16px
-- **Escala:** 12 / 14 / 16 / 18 / 20 / 24 / 30 / 36
-
-### Uso por contexto
-
-| Elemento           | Tamaño    | Peso     |
-|--------------------|-----------|----------|
-| Título de página   | 24px      | 600      |
-| Subtítulo          | 18px      | 500      |
-| Labels de sidebar  | 13px      | 500      |
-| Texto de tabla     | 14px      | 400      |
-| KPI principal      | 28-36px   | 700      |
-| KPI secundario     | 14px      | 400      |
-| Precio en POS      | 16px      | 600      |
-| Total de ticket    | 24px      | 700      |
-| Grupo sidebar      | 11px      | 600      uppercase |
+- PROHIBIDO `width: 800px` o `width: 1000px` hardcodeado en tablas o contenedores
+- PROHIBIDO inline styles — todo CSS va en CSS Modules
+- PROHIBIDO valores hex hardcodeados fuera de `tokens.css`
+- PROHIBIDO `any` en TypeScript
+- PROHIBIDO Tailwind, Preline, Bootstrap — solo CSS Modules
+- PROHIBIDO crear componente nuevo cuando existe uno modificable
+- PROHIBIDO `overflow: hidden` en el contenedor raíz — rompe el scroll
+- PROHIBIDO `position: fixed` dentro de módulos — usa el layout existente
+- PROHIBIDO mostrar valor monetario sin su par (USD sin Bs o Bs sin USD)
+- PROHIBIDO tab activo con fondo sólido oscuro — usar brand-soft siempre
+- PROHIBIDO sidebar con tema de color — siempre #FAFBFC
 
 ---
 
-## ICONOS
+## REFERENCIA VISUAL
 
-**Solo Lucide React.** Nunca emojis en UI.
-
-### Mapa de iconos por módulo
-
-| Módulo          | Icono Lucide          |
-|-----------------|-----------------------|
-| Escritorio      | LayoutDashboard       |
-| Punto de Venta  | ShoppingCart          |
-| Cotizaciones    | FileText              |
-| Clientes        | Users                 |
-| Productos       | Package               |
-| Devoluciones    | RotateCcw             |
-| Gestión de Caja | Calculator            |
-| Reportes        | BarChart2             |
-| Finanzas        | TrendingUp            |
-| Usuarios        | UserCog               |
-| Configuración   | Settings              |
-| Ayuda           | HelpCircle            |
-| Tasa BCV        | DollarSign            |
-| Salir           | LogOut                |
+Archivo: `.doc/DESIGN_SYSTEM.html`
+Abrir en browser para ver TODOS los componentes renderizados.
+Este documento `.md` y ese `.html` son la misma verdad — complementarios.
 
 ---
 
-## ANIMACIONES
-
-- **Librería:** Framer Motion 12.x
-- **Principio:** Emil Kowalski — polish invisible, animaciones naturales
-- **Máximo:** 300ms — nunca más largo para UI operativa
-- **Reduced motion:** siempre respetar `prefers-reduced-motion`
-
-### Patrones estándar
-
-```typescript
-// Entrada de página
-const pageVariants = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.2, ease: 'easeOut' }
-}
-
-// Entrada de card/ítem de lista
-const itemVariants = {
-  initial: { opacity: 0, scale: 0.98 },
-  animate: { opacity: 1, scale: 1 },
-  transition: { duration: 0.15 }
-}
-
-// Modal
-const modalVariants = {
-  initial: { opacity: 0, scale: 0.96, y: 4 },
-  animate: { opacity: 1, scale: 1, y: 0 },
-  exit:    { opacity: 0, scale: 0.96, y: 4 },
-  transition: { duration: 0.2 }
-}
-```
-
----
-
-## REGLAS VISUALES IRROMPIBLES
-
-1. **Acción primaria del POS siempre visible sin scroll**
-2. **Total de caja y total del ticket en tipografía grande, color de acento**
-3. **Tasa BCV siempre visible en sidebar**
-4. **Touch targets ≥ 44px — especialmente en POS y Caja**
-5. **Estados vacíos siempre orientativos — nunca dejar pantalla en blanco**
-6. **Feedback inmediato en toda acción: loading state, success toast, error message**
-7. **Sidebar siempre oscuro — tanto en dark como en light mode**
-8. **Sin colores hardcodeados en componentes — solo variables CSS**
+*ActivoPOS · SYNTIdev · Design System v1.0*
+*Generado: 2026-07-05 | Aprobado: Carlos Bolívar*
+*Próxima revisión: cuando se agregue un módulo nuevo o se apruebe cambio visual*

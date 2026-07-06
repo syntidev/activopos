@@ -220,10 +220,45 @@ a.welcomeStep:hover,
   font-weight: var(--weight-semibold);
 }
 
+/* ── Fila de acciones rápidas (debajo del saludo) ── */
+.quickActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.quickActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-3-5);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-card);
+  transition: background var(--transition-fast);
+}
+
+.quickActionBtn:hover { background: var(--color-surface-hover); }
+
+.quickActionPrimary {
+  background: var(--brand);
+  color: var(--brand-on);
+  border-color: var(--brand);
+  font-weight: var(--weight-semibold);
+}
+
+.quickActionPrimary:hover { background: var(--brand-dark); }
+
 /* ── KPI grid — asimétrico: hero Cobrado (2 filas, izq) + 3 métricas ── */
 .kpiGrid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto;
   grid-template-areas:
     "cobrado credito tickets"
     "cobrado utilidad utilidad";
@@ -252,9 +287,30 @@ a.welcomeStep:hover,
   transform:  translateY(-2px);
 }
 
-/* Hero (Cobrado): card ocupa 2 filas de grid — agrupa ícono+cifra centrados
-   verticalmente en vez de separarlos a los extremos (dejaba hueco visible) */
-.kpiCobrado { justify-content: center; }
+/* Hero (Cobrado): Tipo B del Design System — fondo brand sólido, texto blanco.
+   Card ocupa 2 filas de grid — agrupa ícono+cifra centrados verticalmente
+   en vez de separarlos a los extremos (dejaba hueco visible) */
+.kpiCobrado {
+  justify-content: center;
+  background: var(--brand);
+  box-shadow: var(--card-hero-shadow);
+}
+
+.kpiCobrado .kpiLabel { color: var(--hero-label-color); }
+.kpiCobrado .kpiValue { color: var(--brand-on); }
+.kpiCobrado .kpiSub   { color: var(--hero-sub-color); }
+
+.kpiCobrado .kpiIconCircle {
+  background: var(--hero-chip-bg);
+  color: var(--brand-on);
+}
+
+.kpiCobrado .kpiTrendUp,
+.kpiCobrado .kpiTrendDown,
+.kpiCobrado .kpiTrendFlat {
+  background: var(--hero-chip-bg);
+  color: var(--brand-on);
+}
 
 /* ── Círculo de ícono ── */
 .kpiIconCircle {
@@ -272,6 +328,7 @@ a.welcomeStep:hover,
 .kpiCircleOrange { background: var(--kpi-icon-orange); }
 .kpiCircleBlue   { background: var(--kpi-icon-blue);   }
 .kpiCirclePurple { background: var(--kpi-icon-purple); }
+.kpiCircleRed    { background: var(--kpi-icon-red);    }
 
 /* ── Cuerpo ── */
 .kpiBody {
@@ -297,9 +354,6 @@ a.welcomeStep:hover,
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
-
-/* Hero: cifra un paso mayor para jerarquía real */
-.kpiCobrado .kpiValue { font-size: var(--text-4xl); /* 36px — un escalón menos que antes (40px) */ }
 
 .kpiSub {
   font-size: var(--text-xs);
@@ -682,14 +736,31 @@ a.welcomeStep:hover,
 }
 
 @media (max-width: 560px) {
+  /* 2 columnas iguales — todas compactas, ninguna apilada ni con hero-span */
   .kpiGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto;
     grid-template-areas:
-      "cobrado"
-      "credito"
-      "tickets"
-      "utilidad";
+      "cobrado credito"
+      "tickets utilidad";
+    gap: var(--space-2-5);
   }
+
+  .kpiCard {
+    padding: 12px 14px;
+    gap: var(--space-2);
+  }
+
+  .kpiIconCircle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .kpiValue,
+  .kpiCobrado .kpiValue {
+    font-size: 18px;
+  }
+
   .periodTabs {
     overflow-x: auto;
     scrollbar-width: none;

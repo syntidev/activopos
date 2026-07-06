@@ -6,6 +6,7 @@ import {
   DollarSign,
   ShoppingCart,
   TrendingUp,
+  TrendingDown,
   AlertTriangle,
   ArrowUp,
   ArrowDown,
@@ -19,6 +20,9 @@ import {
   Circle,
   Copy,
   X,
+  Plus,
+  Receipt,
+  Truck,
 } from 'lucide-react'
 import styles from './escritorio.module.css'
 
@@ -392,6 +396,22 @@ export default function EscritorioPage() {
         </div>
       </div>
 
+      {/* ── Acciones rápidas ── */}
+      <div className={styles.quickActions}>
+        <Link href="/pos" className={`${styles.quickActionBtn} ${styles.quickActionPrimary}`}>
+          <Plus size={15} aria-hidden="true" />
+          Nueva venta
+        </Link>
+        <Link href="/finanzas" className={styles.quickActionBtn}>
+          <Receipt size={15} aria-hidden="true" />
+          Agregar gasto
+        </Link>
+        <Link href="/proveedores/compras" className={styles.quickActionBtn}>
+          <Truck size={15} aria-hidden="true" />
+          Nueva compra
+        </Link>
+      </div>
+
       {/* ── Alerta gastos por vencer ── */}
       {gastosAlert && gastosAlert.count > 0 && (
         <div className={styles.gastosAlertBanner} role="alert">
@@ -475,10 +495,10 @@ export default function EscritorioPage() {
         {/* KPI 4 — Utilidad neta (ancha) */}
         <div className={`${styles.kpiCard} ${styles.kpiUtilidad}`} aria-busy={loading} aria-label="Utilidad neta">
           <div
-            className={`${styles.kpiIconCircle} ${utilityIsNeg ? styles.kpiCircleOrange : styles.kpiCirclePurple}`}
+            className={`${styles.kpiIconCircle} ${utilityIsNeg ? styles.kpiCircleRed : styles.kpiCirclePurple}`}
             aria-hidden="true"
           >
-            {utilityIsNeg ? <AlertTriangle size={18} /> : <TrendingUp size={18} />}
+            {utilityIsNeg ? <TrendingDown size={18} /> : <TrendingUp size={18} />}
           </div>
           <div className={styles.kpiBody}>
             <span className={styles.kpiLabel}>Utilidad neta</span>

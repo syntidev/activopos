@@ -46,6 +46,12 @@
   --brand-on-soft:      #002FA0;
   --brand-rgb:          0, 56, 189;
 
+  /* Hero card (KPI Tipo B) — texto blanco translúcido sobre fondo brand sólido,
+     fijo independiente del tema (la card siempre es azul/blanca) */
+  --hero-label-color: rgba(255, 255, 255, 0.6);
+  --hero-sub-color:   rgba(255, 255, 255, 0.55);
+  --hero-chip-bg:      rgba(255, 255, 255, 0.2);
+
   /* ── On-color text — KPI cards con fondo teal — WCAG AA ── */
   --kpi-on-primary:     #FFFFFF;                   /* 4.75:1 on --brand-dark */
   --kpi-on-label:       rgba(255,255,255,0.88);    /* 5.1:1  on --brand-dark */
@@ -295,6 +301,7 @@
   --kpi-icon-orange: var(--cta);
   --kpi-icon-blue:   var(--brand);
   --kpi-icon-purple: #8B5CF6;
+  --kpi-icon-red:    var(--danger);
 }
 
 /* ══════════════════════════════════════════════════════════════

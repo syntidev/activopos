@@ -45,6 +45,12 @@
   letter-spacing: var(--tracking-wide);
 }
 
+/* ── Rail contraído — solo ícono, sin label ── */
+.toggleCollapsed {
+  padding: var(--space-1-5);
+  justify-content: center;
+}
+
 /* ── Modal overlay ── */
 .overlay {
   position: fixed;

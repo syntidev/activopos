@@ -4,12 +4,21 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X, Store } from 'lucide-react'
+import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X, Store, ChevronDown, LogOut } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { useRate } from '@/context/RateContext'
 import styles from './Header.module.css'
 
 interface BizInfo { name: string; logo_path: string | null }
+
+function userInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0] ?? '')
+    .join('')
+    .toUpperCase()
+}
 
 function bizInitials(name: string): string {
   return name
@@ -289,6 +298,20 @@ export function Header({
   const notifBellRef = useRef<HTMLButtonElement>(null)
   const notifPanelRef = useRef<HTMLDivElement>(null)
 
+  /* ── User menu (dropdown: cerrar sesión) ── */
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userBtnRef = useRef<HTMLButtonElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      router.push('/login')
+      router.refresh()
+    }
+  }, [router])
+
   const fetchNotifications = useCallback(async () => {
     setNotifLoading(true)
     try {
@@ -347,6 +370,18 @@ export function Header({
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [notifOpen])
+
+  useEffect(() => {
+    if (!userMenuOpen) return
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node
+      const inBtn  = userBtnRef.current?.contains(target)
+      const inMenu = userMenuRef.current?.contains(target)
+      if (!inBtn && !inMenu) setUserMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [userMenuOpen])
 
   const pageTitle =
     PAGE_TITLES.find(
@@ -490,16 +525,48 @@ export function Header({
           {session && (
             <>
               <div className={styles.separator} aria-hidden="true" />
-              <div className={styles.userInfo} aria-label={`Usuario: ${session.name}`}>
-                <span className={styles.userName}>{session.name}</span>
-                <span className={`${styles.roleBadge} ${roleClass}`}>
-                  {roleLabel}
+              <button
+                ref={userBtnRef}
+                type="button"
+                className={styles.userMenuBtn}
+                onClick={() => setUserMenuOpen(o => !o)}
+                aria-label={`Usuario: ${session.name} — abrir menú`}
+                aria-expanded={userMenuOpen}
+                aria-haspopup="true"
+              >
+                <span className={styles.userAvatar} aria-hidden="true">
+                  {userInitials(session.name)}
                 </span>
-              </div>
+                <span className={styles.userInfo}>
+                  <span className={styles.userName}>{session.name}</span>
+                  <span className={`${styles.roleBadge} ${roleClass}`}>
+                    {roleLabel}
+                  </span>
+                </span>
+                <ChevronDown
+                  size={14}
+                  className={`${styles.userChevron} ${userMenuOpen ? styles.userChevronOpen : ''}`}
+                  aria-hidden="true"
+                />
+              </button>
             </>
           )}
         </div>
       </header>
+
+      {userMenuOpen && session && (
+        <div ref={userMenuRef} className={styles.userMenu} role="menu" aria-label="Menú de usuario">
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.userMenuItemDanger}
+            onClick={() => { setUserMenuOpen(false); void handleLogout() }}
+          >
+            <LogOut size={15} aria-hidden="true" />
+            Cerrar sesión
+          </button>
+        </div>
+      )}
 
       {/* Notification panel — rendered outside header to avoid backdrop-filter stacking context */}
       {notifOpen && (

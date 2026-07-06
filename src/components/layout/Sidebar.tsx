@@ -7,7 +7,7 @@ import { useSidebarNotifications, type SidebarCounts } from '@/hooks/useSidebarN
 import { NotificationsPanel } from './NotificationsPanel'
 import { CajaToggle } from './CajaToggle'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -23,7 +23,6 @@ import {
   Sparkles,
   Settings,
   HelpCircle,
-  LogOut,
   Bell,
   ChefHat,
   Receipt,
@@ -179,7 +178,6 @@ interface NavContentProps {
   visibleGroups: NavGroup[]
   bcvRate: number | null
   formatRate: (rate: number) => string
-  onLogout: () => void
   onCloseMobile?: () => void
   onCloseNotifications?: () => void
   onOpenNotifications?: () => void
@@ -200,7 +198,6 @@ function NavContent({
   visibleGroups,
   bcvRate,
   formatRate,
-  onLogout,
   onCloseMobile,
   onCloseNotifications,
   onOpenNotifications,
@@ -234,7 +231,7 @@ function NavContent({
       {/* Abrir Caja — vive en el sidebar para todas las franjas (antes solo
           aparecía en el header desktop y en el footer del drawer móvil) */}
       <div className={styles.cajaTopWrap}>
-        <CajaToggle />
+        <CajaToggle collapsed={collapsed} />
       </div>
 
       <div className={styles.divider} />
@@ -427,22 +424,6 @@ function NavContent({
             </div>
           </div>
         )}
-
-        <button
-          className={styles.logoutBtn}
-          onClick={onLogout}
-          aria-label="Cerrar sesión"
-          title={collapsed ? 'Cerrar sesión' : undefined}
-        >
-          <LogOut size={18} strokeWidth={1.75} aria-hidden="true" />
-          <AnimatePresence initial={false}>
-            {!collapsed && (
-              <motion.span key="logout-label" className={styles.navLabel} {...LABEL_MOTION}>
-                Cerrar sesión
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
       </div>
     </div>
   )
@@ -471,7 +452,6 @@ export function Sidebar({
   useScrollLock(isMobileOpen)
 
   const pathname = usePathname()
-  const router = useRouter()
   const [showNotif, setShowNotif] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const { items: notifItems, unread: notifUnread, loading: notifLoading, markAllRead } = useNotifications()
@@ -517,21 +497,7 @@ export function Sidebar({
       maximumFractionDigits: 2,
     })
 
-  const handleLogout = useCallback(async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-    } finally {
-      router.push('/login')
-      router.refresh()
-    }
-  }, [router])
-
-  const handleMobileLogout = useCallback(async () => {
-    onCloseMobile()
-    await handleLogout()
-  }, [onCloseMobile, handleLogout])
-
-  const sharedProps: Omit<NavContentProps, 'collapsed' | 'onLogout'> = {
+  const sharedProps: Omit<NavContentProps, 'collapsed'> = {
     pathname,
     visibleGroups,
     bcvRate,
@@ -558,7 +524,7 @@ export function Sidebar({
         transition={{ type: 'spring', stiffness: 280, damping: 30, mass: 0.8 }}
         aria-label="Barra lateral"
       >
-        <NavContent {...sharedProps} collapsed={effectiveCollapsed} onLogout={handleLogout} />
+        <NavContent {...sharedProps} collapsed={effectiveCollapsed} />
       </motion.aside>
 
       {/* Mobile drawer — mounts on demand, slides from left */}
@@ -574,7 +540,7 @@ export function Sidebar({
             aria-modal="true"
             role="dialog"
           >
-            <NavContent {...sharedProps} collapsed={false} onLogout={handleMobileLogout} showMobileInfo />
+            <NavContent {...sharedProps} collapsed={false} showMobileInfo />
           </motion.aside>
         )}
       </AnimatePresence>

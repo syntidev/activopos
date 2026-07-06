@@ -30,7 +30,12 @@ function getElapsed(openedAt: string): string {
   return `${h}h ${m}m`
 }
 
-export function CajaToggle() {
+interface CajaToggleProps {
+  /** Rail contraído (64px desktop o 56px tablet) — oculta el label, solo ícono */
+  collapsed?: boolean
+}
+
+export function CajaToggle({ collapsed = false }: CajaToggleProps) {
   const router = useRouter()
   const { toast } = useToast()
   const [status, setStatus] = useState<CajaStatus | null>(null)
@@ -119,21 +124,23 @@ export function CajaToggle() {
       <div className={styles.separator} aria-hidden="true" />
       <button
         type="button"
-        className={`${styles.toggle} ${isOpen ? styles.toggleOpen : styles.toggleClosed}`}
+        className={`${styles.toggle} ${isOpen ? styles.toggleOpen : styles.toggleClosed} ${collapsed ? styles.toggleCollapsed : ''}`}
         onClick={handleToggleClick}
         aria-label={isOpen
           ? 'Caja abierta — ir a caja para cerrar'
           : 'Caja cerrada — abrir caja'}
-        title={isOpen
-          ? `Abierta por ${(status as { isOpen: true; register: RegisterInfo }).register.cashierName}`
-          : 'Abrir caja'}
+        title={collapsed
+          ? (isOpen ? `Abierta hace ${elapsed}` : 'Caja cerrada')
+          : (isOpen
+            ? `Abierta por ${(status as { isOpen: true; register: RegisterInfo }).register.cashierName}`
+            : 'Abrir caja')}
       >
         <Store size={14} strokeWidth={2} aria-hidden="true" />
-        {isOpen ? (
+        {!collapsed && (isOpen ? (
           <span className={styles.toggleLabel}>Abierta hace {elapsed}</span>
         ) : (
           <span className={styles.toggleLabel}>Caja cerrada</span>
-        )}
+        ))}
       </button>
 
       {modalOpen && (

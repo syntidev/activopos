@@ -383,37 +383,6 @@
   pointer-events: none;
 }
 
-.logoutBtn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2-5);
-  height: var(--touch-min);
-  width: 100%;
-  padding: 0 var(--space-3);
-  background: none;
-  border: none;
-  border-left: 2px solid transparent;
-  color: var(--color-danger);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  cursor: pointer;
-  overflow: hidden;
-  white-space: nowrap;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-
-.logoutBtn:hover {
-  background-color: var(--color-danger-subtle);
-  color: var(--color-danger-hover);
-}
-
-.logoutBtn:focus-visible {
-  outline: 2px solid var(--color-danger);
-  outline-offset: -2px;
-}
-
 /* ── Icon group accent colors (inactive state only) ── */
 .iconColorVentas       { color: var(--brand); }
 .iconColorInventario   { color: var(--cta); }
@@ -498,7 +467,7 @@
 }
 
 
-/* ── Mobile sidebar: compact footer [tasa BCV · Cerrar sesión] ── */
+/* ── Mobile sidebar: compact footer [tasa BCV] — cerrar sesión vive en topbar ── */
 @media (max-width: 768px) {
   .sidebarMobile .logoWrapper   { display: none; }
 
@@ -523,29 +492,11 @@
     gap:             var(--space-1);
     padding:         0 var(--space-2);
   }
-
-  .sidebarMobile .bcvRate::after {
-    content:      '\00B7';
-    padding-left: var(--space-2);
-    color:        var(--sidebar-text);
-    font-size:    var(--text-base);
-    font-weight:  var(--weight-normal);
-    flex-shrink:  0;
-  }
-
-  .sidebarMobile .logoutBtn {
-    width:       auto;
-    height:      auto;
-    padding:     var(--space-1-5) var(--space-2);
-    border-left: none;
-    font-size:   var(--text-sm);
-  }
 }
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  .navItem,
-  .logoutBtn {
+  .navItem {
     transition: none;
   }
 }

@@ -9,13 +9,15 @@ const RATE_MAX = 10_000
 
 const PatchSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  legal_name: z.string().max(255).optional(),
-  rif: z.string().max(20).optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional(),
+  // Columnas nullable en Business: TabEmpresa envía `campo.trim() || null` al
+  // limpiar, así que deben aceptar null (antes daban 400 y rompían todo el PATCH).
+  legal_name: z.string().max(255).nullable().optional(),
+  rif: z.string().max(20).nullable().optional(),
+  address: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  email: z.string().email().nullable().optional(),
   logo_path: z.string()
     .refine(v => v === null || v.startsWith('/uploads/') || v.startsWith('/storage/tenants/'), 'Path inválido')
     .nullable()

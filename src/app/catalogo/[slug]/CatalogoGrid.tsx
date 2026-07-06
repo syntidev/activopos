@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
-  Info, AtSign, Phone, Share2,
+  Info, AtSign, Phone, Share2, ArrowUp,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -180,11 +180,40 @@ export function CatalogoGrid({
   const [spyCategory,    setSpyCategory]    = useState<string | null>(null)
   const [sectionCounts,  setSectionCounts]  = useState<Record<string, number>>({})
   const [modalImageIndex, setModalImageIndex] = useState(0)
+  const [showBackTop,    setShowBackTop]    = useState(false)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const categoryTrackRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+
+  // El scroll vive en `.root` (page.tsx), no en window. El header es hijo directo
+  // de `.root`, así que su parentElement es el contenedor scrolleable.
+  const getScroller = (): HTMLElement | null => headerRef.current?.parentElement ?? null
+
+  const scrollToTop = () => {
+    getScroller()?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const scrollToProducts = () => {
+    const scroller = getScroller()
+    const target = scroller?.querySelector<HTMLElement>('[data-section="products"]')
+    if (scroller && target) {
+      const top = target.offsetTop - 116 // debajo del header sticky (≈112px)
+      scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    }
+  }
+
+  // Muestra "volver al inicio" tras bajar una pantalla
+  useEffect(() => {
+    const scroller = getScroller()
+    if (!scroller) return
+    const onScroll = () => setShowBackTop(scroller.scrollTop > 600)
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => scroller.removeEventListener('scroll', onScroll)
+  }, [])
 
   const hasFeatured = useMemo(() => products.some(p => p.isFeatured), [products])
   const initials    = getInitials(businessName)
@@ -352,7 +381,7 @@ export function CatalogoGrid({
     setQuery('')
     if (cat === null) {
       setSpyCategory(null)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      scrollToTop()
       return
     }
     setSpyCategory(cat)
@@ -596,7 +625,7 @@ export function CatalogoGrid({
   return (
     <>
       {/* ── Sticky header ──────────────────────────────────────── */}
-      <header className={styles.stickyHeader}>
+      <header ref={headerRef} className={styles.stickyHeader}>
         <div className={styles.headerLogo}>
           {businessLogo ? (
             <img
@@ -784,10 +813,7 @@ export function CatalogoGrid({
             <button
               type="button"
               className={styles.heroCtaBtn}
-              onClick={() => {
-                document.querySelector('[data-section="products"]')
-                  ?.scrollIntoView({ behavior: 'smooth' })
-              }}
+              onClick={scrollToProducts}
             >
               Ver productos
             </button>
@@ -986,6 +1012,18 @@ export function CatalogoGrid({
           </>
         )}
       </main>
+
+      {/* ── Volver al inicio ────────────────────────────────────── */}
+      <button
+        type="button"
+        className={`${styles.backTopBtn} ${showBackTop ? styles.backTopBtnVisible : ''}`}
+        onClick={scrollToTop}
+        aria-label="Volver al inicio"
+        aria-hidden={!showBackTop}
+        tabIndex={showBackTop ? 0 : -1}
+      >
+        <ArrowUp size={20} aria-hidden="true" />
+      </button>
 
       {/* ── Cart drawer backdrop ────────────────────────────────── */}
       {cartOpen && (

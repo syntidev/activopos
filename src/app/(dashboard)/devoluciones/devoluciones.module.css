@@ -92,7 +92,6 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-elevation);
   padding: var(--space-3-5) var(--space-4-5);
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
 }
 
 .stepTitle {
@@ -377,7 +376,6 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-elevation);
   overflow: hidden;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
 }
 
 .historyTitle {

@@ -289,6 +289,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
         <p className={styles.pageSubtitle}>Tasa de cambio BCV y PIN de seguridad</p>
       </div>
 
+      <div className={styles.sectionsGrid}>
       {/* ── Sistema ── */}
       <div className={styles.formCardCompact}>
         <h3 className={styles.formCardTitle}>
@@ -570,6 +571,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
             Actualizar contraseña
           </Button>
         </div>
+      </div>
       </div>
     </div>
   )

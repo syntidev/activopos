@@ -129,7 +129,7 @@ export function TabModulos({ businessId: _businessId }: Props) {
   }
 
   return (
-    <>
+    <div className={styles.sectionsGrid}>
     <div className={styles.formCard}>
       <h3 className={styles.formCardTitle}>Módulos activos</h3>
       <p className={styles.formCardHint}>
@@ -222,6 +222,6 @@ export function TabModulos({ businessId: _businessId }: Props) {
         })}
       </div>
     </div>
-    </>
+    </div>
   )
 }

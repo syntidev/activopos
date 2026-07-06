@@ -130,9 +130,10 @@
 
 .section {
   background:    var(--color-surface);
-  border:        1px solid var(--color-border);
+  border:        none;
   border-radius: var(--radius-xl);
   overflow:      hidden;
+  box-shadow:    var(--shadow-elevation);
 }
 
 .sectionTitle {

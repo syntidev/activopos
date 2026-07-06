@@ -82,6 +82,7 @@ export function TabTema({ businessId: _b }: Props) {
         <p className={styles.pageSubtitle}>Los cambios aplican inmediatamente en todos los dispositivos.</p>
       </div>
 
+      <div className={styles.sectionsGrid}>
       <div className={styles.formCard}>
         <h3 className={styles.formCardTitle}>Selecciona un modo</h3>
 
@@ -141,6 +142,7 @@ export function TabTema({ businessId: _b }: Props) {
             <span className={styles.colorSelectedSegment}>{activeColor.segment}</span>
           </p>
         )}
+      </div>
       </div>
 
       <div className={styles.saveRow}>

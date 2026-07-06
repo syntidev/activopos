@@ -55,7 +55,6 @@
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-elevation);
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(var(--brand-rgb), 0.06);
 }
 
 .tableWrap { overflow-x: auto; }

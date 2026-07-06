@@ -78,7 +78,20 @@
 }
 
 .configSection {
-  max-width: 640px;
+  width: 100%;
+}
+
+/* ── Grid de secciones independientes (2 columnas, wide sections span 2) ── */
+.sectionsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+  width: 100%;
+}
+
+.sectionSpan2 {
+  grid-column: span 2;
 }
 
 /* ── Cabecera de página ── */
@@ -1455,6 +1468,10 @@
   }
 
   .usersSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionsGrid {
     grid-template-columns: 1fr;
   }
 }

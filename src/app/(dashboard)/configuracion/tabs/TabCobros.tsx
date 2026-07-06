@@ -563,6 +563,7 @@ export function TabCobros({ businessId: _businessId }: Props) {
         </p>
       </div>
 
+      <div className={styles.sectionsGrid}>
       {/* ════════════════════════════════════════
           SECCIÓN 1 — MEDIOS DE PAGO
       ════════════════════════════════════════ */}
@@ -728,6 +729,7 @@ export function TabCobros({ businessId: _businessId }: Props) {
             Nuevo dispositivo
           </Button>
         </div>
+      </div>
       </div>
 
       {/* ════════════════════════════════════════

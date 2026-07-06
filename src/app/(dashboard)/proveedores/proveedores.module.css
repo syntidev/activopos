@@ -32,8 +32,9 @@
 
 .tableWrap {
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: none;
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevation);
   overflow-x: auto;
 }
 
@@ -138,9 +139,10 @@
 
   .card {
     background: var(--color-surface);
-    border: 1px solid var(--color-border-subtle);
+    border: none;
     border-radius: var(--radius-lg);
-    padding: var(--space-4);
+    box-shadow: var(--shadow-elevation);
+    padding: var(--space-3-5) var(--space-4-5);
   }
 
   .cardHeader {

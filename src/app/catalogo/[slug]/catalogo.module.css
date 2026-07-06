@@ -637,8 +637,15 @@
   color-scheme: light;
 }
 
-@media (min-width: 768px) {
-  .heroBanner { height: 280px; }
+/* Tablet+: el hero adopta el aspect-ratio del banner (1200x480 = 2.5:1) para no
+   recortar arriba/abajo. Cap de altura para pantallas anchas (la imagen mide
+   1200px de ancho; más allá se recorta muy poco a los lados). */
+@media (min-width: 640px) {
+  .heroBanner {
+    height:       auto;
+    aspect-ratio: 1200 / 480;
+    max-height:   560px;
+  }
 }
 
 .heroBannerImg {

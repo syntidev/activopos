@@ -347,48 +347,50 @@ function VentasContent({ isAdmin }: VentasContentProps) {
         </div>
       </div>
 
-      {/* ── Filter bar ── */}
+      {/* ── Filter bar — período / estado en filas separadas ── */}
       <div className={styles.filterBar}>
-        <div className={styles.chipGroup} role="group" aria-label="Período">
-          {(['today', '7d', 'month', 'custom'] as Period[]).map(p => (
-            <button
-              key={p}
-              type="button"
-              className={`${styles.chip} ${period === p ? styles.chipActive : ''}`}
-              onClick={() => {
-                setPeriod(p)
-                if (p === 'custom') setShowCustom(true)
-                else setShowCustom(false)
-              }}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
+        <div className={styles.filterRow}>
+          <div className={styles.chipGroup} role="group" aria-label="Período">
+            {(['today', '7d', 'month', 'custom'] as Period[]).map(p => (
+              <button
+                key={p}
+                type="button"
+                className={`${styles.chip} ${period === p ? styles.chipActive : ''}`}
+                onClick={() => {
+                  setPeriod(p)
+                  if (p === 'custom') setShowCustom(true)
+                  else setShowCustom(false)
+                }}
+              >
+                {PERIOD_LABELS[p]}
+              </button>
+            ))}
+          </div>
+
+          {total > 0 && !loading && (
+            <span className={styles.totalBadge}>{total} resultado{total !== 1 ? 's' : ''}</span>
+          )}
         </div>
 
-        <div className={styles.chipDivider} aria-hidden="true" />
-
-        <div className={styles.chipGroup} role="group" aria-label="Estado">
-          {([
-            { value: '' as StatusFilt, label: 'Todos' },
-            { value: 'paid' as StatusFilt, label: 'Pagado' },
-            { value: 'pending' as StatusFilt, label: 'Crédito' },
-            { value: 'cancelled' as StatusFilt, label: 'Cancelado' },
-          ]).map(({ value, label }) => (
-            <button
-              key={value || 'all'}
-              type="button"
-              className={`${styles.chip} ${statusFilt === value ? styles.chipActive : ''}`}
-              onClick={() => setStatusFilt(value)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className={styles.filterRow}>
+          <div className={styles.chipGroup} role="group" aria-label="Estado">
+            {([
+              { value: '' as StatusFilt, label: 'Todos', activeClass: styles.chipActive },
+              { value: 'paid' as StatusFilt, label: 'Pagado', activeClass: styles.chipActivePaid },
+              { value: 'pending' as StatusFilt, label: 'Crédito', activeClass: styles.chipActivePending },
+              { value: 'cancelled' as StatusFilt, label: 'Cancelado', activeClass: styles.chipActiveCancelled },
+            ]).map(({ value, label, activeClass }) => (
+              <button
+                key={value || 'all'}
+                type="button"
+                className={`${styles.chip} ${statusFilt === value ? activeClass : ''}`}
+                onClick={() => setStatusFilt(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-
-        {total > 0 && !loading && (
-          <span className={styles.totalBadge}>{total} resultado{total !== 1 ? 's' : ''}</span>
-        )}
       </div>
 
       {/* Custom range picker */}

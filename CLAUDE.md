@@ -275,34 +275,67 @@ CLI-D: /playwright + /impeccable craft + /frontend-design + e2e-testing
 
 ---
 
-## 🎨 SISTEMA VISUAL
+## 🎨 SISTEMA VISUAL — REGLAS IRROMPIBLES
 
-### Cards — sistema de elevación (estándar activo)
+### ANTES de tocar cualquier .module.css (obligatorio, sin excepción):
+1. Abrir .doc/DESIGN_SYSTEM.html en browser — referencia visual inapelable
+2. Leer .doc/DESIGN_SYSTEM.md completo — todas las secciones
+3. Leer el JSX del módulo — entender cómo están agrupados los elementos
+4. Si el CSS existente NO produce el resultado del Design System → REESCRITURA TOTAL
+5. PROHIBIDO parchar CSS viejo — si no cumple, se borra y se reescribe desde cero
+6. Declarar al inicio: clases CSS reales usadas en el .tsx del módulo
+
+### Layout obligatorio — todos los módulos sin excepción:
+- Desktop ≥1024px: grid mínimo 2 columnas para cards y secciones
+- grid-template-columns: minmax(0,1fr) minmax(0,1fr) — nunca 1fr solo
+- NUNCA max-width fijo en contenedores de contenido
+- NUNCA flex-direction: column cuando el espacio permite 2 columnas
+- Tablet 640-1023px: 2 columnas
+- Mobile <640px: 1 columna
+
+### Cards — sistema de elevación (estándar activo):
 - background: #FFFFFF
 - border-radius: 16px
 - box-shadow: 0 2px 8px rgba(47,43,61,0.10), 0 0 1px rgba(47,43,61,0.06)
 - border: none — sin borde, solo sombra
-- padding: 20px 24px
-- hover: translateY(-2px) + sombra más pronunciada
+- padding: 14px 18px desktop / 12px 14px mobile
+- hover: translateY(-1px) + sombra más pronunciada
+- PROHIBIDO: border en cards bajo cualquier circunstancia
 
-### Fondo de página dashboard
+### Fondo de página dashboard:
 - background: #EEEDF4 — contraste visible con cards blancas
+- NUNCA background: #FFFFFF en el wrapper de página del dashboard
 
-### KPIs — íconos con círculo de color
-- cobrado → bg #DCFCE7, ícono DollarSign, color #16A34A
-- crédito → bg #FEF3C7, ícono Clock, color #D97706  
-- tickets → bg #DBEAFE, ícono ShoppingCart, color #2563EB
-- utilidad → bg #F3E8FF, ícono TrendingUp, color #9333EA
+### KPIs — íconos con círculo de color semántico:
+- cobrado/ingresos → bg #DCFCE7, ícono DollarSign, color #16A34A
+- crédito/pendiente → bg #FEF3C7, ícono Clock, color #D97706
+- tickets/órdenes → bg #DBEAFE, ícono ShoppingCart, color #2563EB
+- utilidad positiva → bg #F3E8FF, ícono TrendingUp, color #9333EA
+- utilidad negativa → bg #FEE2E2, ícono TrendingDown, color #EF4444
+- KPI hero (principal del módulo) → background: #0038BD, texto blanco
 
-### Regla CSS irrompible
-PROHIBIDO crear valores CSS en .module.css sin verificar primero
-si existe token en tokens.css. Si no existe → crear token primero,
-luego consumirlo. NUNCA duplicar valores entre módulos.
+### Regla CSS de tokens (irrompible):
+- PROHIBIDO crear valores hex en .module.css sin verificar tokens.css primero
+- Si el token no existe → crearlo en tokens.css PRIMERO, luego consumirlo
+- NUNCA duplicar valores entre módulos
+- NUNCA hardcodear rgba, hex o px que ya existe como token
 
-### Componentes del dashboard
-- El dashboard usa escritorio.module.css — NO KpiCard.module.css
-- KpiCard.tsx es consumido por caja/ y reportes/ únicamente
-- Cambios visuales del dashboard van en escritorio/page.tsx y escritorio.module.css
+### Componentes del dashboard:
+- escritorio.module.css — SOLO para escritorio/page.tsx, certificado, no tocar
+- KpiCard.tsx — consumido por caja/ y reportes/ únicamente
+- Cambios en otros módulos van en su propio .module.css
+
+### Catálogo público (src/app/catalogo/):
+- Fondo: #FFFFFF — no #EEEDF4
+- Color primario: var(--biz-color) — nunca #0038BD
+- Sin sidebar en ningún breakpoint
+- Ver .doc/DESIGN_SYSTEM.md sección 16 completa
+
+### Criterio de aprobación visual (no negociable):
+Un módulo está aprobado SOLO cuando Carlos lo verifica visualmente en:
+- Desktop 1280px: 2 columnas, cards elevadas, sin scroll innecesario
+- Mobile 375px: 1 columna, sin overflow horizontal
+Un commit NO equivale a aprobación visual.
 
 ## 🗂️ ESTRUCTURA DEL PROYECTO
 

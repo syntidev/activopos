@@ -918,3 +918,53 @@ model PurchaseItem {
   @@index([product_id])
   @@map("purchase_items")
 }
+
+// ── Marketing (contenido público, sin tenant) ──────────
+
+model Plan {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  price_usd   Float
+  description String?
+  features    Json
+  active      Boolean  @default(true)
+  sort_order  Int      @default(0)
+  created_at  DateTime @default(now())
+
+  @@map("plans")
+}
+
+model Segment {
+  id               String       @id @default(cuid())
+  slug             String       @unique
+  name             String
+  mode             String       @default("product")
+  theme_key        String
+  headline         String
+  subheadline      String
+  meta_title       String
+  meta_description String
+  hero_image       String?
+  pain_1           String
+  pain_2           String
+  pain_3           String
+  active           Boolean      @default(false)
+  sort_order       Int          @default(0)
+  faqs             SegmentFaq[]
+  created_at       DateTime     @default(now())
+
+  @@map("segments")
+}
+
+model SegmentFaq {
+  id         String   @id @default(cuid())
+  segment_id String
+  segment    Segment  @relation(fields: [segment_id], references: [id], onDelete: Cascade)
+  question   String
+  answer     String
+  sort_order Int      @default(0)
+
+  @@index([segment_id])
+  @@map("segment_faqs")
+}

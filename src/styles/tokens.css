@@ -542,17 +542,17 @@
   --bg-overlay:     rgba(0, 0, 0, 0.60);
   --bg-banner:      #132035;
 
-  /* Sidebar — SIEMPRE blanco, ignora tema (Design System v1.1) */
-  --sidebar-bg:             #FAFBFC;
-  --sidebar-border:         #E2E8F0;
-  --sidebar-text:           #6B7280;
-  --sidebar-text-hover:     #1a1a2e;
-  --sidebar-section-label:  #9CA3AF;
-  --sidebar-active-bg:      var(--brand-soft);
-  --sidebar-active-text:    #0038BD;
-  --sidebar-active-border:  #0038BD;
-  --sidebar-hover-bg:       rgba(0, 56, 189, 0.04);
-  --sidebar-dot:            #0038BD;
+  /* Sidebar — hereda dark mode igual que el resto del dashboard */
+  --sidebar-bg:             var(--bg-card);
+  --sidebar-border:         var(--border-card);
+  --sidebar-text:           var(--text-secondary);
+  --sidebar-text-hover:     var(--text-primary);
+  --sidebar-section-label:  var(--text-tertiary);
+  --sidebar-active-bg:      rgba(var(--brand-rgb), 0.14);
+  --sidebar-active-text:    var(--brand-l);
+  --sidebar-active-border:  var(--brand-l);
+  --sidebar-hover-bg:       rgba(var(--brand-rgb), 0.08);
+  --sidebar-dot:            var(--brand-l);
 
   /* Toggle de caja en sidebar */
   --toggle-on-bg:  #0038BD;

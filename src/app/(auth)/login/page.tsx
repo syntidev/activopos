@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-theme="dark">
       <motion.div
         className={styles.card}
         initial={{ opacity: 0, y: 20 }}

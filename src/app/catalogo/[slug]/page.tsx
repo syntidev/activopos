@@ -151,7 +151,8 @@ export default async function CatalogoPage({ params }: PageProps) {
 
   return (
     <div
-      className={`light ${styles.root}`}
+      data-theme="light"
+      className={styles.root}
       style={business.theme_color
         ? { '--biz-color': business.theme_color } as React.CSSProperties
         : undefined}

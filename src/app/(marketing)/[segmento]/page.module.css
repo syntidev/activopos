@@ -1,0 +1,6 @@
+/* Contenedor del template de segmento. El 80% respira en --mkt-bg (gris azulado
+   frío); hero y CTA final son las únicas zonas navy. */
+.page {
+  background: var(--mkt-bg);
+  color:      var(--mkt-text-2);
+}

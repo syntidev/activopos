@@ -1,0 +1,88 @@
+.section {
+  background: var(--mkt-bg-alt);
+  padding:    72px 24px;
+}
+
+.inner {
+  max-width: 760px;
+  margin:    0 auto;
+}
+
+.title {
+  text-align:     center;
+  font-family:    var(--font-display);
+  font-weight:    700;
+  font-size:      30px;
+  letter-spacing: -0.02em;
+  color:          var(--mkt-text-1);
+  margin:         0 0 36px;
+  text-wrap:      balance;
+}
+
+.list {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+}
+
+.item {
+  background:    var(--mkt-card);
+  border:        1px solid var(--mkt-border);
+  border-radius: 14px;
+  overflow:      hidden;
+  transition:    border-color 150ms ease;
+}
+.itemOpen { border-color: var(--brand); }
+
+.question {
+  width:           100%;
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             16px;
+  text-align:      left;
+  background:      none;
+  border:          none;
+  cursor:          pointer;
+  padding:         18px 20px;
+  font-family:     var(--font-sans);
+  font-size:       16px;
+  font-weight:     600;
+  color:           var(--mkt-text-1);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color:       var(--mkt-text-3);
+  transition:  transform 200ms ease, color 200ms ease;
+}
+.chevronOpen { transform: rotate(180deg); color: var(--brand); }
+
+/* Animación de altura sin medir JS: grid 0fr → 1fr */
+.answerWrap {
+  display:               grid;
+  grid-template-rows:    0fr;
+  transition:            grid-template-rows 220ms ease;
+}
+.answerWrap[data-open='true'] { grid-template-rows: 1fr; }
+
+.answer {
+  overflow:    hidden;
+  margin:      0;
+  padding:     0 20px;
+  font-family: var(--font-sans);
+  font-size:   15px;
+  line-height: 1.6;
+  color:       var(--mkt-text-2);
+}
+.answerWrap[data-open='true'] .answer { padding-bottom: 18px; }
+
+@media (max-width: 860px) {
+  .section { padding: 52px 20px; }
+  .title   { font-size: 25px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .answerWrap { transition: none; }
+  .chevron    { transition: none; }
+}

@@ -1,0 +1,161 @@
+.section {
+  background: var(--mkt-bg);
+  padding:    72px 24px;
+}
+
+.inner {
+  max-width: 1120px;
+  margin:    0 auto;
+}
+
+.title {
+  text-align:     center;
+  font-family:    var(--font-display);
+  font-weight:    700;
+  font-size:      32px;
+  letter-spacing: -0.02em;
+  color:          var(--mkt-text-1);
+  margin:         0 0 8px;
+  text-wrap:      balance;
+}
+
+.subtitle {
+  text-align:  center;
+  font-family: var(--font-sans);
+  font-size:   16px;
+  color:       var(--mkt-text-2);
+  margin:      0 0 40px;
+}
+
+.grid {
+  display:               grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:                   20px;
+  align-items:           start;
+}
+
+.card {
+  position:      relative;
+  background:    var(--mkt-card);
+  border:        1px solid var(--mkt-border);
+  border-radius: 18px;
+  padding:       28px 24px;
+  box-shadow:    0 1px 3px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.cardPopular {
+  border: 2px solid var(--brand);
+  box-shadow: 0 12px 32px rgba(0, 56, 189, 0.12);
+}
+
+.popularBadge {
+  position:      absolute;
+  top:           -12px;
+  left:          50%;
+  transform:     translateX(-50%);
+  background:    var(--brand);
+  color:         #FFFFFF;
+  font-family:   var(--font-sans);
+  font-size:     12px;
+  font-weight:   700;
+  letter-spacing: 0.02em;
+  padding:       5px 14px;
+  border-radius: 999px;
+}
+
+.planName {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size:   24px;
+  color:       var(--mkt-text-1);
+  margin:      0 0 12px;
+}
+
+.priceRow {
+  display:     flex;
+  align-items: baseline;
+  gap:         8px;
+  margin-bottom: 12px;
+}
+
+.price {
+  font-family:    var(--font-display);
+  font-weight:    800;
+  font-size:      42px;
+  line-height:    1;
+  letter-spacing: -0.02em;
+  color:          var(--brand);
+}
+
+.per {
+  font-family: var(--font-sans);
+  font-size:   16px;
+  color:       var(--mkt-text-3);
+}
+
+.planDesc {
+  font-family:   var(--font-sans);
+  font-size:     14px;
+  line-height:   1.5;
+  color:         var(--mkt-text-2);
+  margin:        0 0 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--mkt-border);
+}
+
+.features {
+  list-style: none;
+  margin:     0 0 24px;
+  padding:    0;
+  display:    flex;
+  flex-direction: column;
+  gap:        11px;
+}
+
+.feature {
+  display:     flex;
+  align-items: flex-start;
+  gap:         10px;
+  font-family: var(--font-sans);
+  font-size:   14px;
+  line-height: 1.45;
+  color:       var(--mkt-text-2);
+}
+
+.check {
+  color:       var(--success);
+  flex-shrink: 0;
+  margin-top:  2px;
+}
+
+.planBtn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  height:          48px;
+  border-radius:   12px;
+  font-family:     var(--font-sans);
+  font-size:       15px;
+  font-weight:     600;
+  text-decoration: none;
+  transition:      background 150ms ease, opacity 150ms ease;
+}
+
+.planBtnFilled {
+  background: var(--brand);
+  color:      #FFFFFF;
+}
+.planBtnFilled:hover { background: var(--brand-hover); }
+
+.planBtnOutline {
+  background: transparent;
+  color:      var(--brand);
+  border:     1px solid var(--brand);
+}
+.planBtnOutline:hover { background: var(--brand-soft); }
+
+@media (max-width: 860px) {
+  .section { padding: 56px 20px; }
+  .title   { font-size: 26px; }
+  .grid    { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+}

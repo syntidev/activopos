@@ -10,6 +10,8 @@ const PUBLIC_PREFIXES = [
   '/api/catalog/',
   '/api/public/',
   '/api/marketing/',                      // contenido público de marketing (planes, segmentos)
+  '/para-',                               // landings SEO por segmento (/para-carniceria, etc.) — públicas
+
   '/api/r/',                              // descarga pública de reportes por token
   '/api/onboarding/',
 ]

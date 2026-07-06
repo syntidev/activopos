@@ -1,0 +1,70 @@
+.section {
+  background: var(--mkt-bg);
+  padding:    72px 24px;
+}
+
+.inner {
+  max-width: 1120px;
+  margin:    0 auto;
+}
+
+.eyebrow {
+  text-align:  center;
+  font-family: var(--font-sans);
+  font-size:   14px;
+  font-weight: 600;
+  color:       var(--brand);
+  margin:      0 0 10px;
+}
+
+.title {
+  text-align:     center;
+  font-family:    var(--font-display);
+  font-weight:    700;
+  font-size:      32px;
+  line-height:    1.15;
+  letter-spacing: -0.02em;
+  color:          var(--mkt-text-1);
+  margin:         0 0 40px;
+  text-wrap:      balance;
+}
+
+.grid {
+  display:               grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:                   20px;
+}
+
+.card {
+  background:    var(--mkt-card);
+  border:        1px solid var(--mkt-border);
+  border-radius: 16px;
+  padding:       24px;
+  box-shadow:    0 1px 3px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.iconWrap {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           36px;
+  height:          36px;
+  border-radius:   10px;
+  background:      var(--lp-danger-a);
+  color:           var(--danger);
+  margin-bottom:   14px;
+}
+
+.text {
+  font-family: var(--font-sans);
+  font-size:   15px;
+  line-height: 1.55;
+  color:       var(--mkt-text-2);
+  margin:      0;
+}
+
+@media (max-width: 860px) {
+  .section { padding: 52px 20px; }
+  .title   { font-size: 26px; }
+  .grid    { grid-template-columns: 1fr; }
+}

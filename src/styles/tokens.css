@@ -10,6 +10,16 @@
   /* ── Marketing — Landing page specifics ── */
   --navy:               #1E3A5F;
 
+  /* ── Marketing SEO segment landings (Linear/Stripe-calm) ── */
+  --mkt-bg:             #F4F6FB;
+  --mkt-bg-alt:         #EEF2FF;
+  --mkt-navy:           #0D1B2E;
+  --mkt-text-1:         #0F172A;
+  --mkt-text-2:         #475569;
+  --mkt-text-3:         #94A3B8;
+  --mkt-card:           #FFFFFF;
+  --mkt-border:         #E2E8F0;
+
   /* Landing page transparent borders & glows */
   --lp-border:          rgba(255, 255, 255, 0.08);
   --lp-border2:         rgba(255, 255, 255, 0.14);

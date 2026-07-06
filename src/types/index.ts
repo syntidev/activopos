@@ -80,6 +80,7 @@ export interface BusinessConfig {
   pos_mode?:                   'ticket' | 'invoice'
   catalog_instagram?:          string | null
   catalog_hours?:              string | null
+  catalog_cover_path?:         string | null
 }
 
 export interface TicketConfig {

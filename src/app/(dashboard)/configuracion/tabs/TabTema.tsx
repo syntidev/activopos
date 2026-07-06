@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, type CSSProperties } from 'react'
+import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useTheme } from 'next-themes'
-import { Moon, Sun, Check } from 'lucide-react'
+import { Moon, Sun, Check, ImageUp } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import styles from '../configuracion.module.css'
@@ -39,6 +39,12 @@ export function TabTema({ businessId: _b }: Props) {
   const [saving, setSaving] = useState(false)
   const [selectedColor, setSelectedColor] = useState<string>(DEFAULT_COLOR)
 
+  const coverRef = useRef<HTMLInputElement>(null)
+  const [coverPath, setCoverPath]         = useState<string | null>(null)
+  const [coverPreview, setCoverPreview]   = useState<string | null>(null)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [coverDragging, setCoverDragging] = useState(false)
+
   useEffect(() => {
     let active = true
     fetch('/api/config/theme')
@@ -51,6 +57,60 @@ export function TabTema({ businessId: _b }: Props) {
       })
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/config/business')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { business?: { catalog_cover_path?: string | null } } | null) => {
+        if (active && data?.business?.catalog_cover_path) setCoverPath(data.business.catalog_cover_path)
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+
+  const handleCoverSelect = async (file: File) => {
+    if (!file.type.startsWith('image/')) { toast('Solo se aceptan imágenes PNG, JPG o WebP.', 'error'); return }
+    if (file.size > 5 * 1024 * 1024)    { toast('La portada no puede superar 5 MB.', 'error');          return }
+
+    const prev = coverPreview
+    const reader = new FileReader()
+    reader.onload = (e) => setCoverPreview(e.target?.result as string)
+    reader.readAsDataURL(file)
+
+    setUploadingCover(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('type', 'catalog_cover')
+      const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: fd })
+      if (!uploadRes.ok) { toast('Error al subir la portada.', 'error'); setCoverPreview(prev); return }
+      const { url } = await uploadRes.json() as { url: string }
+
+      const patchRes = await fetch('/api/config/business', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ catalog_cover_path: url }),
+      })
+      if (!patchRes.ok) { toast('Error al guardar la portada.', 'error'); setCoverPreview(prev); return }
+      setCoverPath(url)
+      toast('Portada del catálogo guardada.', 'success')
+    } catch {
+      toast('Error de conexión al subir la portada.', 'error')
+      setCoverPreview(prev)
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+
+  const handleCoverDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setCoverDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleCoverSelect(file)
+  }
+
+  const displayCover = coverPreview ?? coverPath
 
   const selectTheme = (mode: ThemeMode) => {
     setTheme(mode)
@@ -142,6 +202,58 @@ export function TabTema({ businessId: _b }: Props) {
             <span className={styles.colorSelectedSegment}>{activeColor.segment}</span>
           </p>
         )}
+      </div>
+
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>
+          <ImageUp size={16} aria-hidden="true" />
+          Portada del catálogo
+        </h3>
+        <p className={styles.colorDesc}>
+          Imagen del banner superior de tu catálogo. Se guarda al instante.
+        </p>
+
+        <div
+          className={`${styles.coverDropZone} ${coverDragging ? styles.logoDropZoneActive : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-label="Subir portada del catálogo"
+          onClick={() => !uploadingCover && coverRef.current?.click()}
+          onKeyDown={(e) => { if (!uploadingCover && (e.key === 'Enter' || e.key === ' ')) coverRef.current?.click() }}
+          onDragOver={(e) => { e.preventDefault(); setCoverDragging(true) }}
+          onDragLeave={() => setCoverDragging(false)}
+          onDrop={handleCoverDrop}
+        >
+          {displayCover ? (
+            <img src={displayCover} alt="Portada del catálogo" className={styles.coverPreview} />
+          ) : (
+            <div className={styles.coverEmpty}>
+              <ImageUp size={22} aria-hidden="true" />
+              <p className={styles.logoDropText}>Arrastra o haz clic para subir</p>
+            </div>
+          )}
+          {uploadingCover && <div className={styles.coverUploading}>Subiendo…</div>}
+        </div>
+        {displayCover && (
+          <p className={styles.logoDropText} style={{ marginTop: 8 }}>
+            {uploadingCover ? 'Subiendo…' : 'Haz clic sobre la imagen para cambiarla'}
+          </p>
+        )}
+
+        <p className={styles.logoDropHint}>
+          Recomendado: horizontal (paisaje), ~1200 × 480 px. Máx 1200 px de ancho, 5 MB. JPG, PNG o WebP.
+          Se muestra a 200–280 px de alto y se recorta a lo ancho (object-fit: cover), así que centra lo importante.
+        </p>
+
+        <input
+          ref={coverRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className={styles.logoFileInput}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverSelect(f) }}
+          aria-hidden="true"
+          tabIndex={-1}
+        />
       </div>
       </div>
 

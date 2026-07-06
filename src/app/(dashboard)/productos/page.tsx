@@ -18,6 +18,9 @@ import {
   ScanBarcode,
   X,
   Pencil,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
 import { Button } from '@/components/ui/Button'
@@ -157,6 +160,8 @@ export default function ProductosPage() {
   const [editProduct, setEditProduct]     = useState<EditableProduct | null>(null)
   const [showCategoryModal, setShowCategoryModal]   = useState(false)
   const [editCategoryData, setEditCategoryData]     = useState<Category | null>(null)
+  const [reorderMode, setReorderMode]               = useState(false)
+  const [reordering, setReordering]                 = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [stockProduct, setStockProduct]   = useState<Product | null>(null)
 
@@ -423,6 +428,33 @@ export default function ProductosPage() {
     await fetchCategories()
   }, [editCategoryData, fetchCategories])
 
+  // Reordena categorías: mueve una posición y persiste sort_order = índice en todas.
+  // El catálogo y estos tabs leen sort_order, así que el orden se refleja en la portada.
+  const moveCategory = useCallback(async (index: number, dir: 'left' | 'right') => {
+    const j = dir === 'left' ? index - 1 : index + 1
+    if (j < 0 || j >= categories.length || reordering) return
+
+    const next = [...categories]
+    const tmp = next[index]
+    next[index] = next[j]
+    next[j] = tmp
+    setCategories(next) // optimista
+
+    setReordering(true)
+    try {
+      await Promise.all(next.map((c, i) =>
+        fetch(`/api/categories/${c.id}`, {
+          method:  'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ sort_order: i }),
+        }),
+      ))
+      await fetchCategories()
+    } finally {
+      setReordering(false)
+    }
+  }, [categories, reordering, fetchCategories])
+
   const handleSaveStock = useCallback(async (
     productId: number,
     type: 'entry' | 'adjust',
@@ -629,6 +661,7 @@ export default function ProductosPage() {
 
       {/* ── Category tabs ── */}
       {categories.length > 0 && (
+        <>
         <div className={styles.tabsBar} role="tablist" aria-label="Filtrar por categoría">
           <button
             role="tab"
@@ -636,31 +669,70 @@ export default function ProductosPage() {
             className={`${styles.catTab} ${selectedCategory === '' ? styles.catTabActive : ''}`}
             onClick={() => setSelectedCategory('')}
             aria-selected={selectedCategory === ''}
+            disabled={reorderMode}
           >
             Todas las categorías
           </button>
-          {categories.map((cat) => (
+          {categories.map((cat, i) => (
             <div key={cat.id} className={styles.catGroup}>
               <button
                 role="tab"
                 type="button"
                 className={`${styles.catTab} ${selectedCategory === String(cat.id) ? styles.catTabActive : ''}`}
-                onClick={() => setSelectedCategory(String(cat.id))}
+                onClick={() => { if (!reorderMode) setSelectedCategory(String(cat.id)) }}
                 aria-selected={selectedCategory === String(cat.id)}
+                disabled={reorderMode}
               >
                 {cat.name}
               </button>
-              <button
-                type="button"
-                className={styles.catEditBtn}
-                onClick={() => { setEditCategoryData(cat); setShowCategoryModal(true) }}
-                aria-label={`Editar categoría ${cat.name}`}
-              >
-                <Pencil size={12} aria-hidden="true" />
-              </button>
+              {reorderMode ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.catEditBtn}
+                    onClick={() => moveCategory(i, 'left')}
+                    disabled={i === 0 || reordering}
+                    aria-label={`Mover ${cat.name} a la izquierda`}
+                  >
+                    <ChevronLeft size={12} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.catEditBtn}
+                    onClick={() => moveCategory(i, 'right')}
+                    disabled={i === categories.length - 1 || reordering}
+                    aria-label={`Mover ${cat.name} a la derecha`}
+                  >
+                    <ChevronRight size={12} aria-hidden="true" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.catEditBtn}
+                  onClick={() => { setEditCategoryData(cat); setShowCategoryModal(true) }}
+                  aria-label={`Editar categoría ${cat.name}`}
+                >
+                  <Pencil size={12} aria-hidden="true" />
+                </button>
+              )}
             </div>
           ))}
+          <button
+            type="button"
+            className={`${styles.catReorderToggle} ${reorderMode ? styles.catReorderToggleActive : ''}`}
+            onClick={() => setReorderMode(m => !m)}
+          >
+            <ArrowLeftRight size={14} aria-hidden="true" />
+            {reorderMode ? 'Listo' : 'Ordenar'}
+          </button>
         </div>
+        {reorderMode && (
+          <p className={styles.catReorderHint}>
+            Usa las flechas para ordenar. Las primeras categorías con productos aparecen en la portada del catálogo (hasta 4).
+          </p>
+        )}
+        </>
       )}
 
       {/* ── Table ── */}

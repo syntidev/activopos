@@ -719,6 +719,45 @@
   outline-offset: 2px;
 }
 
+.catEditBtn:disabled {
+  opacity: 0.15;
+  cursor: not-allowed;
+}
+
+/* ── Reordenar categorías ── */
+.catReorderToggle {
+  flex-shrink:   0;
+  display:       inline-flex;
+  align-items:   center;
+  gap:           var(--space-1-5);
+  min-height:    var(--touch-min);
+  margin-left:   var(--space-2);
+  padding:       0 var(--space-3);
+  background:    none;
+  border:        none;
+  font-size:     var(--text-sm);
+  font-family:   var(--font-sans);
+  font-weight:   var(--weight-medium);
+  color:         var(--color-text-secondary);
+  cursor:        pointer;
+  white-space:   nowrap;
+  transition:    color var(--transition-fast);
+}
+.catReorderToggle:hover { color: var(--color-brand); }
+.catReorderToggleActive { color: var(--color-brand); font-weight: var(--weight-semibold); }
+.catReorderToggle:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.catReorderHint {
+  font-size:   var(--text-xs);
+  color:       var(--color-text-muted);
+  padding:     var(--space-2) var(--space-1) 0;
+  line-height: var(--leading-snug);
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; opacity: 0.55; }

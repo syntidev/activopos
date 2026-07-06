@@ -211,7 +211,7 @@
 /* ── Form layout ── */
 .fieldRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-4);
 }
 
@@ -458,7 +458,7 @@
 /* ── Theme preview cards ── */
 .themeCards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-4);
   margin-top: var(--space-3);
 }
@@ -567,7 +567,7 @@
 /* ── Users table ── */
 .usersSummary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
@@ -706,7 +706,7 @@
 /* ── Role options ── */
 .roleOptions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-3);
   margin-top: var(--space-2);
 }
@@ -779,7 +779,7 @@
 /* ── Pos mode radio options ── */
 .posModeOptions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-3);
 }
 

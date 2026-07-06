@@ -66,6 +66,7 @@ interface Props {
   businessLogo:   string | null
   businessCity:   string | null
   businessDesc:   string | null
+  heroCover?:     string | null
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -136,6 +137,7 @@ export function CatalogoGrid({
   businessLogo,
   businessCity,
   businessDesc,
+  heroCover,
 }: Props) {
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -539,6 +541,84 @@ export function CatalogoGrid({
         )}
       </div>
 
+      {/* ── Hero banner — solo en vista inicial (sin filtro ni búsqueda) ── */}
+      {activeCategory === null && !query && (
+        <section className={styles.heroBanner} aria-label="Presentación del negocio">
+          {heroCover && (
+            <img src={heroCover} alt={businessName} className={styles.heroBannerImg} />
+          )}
+          <div className={styles.heroOverlay} />
+          <div className={styles.heroContent}>
+            <h1 className={styles.heroTitle}>{businessName}</h1>
+            {businessDesc && (
+              <p className={styles.heroDesc}>{businessDesc}</p>
+            )}
+            <button
+              type="button"
+              className={styles.heroCtaBtn}
+              onClick={() => {
+                document.querySelector('[data-section="products"]')
+                  ?.scrollIntoView({ behavior: 'smooth' })
+              }}
+            >
+              Ver productos
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* ── Destacados — showcase de vista inicial ─────────────── */}
+      {hasFeatured && activeCategory === null && !query && (
+        <section className={styles.featuredSection} data-section="featured" aria-label="Productos destacados">
+          <div className={styles.featuredHeader}>
+            <Star size={16} aria-hidden="true" />
+            <span className={styles.featuredTitle}>Destacados</span>
+          </div>
+          <div className={styles.featuredGrid}>
+            {products.filter(p => p.isFeatured).map(p => (
+              <article
+                key={p.id}
+                className={styles.featuredCard}
+                onClick={() => openModal(p)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Ver detalle: ${p.name}`}
+              >
+                <div className={styles.featuredImageWrap}>
+                  {p.image ? (
+                    <img src={p.image} alt={p.name} className={styles.featuredImg} loading="lazy" />
+                  ) : (
+                    <div className={`${styles.featuredPlaceholder} ${styles.gradDefault}`} aria-hidden="true">
+                      <span className={styles.productInitial}>{p.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.featuredInfo}>
+                  <span className={styles.featuredName}>{p.name}</span>
+                  {p.priceUsd > 0 ? (
+                    <div className={styles.featuredPriceBlock}>
+                      <span className={styles.featuredPrice}>
+                        ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </span>
+                      {p.priceBs && (
+                        <span className={styles.featuredPriceBs}>
+                          Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className={styles.priceConsultar}>Consultar precio</span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Subcategory pills ──────────────────────────────────── */}
       {!searchExpanded && !query && subcategoriesForActive.length > 0 && (
         <div className={styles.subcatScroll}>
@@ -565,7 +645,7 @@ export function CatalogoGrid({
       )}
 
       {/* ── Product grid ───────────────────────────────────────── */}
-      <main className={styles.productsSection}>
+      <main className={styles.productsSection} data-section="products">
         {products.length === 0 ? (
           <div className={styles.empty}>
             <Package className={styles.emptyIcon} size={52} strokeWidth={1.25} aria-hidden="true" />

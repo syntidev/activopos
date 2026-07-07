@@ -80,6 +80,7 @@ async function seedSegments() {
   const segments = [
     {
       slug: 'carniceria',
+      tag_line: 'Res · Cerdo · Aves',
       name: 'Carnicería',
       mode: 'product',
       theme_key: 'calle',
@@ -102,6 +103,7 @@ async function seedSegments() {
     },
     {
       slug: 'restaurante',
+      tag_line: 'Mesas · Cocina · Delivery',
       name: 'Restaurante',
       mode: 'hybrid',
       theme_key: 'restaurante',
@@ -124,6 +126,7 @@ async function seedSegments() {
     },
     {
       slug: 'ferreterias',
+      tag_line: 'Materiales · Construcción',
       name: 'Ferretería',
       mode: 'product',
       theme_key: 'ferreteria',
@@ -146,6 +149,7 @@ async function seedSegments() {
     },
     {
       slug: 'farmacias',
+      tag_line: 'Medicamentos · Salud',
       name: 'Farmacia',
       mode: 'product',
       theme_key: 'farmacia',
@@ -168,6 +172,7 @@ async function seedSegments() {
     },
     {
       slug: 'tiendas-ropa',
+      tag_line: 'Tallas · Colores · Apartados',
       name: 'Tienda de Ropa',
       mode: 'product',
       theme_key: 'joyeria',
@@ -190,6 +195,7 @@ async function seedSegments() {
     },
     {
       slug: 'abastos',
+      tag_line: 'Bodega · Víveres · Fiaos',
       name: 'Abasto / Bodega',
       mode: 'product',
       theme_key: 'calle',
@@ -212,6 +218,7 @@ async function seedSegments() {
     },
     {
       slug: 'tecnologia',
+      tag_line: 'Equipos · Garantías · Reparación',
       name: 'Tecnología / Electrónicos',
       mode: 'hybrid',
       theme_key: 'tropical',
@@ -234,6 +241,7 @@ async function seedSegments() {
     },
     {
       slug: 'repuestos',
+      tag_line: 'Mecánica · Repuestos · Mayor',
       name: 'Tienda de Repuestos',
       mode: 'product',
       theme_key: 'ferreteria',
@@ -256,6 +264,7 @@ async function seedSegments() {
     },
     {
       slug: 'joyerias',
+      tag_line: 'Joyas · Apartados · Divisas',
       name: 'Joyería',
       mode: 'product',
       theme_key: 'joyeria',
@@ -278,6 +287,7 @@ async function seedSegments() {
     },
     {
       slug: 'servicios',
+      tag_line: 'Servicios · Cotización · CxC',
       name: 'Servicios y Oficina',
       mode: 'service',
       theme_key: 'oficina',
@@ -300,6 +310,7 @@ async function seedSegments() {
     },
     {
       slug: 'clinicas',
+      tag_line: 'Consultas · Insumos · Salud',
       name: 'Clínica / Consultorio',
       mode: 'hybrid',
       theme_key: 'clinica',
@@ -322,6 +333,7 @@ async function seedSegments() {
     },
     {
       slug: 'gestoria-tramites',
+      tag_line: 'Trámites · Legal · Gestión',
       name: 'Gestoría y Trámites',
       mode: 'service',
       theme_key: 'oficina',

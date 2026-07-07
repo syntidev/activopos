@@ -941,6 +941,7 @@ model Segment {
   name             String
   mode             String       @default("product")
   theme_key        String
+  tag_line         String       @default("")
   headline         String
   subheadline      String
   meta_title       String

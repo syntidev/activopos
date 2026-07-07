@@ -16,6 +16,7 @@ export interface SegmentData {
   name:             string
   mode:             SegmentMode
   theme_key:        string
+  tag_line:         string
   headline:         string
   subheadline:      string
   meta_title:       string

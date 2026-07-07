@@ -9,6 +9,7 @@ export async function GET() {
       slug: true,
       name: true,
       theme_key: true,
+      tag_line: true,
       headline: true,
       mode: true,
     },

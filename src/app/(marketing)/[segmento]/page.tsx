@@ -15,7 +15,7 @@ import styles from './page.module.css'
 const PREFIX = 'para-'
 
 function toSegmentData(raw: {
-  id: string; slug: string; name: string; mode: string; theme_key: string
+  id: string; slug: string; name: string; mode: string; theme_key: string; tag_line: string
   headline: string; subheadline: string; meta_title: string; meta_description: string
   hero_image: string | null; pain_1: string; pain_2: string; pain_3: string; active: boolean
   faqs: { id: string; question: string; answer: string; sort_order: number }[]

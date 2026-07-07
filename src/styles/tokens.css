@@ -19,6 +19,8 @@
   --mkt-text-3:         #94A3B8;
   --mkt-card:           #FFFFFF;
   --mkt-border:         #E2E8F0;
+  --mkt-border-dashed:  #CBD5E1;
+  --mkt-card-subtle:    #F8FAFF;
 
   /* Landing page transparent borders & glows */
   --lp-border:          rgba(255, 255, 255, 0.08);

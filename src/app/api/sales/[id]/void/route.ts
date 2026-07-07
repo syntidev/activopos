@@ -49,17 +49,29 @@ export async function PATCH(
       })
 
       if (wasPaid) {
-        await tx.inventoryEntry.createMany({
-          data: sale.items.map(item => ({
-            business_id: session.businessId,
-            product_id: item.product_id,
-            quantity: Number(item.quantity),
-            waste: 0,
-            entry_type: 'void_reversal',
-            notes: `ANULACION #${sale.ticket_number}`,
-            created_by: session.userId,
-          })),
-        })
+        const variantItems = sale.items.filter(i => i.variant_id != null)
+        const productItems = sale.items.filter(i => i.variant_id == null)
+
+        for (const item of variantItems) {
+          await tx.productVariant.update({
+            where: { id: item.variant_id! },
+            data:  { stock: { increment: Number(item.quantity) } },
+          })
+        }
+
+        if (productItems.length > 0) {
+          await tx.inventoryEntry.createMany({
+            data: productItems.map(item => ({
+              business_id: session.businessId,
+              product_id: item.product_id,
+              quantity: Number(item.quantity),
+              waste: 0,
+              entry_type: 'void_reversal',
+              notes: `ANULACION #${sale.ticket_number}`,
+              created_by: session.userId,
+            })),
+          })
+        }
       }
 
       await tx.activityLog.create({

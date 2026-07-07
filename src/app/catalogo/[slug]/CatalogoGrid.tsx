@@ -11,6 +11,14 @@ import styles from './catalogo.module.css'
 
 /* ── Public interfaces ───────────────────────────────────────── */
 
+export interface CatalogProductVariant {
+  id:           number
+  tipo:         string
+  valor:        string
+  stock:        number
+  precio_extra: number
+}
+
 export interface CatalogProduct {
   id:                number
   name:              string
@@ -28,6 +36,7 @@ export interface CatalogProduct {
   isFeatured:        boolean
   catalogVisibility: 'visible' | 'on_request' | 'hidden'
   availability:      'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued'
+  variants:          CatalogProductVariant[]
 }
 
 export interface PaymentMethod {

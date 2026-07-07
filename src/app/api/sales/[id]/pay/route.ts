@@ -4,6 +4,8 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 
+class InsufficientStockError extends Error {}
+
 const paySchema = z.object({
   payments: z
     .array(
@@ -129,6 +131,14 @@ export async function PATCH(
         if (productType === 'simple') {
           if (item.variant_id != null) {
             // Variant stock tracked on ProductVariant row
+            const variant = await tx.productVariant.findUnique({
+              where: { id: item.variant_id },
+            })
+            if (!variant || variant.stock < Number(item.quantity)) {
+              throw new InsufficientStockError(
+                `Stock insuficiente para variante ${item.variant_id}`
+              )
+            }
             await tx.productVariant.update({
               where: { id: item.variant_id },
               data:  { stock: { decrement: Number(item.quantity) } },
@@ -197,6 +207,9 @@ export async function PATCH(
         { error: 'Datos inválidos', details: err.issues },
         { status: 400 }
       )
+    }
+    if (err instanceof InsufficientStockError) {
+      return NextResponse.json({ error: err.message }, { status: 400 })
     }
     console.error(`sales/${saleId}/pay error:`, err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

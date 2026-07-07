@@ -36,5 +36,9 @@
 }
 
 @media (max-width: 640px) {
-  .rotatingWrap { height: 2.6em; }
+  /* A 390px el contenedor mide ~299px; a los 34px de .headline ninguna frase
+     (incluso la más corta, "La caja cuadra sola.") cabe en 1 línea — medido:
+     322–434px de ancho real vs 299px disponibles. Se reduce solo la línea
+     rotativa (la fija "Tu negocio activo." conserva su tamaño). */
+  .rotatingWrap { height: 1.5em; font-size: 22px; }
 }

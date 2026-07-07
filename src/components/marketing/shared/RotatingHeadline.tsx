@@ -6,10 +6,10 @@ import styles from './RotatingHeadline.module.css'
 
 const PHRASES = [
   'Vendés en el mostrador.',
-  'Tu catálogo vende por WhatsApp.',
   'El BCV se actualiza solo.',
-  'La caja cuadra en segundos.',
-  'Cobrás en dólares y bolívares.',
+  'La caja cuadra sola.',
+  'Cobrás en $ y bolívares.',
+  'Tu catálogo en WhatsApp.',
 ]
 
 const ROTATE_MS = 2800

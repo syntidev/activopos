@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 
 const BCV_API      = process.env.BCV_API_URL ?? 'https://ve.dolarapi.com/v1/dolares/oficial'
@@ -50,25 +51,35 @@ async function fetchBcvRate(previous: number | null): Promise<number> {
 // El campo fetched_at ya existe en dollar_rates y sirve como cached_at.
 export async function getBcvRate(businessId?: number): Promise<number> {
   // 1. Buscar tasa fresca en DB (< 1h de antigüedad)
-  const cached = await prisma.dollarRate.findFirst({
-    where: {
-      source: 'bcv',
-      is_active: true,
-      fetched_at: { gte: new Date(Date.now() - CACHE_TTL) },
-    },
-    orderBy: { fetched_at: 'desc' },
-    select: { rate: true },
-  })
+  let cached: { rate: Prisma.Decimal } | null = null
+  try {
+    cached = await prisma.dollarRate.findFirst({
+      where: {
+        source: 'bcv',
+        is_active: true,
+        fetched_at: { gte: new Date(Date.now() - CACHE_TTL) },
+      },
+      orderBy: { fetched_at: 'desc' },
+      select: { rate: true },
+    })
+  } catch (err) {
+    console.error('BCV cache lookup failed:', err)
+  }
   if (cached) return parseFloat(cached.rate.toString())
 
   // 2. Cache expirado — fetch de API con fallback dual (dolarapi → brecha).
   // cache: 'no-store' es obligatorio: Next.js data cache almacena respuestas fetch
   // independientemente del TTL de DB, causando que el "refresh" devuelva datos stale.
-  const prevRow = await prisma.dollarRate.findFirst({
-    where: { source: 'bcv' },
-    orderBy: { fetched_at: 'desc' },
-    select: { rate: true },
-  })
+  let prevRow: { rate: Prisma.Decimal } | null = null
+  try {
+    prevRow = await prisma.dollarRate.findFirst({
+      where: { source: 'bcv' },
+      orderBy: { fetched_at: 'desc' },
+      select: { rate: true },
+    })
+  } catch (err) {
+    console.error('BCV previous-rate lookup failed:', err)
+  }
   const previous = prevRow ? parseFloat(prevRow.rate.toString()) : null
 
   try {

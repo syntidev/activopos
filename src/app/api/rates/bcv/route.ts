@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBcvRate, readCachedBcvRate, getOtherRate, getActiveRate, getParallelRate } from '@/lib/bcv'
-import { getSession } from '@/lib/auth'
+import { getSession, type SessionPayload } from '@/lib/auth'
 import { ratesLimiter, getClientIp } from '@/lib/rate-limit'
 
 export async function GET(req: NextRequest) {
@@ -10,7 +10,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Too many requests', ok: false }, { status: 429 })
   }
 
-  const session = await getSession() // puede ser null — endpoint semi-público
+  let session: SessionPayload | null
+  try {
+    session = await getSession() // puede ser null — endpoint semi-público
+  } catch (err) {
+    console.error('rates/bcv getSession failed:', err)
+    return NextResponse.json({ error: 'No autorizado', ok: false }, { status: 401 })
+  }
 
   try {
     // Tasa activa (manual override o BCV) — es la que el sistema debe usar.

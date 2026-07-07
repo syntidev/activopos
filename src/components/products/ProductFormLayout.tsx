@@ -627,7 +627,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                     </div>
 
                     <p className={s.variantStockHint}>
-                      El stock total es la suma del stock de cada variante.
+                      El stock de cada variante es independiente.
                     </p>
 
                     {f.variants.some(v => v.stock === 0) && (

@@ -1216,8 +1216,8 @@ export function ProductModal({
                     </span>
                   </div>
 
-                  {/* ── Stock inicial (solo creación) ── */}
-                  {!isEdit && saleMode !== 'service' && (
+                  {/* ── Stock inicial (solo creación, sin variantes) ── */}
+                  {!isEdit && saleMode !== 'service' && !hasVariants && (
                     <>
                       <div className={mStyles.divider} />
                       <div className={mStyles.formGroup}>

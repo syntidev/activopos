@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -37,10 +38,34 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     })
     if (!existing) return NextResponse.json({ error: 'Variante no encontrada' }, { status: 404 })
 
-    const body    = patchSchema.parse(await req.json())
-    const variant = await db.productVariant.update({
-      where: { id: variantId },
-      data:  body,
+    const body     = patchSchema.parse(await req.json())
+    const oldStock = existing.stock
+
+    // $transaction en prisma base: update de la variante + InventoryEntry de ajuste
+    // atómicos (business_id manual — la extension tenant no propaga al tx).
+    const variant = await prisma.$transaction(async (tx) => {
+      const v = await tx.productVariant.update({
+        where: { id: variantId },
+        data:  body,
+      })
+      // Sincroniza net_inventory con el cambio manual de stock de la variante.
+      if (body.stock !== undefined) {
+        const delta = body.stock - oldStock
+        if (delta !== 0) {
+          await tx.inventoryEntry.create({
+            data: {
+              business_id: session.businessId,
+              product_id:  productId,
+              quantity:    delta > 0 ? delta : 0,
+              waste:       delta < 0 ? Math.abs(delta) : 0,
+              entry_type:  'adjustment',
+              notes:       `Ajuste manual variante ${variantId}`,
+              created_by:  session.userId,
+            },
+          })
+        }
+      }
+      return v
     })
 
     return NextResponse.json({ ok: true, variant: { ...variant, precio_extra: Number(variant.precio_extra) } })

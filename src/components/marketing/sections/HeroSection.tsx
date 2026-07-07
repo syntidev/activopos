@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion, useInView, animate } from 'framer-motion'
 import { MessageCircle, LogIn, RefreshCw, Layers, Globe, Smartphone } from 'lucide-react'
+import RotatingHeadline from '@/components/marketing/shared/RotatingHeadline'
 import styles from './HeroSection.module.css'
 
 interface Props {
@@ -249,11 +250,10 @@ export default function HeroSection({ bcvRate }: Props) {
           POS · Hecho en Venezuela · Para Venezuela
         </motion.div>
 
-        {/* H1 */}
-        <motion.h1 className={styles.h1} {...fadeUp(0.2)}>
-          El dinero entra.{' '}
-          <span className={styles.h1Accent}>Tú lo controlas.</span>
-        </motion.h1>
+        {/* H1 — headline rotativo (parte fija + frases en CTA) */}
+        <motion.div {...fadeUp(0.2)}>
+          <RotatingHeadline />
+        </motion.div>
 
         {/* Subtitle */}
         <motion.p className={styles.subtitle} {...fadeUp(0.3)}>

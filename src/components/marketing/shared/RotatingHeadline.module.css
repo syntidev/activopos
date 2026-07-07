@@ -1,0 +1,40 @@
+.headline {
+  font-family:    var(--font-display);
+  font-size:      clamp(34px, 5vw, 60px);
+  font-weight:    800;
+  line-height:    1.1;
+  letter-spacing: -0.02em;
+  color:          #FFFFFF;
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+  margin:         0;
+  text-wrap:      balance;
+}
+
+.fixed {
+  display: block;
+}
+
+/* Altura fija = evita layout shift. El contenedor del hero es angosto y las
+   frases largas ocupan 2 líneas, así que se reservan 2 líneas para no recortar
+   (line-height 1.1 → ~2.2em + buffer). */
+.rotatingWrap {
+  display:  block;
+  overflow: hidden;
+  height:   2.4em;
+  position: relative;
+}
+
+.rotating {
+  display:  block;
+  color:    var(--cta);
+  position: absolute;
+  left:     0;
+  top:      0;
+  width:    100%;
+}
+
+@media (max-width: 640px) {
+  .rotatingWrap { height: 2.6em; }
+}

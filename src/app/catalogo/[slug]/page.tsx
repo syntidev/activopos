@@ -136,7 +136,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       isService:    p.sale_mode === 'service',
       stockQty:     p.sale_mode === 'service' ? null : (netQty ?? null),
       outOfStock:   p.sale_mode !== 'service' && (
-        p.variants.length > 0
+        p.has_variants
           ? !p.variants.some(v => v.stock > 0)
           : (netQty ?? 0) <= 0
       ),

@@ -270,6 +270,7 @@ export function ProductModal({
   const [variants, setVariants]       = useState<ProductVariantInput[]>([])
   const [newVarName, setNewVarName]   = useState('')
   const [newVarExtra, setNewVarExtra] = useState('')
+  const [newVarStock, setNewVarStock] = useState('0')
   const [badge, setBadge]             = useState('none')
   const [subcategory, setSubcategory] = useState('')
   const [isFeatured, setIsFeatured]   = useState(false)
@@ -474,8 +475,8 @@ export function ProductModal({
   const addVariant = () => {
     const name = newVarName.trim()
     if (!name) return
-    setVariants(prev => [...prev, { name, price_extra_usd: parseFloat(newVarExtra) || 0, stock: 0 }])
-    setNewVarName(''); setNewVarExtra('')
+    setVariants(prev => [...prev, { name, price_extra_usd: parseFloat(newVarExtra) || 0, stock: parseInt(newVarStock, 10) || 0 }])
+    setNewVarName(''); setNewVarExtra(''); setNewVarStock('0')
   }
 
   const removeVariant = (idx: number) =>
@@ -1333,6 +1334,9 @@ export function ProductModal({
                                       +${v.price_extra_usd.toFixed(2)}
                                     </span>
                                   )}
+                                  {v.stock > 0 && (
+                                    <span className={styles.variantRowStock}>{v.stock} und</span>
+                                  )}
                                   <button
                                     type="button"
                                     className={styles.variantRemoveBtn}
@@ -1365,6 +1369,17 @@ export function ProductModal({
                               min="0"
                               step="0.01"
                               aria-label="Precio extra USD"
+                            />
+                            <input
+                              type="number"
+                              className={`${mStyles.input} ${styles.variantStockInput}`}
+                              placeholder="Stock inicial"
+                              value={newVarStock}
+                              onChange={(e) => setNewVarStock(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addVariant() } }}
+                              min="0"
+                              step="1"
+                              aria-label="Stock inicial"
                             />
                             <button
                               type="button"

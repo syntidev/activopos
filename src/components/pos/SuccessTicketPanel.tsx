@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Printer, MessageCircle, ArrowRight } from 'lucide-react'
+import { Printer, MessageCircle, ArrowRight, X } from 'lucide-react'
 import styles from './SuccessTicketPanel.module.css'
 
 type PosMode = 'ticket' | 'invoice'
@@ -131,6 +131,15 @@ export function SuccessTicketPanel({ sale, businessName, onClose }: Props) {
           aria-modal="true"
           aria-label={isCredit ? 'Crédito registrado' : 'Venta registrada'}
         >
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={onClose}
+            aria-label="Cerrar"
+          >
+            <X size={16} strokeWidth={2} aria-hidden="true" />
+          </button>
+
           {/* ── Animated check icon ── */}
           <div className={styles.iconWrap} aria-hidden="true">
             <svg className={styles.checkSvg} viewBox="0 0 48 48" fill="none">

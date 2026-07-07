@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Share2, MessageCircle, ExternalLink } from 'lucide-react'
+import { prisma } from '@/lib/prisma'
 import styles from './MarketingFooter.module.css'
 
 const PRODUCT_LINKS = [
@@ -21,7 +22,13 @@ const LEGAL_LINKS = [
   { label: 'Términos y Condiciones', href: '/terminos' },
 ]
 
-export default function MarketingFooter() {
+export default async function MarketingFooter() {
+  const segments = await prisma.segment.findMany({
+    where:   { active: true },
+    orderBy: { sort_order: 'asc' },
+    select:  { slug: true, name: true },
+  })
+
   return (
     <footer className={styles.footer}>
       <div className={styles.grid}>
@@ -80,6 +87,18 @@ export default function MarketingFooter() {
             {PRODUCT_LINKS.map(({ label, href }) => (
               <Link key={href} href={href} className={styles.colLink}>
                 {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        {/* Segmentos col */}
+        <div className={styles.col}>
+          <p className={styles.colTitle}>Segmentos</p>
+          <nav className={styles.colLinks}>
+            {segments.map(seg => (
+              <Link key={seg.slug} href={`/para-${seg.slug}`} className={styles.colLink}>
+                {seg.name}
               </Link>
             ))}
           </nav>

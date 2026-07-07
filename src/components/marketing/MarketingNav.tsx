@@ -6,7 +6,7 @@ import { Menu, X } from 'lucide-react'
 import styles from './MarketingNav.module.css'
 
 const NAV_LINKS = [
-  { label: '¿Para quién?', href: '/#segmentos' },
+  { label: 'Segmentos', href: '/#segmentos' },
   { label: 'Cómo funciona', href: '/#ecosystem' },
   { label: 'Planes', href: '/#pricing' },
   { label: 'Blog', href: '/blog' },

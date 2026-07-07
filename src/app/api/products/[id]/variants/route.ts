@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const variantSchema = z.object({
@@ -63,20 +64,39 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     const body = variantSchema.parse(await req.json())
 
-    // ProductVariant no tiene business_id — se aísla por product_id ya validado
-    const variant = await db.productVariant.create({
-      data: {
-        product_id:   id,
-        tipo:         body.tipo,
-        valor:        body.valor,
-        sku:          body.sku          ?? null,
-        precio_extra: body.precio_extra,
-        stock:        body.stock,
-        color_hex:    body.color_hex    ?? null,
-        sort_order:   body.sort_order,
-        price_usd:    body.price_usd    ?? null,
-        cost_usd:     body.cost_usd     ?? null,
-      },
+    // ProductVariant no tiene business_id — se aísla por product_id ya validado.
+    // $transaction en prisma base: crea la variante y su InventoryEntry inicial
+    // atómicamente (business_id manual — la extension tenant no propaga al tx).
+    const variant = await prisma.$transaction(async (tx) => {
+      const v = await tx.productVariant.create({
+        data: {
+          product_id:   id,
+          tipo:         body.tipo,
+          valor:        body.valor,
+          sku:          body.sku          ?? null,
+          precio_extra: body.precio_extra,
+          stock:        body.stock,
+          color_hex:    body.color_hex    ?? null,
+          sort_order:   body.sort_order,
+          price_usd:    body.price_usd    ?? null,
+          cost_usd:     body.cost_usd     ?? null,
+        },
+      })
+      // Sincroniza net_inventory con el stock inicial de la variante.
+      if (v.stock > 0) {
+        await tx.inventoryEntry.create({
+          data: {
+            business_id: session.businessId,
+            product_id:  id,
+            quantity:    v.stock,
+            waste:       0,
+            entry_type:  'adjustment',
+            notes:       `Stock inicial variante ${v.valor}`,
+            created_by:  session.userId,
+          },
+        })
+      }
+      return v
     })
 
     return NextResponse.json(

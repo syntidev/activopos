@@ -3,10 +3,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import SegmentsMenu from './shared/SegmentsMenu'
 import styles from './MarketingNav.module.css'
 
+interface Segment {
+  slug: string
+  name: string
+  tag_line: string
+}
+
+// Link plano usado en el drawer móvil (el megamenu es solo desktop —
+// .links ya está display:none bajo 768px).
+const SEGMENTOS_LINK = { label: 'Segmentos', href: '/#segmentos' }
+
 const NAV_LINKS = [
-  { label: 'Segmentos', href: '/#segmentos' },
   { label: 'Cómo funciona', href: '/#ecosystem' },
   { label: 'Planes', href: '/#pricing' },
   { label: 'Blog', href: '/blog' },
@@ -15,7 +25,7 @@ const NAV_LINKS = [
   { label: 'Contacto', href: '/contacto' },
 ]
 
-export default function MarketingNav() {
+export default function MarketingNav({ segments }: { segments: Segment[] }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -47,6 +57,7 @@ export default function MarketingNav() {
         </Link>
 
         <div className={styles.links} role="list">
+          <SegmentsMenu segments={segments} />
           {NAV_LINKS.map(({ label, href }) => (
             <Link key={href} href={href} className={styles.link} role="listitem">
               {label}
@@ -97,6 +108,9 @@ export default function MarketingNav() {
             </button>
           </div>
           <nav className={styles.drawerLinks}>
+            <Link href={SEGMENTOS_LINK.href} className={styles.drawerLink} onClick={close}>
+              {SEGMENTOS_LINK.label}
+            </Link>
             {NAV_LINKS.map(({ label, href }) => (
               <Link key={href} href={href} className={styles.drawerLink} onClick={close}>
                 {label}

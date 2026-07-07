@@ -1,0 +1,105 @@
+.wrap {
+  position: relative;
+}
+
+.trigger {
+  display:     flex;
+  align-items: center;
+  gap:         4px;
+  background:  none;
+  border:      none;
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size:   0.875rem;
+  font-weight: 500;
+  color:       var(--text-secondary, var(--text-tertiary));
+  cursor:      pointer;
+  padding:     8px 4px;
+  transition:  color 150ms ease;
+}
+
+.wrap:hover .trigger { color: var(--text-primary, #F1F5F9); }
+
+.chevron {
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform:  rotate(180deg);
+  transition: transform 0.2s ease;
+}
+
+.dropdown {
+  position:   absolute;
+  top:        calc(100% + 8px);
+  /* left:0 (no centrado) — crece desde el borde del trigger. El trigger
+     suele estar cerca del extremo izquierdo del nav (justo tras el logo),
+     así que centrar con translateX(-50%) desbordaba la pantalla en anchos
+     angostos (768-900px). */
+  left:       0;
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.08);
+  padding:    20px;
+  min-width:  440px;
+  /* Único breakpoint donde .links es visible pero angosto (768-900px) —
+     evita que el dropdown centrado de 440px se salga de la pantalla. */
+  max-width:  calc(100vw - 48px);
+  z-index:    210;
+}
+
+.grid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   4px 24px;
+}
+
+.col {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+}
+
+.item {
+  display:         flex;
+  flex-direction:  column;
+  padding:         8px 12px;
+  border-radius:   8px;
+  text-decoration: none;
+  transition:      background 0.15s ease;
+}
+
+.item:hover {
+  background: var(--brand-soft, #DCE6FF);
+}
+
+.itemName {
+  font-size:   13px;
+  font-weight: 600;
+  color:       #0F172A;
+}
+
+.itemTag {
+  font-size: 11px;
+  color:     #94A3B8;
+}
+
+.footer {
+  border-top: 0.5px solid #E2E8F0;
+  margin-top: 16px;
+  padding-top: 12px;
+}
+
+.verTodos {
+  font-size:       13px;
+  font-weight:     500;
+  color:           var(--brand, #0038BD);
+  text-decoration: none;
+}
+
+.verTodos:hover {
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron, .chevronOpen, .trigger { transition: none; }
+}

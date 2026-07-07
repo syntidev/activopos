@@ -32,6 +32,12 @@ const productSchema = z.object({
   subcategory:        z.string().max(60).nullable().optional(),
   is_featured:        z.boolean().default(false),
   sort_order:         z.number().int().default(0),
+  variants:           z.array(z.object({
+    tipo:         z.enum(['talla', 'color', 'personalizado']),
+    valor:        z.string().min(1).max(50),
+    precio_extra: z.number().min(0).default(0),
+    stock:        z.number().int().min(0).default(0),
+  })).optional(),
 })
 
 const calcPrice = (
@@ -217,12 +223,37 @@ export async function POST(req: NextRequest) {
         subcategory:        data.subcategory        ?? null,
         is_featured:        data.is_featured,
         sort_order:         data.sort_order,
+        variants: data.variants?.length
+          ? { create: data.variants.map(v => ({
+              tipo:         v.tipo,
+              valor:        v.valor,
+              precio_extra: v.precio_extra,
+              stock:        v.stock,
+            })) }
+          : undefined,
       },
       include: {
         category: true,
         variants: { where: { is_active: true }, orderBy: [{ sort_order: 'asc' }] },
       },
     })
+
+    // Coherencia con el sistema de stock: cada variante con stock inicial > 0
+    // genera su InventoryEntry de arranque (mismo patrón que el alta sin variantes).
+    const initialStockEntries = product.variants
+      .filter(v => v.stock > 0)
+      .map(v => ({
+        business_id: session.businessId,
+        product_id:  product.id,
+        quantity:    v.stock,
+        waste:       0,
+        entry_type:  'adjustment',
+        notes:       `Stock inicial — variante ${v.valor}`,
+        created_by:  session.userId,
+      }))
+    if (initialStockEntries.length > 0) {
+      await db.inventoryEntry.createMany({ data: initialStockEntries })
+    }
 
     return NextResponse.json({
       ok:      true,

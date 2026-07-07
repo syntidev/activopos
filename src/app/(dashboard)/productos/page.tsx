@@ -307,7 +307,17 @@ export default function ProductosPage() {
         badge:              data.badge || 'none',
         subcategory:        data.subcategory || null,
         is_featured:        data.isFeatured,
-        ...(isEdit ? {} : { stock_quantity: data.stockInitial }),
+        ...(isEdit ? {} : {
+          stock_quantity: data.stockInitial,
+          variants: data.hasVariants
+            ? data.variants.map(v => ({
+                tipo:         'personalizado' as const,
+                valor:        v.name,
+                precio_extra: v.price_extra_usd,
+                stock:        v.stock,
+              }))
+            : undefined,
+        }),
         stock_alert_threshold: data.stockAlertThreshold,
       }),
     })

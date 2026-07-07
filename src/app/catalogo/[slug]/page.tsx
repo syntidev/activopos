@@ -135,7 +135,11 @@ export default async function CatalogoPage({ params }: PageProps) {
       priceBs,
       isService:    p.sale_mode === 'service',
       stockQty:     p.sale_mode === 'service' ? null : (netQty ?? null),
-      outOfStock:   p.sale_mode !== 'service' && (netQty ?? 0) <= 0,
+      outOfStock:   p.sale_mode !== 'service' && (
+        p.variants.length > 0
+          ? !p.variants.some(v => v.stock > 0)
+          : (netQty ?? 0) <= 0
+      ),
       badge:            p.badge ?? null,
       subcategory:      p.subcategory ?? null,
       isFeatured:       p.is_featured,

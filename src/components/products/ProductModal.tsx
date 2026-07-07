@@ -15,6 +15,7 @@ export interface ProductVariantInput {
   id?: number
   name: string
   price_extra_usd: number
+  stock: number
 }
 
 type CatalogVisibility = 'visible' | 'on_request' | 'hidden'
@@ -473,7 +474,7 @@ export function ProductModal({
   const addVariant = () => {
     const name = newVarName.trim()
     if (!name) return
-    setVariants(prev => [...prev, { name, price_extra_usd: parseFloat(newVarExtra) || 0 }])
+    setVariants(prev => [...prev, { name, price_extra_usd: parseFloat(newVarExtra) || 0, stock: 0 }])
     setNewVarName(''); setNewVarExtra('')
   }
 
@@ -482,7 +483,7 @@ export function ProductModal({
 
   const addPreset = (name: string) => {
     if (variants.some(v => v.name === name)) return
-    setVariants(prev => [...prev, { name, price_extra_usd: 0 }])
+    setVariants(prev => [...prev, { name, price_extra_usd: 0, stock: 0 }])
   }
 
   /* ── DB variant CRUD ── */

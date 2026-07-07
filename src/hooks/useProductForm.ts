@@ -150,6 +150,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [variants, setVariants]             = useState<ProductVariantInput[]>([])
   const [newVarName, setNewVarName]         = useState('')
   const [newVarExtra, setNewVarExtra]       = useState('')
+  const [newVarStock, setNewVarStock]       = useState('0')
   const [badge, setBadge]                   = useState('none')
   const [subcategory, setSubcategory]       = useState('')
   const [isFeatured, setIsFeatured]         = useState(false)
@@ -326,14 +327,18 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const addVariant = () => {
     const n = newVarName.trim()
     if (!n) return
-    setVariants(prev => [...prev, { name: n, price_extra_usd: parseFloat(newVarExtra) || 0 }])
-    setNewVarName(''); setNewVarExtra('')
+    setVariants(prev => [...prev, {
+      name: n,
+      price_extra_usd: parseFloat(newVarExtra) || 0,
+      stock: Math.max(parseInt(newVarStock) || 0, 0),
+    }])
+    setNewVarName(''); setNewVarExtra(''); setNewVarStock('0')
   }
   const removeVariant = (idx: number) =>
     setVariants(prev => prev.filter((_, i) => i !== idx))
   const addPreset = (n: string) => {
     if (variants.some(v => v.name === n)) return
-    setVariants(prev => [...prev, { name: n, price_extra_usd: 0 }])
+    setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0 }])
   }
 
   /* ── CRUD de variantes en DB ── */
@@ -480,6 +485,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     // in-memory variants
     hasVariants, setHasVariants, variants,
     newVarName, setNewVarName, newVarExtra, setNewVarExtra,
+    newVarStock, setNewVarStock,
     selectedPresetGroup, setSelectedPresetGroup,
     addVariant, removeVariant, addPreset,
     // DB variants

@@ -600,6 +600,16 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                         step="0.01"
                         aria-label="Precio extra USD"
                       />
+                      <input
+                        type="number"
+                        className={`${m.input} ${c.variantExtraInput}`}
+                        placeholder="Stock"
+                        value={f.newVarStock}
+                        onChange={(e) => f.setNewVarStock(e.target.value)}
+                        min="0"
+                        step="1"
+                        aria-label="Stock inicial de la variante"
+                      />
                       <button
                         type="button"
                         className={c.variantAddBtn}

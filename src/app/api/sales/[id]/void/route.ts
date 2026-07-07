@@ -50,8 +50,8 @@ export async function PATCH(
 
       if (wasPaid) {
         const variantItems = sale.items.filter(i => i.variant_id != null)
-        const productItems = sale.items.filter(i => i.variant_id == null)
 
+        // Restaura variant.stock por cada item con variante.
         for (const item of variantItems) {
           await tx.productVariant.update({
             where: { id: item.variant_id! },
@@ -59,15 +59,20 @@ export async function PATCH(
           })
         }
 
-        if (productItems.length > 0) {
+        // Reversal de net_inventory para TODOS los items (variante y simples).
+        // Dual-mechanism: mantiene net_inventory (que lee el dashboard) sincronizado
+        // con variant.stock. Simétrico al registro de venta en pay/route.ts.
+        if (sale.items.length > 0) {
           await tx.inventoryEntry.createMany({
-            data: productItems.map(item => ({
+            data: sale.items.map(item => ({
               business_id: session.businessId,
               product_id: item.product_id,
               quantity: Number(item.quantity),
               waste: 0,
               entry_type: 'void_reversal',
-              notes: `ANULACION #${sale.ticket_number}`,
+              notes: item.variant_id != null
+                ? `ANULACION #${sale.ticket_number} (variante ${item.variant_id})`
+                : `ANULACION #${sale.ticket_number}`,
               created_by: session.userId,
             })),
           })

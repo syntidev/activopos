@@ -38,6 +38,18 @@ const productSchema = z.object({
     precio_extra: z.number().min(0).default(0),
     stock:        z.number().int().min(0).default(0),
   })).optional(),
+  // Variantes combinadas (multi-dimensión). variant_dimensions define los ejes
+  // (talla, color…); variant_combinations trae el producto cartesiano ya resuelto
+  // por el cliente, con stock/precio propio por combinación.
+  variant_dimensions: z.array(z.object({
+    tipo:    z.string().min(1).max(30),
+    valores: z.array(z.string().min(1).max(50)).min(1),
+  })).min(1).optional(),
+  variant_combinations: z.array(z.object({
+    combination_key: z.string().min(1).max(255),
+    stock:           z.number().int().min(0).default(0),
+    precio_extra:    z.number().min(0).default(0),
+  })).min(1).optional(),
 })
 
 const calcPrice = (
@@ -194,6 +206,30 @@ export async function POST(req: NextRequest) {
     const planCheck = await checkPlanLimit('create_product')
     if (!planCheck.allowed) return NextResponse.json({ error: planCheck.reason }, { status: 403 })
 
+    // Filas de variante a crear. variant_combinations (multi-dimensión) tiene
+    // prioridad: tipo = tipos combinados ("talla+color"), valor = combination_key
+    // ("S-Azul"). Si no, cae al array plano `variants` (una sola dimensión,
+    // combination_key null).
+    const combinedTipo = data.variant_dimensions?.map(d => d.tipo).join('+') ?? ''
+    const variantRows: {
+      tipo: string; valor: string; precio_extra: number; stock: number; combination_key: string | null
+    }[] =
+      data.variant_combinations?.length
+        ? data.variant_combinations.map(c => ({
+            tipo:            combinedTipo,
+            valor:           c.combination_key,
+            precio_extra:    c.precio_extra,
+            stock:           c.stock,
+            combination_key: c.combination_key,
+          }))
+        : (data.variants?.map(v => ({
+            tipo:            v.tipo,
+            valor:           v.valor,
+            precio_extra:    v.precio_extra,
+            stock:           v.stock,
+            combination_key: null,
+          })) ?? [])
+
     const product = await db.product.create({
       data: {
         business_id:        session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
@@ -223,12 +259,13 @@ export async function POST(req: NextRequest) {
         subcategory:        data.subcategory        ?? null,
         is_featured:        data.is_featured,
         sort_order:         data.sort_order,
-        variants: data.variants?.length
-          ? { create: data.variants.map(v => ({
-              tipo:         v.tipo,
-              valor:        v.valor,
-              precio_extra: v.precio_extra,
-              stock:        v.stock,
+        variants: variantRows.length
+          ? { create: variantRows.map(v => ({
+              tipo:            v.tipo,
+              valor:           v.valor,
+              precio_extra:    v.precio_extra,
+              stock:           v.stock,
+              combination_key: v.combination_key,
             })) }
           : undefined,
       },

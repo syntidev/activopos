@@ -392,12 +392,12 @@ function ReporteDiaContent() {
                           Producto {prodSortKey === 'name' ? (prodSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
                         </button>
                       </th>
-                      <th className={`${styles.th} ${styles.colCant}`}>
+                      <th className={`${styles.th} ${styles.colCant} ${styles.thHidden}`}>
                         <button type="button" className={styles.sortTh} onClick={() => handleProdSort('quantity')}>
                           Cant. {prodSortKey === 'quantity' ? (prodSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
                         </button>
                       </th>
-                      <th className={`${styles.th} ${styles.colPrecio}`}>
+                      <th className={`${styles.th} ${styles.colPrecio} ${styles.thHidden}`}>
                         <button type="button" className={styles.sortTh} onClick={() => handleProdSort('unit')}>
                           P. Unit. {prodSortKey === 'unit' ? (prodSortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
                         </button>
@@ -424,10 +424,10 @@ function ReporteDiaContent() {
                       const unitUsd = p.quantity > 0 ? p.totalUsd / p.quantity : 0
                       return (
                         <tr key={p.productId} className={i % 2 === 1 ? styles.rowEven : ''}>
-                          <td className={`${styles.td} ${styles.colProducto}`}>{p.name}</td>
-                          <td className={`${styles.td} ${styles.colCant}`}>{p.quantity}</td>
-                          <td className={`${styles.td} ${styles.colPrecio}`}>{fmtUsd(unitUsd)}</td>
-                          <td className={`${styles.td} ${styles.colTotal}`}>
+                          <td className={`${styles.td} ${styles.colProducto}`} data-label="Producto">{p.name}</td>
+                          <td className={`${styles.td} ${styles.colCant} ${styles.tdHidden}`} data-label="Cant.">{p.quantity}</td>
+                          <td className={`${styles.td} ${styles.colPrecio} ${styles.tdHidden}`} data-label="P. Unit.">{fmtUsd(unitUsd)}</td>
+                          <td className={`${styles.td} ${styles.colTotal}`} data-label="Total">
                             <span className={styles.totalBold}>{fmtUsd(p.totalUsd)}</span>
                             <br />
                             <span className={styles.tdSub}>{fmtBs(p.totalBs)}</span>
@@ -586,10 +586,10 @@ function InvMovTab() {
                 <tr>
                   <th className={styles.th}>Fecha</th>
                   <th className={styles.th}>Producto</th>
-                  <th className={styles.th}>Tipo</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Tipo</th>
                   <th className={`${styles.th} ${styles.colCant}`}>Cantidad</th>
-                  <th className={`${styles.th} ${styles.colPrecio}`}>Costo / u</th>
-                  <th className={styles.th}>Proveedor</th>
+                  <th className={`${styles.th} ${styles.colPrecio} ${styles.thHidden}`}>Costo / u</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Proveedor</th>
                 </tr>
               </thead>
               <tbody>
@@ -601,30 +601,30 @@ function InvMovTab() {
                     : `+${e.quantity.toFixed(isW ? 3 : 0)}`
                   return (
                     <tr key={e.id} className={i % 2 === 1 ? styles.rowEven : ''}>
-                      <td className={styles.td}>
+                      <td className={styles.td} data-label="Fecha">
                         <span className={styles.dateCell}>
                           <Clock size={10} aria-hidden="true" />
                           {fmtDateTime(e.entered_at)}
                         </span>
                       </td>
-                      <td className={styles.td}>
+                      <td className={styles.td} data-label="Producto">
                         <strong>{e.product.name}</strong>
                         <span className={styles.tdSub}>&nbsp;{e.product.base_unit_label}</span>
                       </td>
-                      <td className={styles.td}>
+                      <td className={`${styles.td} ${styles.tdHidden}`} data-label="Tipo">
                         <span className={t === 'entrada' ? styles.badgeEntrada : styles.badgeAjuste}>
                           {t === 'entrada' ? 'Entrada' : 'Ajuste'}
                         </span>
                       </td>
-                      <td className={`${styles.td} ${styles.colCant}`}>
+                      <td className={`${styles.td} ${styles.colCant}`} data-label="Cantidad">
                         <span className={t === 'entrada' ? styles.qtyPos : styles.qtyNeg}>
                           {qty}&nbsp;{e.product.base_unit_label}
                         </span>
                       </td>
-                      <td className={`${styles.td} ${styles.colPrecio}`}>
+                      <td className={`${styles.td} ${styles.colPrecio} ${styles.tdHidden}`} data-label="Costo / u">
                         {e.cost_per_unit_usd != null ? fmtUsd(e.cost_per_unit_usd) : <span className={styles.tdDash}>—</span>}
                       </td>
-                      <td className={styles.td}>{e.supplier ?? <span className={styles.tdDash}>—</span>}</td>
+                      <td className={`${styles.td} ${styles.tdHidden}`} data-label="Proveedor">{e.supplier ?? <span className={styles.tdDash}>—</span>}</td>
                     </tr>
                   )
                 })}
@@ -806,11 +806,11 @@ function CierresTab() {
             <thead>
               <tr>
                 <th className={styles.th}>Cajero</th>
-                <th className={styles.th}>Apertura</th>
-                <th className={styles.th}>Cierre</th>
+                <th className={`${styles.th} ${styles.thHidden}`}>Apertura</th>
+                <th className={`${styles.th} ${styles.thHidden}`}>Cierre</th>
                 <th className={`${styles.th} ${styles.colPrecio}`}>Ventas USD</th>
-                <th className={`${styles.th} ${styles.colPrecio}`}>Esperado USD</th>
-                <th className={`${styles.th} ${styles.colPrecio}`}>Contado USD</th>
+                <th className={`${styles.th} ${styles.colPrecio} ${styles.thHidden}`}>Esperado USD</th>
+                <th className={`${styles.th} ${styles.colPrecio} ${styles.thHidden}`}>Contado USD</th>
                 <th className={`${styles.th} ${styles.colPrecio}`}>Diferencia</th>
               </tr>
             </thead>
@@ -823,17 +823,17 @@ function CierresTab() {
                 const difPos         = difUsd !== null && difUsd >= 0
                 return (
                   <tr key={h.id} className={i % 2 === 1 ? styles.rowEven : ''}>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Cajero">
                       <strong>{h.cashierName}</strong>
                       <span className={styles.tdSub}>&nbsp;· {h.salesCount} ventas</span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Apertura">
                       <span className={styles.dateCell}>
                         <Clock size={10} aria-hidden="true" />
                         {fmtDateTime(h.openedAt)}
                       </span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Cierre">
                       {h.closedAt ? (
                         <span className={styles.dateCell}>
                           <Clock size={10} aria-hidden="true" />
@@ -843,16 +843,16 @@ function CierresTab() {
                         <span className={styles.badgeEntrada}>Abierta</span>
                       )}
                     </td>
-                    <td className={`${styles.td} ${styles.colPrecio}`}>
+                    <td className={`${styles.td} ${styles.colPrecio}`} data-label="Ventas USD">
                       <span className={styles.totalBold}>{fmtUsd(h.totalVentasUsd)}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.colPrecio}`}>
+                    <td className={`${styles.td} ${styles.colPrecio} ${styles.tdHidden}`} data-label="Esperado USD">
                       {fmtUsd(esperadoUsd)}
                     </td>
-                    <td className={`${styles.td} ${styles.colPrecio}`}>
+                    <td className={`${styles.td} ${styles.colPrecio} ${styles.tdHidden}`} data-label="Contado USD">
                       {contadoUsd !== null ? fmtUsd(contadoUsd) : <span className={styles.tdDash}>—</span>}
                     </td>
-                    <td className={`${styles.td} ${styles.colPrecio}`}>
+                    <td className={`${styles.td} ${styles.colPrecio}`} data-label="Diferencia">
                       {difUsd !== null ? (
                         <span className={difPos ? styles.difPos : styles.difNeg}>
                           {difPos ? '+' : ''}{fmtUsd(difUsd)}

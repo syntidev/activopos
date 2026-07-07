@@ -84,7 +84,8 @@
 
 .table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
+  min-width: 600px;
   border-collapse: collapse;
   font-size: var(--text-sm);
 }
@@ -222,4 +223,44 @@
 @media (max-width: 640px) {
   .searchRow    { flex-wrap: wrap; }
   .searchWrapper { max-width: 100%; }
+}
+
+/* ── Tabla responsive: card-stack en mobile ── */
+.tdHidden { display: table-cell; }
+.thHidden { }
+
+@media (max-width: 639px) {
+  .tdHidden, .thHidden { display: none !important; }
+
+  .table { display: block; min-width: unset; width: 100%; }
+  .table thead { display: none; }
+  .table tbody { display: flex; flex-direction: column; gap: var(--space-2); }
+  .table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-1);
+  }
+  .table tbody tr:nth-child(odd),
+  .table tbody tr:nth-child(even) { background: var(--color-surface); }
+  .td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-0-5) 0;
+    white-space: normal;
+  }
+  .td::before {
+    content: attr(data-label);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    flex-shrink: 0;
+    margin-right: var(--space-2);
+  }
 }

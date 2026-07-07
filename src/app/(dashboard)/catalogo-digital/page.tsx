@@ -229,7 +229,7 @@ function CatalogoAdminContent() {
                     />
                   </th>
                   <th className={styles.th}>Producto</th>
-                  <th className={`${styles.th} ${styles.colCenter}`}>Pedidos</th>
+                  <th className={`${styles.th} ${styles.colCenter} ${styles.thHidden}`}>Pedidos</th>
                   <th className={`${styles.th} ${styles.colCenter}`}>Visibilidad</th>
                   <th className={`${styles.th} ${styles.colRight}`}>Acción</th>
                 </tr>
@@ -237,7 +237,7 @@ function CatalogoAdminContent() {
               <tbody>
                 {products.map(p => (
                   <tr key={p.id}>
-                    <td className={`${styles.td} ${styles.colCheck}`}>
+                    <td className={`${styles.td} ${styles.colCheck}`} data-label="Sel.">
                       <input
                         type="checkbox"
                         checked={selected.includes(p.id)}
@@ -245,18 +245,18 @@ function CatalogoAdminContent() {
                         aria-label={`Seleccionar ${p.name}`}
                       />
                     </td>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Producto">
                       <span className={styles.productName}>{p.name}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.colCenter}`}>
+                    <td className={`${styles.td} ${styles.colCenter} ${styles.tdHidden}`} data-label="Pedidos">
                       <span className={styles.orderCount}>{p.order_count}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.colCenter}`}>
+                    <td className={`${styles.td} ${styles.colCenter}`} data-label="Visibilidad">
                       <span className={`${styles.visBadge} ${VIS_BADGE_CLASS[p.catalog_visibility]}`}>
                         {VIS_LABEL[p.catalog_visibility]}
                       </span>
                     </td>
-                    <td className={`${styles.td} ${styles.colRight}`}>
+                    <td className={`${styles.td} ${styles.colRight}`} data-label="Acción">
                       <button
                         className={styles.actionBtn}
                         disabled={togglingId === p.id}

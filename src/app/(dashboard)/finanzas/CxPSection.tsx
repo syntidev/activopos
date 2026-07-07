@@ -133,10 +133,10 @@ export function CxPSection({ month }: { month: string }) {
               <thead>
                 <tr>
                   <th className={styles.finTh}>Concepto</th>
-                  <th className={styles.finTh}>Categoría</th>
+                  <th className={`${styles.finTh} ${styles.thHidden}`}>Categoría</th>
                   <th className={`${styles.finTh} ${styles.colRight}`}>Monto</th>
                   <th className={styles.finTh}>Fecha</th>
-                  <th className={`${styles.finTh} ${styles.colCenter}`}>Estado</th>
+                  <th className={`${styles.finTh} ${styles.colCenter} ${styles.thHidden}`}>Estado</th>
                   <th className={`${styles.finTh} ${styles.colRight}`}>Acciones</th>
                 </tr>
               </thead>
@@ -145,20 +145,20 @@ export function CxPSection({ month }: { month: string }) {
                   const urgente = isUrgente(item.fecha)
                   return (
                     <tr key={item.id}>
-                      <td className={styles.finTd}>
+                      <td className={styles.finTd} data-label="Concepto">
                         <span className={styles.finAmtBold}>{item.concepto}</span>
                       </td>
-                      <td className={styles.finTd}>{item.categoria}</td>
-                      <td className={`${styles.finTd} ${styles.colRight}`}>
+                      <td className={`${styles.finTd} ${styles.tdHidden}`} data-label="Categoría">{item.categoria}</td>
+                      <td className={`${styles.finTd} ${styles.colRight}`} data-label="Monto">
                         <span className={styles.finAmtBold}>{fmtUsd(item.monto_usd)}</span>
                       </td>
-                      <td className={styles.finTd}>
+                      <td className={styles.finTd} data-label="Fecha">
                         {new Date(item.fecha + 'T12:00:00').toLocaleDateString('es-VE')}
                       </td>
-                      <td className={`${styles.finTd} ${styles.colCenter}`}>
+                      <td className={`${styles.finTd} ${styles.colCenter} ${styles.tdHidden}`} data-label="Estado">
                         {urgente && <span className={styles.badgeUrgente}>Urgente</span>}
                       </td>
-                      <td className={`${styles.finTd} ${styles.colRight}`}>
+                      <td className={`${styles.finTd} ${styles.colRight}`} data-label="Acciones">
                         <span className={styles.actionsBtnGroup}>
                           <button
                             type="button"

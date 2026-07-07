@@ -442,43 +442,43 @@ function CotizacionesContent() {
               <thead className={styles.thead}>
                 <tr>
                   <th className={styles.th}>Número</th>
-                  <th className={styles.th}>Cliente</th>
-                  <th className={styles.th}>Ítems</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Cliente</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Ítems</th>
                   <th className={`${styles.th} ${styles.thNum}`}>Total</th>
                   <th className={styles.th}>Estado</th>
-                  <th className={styles.th}>Fecha</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Fecha</th>
                   <th className={styles.th} />
                 </tr>
               </thead>
               <tbody>
                 {quotations.map(q => (
                   <tr key={q.id} className={styles.tr}>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Número">
                       <span className={styles.quotNum}>{q.number}</span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Cliente">
                       {q.client
                         ? <span className={styles.clientName}>{q.client.name}</span>
                         : <span className={styles.muted}>—</span>}
                     </td>
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Ítems">
                       <span className={styles.muted}>{q.items.length} ítem{q.items.length !== 1 ? 's' : ''}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.tdNum}`}>
+                    <td className={`${styles.td} ${styles.tdNum}`} data-label="Total">
                       <span className={styles.usd}>${q.total_usd.toFixed(2)}</span>
                       <span className={styles.bs}>
                         Bs.&nbsp;{q.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Estado">
                       <span className={`${styles.chip} ${statusClass(q.status)}`}>
                         {STATUS_LABELS[q.status] ?? q.status}
                       </span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Fecha">
                       <span className={styles.muted}>{fmtDate(q.created_at)}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.tdAction}`}>
+                    <td className={`${styles.td} ${styles.tdAction}`} data-label="Acciones">
                       <div className={styles.actionsRow}>
                         {q.status !== 'expired' && (
                           <button

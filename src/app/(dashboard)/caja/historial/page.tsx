@@ -151,11 +151,11 @@ function HistorialContent() {
                 <tr>
                   <th className={styles.th}>Fecha de Cierre</th>
                   <th className={styles.th}>Usuario</th>
-                  <th className={styles.th}>Ventas Turno</th>
-                  <th className={`${styles.th} ${styles.alignRight}`}>Efvo. Esperado</th>
-                  <th className={`${styles.th} ${styles.alignRight}`}>Efvo. Contado</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Ventas Turno</th>
+                  <th className={`${styles.th} ${styles.alignRight} ${styles.thHidden}`}>Efvo. Esperado</th>
+                  <th className={`${styles.th} ${styles.alignRight} ${styles.thHidden}`}>Efvo. Contado</th>
                   <th className={`${styles.th} ${styles.alignRight}`}>Dif. USD</th>
-                  <th className={`${styles.th} ${styles.alignRight}`}>Dif. Bs</th>
+                  <th className={`${styles.th} ${styles.alignRight} ${styles.thHidden}`}>Dif. Bs</th>
                 </tr>
               </thead>
               <tbody>
@@ -169,28 +169,28 @@ function HistorialContent() {
 
                   return (
                     <tr key={row.id} className={styles.row}>
-                      <td className={styles.td}>
+                      <td className={styles.td} data-label="Fecha de Cierre">
                         <span className={styles.dateCell}>{fmtDatetime(row.closedAt)}</span>
                         <span className={styles.openedAt}>Apertura: {fmtDatetime(row.openedAt)}</span>
                       </td>
-                      <td className={styles.td}>{row.cashierName}</td>
-                      <td className={styles.td}>
+                      <td className={styles.td} data-label="Usuario">{row.cashierName}</td>
+                      <td className={`${styles.td} ${styles.tdHidden}`} data-label="Ventas Turno">
                         <div className={styles.salesStack}>
                           <span className={styles.salesUsd}>{fmtUsd(row.totalVentasUsd)}</span>
                           <span className={styles.salesBs}>{fmtBs(row.totalVentasBs)}</span>
                           <span className={styles.countChip}>{row.salesCount} tickets</span>
                         </div>
                       </td>
-                      <td className={`${styles.td} ${styles.alignRight}`}>
+                      <td className={`${styles.td} ${styles.alignRight} ${styles.tdHidden}`} data-label="Efvo. Esperado">
                         {fmtBs(row.efectivoEsperado)}
                       </td>
-                      <td className={`${styles.td} ${styles.alignRight}`}>
+                      <td className={`${styles.td} ${styles.alignRight} ${styles.tdHidden}`} data-label="Efvo. Contado">
                         {row.efectivoContado !== null ? fmtBs(row.efectivoContado) : '—'}
                       </td>
-                      <td className={`${styles.td} ${styles.alignRight} ${ok ? styles.difOk : styles.difBad}`}>
+                      <td className={`${styles.td} ${styles.alignRight} ${ok ? styles.difOk : styles.difBad}`} data-label="Dif. USD">
                         {difUsd !== null ? fmtUsd(difUsd) : '—'}
                       </td>
-                      <td className={`${styles.td} ${styles.alignRight} ${ok ? styles.difOk : styles.difBad}`}>
+                      <td className={`${styles.td} ${styles.alignRight} ${ok ? styles.difOk : styles.difBad} ${styles.tdHidden}`} data-label="Dif. Bs">
                         {difBs !== null ? fmtBs(difBs) : '—'}
                       </td>
                     </tr>

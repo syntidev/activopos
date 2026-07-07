@@ -168,7 +168,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
             <table className={styles.table}>
               <thead className={styles.thead}>
                 <tr>
-                  <th className={styles.th}>Cédula / RIF</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Cédula / RIF</th>
                   <th className={styles.th}>
                     <button
                       type="button"
@@ -202,7 +202,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
                       }
                     </button>
                   </th>
-                  <th className={`${styles.th} ${styles.thRight}`}>Acciones</th>
+                  <th className={`${styles.th} ${styles.thRight} ${styles.thHidden}`}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -212,19 +212,19 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
                     className={styles.row}
                     onClick={() => setHistorialId(client.id)}
                   >
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Cédula / RIF">
                       <span className={styles.cedula}>{client.cedula ?? '—'}</span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Nombre">
                       <span className={styles.name}>{client.name}</span>
                       {client.email && (
                         <span className={styles.email}>{client.email}</span>
                       )}
                     </td>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Teléfono">
                       <span className={styles.phone}>{client.phone ?? '—'}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.tdRight}`}>
+                    <td className={`${styles.td} ${styles.tdRight}`} data-label="Saldo Pendiente">
                       {client.pending_balance_usd > 0 ? (
                         <Badge variant="warning">
                           ${client.pending_balance_usd.toFixed(2)}
@@ -233,7 +233,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
                         <Badge variant="neutral">$0.00</Badge>
                       )}
                     </td>
-                    <td className={`${styles.td} ${styles.tdRight}`}>
+                    <td className={`${styles.td} ${styles.tdRight} ${styles.tdHidden}`} data-label="Acciones">
                       <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
                         <button
                           className={styles.actionBtn}

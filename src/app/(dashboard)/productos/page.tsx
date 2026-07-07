@@ -753,20 +753,20 @@ export default function ProductosPage() {
                     {sortKey === 'price' ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
                   </button>
                 </th>
-                <th className={styles.th}>Precio (Bs)</th>
+                <th className={`${styles.th} ${styles.thHidden}`}>Precio (Bs)</th>
                 <th className={styles.th}>
                   <button type="button" className={styles.sortTh} onClick={() => handleSort('stock')}>
                     Stock
                     {sortKey === 'stock' ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
                   </button>
                 </th>
-                <th className={styles.th}>
+                <th className={`${styles.th} ${styles.thHidden}`}>
                   <button type="button" className={styles.sortTh} onClick={() => handleSort('utility')}>
                     Utilidad
                     {sortKey === 'utility' ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : <ArrowUpDown size={11} className={styles.sortIdle} />}
                   </button>
                 </th>
-                <th className={`${styles.th} ${styles.tdCenter}`}>Activo</th>
+                <th className={`${styles.th} ${styles.tdCenter} ${styles.thHidden}`}>Activo</th>
                 <th className={`${styles.th} ${styles.tdRight}`}>
                   <SlidersHorizontal size={14} aria-hidden="true" />
                 </th>
@@ -829,7 +829,7 @@ export default function ProductosPage() {
                       className={`${styles.tr} ${isInactive ? styles.trInactive : ''}`}
                     >
                       {/* PRODUCTO */}
-                      <td className={styles.td}>
+                      <td className={styles.td} data-label="Producto">
                         <div className={styles.productCell}>
                           {thumbSrc ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -858,13 +858,13 @@ export default function ProductosPage() {
                       </td>
 
                       {/* PRECIO REF */}
-                      <td className={styles.td}><span className={styles.priceRef}>{fmtUsd(product.price_per_unit_usd)}</span></td>
+                      <td className={styles.td} data-label="Precio"><span className={styles.priceRef}>{fmtUsd(product.price_per_unit_usd)}</span></td>
 
                       {/* PRECIO BS */}
-                      <td className={styles.td}><span className={styles.priceBs}>{fmtBs(product.price_per_unit_usd, bcvRate)}</span></td>
+                      <td className={`${styles.td} ${styles.tdHidden}`} data-label="Precio (Bs)"><span className={styles.priceBs}>{fmtBs(product.price_per_unit_usd, bcvRate)}</span></td>
 
                       {/* STOCK */}
-                      <td className={styles.td}>
+                      <td className={styles.td} data-label="Stock">
                         {stockLevel === null ? (
                           <span className={styles.stockNone}>—</span>
                         ) : stockLevel === 'out' ? (
@@ -877,7 +877,7 @@ export default function ProductosPage() {
                       </td>
 
                       {/* UTILIDAD */}
-                      <td className={styles.td}>
+                      <td className={`${styles.td} ${styles.tdHidden}`} data-label="Utilidad">
                         {utility === null ? <span className={styles.utilityZero}>—</span> : (
                           <span className={utility > 0 ? styles.utilityPos : utility < 0 ? styles.utilityNeg : styles.utilityZero}>
                             {fmtUsd(utility)}
@@ -886,7 +886,7 @@ export default function ProductosPage() {
                       </td>
 
                       {/* TOGGLE ACTIVO (FIX 3) */}
-                      <td className={`${styles.td} ${styles.tdCenter}`}>
+                      <td className={`${styles.td} ${styles.tdCenter} ${styles.tdHidden}`} data-label="Activo">
                         <label
                           className={styles.toggle}
                           title={isInactive ? 'Activar producto' : 'Desactivar producto'}
@@ -904,7 +904,7 @@ export default function ProductosPage() {
                       </td>
 
                       {/* ACCIONES */}
-                      <td className={`${styles.td} ${styles.tdRight}`}>
+                      <td className={`${styles.td} ${styles.tdRight}`} data-label="Acciones">
                         <div className={styles.rowActions} role="group" aria-label={`Acciones: ${product.name}`}>
                           <button type="button" className={styles.rowActionBtn} title="Ajustar stock"
                             aria-label={`Ajustar stock de ${product.name}`}

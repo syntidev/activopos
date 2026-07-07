@@ -713,3 +713,43 @@
 @media (min-width: 1024px) {
   .page { overflow-x: visible; }
 }
+
+/* ── Tablas responsive: card-stack en mobile ── */
+.tdHidden { display: table-cell; }
+.thHidden { }
+
+@media (max-width: 639px) {
+  .tdHidden, .thHidden { display: none !important; }
+
+  .reportTable { display: block; width: 100%; }
+  .reportTable thead { display: none; }
+  .reportTable tbody { display: flex; flex-direction: column; gap: var(--space-2); }
+  .reportTable tbody tr,
+  .reportTable tbody tr.rowEven {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elevation);
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-1);
+  }
+  .reportTable .td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-0-5) 0;
+    border-bottom: none;
+    white-space: normal;
+  }
+  .reportTable .td::before {
+    content: attr(data-label);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    margin-right: var(--space-2);
+  }
+}

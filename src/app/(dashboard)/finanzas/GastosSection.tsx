@@ -220,11 +220,11 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
             <thead>
               <tr>
                 <th className={styles.finTh}>Fecha</th>
-                <th className={styles.finTh}>Categoría</th>
+                <th className={`${styles.finTh} ${styles.thHidden}`}>Categoría</th>
                 <th className={styles.finTh}>Descripción</th>
-                <th className={styles.finTh}>Tipo</th>
+                <th className={`${styles.finTh} ${styles.thHidden}`}>Tipo</th>
                 <th className={`${styles.finTh} ${styles.colRight}`}>Monto USD</th>
-                <th className={`${styles.finTh} ${styles.colCenter}`}>Vence</th>
+                <th className={`${styles.finTh} ${styles.colCenter} ${styles.thHidden}`}>Vence</th>
                 <th className={styles.finTh} aria-label="Acciones" />
               </tr>
             </thead>
@@ -238,11 +238,11 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
 
                 return (
                   <tr key={g.id}>
-                    <td className={styles.finTd}>
+                    <td className={styles.finTd} data-label="Fecha">
                       {new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-VE')}
                     </td>
 
-                    <td className={styles.finTd}>
+                    <td className={`${styles.finTd} ${styles.tdHidden}`} data-label="Categoría">
                       <span className={styles.catBadge}>
                         <span
                           className={styles.catDot}
@@ -253,20 +253,20 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
                       </span>
                     </td>
 
-                    <td className={`${styles.finTd} ${styles.tdPrimary}`}>{g.concepto}</td>
+                    <td className={`${styles.finTd} ${styles.tdPrimary}`} data-label="Descripción">{g.concepto}</td>
 
-                    <td className={styles.finTd}>
+                    <td className={`${styles.finTd} ${styles.tdHidden}`} data-label="Tipo">
                       {isFijo
                         ? <span className={styles.badgeFijo}>Fijo</span>
                         : <span className={styles.badgeVariable}>Variable</span>
                       }
                     </td>
 
-                    <td className={`${styles.finTd} ${styles.finAmtBold} ${styles.colRight}`}>
+                    <td className={`${styles.finTd} ${styles.finAmtBold} ${styles.colRight}`} data-label="Monto USD">
                       ${Number(g.monto_usd).toFixed(2)}
                     </td>
 
-                    <td className={`${styles.finTd} ${styles.colCenter}`}>
+                    <td className={`${styles.finTd} ${styles.colCenter} ${styles.tdHidden}`} data-label="Vence">
                       {badge ? (
                         <span className={badge.style === 'vencido' ? styles.badgeVencido : styles.badgeUrgente}>
                           {badge.text}
@@ -278,7 +278,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
                       ) : null}
                     </td>
 
-                    <td className={styles.finTd}>
+                    <td className={styles.finTd} data-label="Acciones">
                       <span className={styles.actionsBtnGroup}>
                         <button
                           type="button"

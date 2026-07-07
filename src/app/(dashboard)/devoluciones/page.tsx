@@ -421,33 +421,33 @@ function DevolucionesContent() {
               <thead className={styles.thead}>
                 <tr>
                   <th className={styles.th}>Ticket original</th>
-                  <th className={styles.th}>Motivo</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Motivo</th>
                   <th className={styles.th}>Estado</th>
                   <th className={`${styles.th} ${styles.thNum}`}>Total</th>
-                  <th className={styles.th}>Hace</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Hace</th>
                 </tr>
               </thead>
               <tbody>
                 {history.map(r => (
                   <tr key={r.id} className={styles.tr}>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Ticket original">
                       <span className={styles.ticketRef}>
                         {r.sale?.ticket_number ?? '—'}
                       </span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Motivo">
                       <span className={styles.reasonText}>{r.reason}</span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={styles.td} data-label="Estado">
                       <span className={`${styles.statusChip} ${r.status === 'approved' ? styles.statusApproved : r.status === 'rejected' ? styles.statusRejected : styles.statusPending}`}>
                         {r.status === 'approved' ? 'Aprobada' : r.status === 'rejected' ? 'Rechazada' : 'Pendiente'}
                       </span>
                     </td>
-                    <td className={`${styles.td} ${styles.tdNum}`}>
+                    <td className={`${styles.td} ${styles.tdNum}`} data-label="Total">
                       <span className={styles.usd}>${r.total_usd.toFixed(2)}</span>
                       <span className={styles.bs}>Bs.&nbsp;{r.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </td>
-                    <td className={styles.td}>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Hace">
                       <span className={styles.muted}>{timeAgo(r.created_at)}</span>
                     </td>
                   </tr>

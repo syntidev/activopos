@@ -59,7 +59,7 @@
 
 .tableWrap { overflow-x: auto; }
 
-.table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.table { width: 100%; table-layout: auto; min-width: 640px; border-collapse: collapse; }
 
 .thead { background: var(--color-surface-2); }
 
@@ -565,6 +565,45 @@
   .fieldRow2 { grid-template-columns: 1fr; }
   .modal { border-radius: var(--radius-lg); }
   .itemsHead, .itemLine { grid-template-columns: 1fr 60px 64px 60px 28px; }
+}
+
+/* ── Tabla responsive: card-stack en mobile ── */
+.tdHidden { display: table-cell; }
+.thHidden { }
+
+@media (max-width: 639px) {
+  .tdHidden, .thHidden { display: none !important; }
+
+  .table { display: block; min-width: unset; width: 100%; }
+  .thead { display: none; }
+  .table tbody { display: flex; flex-direction: column; gap: var(--space-2); }
+  .table tbody tr {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elevation);
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-1);
+  }
+  .td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-0-5) 0;
+    border-bottom: none;
+    white-space: normal;
+  }
+  .td::before {
+    content: attr(data-label);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    flex-shrink: 0;
+    margin-right: var(--space-2);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

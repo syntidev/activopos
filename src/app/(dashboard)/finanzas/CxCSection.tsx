@@ -170,21 +170,21 @@ export function CxCSection({ rate }: { rate: number }) {
               <thead>
                 <tr>
                   <th className={styles.finTh}>Cliente</th>
-                  <th className={styles.finTh}>Ticket</th>
+                  <th className={`${styles.finTh} ${styles.thHidden}`}>Ticket</th>
                   <th className={`${styles.finTh} ${styles.colRight}`}>Saldo</th>
                   <th className={`${styles.finTh} ${styles.colCenter}`}>Vence</th>
-                  <th className={`${styles.finTh} ${styles.colCenter}`}>Estado</th>
+                  <th className={`${styles.finTh} ${styles.colCenter} ${styles.thHidden}`}>Estado</th>
                   <th className={`${styles.finTh} ${styles.colRight}`}>Abonar</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(item => (
                   <tr key={item.sale_id}>
-                    <td className={styles.finTd}>
+                    <td className={styles.finTd} data-label="Cliente">
                       <span className={styles.finAmtBold}>{item.client_name}</span>
                     </td>
-                    <td className={styles.finTd}>{item.ticket_number}</td>
-                    <td className={`${styles.finTd} ${styles.colRight}`}>
+                    <td className={`${styles.finTd} ${styles.tdHidden}`} data-label="Ticket">{item.ticket_number}</td>
+                    <td className={`${styles.finTd} ${styles.colRight}`} data-label="Saldo">
                       <span className={styles.finAmtBold}>{fmtUsd(item.saldo_usd)}</span>
                       {rate > 0 && (
                         <span className={styles.finSubText}>
@@ -192,14 +192,14 @@ export function CxCSection({ rate }: { rate: number }) {
                         </span>
                       )}
                     </td>
-                    <td className={`${styles.finTd} ${styles.colCenter}`}>
+                    <td className={`${styles.finTd} ${styles.colCenter}`} data-label="Vence">
                       <span className={styles.finSubText}>{fmtDue(item)}</span>
                     </td>
-                    <td className={`${styles.finTd} ${styles.colCenter}`}>
+                    <td className={`${styles.finTd} ${styles.colCenter} ${styles.tdHidden}`} data-label="Estado">
                       {item.bucket === 'vencido'    && <span className={styles.badgeVencido}>Vencido</span>}
                       {item.bucket === 'por_vencer' && <span className={styles.badgeUrgente}>Próximo</span>}
                     </td>
-                    <td className={`${styles.finTd} ${styles.colRight}`}>
+                    <td className={`${styles.finTd} ${styles.colRight}`} data-label="Abonar">
                       <button
                         className={styles.actionBtn}
                         onClick={() => setSelected({

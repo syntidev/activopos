@@ -970,7 +970,7 @@ function InventarioContent() {
                       <th className={styles.th}>Producto</th>
                       <th className={styles.th}>Estado</th>
                       <th className={`${styles.th} ${styles.thNum}`}>Stock actual</th>
-                      <th className={`${styles.th} ${styles.thNum}`}>Costo / und</th>
+                      <th className={`${styles.th} ${styles.thNum} ${styles.thHidden}`}>Costo / und</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -986,21 +986,21 @@ function InventarioContent() {
                           onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setPanelProduct(p) }}
                           aria-label={`Ver detalles de ${p.name}`}
                         >
-                          <td className={styles.td}>
+                          <td className={styles.td} data-label="Producto">
                             <span className={styles.productName}>{p.name}</span>
                             <span className={styles.productUnit}>{p.base_unit_label}</span>
                           </td>
-                          <td className={styles.td}>
+                          <td className={styles.td} data-label="Estado">
                             <span className={`${styles.stockBadge} ${styles[STOCK_STATUS_CLASS[status]]}`}>
                               {STOCK_STATUS_LABEL[status]}
                             </span>
                           </td>
-                          <td className={`${styles.td} ${styles.tdNum}`}>
+                          <td className={`${styles.td} ${styles.tdNum}`} data-label="Stock actual">
                             <span className={status === 'out' ? styles.stockLow : status === 'low' ? styles.stockLow : styles.stockOk}>
                               {p.stock.net_qty.toFixed(isW ? 3 : 0)}
                             </span>
                           </td>
-                          <td className={`${styles.td} ${styles.tdNum}`}>
+                          <td className={`${styles.td} ${styles.tdNum} ${styles.tdHidden}`} data-label="Costo / und">
                             {p.cost_per_unit_usd != null
                               ? <span className={styles.price}>${p.cost_per_unit_usd.toFixed(3)}</span>
                               : <span className={styles.dash}>—</span>}
@@ -1103,12 +1103,12 @@ function InventarioContent() {
                       <tr>
                         <th className={styles.th}>Fecha</th>
                         <th className={styles.th}>Producto</th>
-                        <th className={styles.th}>Tipo</th>
+                        <th className={`${styles.th} ${styles.thHidden}`}>Tipo</th>
                         <th className={`${styles.th} ${styles.thNum}`}>Cantidad</th>
-                        <th className={`${styles.th} ${styles.thNum}`}>Costo / u</th>
-                        <th className={styles.th}>Proveedor</th>
-                        <th className={styles.th}>Notas</th>
-                        <th className={styles.th}>Usuario</th>
+                        <th className={`${styles.th} ${styles.thNum} ${styles.thHidden}`}>Costo / u</th>
+                        <th className={`${styles.th} ${styles.thHidden}`}>Proveedor</th>
+                        <th className={`${styles.th} ${styles.thHidden}`}>Notas</th>
+                        <th className={`${styles.th} ${styles.thHidden}`}>Usuario</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1126,40 +1126,40 @@ function InventarioContent() {
                           : type === 'ajuste' ? styles.typeBadgeAjuste : styles.typeBadgeConsumo
                         return (
                           <tr key={e.id} className={styles.tr}>
-                            <td className={styles.td}>
+                            <td className={styles.td} data-label="Fecha">
                               <span className={styles.timeCell}>
                                 <Clock size={10} aria-hidden="true" />
                                 {formatDate(e.entered_at)}
                               </span>
                             </td>
-                            <td className={styles.td}>
+                            <td className={styles.td} data-label="Producto">
                               <span className={styles.productName}>{e.product.name}</span>
                               <span className={styles.productUnit}>{e.product.base_unit_label}</span>
                             </td>
-                            <td className={styles.td}>
+                            <td className={`${styles.td} ${styles.tdHidden}`} data-label="Tipo">
                               <span className={typeBadgeClass}>{typeLabel}</span>
                             </td>
-                            <td className={`${styles.td} ${styles.tdNum}`}>
+                            <td className={`${styles.td} ${styles.tdNum}`} data-label="Cantidad">
                               <span className={type === 'entrada' ? styles.stockOk : styles.stockLow}>
                                 {qty}&nbsp;{e.product.base_unit_label}
                               </span>
                             </td>
-                            <td className={`${styles.td} ${styles.tdNum}`}>
+                            <td className={`${styles.td} ${styles.tdNum} ${styles.tdHidden}`} data-label="Costo / u">
                               {e.cost_per_unit_usd != null
                                 ? <span className={styles.price}>${e.cost_per_unit_usd.toFixed(3)}</span>
                                 : <span className={styles.dash}>—</span>}
                             </td>
-                            <td className={styles.td}>
+                            <td className={`${styles.td} ${styles.tdHidden}`} data-label="Proveedor">
                               <span className={e.supplier ? styles.supplier : styles.dash}>
                                 {e.supplier ?? '—'}
                               </span>
                             </td>
-                            <td className={styles.td}>
+                            <td className={`${styles.td} ${styles.tdHidden}`} data-label="Notas">
                               <span className={styles.noteCell} title={e.notes ?? undefined}>
                                 {e.notes ?? <span className={styles.dash}>—</span>}
                               </span>
                             </td>
-                            <td className={styles.td}>
+                            <td className={`${styles.td} ${styles.tdHidden}`} data-label="Usuario">
                               <span className={styles.userCell}>{e.user?.name ?? '—'}</span>
                             </td>
                           </tr>

@@ -850,7 +850,8 @@
 
 .finTable {
   width:           100%;
-  table-layout:    fixed;
+  table-layout:    auto;
+  min-width:       560px;
   border-collapse: collapse;
 }
 
@@ -1381,4 +1382,46 @@
   display:     inline-flex;
   align-items: center;
   gap:         var(--space-1);
+}
+
+/* ── Tabla responsive: card-stack en mobile ── */
+.tdHidden { display: table-cell; }
+.thHidden { }
+
+@media (max-width: 639px) {
+  .tdHidden, .thHidden { display: none !important; }
+
+  .finTable { display: block; min-width: unset; width: 100%; }
+  .finTable thead { display: none; }
+  .finTable tbody { display: flex; flex-direction: column; gap: var(--space-2); }
+  .finTable tbody tr,
+  .finTable tbody tr:nth-child(odd),
+  .finTable tbody tr:nth-child(even) {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-1);
+  }
+  .finTd {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-0-5) 0;
+    border-bottom: none;
+    white-space: normal;
+  }
+  .finTd:first-child, .finTh:first-child { white-space: normal; }
+  .finTd::before {
+    content: attr(data-label);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    flex-shrink: 0;
+    margin-right: var(--space-2);
+  }
 }

@@ -154,16 +154,17 @@ function sortSales(sales: SaleRow[], key: SortKey | null, dir: SortDir): SaleRow
 
 /* ── SortTh ── */
 
-function SortTh({ label, col, current, dir, onClick }: {
+function SortTh({ label, col, current, dir, onClick, hidden }: {
   label:   string
   col:     SortKey
   current: SortKey | null
   dir:     SortDir
   onClick: (k: SortKey) => void
+  hidden?: boolean
 }) {
   const active = current === col
   return (
-    <th className={styles.th}>
+    <th className={`${styles.th} ${hidden ? styles.thHidden : ''}`}>
       <button type="button" className={styles.sortBtn} onClick={() => onClick(col)}>
         {label}
         {active
@@ -452,14 +453,14 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                   <thead>
                     <tr>
                       <SortTh label="Ticket"  col="ticket" current={sortKey} dir={sortDir} onClick={handleSort} />
-                      <SortTh label="Fecha"   col="date"   current={sortKey} dir={sortDir} onClick={handleSort} />
-                      <SortTh label="Cliente" col="client" current={sortKey} dir={sortDir} onClick={handleSort} />
-                      <SortTh label="Ítems"   col="items"  current={sortKey} dir={sortDir} onClick={handleSort} />
+                      <SortTh label="Fecha"   col="date"   current={sortKey} dir={sortDir} onClick={handleSort} hidden />
+                      <SortTh label="Cliente" col="client" current={sortKey} dir={sortDir} onClick={handleSort} hidden />
+                      <SortTh label="Ítems"   col="items"  current={sortKey} dir={sortDir} onClick={handleSort} hidden />
                       <SortTh label="Total"   col="total"  current={sortKey} dir={sortDir} onClick={handleSort} />
                       {isAdmin && (
-                        <SortTh label="Utilidad" col="utilidad" current={sortKey} dir={sortDir} onClick={handleSort} />
+                        <SortTh label="Utilidad" col="utilidad" current={sortKey} dir={sortDir} onClick={handleSort} hidden />
                       )}
-                      <SortTh label="Método"  col="method" current={sortKey} dir={sortDir} onClick={handleSort} />
+                      <SortTh label="Método"  col="method" current={sortKey} dir={sortDir} onClick={handleSort} hidden />
                       <SortTh label="Estado"  col="status" current={sortKey} dir={sortDir} onClick={handleSort} />
                     </tr>
                   </thead>
@@ -475,13 +476,13 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                         aria-pressed={selected?.id === sale.id}
                         aria-label={`Venta ${sale.ticket_number} — ${fmtUsd(sale.total_usd)}`}
                       >
-                        <td className={styles.td}>
+                        <td className={styles.td} data-label="Ticket">
                           <span className={styles.ticketNum}>
                             <Hash size={11} aria-hidden="true" />
                             {sale.ticket_number}
                           </span>
                         </td>
-                        <td className={styles.td}>
+                        <td className={`${styles.td} ${styles.tdHidden}`} data-label="Fecha">
                           <span className={styles.dateCell}>
                             {fmtDate(sale.sold_at ?? sale.created_at, true)}
                             <span className={styles.timeCell}>
@@ -489,17 +490,17 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                             </span>
                           </span>
                         </td>
-                        <td className={styles.td}>
+                        <td className={`${styles.td} ${styles.tdHidden}`} data-label="Cliente">
                           <span className={styles.clientCell}>{clientName(sale)}</span>
                         </td>
-                        <td className={`${styles.td} ${styles.tdCenter}`}>
+                        <td className={`${styles.td} ${styles.tdCenter} ${styles.tdHidden}`} data-label="Ítems">
                           <span className={styles.itemCount}>{sale.items.length}</span>
                         </td>
-                        <td className={styles.td}>
+                        <td className={styles.td} data-label="Total">
                           <span className={styles.totalCell}>{fmtUsd(sale.total_usd)}</span>
                         </td>
                         {isAdmin && (
-                          <td className={styles.td}>
+                          <td className={`${styles.td} ${styles.tdHidden}`} data-label="Utilidad">
                             {sale.utilidad_usd == null ? (
                               <span className={styles.utilidadNull}>—</span>
                             ) : (
@@ -509,10 +510,10 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                             )}
                           </td>
                         )}
-                        <td className={styles.td}>
+                        <td className={`${styles.td} ${styles.tdHidden}`} data-label="Método">
                           <span className={styles.methodCell}>{primaryPayment(sale)}</span>
                         </td>
-                        <td className={styles.td}>
+                        <td className={styles.td} data-label="Estado">
                           <Badge variant={STATUS_VARIANT[sale.status]} size="sm">
                             {STATUS_LABELS[sale.status]}
                           </Badge>

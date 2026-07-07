@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { SegmentData } from '@/types/marketing'
+import RotatingBadge from '@/components/marketing/shared/RotatingBadge'
 import styles from './SegmentHero.module.css'
 
 export default function SegmentHero({ segment }: { segment: SegmentData }) {
@@ -7,7 +8,7 @@ export default function SegmentHero({ segment }: { segment: SegmentData }) {
     <section className={styles.hero}>
       <div className={styles.inner}>
         <div className={styles.copy}>
-          <span className={styles.badge}>Para {segment.name}</span>
+          <RotatingBadge />
           <h1 className={styles.headline}>
             {segment.headline}
             <span className={styles.headlineAccent}>Para tu {segment.name}.</span>

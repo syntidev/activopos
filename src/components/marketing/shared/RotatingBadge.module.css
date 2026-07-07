@@ -1,0 +1,30 @@
+.badge {
+  display:       inline-flex;
+  align-items:   center;
+  overflow:      hidden;
+  height:        28px;
+  border:        1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding:       0 14px;
+  margin-bottom: 20px;
+  position:      relative;
+  /* Los hijos son position:absolute (para la animación translateY), así que
+     NO aportan ancho intrínseco al contenedor inline-flex — sin un ancho
+     reservado, el badge colapsaría a solo el padding. Se mide y ajusta tras
+     verificar en browser la frase más larga. */
+  width:         210px;
+}
+
+.phrase {
+  display:     block;
+  font-size:   13px;
+  font-weight: 500;
+  color:       var(--brand-soft, #DCE6FF);
+  white-space: nowrap;
+  position:    absolute;
+  left:        14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge { transition: none; }
+}

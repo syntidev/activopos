@@ -69,9 +69,9 @@ export async function PATCH(
               product_id: item.product_id,
               quantity: Number(item.quantity),
               waste: 0,
-              entry_type: 'void_reversal',
+              entry_type: item.variant_id != null ? 'return' : 'void_reversal',
               notes: item.variant_id != null
-                ? `ANULACION #${sale.ticket_number} (variante ${item.variant_id})`
+                ? `Anulación variante ${item.variant_id}`
                 : `ANULACION #${sale.ticket_number}`,
               created_by: session.userId,
             })),

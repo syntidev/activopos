@@ -8,7 +8,10 @@ export default function SegmentHero({ segment }: { segment: SegmentData }) {
       <div className={styles.inner}>
         <div className={styles.copy}>
           <span className={styles.badge}>Para {segment.name}</span>
-          <h1 className={styles.headline}>{segment.headline}</h1>
+          <h1 className={styles.headline}>
+            {segment.headline}
+            <span className={styles.headlineAccent}>Para tu {segment.name}.</span>
+          </h1>
           <p className={styles.subheadline}>{segment.subheadline}</p>
           <div className={styles.actions}>
             <Link href="/registro" className={styles.ctaPrimary}>

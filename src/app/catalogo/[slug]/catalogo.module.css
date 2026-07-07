@@ -1617,6 +1617,79 @@
   user-select: none;
 }
 
+/* ── Variant selector (modal de detalle) ─────────────────────── */
+.variantSection {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-3);
+  margin-top:     var(--space-1);
+}
+
+.variantGroup {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.variantGroupLabel {
+  font-size:      var(--text-sm);
+  font-weight:    var(--weight-medium);
+  color:          var(--color-text-secondary);
+  text-transform: capitalize;
+}
+
+.variantChips {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       var(--space-2);
+}
+
+.variantChip {
+  display:        inline-flex;
+  flex-direction: column;
+  align-items:    center;
+  padding:        var(--space-1-5) var(--space-3);
+  border-radius:  var(--radius-full);
+  font-size:      var(--text-sm);
+  font-weight:    var(--weight-medium);
+  font-family:    inherit;
+  border:         1.5px solid var(--color-border);
+  background:     var(--color-surface);
+  color:          var(--color-text-primary);
+  cursor:         pointer;
+  white-space:    nowrap;
+  transition:     all var(--transition-fast);
+}
+
+.variantChip:hover { border-color: var(--biz-color, var(--color-brand)); }
+
+.variantChipActive {
+  background:   var(--color-brand-subtle);
+  border-color: var(--biz-color, var(--color-brand));
+  color:        var(--biz-color, var(--color-brand));
+}
+
+.variantChipDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  pointer-events: none;
+}
+
+.variantSoldOutLabel {
+  display:         block;
+  font-size:       var(--text-2xs);
+  font-weight:     var(--weight-semibold);
+  line-height:     1.3;
+  text-decoration: none;
+  color:           var(--color-danger-text);
+}
+
+.variantErrorMsg {
+  font-size: var(--text-xs);
+  color:     var(--color-danger-text, #DC2626);
+}
+
 /* always-visible footer CTA */
 .modalFooter {
   padding:         var(--space-3) var(--space-5);
@@ -1932,6 +2005,11 @@
   overflow:      hidden;
   text-overflow: ellipsis;
   white-space:   nowrap;
+}
+
+.drawerItemVariant {
+  font-size: var(--text-xs);
+  color:     var(--color-text-muted);
 }
 
 .drawerItemPrice {

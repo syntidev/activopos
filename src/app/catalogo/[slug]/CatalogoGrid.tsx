@@ -48,11 +48,17 @@ export interface PaymentMethod {
 /* ── Internal types ──────────────────────────────────────────── */
 
 interface CartItem {
-  product_id: number
-  name:       string
-  qty:        number
-  price_usd:  number
-  image_url:  string | null
+  product_id:     number
+  name:           string
+  qty:            number
+  price_usd:      number
+  image_url:      string | null
+  variant_id?:    number
+  variant_label?: string
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 interface DeliveryZone {
@@ -189,6 +195,8 @@ export function CatalogoGrid({
   const [spyCategory,    setSpyCategory]    = useState<string | null>(null)
   const [sectionCounts,  setSectionCounts]  = useState<Record<string, number>>({})
   const [modalImageIndex, setModalImageIndex] = useState(0)
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
+  const [variantError,    setVariantError]    = useState(false)
   const [showBackTop,    setShowBackTop]    = useState(false)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
@@ -344,20 +352,22 @@ export function CatalogoGrid({
   const subtotalUsd = cart.reduce((acc, i) => acc + i.qty * i.price_usd, 0)
   const subtotalBs  = subtotalUsd * rate
 
-  const addToCart = (product: CatalogProduct, qty: number) => {
+  const addToCart = (product: CatalogProduct, qty: number, variant?: CatalogProductVariant) => {
     setCart(prev => {
-      const existing = prev.find(i => i.product_id === product.id)
+      const existing = prev.find(i => i.product_id === product.id && i.variant_id === variant?.id)
       if (existing) {
         return prev.map(i =>
-          i.product_id === product.id ? { ...i, qty: i.qty + qty } : i,
+          (i.product_id === product.id && i.variant_id === variant?.id) ? { ...i, qty: i.qty + qty } : i,
         )
       }
       return [...prev, {
-        product_id: product.id,
-        name:       product.name,
+        product_id:    product.id,
+        name:          product.name,
         qty,
-        price_usd:  product.priceUsd,
-        image_url:  product.image,
+        price_usd:     product.priceUsd + (variant?.precio_extra ?? 0),
+        image_url:     product.image,
+        variant_id:    variant?.id,
+        variant_label: variant ? `${capitalize(variant.tipo)}: ${variant.valor}` : undefined,
       }]
     })
     setCartBumping(true)
@@ -402,13 +412,13 @@ export function CatalogoGrid({
     })
   }
 
-  const updateCartQty = (productId: number, delta: number) => {
+  const updateCartQty = (productId: number, variantId: number | undefined, delta: number) => {
     setCart(prev => {
-      const item = prev.find(i => i.product_id === productId)
+      const item = prev.find(i => i.product_id === productId && i.variant_id === variantId)
       if (!item) return prev
       const newQty = item.qty + delta
-      if (newQty <= 0) return prev.filter(i => i.product_id !== productId)
-      return prev.map(i => i.product_id === productId ? { ...i, qty: newQty } : i)
+      if (newQty <= 0) return prev.filter(i => !(i.product_id === productId && i.variant_id === variantId))
+      return prev.map(i => (i.product_id === productId && i.variant_id === variantId) ? { ...i, qty: newQty } : i)
     })
   }
 
@@ -418,7 +428,10 @@ export function CatalogoGrid({
     return browseMode && spyCategory === cat
   }
 
-  const openModal  = (p: CatalogProduct) => { setSelectedProduct(p); setModalQty(1); setModalImageIndex(0) }
+  const openModal  = (p: CatalogProduct) => {
+    setSelectedProduct(p); setModalQty(1); setModalImageIndex(0)
+    setSelectedVariantId(null); setVariantError(false)
+  }
   const closeModal = () => setSelectedProduct(null)
 
   // Scroll lock
@@ -490,7 +503,7 @@ export function CatalogoGrid({
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          items:              cart.map(i => ({ product_id: i.product_id, qty: i.qty })),
+          items:              cart.map(i => ({ product_id: i.product_id, qty: i.qty, variant_id: i.variant_id })),
           customer_name:      cName.trim(),
           customer_phone:     cPhone.trim(),
           customer_reference: referenceWithZone,
@@ -519,6 +532,18 @@ export function CatalogoGrid({
   }
 
   const selP = selectedProduct
+
+  const variantGroups = useMemo(() => {
+    if (!selP?.variants.length) return [] as { tipo: string; options: CatalogProductVariant[] }[]
+    const map = new Map<string, CatalogProductVariant[]>()
+    for (const v of selP.variants) {
+      if (!map.has(v.tipo)) map.set(v.tipo, [])
+      map.get(v.tipo)!.push(v)
+    }
+    return Array.from(map.entries()).map(([tipo, options]) => ({ tipo, options }))
+  }, [selP])
+
+  const selectedVariant = selP?.variants.find(v => v.id === selectedVariantId) ?? null
 
   // Card de producto — compartida entre secciones browse y grid filtrado.
   // accentColor pinta el borde superior (--accent-cat); cae a --biz-color.
@@ -619,8 +644,8 @@ export function CatalogoGrid({
               <button
                 type="button"
                 className={styles.addBtnCircle}
-                onClick={e => { e.stopPropagation(); addToCart(p, 1) }}
-                aria-label={`Agregar ${p.name} al carrito`}
+                onClick={e => { e.stopPropagation(); p.variants.length > 0 ? openModal(p) : addToCart(p, 1) }}
+                aria-label={p.variants.length > 0 ? `Ver opciones de ${p.name}` : `Agregar ${p.name} al carrito`}
               >
                 <Plus size={16} aria-hidden="true" />
               </button>
@@ -1071,7 +1096,7 @@ export function CatalogoGrid({
               </div>
             ) : (
               cart.map(item => (
-                <div key={item.product_id} className={styles.drawerItem}>
+                <div key={`${item.product_id}-${item.variant_id ?? 'base'}`} className={styles.drawerItem}>
                   <div className={styles.drawerItemThumb}>
                     {item.image_url ? (
                       <img src={item.image_url} alt={item.name} />
@@ -1083,6 +1108,9 @@ export function CatalogoGrid({
                   </div>
                   <div className={styles.drawerItemInfo}>
                     <span className={styles.drawerItemName}>{item.name}</span>
+                    {item.variant_label && (
+                      <span className={styles.drawerItemVariant}>{item.variant_label}</span>
+                    )}
                     <span className={styles.drawerItemPrice}>{fmtUsd(item.price_usd)} c/u</span>
                     <span className={styles.drawerItemPriceBs}>{fmtBs(item.price_usd * rate)} c/u</span>
                     <span className={styles.drawerItemSubtotal}>{fmtUsd(item.qty * item.price_usd)}</span>
@@ -1091,7 +1119,7 @@ export function CatalogoGrid({
                     <button
                       type="button"
                       className={styles.drawerQtyBtn}
-                      onClick={() => updateCartQty(item.product_id, -1)}
+                      onClick={() => updateCartQty(item.product_id, item.variant_id, -1)}
                       aria-label={`Reducir cantidad de ${item.name}`}
                     >
                       <Minus size={12} />
@@ -1100,7 +1128,7 @@ export function CatalogoGrid({
                     <button
                       type="button"
                       className={styles.drawerQtyBtn}
-                      onClick={() => updateCartQty(item.product_id, 1)}
+                      onClick={() => updateCartQty(item.product_id, item.variant_id, 1)}
                       aria-label={`Aumentar cantidad de ${item.name}`}
                     >
                       <Plus size={12} />
@@ -1435,6 +1463,40 @@ export function CatalogoGrid({
                 )}
               </div>
 
+              {/* Variant selector */}
+              {selP.variants.length > 0 &&
+                selP.availability !== 'discontinued' &&
+                selP.catalogVisibility !== 'on_request' && (
+                <div className={styles.variantSection}>
+                  {variantGroups.map(g => (
+                    <div key={g.tipo} className={styles.variantGroup}>
+                      <span className={styles.variantGroupLabel}>{capitalize(g.tipo)}</span>
+                      <div className={styles.variantChips}>
+                        {g.options.map(v => {
+                          const soldOut = v.stock <= 0
+                          const active  = selectedVariantId === v.id
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
+                              onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
+                              disabled={soldOut}
+                              aria-pressed={active}
+                              aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
+                            >
+                              {v.valor}
+                              {soldOut && <span className={styles.variantSoldOutLabel}>Agotado</span>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                  {variantError && <p className={styles.variantErrorMsg}>Selecciona una opción</p>}
+                </div>
+              )}
+
               {/* Qty stepper (only for purchasable products) */}
               {selP.availability !== 'discontinued' &&
                 selP.catalogVisibility !== 'on_request' &&
@@ -1486,10 +1548,14 @@ export function CatalogoGrid({
                   <button
                     type="button"
                     className={styles.btnAddCart}
-                    onClick={() => { addToCart(selP, modalQty); closeModal(); setCartOpen(true) }}
+                    onClick={() => {
+                      if (selP.variants.length > 0 && !selectedVariant) { setVariantError(true); return }
+                      addToCart(selP, modalQty, selectedVariant ?? undefined)
+                      closeModal(); setCartOpen(true)
+                    }}
                   >
                     <ShoppingBag size={17} aria-hidden="true" />
-                    Agregar · ${(selP.priceUsd * modalQty).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    Agregar · ${((selP.priceUsd + (selectedVariant?.precio_extra ?? 0)) * modalQty).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </button>
                 </div>
               ) : (

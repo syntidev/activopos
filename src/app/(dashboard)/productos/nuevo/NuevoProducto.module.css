@@ -123,6 +123,26 @@
   margin: 0;
 }
 
+/* ── Variantes: hint de stock total + advertencia ── */
+.variantStockHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.variantStockWarning {
+  font-size: 12px;
+  color: var(--color-warning-text);
+  margin: 0;
+}
+
+.variantStockZero {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-warning-text);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Mobile ── */
 @media (max-width: 640px) {
   .page { padding: var(--space-3); gap: var(--space-4); }

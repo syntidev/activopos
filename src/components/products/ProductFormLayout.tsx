@@ -470,19 +470,21 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           <section className={s.card}>
             <h2 className={s.cardTitle}>Inventario</h2>
 
-            <div className={m.formGroup}>
-              <label className={m.label} htmlFor="np-stock">Stock Inicial</label>
-              <input
-                id="np-stock"
-                type="number"
-                className={m.input}
-                placeholder="0"
-                value={f.stockInitial}
-                onChange={(e) => f.setStockInitial(e.target.value)}
-                min="0"
-                step={f.saleMode === 'weight' ? '0.001' : '1'}
-              />
-            </div>
+            {!f.hasVariants && (
+              <div className={m.formGroup}>
+                <label className={m.label} htmlFor="np-stock">Stock Inicial</label>
+                <input
+                  id="np-stock"
+                  type="number"
+                  className={m.input}
+                  placeholder="0"
+                  value={f.stockInitial}
+                  onChange={(e) => f.setStockInitial(e.target.value)}
+                  min="0"
+                  step={f.saleMode === 'weight' ? '0.001' : '1'}
+                />
+              </div>
+            )}
 
             <div className={m.formGroup}>
               <label className={m.label} htmlFor="np-alert-threshold">Alerta de stock crítico</label>
@@ -567,6 +569,9 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                             {v.price_extra_usd > 0 && (
                               <span className={c.variantRowExtra}>+${v.price_extra_usd.toFixed(2)}</span>
                             )}
+                            <span className={v.stock > 0 ? c.variantRowStock : s.variantStockZero}>
+                              {v.stock} und
+                            </span>
                             <button
                               type="button"
                               className={c.variantRemoveBtn}
@@ -603,7 +608,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                       <input
                         type="number"
                         className={`${m.input} ${c.variantExtraInput}`}
-                        placeholder="Stock"
+                        placeholder="Unidades disponibles"
                         value={f.newVarStock}
                         onChange={(e) => f.setNewVarStock(e.target.value)}
                         min="0"
@@ -620,6 +625,16 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                         <Plus size={15} aria-hidden="true" />
                       </button>
                     </div>
+
+                    <p className={s.variantStockHint}>
+                      El stock total es la suma del stock de cada variante.
+                    </p>
+
+                    {f.variants.some(v => v.stock === 0) && (
+                      <p className={s.variantStockWarning}>
+                        Hay variantes con stock en 0 — quedarán marcadas como agotadas.
+                      </p>
+                    )}
                   </div>
                 )}
               </>

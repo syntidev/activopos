@@ -438,7 +438,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
         pricePerUnitUsd: computed.displayPrice,
-        stockInitial:        Math.max(parseInt(stockInitial) || 0, 0),
+        stockInitial:        hasVariants ? 0 : Math.max(parseInt(stockInitial) || 0, 0),
         stockAlertThreshold: Math.max(parseInt(stockAlertThreshold) || 0, 0),
         isAvailable,
         catalogVisibility,

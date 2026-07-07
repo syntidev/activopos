@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { MessageCircle } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth'
 import { getBcvRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
@@ -67,7 +68,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CatalogoPage({ params }: PageProps) {
   const business = await getBusiness(params.slug)
-  if (!business || !isCatalogLive(business)) notFound()
+  if (!business) notFound()
+
+  // SEC: bypass del plan-gate solo para el propio negocio — super_admin ve cualquiera
+  // (acceso global, igual que el resto del sistema); admin solo el suyo.
+  const session = await getSession()
+  const isOwnerPreview =
+    session?.role === 'super_admin' ||
+    (session?.role === 'admin' && session.businessId === business.id)
+
+  if (!isOwnerPreview && !isCatalogLive(business)) notFound()
 
   const [products, rate, stockEntries, paymentMethods] = await Promise.all([
     prisma.product.findMany({

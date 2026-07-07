@@ -83,6 +83,18 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
   const [loadError, setLoadError]     = useState<string | null>(null)
   const [categories, setCategories]   = useState<ModalCategory[]>([])
   const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [hasCatalogPlan, setHasCatalogPlan] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/plan/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'access_catalog' }),
+    })
+      .then(res => res.json())
+      .then(data => setHasCatalogPlan(!!data.allowed))
+      .catch(() => {})
+  }, [])
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -168,7 +180,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
     await fetchCategories()
   }, [fetchCategories])
 
-  const f = useProductForm({ editProduct, onSave: handleSave })
+  const f = useProductForm({ editProduct, hasCatalogPlan, onSave: handleSave })
 
   return (
     <div className={s.page}>

@@ -157,6 +157,18 @@ export default function ProductosPage() {
 
   /* ── Modal states ── */
   const [showProductModal, setShowProductModal] = useState(false)
+  const [hasCatalogPlan, setHasCatalogPlan] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/plan/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'access_catalog' }),
+    })
+      .then(res => res.json())
+      .then(data => setHasCatalogPlan(!!data.allowed))
+      .catch(() => {})
+  }, [])
   const [editProduct, setEditProduct]     = useState<EditableProduct | null>(null)
   const [showCategoryModal, setShowCategoryModal]   = useState(false)
   const [editCategoryData, setEditCategoryData]     = useState<Category | null>(null)
@@ -936,6 +948,7 @@ export default function ProductosPage() {
         isOpen={showProductModal}
         editProduct={editProduct}
         categories={modalCategories}
+        hasCatalogPlan={hasCatalogPlan}
         onClose={() => { setShowProductModal(false); setEditProduct(null) }}
         onSave={handleSaveProduct}
         onNewCategory={() => setShowCategoryModal(true)}

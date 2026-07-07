@@ -17,6 +17,18 @@ export default function NuevoProductoPage() {
   const router = useRouter()
   const [categories, setCategories] = useState<ModalCategory[]>([])
   const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [hasCatalogPlan, setHasCatalogPlan] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/plan/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'access_catalog' }),
+    })
+      .then(res => res.json())
+      .then(data => setHasCatalogPlan(!!data.allowed))
+      .catch(() => {})
+  }, [])
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -80,7 +92,7 @@ export default function NuevoProductoPage() {
     await fetchCategories()
   }, [fetchCategories])
 
-  const f = useProductForm({ onSave: handleSave })
+  const f = useProductForm({ hasCatalogPlan, onSave: handleSave })
 
   return (
     <div className={s.page}>

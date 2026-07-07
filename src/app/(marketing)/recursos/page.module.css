@@ -1,0 +1,119 @@
+.page { background: var(--mkt-bg, #F4F6FB); }
+
+.hero {
+  background: #0D1B2E;
+  padding: 80px 5vw;
+  text-align: center;
+}
+
+.heroTitle {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 16px;
+}
+
+.heroSub {
+  font-size: 18px;
+  color: #94A3B8;
+  margin: 0;
+}
+
+.section {
+  padding: 64px 5vw;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 32px;
+}
+
+.segmentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.segmentCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  background: #FFFFFF;
+  border: 0.5px solid #E2E8F0;
+  border-radius: 16px;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.segmentCard:hover {
+  box-shadow: 0 4px 16px rgba(0,56,189,0.10);
+  border-color: var(--brand, #0038BD);
+}
+
+.segName { font-size: 15px; font-weight: 700; color: #0F172A; }
+.segTag { font-size: 12px; color: #94A3B8; }
+.segHeadline { font-size: 13px; color: #475569; line-height: 1.4; }
+.segLink { font-size: 13px; font-weight: 600; color: var(--brand, #0038BD); margin-top: 4px; }
+
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.planCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px;
+  background: #FFFFFF;
+  border: 0.5px solid #E2E8F0;
+  border-radius: 16px;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.planCard:hover { box-shadow: 0 4px 16px rgba(0,56,189,0.10); }
+.planName { font-size: 16px; font-weight: 700; color: #0F172A; }
+.planPrice { font-size: 36px; font-weight: 800; color: var(--brand, #0038BD); }
+.planPer { font-size: 16px; font-weight: 400; color: #94A3B8; }
+
+.ctaSection {
+  background: #0D1B2E;
+  padding: 80px 5vw;
+  text-align: center;
+}
+
+.ctaTitle {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 32px;
+}
+
+.ctaBtn {
+  display: inline-block;
+  background: var(--cta, #EF8E01);
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px 32px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.ctaBtn:hover { background: var(--cta-hover, #D97900); }
+
+@media (max-width: 768px) {
+  .segmentGrid, .planGrid { grid-template-columns: 1fr; }
+}

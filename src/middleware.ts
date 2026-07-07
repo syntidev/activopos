@@ -19,6 +19,7 @@ const PUBLIC_PREFIXES = [
 // Rutas exactas públicas — no usan startsWith
 const PUBLIC_EXACT = new Set([
   '/',
+  '/recursos',
   '/landing.html',
   '/sitemap.xml',
   '/robots.txt',

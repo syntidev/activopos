@@ -144,15 +144,15 @@ export async function PATCH(
               data:  { stock: { decrement: Number(item.quantity) } },
             })
             // Dual-mechanism: mantiene net_inventory (agregado de InventoryEntry,
-            // que lee el dashboard) sincronizado con variant.stock. Mismo registro
-            // que una venta sin variante: quantity negativo, waste 0.
+            // que lee el dashboard) sincronizado con variant.stock. net = quantity - waste,
+            // así waste=qty descuenta la venta de la variante del inventario neto.
             inventoryDeductions.push({
               business_id: session.businessId,
               product_id:  item.product_id,
-              quantity:    -Number(item.quantity),
-              waste:       0,
+              quantity:    0,
+              waste:       Number(item.quantity),
               entry_type:  'sale',
-              notes:       `VENTA #${sale.ticket_number} (variante ${item.variant_id})`,
+              notes:       `Venta variante ${item.variant_id}`,
               created_by:  session.userId,
             })
           } else {

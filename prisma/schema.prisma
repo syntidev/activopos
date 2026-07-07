@@ -587,6 +587,7 @@ model ProductVariant {
   cost_usd     Float?
   stock        Int      @default(0)
   color_hex    String?  @db.VarChar(7)
+  combination_key String? @map("combination_key") @db.VarChar(255)
   is_active    Boolean  @default(true)
   sort_order   Int      @default(0)
   created_at   DateTime @default(now())

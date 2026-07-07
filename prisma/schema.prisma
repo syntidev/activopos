@@ -963,7 +963,7 @@ model SegmentFaq {
   segment_id String
   segment    Segment  @relation(fields: [segment_id], references: [id], onDelete: Cascade)
   question   String
-  answer     String
+  answer     String   @db.Text
   sort_order Int      @default(0)
 
   @@index([segment_id])

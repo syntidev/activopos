@@ -76,6 +76,54 @@ async function seedPlans() {
   console.log('✅ Plans seeded')
 }
 
+const COMMON_FAQS = [
+  {
+    question: '¿ActivoPOS reemplaza mi facturación del SENIAT?',
+    answer: 'No. ActivoPOS es tu sistema de control de ventas e inventario — no reemplaza tu facturación SENIAT, la complementa. Puedes usar ActivoPOS para el control diario y tu sistema fiscal por separado.',
+    sort_order: 4,
+  },
+  {
+    question: '¿Necesito instalar algo en mi computadora o teléfono?',
+    answer: 'No. ActivoPOS corre completamente en el navegador — Chrome, Safari o cualquier browser moderno. Sin instalación, sin actualizaciones manuales. Funciona en teléfono, tablet o computadora.',
+    sort_order: 5,
+  },
+  {
+    question: '¿Cómo se actualiza la tasa del dólar?',
+    answer: 'Automáticamente. ActivoPOS consulta la tasa BCV varias veces al día. Tú defines el precio en USD una sola vez y el sistema calcula los bolívares en tiempo real en cada cobro.',
+    sort_order: 6,
+  },
+  {
+    question: '¿Qué métodos de pago acepta ActivoPOS?',
+    answer: 'Todos los que usa Venezuela: Pago Móvil, Zelle, efectivo en dólares, efectivo en bolívares, transferencia bancaria y USDT. Un mismo cobro puede mezclar varios métodos.',
+    sort_order: 7,
+  },
+  {
+    question: '¿Cuánto cuesta ActivoPOS?',
+    answer: 'El plan Mostrador arranca desde $15/mes. El plan Negocio con catálogo digital es $25/mes. El plan Pro con usuarios ilimitados es $40/mes. Sin contrato anual — pagas mes a mes.',
+    sort_order: 8,
+  },
+  {
+    question: '¿Puedo cancelar cuando quiera?',
+    answer: 'Sí. No hay contrato anual ni penalización por cancelar. Cancelas cuando quieras y tu cuenta queda activa hasta el final del período pagado.',
+    sort_order: 9,
+  },
+  {
+    question: '¿Funciona desde el teléfono?',
+    answer: 'Sí. ActivoPOS está diseñado mobile-first. El POS, el inventario, los reportes y el catálogo funcionan perfectamente desde cualquier teléfono Android o iPhone.',
+    sort_order: 10,
+  },
+  {
+    question: '¿Puedo tener varios usuarios con diferentes permisos?',
+    answer: 'Sí. Puedes crear usuarios con rol de cajero — solo ven el POS y la caja — o de administrador — acceso completo. Cada uno entra con su propio usuario y contraseña.',
+    sort_order: 11,
+  },
+  {
+    question: '¿Qué pasa si se va la luz o el internet?',
+    answer: 'Las ventas que ya procesaste quedan guardadas. Para nuevas ventas necesitas conexión — ActivoPOS es 100% en la nube. Recomendamos tener el hotspot del teléfono como respaldo.',
+    sort_order: 12,
+  },
+]
+
 async function seedSegments() {
   const segments = [
     {
@@ -98,6 +146,7 @@ async function seedSegments() {
           { question: '¿Puedo vender por kilo y por pieza en el mismo sistema?', answer: 'Sí. Cada producto tiene su modo de venta: peso (kg con decimales) o unidad. Los puedes mezclar en el mismo ticket.', sort_order: 1 },
           { question: '¿Cómo maneja ActivoPOS la tasa del dólar en la carnicería?', answer: 'La tasa BCV se actualiza automáticamente. Tú pones el precio en USD y el sistema calcula los bolívares en tiempo real al momento del cobro.', sort_order: 2 },
           { question: '¿Puedo saber cuánto de cada corte me queda?', answer: 'Sí. El inventario descuenta automáticamente con cada venta. Ves el stock en tiempo real sin tener que contar.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -121,6 +170,7 @@ async function seedSegments() {
           { question: '¿ActivoPOS maneja mesas y comandas?', answer: 'Sí. Puedes tener tickets abiertos por mesa, agregar productos, modificar y cobrar cuando el cliente pida la cuenta.', sort_order: 1 },
           { question: '¿Funciona con pantalla de cocina (KDS)?', answer: 'Sí, en el plan Pro tienes acceso al módulo KDS — una pantalla donde la cocina ve los pedidos en tiempo real sin papel.', sort_order: 2 },
           { question: '¿Puedo tener varios cajeros trabajando al mismo tiempo?', answer: 'Sí. Cada usuario tiene su acceso. Los cajeros ven el POS y los pedidos; el admin ve todo incluyendo reportes y finanzas.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -144,6 +194,7 @@ async function seedSegments() {
           { question: '¿Puedo buscar productos por código o referencia?', answer: 'Sí. El POS tiene búsqueda por nombre, SKU y código de barras. También puedes usar la cámara del teléfono como escáner.', sort_order: 1 },
           { question: '¿ActivoPOS maneja precios al mayor y al detal?', answer: 'Puedes tener listas de precio por cliente. Un cliente mayorista ve sus precios, uno al detal ve los suyos.', sort_order: 2 },
           { question: '¿Puedo actualizar precios masivamente cuando sube el dólar?', answer: 'Sí. Puedes actualizar el costo y el margen de categorías completas. El sistema recalcula los precios automáticamente.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -167,6 +218,7 @@ async function seedSegments() {
           { question: '¿ActivoPOS maneja fechas de vencimiento?', answer: 'Puedes registrar lotes con fecha de vencimiento. El sistema te alerta cuando un producto está próximo a vencer.', sort_order: 1 },
           { question: '¿Cómo manejo los precios regulados?', answer: 'Cada producto tiene su precio en USD que tú defines. Si hay precio regulado, lo ingresas manualmente y el sistema lo respeta en el cobro.', sort_order: 2 },
           { question: '¿Puedo vender con Pago Móvil y efectivo en el mismo ticket?', answer: 'Sí. Un mismo ticket puede tener múltiples métodos de pago: Pago Móvil, Zelle, efectivo USD, efectivo Bs o cualquier combinación.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -190,6 +242,7 @@ async function seedSegments() {
           { question: '¿Puedo manejar tallas y colores como variantes?', answer: 'Sí. Cada producto puede tener variantes (talla S, M, L / color rojo, azul). El inventario lleva el stock de cada combinación por separado.', sort_order: 1 },
           { question: '¿Puedo publicar mi catálogo para que clientes vean qué hay?', answer: 'Sí. ActivoPOS te da un catálogo digital en tutienda.activopos.com. Los clientes ven los productos disponibles y pueden pedir por WhatsApp.', sort_order: 2 },
           { question: '¿Maneja ventas a crédito o apartados?', answer: 'Sí. Puedes registrar ventas a crédito, llevar el saldo del cliente y registrar abonos parciales. Todo queda en el historial.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -213,6 +266,7 @@ async function seedSegments() {
           { question: '¿ActivoPOS funciona para bodegas con muchos productos?', answer: 'Sí. No hay límite de productos en los planes Negocio y Pro. Puedes tener cientos de referencias con su stock individual.', sort_order: 1 },
           { question: '¿Cómo manejo los fiaditos o ventas a crédito?', answer: 'Registras al cliente y sus ventas a crédito quedan en su cuenta. Ves cuánto te debe y registras los pagos cuando lleguen.', sort_order: 2 },
           { question: '¿Funciona con caja registradora o lector de código de barras?', answer: 'ActivoPOS funciona en cualquier dispositivo con navegador — tablet, teléfono, computador. Puedes usar la cámara como escáner de código de barras.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -236,6 +290,7 @@ async function seedSegments() {
           { question: '¿Puedo registrar el serial de cada equipo vendido?', answer: 'Sí. Puedes agregar notas y especificaciones a cada producto vendido. El historial del cliente guarda todos sus equipos.', sort_order: 1 },
           { question: '¿ActivoPOS maneja órdenes de servicio técnico?', answer: 'Sí, con el módulo de cotizaciones y servicios. Creas la orden, le das seguimiento y cobras al cerrar.', sort_order: 2 },
           { question: '¿Cómo mantengo los precios actualizados en dólares?', answer: 'Defines el precio en USD. La tasa BCV se actualiza automáticamente. Nunca más calcular bolívares a mano.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -259,6 +314,7 @@ async function seedSegments() {
           { question: '¿Puedo buscar repuestos por código o referencia del fabricante?', answer: 'Sí. La búsqueda del POS funciona por nombre, SKU y código de barras. Encuentra cualquier referencia en segundos.', sort_order: 1 },
           { question: '¿ActivoPOS maneja precios al mayor y al detal?', answer: 'Sí. Puedes asignar listas de precio por tipo de cliente. Los mayoristas ven sus precios y los detallistas los suyos.', sort_order: 2 },
           { question: '¿Puedo ver qué referencias se venden más?', answer: 'Sí. Los reportes muestran los productos más vendidos por período. Ves qué referencias se mueven y cuáles están quietas.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },
@@ -305,6 +361,7 @@ async function seedSegments() {
           { question: '¿ActivoPOS funciona para servicios sin inventario físico?', answer: 'Sí. Puedes crear servicios como productos sin stock. El POS los agrega al ticket igual que cualquier artículo.', sort_order: 1 },
           { question: '¿Genera cotizaciones profesionales en PDF?', answer: 'Sí. Las cotizaciones incluyen los datos de tu empresa, el detalle de servicios, total en USD y Bs, y condiciones de pago.', sort_order: 2 },
           { question: '¿Cómo llevo el control de clientes que me deben?', answer: 'Cada cliente tiene su cuenta. Las ventas a crédito quedan registradas y ves el saldo pendiente, los abonos y el historial completo.', sort_order: 3 },
+          ...COMMON_FAQS,
         ],
       },
     },

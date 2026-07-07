@@ -10,9 +10,12 @@ import SegmentFAQ from '@/components/marketing/sections/segment/SegmentFAQ'
 import SegmentCTA from '@/components/marketing/sections/segment/SegmentCTA'
 import styles from './page.module.css'
 
+export const revalidate = 3600 // revalida cada hora — segmentos no cambian frecuentemente
+
 // Las URLs son /para-<slug>. Next no permite prefijo dinámico parcial en el nombre
 // de carpeta, así que el segmento captura "para-<slug>" y aquí se despega el prefijo.
 const PREFIX = 'para-'
+const SLUG_RE = /^[a-z0-9-]{3,50}$/
 
 function toSegmentData(raw: {
   id: string; slug: string; name: string; mode: string; theme_key: string; tag_line: string
@@ -55,7 +58,9 @@ export async function generateMetadata(
   { params }: { params: { segmento: string } },
 ): Promise<Metadata> {
   if (!params.segmento.startsWith(PREFIX)) return {}
-  const segment = await getSegment(params.segmento.slice(PREFIX.length))
+  const slug = params.segmento.slice(PREFIX.length)
+  if (!SLUG_RE.test(slug)) return {}
+  const segment = await getSegment(slug)
   if (!segment) return {}
   return {
     title:       segment.meta_title,
@@ -75,6 +80,7 @@ export default async function SegmentPage(
 ) {
   if (!params.segmento.startsWith(PREFIX)) notFound()
   const slug = params.segmento.slice(PREFIX.length)
+  if (!SLUG_RE.test(slug)) notFound()
 
   const [segment, plans] = await Promise.all([getSegment(slug), getPlans()])
   if (!segment) notFound()

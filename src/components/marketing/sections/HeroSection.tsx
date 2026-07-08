@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion, useInView, animate } from 'framer-motion'
-import { MessageCircle, LogIn, RefreshCw, Layers, Globe, Smartphone } from 'lucide-react'
+import { MessageCircle, LogIn, UserPlus, RefreshCw, Layers, Globe, Smartphone } from 'lucide-react'
 import RotatingHeadline from '@/components/marketing/shared/RotatingHeadline'
 import styles from './HeroSection.module.css'
 
@@ -267,13 +267,17 @@ export default function HeroSection({ bcvRate }: Props) {
 
         {/* CTAs */}
         <motion.div className={styles.actions} {...fadeUp(0.4)}>
+          <Link href="/registro" className={styles.btnPrimary}>
+            <UserPlus size={17} aria-hidden />
+            Empezar gratis
+          </Link>
           <a
             href="https://wa.me/584222654827?text=Hola%2C+quiero+ver+ActivoPOS+en+acci%C3%B3n"
             target="_blank"
             rel="noopener noreferrer"
-            className={styles.btnPrimary}
+            className={styles.btnGhost}
           >
-            <MessageCircle size={17} aria-hidden />
+            <MessageCircle size={16} aria-hidden />
             Ver demostración
           </a>
           <Link href="/login" className={styles.btnGhost}>

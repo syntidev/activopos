@@ -21,6 +21,7 @@ const productSchema = z.object({
   price_per_unit_usd: z.number().min(0).nullable().optional(),
   price_per_kg_usd:   z.number().min(0).nullable().optional(),
   min_stock:          z.number().min(0).default(0),
+  stock_quantity:     z.number().int().min(0).default(0),
   images:             z.array(z.string().url()).nullable().optional(),
   is_available:       z.boolean().default(true),
   has_variants:       z.boolean().default(false),
@@ -290,6 +291,21 @@ export async function POST(req: NextRequest) {
       }))
     if (initialStockEntries.length > 0) {
       await db.inventoryEntry.createMany({ data: initialStockEntries })
+    }
+
+    // Producto sin variantes: stock inicial viene de stock_quantity, no de variantRows.
+    if (variantRows.length === 0 && data.stock_quantity > 0) {
+      await db.inventoryEntry.create({
+        data: {
+          business_id: session.businessId,
+          product_id:  product.id,
+          quantity:    data.stock_quantity,
+          waste:       0,
+          entry_type:  'adjustment',
+          notes:       'Stock inicial',
+          created_by:  session.userId,
+        },
+      })
     }
 
     return NextResponse.json({

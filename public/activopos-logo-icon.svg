@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <!--
+    ActivoPOS — ICON (isotipo solo, sin wordmark)
+    Uso: sidebar dashboard, app icon 512px, PWA manifest, favicon SVG
+    Flat, sin sombras — máxima legibilidad a cualquier tamaño
+    Fondo transparente — se adapta al contexto
+  -->
+  <path fill="#0038BD" d="M 26,82 Q 26,26 82,26 L 190,26 Q 220,26 220,56 Q 220,88 190,88 L 100,88 Q 88,88 88,100 L 88,190 Q 88,220 56,220 Q 26,220 26,190 Z"/>
+  <path fill="#0038BD" d="M 474,82 Q 474,26 418,26 L 310,26 Q 280,26 280,56 Q 280,88 310,88 L 400,88 Q 412,88 412,100 L 412,190 Q 412,220 444,220 Q 474,220 474,190 Z"/>
+  <path fill="#0038BD" d="M 26,418 Q 26,474 82,474 L 190,474 Q 220,474 220,444 Q 220,412 190,412 L 100,412 Q 88,412 88,400 L 88,310 Q 88,280 56,280 Q 26,280 26,310 Z"/>
+  <path fill="#0038BD" d="M 474,418 Q 474,474 418,474 L 310,474 Q 280,474 280,444 Q 280,412 310,412 L 400,412 Q 412,412 412,400 L 412,310 Q 412,280 444,280 Q 474,280 474,310 Z"/>
+
+  <circle fill="none" stroke="#EF8E01" stroke-width="5" opacity="0.75" cx="250" cy="250" r="96"/>
+  <circle fill="none" stroke="#EF8E01" stroke-width="3.5" opacity="0.45" cx="250" cy="250" r="120"/>
+  <circle fill="#EF8E01" cx="250" cy="250" r="72"/>
+</svg>

@@ -20,7 +20,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#0038BD',
+  themeColor: '#EF8E01',
 }
 
 export const metadata: Metadata = {
@@ -29,8 +29,7 @@ export const metadata: Metadata = {
     template: '%s | ActivoPOS',
   },
   description: 'Tu sistema de control de ventas e inventario. No reemplaza tu facturación SENIAT — la complementa.',
-  manifest: '/brand/activopos/site.webmanifest',
-  themeColor: '#EF8E01',
+  manifest: '/site.webmanifest',
   appleWebApp: {
     capable: true,
     title: 'ActivoPOS',
@@ -38,12 +37,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/brand/activopos/favicon.ico', sizes: 'any' },
-      { url: '/brand/activopos/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
-      { url: '/brand/activopos/activopos-logo-icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/activopos-logo-icon.svg', type: 'image/svg+xml' },
     ],
     apple: [
-      { url: '/brand/activopos/apple-touch-icon.png', sizes: '180x180' },
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
     ],
   },
 }

@@ -32,6 +32,7 @@ const PatchSchema = z.object({
   allow_cashier_price_override: z.boolean().optional(),
   quotation_footer: z.string().optional(),
   pos_mode: z.enum(['ticket', 'invoice']).optional(),
+  catalog_active:    z.boolean().optional(),
   catalog_instagram: z.string().max(80).nullable().optional(),
   catalog_hours:     z.string().max(2000).nullable().optional(),
   // Prefijo/estructura validados aquí; el binding al tenant del caller se

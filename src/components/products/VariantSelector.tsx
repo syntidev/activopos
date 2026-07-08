@@ -12,6 +12,8 @@ export interface ProductVariant {
   price_extra_usd: number
   price_usd: number | null
   stock: number
+  tipo?: string
+  combination_key?: string | null
 }
 
 interface VariantSelectorProps {
@@ -27,6 +29,8 @@ interface ApiVariant {
   precio_extra: number
   price_usd: number | null
   stock: number
+  tipo: string
+  combination_key: string | null
 }
 
 function VariantSkeleton() {
@@ -49,10 +53,12 @@ export function VariantSelector({
 
   const [variants, setVariants] = useState<ProductVariant[]>([])
   const [loading, setLoading] = useState(false)
+  const [selectedDim1, setSelectedDim1] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open || !product) return
     setVariants([])
+    setSelectedDim1(null)
     setLoading(true)
     fetch(`/api/products/${product.id}/variants`)
       .then((r) => r.json())
@@ -63,6 +69,8 @@ export function VariantSelector({
           price_extra_usd: Number(v.precio_extra ?? 0),
           price_usd:       v.price_usd != null ? Number(v.price_usd) : null,
           stock:           Number(v.stock ?? 0),
+          tipo:            v.tipo,
+          combination_key: v.combination_key,
         }))
         setVariants(mapped)
       })
@@ -74,6 +82,21 @@ export function VariantSelector({
 
   const getPrice = (v: ProductVariant): number =>
     v.price_usd != null ? v.price_usd : basePrice + v.price_extra_usd
+
+  // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
+  // El primer segmento (antes del primer "-") es la dimensión 1.
+  const isCombined = variants.some(v => v.combination_key)
+  const dim1Labels = isCombined ? (variants[0]?.tipo ?? '').split('+') : []
+  const dim1Label  = dim1Labels[0] ?? 'Talla'
+  const dim2Label  = dim1Labels[1] ?? 'Color'
+
+  const dim1Options = isCombined
+    ? Array.from(new Set(variants.map(v => v.combination_key!.split('-')[0])))
+    : []
+
+  const dim2Options = selectedDim1 !== null
+    ? variants.filter(v => v.combination_key!.startsWith(`${selectedDim1}-`))
+    : []
 
   const handleSelect = (variant: ProductVariant) => {
     if (variant.stock <= 0) return
@@ -122,6 +145,52 @@ export function VariantSelector({
                 <VariantSkeleton />
               ) : variants.length === 0 ? (
                 <p className={styles.empty}>No hay variantes disponibles.</p>
+              ) : isCombined ? (
+                <div className={styles.chainedWrap}>
+                  <p className={styles.chainedStepLabel}>1. {dim1Label}</p>
+                  <div className={styles.chainedChips}>
+                    {dim1Options.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        className={`${styles.chainedChip} ${selectedDim1 === opt ? styles.chainedChipActive : ''}`}
+                        onClick={() => setSelectedDim1(opt)}
+                        aria-pressed={selectedDim1 === opt}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedDim1 !== null && (
+                    <>
+                      <p className={styles.chainedStepLabel}>2. {dim2Label}</p>
+                      <div className={styles.variantGrid}>
+                        {dim2Options.map((v) => {
+                          const price = getPrice(v)
+                          const outOfStock = v.stock <= 0
+                          const label = v.combination_key!.slice(selectedDim1.length + 1)
+                          return (
+                            <button
+                              key={v.id}
+                              className={`${styles.variantBtn} ${outOfStock ? styles.variantBtnOut : ''}`}
+                              onClick={() => handleSelect(v)}
+                              disabled={outOfStock}
+                              aria-disabled={outOfStock}
+                              type="button"
+                            >
+                              <span className={styles.variantName}>{label}</span>
+                              <span className={styles.variantPrice}>${price.toFixed(2)}</span>
+                              <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
+                                {outOfStock ? 'Agotado' : `${v.stock} und`}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
               ) : (
                 <div className={styles.variantGrid}>
                   {variants.map((v) => {

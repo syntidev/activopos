@@ -128,5 +128,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|public).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|favicon-96x96.png|favicon.svg|apple-touch-icon.png|site.webmanifest|activopos-logo-icon.svg|activopos-logo-flat-positive.svg|activopos-logo-adaptive.svg|web-app-manifest-192x192.png|web-app-manifest-512x512.png).*)'],
 }

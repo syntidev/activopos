@@ -51,7 +51,7 @@ export default function LoginPage() {
         transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
       >
         <div className={styles.logoRow} aria-label="ActivoPOS">
-          <img src="/activopos-3d.svg" alt="ActivoPOS" className={styles.logoImg} />
+          <img src="/activopos-logo-flat-positive.svg" alt="ActivoPOS" className={styles.logoImg} />
           <span className={styles.logoName}>
             <span className={styles.logoActivo}>Activo</span>
             <span className={styles.logoPOS}>POS</span>

@@ -37,7 +37,7 @@ export default async function MarketingFooter() {
         {/* Brand col */}
         <div className={styles.brand}>
           <Link href="/" className={styles.logo} aria-label="ActivoPOS — inicio">
-            <img src="/activopos-3d.svg" alt="" aria-hidden="true" className={styles.logoImg} />
+            <img src="/activopos-logo-flat-positive.svg" alt="" aria-hidden="true" className={styles.logoImg} />
             <span className={styles.logoName}>
               <span className={styles.logoA}>Activo</span>
               <span className={styles.logoB}>POS</span>

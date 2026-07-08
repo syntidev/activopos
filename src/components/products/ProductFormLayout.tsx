@@ -48,6 +48,10 @@ interface ProductFormLayoutProps {
  * Solo presentación — toda la lógica vive en useProductForm(). Consumido por
  * /productos/nuevo y /productos/[id]/editar. Debe renderizarse como hijo directo
  * de un <form className={s.grid}> para que la rejilla 50/50 funcione.
+ *
+ * Distribución (balanceada — ver Sprint 79):
+ * izquierda = Información básica + Imágenes + Catálogo
+ * derecha   = Precio + Inventario (stock/alerta) + Variantes (toggle + chips/tabla)
  */
 export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormLayoutProps) {
   return (
@@ -300,6 +304,147 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           </div>
           {f.imgError && <p className={m.errorMsg}>{f.imgError}</p>}
         </section>
+
+        {/* ── Card: Catálogo ── */}
+        <section className={s.card}>
+          <h2 className={s.cardTitle}>Catálogo</h2>
+
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-category">Categoría</label>
+            <select
+              id="np-category"
+              className={m.select}
+              value={f.categoryId ?? ''}
+              onChange={(e) => f.setCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+            >
+              <option value="">— Sin categoría —</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+            <button type="button" className={c.newCategoryBtn} onClick={onNewCategory}>
+              <Plus size={12} aria-hidden="true" />
+              Nueva Categoría
+            </button>
+          </div>
+
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-subcategory">Subcategoría</label>
+            <input
+              id="np-subcategory"
+              type="text"
+              className={m.input}
+              placeholder="Ej: Camisas, Collares, Snacks, etc."
+              value={f.subcategory}
+              onChange={(e) => f.setSubcategory(e.target.value)}
+              maxLength={60}
+            />
+          </div>
+
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-badge">Badge en catálogo</label>
+            <select
+              id="np-badge"
+              className={m.select}
+              value={f.badge}
+              onChange={(e) => f.setBadge(e.target.value)}
+            >
+              <option value="none">Sin badge</option>
+              <option value="popular">Popular</option>
+              <option value="nuevo">Nuevo</option>
+              <option value="promo">Promo</option>
+              <option value="recomendado">Recomendado</option>
+            </select>
+          </div>
+
+          {/* Toggle destacado */}
+          <div className={c.fixedPriceRow}>
+            <div className={c.fixedPriceLabel}>
+              <Star size={14} className={c.toggleIcon} aria-hidden="true" />
+              <div>
+                <span className={c.fixedPriceTitle}>Destacado</span>
+                <span className={c.fixedPriceSub}>Aparece primero en el catálogo público</span>
+              </div>
+            </div>
+            <label className={c.toggle} aria-label="Destacado">
+              <input
+                type="checkbox"
+                className={c.toggleInput}
+                checked={f.isFeatured}
+                onChange={(e) => f.setIsFeatured(e.target.checked)}
+              />
+              <span className={c.toggleTrack} />
+              <span className={c.toggleThumb} />
+            </label>
+          </div>
+
+          {/* Toggle disponible */}
+          <div className={c.fixedPriceRow}>
+            <div className={c.fixedPriceLabel}>
+              <span className={c.fixedPriceTitle}>Disponible para venta</span>
+              <span className={c.fixedPriceSub}>Oculta el producto del POS si está desactivado</span>
+            </div>
+            <label className={c.toggle} aria-label="Disponible para venta">
+              <input
+                type="checkbox"
+                className={c.toggleInput}
+                checked={f.isAvailable}
+                onChange={(e) => f.setIsAvailable(e.target.checked)}
+              />
+              <span className={c.toggleTrack} />
+              <span className={c.toggleThumb} />
+            </label>
+          </div>
+
+          {/* Visibilidad en catálogo */}
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-catalog-vis">
+              <Globe size={13} className={c.toggleIcon} aria-hidden="true" />
+              Visibilidad en catálogo
+            </label>
+            <select
+              id="np-catalog-vis"
+              className={m.select}
+              value={f.catalogVisibility}
+              onChange={(e) => {
+                const v = e.target.value as 'visible' | 'on_request' | 'hidden'
+                if ((v === 'visible' || v === 'on_request') && !f.hasCatalogPlan) {
+                  f.setShowCatalogUpgrade(true)
+                } else {
+                  f.setCatalogVisibility(v)
+                }
+              }}
+            >
+              <option value="hidden">Oculto — solo visible en POS</option>
+              <option value="visible">Visible — con precio y botón de pedido</option>
+              <option value="on_request">Solo consulta — sin precio, botón WhatsApp</option>
+            </select>
+          </div>
+
+          {/* Estado del servicio (solo servicios) */}
+          {f.saleMode === 'service' && (
+            <div className={c.fixedPriceRow}>
+              <div className={c.fixedPriceLabel}>
+                <span className={c.fixedPriceTitle}>Estado del servicio</span>
+                <span className={c.fixedPriceSub}>
+                  {f.availability === 'discontinued'
+                    ? 'Descontinuado — no aparece en catálogo ni POS'
+                    : 'Activo — disponible para solicitar'}
+                </span>
+              </div>
+              <label className={c.toggle} aria-label="Estado del servicio">
+                <input
+                  type="checkbox"
+                  className={c.toggleInput}
+                  checked={f.availability !== 'discontinued'}
+                  onChange={(e) => f.setAvailability(e.target.checked ? 'in_stock' : 'discontinued')}
+                />
+                <span className={c.toggleTrack} />
+                <span className={c.toggleThumb} />
+              </label>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* ══ Columna derecha ══ */}
@@ -465,7 +610,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           </div>
         </section>
 
-        {/* ── Card: Inventario ── */}
+        {/* ── Card: Inventario (stock + alerta — sin variantes) ── */}
         {f.saleMode !== 'service' && (
           <section className={s.card}>
             <h2 className={s.cardTitle}>Inventario</h2>
@@ -501,184 +646,187 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               />
               <p className={c.fixedPriceSub}>Avisar cuando el stock llegue a este nivel</p>
             </div>
+          </section>
+        )}
 
-            {(f.productKind === 'simple' || f.productKind === 'weight') && (
-              <>
-                <div className={m.divider} />
+        {/* ── Card: Variantes (toggle + chips/tabla — propia tarjeta) ── */}
+        {f.saleMode !== 'service' && (f.productKind === 'simple' || f.productKind === 'weight') && (
+          <section className={s.card}>
+            <h2 className={s.cardTitle}>Variantes</h2>
 
-                {/* Toggle variantes */}
-                <div className={c.fixedPriceRow}>
-                  <div className={c.fixedPriceLabel}>
-                    <Layers size={14} className={c.toggleIcon} aria-hidden="true" />
-                    <div>
-                      <span className={c.fixedPriceTitle}>Tiene variantes (tallas/colores)</span>
-                      <span className={c.fixedPriceSub}>El cajero elige variante antes de vender</span>
-                    </div>
-                  </div>
-                  <label className={c.toggle} aria-label="Tiene variantes">
-                    <input
-                      type="checkbox"
-                      className={c.toggleInput}
-                      checked={f.hasVariants}
-                      onChange={(e) => {
-                        f.setHasVariants(e.target.checked)
-                        if (!e.target.checked) f.setSelectedPresetGroup(null)
-                      }}
-                    />
-                    <span className={c.toggleTrack} />
-                    <span className={c.toggleThumb} />
-                  </label>
+            {/* Toggle variantes */}
+            <div className={c.fixedPriceRow}>
+              <div className={c.fixedPriceLabel}>
+                <Layers size={14} className={c.toggleIcon} aria-hidden="true" />
+                <div>
+                  <span className={c.fixedPriceTitle}>Tiene variantes (tallas/colores)</span>
+                  <span className={c.fixedPriceSub}>El cajero elige variante antes de vender</span>
                 </div>
+              </div>
+              <label className={c.toggle} aria-label="Tiene variantes">
+                <input
+                  type="checkbox"
+                  className={c.toggleInput}
+                  checked={f.hasVariants}
+                  onChange={(e) => {
+                    f.setHasVariants(e.target.checked)
+                    if (!e.target.checked) f.setSelectedPresetGroup(null)
+                  }}
+                />
+                <span className={c.toggleTrack} />
+                <span className={c.toggleThumb} />
+              </label>
+            </div>
 
-                {f.hasVariants && (
-                  <div className={c.variantsSection}>
-                    <label className={s.combineToggleRow}>
-                      <input
-                        type="checkbox"
-                        checked={f.combineVariants}
-                        onChange={(e) => f.setCombineVariants(e.target.checked)}
-                      />
-                      <span>Combinar dos tipos (ej. Talla + Color)</span>
-                    </label>
+            {f.hasVariants && (
+              <div className={c.variantsSection}>
+                <label className={s.combineToggleRow}>
+                  <input
+                    type="checkbox"
+                    checked={f.combineVariants}
+                    onChange={(e) => f.setCombineVariants(e.target.checked)}
+                  />
+                  <span>Combinar dos tipos (ej. Talla + Color)</span>
+                </label>
 
-                    {f.combineVariants ? (
-                      <div className={s.combineSection}>
-                        <div className={s.combineDim}>
-                          <p className={c.sectionLabel}>Tallas</p>
-                          <div className={c.variantAddRow}>
-                            <input
-                              type="text"
-                              className={`${m.input} ${c.variantNameInput}`}
-                              placeholder="Ej: S, M, L"
-                              value={f.dim1Input}
-                              onChange={(e) => f.setDim1Input(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); f.addDim1Value() } }}
-                              maxLength={30}
-                            />
-                            <button
-                              type="button"
-                              className={c.variantAddBtn}
-                              onClick={f.addDim1Value}
-                              disabled={!f.dim1Input.trim()}
-                              aria-label="Añadir talla"
-                            >
-                              <Plus size={15} aria-hidden="true" />
-                            </button>
-                          </div>
-                          {f.dim1Values.length > 0 && (
-                            <div className={c.presetGroup}>
-                              {f.dim1Values.map((v, i) => (
-                                <button
-                                  key={v}
-                                  type="button"
-                                  className={c.presetBtnActive}
-                                  onClick={() => f.removeDim1Value(i)}
-                                  aria-label={`Quitar talla ${v}`}
-                                >
-                                  {v} <X size={11} aria-hidden="true" />
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className={s.combineDim}>
-                          <p className={c.sectionLabel}>Colores</p>
-                          <div className={c.variantAddRow}>
-                            <input
-                              type="text"
-                              className={`${m.input} ${c.variantNameInput}`}
-                              placeholder="Ej: Azul, Rojo"
-                              value={f.dim2Input}
-                              onChange={(e) => f.setDim2Input(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); f.addDim2Value() } }}
-                              maxLength={30}
-                            />
-                            <button
-                              type="button"
-                              className={c.variantAddBtn}
-                              onClick={f.addDim2Value}
-                              disabled={!f.dim2Input.trim()}
-                              aria-label="Añadir color"
-                            >
-                              <Plus size={15} aria-hidden="true" />
-                            </button>
-                          </div>
-                          {f.dim2Values.length > 0 && (
-                            <div className={c.presetGroup}>
-                              {f.dim2Values.map((v, i) => (
-                                <button
-                                  key={v}
-                                  type="button"
-                                  className={c.presetBtnActive}
-                                  onClick={() => f.removeDim2Value(i)}
-                                  aria-label={`Quitar color ${v}`}
-                                >
-                                  {v} <X size={11} aria-hidden="true" />
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
+                {f.combineVariants ? (
+                  <div className={s.combineSection}>
+                    <div className={s.combineDim}>
+                      <p className={c.sectionLabel}>Tallas</p>
+                      <div className={c.variantAddRow}>
+                        <input
+                          type="text"
+                          className={`${m.input} ${c.variantNameInput}`}
+                          placeholder="Ej: S, M, L"
+                          value={f.dim1Input}
+                          onChange={(e) => f.setDim1Input(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); f.addDim1Value() } }}
+                          maxLength={30}
+                        />
                         <button
                           type="button"
-                          className={s.generateCombosBtn}
-                          onClick={f.generateCombinations}
-                          disabled={!f.dim1Values.length || !f.dim2Values.length}
+                          className={c.variantAddBtn}
+                          onClick={f.addDim1Value}
+                          disabled={!f.dim1Input.trim()}
+                          aria-label="Añadir talla"
                         >
-                          Generar combinaciones
+                          <Plus size={15} aria-hidden="true" />
                         </button>
+                      </div>
+                      {f.dim1Values.length > 0 && (
+                        <div className={c.presetGroup}>
+                          {f.dim1Values.map((v, i) => (
+                            <button
+                              key={v}
+                              type="button"
+                              className={c.presetBtnActive}
+                              onClick={() => f.removeDim1Value(i)}
+                              aria-label={`Quitar talla ${v}`}
+                            >
+                              {v} <X size={11} aria-hidden="true" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                        {f.combinations.length > 0 && (
-                          <div className={s.comboTableWrap}>
-                            <table className={s.comboTable}>
-                              <thead>
-                                <tr>
-                                  <th className={s.comboTh}>Combinación</th>
-                                  <th className={s.comboTh}>Stock</th>
-                                  <th className={s.comboTh}>Precio extra</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {f.combinations.map((combo) => (
-                                  <tr key={combo.key}>
-                                    <td className={s.comboTd}>{combo.key.replace('-', ' - ')}</td>
-                                    <td className={s.comboTd}>
-                                      <input
-                                        type="number"
-                                        className={`${m.input} ${combo.stock === '0' ? s.comboStockZero : ''}`}
-                                        value={combo.stock}
-                                        onChange={(e) => f.updateCombinationStock(combo.key, e.target.value)}
-                                        min="0"
-                                        step="1"
-                                        aria-label={`Stock de ${combo.key}`}
-                                      />
-                                    </td>
-                                    <td className={s.comboTd}>
-                                      <input
-                                        type="number"
-                                        className={m.input}
-                                        value={combo.extra}
-                                        onChange={(e) => f.updateCombinationExtra(combo.key, e.target.value)}
-                                        min="0"
-                                        step="0.01"
-                                        aria-label={`Precio extra de ${combo.key}`}
-                                      />
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                            {f.combinations.some(c => c.stock === '0') && (
-                              <p className={s.variantStockWarning}>
-                                Hay combinaciones con stock en 0 — quedarán marcadas como agotadas.
-                              </p>
-                            )}
-                          </div>
+                    <div className={s.combineDim}>
+                      <p className={c.sectionLabel}>Colores</p>
+                      <div className={c.variantAddRow}>
+                        <input
+                          type="text"
+                          className={`${m.input} ${c.variantNameInput}`}
+                          placeholder="Ej: Azul, Rojo"
+                          value={f.dim2Input}
+                          onChange={(e) => f.setDim2Input(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); f.addDim2Value() } }}
+                          maxLength={30}
+                        />
+                        <button
+                          type="button"
+                          className={c.variantAddBtn}
+                          onClick={f.addDim2Value}
+                          disabled={!f.dim2Input.trim()}
+                          aria-label="Añadir color"
+                        >
+                          <Plus size={15} aria-hidden="true" />
+                        </button>
+                      </div>
+                      {f.dim2Values.length > 0 && (
+                        <div className={c.presetGroup}>
+                          {f.dim2Values.map((v, i) => (
+                            <button
+                              key={v}
+                              type="button"
+                              className={c.presetBtnActive}
+                              onClick={() => f.removeDim2Value(i)}
+                              aria-label={`Quitar color ${v}`}
+                            >
+                              {v} <X size={11} aria-hidden="true" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className={s.generateCombosBtn}
+                      onClick={f.generateCombinations}
+                      disabled={!f.dim1Values.length || !f.dim2Values.length}
+                    >
+                      Generar combinaciones
+                    </button>
+
+                    {f.combinations.length > 0 && (
+                      <div className={s.comboTableWrap}>
+                        <table className={s.comboTable}>
+                          <thead>
+                            <tr>
+                              <th className={s.comboTh}>Combinación</th>
+                              <th className={s.comboTh}>Stock</th>
+                              <th className={s.comboTh}>Precio extra</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {f.combinations.map((combo) => (
+                              <tr key={combo.key}>
+                                <td className={s.comboTd}>{combo.key.replace('-', ' - ')}</td>
+                                <td className={s.comboTd}>
+                                  <input
+                                    type="number"
+                                    className={`${m.input} ${combo.stock === '0' ? s.comboStockZero : ''}`}
+                                    value={combo.stock}
+                                    onChange={(e) => f.updateCombinationStock(combo.key, e.target.value)}
+                                    min="0"
+                                    step="1"
+                                    aria-label={`Stock de ${combo.key}`}
+                                  />
+                                </td>
+                                <td className={s.comboTd}>
+                                  <input
+                                    type="number"
+                                    className={m.input}
+                                    value={combo.extra}
+                                    onChange={(e) => f.updateCombinationExtra(combo.key, e.target.value)}
+                                    min="0"
+                                    step="0.01"
+                                    aria-label={`Precio extra de ${combo.key}`}
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {f.combinations.some(cb => cb.stock === '0') && (
+                          <p className={s.variantStockWarning}>
+                            Hay combinaciones con stock en 0 — quedarán marcadas como agotadas.
+                          </p>
                         )}
                       </div>
-                    ) : (
+                    )}
+                  </div>
+                ) : (
                   <>
                     <p className={c.sectionLabel}>Elige un tipo</p>
                     <div className={c.presetGroupSelector}>
@@ -792,154 +940,11 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                       </p>
                     )}
                   </>
-                    )}
-                  </div>
                 )}
-              </>
+              </div>
             )}
           </section>
         )}
-
-        {/* ── Card: Catálogo ── */}
-        <section className={s.card}>
-          <h2 className={s.cardTitle}>Catálogo</h2>
-
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-category">Categoría</label>
-            <select
-              id="np-category"
-              className={m.select}
-              value={f.categoryId ?? ''}
-              onChange={(e) => f.setCategoryId(e.target.value ? parseInt(e.target.value) : null)}
-            >
-              <option value="">— Sin categoría —</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-            <button type="button" className={c.newCategoryBtn} onClick={onNewCategory}>
-              <Plus size={12} aria-hidden="true" />
-              Nueva Categoría
-            </button>
-          </div>
-
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-subcategory">Subcategoría</label>
-            <input
-              id="np-subcategory"
-              type="text"
-              className={m.input}
-              placeholder="Ej: Camisas, Collares, Snacks, etc."
-              value={f.subcategory}
-              onChange={(e) => f.setSubcategory(e.target.value)}
-              maxLength={60}
-            />
-          </div>
-
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-badge">Badge en catálogo</label>
-            <select
-              id="np-badge"
-              className={m.select}
-              value={f.badge}
-              onChange={(e) => f.setBadge(e.target.value)}
-            >
-              <option value="none">Sin badge</option>
-              <option value="popular">Popular</option>
-              <option value="nuevo">Nuevo</option>
-              <option value="promo">Promo</option>
-              <option value="recomendado">Recomendado</option>
-            </select>
-          </div>
-
-          {/* Toggle destacado */}
-          <div className={c.fixedPriceRow}>
-            <div className={c.fixedPriceLabel}>
-              <Star size={14} className={c.toggleIcon} aria-hidden="true" />
-              <div>
-                <span className={c.fixedPriceTitle}>Destacado</span>
-                <span className={c.fixedPriceSub}>Aparece primero en el catálogo público</span>
-              </div>
-            </div>
-            <label className={c.toggle} aria-label="Destacado">
-              <input
-                type="checkbox"
-                className={c.toggleInput}
-                checked={f.isFeatured}
-                onChange={(e) => f.setIsFeatured(e.target.checked)}
-              />
-              <span className={c.toggleTrack} />
-              <span className={c.toggleThumb} />
-            </label>
-          </div>
-
-          {/* Toggle disponible */}
-          <div className={c.fixedPriceRow}>
-            <div className={c.fixedPriceLabel}>
-              <span className={c.fixedPriceTitle}>Disponible para venta</span>
-              <span className={c.fixedPriceSub}>Oculta el producto del POS si está desactivado</span>
-            </div>
-            <label className={c.toggle} aria-label="Disponible para venta">
-              <input
-                type="checkbox"
-                className={c.toggleInput}
-                checked={f.isAvailable}
-                onChange={(e) => f.setIsAvailable(e.target.checked)}
-              />
-              <span className={c.toggleTrack} />
-              <span className={c.toggleThumb} />
-            </label>
-          </div>
-
-          {/* Visibilidad en catálogo */}
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-catalog-vis">
-              <Globe size={13} className={c.toggleIcon} aria-hidden="true" />
-              Visibilidad en catálogo
-            </label>
-            <select
-              id="np-catalog-vis"
-              className={m.select}
-              value={f.catalogVisibility}
-              onChange={(e) => {
-                const v = e.target.value as 'visible' | 'on_request' | 'hidden'
-                if ((v === 'visible' || v === 'on_request') && !f.hasCatalogPlan) {
-                  f.setShowCatalogUpgrade(true)
-                } else {
-                  f.setCatalogVisibility(v)
-                }
-              }}
-            >
-              <option value="hidden">Oculto — solo visible en POS</option>
-              <option value="visible">Visible — con precio y botón de pedido</option>
-              <option value="on_request">Solo consulta — sin precio, botón WhatsApp</option>
-            </select>
-          </div>
-
-          {/* Estado del servicio (solo servicios) */}
-          {f.saleMode === 'service' && (
-            <div className={c.fixedPriceRow}>
-              <div className={c.fixedPriceLabel}>
-                <span className={c.fixedPriceTitle}>Estado del servicio</span>
-                <span className={c.fixedPriceSub}>
-                  {f.availability === 'discontinued'
-                    ? 'Descontinuado — no aparece en catálogo ni POS'
-                    : 'Activo — disponible para solicitar'}
-                </span>
-              </div>
-              <label className={c.toggle} aria-label="Estado del servicio">
-                <input
-                  type="checkbox"
-                  className={c.toggleInput}
-                  checked={f.availability !== 'discontinued'}
-                  onChange={(e) => f.setAvailability(e.target.checked ? 'in_stock' : 'discontinued')}
-                />
-                <span className={c.toggleTrack} />
-                <span className={c.toggleThumb} />
-              </label>
-            </div>
-          )}
-        </section>
 
         {f.errors.submit && <p className={m.errorMsg}>{f.errors.submit}</p>}
       </div>

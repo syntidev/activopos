@@ -24,28 +24,27 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'ActivoPOS — El POS para negocios que andan activos',
-  description:
-    'Sistema de punto de venta para PYMES venezolanas. BCV automático, multimoneda, reportería en tiempo real.',
-  keywords: ['POS', 'punto de venta', 'Venezuela', 'BCV', 'bolívares'],
-  authors: [{ name: 'SYNTIdev' }],
-  robots: 'noindex, nofollow',
-  manifest: '/manifest.json',
+  title: {
+    default: 'ActivoPOS',
+    template: '%s | ActivoPOS',
+  },
+  description: 'Tu sistema de control de ventas e inventario. No reemplaza tu facturación SENIAT — la complementa.',
+  manifest: '/brand/activopos/site.webmanifest',
+  themeColor: '#EF8E01',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
     title: 'ActivoPOS',
-  },
-  other: {
-    'mobile-web-app-capable': 'yes',
+    statusBarStyle: 'black-translucent',
   },
   icons: {
     icon: [
-      { url: '/favicon.svg',        type: 'image/svg+xml' },
-      { url: '/favicon-96x96.png',  sizes: '96x96',   type: 'image/png' },
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/brand/activopos/favicon.ico', sizes: 'any' },
+      { url: '/brand/activopos/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/brand/activopos/activopos-logo-icon.svg', type: 'image/svg+xml' },
     ],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+    apple: [
+      { url: '/brand/activopos/apple-touch-icon.png', sizes: '180x180' },
+    ],
   },
 }
 

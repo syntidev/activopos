@@ -16,6 +16,7 @@ export interface ProductVariantInput {
   name: string
   price_extra_usd: number
   stock: number
+  tipo?: 'talla' | 'color' | 'personalizado'
 }
 
 type CatalogVisibility = 'visible' | 'on_request' | 'hidden'

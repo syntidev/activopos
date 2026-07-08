@@ -346,7 +346,8 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setVariants(prev => prev.filter((_, i) => i !== idx))
   const addPreset = (n: string) => {
     if (variants.some(v => v.name === n)) return
-    setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0 }])
+    const tipo = selectedPresetGroup === 'colores' ? 'color' : 'talla'
+    setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0, tipo }])
   }
   const updateVariantStock = (idx: number, stock: number) =>
     setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock: Math.max(stock || 0, 0) } : v))

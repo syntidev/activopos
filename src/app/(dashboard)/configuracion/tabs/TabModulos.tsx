@@ -30,6 +30,11 @@ const MODULES: Module[] = [
 
 const DEFAULT_ENABLED = new Set(['pos', 'inventory', 'caja', 'pedidos', 'catalog', 'finanzas', 'reportes', 'analytics'])
 
+// Sidebar (DashboardShell) vive en un árbol de componentes separado y solo
+// hace fetch de enabledModules una vez al montar. Sin este evento, un toggle
+// aquí queda invisible en el sidebar hasta un reload completo.
+const MODULES_UPDATED_EVENT = 'activopos:modules-updated'
+
 interface OptionalModule {
   key: string
   label: string
@@ -99,6 +104,8 @@ export function TabModulos({ businessId: _businessId }: Props) {
         body: JSON.stringify({ modules: Array.from(next) }),
       })
       if (!res.ok) throw new Error()
+      const j = await res.json() as { modules_enabled?: string[] }
+      window.dispatchEvent(new CustomEvent(MODULES_UPDATED_EVENT, { detail: j.modules_enabled ?? Array.from(next) }))
     } catch {
       setEnabled(prev => {
         const reverted = new Set(prev)
@@ -115,11 +122,13 @@ export function TabModulos({ businessId: _businessId }: Props) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await fetch('/api/config/business/modules', {
+      const res = await fetch('/api/config/business/modules', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ modules: Array.from(enabled) }),
       })
+      const j = await res.json().catch(() => ({})) as { modules_enabled?: string[] }
+      window.dispatchEvent(new CustomEvent(MODULES_UPDATED_EVENT, { detail: j.modules_enabled ?? Array.from(enabled) }))
       toast('Módulos actualizados', 'success')
     } catch {
       toast('Error al guardar módulos', 'error')

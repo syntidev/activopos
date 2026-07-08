@@ -8,11 +8,10 @@ const ALLOWED_MODULES = [
   'finanzas', 'reportes', 'analytics', 'kds', 'delivery',
 ] as const
 
-// core modules are always active — optional-only: kds, delivery
-const CORE_MODULES = [
-  'pos', 'inventory', 'caja', 'pedidos',
-  'catalog', 'finanzas', 'reportes', 'analytics',
-] as const
+// core modules are always active — matches TabModulos.tsx alwaysOn:true.
+// Todo lo demás (caja, pedidos, catalog, finanzas, reportes, analytics) es
+// desactivable; forzarlos aquí pisaba el toggle del usuario en cada guardado.
+const CORE_MODULES = ['pos', 'inventory'] as const
 
 const modulesSchema = z.object({
   modules: z.array(z.enum(ALLOWED_MODULES)).min(1),

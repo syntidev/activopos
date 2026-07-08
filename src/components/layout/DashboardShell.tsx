@@ -31,6 +31,18 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
       .catch(() => {})
   }, [])
 
+  /* ── Revalidación en tiempo real: TabModulos (configuración) vive en un
+     árbol de componentes separado — sin este listener, un toggle guardado
+     ahí no se reflejaba en el sidebar hasta un reload completo. ── */
+  useEffect(() => {
+    function onModulesUpdated(e: Event) {
+      const detail = (e as CustomEvent<string[]>).detail
+      if (Array.isArray(detail)) setEnabledModules(detail)
+    }
+    window.addEventListener('activopos:modules-updated', onModulesUpdated)
+    return () => window.removeEventListener('activopos:modules-updated', onModulesUpdated)
+  }, [])
+
   /* ── Close mobile drawer on desktop resize ── */
   useEffect(() => {
     function handleResize() {

@@ -2,7 +2,7 @@
 
 import {
   X, Plus, ImagePlus, Loader2, Layers, Globe, Star,
-  Box, Scale, Wrench, Boxes, Search, ScanBarcode,
+  Box, Scale, Wrench, Boxes, Search, ScanBarcode, Pencil, Trash2,
 } from 'lucide-react'
 import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProductForm'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
@@ -678,7 +678,124 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               </label>
             </div>
 
-            {f.hasVariants && (
+            {f.hasVariants && f.isEdit && (
+              <div className={c.variantsSection}>
+                <div className={c.dbVariantsSection}>
+                  <div className={c.dbVarsHeader}>
+                    <p className={m.label}>Variantes guardadas</p>
+                    <button
+                      type="button"
+                      className={c.dbVarsAddBtn}
+                      onClick={() => f.openVarForm(null)}
+                    >
+                      <Plus size={13} aria-hidden="true" />
+                      Agregar
+                    </button>
+                  </div>
+
+                  {f.loadingDbVars ? (
+                    <div className={c.dbVarEmpty}>
+                      <Loader2 size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+                      Cargando…
+                    </div>
+                  ) : f.dbVariants.length === 0 && !f.showVarForm ? (
+                    <p className={c.dbVarEmpty}>Sin variantes. Agrega la primera.</p>
+                  ) : (
+                    f.dbVariants.map(v => (
+                      <div key={v.id} className={c.dbVarRow}>
+                        <span className={c.dbVarName}>{v.valor}</span>
+                        <span className={c.dbVarPrice}>${(v.price_usd ?? v.precio_extra).toFixed(2)}</span>
+                        <span className={c.dbVarStock}>{v.stock} und</span>
+                        <button
+                          type="button"
+                          className={c.dbVarAction}
+                          onClick={() => f.openVarForm(v)}
+                          aria-label={`Editar variante ${v.valor}`}
+                        >
+                          <Pencil size={13} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className={`${c.dbVarAction} ${c.dbVarActionDelete}`}
+                          onClick={() => void f.handleDeleteVar(v.id)}
+                          aria-label={`Eliminar variante ${v.valor}`}
+                        >
+                          <Trash2 size={13} aria-hidden="true" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+
+                  {f.showVarForm && (
+                    <div className={c.dbVarForm}>
+                      <div className={c.dbVarFormRow}>
+                        <input
+                          type="text"
+                          className={m.input}
+                          placeholder="Nombre* (ej: Talla M, Rojo)"
+                          value={f.varFormValor}
+                          onChange={(e) => f.setVarFormValor(e.target.value)}
+                          maxLength={80}
+                          aria-label="Nombre de variante"
+                        />
+                        <input
+                          type="text"
+                          className={m.input}
+                          placeholder="SKU"
+                          value={f.varFormSku}
+                          onChange={(e) => f.setVarFormSku(e.target.value)}
+                          maxLength={60}
+                          aria-label="SKU"
+                          style={{ maxWidth: 110 }}
+                        />
+                      </div>
+                      <div className={c.dbVarFormRow}>
+                        <input
+                          type="number"
+                          className={m.input}
+                          placeholder="Precio extra $"
+                          value={f.varFormExtra}
+                          onChange={(e) => f.setVarFormExtra(e.target.value)}
+                          min="0"
+                          step="0.01"
+                          aria-label="Precio extra USD"
+                        />
+                        <input
+                          type="number"
+                          className={m.input}
+                          placeholder="Stock inicial"
+                          value={f.varFormStock}
+                          onChange={(e) => f.setVarFormStock(e.target.value)}
+                          min="0"
+                          step="1"
+                          aria-label="Stock inicial"
+                        />
+                      </div>
+                      <div className={c.dbVarFormActions}>
+                        <button
+                          type="button"
+                          className={c.dbVarCancelBtn}
+                          onClick={() => { f.setShowVarForm(false); f.setEditingVar(null) }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          className={c.dbVarSaveBtn}
+                          onClick={() => void f.handleSaveVar()}
+                          disabled={f.varFormSaving || !f.varFormValor.trim()}
+                        >
+                          {f.varFormSaving && <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} aria-hidden="true" />}
+                          {f.editingVar ? 'Actualizar' : 'Guardar variante'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {f.hasVariants && !f.isEdit && (
               <div className={c.variantsSection}>
                 <label className={s.combineToggleRow}>
                   <input

@@ -1577,6 +1577,15 @@
   color:       var(--color-text-secondary);
 }
 
+.modalQtyAvailable {
+  display:     block;
+  font-size:   var(--text-xs);
+  font-weight: var(--weight-medium);
+  color:       var(--color-warning-text);
+  margin-top:  calc(var(--space-2) * -1);
+  padding-bottom: var(--space-2);
+}
+
 .qtyControl {
   display:       flex;
   align-items:   center;

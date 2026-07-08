@@ -547,6 +547,18 @@ export function CatalogoGrid({
 
   const selectedVariant = selP?.variants.find(v => v.id === selectedVariantId) ?? null
 
+  // Cap de cantidad: stock de la variante elegida, o del producto si no hay
+  // variante seleccionada (o no tiene variantes). null (servicios) = sin tope.
+  const availableStock = selectedVariant
+    ? selectedVariant.stock
+    : (selP?.stockQty ?? Infinity)
+
+  // Si el stock disponible baja (cambio de variante) por debajo de la
+  // cantidad ya elegida, la re-ajusta — evita overselling al cambiar de talla.
+  useEffect(() => {
+    setModalQty(q => Math.min(q, Math.max(1, availableStock)))
+  }, [availableStock])
+
   // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
   const isCombinedVariant = !!selP?.variants.some(v => v.combination_key)
   const combinedDimLabels = isCombinedVariant ? (selP!.variants[0]?.tipo ?? '').split('+') : []
@@ -1563,29 +1575,37 @@ export function CatalogoGrid({
               {selP.availability !== 'discontinued' &&
                 selP.catalogVisibility !== 'on_request' &&
                 selP.priceUsd > 0 && (
-                <div className={styles.modalQtyRow}>
-                  <span className={styles.modalQtyLabel}>Cantidad</span>
-                  <div className={styles.qtyControl}>
-                    <button
-                      type="button"
-                      className={styles.qtyControlBtn}
-                      onClick={() => setModalQty(q => Math.max(1, q - 1))}
-                      disabled={modalQty <= 1}
-                      aria-label="Reducir cantidad"
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <span className={styles.qtyValue}>{modalQty}</span>
-                    <button
-                      type="button"
-                      className={styles.qtyControlBtn}
-                      onClick={() => setModalQty(q => q + 1)}
-                      aria-label="Aumentar cantidad"
-                    >
-                      <Plus size={14} />
-                    </button>
+                <>
+                  <div className={styles.modalQtyRow}>
+                    <span className={styles.modalQtyLabel}>Cantidad</span>
+                    <div className={styles.qtyControl}>
+                      <button
+                        type="button"
+                        className={styles.qtyControlBtn}
+                        onClick={() => setModalQty(q => Math.max(1, q - 1))}
+                        disabled={modalQty <= 1}
+                        aria-label="Reducir cantidad"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className={styles.qtyValue}>{modalQty}</span>
+                      <button
+                        type="button"
+                        className={styles.qtyControlBtn}
+                        onClick={() => setModalQty(q => Math.min(availableStock, q + 1))}
+                        disabled={modalQty >= availableStock}
+                        aria-label="Aumentar cantidad"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                  {availableStock < 10 && (
+                    <span className={styles.modalQtyAvailable}>
+                      {availableStock} disponible{availableStock === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </>
               )}
             </div>
 

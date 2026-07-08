@@ -1,9 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import type Quagga from '@ericblade/quagga2'
-
-type QuaggaType = typeof Quagga
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import type { Html5Qrcode } from 'html5-qrcode'
 
 interface UseScannerOptions {
   /** Whether the scanner should be running. Flip to true to start, false to stop. */
@@ -17,18 +15,39 @@ interface UseScannerOptions {
 }
 
 interface UseScannerReturn {
-  /** Attach to a <div> element — Quagga renders video/canvas inside it. */
+  /** Attach to a <div> element — html5-qrcode renders video/canvas inside it. */
   videoContainerRef: React.RefObject<HTMLDivElement>
   /** True when the camera could not be started. */
   permError: boolean
+  /** True while the camera engine is running. */
+  isScanning: boolean
+  /** Human-readable error from the last failed start/scanFile call. */
+  error: string | null
+  /** Imperative start — used by UIs that gate the camera behind a button tap. */
+  startScanner: () => void
+  /** Imperative stop — safe to call even if not running. */
+  stopScanner: () => void
+  /** Capa 3 fallback: decode a barcode from a photo file (e.g. camera capture input). */
+  scanFile: (file: File) => Promise<void>
 }
 
-type DetectHandler = (result: { codeResult: { code: string | null } }) => void
+// Sin width/height/frameRate — el dispositivo elige su mejor resolución nativa.
+const CAMERA_CONFIG = { facingMode: 'environment' }
+
+const HTML5_QR_CONFIG = {
+  fps: 30,
+  qrbox: { width: 300, height: 200 },
+  experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+}
 
 /**
- * Shared scanner hook — manages @ericblade/quagga2 lifecycle, camera permissions,
- * and debounce. Quagga2's locator finds barcodes even when rotated or off-center.
- * Uses dynamic import to avoid SSR failures (Quagga accesses browser APIs at load time).
+ * Shared scanner hook — arquitectura en capas:
+ *   Capa 1+2: html5-qrcode, que usa BarcodeDetector nativo cuando el
+ *             dispositivo lo soporta (experimentalFeatures.useBarCodeDetectorIfSupported)
+ *             y cae a su propio decoder JS si no.
+ *   Capa 3:   scanFile() — decodifica una foto tomada como fallback final.
+ * Capa 0 (input manual) vive en el componente consumidor, no aquí.
+ * Dynamic import de html5-qrcode: SSR-safe, accede a APIs de browser al cargar.
  */
 export function useScanner({
   active,
@@ -38,99 +57,97 @@ export function useScanner({
 }: UseScannerOptions): UseScannerReturn {
   const videoContainerRef = useRef<HTMLDivElement>(null)
   const [permError, setPermError]   = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
+  const [error, setError]           = useState<string | null>(null)
 
-  // Stable refs for the loaded module and active handler (shared between effect and cleanup)
-  const quaggaRef  = useRef<QuaggaType | null>(null)
-  const handlerRef = useRef<DetectHandler | null>(null)
+  const rawId       = useId()
+  const containerId = `scanner-${rawId.replace(/[^a-zA-Z0-9]/g, '')}`
 
-  // Store callbacks in refs so the effect doesn't re-run when they change identity
+  const scannerRef  = useRef<Html5Qrcode | null>(null)
+  const runningRef  = useRef(false)
+  const lastCodeRef = useRef('')
+  const lastTsRef   = useRef(0)
+
   const onResultRef = useRef(onResult)
   const onErrorRef  = useRef(onError)
   useEffect(() => { onResultRef.current = onResult }, [onResult])
   useEffect(() => { onErrorRef.current = onError }, [onError])
 
-  useEffect(() => {
-    const target = videoContainerRef.current
+  const emit = useCallback((code: string) => {
+    const now = Date.now()
+    if (code === lastCodeRef.current && now - lastTsRef.current < debounceMs) return
+    lastCodeRef.current = code
+    lastTsRef.current   = now
+    onResultRef.current(code)
+  }, [debounceMs])
 
-    if (!active) {
-      const Q = quaggaRef.current
-      const H = handlerRef.current
-      if (Q && H) Q.offDetected(H)
-      if (Q) { try { Q.stop() } catch { /* not running */ } }
-      return
-    }
+  const stopScanner = useCallback(() => {
+    runningRef.current = false
+    setIsScanning(false)
+    const scanner = scannerRef.current
+    scannerRef.current = null
+    if (!scanner) return
+    scanner.stop()
+      .catch(() => { /* ya detenido */ })
+      .finally(() => { try { scanner.clear() } catch { /* no-op */ } })
+  }, [])
 
-    if (!target) return
-
+  const startScanner = useCallback(() => {
+    const container = videoContainerRef.current
+    if (!container || runningRef.current) return
+    runningRef.current = true
+    setError(null)
     setPermError(false)
+    setIsScanning(true)
 
-    let mounted = true
-    let lastCode = ''
-    let lastTs   = 0
+    void (async () => {
+      try {
+        if (!container.id) container.id = containerId
+        const { Html5Qrcode } = await import('html5-qrcode')
+        const scanner = new Html5Qrcode(container.id)
+        scannerRef.current = scanner
+        await scanner.start(
+          CAMERA_CONFIG,
+          HTML5_QR_CONFIG,
+          (decodedText) => emit(decodedText),
+          () => { /* frame sin código — silencioso */ }
+        )
+      } catch {
+        runningRef.current = false
+        setIsScanning(false)
+        setPermError(true)
+        setError('No se pudo acceder a la cámara')
+        onErrorRef.current?.('permission_denied')
+      }
+    })()
+  }, [containerId, emit])
 
-    const handler: DetectHandler = (result) => {
-      const code = result.codeResult.code
-      if (!code) return
-      const now = Date.now()
-      if (code === lastCode && now - lastTs < debounceMs) return
-      lastCode = code
-      lastTs   = now
-      onResultRef.current(code)
+  useEffect(() => {
+    if (active) startScanner()
+    else stopScanner()
+    return () => stopScanner()
+  }, [active, startScanner, stopScanner])
+
+  const scanFile = useCallback(async (file: File) => {
+    setError(null)
+    const fileScanId = `${containerId}-file`
+    let el = document.getElementById(fileScanId)
+    if (!el) {
+      el = document.createElement('div')
+      el.id = fileScanId
+      el.style.display = 'none'
+      document.body.appendChild(el)
     }
-
-    void import('@ericblade/quagga2').then(({ default: Q }) => {
-      if (!mounted) return
-      quaggaRef.current  = Q
-      handlerRef.current = handler
-
-      Q.init(
-        {
-          inputStream: {
-            type: 'LiveStream',
-            target,
-            constraints: {
-              facingMode: { ideal: 'environment' },
-            },
-          },
-          locator: {
-            patchSize: 'large',
-            halfSample: false,
-          },
-          numOfWorkers: 2,
-          decoder: {
-            readers: [
-              'ean_reader',
-              'ean_8_reader',
-              'code_128_reader',
-              'upc_reader',
-              'upc_e_reader',
-            ],
-          },
-          locate: true,
-        },
-        (err) => {
-          if (!mounted) return
-          if (err) {
-            setPermError(true)
-            onErrorRef.current?.('permission_denied')
-            return
-          }
-          Q.start()
-          Q.onDetected(handler)
-        }
-      )
-    })
-
-    return () => {
-      mounted = false
-      const Q = quaggaRef.current
-      const H = handlerRef.current
-      if (Q && H) Q.offDetected(H)
-      if (Q) { try { Q.stop() } catch { /* already stopped */ } }
-      quaggaRef.current  = null
-      handlerRef.current = null
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode')
+      const scanner = new Html5Qrcode(fileScanId)
+      const decoded = await scanner.scanFile(file, false)
+      try { scanner.clear() } catch { /* no-op */ }
+      emit(decoded)
+    } catch {
+      setError('No se pudo leer el código en la foto')
     }
-  }, [active, debounceMs])
+  }, [containerId, emit])
 
-  return { videoContainerRef, permError }
+  return { videoContainerRef, permError, isScanning, error, startScanner, stopScanner, scanFile }
 }

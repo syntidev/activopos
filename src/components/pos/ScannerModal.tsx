@@ -1,8 +1,11 @@
 'use client'
 
 import { useRef, useState, useCallback } from 'react'
-import { X, Minus, Plus, ShoppingCart } from 'lucide-react'
+import type { ChangeEvent, FormEvent } from 'react'
+import { X, Minus, Plus, ShoppingCart, Camera, ImagePlus } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import type { ProductForPOS, TicketState, TicketTotals } from '@/lib/pos'
 import styles from './ScannerModal.module.css'
 
@@ -56,9 +59,11 @@ export function ScannerModal({
   /* Barcode lookup cache — persists across scans within one open session */
   const barcodeCache  = useRef<Map<string, ProductForPOS | null>>(new Map())
   const lookingUpRef  = useRef(false)
+  const fileInputRef  = useRef<HTMLInputElement>(null)
 
-  const [flash, setFlash]       = useState(false)
-  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [flash, setFlash]         = useState(false)
+  const [toastMsg, setToastMsg]   = useState<string | null>(null)
+  const [manualCode, setManualCode] = useState('')
 
   const showToast = (msg: string) => {
     setToastMsg(msg)
@@ -96,10 +101,29 @@ export function ScannerModal({
     }
   }, [onAddProduct])
 
-  const { videoContainerRef, permError } = useScanner({
-    active:   open,
+  const { videoContainerRef, permError, isScanning, error, startScanner, stopScanner, scanFile } = useScanner({
+    active:   false, // Capa 1+2 arranca manual vía botón "Usar cámara", no al abrir el modal
     onResult: handleBarcode,
   })
+
+  const handleClose = useCallback(() => {
+    stopScanner()
+    onClose()
+  }, [stopScanner, onClose])
+
+  const handleManualSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    const code = manualCode.trim()
+    if (!code) return
+    handleBarcode(code)
+    setManualCode('')
+  }
+
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) void scanFile(file)
+    e.target.value = ''
+  }
 
   if (!open) return null
 
@@ -113,18 +137,68 @@ export function ScannerModal({
       aria-label="Escáner de código de barras"
     >
 
+      {/* ══ Capa 0 — input manual, siempre visible ══ */}
+      <form className={styles.manualBar} onSubmit={handleManualSubmit}>
+        <Input
+          value={manualCode}
+          onChange={(e) => setManualCode(e.target.value)}
+          placeholder="Escribe o pega el código"
+          inputSize="sm"
+          aria-label="Código de barras manual"
+        />
+        <Button type="submit" size="sm" variant="secondary" disabled={!manualCode.trim()}>
+          Buscar
+        </Button>
+      </form>
+
       {/* ══ Camera zone (33dvh) ══ */}
       <div className={styles.cameraZone}>
 
-        {/* Video stream — Quagga renders <video>+<canvas> inside this div */}
+        {/* Contenedor para html5-qrcode — renderiza su propio <video> dentro */}
         <div
+          id="scanner-container"
           ref={videoContainerRef}
           className={styles.video}
           aria-hidden="true"
         />
 
-        {/* Viewfinder + dark overlay outside via box-shadow */}
-        {!permError && (
+        {/* Capa 1+2/3 — prompt antes de iniciar cámara */}
+        {!isScanning && (
+          <div className={styles.cameraPrompt}>
+            <Button
+              type="button"
+              variant="cta"
+              size="md"
+              leftIcon={<Camera size={16} aria-hidden="true" />}
+              onClick={startScanner}
+            >
+              Usar cámara
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              leftIcon={<ImagePlus size={16} aria-hidden="true" />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Tomar foto
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className={styles.hiddenFileInput}
+              onChange={handlePhotoChange}
+            />
+            {(permError || error) && (
+              <p className={styles.cameraError}>{error ?? 'No se pudo acceder a la cámara.'}</p>
+            )}
+          </div>
+        )}
+
+        {/* Viewfinder + dark overlay outside via box-shadow — solo mientras escanea */}
+        {isScanning && (
           <>
             <div className={styles.viewfinder} aria-hidden="true">
               <span className={`${styles.corner} ${styles.cornerTL}`} />
@@ -139,26 +213,20 @@ export function ScannerModal({
               />
             </div>
             <p className={styles.scanHint} aria-hidden="true">Centra el código en el recuadro</p>
-          </>
-        )}
 
-        {/* Status badge (top-left) */}
-        <div className={styles.statusBadge}>
-          {permError ? (
-            <span className={styles.permMsg}>Activa la cámara en la configuración.</span>
-          ) : (
-            <>
+            {/* Status badge (top-left) */}
+            <div className={styles.statusBadge}>
               <span className={styles.scanDot} aria-hidden="true" />
               <span>Escaneando...</span>
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
 
         {/* Close button (top-right) */}
         <button
           type="button"
           className={styles.closeBtn}
-          onClick={onClose}
+          onClick={handleClose}
           aria-label="Cerrar escáner"
         >
           <X size={20} strokeWidth={2} aria-hidden="true" />

@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { MessageCircle } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { getBcvRate } from '@/lib/bcv'
@@ -179,9 +178,6 @@ export default async function CatalogoPage({ params }: PageProps) {
   const displayTitle = business.catalog_title ?? business.name
   const location     = [business.city, business.state].filter(Boolean).join(', ')
   const waPhone      = business.phone?.replace(/\D/g, '') ?? ''
-  const waUrl        = waPhone
-    ? `https://wa.me/${waPhone}?text=${encodeURIComponent('Hola, vi tu catálogo en ActivoPOS y me interesa pedir.')}`
-    : null
 
   return (
     <div
@@ -208,20 +204,6 @@ export default async function CatalogoPage({ params }: PageProps) {
         businessInstagram={business.catalog_instagram ?? null}
         heroCover={business.catalog_cover_path ?? null}
       />
-
-      {/* ── WhatsApp FAB ────────────────────────────────────────── */}
-      {waUrl && (
-        <a
-          href={waUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.waFab}
-          aria-label="Contactar por WhatsApp"
-        >
-          <MessageCircle size={22} strokeWidth={2} aria-hidden="true" />
-          <span className={styles.waFabText}>Pedir por WhatsApp</span>
-        </a>
-      )}
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className={styles.footer}>

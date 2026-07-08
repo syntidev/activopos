@@ -348,6 +348,8 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     if (variants.some(v => v.name === n)) return
     setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0 }])
   }
+  const updateVariantStock = (idx: number, stock: number) =>
+    setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock: Math.max(stock || 0, 0) } : v))
 
   /* ── Variantes combinadas: tallas × colores → producto cartesiano ── */
   const addDim1Value = () => {
@@ -544,7 +546,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     newVarName, setNewVarName, newVarExtra, setNewVarExtra,
     newVarStock, setNewVarStock,
     selectedPresetGroup, setSelectedPresetGroup,
-    addVariant, removeVariant, addPreset,
+    addVariant, removeVariant, addPreset, updateVariantStock,
     // combined variants (2 dimensiones)
     combineVariants, setCombineVariants,
     dim1Values, dim1Input, setDim1Input, addDim1Value, removeDim1Value,

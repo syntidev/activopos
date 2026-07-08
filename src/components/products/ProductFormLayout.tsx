@@ -717,9 +717,17 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                             {v.price_extra_usd > 0 && (
                               <span className={c.variantRowExtra}>+${v.price_extra_usd.toFixed(2)}</span>
                             )}
-                            <span className={v.stock > 0 ? c.variantRowStock : s.variantStockZero}>
-                              {v.stock} und
-                            </span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              className={`${m.input} ${c.variantExtraInput} ${v.stock === 0 ? s.comboStockZero : ''}`}
+                              min={0}
+                              step={1}
+                              placeholder="Stock"
+                              value={v.stock}
+                              onChange={(e) => f.updateVariantStock(i, Number(e.target.value))}
+                              aria-label={`Stock de ${v.name}`}
+                            />
                             <button
                               type="button"
                               className={c.variantRemoveBtn}

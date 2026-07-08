@@ -65,6 +65,8 @@ interface NavItem {
   badgeKey?: 'pending_orders'
   /** Oculta el item a cashier aunque el grupo sea visible (item con datos de costo) */
   adminOnly?: boolean
+  /** Además del toggle en modules_enabled, requiere que el plan del tenant lo incluya */
+  requiresCatalogPlan?: boolean
 }
 
 interface NavGroup {
@@ -122,7 +124,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'CATÁLOGO',
     adminOnly: true,
     items: [
-      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalog', colorKey: 'inventario' },
+      { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalog', colorKey: 'inventario', requiresCatalogPlan: true },
     ],
   },
   /* ── Grupos preservados: no listados en la nueva estructura pedida,
@@ -183,6 +185,7 @@ interface NavContentProps {
   onOpenNotifications?: () => void
   notifUnread?: number
   enabledModules?: string[] | null
+  catalogPlanAllowed?: boolean
   sidebarCounts?: SidebarCounts
   showMobileInfo?: boolean
   session?: SessionUser | null
@@ -203,6 +206,7 @@ function NavContent({
   onOpenNotifications,
   notifUnread = 0,
   enabledModules,
+  catalogPlanAllowed = true,
   sidebarCounts,
   showMobileInfo = false,
   session,
@@ -241,6 +245,7 @@ function NavContent({
         {visibleGroups.map((group) => {
           const visibleItems = group.items.filter(item =>
             (!item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)) &&
+            (!item.requiresCatalogPlan || catalogPlanAllowed) &&
             (!item.adminOnly || isAdmin)
           )
           if (visibleItems.length === 0) return null
@@ -438,6 +443,7 @@ interface SidebarProps {
   isMobileOpen: boolean
   onCloseMobile: () => void
   enabledModules?: string[] | null
+  catalogPlanAllowed?: boolean
 }
 
 export function Sidebar({
@@ -448,6 +454,7 @@ export function Sidebar({
   isMobileOpen,
   onCloseMobile,
   enabledModules,
+  catalogPlanAllowed,
 }: SidebarProps) {
   useScrollLock(isMobileOpen)
 
@@ -507,6 +514,7 @@ export function Sidebar({
     onOpenNotifications: () => setShowNotif(true),
     notifUnread,
     enabledModules,
+    catalogPlanAllowed,
     sidebarCounts,
     session,
     isImpersonating,

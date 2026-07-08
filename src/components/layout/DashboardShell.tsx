@@ -19,14 +19,16 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
   const { rate: bcvRate }                   = useRate()
   const [isCollapsed, setIsCollapsed]       = useState(false)
   const [isMobileOpen, setIsMobileOpen]     = useState(false)
-  const [enabledModules, setEnabledModules] = useState<string[] | null>(null)
+  const [enabledModules, setEnabledModules]         = useState<string[] | null>(null)
+  const [catalogPlanAllowed, setCatalogPlanAllowed] = useState(true)
 
   /* ── Fetch enabled modules once on mount ── */
   useEffect(() => {
     fetch('/api/config/business/modules')
       .then(r => r.ok ? r.json() : null)
-      .then((j: { modules_enabled?: string[] } | null) => {
+      .then((j: { modules_enabled?: string[]; catalog_plan_allows?: boolean } | null) => {
         if (Array.isArray(j?.modules_enabled)) setEnabledModules(j!.modules_enabled)
+        if (typeof j?.catalog_plan_allows === 'boolean') setCatalogPlanAllowed(j.catalog_plan_allows)
       })
       .catch(() => {})
   }, [])
@@ -68,6 +70,7 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
           isMobileOpen={isMobileOpen}
           onCloseMobile={handleCloseMobile}
           enabledModules={enabledModules}
+          catalogPlanAllowed={catalogPlanAllowed}
         />
 
         {isMobileOpen && (

@@ -123,6 +123,89 @@
   margin: 0;
 }
 
+/* ── Variantes combinadas (2 dimensiones) ── */
+.combineToggleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.combineSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.combineDim {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.generateCombosBtn {
+  align-self: flex-start;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-4);
+  background: var(--color-brand);
+  color: var(--color-text-on-brand);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.generateCombosBtn:hover:not(:disabled) { opacity: 0.88; }
+.generateCombosBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.comboTableWrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  background: var(--color-surface);
+}
+
+.comboTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 360px;
+}
+
+.comboTh {
+  padding: var(--space-2-5) var(--space-3);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  text-align: left;
+  background: var(--color-surface-2);
+  border-bottom: 2px solid rgba(var(--brand-rgb), 0.15);
+  white-space: nowrap;
+}
+
+.comboTd {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
+}
+
+.comboTable tbody tr:last-child .comboTd { border-bottom: none; }
+
+.comboStockZero {
+  border-color: var(--color-warning-border) !important;
+}
+
 /* ── Variantes: hint de stock total + advertencia ── */
 .variantStockHint {
   font-size: 12px;

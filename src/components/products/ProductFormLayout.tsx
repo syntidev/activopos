@@ -532,6 +532,154 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
 
                 {f.hasVariants && (
                   <div className={c.variantsSection}>
+                    <label className={s.combineToggleRow}>
+                      <input
+                        type="checkbox"
+                        checked={f.combineVariants}
+                        onChange={(e) => f.setCombineVariants(e.target.checked)}
+                      />
+                      <span>Combinar dos tipos (ej. Talla + Color)</span>
+                    </label>
+
+                    {f.combineVariants ? (
+                      <div className={s.combineSection}>
+                        <div className={s.combineDim}>
+                          <p className={c.sectionLabel}>Tallas</p>
+                          <div className={c.variantAddRow}>
+                            <input
+                              type="text"
+                              className={`${m.input} ${c.variantNameInput}`}
+                              placeholder="Ej: S, M, L"
+                              value={f.dim1Input}
+                              onChange={(e) => f.setDim1Input(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); f.addDim1Value() } }}
+                              maxLength={30}
+                            />
+                            <button
+                              type="button"
+                              className={c.variantAddBtn}
+                              onClick={f.addDim1Value}
+                              disabled={!f.dim1Input.trim()}
+                              aria-label="Añadir talla"
+                            >
+                              <Plus size={15} aria-hidden="true" />
+                            </button>
+                          </div>
+                          {f.dim1Values.length > 0 && (
+                            <div className={c.presetGroup}>
+                              {f.dim1Values.map((v, i) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={c.presetBtnActive}
+                                  onClick={() => f.removeDim1Value(i)}
+                                  aria-label={`Quitar talla ${v}`}
+                                >
+                                  {v} <X size={11} aria-hidden="true" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className={s.combineDim}>
+                          <p className={c.sectionLabel}>Colores</p>
+                          <div className={c.variantAddRow}>
+                            <input
+                              type="text"
+                              className={`${m.input} ${c.variantNameInput}`}
+                              placeholder="Ej: Azul, Rojo"
+                              value={f.dim2Input}
+                              onChange={(e) => f.setDim2Input(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); f.addDim2Value() } }}
+                              maxLength={30}
+                            />
+                            <button
+                              type="button"
+                              className={c.variantAddBtn}
+                              onClick={f.addDim2Value}
+                              disabled={!f.dim2Input.trim()}
+                              aria-label="Añadir color"
+                            >
+                              <Plus size={15} aria-hidden="true" />
+                            </button>
+                          </div>
+                          {f.dim2Values.length > 0 && (
+                            <div className={c.presetGroup}>
+                              {f.dim2Values.map((v, i) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  className={c.presetBtnActive}
+                                  onClick={() => f.removeDim2Value(i)}
+                                  aria-label={`Quitar color ${v}`}
+                                >
+                                  {v} <X size={11} aria-hidden="true" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          className={s.generateCombosBtn}
+                          onClick={f.generateCombinations}
+                          disabled={!f.dim1Values.length || !f.dim2Values.length}
+                        >
+                          Generar combinaciones
+                        </button>
+
+                        {f.combinations.length > 0 && (
+                          <div className={s.comboTableWrap}>
+                            <table className={s.comboTable}>
+                              <thead>
+                                <tr>
+                                  <th className={s.comboTh}>Combinación</th>
+                                  <th className={s.comboTh}>Stock</th>
+                                  <th className={s.comboTh}>Precio extra</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {f.combinations.map((combo) => (
+                                  <tr key={combo.key}>
+                                    <td className={s.comboTd}>{combo.key.replace('-', ' - ')}</td>
+                                    <td className={s.comboTd}>
+                                      <input
+                                        type="number"
+                                        className={`${m.input} ${combo.stock === '0' ? s.comboStockZero : ''}`}
+                                        value={combo.stock}
+                                        onChange={(e) => f.updateCombinationStock(combo.key, e.target.value)}
+                                        min="0"
+                                        step="1"
+                                        aria-label={`Stock de ${combo.key}`}
+                                      />
+                                    </td>
+                                    <td className={s.comboTd}>
+                                      <input
+                                        type="number"
+                                        className={m.input}
+                                        value={combo.extra}
+                                        onChange={(e) => f.updateCombinationExtra(combo.key, e.target.value)}
+                                        min="0"
+                                        step="0.01"
+                                        aria-label={`Precio extra de ${combo.key}`}
+                                      />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {f.combinations.some(c => c.stock === '0') && (
+                              <p className={s.variantStockWarning}>
+                                Hay combinaciones con stock en 0 — quedarán marcadas como agotadas.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                  <>
                     <p className={c.sectionLabel}>Elige un tipo</p>
                     <div className={c.presetGroupSelector}>
                       {PRESET_GROUPS.map((g) => (
@@ -634,6 +782,8 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                       <p className={s.variantStockWarning}>
                         Hay variantes con stock en 0 — quedarán marcadas como agotadas.
                       </p>
+                    )}
+                  </>
                     )}
                   </div>
                 )}

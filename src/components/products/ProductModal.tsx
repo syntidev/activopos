@@ -36,6 +36,8 @@ export interface ProductFormData {
   hasVariants: boolean
   images: string[]
   variants: ProductVariantInput[]
+  variantDimensions?: Array<{ tipo: string; valores: string[] }>
+  variantCombinations?: Array<{ combination_key: string; stock: number; precio_extra: number }>
   badge: string
   subcategory: string
   isFeatured: boolean

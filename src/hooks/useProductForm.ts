@@ -151,6 +151,14 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [newVarName, setNewVarName]         = useState('')
   const [newVarExtra, setNewVarExtra]       = useState('')
   const [newVarStock, setNewVarStock]       = useState('0')
+
+  /* ── Variantes combinadas (2 dimensiones, ej. Talla + Color) ── */
+  const [combineVariants, setCombineVariants] = useState(false)
+  const [dim1Values, setDim1Values]           = useState<string[]>([])
+  const [dim1Input, setDim1Input]             = useState('')
+  const [dim2Values, setDim2Values]           = useState<string[]>([])
+  const [dim2Input, setDim2Input]             = useState('')
+  const [combinations, setCombinations]       = useState<Array<{ key: string; stock: string; extra: string }>>([])
   const [badge, setBadge]                   = useState('none')
   const [subcategory, setSubcategory]       = useState('')
   const [isFeatured, setIsFeatured]         = useState(false)
@@ -341,6 +349,45 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0 }])
   }
 
+  /* ── Variantes combinadas: tallas × colores → producto cartesiano ── */
+  const addDim1Value = () => {
+    const v = dim1Input.trim()
+    if (!v || dim1Values.includes(v)) return
+    setDim1Values(prev => [...prev, v])
+    setDim1Input('')
+  }
+  const removeDim1Value = (idx: number) =>
+    setDim1Values(prev => prev.filter((_, i) => i !== idx))
+  const addDim2Value = () => {
+    const v = dim2Input.trim()
+    if (!v || dim2Values.includes(v)) return
+    setDim2Values(prev => [...prev, v])
+    setDim2Input('')
+  }
+  const removeDim2Value = (idx: number) =>
+    setDim2Values(prev => prev.filter((_, i) => i !== idx))
+
+  // Recalcula el cartesiano. Conserva stock/precio ya cargado para las
+  // combinaciones que sobreviven (evita perder datos si el usuario agrega
+  // un valor más y vuelve a generar).
+  const generateCombinations = () => {
+    if (!dim1Values.length || !dim2Values.length) return
+    const prevByKey = new Map(combinations.map(c => [c.key, c]))
+    const next: Array<{ key: string; stock: string; extra: string }> = []
+    for (const a of dim1Values) {
+      for (const b of dim2Values) {
+        const key = `${a}-${b}`
+        next.push(prevByKey.get(key) ?? { key, stock: '0', extra: '0' })
+      }
+    }
+    setCombinations(next)
+  }
+
+  const updateCombinationStock = (key: string, value: string) =>
+    setCombinations(prev => prev.map(c => c.key === key ? { ...c, stock: value } : c))
+  const updateCombinationExtra = (key: string, value: string) =>
+    setCombinations(prev => prev.map(c => c.key === key ? { ...c, extra: value } : c))
+
   /* ── CRUD de variantes en DB ── */
   const openVarForm = (v: DbVariant | null) => {
     setEditingVar(v)
@@ -445,7 +492,17 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         availability,
         hasVariants,
         images:   images.filter((u): u is string => u !== null),
-        variants,
+        variants: combineVariants ? [] : variants,
+        variantDimensions: combineVariants && combinations.length
+          ? [{ tipo: 'talla', valores: dim1Values }, { tipo: 'color', valores: dim2Values }]
+          : undefined,
+        variantCombinations: combineVariants && combinations.length
+          ? combinations.map(c => ({
+              combination_key: c.key,
+              stock:           Math.max(parseInt(c.stock) || 0, 0),
+              precio_extra:    parseFloat(c.extra) || 0,
+            }))
+          : undefined,
         badge,
         subcategory: subcategory.trim(),
         isFeatured,
@@ -488,6 +545,11 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     newVarStock, setNewVarStock,
     selectedPresetGroup, setSelectedPresetGroup,
     addVariant, removeVariant, addPreset,
+    // combined variants (2 dimensiones)
+    combineVariants, setCombineVariants,
+    dim1Values, dim1Input, setDim1Input, addDim1Value, removeDim1Value,
+    dim2Values, dim2Input, setDim2Input, addDim2Value, removeDim2Value,
+    combinations, generateCombinations, updateCombinationStock, updateCombinationExtra,
     // DB variants
     dbVariants, loadingDbVars, showVarForm, setShowVarForm,
     editingVar, setEditingVar,

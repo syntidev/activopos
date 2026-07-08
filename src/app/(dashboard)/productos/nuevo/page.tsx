@@ -64,7 +64,7 @@ export default function NuevoProductoPage() {
         availability:       data.availability,
         show_in_catalog:    data.catalogVisibility !== 'hidden',
         has_variants:       data.hasVariants,
-        variants:           data.hasVariants
+        variants:           data.hasVariants && data.variants.length
           ? data.variants.map(v => ({
               tipo:         'personalizado' as const,
               valor:        v.name,
@@ -72,6 +72,8 @@ export default function NuevoProductoPage() {
               stock:        v.stock,
             }))
           : undefined,
+        variant_dimensions:   data.variantDimensions,
+        variant_combinations: data.variantCombinations,
         images:             data.images,
         badge:              data.badge || 'none',
         subcategory:        data.subcategory || null,

@@ -1,4 +1,4 @@
-import { PLAN_LIMITS, type PlanTier } from './plan-limits'
+import { PLAN_LIMITS, PLAN_DISPLAY, type PlanTier } from './plan-limits'
 import { getAuthenticatedTenant } from './tenant'
 import { prisma } from './prisma'
 
@@ -29,7 +29,7 @@ export async function checkPlanLimit(action: PlanAction): Promise<{ allowed: boo
     if (limits.products === -1) return { allowed: true }
     const count = await prisma.product.count({ where: { business_id: session.businessId, active: true } })
     if (count >= limits.products) {
-      return { allowed: false, reason: `Límite de ${limits.products} productos alcanzado en tu plan ${plan}.` }
+      return { allowed: false, reason: `Límite de ${limits.products} productos alcanzado en tu plan ${PLAN_DISPLAY[plan]}.` }
     }
   }
 
@@ -37,23 +37,23 @@ export async function checkPlanLimit(action: PlanAction): Promise<{ allowed: boo
     if (limits.users === -1) return { allowed: true }
     const count = await prisma.user.count({ where: { business_id: session.businessId } })
     if (count >= limits.users) {
-      return { allowed: false, reason: `Límite de ${limits.users} usuarios alcanzado en tu plan ${plan}.` }
+      return { allowed: false, reason: `Límite de ${limits.users} usuarios alcanzado en tu plan ${PLAN_DISPLAY[plan]}.` }
     }
   }
 
   if (action === 'access_catalog') {
     if (session.role === 'admin' || session.role === 'super_admin') return { allowed: true }
     if (!limits.catalog) {
-      return { allowed: false, reason: 'El catálogo digital requiere plan Pro o Business.' }
+      return { allowed: false, reason: `El catálogo digital requiere plan ${PLAN_DISPLAY.pro} o ${PLAN_DISPLAY.business}.` }
     }
   }
 
   if (action === 'access_ai' && !limits.ai) {
-    return { allowed: false, reason: 'El asistente IA requiere plan Business.' }
+    return { allowed: false, reason: `El asistente IA requiere plan ${PLAN_DISPLAY.business}.` }
   }
 
   if (action === 'create_supplier' && !limits.suppliers) {
-    return { allowed: false, reason: 'El módulo de proveedores requiere plan Inicio o superior.' }
+    return { allowed: false, reason: `El módulo de proveedores requiere plan ${PLAN_DISPLAY.inicio} o superior.` }
   }
 
   return { allowed: true }

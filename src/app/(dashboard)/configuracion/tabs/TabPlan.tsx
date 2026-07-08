@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Crown, Calendar, ExternalLink, AlertCircle, Rocket, Check, X, MessageCircle } from 'lucide-react'
-import { BILLING_CYCLES, type BillingCycleKey } from '@/lib/plan-limits'
+import { BILLING_CYCLES, PLAN_DISPLAY, type BillingCycleKey } from '@/lib/plan-limits'
 import styles from './TabPlan.module.css'
 
 const CYCLE_LABEL: Record<BillingCycleKey, string> = {
@@ -45,13 +45,6 @@ const PLAN_BADGE_CLASS: Record<PlanTier, string> = {
   inicio:   styles.planBadgeInicio,
   pro:      styles.planBadgePro,
   business: styles.planBadgeBusiness,
-}
-
-const PLAN_LABEL: Record<PlanTier, string> = {
-  trial:    'TRIAL',
-  inicio:   'INICIO',
-  pro:      'PRO',
-  business: 'BUSINESS',
 }
 
 function usageBarClass(used: number, limit: number): string {
@@ -170,7 +163,7 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
   }
 
   const contactMsg = encodeURIComponent(
-    `Hola ActivoPOS, quiero cambiar mi plan. Mi negocio ID es ${businessId}. Plan actual: ${data.plan}.`
+    `Hola ActivoPOS, quiero cambiar mi plan. Mi negocio ID es ${businessId}. Plan actual: ${PLAN_DISPLAY[data.plan]}.`
   )
   const showExpiryAlert = data.days_remaining !== null && data.days_remaining >= 0 && data.days_remaining < 7
   const isUpgradeable   = data.plan === 'trial' || data.plan === 'inicio'
@@ -180,7 +173,7 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
       <div className={styles.usageCardHead}>
         <Rocket size={18} aria-hidden="true" />
         <h3 className={styles.usageCardTitle}>Tu Plan Actual</h3>
-        <span className={`${styles.planBadge} ${PLAN_BADGE_CLASS[data.plan]}`}>{PLAN_LABEL[data.plan]}</span>
+        <span className={`${styles.planBadge} ${PLAN_BADGE_CLASS[data.plan]}`}>{PLAN_DISPLAY[data.plan]}</span>
       </div>
 
       <p className={styles.usageExpiry}>

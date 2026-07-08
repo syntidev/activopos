@@ -8,6 +8,16 @@ export const PLAN_LIMITS = {
 
 export type PlanTier = keyof typeof PLAN_LIMITS
 
+// Nombre visible al usuario — el código interno (trial/inicio/pro/business)
+// no coincide con el naming de la landing (Mostrador/Negocio/Pro). La DB
+// sigue guardando el tier interno; esto es solo para textos de UI.
+export const PLAN_DISPLAY: Record<PlanTier, string> = {
+  trial:    'Prueba gratuita',
+  inicio:   'Mostrador',
+  pro:      'Negocio',
+  business: 'Pro',
+}
+
 const PLAN_ORDER: PlanTier[] = ['trial', 'inicio', 'pro', 'business']
 
 export function nextPlanTier(plan: PlanTier): PlanTier | undefined {

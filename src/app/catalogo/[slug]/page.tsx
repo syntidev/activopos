@@ -92,7 +92,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         category: { select: { name: true, color: true, sort_order: true } },
         variants: {
           where:  { is_active: true },
-          select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true },
+          select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true },
         },
       },
       orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
@@ -151,11 +151,12 @@ export default async function CatalogoPage({ params }: PageProps) {
         min_stock:    p.min_stock !== null ? Number(p.min_stock) : null,
       }),
       variants: p.variants.map(v => ({
-        id:           v.id,
-        tipo:         v.tipo,
-        valor:        v.valor,
-        stock:        v.stock,
-        precio_extra: Number(v.precio_extra),
+        id:              v.id,
+        tipo:            v.tipo,
+        valor:           v.valor,
+        stock:           v.stock,
+        precio_extra:    Number(v.precio_extra),
+        combination_key: v.combination_key,
       })),
     }
   })

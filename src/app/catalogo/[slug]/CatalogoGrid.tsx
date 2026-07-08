@@ -12,11 +12,12 @@ import styles from './catalogo.module.css'
 /* ── Public interfaces ───────────────────────────────────────── */
 
 export interface CatalogProductVariant {
-  id:           number
-  tipo:         string
-  valor:        string
-  stock:        number
-  precio_extra: number
+  id:              number
+  tipo:            string
+  valor:           string
+  stock:           number
+  precio_extra:    number
+  combination_key: string | null
 }
 
 export interface CatalogProduct {
@@ -197,6 +198,7 @@ export function CatalogoGrid({
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [variantError,    setVariantError]    = useState(false)
+  const [selectedDim1,    setSelectedDim1]    = useState<string | null>(null)
   const [showBackTop,    setShowBackTop]    = useState(false)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
@@ -430,7 +432,7 @@ export function CatalogoGrid({
 
   const openModal  = (p: CatalogProduct) => {
     setSelectedProduct(p); setModalQty(1); setModalImageIndex(0)
-    setSelectedVariantId(null); setVariantError(false)
+    setSelectedVariantId(null); setVariantError(false); setSelectedDim1(null)
   }
   const closeModal = () => setSelectedProduct(null)
 
@@ -544,6 +546,18 @@ export function CatalogoGrid({
   }, [selP])
 
   const selectedVariant = selP?.variants.find(v => v.id === selectedVariantId) ?? null
+
+  // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
+  const isCombinedVariant = !!selP?.variants.some(v => v.combination_key)
+  const combinedDimLabels = isCombinedVariant ? (selP!.variants[0]?.tipo ?? '').split('+') : []
+  const combinedDim1Label = combinedDimLabels[0] ?? 'Talla'
+  const combinedDim2Label = combinedDimLabels[1] ?? 'Color'
+  const combinedDim1Options = isCombinedVariant
+    ? Array.from(new Set(selP!.variants.map(v => v.combination_key!.split('-')[0])))
+    : []
+  const combinedDim2Options = isCombinedVariant && selectedDim1 !== null
+    ? selP!.variants.filter(v => v.combination_key!.startsWith(`${selectedDim1}-`))
+    : []
 
   // Card de producto — compartida entre secciones browse y grid filtrado.
   // accentColor pinta el borde superior (--accent-cat); cae a --biz-color.
@@ -1468,31 +1482,79 @@ export function CatalogoGrid({
                 selP.availability !== 'discontinued' &&
                 selP.catalogVisibility !== 'on_request' && (
                 <div className={styles.variantSection}>
-                  {variantGroups.map(g => (
-                    <div key={g.tipo} className={styles.variantGroup}>
-                      <span className={styles.variantGroupLabel}>{capitalize(g.tipo)}</span>
-                      <div className={styles.variantChips}>
-                        {g.options.map(v => {
-                          const soldOut = v.stock <= 0
-                          const active  = selectedVariantId === v.id
-                          return (
+                  {isCombinedVariant ? (
+                    <>
+                      <div className={styles.variantGroup}>
+                        <span className={styles.variantGroupLabel}>{capitalize(combinedDim1Label)}</span>
+                        <div className={styles.variantChips}>
+                          {combinedDim1Options.map(opt => (
                             <button
-                              key={v.id}
+                              key={opt}
                               type="button"
-                              className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
-                              onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
-                              disabled={soldOut}
-                              aria-pressed={active}
-                              aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
+                              className={`${styles.variantChip} ${selectedDim1 === opt ? styles.variantChipActive : ''}`}
+                              onClick={() => { setSelectedDim1(opt); setSelectedVariantId(null); setVariantError(false) }}
+                              aria-pressed={selectedDim1 === opt}
                             >
-                              {v.valor}
-                              {soldOut && <span className={styles.variantSoldOutLabel}>Agotado</span>}
+                              {opt}
                             </button>
-                          )
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+
+                      {selectedDim1 !== null && (
+                        <div className={styles.variantGroup}>
+                          <span className={styles.variantGroupLabel}>{capitalize(combinedDim2Label)}</span>
+                          <div className={styles.variantChips}>
+                            {combinedDim2Options.map(v => {
+                              const soldOut = v.stock <= 0
+                              const active  = selectedVariantId === v.id
+                              const label   = v.combination_key!.slice(selectedDim1.length + 1)
+                              return (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
+                                  onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
+                                  disabled={soldOut}
+                                  aria-pressed={active}
+                                  aria-label={`${combinedDim2Label}: ${label}${soldOut ? ' — agotado' : ''}`}
+                                >
+                                  {label}
+                                  {soldOut && <span className={styles.variantSoldOutLabel}>Agotado</span>}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    variantGroups.map(g => (
+                      <div key={g.tipo} className={styles.variantGroup}>
+                        <span className={styles.variantGroupLabel}>{capitalize(g.tipo)}</span>
+                        <div className={styles.variantChips}>
+                          {g.options.map(v => {
+                            const soldOut = v.stock <= 0
+                            const active  = selectedVariantId === v.id
+                            return (
+                              <button
+                                key={v.id}
+                                type="button"
+                                className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
+                                onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
+                                disabled={soldOut}
+                                aria-pressed={active}
+                                aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
+                              >
+                                {v.valor}
+                                {soldOut && <span className={styles.variantSoldOutLabel}>Agotado</span>}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  )}
                   {variantError && <p className={styles.variantErrorMsg}>Selecciona una opción</p>}
                 </div>
               )}

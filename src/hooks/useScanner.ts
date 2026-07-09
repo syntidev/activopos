@@ -124,11 +124,21 @@ export function useScanner({
           (decodedText) => emit(decodedText),
           () => { /* frame sin código — silencioso */ }
         )
-      } catch {
+      } catch (err) {
         runningRef.current = false
         setIsScanning(false)
         setPermError(true)
-        setError('No se pudo acceder a la cámara')
+        // scanner.start() propaga el DOMException original de getUserMedia
+        // sin envolverlo — .name llega intacto, no hace falta un preflight
+        // getUserMedia aparte (evitaría pedir la cámara dos veces).
+        const name = err instanceof DOMException ? err.name : null
+        if (name === 'NotAllowedError') {
+          setError('Permite el acceso a la cámara en tu navegador para escanear')
+        } else if (name === 'NotFoundError') {
+          setError('Este dispositivo no tiene cámara disponible')
+        } else {
+          setError('No se pudo acceder a la cámara')
+        }
         onErrorRef.current?.('permission_denied')
       }
     })()

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap } from 'lucide-react'
 import styles from './admin.module.css'
 
@@ -16,7 +16,17 @@ const NAV = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [openTickets, setOpenTickets] = useState<number | null>(null)
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      router.push('/login')
+      router.refresh()
+    }
+  }, [router])
 
   useEffect(() => {
     fetch('/api/admin/tickets?status=open&count=true')
@@ -62,12 +72,10 @@ export function AdminSidebar() {
       </nav>
 
       <div className={styles.sidebarFooter}>
-        <form action="/api/auth/logout" method="POST">
-          <button type="submit" className={styles.logoutBtn} aria-label="Cerrar sesión">
-            <LogOut size={15} strokeWidth={1.75} aria-hidden="true" />
-            <span>Salir</span>
-          </button>
-        </form>
+        <button type="button" className={styles.logoutBtn} aria-label="Cerrar sesión" onClick={() => void handleLogout()}>
+          <LogOut size={15} strokeWidth={1.75} aria-hidden="true" />
+          <span>Salir</span>
+        </button>
       </div>
     </aside>
   )

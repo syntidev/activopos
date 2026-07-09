@@ -22,16 +22,31 @@ export const metadata: Metadata = {
     title: 'ActivoPOS — El POS para negocios que andan activos',
     description: 'Sistema de punto de venta e inventario para PYMES venezolanas.',
     url: 'https://activopos.com/',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'ActivoPOS — El POS para negocios que andan activos' }],
   },
 }
 
 export const revalidate = 300
+
+const ORGANIZATION_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'ActivoPOS',
+  url: 'https://activopos.com',
+  logo: 'https://activopos.com/activopos-logo-flat-positive.png',
+  description: 'POS SaaS para negocios venezolanos',
+  sameAs: ['https://instagram.com/activopos'],
+}
 
 export default async function LandingPage() {
   const bcvRate = await getBcvRate()
 
   return (
     <div className={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
+      />
       <LandingAnimations />
       <HeroSection bcvRate={bcvRate} />
       <TickerSection />

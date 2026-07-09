@@ -1,8 +1,8 @@
 'use client'
 
 import { useRef, useState, useCallback } from 'react'
-import type { FormEvent } from 'react'
-import { X, Minus, Plus, ShoppingCart, Camera, Aperture } from 'lucide-react'
+import type { ChangeEvent, FormEvent } from 'react'
+import { X, Minus, Plus, ShoppingCart, Camera, Aperture, ImagePlus } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -59,6 +59,7 @@ export function ScannerModal({
   /* Barcode lookup cache — persists across scans within one open session */
   const barcodeCache  = useRef<Map<string, ProductForPOS | null>>(new Map())
   const lookingUpRef  = useRef(false)
+  const fileInputRef  = useRef<HTMLInputElement>(null)
 
   const [flash, setFlash]         = useState(false)
   const [toastMsg, setToastMsg]   = useState<string | null>(null)
@@ -100,7 +101,7 @@ export function ScannerModal({
     }
   }, [onAddProduct])
 
-  const { videoContainerRef, permError, isScanning, error, startScanner, stopScanner, captureFrame } = useScanner({
+  const { videoContainerRef, permError, isScanning, error, startScanner, stopScanner, scanFile, captureFrame } = useScanner({
     active:   false, // Capa 1+2 arranca manual vía botón "Usar cámara", no al abrir el modal
     onResult: handleBarcode,
   })
@@ -116,6 +117,14 @@ export function ScannerModal({
     if (!code) return
     handleBarcode(code)
     setManualCode('')
+  }
+
+  // Opción independiente de "Usar cámara" — abre el picker nativo del OS,
+  // no depende de que html5-qrcode haya podido iniciar el video en vivo.
+  const handleFileCapture = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) void scanFile(file)
+    e.target.value = ''
   }
 
   if (!open) return null
@@ -155,7 +164,9 @@ export function ScannerModal({
           aria-hidden="true"
         />
 
-        {/* Capa 1+2 — prompt antes de iniciar cámara */}
+        {/* Capa 1+2/3 — prompt antes de iniciar cámara. Dos opciones independientes:
+            "Usar cámara" (viewfinder en vivo) y "Tomar foto" (picker nativo del OS,
+            no depende de que html5-qrcode haya podido arrancar). */}
         {!isScanning && (
           <div className={styles.cameraPrompt}>
             <Button
@@ -167,6 +178,23 @@ export function ScannerModal({
             >
               Usar cámara
             </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              leftIcon={<ImagePlus size={16} aria-hidden="true" />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Tomar foto
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className={styles.hiddenFileInput}
+              onChange={handleFileCapture}
+            />
             {(permError || error) && (
               <p className={styles.cameraError}>{error ?? 'No se pudo acceder a la cámara.'}</p>
             )}

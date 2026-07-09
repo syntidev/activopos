@@ -863,7 +863,7 @@
 /* ── CATEGORY SHOWCASE — tiles grandes (≤4 categorías) ───────── */
 
 .catShowcase {
-  padding: var(--space-4) var(--space-4) 0;
+  padding: var(--space-6) var(--space-4);
 }
 
 .catShowcaseGrid {

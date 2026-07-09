@@ -948,6 +948,7 @@ model Segment {
   meta_title       String
   meta_description String
   hero_image       String?
+  icon             String?      @db.VarChar(50)
   pain_1           String
   pain_2           String
   pain_3           String

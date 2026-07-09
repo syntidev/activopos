@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -74,12 +74,16 @@ function SegmentItem({ seg }: { seg: Segment }) {
   )
 }
 
+const MAX_VISIBLE = 8
+
 export default function SegmentsMenu({ segments }: { segments: Segment[] }) {
   const [open, setOpen] = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const half = Math.ceil(segments.length / 2)
-  const col1 = segments.slice(0, half)
-  const col2 = segments.slice(half)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const visible = segments.slice(0, MAX_VISIBLE)
+  const half = Math.ceil(visible.length / 2)
+  const col1 = visible.slice(0, half)
+  const col2 = visible.slice(half)
 
   const cancelClose = useCallback(() => {
     if (closeTimer.current) {
@@ -100,9 +104,25 @@ export default function SegmentsMenu({ segments }: { segments: Segment[] }) {
     closeTimer.current = setTimeout(() => setOpen(false), 200)
   }, [])
 
+  const handleTriggerClick = useCallback(() => {
+    cancelClose()
+    setOpen(o => !o)
+  }, [cancelClose])
+
+  // Touch (tablets en el breakpoint desktop del nav) no dispara mouseenter/leave —
+  // cerrar al tocar fuera del menu.
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (e: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [open])
+
   return (
-    <div className={styles.wrap} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
-      <button className={styles.trigger} aria-expanded={open} type="button">
+    <div ref={wrapRef} className={styles.wrap} onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+      <button className={styles.trigger} aria-expanded={open} type="button" onClick={handleTriggerClick}>
         Segmentos
         <ChevronDown size={14} className={open ? styles.chevronOpen : styles.chevron} aria-hidden="true" />
       </button>
@@ -125,7 +145,7 @@ export default function SegmentsMenu({ segments }: { segments: Segment[] }) {
               </div>
             </div>
             <div className={styles.footer}>
-              <Link href="/#segmentos" className={styles.verTodos}>
+              <Link href="/segmentos" className={styles.verTodos}>
                 Ver todos los segmentos →
               </Link>
             </div>

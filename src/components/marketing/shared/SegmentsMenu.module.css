@@ -44,6 +44,8 @@
   /* Único breakpoint donde .links es visible pero angosto (768-900px) —
      evita que el dropdown centrado de 440px se salga de la pantalla. */
   max-width:  calc(100vw - 48px);
+  max-height: 60vh;
+  overflow-y: auto;
   z-index:    210;
 }
 

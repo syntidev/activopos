@@ -33,19 +33,10 @@ interface UseScannerReturn {
   captureFrame: () => Promise<void>
 }
 
-// focusMode no está en el tipo MediaTrackConstraints de TS (propiedad no
-// estándar, soportada por Chrome/Android) — se extiende localmente en vez
-// de usar `any`.
-interface CameraConstraints extends MediaTrackConstraints {
-  focusMode?: 'continuous' | 'manual' | 'single-shot'
-}
-
-// Sin width/height/frameRate/aspectRatio — el dispositivo elige su mejor
-// resolución nativa. focusMode:'continuous' mantiene el enfoque activo
-// durante el video (crítico en Samsung S24+, que si no queda desenfocado).
-const CAMERA_CONFIG: CameraConstraints = {
+// Sin width/height/frameRate/aspectRatio/focusMode — el dispositivo elige
+// su propia resolución y enfoque nativos, sin ningún constraint adicional.
+const CAMERA_CONFIG: MediaTrackConstraints = {
   facingMode: 'environment',
-  focusMode:  'continuous',
 }
 
 const HTML5_QR_CONFIG = {

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { FileSpreadsheet, Check, Tag } from 'lucide-react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Button }          from '@/components/ui/Button'
+import { useToast }        from '@/components/ui'
 import { CxCSection }      from './CxCSection'
 import { CxPSection }      from './CxPSection'
 import { GastosSection }   from './GastosSection'
@@ -32,6 +33,7 @@ export default function FinanzasPage() {
   const [rate,            setRate]           = useState(0)
   const [exportingExcel,  setExportingExcel] = useState(false)
   const [exportSuccess,   setExportSuccess]  = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     fetch('/api/rates/bcv')
@@ -39,20 +41,34 @@ export default function FinanzasPage() {
       .then(j => { if (j.ok && j.rate) setRate(Number(j.rate)) })
   }, [])
 
-  const handleExportExcel = useCallback(() => {
+  const handleExportExcel = useCallback(async () => {
     if (exportingExcel) return
     setExportingExcel(true)
-    const [year, mon] = month.split('-')
-    const lastDay = new Date(Number(year), Number(mon), 0).getDate()
-    const from = `${month}-01`
-    const to   = `${month}-${String(lastDay).padStart(2, '0')}`
-    window.location.href = `/api/finanzas/export?from=${from}&to=${to}`
-    setTimeout(() => {
-      setExportingExcel(false)
+    try {
+      const [year, mon] = month.split('-')
+      const lastDay = new Date(Number(year), Number(mon), 0).getDate()
+      const from = `${month}-01`
+      const to   = `${month}-${String(lastDay).padStart(2, '0')}`
+      const res  = await fetch(`/api/finanzas/export?from=${from}&to=${to}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err?.error ?? `Error ${res.status}`)
+      }
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `finanzas-${year}-${mon}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
       setExportSuccess(true)
       setTimeout(() => setExportSuccess(false), 2000)
-    }, 1500)
-  }, [month, exportingExcel])
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Error al exportar', 'error')
+    } finally {
+      setExportingExcel(false)
+    }
+  }, [month, exportingExcel, toast])
 
   return (
     <div className={`${styles.page} page-container`}>

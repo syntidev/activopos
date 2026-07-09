@@ -87,15 +87,21 @@
   border: 1px solid transparent;
 }
 
-/* Preview badge color variants */
-.badge_blue   { background: var(--color-brand-subtle);   color: var(--color-brand);        border-color: var(--color-brand-border);   }
-.badge_green  { background: var(--color-success-subtle); color: var(--color-success-text);  border-color: var(--color-success-border); }
-.badge_orange { background: var(--color-warning-subtle); color: var(--color-warning-text);  border-color: var(--color-warning-border); }
-.badge_red    { background: var(--color-danger-subtle);  color: var(--color-danger-text);   border-color: var(--color-danger-border);  }
-.badge_violet { background: rgba(var(--violet-rgb), 0.12); color: #A78BFA; border-color: rgba(var(--violet-rgb), 0.3); }
-.badge_pink   { background: rgba(var(--pink-rgb),   0.12); color: #F9A8D4; border-color: rgba(var(--pink-rgb),   0.3); }
-.badge_cyan   { background: rgba(var(--cyan-rgb),   0.12); color: #67E8F9; border-color: rgba(var(--cyan-rgb),   0.3); }
-.badge_gray   { background: var(--color-surface-3); color: var(--color-text-secondary); border-color: var(--color-border); }
+/* Preview badge — pintado con el hex real elegido (--preview-hex),
+   no con una de las 8 clases fijas (soporta cualquier color de DB). */
+.previewBadgeCustom {
+  background:   color-mix(in srgb, var(--preview-hex) 14%, transparent);
+  color:        var(--preview-hex);
+  border-color: color-mix(in srgb, var(--preview-hex) 30%, transparent);
+}
+
+/* ── Hex input libre — visible siempre bajo los swatches ── */
+.hexInput {
+  margin-top: var(--space-2);
+  max-width: 140px;
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+}
 
 /* ── Requires preparation checkbox ── */
 .checkRow {

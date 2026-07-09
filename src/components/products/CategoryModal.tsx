@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, type CSSProperties } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Tag, Check } from 'lucide-react'
@@ -43,8 +43,9 @@ const DOT_CLASS: Record<string, string> = {
   gray:   styles.dotGray,
 }
 
-// La API (/api/categories) exige color como hex '#RRGGBB' — este picker trabaja
-// con keys de paleta (dots), así que se traduce key<->hex al guardar/precargar.
+// La API (/api/categories) exige color como hex '#RRGGBB'. El estado `color`
+// del modal ES ese hex exacto (fuente de verdad) — los swatches son solo un
+// atajo que lo setean; nunca se fuerza el hex real a encajar en uno de ellos.
 const COLOR_HEX: Record<string, string> = {
   blue:   '#0038BD',
   green:  '#16A34A',
@@ -57,14 +58,37 @@ const COLOR_HEX: Record<string, string> = {
 }
 const DEFAULT_COLOR_KEY = 'blue'
 const HEX_TO_KEY: Record<string, string> = Object.fromEntries(
-  Object.entries(COLOR_HEX).map(([key, hex]) => [hex, key])
+  Object.entries(COLOR_HEX).map(([key, hex]) => [hex.toUpperCase(), key])
 )
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = HEX_COLOR_RE.exec(hex)
+  if (!m) return null
+  const n = parseInt(hex.slice(1), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+// Swatch visualmente más cercano a un hex arbitrario (distancia euclidiana en RGB)
+// — solo para resaltar un punto de referencia, nunca reemplaza el hex real.
+function nearestSwatchKey(hex: string): string {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return DEFAULT_COLOR_KEY
+  let best = DEFAULT_COLOR_KEY
+  let bestDist = Infinity
+  for (const [key, swatchHex] of Object.entries(COLOR_HEX)) {
+    const swatchRgb = hexToRgb(swatchHex)!
+    const dist = (rgb[0] - swatchRgb[0]) ** 2 + (rgb[1] - swatchRgb[1]) ** 2 + (rgb[2] - swatchRgb[2]) ** 2
+    if (dist < bestDist) { bestDist = dist; best = key }
+  }
+  return best
+}
 
 export function CategoryModal({ isOpen, onClose, initialData, onSave }: CategoryModalProps) {
   useScrollLock(isOpen)
 
   const [name, setName]                   = useState('')
-  const [color, setColor]                 = useState('blue')
+  const [color, setColor]                 = useState(COLOR_HEX[DEFAULT_COLOR_KEY])
   const [requiresPrep, setRequiresPrep]   = useState(false)
   const [error, setError]                 = useState('')
   const [isSaving, setIsSaving]           = useState(false)
@@ -72,7 +96,7 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
   useEffect(() => {
     if (isOpen) {
       setName(initialData?.name ?? '')
-      setColor((initialData?.color && HEX_TO_KEY[initialData.color]) || DEFAULT_COLOR_KEY)
+      setColor(initialData?.color || COLOR_HEX[DEFAULT_COLOR_KEY])
       setRequiresPrep(initialData?.requires_preparation ?? false)
       setError('')
       setIsSaving(false)
@@ -81,6 +105,13 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
 
   const isEdit = Boolean(initialData?.id)
 
+  // Swatch resaltado: match exacto si el hex coincide con uno; si no, el más
+  // cercano visualmente — solo referencia, `color` sigue siendo el hex real.
+  const activeSwatchKey = useMemo(
+    () => HEX_TO_KEY[color.toUpperCase()] ?? nearestSwatchKey(color),
+    [color]
+  )
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
@@ -88,11 +119,14 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
       setError('El nombre es obligatorio')
       return
     }
+    if (!HEX_COLOR_RE.test(color)) {
+      setError('Color inválido — usa formato #RRGGBB')
+      return
+    }
     setError('')
     setIsSaving(true)
     try {
-      const colorHex = COLOR_HEX[color] ?? COLOR_HEX[DEFAULT_COLOR_KEY]
-      await onSave(trimmed, colorHex, requiresPrep)
+      await onSave(trimmed, color, requiresPrep)
       onClose()
     } catch {
       setError('Error al guardar. Intenta de nuevo.')
@@ -173,24 +207,36 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
                         key={c.key}
                         type="button"
                         role="radio"
-                        aria-checked={color === c.key}
+                        aria-checked={activeSwatchKey === c.key}
                         aria-label={c.label}
                         title={c.label}
-                        className={`${styles.dot} ${DOT_CLASS[c.key]} ${color === c.key ? styles.dotSelected : ''}`}
-                        onClick={() => setColor(c.key)}
+                        className={`${styles.dot} ${DOT_CLASS[c.key]} ${activeSwatchKey === c.key ? styles.dotSelected : ''}`}
+                        onClick={() => setColor(COLOR_HEX[c.key])}
                       >
-                        {color === c.key && (
+                        {activeSwatchKey === c.key && (
                           <Check size={12} strokeWidth={3} className={styles.dotCheck} aria-hidden="true" />
                         )}
                       </button>
                     ))}
                   </div>
+                  <input
+                    type="text"
+                    className={`${mStyles.input} ${styles.hexInput}`}
+                    value={color}
+                    onChange={(e) => { setColor(e.target.value); if (error) setError('') }}
+                    placeholder="#RRGGBB"
+                    maxLength={7}
+                    aria-label="Color en formato hexadecimal"
+                  />
                 </div>
 
                 {/* Preview */}
                 <div className={styles.preview}>
                   <span className={styles.previewLabel}>Vista previa:</span>
-                  <span className={`${styles.previewBadge} ${styles[`badge_${color}`]}`}>
+                  <span
+                    className={`${styles.previewBadge} ${styles.previewBadgeCustom}`}
+                    style={{ '--preview-hex': HEX_COLOR_RE.test(color) ? color : COLOR_HEX[DEFAULT_COLOR_KEY] } as CSSProperties}
+                  >
                     {name || 'Categoría'}
                   </span>
                 </div>

@@ -970,3 +970,26 @@ model SegmentFaq {
   @@index([segment_id])
   @@map("segment_faqs")
 }
+
+model BlogPost {
+  id               Int       @id @default(autoincrement())
+  title            String    @db.VarChar(255)
+  slug             String    @unique @db.VarChar(255)
+  excerpt          String?   @db.Text
+  content          String    @db.LongText
+  featured_image   String?   @db.VarChar(500)
+  category         String?   @db.VarChar(80)
+  tags             Json?
+  author           String    @default("Equipo ActivoPOS") @db.VarChar(100)
+  status           String    @default("draft") @db.VarChar(20)
+  published_at     DateTime?
+  read_time        String?   @db.VarChar(20)
+  views            Int       @default(0)
+  is_featured      Boolean   @default(false)
+  meta_title       String?   @db.VarChar(255)
+  meta_description String?   @db.VarChar(255)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("blog_posts")
+}

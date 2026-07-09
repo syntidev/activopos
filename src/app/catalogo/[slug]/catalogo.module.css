@@ -863,7 +863,7 @@
 /* ── CATEGORY SHOWCASE — tiles grandes (≤4 categorías) ───────── */
 
 .catShowcase {
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-8) var(--space-4) var(--space-6);
 }
 
 .catShowcaseGrid {
@@ -949,10 +949,11 @@
 /* ── CATEGORY SECTION — vitrina apilada + scroll-spy ─────────── */
 
 .catSection {
-  padding:       var(--space-2) var(--space-4) var(--space-4);
+  padding: var(--space-6) var(--space-4) var(--space-6);
   scroll-margin-top: 112px;
 }
 
+/* Lateral ya lo da .catSection — duplicarlo acá lo dejaría a 32px por lado */
 .catSection .productsGrid { padding: 0; }
 
 .catSectionTitle {
@@ -2369,7 +2370,7 @@
 /* ── FOOTER ──────────────────────────────────────────────────── */
 
 .footer {
-  padding:    var(--space-6) var(--space-4);
+  padding: var(--space-8) var(--space-4) var(--space-6);
   text-align: center;
   font-size:  var(--text-xs);
   color:      var(--color-text-secondary);

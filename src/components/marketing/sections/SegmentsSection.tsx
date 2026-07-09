@@ -14,7 +14,7 @@ export default async function SegmentsSection() {
   return (
     <section className={styles.section} id="segmentos">
       <h2 className={styles.headline}>
-        Si producís, vendés o prestás un servicio<br />en Venezuela, esto es para ti.
+        Si produces, vendes o prestas un servicio<br />en Venezuela, esto es para ti.
       </h2>
       <div className={styles.grid}>
         {segments.map(seg => (

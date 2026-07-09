@@ -43,6 +43,23 @@ const DOT_CLASS: Record<string, string> = {
   gray:   styles.dotGray,
 }
 
+// La API (/api/categories) exige color como hex '#RRGGBB' — este picker trabaja
+// con keys de paleta (dots), así que se traduce key<->hex al guardar/precargar.
+const COLOR_HEX: Record<string, string> = {
+  blue:   '#0038BD',
+  green:  '#16A34A',
+  orange: '#FBBF24',
+  red:    '#EF4444',
+  violet: '#7C3AED',
+  pink:   '#EC4899',
+  cyan:   '#0891B2',
+  gray:   '#64748B',
+}
+const DEFAULT_COLOR_KEY = 'blue'
+const HEX_TO_KEY: Record<string, string> = Object.fromEntries(
+  Object.entries(COLOR_HEX).map(([key, hex]) => [hex, key])
+)
+
 export function CategoryModal({ isOpen, onClose, initialData, onSave }: CategoryModalProps) {
   useScrollLock(isOpen)
 
@@ -55,7 +72,7 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
   useEffect(() => {
     if (isOpen) {
       setName(initialData?.name ?? '')
-      setColor(initialData?.color ?? 'blue')
+      setColor((initialData?.color && HEX_TO_KEY[initialData.color]) || DEFAULT_COLOR_KEY)
       setRequiresPrep(initialData?.requires_preparation ?? false)
       setError('')
       setIsSaving(false)
@@ -74,7 +91,8 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
     setError('')
     setIsSaving(true)
     try {
-      await onSave(trimmed, color, requiresPrep)
+      const colorHex = COLOR_HEX[color] ?? COLOR_HEX[DEFAULT_COLOR_KEY]
+      await onSave(trimmed, colorHex, requiresPrep)
       onClose()
     } catch {
       setError('Error al guardar. Intenta de nuevo.')

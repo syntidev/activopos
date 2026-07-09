@@ -45,6 +45,26 @@ const HTML5_QR_CONFIG = {
   experimentalFeatures: { useBarCodeDetectorIfSupported: true },
 }
 
+// Beep de confirmación — código detectado, independiente de si el lookup
+// posterior encuentra el producto o no (eso lo maneja cada consumidor).
+function beep(): void {
+  try {
+    const ctx  = new AudioContext()
+    const osc  = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 1800
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.1)
+    osc.onended = () => void ctx.close()
+  } catch {
+    // audio no soportado — no interrumpir el escaneo
+  }
+}
+
 /**
  * Shared scanner hook — arquitectura en capas:
  *   Capa 1+2: html5-qrcode, que usa BarcodeDetector nativo cuando el
@@ -83,6 +103,7 @@ export function useScanner({
     if (code === lastCodeRef.current && now - lastTsRef.current < debounceMs) return
     lastCodeRef.current = code
     lastTsRef.current   = now
+    beep()
     onResultRef.current(code)
   }, [debounceMs])
 

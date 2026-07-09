@@ -29,6 +29,8 @@ interface UseScannerReturn {
   stopScanner: () => void
   /** Capa 3 fallback: decode a barcode from a photo file (e.g. camera capture input). */
   scanFile: (file: File) => Promise<void>
+  /** Capa 3 fallback: snapshot the current live frame (mientras isScanning) y decodificarlo. */
+  captureFrame: () => Promise<void>
 }
 
 // focusMode no está en el tipo MediaTrackConstraints de TS (propiedad no
@@ -171,5 +173,25 @@ export function useScanner({
     }
   }, [containerId, emit])
 
-  return { videoContainerRef, permError, isScanning, error, startScanner, stopScanner, scanFile }
+  // Toma un snapshot del <video> que html5-qrcode ya está renderizando dentro
+  // de videoContainerRef y lo decodifica como si fuera una foto — evita abrir
+  // el picker nativo del OS (que no permite superponer la guía visual).
+  const captureFrame = useCallback(async () => {
+    const video = videoContainerRef.current?.querySelector('video')
+    if (!video || video.readyState < 2) return
+    const canvas = document.createElement('canvas')
+    canvas.width  = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.drawImage(video, 0, 0)
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+    if (!blob) return
+    await scanFile(new File([blob], 'captura.png', { type: 'image/png' }))
+  }, [scanFile])
+
+  return {
+    videoContainerRef, permError, isScanning, error,
+    startScanner, stopScanner, scanFile, captureFrame,
+  }
 }

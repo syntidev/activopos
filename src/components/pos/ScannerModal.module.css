@@ -77,10 +77,6 @@
   text-align: center;
 }
 
-.hiddenFileInput {
-  display: none;
-}
-
 /* ── Viewfinder — 260×180px centered rectangle ── */
 
 .viewfinder {
@@ -238,6 +234,32 @@
 
 .closeBtn:hover  { background: rgba(0, 0, 0, 0.8); }
 .closeBtn:active { transform: scale(0.9); }
+
+/* ── Capture button (bottom-center) — snapshot manual del frame en vivo ── */
+
+.captureBtn {
+  position: absolute;
+  bottom: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-large);
+  height: var(--touch-large);
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  color: white;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
+}
+
+.captureBtn:hover  { background: rgba(0, 0, 0, 0.8); }
+.captureBtn:active { transform: translateX(-50%) scale(0.9); }
 
 /* ── Not-found toast ── */
 

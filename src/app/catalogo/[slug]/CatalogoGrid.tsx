@@ -899,7 +899,7 @@ export function CatalogoGrid({
                   {first?.image ? (
                     <img src={first.image} alt="" className={styles.catTileImg} loading="lazy" aria-hidden="true" />
                   ) : (
-                    <div className={`${styles.catTilePlaceholder} ${styles.gradDefault}`} aria-hidden="true" />
+                    <div className={styles.catTilePlaceholder} aria-hidden="true" />
                   )}
                   <div className={styles.catTileOverlay} />
                   <div className={styles.catTileInfo}>
@@ -1460,7 +1460,12 @@ export function CatalogoGrid({
             {/* Scrollable body */}
             <div className={styles.modalBody}>
               {selP.categoryName && (
-                <p className={styles.productCategory}>{selP.categoryName}</p>
+                <span
+                  className={styles.categoryBadge}
+                  style={{ '--badge-color': categoryColors[selP.categoryName] ?? undefined } as CSSProperties}
+                >
+                  {selP.categoryName}
+                </span>
               )}
               <h2 className={styles.modalTitle}>{selP.name}</h2>
               {selP.description && (
@@ -1600,7 +1605,7 @@ export function CatalogoGrid({
                       </button>
                     </div>
                   </div>
-                  {availableStock < 10 && (
+                  {availableStock > 0 && availableStock <= 10 && (
                     <span className={styles.modalQtyAvailable}>
                       {availableStock} disponible{availableStock === 1 ? '' : 's'}
                     </span>

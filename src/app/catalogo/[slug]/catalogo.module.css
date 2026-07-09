@@ -853,13 +853,12 @@
 .productsGrid {
   display:               grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:                   var(--space-3);
+  gap:                   var(--space-4);
   padding:               var(--space-4);
 }
 
 @media (min-width: 640px)  { .productsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .productsGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (min-width: 1280px) { .productsGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 
 /* ── CATEGORY SHOWCASE — tiles grandes (≤4 categorías) ───────── */
 
@@ -909,8 +908,9 @@
 .catTile:hover .catTileImg { transform: scale(1.05); }
 
 .catTilePlaceholder {
-  position: absolute;
-  inset:    0;
+  position:   absolute;
+  inset:      0;
+  background: linear-gradient(135deg, var(--tile-accent, #0038BD) 0%, #0D1B2E 100%);
 }
 
 .catTileOverlay {
@@ -1275,6 +1275,21 @@
   margin:         0;
 }
 
+/* ── Badge de categoría en el modal de producto ── */
+.categoryBadge {
+  display:        inline-flex;
+  align-self:     flex-start;
+  font-size:      var(--text-2xs);
+  font-weight:    var(--weight-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color:          var(--badge-color, var(--biz-color, var(--color-brand)));
+  background:     color-mix(in srgb, var(--badge-color, var(--biz-color, var(--color-brand))) 15%, transparent);
+  padding:        3px var(--space-2);
+  border-radius:  var(--radius-full);
+  margin:         0 0 var(--space-1);
+}
+
 .productName {
   font-size:          var(--text-sm);
   font-weight:        var(--weight-medium);
@@ -1445,8 +1460,7 @@
 
 .modalImageWrap {
   position:      relative;
-  aspect-ratio:  1 / 1;
-  max-height:    300px;
+  aspect-ratio:  4 / 3;
   overflow:      hidden;
   flex-shrink:   0;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -1456,7 +1470,6 @@
 .modalImage {
   width:      100%;
   height:     100%;
-  max-height: 300px;
   object-fit: cover;
   display:    block;
 }

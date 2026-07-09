@@ -1,90 +1,170 @@
 import type { Metadata } from 'next'
-import { BookOpen } from 'lucide-react'
+import type { CSSProperties } from 'react'
+import Link from 'next/link'
+import { ArrowLeft, ArrowRight, Clock, User } from 'lucide-react'
+import { fetchBlogList, categoryColor, BLOG_CATEGORIES, type BlogPostSummary } from './types'
 import styles from './blog.module.css'
+
+interface PageProps {
+  searchParams: { page?: string; category?: string }
+}
+
+const PAGE_SIZE = 9
 
 export const metadata: Metadata = {
   title: 'Blog',
   description:
-    'Artículos sobre gestión de negocios venezolanos, control de inventario y ventas con ActivoPOS.',
+    'Guías y recursos sobre ventas, inventario y tecnología para negocios venezolanos. Artículos prácticos de ActivoPOS.',
+  alternates: { canonical: 'https://activopos.com/blog' },
+  openGraph: {
+    title: 'Blog | ActivoPOS',
+    description: 'Guías y recursos para negocios venezolanos.',
+    url: 'https://activopos.com/blog',
+    type: 'website',
+  },
 }
 
-const POSTS = [
-  {
-    category: 'Gestión de negocios',
-    title: 'Cómo controlar el inventario de tu bodegón sin volverte loco',
-    desc: 'Los errores más comunes al gestionar stock en negocios pequeños y cómo evitarlos con un sistema simple.',
-    readTime: '5 min',
-  },
-  {
-    category: 'Dólar y precios',
-    title: 'Vender en USD y cobrar en Bs: la guía definitiva para 2026',
-    desc: 'Estrategias para fijar precios, ajustar márgenes con la tasa BCV y no perder dinero en la conversión.',
-    readTime: '7 min',
-  },
-  {
-    category: 'Tecnología POS',
-    title: 'Catálogo digital por WhatsApp: cómo vender sin abrir una tienda online',
-    desc: 'Tu catálogo activo en ActivoPOS genera un link que tus clientes pueden compartir y hacer pedidos directamente.',
-    readTime: '4 min',
-  },
-]
+function fmtDate(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('es-VE', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
-export default function BlogPage() {
+function PostCard({ post }: { post: BlogPostSummary }) {
   return (
-    <section className={styles.page}>
-      <div className={styles.inner}>
-        <p className={styles.eyebrow}>Blog</p>
-        <h1 className={styles.title}>Ideas para negocios activos</h1>
-        <p className={styles.subtitle}>
-          Artículos prácticos sobre gestión, precios, inventario y tecnología para
-          el comercio venezolano.
-        </p>
-
-        <div className={styles.grid}>
-          {POSTS.map(({ category, title, desc, readTime }) => (
-            <article key={title} className={styles.card}>
-              <div className={styles.cardImg}>
-                <BookOpen size={48} className={styles.cardImgIcon} aria-hidden="true" />
-                <span className={styles.badge}>Próximamente</span>
-              </div>
-              <div className={styles.cardBody}>
-                <p className={styles.cardCategory}>{category}</p>
-                <h2 className={styles.cardTitle}>{title}</h2>
-                <p className={styles.cardDesc}>{desc}</p>
-                <p className={styles.cardFooter}>{readTime} de lectura</p>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        {/* Newsletter */}
-        <div className={styles.newsletter}>
-          <h2 className={styles.newsletterTitle}>Avísame cuando publiquen</h2>
-          <p className={styles.newsletterSubtitle}>
-            Sin spam. Solo artículos prácticos cuando estén listos.
-          </p>
-          <NewsletterForm />
-        </div>
+    <Link href={`/blog/${post.slug}`} className={styles.card}>
+      <div className={styles.cardImgWrap}>
+        {post.cover_image && (
+          <img src={post.cover_image} alt="" className={styles.cardImg} loading="lazy" />
+        )}
+        <span
+          className={styles.cardBadge}
+          style={{ '--badge-color': post.category_color ?? categoryColor(post.category) } as CSSProperties}
+        >
+          {post.category}
+        </span>
       </div>
-    </section>
+      <div className={styles.cardBody}>
+        <h2 className={styles.cardTitle}>{post.title}</h2>
+        <p className={styles.cardExcerpt}>{post.excerpt}</p>
+        <p className={styles.cardMeta}>
+          {post.author_name} · {fmtDate(post.published_at)} · {post.read_time_minutes} min
+        </p>
+      </div>
+    </Link>
   )
 }
 
-function NewsletterForm() {
+export default async function BlogPage({ searchParams }: PageProps) {
+  const page     = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1)
+  const category = searchParams.category ?? ''
+
+  const data = await fetchBlogList({ page, category, limit: PAGE_SIZE })
+  const posts = data?.posts ?? []
+  const total = data?.total ?? 0
+  const totalPages = total > 0 ? Math.ceil(total / PAGE_SIZE) : 1
+
+  // El post destacado solo se muestra en la primera página sin filtro —
+  // evita que reaparezca arriba de cada página/categoría filtrada.
+  const showFeatured = page === 1 && !category
+  const featured = showFeatured ? posts.find(p => p.is_featured) ?? null : null
+  const gridPosts = featured ? posts.filter(p => p.slug !== featured.slug) : posts
+
   return (
-    <form className={styles.newsletterForm} action="https://formspree.io/f/activopos-blog" method="POST">
-      <input
-        type="email"
-        name="email"
-        className={styles.newsletterInput}
-        placeholder="tu@correo.com"
-        required
-        autoComplete="email"
-        aria-label="Correo electrónico"
-      />
-      <button type="submit" className={styles.newsletterBtn}>
-        Notificarme
-      </button>
-    </form>
+    <>
+      <section className={styles.hero}>
+        <div className={styles.heroInner}>
+          <h1 className={styles.heroTitle}>Blog ActivoPOS</h1>
+          <p className={styles.heroSubtitle}>Guías y recursos para negocios venezolanos</p>
+        </div>
+      </section>
+
+      <div className={styles.page}>
+        <div className={styles.inner}>
+          {featured && (
+            <Link href={`/blog/${featured.slug}`} className={styles.featured}>
+              <div className={styles.featuredImgWrap}>
+                {featured.cover_image && (
+                  <img src={featured.cover_image} alt="" className={styles.featuredImg} loading="eager" />
+                )}
+              </div>
+              <div className={styles.featuredContent}>
+                <span
+                  className={styles.featuredBadge}
+                  style={{ '--badge-color': featured.category_color ?? categoryColor(featured.category) } as CSSProperties}
+                >
+                  {featured.category}
+                </span>
+                <h2 className={styles.featuredTitle}>{featured.title}</h2>
+                <p className={styles.featuredExcerpt}>{featured.excerpt}</p>
+                <div className={styles.meta}>
+                  <User size={13} aria-hidden="true" />
+                  {featured.author_name}
+                  <span className={styles.metaDot} aria-hidden="true">·</span>
+                  {fmtDate(featured.published_at)}
+                  <span className={styles.metaDot} aria-hidden="true">·</span>
+                  <Clock size={13} aria-hidden="true" />
+                  {featured.read_time_minutes} min de lectura
+                </div>
+              </div>
+            </Link>
+          )}
+
+          <nav className={styles.chipsScroll} aria-label="Filtrar por categoría">
+            <div className={styles.chipsTrack}>
+              <Link
+                href="/blog"
+                className={`${styles.chip} ${!category ? styles.chipActive : ''}`}
+              >
+                Todos
+              </Link>
+              {BLOG_CATEGORIES.map(c => (
+                <Link
+                  key={c.key}
+                  href={`/blog?category=${c.key}`}
+                  className={`${styles.chip} ${category === c.key ? styles.chipActive : ''}`}
+                >
+                  {c.label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+
+          {gridPosts.length === 0 ? (
+            <p className={styles.emptyState}>
+              {data === null
+                ? 'No pudimos cargar los artículos. Intenta de nuevo en unos minutos.'
+                : 'Aún no hay artículos en esta categoría.'}
+            </p>
+          ) : (
+            <div className={styles.grid}>
+              {gridPosts.map(post => <PostCard key={post.slug} post={post} />)}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <Link
+                href={`/blog?page=${page - 1}${category ? `&category=${category}` : ''}`}
+                className={`${styles.pageBtn} ${page <= 1 ? styles.pageBtnDisabled : ''}`}
+                aria-disabled={page <= 1}
+              >
+                <ArrowLeft size={14} aria-hidden="true" />
+                Anterior
+              </Link>
+              <span className={styles.pageInfo}>Página {page} de {totalPages}</span>
+              <Link
+                href={`/blog?page=${page + 1}${category ? `&category=${category}` : ''}`}
+                className={`${styles.pageBtn} ${page >= totalPages ? styles.pageBtnDisabled : ''}`}
+                aria-disabled={page >= totalPages}
+              >
+                Siguiente
+                <ArrowRight size={14} aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   )
 }

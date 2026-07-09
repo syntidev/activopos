@@ -28,6 +28,7 @@
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.40.0",
     "html5-qrcode": "^2.3.8",
+    "isomorphic-dompurify": "^3.18.0",
     "jose": "^6.2.3",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.18.0",

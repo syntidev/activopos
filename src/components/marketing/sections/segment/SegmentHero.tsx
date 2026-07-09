@@ -11,7 +11,9 @@ export default function SegmentHero({ segment }: { segment: SegmentData }) {
           <RotatingBadge />
           <h1 className={styles.headline}>
             {segment.headline}
-            <span className={styles.headlineAccent}>Para tu {segment.name}.</span>
+            {segment.tag_line && (
+              <span className={styles.headlineAccent}>{segment.tag_line}</span>
+            )}
           </h1>
           <p className={styles.subheadline}>{segment.subheadline}</p>
           <div className={styles.actions}>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
+import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './SegmentsSection.module.css'
 
 interface ApiSegment {
@@ -29,28 +30,30 @@ export default async function SegmentsSection() {
 
   return (
     <section className={styles.section} id="segmentos">
-      <h2 className={styles.headline}>
-        Si produces, vendes o prestas un servicio<br />en Venezuela, esto es para ti.
-      </h2>
-      {segments.length > 0 && (
-        <>
-          <div className={styles.grid}>
-            {segments.map(seg => (
-              <Link key={seg.slug} href={`/para-${seg.slug}`} className={styles.card}>
-                <SegmentIcon slug={seg.slug} size={28} />
-                <span className={styles.name}>{seg.name}</span>
-                <span className={styles.tagLine}>{seg.tag_line}</span>
+      <RevealSection>
+        <h2 className={styles.headline}>
+          Si produces, vendes o prestas un servicio<br />en Venezuela, esto es para ti.
+        </h2>
+        {segments.length > 0 && (
+          <>
+            <div className={styles.grid}>
+              {segments.map(seg => (
+                <Link key={seg.slug} href={`/para-${seg.slug}`} className={styles.card}>
+                  <SegmentIcon slug={seg.slug} size={28} />
+                  <span className={styles.name}>{seg.name}</span>
+                  <span className={styles.tagLine}>{seg.tag_line}</span>
+                </Link>
+              ))}
+            </div>
+            <div className={styles.moreWrap}>
+              <Link href="/segmentos" className={styles.moreLink}>
+                Ver todos los segmentos
+                <ArrowRight size={15} aria-hidden="true" />
               </Link>
-            ))}
-          </div>
-          <div className={styles.moreWrap}>
-            <Link href="/segmentos" className={styles.moreLink}>
-              Ver todos los segmentos
-              <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-        </>
-      )}
+            </div>
+          </>
+        )}
+      </RevealSection>
     </section>
   )
 }

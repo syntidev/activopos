@@ -22,5 +22,16 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const token = await signImpersonation({ businessId: business.id, businessName: business.name })
   setImpersonationCookie(token)
 
+  await prisma.activityLog.create({
+    data: {
+      business_id: business.id,
+      user_id:     session.userId,
+      action:      'impersonation_start',
+      model_type:  'Business',
+      model_id:    business.id,
+      new_values:  { super_admin_name: session.name },
+    },
+  })
+
   return NextResponse.json({ ok: true })
 }

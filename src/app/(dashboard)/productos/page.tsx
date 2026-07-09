@@ -23,6 +23,7 @@ import {
   ArrowLeftRight,
 } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
+import { useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
 import { ProductModal } from '@/components/products/ProductModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
@@ -148,6 +149,7 @@ function TableSkeleton() {
 
 export default function ProductosPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [products, setProducts]           = useState<Product[]>([])
   const [categories, setCategories]       = useState<Category[]>([])
   const [isLoading, setIsLoading]         = useState(true)
@@ -450,6 +452,19 @@ export default function ProductosPage() {
     await fetchCategories()
   }, [editCategoryData, fetchCategories])
 
+  const handleDeleteCategory = useCallback(async (cat: Category) => {
+    if (!window.confirm(`¿Eliminar la categoría "${cat.name}"?`)) return
+    const res = await fetch(`/api/categories/${cat.id}`, { method: 'DELETE' })
+    const j = await res.json().catch(() => ({})) as { ok?: boolean; error?: string }
+    if (res.ok && j.ok) {
+      toast('Categoría eliminada', 'success')
+      if (selectedCategory === String(cat.id)) setSelectedCategory('')
+      await fetchCategories()
+    } else {
+      toast(j.error ?? 'Error al eliminar', 'error')
+    }
+  }, [selectedCategory, fetchCategories, toast])
+
   // Reordena categorías: mueve una posición y persiste sort_order = índice en todas.
   // El catálogo y estos tabs leen sort_order, así que el orden se refleja en la portada.
   const moveCategory = useCallback(async (index: number, dir: 'left' | 'right') => {
@@ -729,14 +744,24 @@ export default function ProductosPage() {
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className={styles.catEditBtn}
-                  onClick={() => { setEditCategoryData(cat); setShowCategoryModal(true) }}
-                  aria-label={`Editar categoría ${cat.name}`}
-                >
-                  <Pencil size={12} aria-hidden="true" />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className={styles.catEditBtn}
+                    onClick={() => { setEditCategoryData(cat); setShowCategoryModal(true) }}
+                    aria-label={`Editar categoría ${cat.name}`}
+                  >
+                    <Pencil size={12} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.catEditBtn}
+                    onClick={() => void handleDeleteCategory(cat)}
+                    aria-label={`Eliminar categoría ${cat.name}`}
+                  >
+                    <Trash2 size={12} aria-hidden="true" />
+                  </button>
+                </>
               )}
             </div>
           ))}

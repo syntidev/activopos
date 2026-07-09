@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { SuspendToggle, BusinessFilters } from '../TenantActions'
+import { SuspendToggle, ImpersonateButton, BusinessFilters } from '../TenantActions'
 import styles from '../admin.module.css'
 
 const PAGE_SIZE = 25
@@ -127,6 +127,7 @@ export default async function BusinessesPage({ searchParams }: PageProps) {
                 <th>Ventas mes</th>
                 <th></th>
                 <th></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -143,6 +144,9 @@ export default async function BusinessesPage({ searchParams }: PageProps) {
                     <Link href={`/businesses/${b.id}`} className={styles.actionLink}>
                       Ver detalle →
                     </Link>
+                  </td>
+                  <td>
+                    <ImpersonateButton tenantId={b.id} tenantName={b.name} />
                   </td>
                   <td>
                     <SuspendToggle tenantId={b.id} active={b.active} />

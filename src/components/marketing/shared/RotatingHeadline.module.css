@@ -4,7 +4,7 @@
   font-weight:    800;
   line-height:    1.1;
   letter-spacing: -0.02em;
-  color:          #FFFFFF;
+  color:          #0D1B2E;
   display:        flex;
   flex-direction: column;
   gap:            8px;
@@ -28,7 +28,7 @@
 
 .rotating {
   display:  block;
-  color:    var(--cta);
+  color:    #0038BD;
   position: absolute;
   left:     0;
   top:      0;

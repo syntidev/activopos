@@ -5,10 +5,10 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import styles from './RotatingHeadline.module.css'
 
 const PHRASES = [
-  'Vendés en el mostrador.',
+  'Vendes en el mostrador.',
   'El BCV se actualiza solo.',
   'La caja cuadra sola.',
-  'Cobrás en $ y bolívares.',
+  'Cobras en $ y bolívares.',
   'Tu catálogo en WhatsApp.',
 ]
 
@@ -37,7 +37,7 @@ export default function RotatingHeadline() {
 
   return (
     <h1 className={styles.headline}>
-      <span className={styles.fixed}>Tu negocio activo.</span>
+      <span className={styles.fixed}>Cobra, controla y repón sin enredarte.</span>
       <span className={styles.rotatingWrap}>
         <AnimatePresence mode="wait">
           <motion.span

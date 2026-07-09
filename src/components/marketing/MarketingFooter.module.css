@@ -1,7 +1,7 @@
 .footer {
-  background: var(--bg-base, #0D1B2E);
+  background: #0D1B2E;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: clamp(3rem, 8vw, 5rem) clamp(1.25rem, 5vw, 3rem) 2rem;
+  padding: clamp(4rem, 10vw, 6.5rem) clamp(1.25rem, 5vw, 3rem) 2.5rem;
 }
 
 .grid {
@@ -9,7 +9,7 @@
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr 1fr;
-  gap: 3rem;
+  gap: 4rem;
 }
 
 .brand {}
@@ -114,7 +114,7 @@
 .colLinks {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .colLink {
@@ -149,8 +149,8 @@
 
 .bottom {
   max-width: 1140px;
-  margin: 3rem auto 0;
-  padding-top: 1.5rem;
+  margin: 4rem auto 0;
+  padding-top: 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;

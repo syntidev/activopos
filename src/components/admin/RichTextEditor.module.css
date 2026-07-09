@@ -1,0 +1,94 @@
+/* Editor Tiptap — visual consistente con .input/.textarea de blog-admin.module.css */
+
+.wrap {
+  background:    #18181b;
+  border:        1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  overflow:      hidden;
+}
+
+.wrap:focus-within { border-color: var(--brand); }
+
+.toolbar {
+  display:      flex;
+  align-items:  center;
+  gap:          var(--space-1);
+  padding:      var(--space-2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           30px;
+  height:          30px;
+  border:          none;
+  border-radius:   var(--radius-sm, 6px);
+  background:      transparent;
+  color:           #a1a1aa;
+  cursor:          pointer;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+}
+
+.btn:hover { background: #1f1f23; color: #e4e4e7; }
+
+.btnActive {
+  background: rgba(var(--brand-rgb, 0, 56, 189), 0.18);
+  color:      var(--brand);
+}
+
+.divider {
+  width:        1px;
+  height:       20px;
+  background:   rgba(255, 255, 255, 0.1);
+  margin:       0 var(--space-1);
+}
+
+.content {
+  min-height: 340px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding:    var(--space-3);
+  color:      #e4e4e7;
+  font-size:  var(--text-sm);
+  line-height: 1.65;
+  outline:    none;
+}
+
+.content p { margin: 0 0 1em; }
+.content p:last-child { margin-bottom: 0; }
+
+.content h2 {
+  font-size:   1.25rem;
+  font-weight: var(--weight-bold);
+  color:       #fff;
+  margin:      1.25em 0 0.5em;
+}
+
+.content h3 {
+  font-size:   1.0625rem;
+  font-weight: var(--weight-bold);
+  color:       #fff;
+  margin:      1.1em 0 0.5em;
+}
+
+.content ul {
+  margin:       0 0 1em;
+  padding-left: 1.375em;
+}
+
+.content li { margin-bottom: 0.375em; }
+
+.content a {
+  color:           var(--brand-l, var(--brand));
+  text-decoration: underline;
+}
+
+.content strong { color: #fff; }
+
+.content img {
+  max-width:     100%;
+  border-radius: var(--radius-md);
+  margin:        0.75em 0;
+}

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import type { ChangeEvent } from 'react'
 import { X } from 'lucide-react'
+import { RichTextEditor } from '@/components/admin/RichTextEditor'
 import { BLOG_CATEGORIES, slugify, type BlogPost, type BlogPostPayload } from './constants'
 import styles from './blog-admin.module.css'
 
@@ -175,14 +176,8 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
       </div>
 
       <div className={styles.formGroup}>
-        <label className={styles.label} htmlFor="content">Contenido (HTML) *</label>
-        <textarea
-          id="content"
-          className={`${styles.textarea} ${styles.textareaLg}`}
-          value={values.content}
-          onChange={e => set('content', e.target.value)}
-          required
-        />
+        <label className={styles.label} htmlFor="content">Contenido *</label>
+        <RichTextEditor value={values.content} onChange={html => set('content', html)} />
       </div>
 
       <div className={styles.formGroup}>

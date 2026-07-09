@@ -1,6 +1,6 @@
 .section {
   padding:    80px 5vw;
-  background: var(--mkt-bg);
+  background: #EEEDF4;
 }
 
 .headline {
@@ -15,7 +15,7 @@
 
 .grid {
   display:               grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap:                   16px;
   max-width:             1100px;
   margin:                0 auto;
@@ -42,29 +42,6 @@
   border-color: var(--brand);
 }
 
-.cardGeneric {
-  border:     1.5px dashed var(--mkt-border-dashed);
-  background: var(--mkt-card-subtle);
-}
-
-.cardGeneric:hover {
-  border-color: var(--brand);
-  border-style: solid;
-  background:   var(--mkt-card);
-}
-
-.iconWrap {
-  width:           44px;
-  height:          44px;
-  border-radius:   12px;
-  background:      var(--brand-soft);
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  color:           var(--brand);
-  flex-shrink:     0;
-}
-
 .name {
   font-size:   13px;
   font-weight: 600;
@@ -82,9 +59,24 @@
   .grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (min-width: 769px) and (max-width: 1024px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
+.moreWrap {
+  display:         flex;
+  justify-content: center;
+  margin-top:      32px;
 }
+
+.moreLink {
+  display:         inline-flex;
+  align-items:     center;
+  gap:              8px;
+  font-size:       14px;
+  font-weight:     600;
+  color:           var(--brand);
+  text-decoration: none;
+  transition:      gap 0.2s ease;
+}
+
+.moreLink:hover { gap: 12px; }
 
 @media (prefers-reduced-motion: reduce) {
   .card { transition: none; }

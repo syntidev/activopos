@@ -74,8 +74,7 @@
 }
 
 .cardFeatured {
-  border-color: rgba(var(--brand-rgb), 0.30);
-  border-left-color: var(--brand);
+  border: 1.5px solid #0038BD;
   box-shadow: 0 4px 24px rgba(var(--brand-rgb), 0.14), 0 0 0 1px rgba(var(--brand-rgb), 0.08);
 }
 

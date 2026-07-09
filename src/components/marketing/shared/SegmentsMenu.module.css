@@ -59,17 +59,36 @@
   gap:            2px;
 }
 
-.item {
-  display:         flex;
-  flex-direction:  column;
-  padding:         8px 12px;
-  border-radius:   8px;
+.itemLink {
   text-decoration: none;
-  transition:      background 0.15s ease;
+  display:         block;
 }
 
-.item:hover {
-  background: var(--brand-soft, #DCE6FF);
+.item {
+  display:       flex;
+  align-items:   center;
+  gap:           10px;
+  padding:       8px 12px;
+  border-radius: 8px;
+}
+
+.iconBox {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           28px;
+  height:          28px;
+  border-radius:   8px;
+  flex-shrink:     0;
+}
+
+.iconGlyph {
+  display: flex;
+}
+
+.itemText {
+  display:        flex;
+  flex-direction: column;
 }
 
 .itemName {

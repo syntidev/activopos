@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { BLOG_CATEGORIES } from './constants'
@@ -26,10 +26,19 @@ interface GenerateAiModalProps {
 export function GenerateAiModal({ open, onClose, onSaved }: GenerateAiModalProps) {
   const [tema, setTema]           = useState('')
   const [categoria, setCategoria] = useState<string>(BLOG_CATEGORIES[0])
+  const [categories, setCategories] = useState<string[]>([])
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState<string | null>(null)
   const [article, setArticle]     = useState<AiArticle | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    fetch('/api/admin/blog/categories')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((body: { categories: string[] }) => setCategories(body.categories ?? []))
+      .catch(() => {})
+  }, [open])
 
   function reset() {
     setTema('')
@@ -101,94 +110,96 @@ export function GenerateAiModal({ open, onClose, onSaved }: GenerateAiModalProps
   }
 
   return (
-    <div data-theme="dark">
-      <Modal open={open} onClose={handleClose} title="Generar post con IA" size="lg">
-        <div className={styles.aiForm}>
-          {!article && (
-            <>
-              <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="ai-tema">Tema</label>
-                <textarea
-                  id="ai-tema"
-                  className={styles.textarea}
-                  value={tema}
-                  onChange={e => setTema(e.target.value)}
-                  placeholder="Ej: cómo evitar pérdidas por descuadre de caja en un abasto"
-                  maxLength={200}
-                />
+    <Modal open={open} onClose={handleClose} title="Generar post con IA" size="lg">
+      <div className={styles.aiForm}>
+        {!article && (
+          <>
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="ai-tema">Tema</label>
+              <textarea
+                id="ai-tema"
+                className={styles.textarea}
+                value={tema}
+                onChange={e => setTema(e.target.value)}
+                placeholder="Ej: cómo evitar pérdidas por descuadre de caja en un abasto"
+                maxLength={200}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="ai-categoria">Categoría</label>
+              <input
+                id="ai-categoria"
+                className={styles.input}
+                list="blog-categories"
+                value={categoria}
+                onChange={e => setCategoria(e.target.value)}
+                placeholder="Ej: Catálogo digital, Marketing..."
+                maxLength={80}
+              />
+              <datalist id="blog-categories">
+                {categories.map(cat => <option key={cat} value={cat} />)}
+              </datalist>
+            </div>
+
+            {error && <p className={styles.errorText}>{error}</p>}
+
+            {generating && (
+              <div className={styles.loadingRow}>
+                <Loader2 size={16} className={styles.spin} aria-hidden="true" />
+                Generando artículo...
               </div>
+            )}
 
-              <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="ai-categoria">Categoría</label>
-                <select
-                  id="ai-categoria"
-                  className={styles.select}
-                  value={categoria}
-                  onChange={e => setCategoria(e.target.value)}
-                >
-                  {BLOG_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+            <div className={styles.formActions}>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={() => void handleGenerate()}
+                disabled={generating || !tema.trim()}
+              >
+                <Sparkles size={14} aria-hidden="true" />
+                {generating ? 'Generando...' : 'Generar'}
+              </button>
+            </div>
+          </>
+        )}
+
+        {article && (
+          <>
+            <div className={styles.aiPreview}>
+              <p className={styles.aiPreviewTitle}>{article.titulo}</p>
+              <p className={styles.aiPreviewMeta}>/{article.slug} · {article.read_time}</p>
+              <p className={styles.aiPreviewExcerpt}>{article.excerpt}</p>
+              <div className={styles.aiTagsRow}>
+                {article.tags.map(t => <span key={t} className={styles.aiTag}>{t}</span>)}
               </div>
+              <p className={styles.aiPreviewContent}>{article.content.replace(/<[^>]+>/g, ' ').trim()}</p>
+            </div>
 
-              {error && <p className={styles.errorText}>{error}</p>}
+            {error && <p className={styles.errorText}>{error}</p>}
 
-              {generating && (
-                <div className={styles.loadingRow}>
-                  <Loader2 size={16} className={styles.spin} aria-hidden="true" />
-                  Generando artículo...
-                </div>
-              )}
-
-              <div className={styles.formActions}>
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnPrimary}`}
-                  onClick={() => void handleGenerate()}
-                  disabled={generating || !tema.trim()}
-                >
-                  <Sparkles size={14} aria-hidden="true" />
-                  {generating ? 'Generando...' : 'Generar'}
-                </button>
-              </div>
-            </>
-          )}
-
-          {article && (
-            <>
-              <div className={styles.aiPreview}>
-                <p className={styles.aiPreviewTitle}>{article.titulo}</p>
-                <p className={styles.aiPreviewMeta}>/{article.slug} · {article.read_time}</p>
-                <p className={styles.aiPreviewExcerpt}>{article.excerpt}</p>
-                <div className={styles.aiTagsRow}>
-                  {article.tags.map(t => <span key={t} className={styles.aiTag}>{t}</span>)}
-                </div>
-                <p className={styles.aiPreviewContent}>{article.content.replace(/<[^>]+>/g, ' ').trim()}</p>
-              </div>
-
-              {error && <p className={styles.errorText}>{error}</p>}
-
-              <div className={styles.formActions}>
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnPrimary}`}
-                  onClick={() => void handleSaveDraft()}
-                  disabled={saving}
-                >
-                  {saving ? 'Guardando...' : 'Guardar como borrador'}
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.btn} ${styles.btnSecondary}`}
-                  onClick={reset}
-                  disabled={saving}
-                >
-                  Descartar
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </Modal>
-    </div>
+            <div className={styles.formActions}>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={() => void handleSaveDraft()}
+                disabled={saving}
+              >
+                {saving ? 'Guardando...' : 'Guardar como borrador'}
+              </button>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnSecondary}`}
+                onClick={reset}
+                disabled={saving}
+              >
+                Descartar
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   )
 }

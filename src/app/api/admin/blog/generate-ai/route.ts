@@ -19,9 +19,40 @@ const aiResultSchema = z.object({
 })
 
 function buildPrompt(tema: string, categoria: string): string {
-  return `Eres redactor de ActivoPOS, POS SaaS venezolano para PYMES.
-Escribe un artículo de blog profesional en español venezolano sobre: ${tema}
+  return `Eres el redactor oficial de ActivoPOS, un sistema POS SaaS diseñado específicamente para PYMES venezolanas.
+
+CONTEXTO DEL PRODUCTO:
+- POS táctil para ventas en mostrador
+- BCV automático — tasa oficial en tiempo real
+- Catálogo digital con pedidos por WhatsApp
+- Métodos de pago venezolanos: Pago Móvil, Zelle, Binance, USDT, Zinli
+- Variantes de producto: tallas, colores, combinaciones
+- Cierre de caja diario con reporte
+- Inventario en tiempo real
+- Planes disponibles: desde básico hasta avanzado con funciones ilimitadas (no menciones precios específicos en el artículo)
+- Segmentos atendidos: bodegas, abastos, boutiques, cafetines, farmacias, carnicerías, restaurantes, panaderías, ferreterías, joyerías, fruterías, veterinarias, papelerías, tiendas de electrónica, centros de belleza, mueblerías, lavanderías, tiendas deportivas, distribuidoras, licorerías, repuesterías, ópticas, jugueterías
+
+TONO:
+- Español venezolano neutro-comercial
+- Tuteo directo ("tu negocio", "vendés", "cobrás")
+- Sin jerga startup ni anglicismos innecesarios
+- Cercano, práctico, sin grandilocuencia
+
+OBJETIVO SEO:
+- Posicionar en Google Venezuela para búsquedas de PYMES
+- Keywords naturales: POS Venezuela, sistema de ventas Venezuela, cobrar en bolívares y dólares, tasa BCV, catálogo digital WhatsApp
+
+El artículo debe:
+- Mencionar funciones reales de ActivoPOS cuando sea relevante
+- Incluir un CTA al final hacia activopos.com
+- Hablar de la realidad venezolana — economía dual, WhatsApp, Pago Móvil
+
+Escribe un artículo de blog sobre: ${tema}
 Categoría: ${categoria}
+
+Menciona funciones específicas de ActivoPOS cuando sea natural.
+Usa ejemplos venezolanos reales: bodegas, abastos, boutiques, cafetines.
+El artículo debe sonar como escrito por alguien que conoce el negocio venezolano.
 
 Responde SOLO en JSON válido:
 {

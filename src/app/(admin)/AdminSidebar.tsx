@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap, FileText } from 'lucide-react'
+import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap, FileText, Menu } from 'lucide-react'
 import styles from './admin.module.css'
 
 const NAV = [
@@ -19,6 +19,7 @@ export function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [openTickets, setOpenTickets] = useState<number | null>(null)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   const handleLogout = useCallback(async () => {
     try {
@@ -38,8 +39,42 @@ export function AdminSidebar() {
       .catch(() => {})
   }, [])
 
+  /* Close drawer on route change and on desktop resize */
+  useEffect(() => { setIsMobileOpen(false) }, [pathname])
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth >= 768) setIsMobileOpen(false)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
-    <aside className={styles.sidebar}>
+    <>
+      <div className={styles.mobileTopBar}>
+        <button
+          type="button"
+          className={styles.hamburgerBtn}
+          onClick={() => setIsMobileOpen(v => !v)}
+          aria-label="Abrir menú de navegación"
+          aria-expanded={isMobileOpen}
+        >
+          <Menu size={20} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+        <span className={styles.logoText}>
+          Activo<strong>ADMIN</strong>
+        </span>
+      </div>
+
+      {isMobileOpen && (
+        <div
+          className={styles.mobileOverlay}
+          onClick={() => setIsMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`${styles.sidebar} ${isMobileOpen ? styles.sidebarOpen : ''}`}>
       <div className={styles.sidebarLogo}>
         <Zap size={18} strokeWidth={2} aria-hidden="true" className={styles.logoIcon} />
         <span className={styles.logoText}>
@@ -78,6 +113,7 @@ export function AdminSidebar() {
           <span>Salir</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

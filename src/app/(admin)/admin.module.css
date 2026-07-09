@@ -8,6 +8,15 @@
   font-family: var(--font-body);
 }
 
+/* ── Mobile top bar (hamburger + logo) — hidden on desktop ── */
+.mobileTopBar {
+  display: none;
+}
+
+.mobileOverlay {
+  display: none;
+}
+
 /* ── Sidebar ── */
 .sidebar {
   display: flex;
@@ -17,6 +26,60 @@
   background: #111113;
   border-right: 1px solid rgba(255,255,255,0.06);
   padding: var(--space-4) 0;
+}
+
+@media (max-width: 767px) {
+  .mobileTopBar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    padding: 0 var(--space-4);
+    background: #111113;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    z-index: var(--z-overlay);
+  }
+
+  .hamburgerBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-left: calc(var(--space-2) * -1);
+    background: none;
+    border: none;
+    color: #e4e4e7;
+    cursor: pointer;
+  }
+
+  .mobileOverlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg, rgba(0,0,0,0.5));
+    z-index: calc(var(--z-overlay) - 1);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: calc(var(--z-overlay) + 1);
+    transform: translateX(-100%);
+    transition: transform var(--duration-slow) var(--ease-spring);
+    padding-top: var(--space-6);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
 }
 
 .sidebarLogo {
@@ -58,6 +121,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 44px;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -106,6 +170,7 @@
   align-items: center;
   gap: var(--space-2);
   width: 100%;
+  min-height: 44px;
   padding: var(--space-2) var(--space-3);
   border: none;
   border-radius: var(--radius-md);
@@ -124,8 +189,16 @@
 /* ── Main content ── */
 .main {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: var(--space-8);
+}
+
+@media (max-width: 767px) {
+  .main {
+    padding: var(--space-4);
+    padding-top: calc(var(--header-height) + var(--space-4));
+  }
 }
 
 /* ── Page header ── */
@@ -193,15 +266,23 @@
   background: #111113;
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .tableHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
   padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+@media (max-width: 640px) {
+  .tableHeader {
+    padding: var(--space-3) var(--space-4);
+  }
 }
 
 .tableTitle {
@@ -236,6 +317,7 @@
   color: #e4e4e7;
   font-size: var(--text-sm);
   width: 180px;
+  max-width: 100%;
 }
 
 .searchField input::placeholder { color: #52525b; }
@@ -272,6 +354,7 @@
 
 .table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   font-size: var(--text-sm);
 }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { SuspendToggle, ImpersonateButton, BusinessFilters } from '../TenantActions'
 import styles from '../admin.module.css'
+import pageStyles from './businesses.module.css'
 
 const PAGE_SIZE = 25
 
@@ -115,7 +116,7 @@ export default async function BusinessesPage({ searchParams }: PageProps) {
             {q || plan ? 'Sin resultados para este filtro.' : 'Sin negocios registrados.'}
           </div>
         ) : (
-          <table className={styles.table}>
+          <table className={`${styles.table} ${pageStyles.table}`}>
             <thead>
               <tr>
                 <th>Nombre</th>

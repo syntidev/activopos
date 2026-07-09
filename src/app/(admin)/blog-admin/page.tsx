@@ -81,7 +81,7 @@ export default function BlogAdminPage() {
         )}
 
         {loadState === 'ready' && posts.length > 0 && (
-          <table className={adminStyles.table}>
+          <table className={`${adminStyles.table} ${styles.table}`}>
             <thead>
               <tr>
                 <th></th>

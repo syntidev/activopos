@@ -133,7 +133,7 @@ export default function TicketsPage() {
         )}
 
         {loadState === 'ready' && tickets.length > 0 && (
-          <table className={adminStyles.table}>
+          <table className={`${adminStyles.table} ${styles.table}`}>
             <thead>
               <tr>
                 <th>#</th>

@@ -6,3 +6,13 @@
   color: #71717a;
   font-size: var(--text-xs);
 }
+
+/* Mobile: hide non-essential columns (Categoría, Hace) */
+@media (max-width: 640px) {
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    display: none;
+  }
+}

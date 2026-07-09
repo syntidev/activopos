@@ -10,6 +10,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 44px;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -60,6 +61,20 @@
   gap: var(--space-3);
 }
 
+/* Mobile: hide non-essential columns (miniatura, Categoría, Fecha, Vistas) */
+@media (max-width: 640px) {
+  .table th:nth-child(1),
+  .table td:nth-child(1),
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    display: none;
+  }
+}
+
 /* ── Form ── */
 .form {
   display: flex;
@@ -72,6 +87,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
+}
+
+@media (max-width: 767px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
 }
 
 .formGroup {

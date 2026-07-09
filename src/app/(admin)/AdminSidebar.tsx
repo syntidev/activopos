@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap } from 'lucide-react'
+import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap, FileText } from 'lucide-react'
 import styles from './admin.module.css'
 
 const NAV = [
   { href: '/businesses',     icon: Building2, label: 'Negocios'      },
+  { href: '/blog-admin',     icon: FileText,  label: 'Blog'          },
   { href: '/invoices',       icon: Receipt,   label: 'Facturas'      },
   { href: '/tickets',        icon: Headset,   label: 'Tickets'       },
   { href: '/stats',          icon: BarChart3, label: 'Estadísticas'  },

@@ -5,6 +5,7 @@ import { Barcode, ScanBarcode, Search, LayoutGrid, List } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ProductCard } from '@/components/pos/ProductCard'
 import { ProductListRow } from '@/components/pos/ProductListRow'
+import { useToast } from '@/components/ui'
 import type { ProductForPOS } from '@/lib/pos'
 import type { SaleMode } from '@/types/products'
 import styles from './pos.module.css'
@@ -83,6 +84,7 @@ interface LeftPanelProps {
 export function LeftPanel({
   search, onSearchChange, isSearching, results, rate, onProductClick, onScannerOpen,
 }: LeftPanelProps) {
+  const { toast } = useToast()
 
   /* ── View mode (localStorage) ── */
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -163,6 +165,16 @@ export function LeftPanel({
               placeholder="Buscar producto o código..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter' || isSearching || !search.trim()) return
+                e.preventDefault()
+                if (results.length > 0) {
+                  onProductClick(results[0])
+                  onSearchChange('')
+                } else {
+                  toast(`Producto no encontrado: ${search.trim()}`, 'error')
+                }
+              }}
               autoComplete="off"
               aria-label="Buscar producto"
             />

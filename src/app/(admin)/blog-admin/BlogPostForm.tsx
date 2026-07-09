@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import type { ChangeEvent } from 'react'
 import { X } from 'lucide-react'
 import { BLOG_CATEGORIES, slugify, type BlogPost, type BlogPostPayload } from './constants'
 import styles from './blog-admin.module.css'
@@ -72,9 +73,35 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
   const [values, setValues]           = useState<BlogPostFormValues>(() => toFormValues(post))
   const [slugTouched, setSlugTouched] = useState(!!post?.slug)
   const [tagInput, setTagInput]       = useState('')
+  const [uploading, setUploading]     = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function set<K extends keyof BlogPostFormValues>(key: K, value: BlogPostFormValues[K]) {
     setValues(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function handleImageUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError(null)
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+      const res  = await fetch('/api/admin/blog/upload-image', { method: 'POST', body: formData })
+      const body = await res.json()
+      if (!res.ok) {
+        setUploadError(body.error ?? 'No se pudo subir la imagen.')
+        return
+      }
+      set('featured_image', body.url)
+    } catch {
+      setUploadError('Error de red al subir la imagen.')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
   }
 
   function handleTitleChange(title: string) {
@@ -159,14 +186,30 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
       </div>
 
       <div className={styles.formGroup}>
-        <label className={styles.label} htmlFor="featured_image">Imagen (URL)</label>
-        <input
-          id="featured_image"
-          className={styles.input}
-          value={values.featured_image}
-          onChange={e => set('featured_image', e.target.value)}
-          placeholder="/uploads/blog/..."
-        />
+        <label className={styles.label} htmlFor="featured_image_upload">Imagen destacada</label>
+        {values.featured_image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={values.featured_image} alt="" className={styles.imagePreview} />
+        )}
+        <div className={styles.imageUploadRow}>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnSecondary}`}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? 'Subiendo...' : 'Subir imagen'}
+          </button>
+          <input
+            id="featured_image_upload"
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className={styles.hiddenFileInput}
+            onChange={e => void handleImageUpload(e)}
+          />
+        </div>
+        {uploadError && <p className={styles.errorText}>{uploadError}</p>}
       </div>
 
       <div className={styles.formRow}>

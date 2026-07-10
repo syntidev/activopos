@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
@@ -178,6 +179,7 @@ export function CatalogoGrid({
   businessInstagram,
   catalogMode = 'home',
 }: Props) {
+  const router = useRouter()
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [activeSub,      setActiveSub]      = useState<string | null>(null)
@@ -656,9 +658,9 @@ export function CatalogoGrid({
         key={p.id}
         className={`${styles.productCard} ${isOut ? styles.productCardOutOfStock : ''}`}
         style={cardStyle}
-        onClick={() => openModal(p)}
+        onClick={() => router.push(`/catalogo/${slug}/p/${p.id}`)}
         onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/catalogo/${slug}/p/${p.id}`) }
         }}
         tabIndex={isOut ? -1 : 0}
         role="button"
@@ -1087,9 +1089,9 @@ export function CatalogoGrid({
               <article
                 key={p.id}
                 className={styles.featuredCard}
-                onClick={() => openModal(p)}
+                onClick={() => router.push(`/catalogo/${slug}/p/${p.id}`)}
                 onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(p) }
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/catalogo/${slug}/p/${p.id}`) }
                 }}
                 tabIndex={0}
                 role="button"

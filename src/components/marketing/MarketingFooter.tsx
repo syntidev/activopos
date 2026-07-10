@@ -97,11 +97,16 @@ export default async function MarketingFooter() {
         <div className={styles.col}>
           <p className={styles.colTitle}>Segmentos</p>
           <nav className={styles.colLinks}>
-            {segments.map(seg => (
+            {segments.slice(0, 6).map(seg => (
               <Link key={seg.slug} href={`/para-${seg.slug}`} className={styles.colLink}>
                 {seg.name}
               </Link>
             ))}
+            {segments.length > 6 && (
+              <Link href="/segmentos" className={styles.colLink}>
+                Ver todos →
+              </Link>
+            )}
           </nav>
         </div>
 

@@ -3,25 +3,22 @@ import styles from './TestimonialsSection.module.css'
 
 const TESTIMONIALS = [
   {
-    quote:
-      '"Antes respondía 40 mensajes al día con precios. Ahora les mando el QR y ellos mismos ven lo que hay. Los pedidos llegan solos al WhatsApp."',
-    name: 'Daniel A.',
-    biz: 'Café · Margarita · Plan Catálogo',
-    initial: 'D',
-  },
-  {
-    quote:
-      '"El BCV se actualiza solo. Ya no llamo a nadie para cambiar los precios en bolívares. Eso solo ya valió la pena desde el primer día."',
-    name: 'María R.',
-    biz: 'Bodega · Caracas · Plan Mostrador',
+    quote: '"Ahora sí sabemos qué salió y qué quedó. Antes cuadrábamos a ojo."',
+    name: 'María G.',
+    biz: 'Bodega · Caracas',
     initial: 'M',
   },
   {
-    quote:
-      '"Vendo ropa y con las variantes de talla y color el cajero sabe exactamente qué salió. El inventario cuadra solo, sin contar a mano."',
-    name: 'Luisana V.',
-    biz: 'Boutique · Valencia · Plan Catálogo',
-    initial: 'L',
+    quote: '"Dejamos de resolver por WhatsApp y libreta. El cliente pide por el catálogo y ya."',
+    name: 'Carlos R.',
+    biz: 'Restaurante · Maracaibo',
+    initial: 'C',
+  },
+  {
+    quote: '"El BCV se actualiza solo. No pierdo plata en la diferencia de tasa."',
+    name: 'Ana M.',
+    biz: 'Boutique · Valencia',
+    initial: 'A',
   },
 ]
 

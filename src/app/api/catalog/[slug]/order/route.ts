@@ -67,25 +67,44 @@ function buildWaMessage(
   resolvedItems:      ResolvedItem[],
   totalUsd:           number,
   totalBs:            number,
+  delivery_type:      'pickup' | 'delivery',
+  recipient_name:     string | undefined,
+  delivery_address:   string | undefined,
 ): string {
   const itemLines = resolvedItems
-    .map(i => `- ${i.product_name} x${i.qty} — $${i.price_usd.toFixed(2)}`)
+    .map(i => `- ${i.product_name} x${i.qty} — $${i.price_usd.toFixed(2)} c/u`)
     .join('\n')
 
-  return [
+  const entregaLabel = delivery_type === 'delivery' ? '🚚 Envío a domicilio' : '🏪 Retiro en tienda'
+
+  const lines: string[] = [
     `🛍️ *Nuevo pedido #${order_number}*`,
-    `Cliente: ${customer_name}`,
-    `WhatsApp: ${customer_phone}`,
-    `Sector: ${customer_reference}`,
     '',
-    `*Productos:*`,
-    itemLines,
-    '',
-    `💰 *Total: $${totalUsd.toFixed(2)}*`,
-    `   Bs. ${totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} al cambio BCV`,
-    '',
-    `Método de pago: ${payment_method}`,
-  ].join('\n')
+    `👤 *Cliente:* ${customer_name}`,
+    `📱 *WhatsApp:* ${customer_phone}`,
+  ]
+
+  if (customer_reference && customer_reference !== 'Sin especificar') {
+    lines.push(`📍 *Sector:* ${customer_reference}`)
+  }
+
+  lines.push('')
+  lines.push(`*Productos:*`)
+  lines.push(itemLines)
+  lines.push('')
+  lines.push(`💰 *Total: $${totalUsd.toFixed(2)}*`)
+  lines.push(`   Bs. ${totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} al cambio BCV`)
+  lines.push('')
+  lines.push(`💳 *Método de pago:* ${payment_method}`)
+  lines.push(`📦 *Entrega:* ${entregaLabel}`)
+
+  if (delivery_type === 'delivery') {
+    if (recipient_name) lines.push(`   Recibe: ${recipient_name}`)
+    if (delivery_address) lines.push(`   Dirección: ${delivery_address}`)
+    lines.push(`   ⚠️ El costo de envío puede variar según tu zona. Te contactamos para coordinarlo.`)
+  }
+
+  return lines.join('\n')
 }
 
 export async function POST(
@@ -320,6 +339,9 @@ export async function POST(
     resolvedItems,
     Number(order.total_usd),
     Number(order.total_bs),
+    body.delivery_type,
+    body.recipient_name,
+    body.delivery_address,
   )
 
   const whatsapp_url = bizPhone

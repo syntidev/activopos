@@ -10,7 +10,7 @@
 /* ── Hero simple ── */
 
 .hero {
-  background: #EEEDF4;
+  background: var(--mkt-section-b);
   padding: clamp(3rem, 8vw, 5rem) clamp(1.25rem, 5vw, 3rem) clamp(2.5rem, 6vw, 3.5rem);
 }
 
@@ -22,8 +22,8 @@
 .heroTitle {
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 800;
-  color: var(--lp-text-h);
+  font-weight: 700;
+  color: var(--mkt-navy);
   letter-spacing: -0.03em;
   line-height: 1.15;
   text-wrap: balance;
@@ -41,7 +41,7 @@
 
 .page {
   min-height: calc(100vh - 64px);
-  background: var(--lp-bg-base);
+  background: var(--mkt-section-a);
 }
 
 .inner {
@@ -56,17 +56,17 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
-  background: var(--lp-bg-card);
-  border: 1px solid var(--lp-border-light);
-  border-radius: var(--radius-xl);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--lp-shadow-card);
   margin-bottom: 3rem;
   text-decoration: none;
-  transition: box-shadow 200ms ease, transform 200ms ease;
+  transition: box-shadow 200ms ease, transform 200ms ease, border-color 200ms ease;
 }
 
-.featured:hover { box-shadow: var(--lp-shadow-hover); transform: translateY(-2px); }
+.featured:hover { box-shadow: var(--lp-shadow-hover); transform: translateY(-2px); border-color: var(--brand); }
 
 @media (max-width: 780px) { .featured { grid-template-columns: 1fr; } }
 
@@ -109,7 +109,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: clamp(1.375rem, 3vw, 1.75rem);
   font-weight: 700;
-  color: var(--lp-text-h);
+  color: var(--mkt-navy);
   letter-spacing: -0.02em;
   line-height: 1.25;
   margin: 0;
@@ -186,9 +186,9 @@
 @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
 
 .card {
-  background: var(--lp-bg-card);
-  border: 1px solid var(--lp-border-light);
-  border-radius: var(--radius-xl);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -200,7 +200,7 @@
 .card:hover {
   transform: translateY(-4px);
   box-shadow: var(--lp-shadow-hover);
-  border-color: rgba(0, 56, 189, 0.20);
+  border-color: var(--brand);
 }
 
 .cardImgWrap {
@@ -242,7 +242,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.0625rem;
   font-weight: 700;
-  color: var(--lp-text-h);
+  color: var(--mkt-navy);
   letter-spacing: -0.015em;
   line-height: 1.3;
   margin: 0;
@@ -294,9 +294,9 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--lp-text-h);
-  background: var(--lp-bg-card);
-  border: 1px solid var(--lp-border-light);
+  color: var(--mkt-navy);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
   border-radius: var(--radius-lg);
   padding: 0.625rem 1.25rem;
   display: inline-flex;
@@ -306,7 +306,7 @@
   transition: border-color 150ms ease, background 150ms ease;
 }
 
-.pageBtn:hover { border-color: rgba(0, 56, 189, 0.30); }
+.pageBtn:hover { border-color: var(--brand); }
 
 .pageBtnDisabled {
   opacity: 0.4;

@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Clock, User } from 'lucide-react'
-import { fetchBlogList, categoryColor, BLOG_CATEGORIES, type BlogPostSummary } from './types'
+import { fetchBlogList, fetchBlogCategories, categoryColor, type BlogPostSummary } from './types'
+import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './blog.module.css'
 
 interface PageProps {
@@ -59,7 +60,10 @@ export default async function BlogPage({ searchParams }: PageProps) {
   const page     = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1)
   const category = searchParams.category ?? ''
 
-  const data = await fetchBlogList({ page, category, limit: PAGE_SIZE })
+  const [data, availableCategories] = await Promise.all([
+    fetchBlogList({ page, category, limit: PAGE_SIZE }),
+    fetchBlogCategories(),
+  ])
   const posts = data?.posts ?? []
   const total = data?.total ?? 0
   const totalPages = total > 0 ? Math.ceil(total / PAGE_SIZE) : 1
@@ -73,41 +77,45 @@ export default async function BlogPage({ searchParams }: PageProps) {
   return (
     <>
       <section className={styles.hero}>
-        <div className={styles.heroInner}>
-          <h1 className={styles.heroTitle}>Blog ActivoPOS</h1>
-          <p className={styles.heroSubtitle}>Guías y recursos para negocios venezolanos</p>
-        </div>
+        <RevealSection>
+          <div className={styles.heroInner}>
+            <h1 className={styles.heroTitle}>Blog ActivoPOS</h1>
+            <p className={styles.heroSubtitle}>Guías y recursos para negocios venezolanos</p>
+          </div>
+        </RevealSection>
       </section>
 
       <div className={styles.page}>
         <div className={styles.inner}>
           {featured && (
-            <Link href={`/blog/${featured.slug}`} className={styles.featured}>
-              <div className={styles.featuredImgWrap}>
-                {featured.cover_image && (
-                  <img src={featured.cover_image} alt="" className={styles.featuredImg} loading="eager" />
-                )}
-              </div>
-              <div className={styles.featuredContent}>
-                <span
-                  className={styles.featuredBadge}
-                  style={{ '--badge-color': featured.category_color ?? categoryColor(featured.category) } as CSSProperties}
-                >
-                  {featured.category}
-                </span>
-                <h2 className={styles.featuredTitle}>{featured.title}</h2>
-                <p className={styles.featuredExcerpt}>{featured.excerpt}</p>
-                <div className={styles.meta}>
-                  <User size={13} aria-hidden="true" />
-                  {featured.author_name}
-                  <span className={styles.metaDot} aria-hidden="true">·</span>
-                  {fmtDate(featured.published_at)}
-                  <span className={styles.metaDot} aria-hidden="true">·</span>
-                  <Clock size={13} aria-hidden="true" />
-                  {featured.read_time_minutes} min de lectura
+            <RevealSection>
+              <Link href={`/blog/${featured.slug}`} className={styles.featured}>
+                <div className={styles.featuredImgWrap}>
+                  {featured.cover_image && (
+                    <img src={featured.cover_image} alt="" className={styles.featuredImg} loading="eager" />
+                  )}
                 </div>
-              </div>
-            </Link>
+                <div className={styles.featuredContent}>
+                  <span
+                    className={styles.featuredBadge}
+                    style={{ '--badge-color': featured.category_color ?? categoryColor(featured.category) } as CSSProperties}
+                  >
+                    {featured.category}
+                  </span>
+                  <h2 className={styles.featuredTitle}>{featured.title}</h2>
+                  <p className={styles.featuredExcerpt}>{featured.excerpt}</p>
+                  <div className={styles.meta}>
+                    <User size={13} aria-hidden="true" />
+                    {featured.author_name}
+                    <span className={styles.metaDot} aria-hidden="true">·</span>
+                    {fmtDate(featured.published_at)}
+                    <span className={styles.metaDot} aria-hidden="true">·</span>
+                    <Clock size={13} aria-hidden="true" />
+                    {featured.read_time_minutes} min de lectura
+                  </div>
+                </div>
+              </Link>
+            </RevealSection>
           )}
 
           <nav className={styles.chipsScroll} aria-label="Filtrar por categoría">
@@ -118,13 +126,13 @@ export default async function BlogPage({ searchParams }: PageProps) {
               >
                 Todos
               </Link>
-              {BLOG_CATEGORIES.map(c => (
+              {availableCategories.map(cat => (
                 <Link
-                  key={c.key}
-                  href={`/blog?category=${c.key}`}
-                  className={`${styles.chip} ${category === c.key ? styles.chipActive : ''}`}
+                  key={cat}
+                  href={`/blog?category=${encodeURIComponent(cat)}`}
+                  className={`${styles.chip} ${category === cat ? styles.chipActive : ''}`}
                 >
-                  {c.label}
+                  {cat}
                 </Link>
               ))}
             </div>
@@ -137,9 +145,11 @@ export default async function BlogPage({ searchParams }: PageProps) {
                 : 'Aún no hay artículos en esta categoría.'}
             </p>
           ) : (
-            <div className={styles.grid}>
-              {gridPosts.map(post => <PostCard key={post.slug} post={post} />)}
-            </div>
+            <RevealSection>
+              <div className={styles.grid}>
+                {gridPosts.map(post => <PostCard key={post.slug} post={post} />)}
+              </div>
+            </RevealSection>
           )}
 
           {totalPages > 1 && (

@@ -78,6 +78,7 @@ interface Props {
   products:       CatalogProduct[]
   categories:     string[]
   categoryColors: Record<string, string | null>
+  categoryImages: Record<string, string | null>
   slug:           string
   rate:           number
   paymentMethods: PaymentMethod[]
@@ -163,6 +164,7 @@ export function CatalogoGrid({
   products,
   categories,
   categoryColors,
+  categoryImages,
   slug,
   rate,
   paymentMethods,
@@ -1001,7 +1003,7 @@ export function CatalogoGrid({
           </div>
           <div className={styles.catCircleTrack}>
             {categories.map(cat => {
-              const first = products.find(p => p.categoryName === cat && p.image)
+              const catImage = categoryImages[cat] ?? null
               const count = categoryCounts.get(cat) ?? 0
               return (
                 <button
@@ -1011,9 +1013,9 @@ export function CatalogoGrid({
                   onClick={() => scrollToSection(cat)}
                 >
                   <div className={styles.catCircleAvatar}>
-                    {first?.image ? (
+                    {catImage ? (
                       <img
-                        src={first.image}
+                        src={catImage}
                         alt=""
                         className={styles.catCircleImg}
                         loading="lazy"

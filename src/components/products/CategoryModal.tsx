@@ -12,13 +12,14 @@ interface InitialData {
   name: string
   color: string
   requires_preparation: boolean
+  image_url?: string | null
 }
 
 interface CategoryModalProps {
   isOpen: boolean
   onClose: () => void
   initialData?: InitialData
-  onSave: (name: string, color: string, requiresPreparation: boolean) => Promise<void>
+  onSave: (name: string, color: string, requiresPreparation: boolean, imageUrl: string | null) => Promise<void>
 }
 
 const COLORS: Array<{ key: string; label: string }> = [
@@ -90,6 +91,7 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
   const [name, setName]                   = useState('')
   const [color, setColor]                 = useState(COLOR_HEX[DEFAULT_COLOR_KEY])
   const [requiresPrep, setRequiresPrep]   = useState(false)
+  const [imageUrl, setImageUrl]           = useState('')
   const [error, setError]                 = useState('')
   const [isSaving, setIsSaving]           = useState(false)
 
@@ -98,6 +100,7 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
       setName(initialData?.name ?? '')
       setColor(initialData?.color || COLOR_HEX[DEFAULT_COLOR_KEY])
       setRequiresPrep(initialData?.requires_preparation ?? false)
+      setImageUrl(initialData?.image_url ?? '')
       setError('')
       setIsSaving(false)
     }
@@ -126,7 +129,7 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
     setError('')
     setIsSaving(true)
     try {
-      await onSave(trimmed, color, requiresPrep)
+      await onSave(trimmed, color, requiresPrep, imageUrl.trim() || null)
       onClose()
     } catch {
       setError('Error al guardar. Intenta de nuevo.')
@@ -228,6 +231,28 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
                     maxLength={7}
                     aria-label="Color en formato hexadecimal"
                   />
+                </div>
+
+                {/* Imagen */}
+                <div className={mStyles.formGroup}>
+                  <label className={mStyles.label} htmlFor="cat-image-url">
+                    Imagen de categoría
+                  </label>
+                  <input
+                    id="cat-image-url"
+                    type="url"
+                    className={mStyles.input}
+                    placeholder="https://..."
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                  />
+                  {imageUrl && (
+                    <img
+                      src={imageUrl}
+                      alt="Vista previa"
+                      className={styles.imagePreview}
+                    />
+                  )}
                 </div>
 
                 {/* Preview */}

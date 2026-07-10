@@ -82,7 +82,7 @@ export default async function CatalogoPage({ params }: PageProps) {
 
   if (!isOwnerPreview && !isCatalogLive(business)) notFound()
 
-  const [products, rate, stockEntries, paymentMethods] = await Promise.all([
+  const [products, rate, stockEntries, paymentMethods, dbCategories] = await Promise.all([
     prisma.product.findMany({
       where: {
         business_id:        business.id,
@@ -109,6 +109,11 @@ export default async function CatalogoPage({ params }: PageProps) {
     prisma.paymentMethod.findMany({
       where:   { business_id: business.id, is_active: true },
       select:  { id: true, name: true, type: true },
+      orderBy: { sort_order: 'asc' },
+    }),
+    prisma.category.findMany({
+      where:   { business_id: business.id, active: true },
+      select:  { name: true, color: true, sort_order: true, image_url: true },
       orderBy: { sort_order: 'asc' },
     }),
   ])
@@ -179,6 +184,11 @@ export default async function CatalogoPage({ params }: PageProps) {
   const categoryColors: Record<string, string | null> = {}
   Array.from(catMeta.entries()).forEach(([name, meta]) => { categoryColors[name] = meta.color })
 
+  // Imagen propia de categoría (círculos del catálogo) — viene de Category.image_url,
+  // no del producto al azar
+  const categoryImages: Record<string, string | null> = {}
+  dbCategories.forEach(c => { categoryImages[c.name] = c.image_url ?? null })
+
   const displayTitle = business.catalog_title ?? business.name
   const location     = [business.city, business.state].filter(Boolean).join(', ')
   const waPhone      = business.phone?.replace(/\D/g, '') ?? ''
@@ -196,6 +206,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         products={catalogProducts}
         categories={categories}
         categoryColors={categoryColors}
+        categoryImages={categoryImages}
         slug={params.slug}
         rate={rate}
         paymentMethods={paymentMethods as PaymentMethod[]}

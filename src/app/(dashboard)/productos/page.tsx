@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { HelpButton } from '@/components/help/HelpButton'
 import {
   Plus,
   Search,
@@ -39,6 +40,7 @@ interface Category {
   name: string
   color: string
   requires_preparation: boolean
+  image_url?: string | null
 }
 
 interface Product {
@@ -435,14 +437,14 @@ export default function ProductosPage() {
     }
   }, [products])
 
-  const handleSaveCategory = useCallback(async (name: string, color: string, requiresPreparation: boolean) => {
+  const handleSaveCategory = useCallback(async (name: string, color: string, requiresPreparation: boolean, imageUrl: string | null) => {
     const id     = editCategoryData?.id
     const url    = id ? `/api/categories/${id}` : '/api/products/categories'
     const method = id ? 'PATCH' : 'POST'
     const res    = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, color, requires_preparation: requiresPreparation }),
+      body: JSON.stringify({ name, color, requires_preparation: requiresPreparation, image_url: imageUrl }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
@@ -1161,6 +1163,7 @@ export default function ProductosPage() {
           )}
         </div>
       )}
+      <HelpButton module="productos" />
     </div>
   )
 }

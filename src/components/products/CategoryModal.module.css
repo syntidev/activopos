@@ -64,6 +64,14 @@
 .dotCyan   { background-color: #0891B2; }
 .dotGray   { background-color: var(--color-text-secondary); }
 
+.imagePreview {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  margin-top: var(--space-2);
+}
+
 /* ── Preview badge ── */
 .preview {
   display: flex;

@@ -1,5 +1,5 @@
 .page {
-  background: var(--mkt-bg);
+  background: var(--mkt-section-a);
   min-height: 100vh;
 }
 
@@ -11,8 +11,8 @@
 .heroTitle {
   font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 52px);
-  font-weight: 800;
-  color: var(--mkt-text-1);
+  font-weight: 700;
+  color: var(--mkt-navy);
   line-height: 1.15;
   margin: 0 0 16px;
 }
@@ -42,15 +42,17 @@
   gap: 10px;
   padding: 32px 20px;
   background: var(--mkt-card);
-  border-radius: 16px;
+  border: 1px solid var(--mkt-border);
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
   text-decoration: none;
   text-align: center;
-  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1), border-color 200ms ease;
 }
 
 .card:hover {
   transform: translateY(-4px);
+  border-color: var(--brand);
   box-shadow: 0 8px 24px rgba(47, 43, 61, 0.16), 0 0 1px rgba(47, 43, 61, 0.08);
 }
 
@@ -81,7 +83,7 @@
 .name {
   font-size: 15px;
   font-weight: 700;
-  color: var(--mkt-text-1);
+  color: var(--mkt-navy);
   line-height: 1.3;
 }
 

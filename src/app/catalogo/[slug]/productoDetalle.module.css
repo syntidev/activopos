@@ -1,0 +1,376 @@
+/* ActivoPOS — Página de detalle de producto del catálogo público
+   src/app/catalogo/[slug]/productoDetalle.module.css
+   Light mode siempre. --biz-color del tenant. Sin sidebar. */
+
+.page {
+  min-height:     100dvh;
+  background:     #FFFFFF;
+  color:          var(--color-text-primary);
+  font-family:    var(--font-sans);
+  padding-bottom: var(--space-10);
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  padding:     var(--space-3) var(--space-4);
+  font-size:   var(--text-sm);
+}
+
+.breadcrumbBack {
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-1);
+  color:           var(--biz-color, var(--color-brand));
+  text-decoration: none;
+  font-weight:     var(--weight-medium);
+}
+.breadcrumbBack:hover { text-decoration: underline; }
+
+.breadcrumbSep { color: var(--color-text-muted); }
+
+.breadcrumbCat {
+  color:       var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+}
+
+/* Layout — mobile: columna / desktop: 2 columnas */
+.layout {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-6);
+  padding:        0;
+  max-width:      1100px;
+  margin:         0 auto;
+}
+
+@media (min-width: 768px) {
+  .layout {
+    flex-direction: row;
+    align-items:    flex-start;
+    gap:            var(--space-8);
+    padding:        var(--space-4) var(--space-6);
+  }
+}
+
+/* Galería */
+.gallery {
+  display:   flex;
+  flex-direction: column;
+  gap:       var(--space-3);
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .gallery { width: 45%; }
+}
+
+.galleryMain {
+  position:      relative;
+  aspect-ratio:  1 / 1;
+  overflow:      hidden;
+  background:    #F3F4F6;
+}
+
+@media (min-width: 768px) {
+  .galleryMain { border-radius: 16px; }
+}
+
+.galleryMainImg {
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  display:    block;
+}
+
+.galleryPlaceholder {
+  width:           100%;
+  height:          100%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+}
+
+.galleryInitial {
+  font-size:   80px;
+  font-weight: var(--weight-bold);
+  color:       #D1D5DB;
+}
+
+.galleryShare {
+  position:        absolute;
+  top:             var(--space-3);
+  right:           var(--space-3);
+  width:           36px;
+  height:          36px;
+  border-radius:   50%;
+  background:      rgba(255,255,255,0.9);
+  border:          none;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          pointer;
+  color:           var(--color-text-secondary);
+  backdrop-filter: blur(4px);
+}
+.galleryShare:hover { background: #FFFFFF; }
+
+.galleryThumbs {
+  display:    flex;
+  gap:        var(--space-2);
+  overflow-x: auto;
+  padding:    0 var(--space-4);
+  scrollbar-width: none;
+}
+.galleryThumbs::-webkit-scrollbar { display: none; }
+
+@media (min-width: 768px) {
+  .galleryThumbs { padding: 0; }
+}
+
+.galleryThumb {
+  width:         64px;
+  height:        64px;
+  border-radius: 8px;
+  overflow:      hidden;
+  border:        2px solid transparent;
+  flex-shrink:   0;
+  padding:       0;
+  cursor:        pointer;
+  background:    #F3F4F6;
+  transition:    border-color 150ms ease;
+}
+.galleryThumb img {
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  display:    block;
+}
+.galleryThumbActive {
+  border-color: var(--biz-color, var(--color-brand));
+}
+
+/* Info */
+.info {
+  flex:    1;
+  padding: 0 var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap:     var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .info {
+    padding:  var(--space-2) 0;
+    position: sticky;
+    top:      72px;
+  }
+}
+
+.categoryBadge {
+  font-size:      var(--text-2xs);
+  font-weight:    var(--weight-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color:          var(--biz-color, var(--color-brand));
+}
+
+.productName {
+  font-size:   var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color:       var(--color-text-primary);
+  line-height: 1.2;
+  margin:      0;
+}
+
+@media (min-width: 768px) {
+  .productName { font-size: var(--text-3xl); }
+}
+
+.productDesc {
+  font-size:   var(--text-sm);
+  color:       var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin:      0;
+}
+
+.priceBlock {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-1);
+}
+
+.priceUsd {
+  font-size:   var(--text-3xl);
+  font-weight: var(--weight-extrabold);
+  color:       var(--color-text-primary);
+  line-height: 1;
+}
+
+.priceBs {
+  font-size: var(--text-sm);
+  color:     var(--color-text-secondary);
+}
+
+/* Variantes */
+.variants {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-3);
+}
+
+.variantGroup {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+}
+
+.variantLabel {
+  font-size:   var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.variantChips {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       var(--space-2);
+}
+
+.variantChip {
+  padding:       var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-md);
+  border:        1.5px solid var(--color-border-subtle);
+  background:    var(--color-white);
+  color:         var(--color-text-primary);
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-medium);
+  cursor:        pointer;
+  transition:    border-color 150ms ease, background 150ms ease;
+}
+.variantChipActive {
+  border-color: var(--biz-color, var(--color-brand));
+  background:   color-mix(in srgb, var(--biz-color, var(--color-brand)) 10%, white);
+  color:        var(--biz-color, var(--color-brand));
+  font-weight:  var(--weight-semibold);
+}
+.variantChipDisabled {
+  opacity:        0.4;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+
+.soldOutLabel {
+  display:    block;
+  font-size:  10px;
+  margin-top: 2px;
+}
+
+.variantError {
+  font-size: var(--text-xs);
+  color:     var(--color-danger, #EF4444);
+  margin:    0;
+}
+
+/* Qty */
+.qtyRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-4);
+}
+
+.qtyLabel {
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-medium);
+  color:       var(--color-text-primary);
+}
+
+.qtyControl {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  border:      1.5px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding:     var(--space-1) var(--space-2);
+}
+
+.qtyBtn {
+  width:           32px;
+  height:          32px;
+  border:          none;
+  background:      none;
+  cursor:          pointer;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  color:           var(--color-text-secondary);
+  border-radius:   var(--radius-sm);
+  transition:      background 150ms ease;
+}
+.qtyBtn:hover:not(:disabled) { background: var(--color-surface-2); }
+.qtyBtn:disabled { opacity: 0.3; pointer-events: none; }
+
+.qtyValue {
+  min-width:   28px;
+  text-align:  center;
+  font-size:   var(--text-base);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+}
+
+/* BCV note */
+.bcvNote {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  font-size:   var(--text-xs);
+  color:       var(--color-text-secondary);
+  background:  var(--color-surface-2);
+  border-radius: var(--radius-md);
+  padding:     var(--space-2) var(--space-3);
+}
+
+/* CTAs */
+.ctas {
+  display: flex;
+  gap:     var(--space-3);
+}
+
+.btnPedir {
+  flex:            1;
+  height:          52px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--space-2);
+  border-radius:   var(--radius-lg);
+  background:      var(--biz-color, var(--color-brand));
+  color:           #FFFFFF;
+  font-size:       var(--text-base);
+  font-weight:     var(--weight-semibold);
+  text-decoration: none;
+  transition:      background 150ms ease;
+}
+.btnPedir:hover {
+  background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 85%, black);
+}
+
+.btnShare {
+  width:           52px;
+  height:          52px;
+  border-radius:   var(--radius-lg);
+  border:          1.5px solid var(--color-border-subtle);
+  background:      var(--color-white);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          pointer;
+  color:           var(--color-text-secondary);
+  flex-shrink:     0;
+  transition:      background 150ms ease;
+}
+.btnShare:hover { background: var(--color-surface-2); }

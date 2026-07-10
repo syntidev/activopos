@@ -213,12 +213,41 @@ export default async function CatalogoPage({ params }: PageProps) {
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className={styles.footer}>
-        <p>
-          Impulsado por{' '}
-          <a href="https://activopos.com" target="_blank" rel="noopener noreferrer">
-            ActivoPOS
-          </a>
-        </p>
+        <div className={styles.footerBiz}>
+          {displayTitle && (
+            <p className={styles.footerBizName}>{displayTitle}</p>
+          )}
+          {business.legal_name && (
+            <p className={styles.footerBizLegal}>{business.legal_name}</p>
+          )}
+          {business.rif && (
+            <p className={styles.footerBizRif}>RIF: {business.rif}</p>
+          )}
+          {business.address && (
+            <p className={styles.footerBizAddress}>{business.address}</p>
+          )}
+          {location && (
+            <p className={styles.footerBizCity}>{location}</p>
+          )}
+          {waPhone && (
+            <a
+              href={`https://wa.me/${waPhone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.footerBizPhone}
+            >
+              {waPhone}
+            </a>
+          )}
+        </div>
+        <div className={styles.footerPowered}>
+          <p>
+            Impulsado por{' '}
+            <a href="https://activopos.com" target="_blank" rel="noopener noreferrer">
+              ActivoPOS
+            </a>
+          </p>
+        </div>
       </footer>
     </div>
   )

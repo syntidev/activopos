@@ -11,6 +11,7 @@ const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 const ItemSchema = z.object({
   product_id: z.number().int().positive(),
   qty:        z.number().positive().max(9999),
+  variant_id: z.number().int().positive().optional(),
 })
 
 const BodySchema = z.object({
@@ -31,11 +32,12 @@ type TxClient = Omit<
 >
 
 interface ResolvedItem {
-  product_id:   number
-  product_name: string
-  qty:          number
-  price_usd:    number
-  subtotal_usd: number
+  product_id:    number
+  product_name:  string
+  qty:           number
+  price_usd:     number
+  subtotal_usd:  number
+  variant_label: string | null
 }
 
 async function generateOrderNumber(businessId: number, prefix: string, tx: TxClient): Promise<string> {
@@ -181,21 +183,6 @@ export async function POST(
 
   const productMap = new Map(dbProducts.map(p => [p.id, p]))
 
-  // Build resolved items using server-side prices and names
-  const resolvedItems: ResolvedItem[] = body.items.map(item => {
-    const p = productMap.get(item.product_id)!
-    const priceUsd = p.sale_mode === 'weight'
-      ? (p.price_per_kg_usd  ? Number(p.price_per_kg_usd)  : 0)
-      : (p.price_per_unit_usd ? Number(p.price_per_unit_usd) : 0)
-    return {
-      product_id:   item.product_id,
-      product_name: p.name,
-      qty:          item.qty,
-      price_usd:    priceUsd,
-      subtotal_usd: Math.round(item.qty * priceUsd * 100) / 100,
-    }
-  })
-
   const needsKds = dbProducts.some(p => p.category?.requires_preparation === true)
 
   const rate = await getBcvRate()
@@ -210,6 +197,7 @@ export async function POST(
     return NextResponse.json({ error: 'Catálogo no disponible' }, { status: 500 })
   }
 
+  let resolvedItems: ResolvedItem[] = []
   let order: { id: number; order_number: string; total_usd: unknown; total_bs: unknown }
   try {
     order = await prisma.$transaction(async (tx) => {
@@ -219,6 +207,45 @@ export async function POST(
     for (const productId of uniqueProductIds) {
       await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`
     }
+
+    // Precio final por ítem: base del producto + precio_extra de la variante
+    // seleccionada. El variant_id se valida contra product_id en el mismo where
+    // — evita que un cliente mande el variant_id de OTRO producto para colar
+    // un precio_extra ajeno (product_id ya viene tenant-verificado via dbProducts).
+    const items: ResolvedItem[] = []
+    for (const item of body.items) {
+      const p = productMap.get(item.product_id)!
+      const priceUsd = p.sale_mode === 'weight'
+        ? (p.price_per_kg_usd  ? Number(p.price_per_kg_usd)  : 0)
+        : (p.price_per_unit_usd ? Number(p.price_per_unit_usd) : 0)
+
+      let priceExtra = 0
+      let variantLabel: string | null = null
+      if (item.variant_id) {
+        const variant = await tx.productVariant.findFirst({
+          where:  { id: item.variant_id, product_id: item.product_id, is_active: true },
+          select: { precio_extra: true, stock: true, valor: true },
+        })
+        if (variant) {
+          priceExtra   = Number(variant.precio_extra ?? 0)
+          variantLabel = variant.valor
+          if (variant.stock < item.qty) {
+            throw new Error(`STOCK_INSUFICIENTE:${p.name} (${variant.valor})`)
+          }
+        }
+      }
+      const finalPrice = priceUsd + priceExtra
+
+      items.push({
+        product_id:    item.product_id,
+        product_name:  p.name,
+        qty:           item.qty,
+        price_usd:     finalPrice,
+        subtotal_usd:  Math.round(item.qty * finalPrice * 100) / 100,
+        variant_label: variantLabel,
+      })
+    }
+    resolvedItems = items
 
     const order_number = await generateOrderNumber(business.id, business.ticket_prefix, tx)
 
@@ -291,6 +318,7 @@ export async function POST(
           create: resolvedItems.map(item => ({
             product_id:         item.product_id,
             product_name:       item.product_name,
+            variant_label:      item.variant_label,
             quantity:           item.qty,
             price_per_unit_usd: item.price_usd,
             subtotal_usd:       item.subtotal_usd,

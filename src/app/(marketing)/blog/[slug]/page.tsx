@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import DOMPurify from 'isomorphic-dompurify'
 import { Clock, User, ArrowLeft, ArrowRight } from 'lucide-react'
 import {
-  fetchBlogPost, fetchBlogList, categoryColor, BLOG_CATEGORIES,
+  fetchBlogPost, fetchBlogList, categoryColor,
   type BlogPostSummary,
 } from '../types'
 import styles from '../blog.module.css'
@@ -18,10 +18,6 @@ function fmtDate(iso: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('es-VE', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
-function categoryKey(label: string): string {
-  return BLOG_CATEGORIES.find(c => c.label === label)?.key ?? label
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -81,7 +77,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   // Relacionados + prev/next se derivan de la misma categoría vía el único
   // endpoint de listado disponible (GET /api/blog) — no se inventa un
   // endpoint nuevo solo para esto.
-  const siblings = await fetchBlogList({ category: categoryKey(post.category), limit: 12 })
+  const siblings = await fetchBlogList({ category: post.category, limit: 12 })
   const inCategory = (siblings?.posts ?? []).filter(p => p.slug !== post.slug)
   const related = inCategory.slice(0, 3)
 
@@ -131,7 +127,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             <span className={styles.breadcrumbSep} aria-hidden="true">/</span>
             <Link href="/blog">Blog</Link>
             <span className={styles.breadcrumbSep} aria-hidden="true">/</span>
-            <Link href={`/blog?category=${categoryKey(post.category)}`}>{post.category}</Link>
+            <Link href={`/blog?category=${encodeURIComponent(post.category)}`}>{post.category}</Link>
             <span className={styles.breadcrumbSep} aria-hidden="true">/</span>
             <span className={styles.breadcrumbCurrent}>{post.title}</span>
           </nav>

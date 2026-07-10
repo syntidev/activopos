@@ -1,4 +1,5 @@
-import { MessageCircle, CheckCircle } from 'lucide-react'
+import Link from 'next/link'
+import { MessageCircle, UserPlus, CheckCircle } from 'lucide-react'
 import styles from './FinalCTASection.module.css'
 
 const TRUST = [
@@ -18,18 +19,21 @@ export default function FinalCTASection() {
           <em>Tu sistema también debería estarlo.</em>
         </h2>
         <p className={styles.subtitle} data-reveal>
-          Un mensaje y en menos de 24 horas tienes la demo lista.
-          Sin instalar nada. Sin compromisos.
+          Empieza gratis hoy. Sin tarjeta de crédito.
         </p>
         <div className={styles.ctaWrap} data-reveal>
+          <Link href="/registro" className={styles.ctaBtn}>
+            <UserPlus size={20} aria-hidden />
+            Empezar gratis
+          </Link>
           <a
             href="https://wa.me/584222654827?text=Hola%2C+quiero+activar+mi+negocio+con+ActivoPOS"
             target="_blank"
             rel="noopener noreferrer"
-            className={styles.ctaBtn}
+            className={styles.ctaBtnGhost}
           >
-            <MessageCircle size={20} aria-hidden />
-            Escríbenos por WhatsApp
+            <MessageCircle size={18} aria-hidden />
+            Ver demostración
           </a>
         </div>
         <div className={styles.trust} data-reveal>

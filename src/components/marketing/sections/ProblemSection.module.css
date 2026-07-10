@@ -1,6 +1,6 @@
 .section {
   padding: 96px 0;
-  background: #F0F4F8;
+  background: #EEEDF4;
   position: relative;
   z-index: 1;
 }
@@ -17,7 +17,7 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
-  color: #1E293B;
+  color: #0D1B2E;
   text-wrap: balance;
   margin-bottom: var(--space-3);
 }

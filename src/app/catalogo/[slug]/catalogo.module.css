@@ -474,7 +474,7 @@
   font-weight:   var(--weight-medium);
   font-family:   inherit;
   border:        1.5px solid var(--color-border);
-  background:    transparent;
+  background:    var(--color-white);
   color:         var(--color-text-secondary);
   cursor:        pointer;
   white-space:   nowrap;

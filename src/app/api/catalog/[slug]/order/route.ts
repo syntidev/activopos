@@ -95,7 +95,7 @@ function buildWaMessage(
   lines.push(`💰 *Total: $${totalUsd.toFixed(2)}*`)
   lines.push(`   Bs. ${totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} al cambio BCV`)
   lines.push('')
-  lines.push(`💳 *Método de pago:* ${payment_method}`)
+  lines.push(`💳 *Pago:* ${payment_method}`)
   lines.push(`📦 *Entrega:* ${entregaLabel}`)
 
   if (delivery_type === 'delivery') {

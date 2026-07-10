@@ -7,6 +7,7 @@ const PLANS = [
   {
     tier: 'Plan 1',
     name: 'Mostrador\nactivado',
+    riskFree: 'Empieza donde estás. Sin riesgo.',
     tagline: 'Deja el papel hoy mismo',
     taglineIcon: Zap,
     desc: 'Para el negocio que quiere control real desde el primer día. Ventas, inventario, variantes y caja — todo en una sola pantalla.',
@@ -28,6 +29,7 @@ const PLANS = [
   {
     tier: 'Plan 2',
     name: 'Catálogo\nen la calle',
+    riskFree: 'Para el negocio que ya vende y quiere vender más.',
     tagline: 'Tu negocio abierto 24/7',
     taglineIcon: Globe,
     desc: 'El POS completo más tu vitrina digital que recibe pedidos por WhatsApp con delivery mientras tú duermes. Tu QR propio para compartir donde quieras.',
@@ -63,7 +65,7 @@ export default function PricingSection() {
         </div>
 
         <div className={styles.grid} data-reveal>
-          {PLANS.map(({ tier, name, tagline, taglineIcon: TIcon, desc, feats, cta, wa, featured, badge }) => (
+          {PLANS.map(({ tier, name, riskFree, tagline, taglineIcon: TIcon, desc, feats, cta, wa, featured, badge }) => (
             <div key={tier} className={`${styles.card} ${featured ? styles.cardFeatured : ''}`}>
               {badge && <div className={styles.badge}>{badge}</div>}
               <div className={styles.cardHead}>
@@ -73,6 +75,7 @@ export default function PricingSection() {
                     <span key={i}>{line}{i === 0 && <br />}</span>
                   ))}
                 </div>
+                <p className={styles.riskFree}>{riskFree}</p>
                 <div className={styles.tagline}>
                   <TIcon size={12} aria-hidden />
                   {tagline}

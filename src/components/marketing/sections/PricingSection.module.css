@@ -74,7 +74,7 @@
 }
 
 .cardFeatured {
-  border: 1.5px solid #0038BD;
+  border: 2px solid #0038BD;
   box-shadow: 0 4px 24px rgba(var(--brand-rgb), 0.14), 0 0 0 1px rgba(var(--brand-rgb), 0.08);
 }
 
@@ -86,8 +86,8 @@
   position: absolute;
   top: -1px;
   right: 24px;
-  background: var(--brand);
-  color: var(--brand-on);
+  background: #DCE6FF;
+  color: #0038BD;
   font-size: 10px;
   font-weight: var(--weight-bold);
   padding: 4px 12px;
@@ -117,6 +117,13 @@
   letter-spacing: -0.02em;
   color: #1E293B;
   margin-bottom: var(--space-2-5);
+}
+
+.riskFree {
+  font-size: 13px;
+  color: #64748B;
+  font-style: italic;
+  margin-bottom: var(--space-3);
 }
 
 .tagline {

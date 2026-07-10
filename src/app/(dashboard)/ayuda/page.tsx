@@ -364,29 +364,59 @@ function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => vo
 interface BotRule { keywords: string[]; response: string }
 
 const BOT_RULES: BotRule[] = [
-  { keywords: ['hola','buenos','buenas'], response: '¡Hola! Soy el asistente de ActivoPOS. Puedo ayudarte con ventas, inventario, caja, pedidos, clientes y configuración. ¿Qué necesitas?' },
-  { keywords: ['vender','venta','cobrar','pos','punto de venta'], response: 'Para vender: abre la Caja primero, luego ve al Punto de Venta. Busca el producto por nombre, código de barras o con el escáner de cámara. Agrega al ticket y presiona Cobrar.' },
-  { keywords: ['escaner','escanear','camara','codigo de barra','barcode'], response: 'El escáner de cámara está disponible en el POS, Productos e Inventario. Toca el ícono de escáner en el header (solo en móvil). Apunta la cámara al código de barras del producto.' },
-  { keywords: ['talla','variante','color','tallas','zapato','ropa'], response: 'Las variantes (talla, color, modelo) se configuran en cada producto. Abre el producto, activa el toggle "Este producto tiene variantes" y selecciona las tallas: ropa adulto (XS-XXXL), ropa niño (2-16), zapato adulto (35-44), zapato niño (18-34).' },
-  { keywords: ['inventario','stock','entrada','mercancia'], response: 'Para registrar mercancía: ve a Inventario y haz clic en "Entrada" en el producto correspondiente. Ingresa cantidad y costo. El sistema actualiza el stock y el costo automáticamente.' },
-  { keywords: ['crear producto','nuevo producto','agregar producto','producto nuevo'], response: 'Para crear un producto: ve a Productos → "Nuevo Producto". Ponle nombre, precio en USD y costo. Escoge si se vende por unidad o por peso, y si tiene tallas o variantes actívalas ahí mismo.' },
-  { keywords: ['proveedor','proveedores'], response: 'Para registrar un proveedor: ve a Proveedores → "Nuevo". Con nombre, RIF y teléfono basta. Ya lo puedes usar al registrar una compra.' },
-  { keywords: ['compra','compras','comprar mercancia'], response: 'Para registrar una compra: ve a Proveedores → pestaña Compras → "Nueva Compra". Elige el proveedor, agrega productos con cantidad y costo, y marca si ya la pagaste (Recibida) o quedó a deber (Pendiente).' },
-  { keywords: ['caja','abrir caja','cerrar caja','arqueo'], response: 'Para abrir la caja: ve a Gestión de Caja y presiona "Abrir caja" con el monto inicial. Al cerrar: cuenta el efectivo real, ingresa el monto y el sistema calcula la diferencia.' },
-  { keywords: ['pedido','pedidos','catalogo','whatsapp','orden'], response: 'Los pedidos del catálogo digital llegan al módulo Pedidos en formato kanban: Recibido → Preparando → Listo → Despachado. Puedes cobrar cada pedido directamente desde la tarjeta.' },
-  { keywords: ['cliente','clientes','credito','cxc','deuda'], response: 'Para vender a crédito: en el POS selecciona "Crédito" como método de pago. La deuda queda en el módulo Finanzas → CxC. Para abonar: ve a Clientes → selecciona el cliente → Registrar abono.' },
-  { keywords: ['bcv','tasa','bolivar','bs','dolar'], response: 'La tasa BCV se actualiza automáticamente cada hora desde el Banco Central de Venezuela. Se congela en cada venta para que el historial siempre sea exacto en USD.' },
-  { keywords: ['reporte','reportes','ventas del dia','cuanto vendi'], response: 'Los reportes están en el módulo Reportes. Puedes ver por Hoy, 7 días, Este mes, Trimestre o un rango de fechas personalizado. También puedes exportar a Excel.' },
-  { keywords: ['finanzas','gasto','gastos','utilidad','ganancia'], response: 'En Finanzas puedes registrar gastos, ver tus CxC (ventas a crédito), CxP (cuentas por pagar) y el punto de equilibrio. El resumen muestra ingresos vs gastos del período.' },
-  { keywords: ['notificacion','notificaciones','alerta'], response: 'Las notificaciones aparecen en la campana del header. Te avisan de pedidos nuevos del catálogo, stock crítico y CxC vencidas. Puedes marcarlas todas como leídas.' },
+  { keywords: ['hola','buenos','buenas'], response: '¡Hola! Soy el asistente de ActivoPOS. Pregúntame sobre ventas, pagos, código de barras, BCV, variantes, catálogo, caja, inventario, clientes, finanzas, reportes, configuración o planes.' },
+
+  // 1. POS — vender, pagos, descuentos, crédito
+  { keywords: ['vender','venta','cobrar','pos','punto de venta','como vendo'], response: 'Para vender: abre la Caja primero, luego ve al Punto de Venta. Busca el producto por nombre, código o escáner. Ingresa la cantidad — el sistema calcula el total en USD y Bs. Elige el método de pago y cobra.' },
+  { keywords: ['pago movil','zelle','usdt','zinli','binance','metodo de pago','metodos de pago','como pagan','efectivo'], response: 'ActivoPOS acepta Pago Móvil, Zelle, USDT, Efectivo y Zinli. Actívalos en Configuración → Métodos de pago. En el cobro puedes combinar más de uno en la misma venta (pago mixto).' },
+  { keywords: ['descuento','rebaja','oferta'], response: 'Para aplicar un descuento: toca el precio del producto en el ticket antes de cobrar. Los descuentos grandes pueden requerir el PIN de un administrador, según cómo lo configures.' },
+  { keywords: ['credito','fiado','a deber','cxc'], response: 'Para vender a crédito: en el POS selecciona "Crédito" como método de pago y elige el cliente (obligatorio registrarlo primero). La deuda queda en Finanzas → CxC. Para abonar: Clientes → selecciona el cliente → Registrar abono.' },
+
+  // 2. Código de barras — cámara y pistola USB
+  { keywords: ['escaner','escanear','camara','codigo de barra','barcode'], response: 'El escáner por cámara está en POS, Productos e Inventario — toca el ícono de escáner. También puedes escribir el código a mano: la búsqueda es instantánea desde 3 caracteres.' },
+  { keywords: ['pistola','lector usb','lector de codigo','usb scanner'], response: 'Una pistola USB funciona sin configurar nada extra: al escanear, el código completo se vuelca al buscador y presiona Enter automáticamente — el producto se agrega solo. Funciona en POS y en el buscador de Productos.' },
+
+  // 3. BCV
+  { keywords: ['bcv','tasa','bolivar','bs','dolar','cuanto esta el dolar'], response: 'La tasa BCV se actualiza sola desde la fuente oficial. Cada venta usa la tasa vigente en el momento del cobro, así que el historial siempre queda exacto en Bs, sin que tengas que actualizar nada a mano.' },
+
+  // 4. Variantes
+  { keywords: ['talla','variante','color','tallas','zapato','ropa','combinacion'], response: 'Las variantes (talla, color o combinaciones) se activan en cada producto con el toggle "Tiene variantes". Cada variante lleva su propio stock — vender una talla no descuenta el stock de las demás.' },
+
+  // 5. Catálogo digital
+  { keywords: ['catalogo','tienda','qr','enlace','digital','pedido','pedidos'], response: 'El Catálogo Digital se activa en Configuración → Catálogo Digital. Comparte tu link o el código QR por WhatsApp — el cliente ve tus productos y hace el pedido, que llega directo al módulo Pedidos. El stock se sincroniza solo: si se agota, deja de aparecer disponible.' },
+
+  // 6. Caja
+  { keywords: ['caja','abrir caja','cerrar caja','arqueo','cuadre'], response: 'Abre la caja declarando el efectivo inicial. Todas las ventas del turno se registran solas. Al cerrar, cuenta el efectivo físico y compáralo con el sistema — cualquier diferencia queda registrada. Puedes exportar el reporte del día en PDF, con el resumen en USD y Bs.' },
+
+  // 7. Inventario
+  { keywords: ['inventario','stock','entrada','mercancia','ajuste','movimiento'], response: 'El stock baja solo cuando una venta queda Pagada. Para mercancía nueva usa "Entrada Manual". El badge rojo marca stock crítico según el mínimo que configures por producto. Cada movimiento (entrada, ajuste, venta) queda en el historial con fecha y usuario.' },
+
+  // 8. Clientes
+  { keywords: ['cliente','clientes','directorio','deuda','historial de compras'], response: 'Registra clientes con nombre, teléfono y cédula o RIF — es obligatorio para venderles a crédito. Cada ficha muestra su historial de compras y lo que debe. Filtra por "Con deuda" para ver a quién cobrar.' },
+
+  // 9. Finanzas
+  { keywords: ['finanzas','gasto','gastos','utilidad','ganancia','compra','compras'], response: 'En Finanzas registras gastos (luz, alquiler, empleados) y compras a proveedor (mercancía con su costo real). La diferencia importa: una compra aumenta tu inventario, un gasto no. La utilidad es ventas menos costos y gastos del período — exporta el detalle en Excel para tu contador.' },
+
+  // 10. Reportes
+  { keywords: ['reporte','reportes','ventas del dia','cuanto vendi','exportar'], response: 'En Reportes eliges el período (hoy, semana, mes o rango personalizado) y ves el total por método de pago y por producto. Puedes exportar a Excel o PDF.' },
+
+  // 11. Configuración
+  { keywords: ['configuracion','logo','modulos','usuario','usuarios','cajero','pin','contraseña'], response: 'En Configuración editas el logo y datos del negocio, activas métodos de pago, activas o desactivas módulos según tu plan, y agregas usuarios. Los cajeros usan un PIN de 4 dígitos para autorizar descuentos; solo ven el POS, mientras que el administrador tiene acceso completo.' },
+
+  // 12. Planes
+  { keywords: ['plan','planes','precio','cuanto cuesta','mostrador','negocio','pro','upgrade','mejorar plan'], response: 'Hay tres planes: Mostrador (POS básico, hasta 100 productos y 3 usuarios), Negocio (agrega Catálogo Digital, hasta 500 productos y 10 usuarios) y Pro (todo ilimitado + asistente IA). Puedes mejorar tu plan desde Configuración.' },
+
+  // 13. Preguntas frecuentes venezolanas
+  { keywords: ['seniat','factura fiscal','factura legal'], response: 'ActivoPOS no reemplaza tu facturación fiscal ante el SENIAT — la complementa. Los tickets que genera son comprobantes de venta para tu control interno, no facturas fiscales.' },
+  { keywords: ['tasa paralela','dolar paralelo','dolar negro'], response: 'ActivoPOS usa la tasa oficial del BCV, no la tasa paralela. Si tu negocio maneja otra tasa de referencia, puedes ajustarla manualmente en Configuración.' },
+
+  { keywords: ['notificacion','notificaciones','alerta'], response: 'Las notificaciones aparecen en la campana del header: pedidos nuevos del catálogo, stock crítico y CxC vencidas. Puedes marcarlas todas como leídas.' },
   { keywords: ['kds','cocina','kitchen','pantalla cocina'], response: 'El KDS (Kitchen Display System) es una pantalla para cocina o despacho que muestra los pedidos en tiempo real. Se activa en Configuración → Módulos Opcionales. Ideal para restaurantes y cafeterías.' },
-  { keywords: ['usuario','usuarios','cajero','pin','contraseña'], response: 'Puedes crear usuarios en el módulo Usuarios. Los cajeros necesitan un PIN de 4 dígitos para autorizar descuentos. Para cambiar contraseña: ve a Configuración → Seguridad.' },
-  { keywords: ['ticket','imprimir','impresora','termica','58mm'], response: 'ActivoPOS genera tickets térmicos para impresoras de 58mm (como la Roccia). Después de cada cobro, toca "Imprimir ticket" para enviar a la impresora.' },
-  { keywords: ['pwa','instalar','app','movil','celular'], response: 'ActivoPOS funciona como app en tu celular. En Chrome, toca el menú → "Instalar app" o "Agregar a pantalla de inicio". Funciona sin instalación desde la App Store.' },
-  { keywords: ['catalogo','tienda','qr','enlace','digital'], response: 'El Catálogo Digital es tu tienda online en activopos.com/catalogo/tu-negocio. Comparte el QR o el enlace con tus clientes. Los pedidos llegan automáticamente al módulo Pedidos.' },
+  { keywords: ['ticket','imprimir','impresora','termica','58mm'], response: 'ActivoPOS genera tickets térmicos para impresoras de 58mm. Después de cada cobro, toca "Imprimir ticket".' },
+  { keywords: ['pwa','instalar','app','movil','celular'], response: 'ActivoPOS funciona como app en tu celular. En Chrome, toca el menú → "Instalar app" o "Agregar a pantalla de inicio". No necesitas descargarlo de ninguna tienda de apps.' },
 ]
 
-const DEFAULT_REPLY = 'No encontré información sobre eso. Puedes preguntarme sobre: ventas, inventario, caja, pedidos, clientes, tallas, escáner, reportes, finanzas, notificaciones, KDS o impresión de tickets.'
+const DEFAULT_REPLY = 'No encontré información sobre eso. Puedes preguntarme sobre: ventas, métodos de pago, código de barras, BCV, variantes, catálogo digital, caja, inventario, clientes, finanzas, reportes, configuración o planes.'
 
 function botReply(text: string): string {
   const q = text.toLowerCase()

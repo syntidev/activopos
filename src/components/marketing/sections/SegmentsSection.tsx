@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
+import SegmentPill from '@/components/marketing/shared/SegmentPill'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './SegmentsSection.module.css'
 
@@ -37,12 +37,8 @@ export default async function SegmentsSection() {
         {segments.length > 0 && (
           <>
             <div className={styles.grid}>
-              {segments.map(seg => (
-                <Link key={seg.slug} href={`/para-${seg.slug}`} className={styles.card}>
-                  <SegmentIcon slug={seg.slug} size={28} />
-                  <span className={styles.name}>{seg.name}</span>
-                  <span className={styles.tagLine}>{seg.tag_line}</span>
-                </Link>
+              {segments.map((seg, i) => (
+                <SegmentPill key={seg.slug} slug={seg.slug} name={seg.name} tagLine={seg.tag_line} delay={i * 0.08} />
               ))}
             </div>
             <div className={styles.moreWrap}>

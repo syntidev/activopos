@@ -1,0 +1,47 @@
+/* ============================================================
+   HelpButton — Botón flotante de ayuda contextual
+   Fixed bottom-right, circular, brand azul
+   ============================================================ */
+
+.helpBtn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 900;
+
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+
+  background: var(--brand);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.40);
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.helpBtn:hover {
+  background: var(--brand-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--brand-rgb), 0.50);
+}
+
+.helpBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(var(--brand-rgb), 0.35);
+}
+
+/* Touch target mínimo 44px — ya cumple con 48px */
+
+@media (max-width: 640px) {
+  .helpBtn {
+    bottom: 20px;
+    right: 16px;
+  }
+}

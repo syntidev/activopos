@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { MessageCircle, Mail, Clock } from 'lucide-react'
 import ContactForm from './ContactForm'
+import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './contacto.module.css'
 
 export const metadata: Metadata = {
@@ -37,53 +38,57 @@ export default function ContactoPage() {
   return (
     <section className={styles.page}>
       <div className={styles.inner}>
-        <header className={styles.header}>
-          <p className={styles.eyebrow}>Contacto</p>
-          <h1 className={styles.title}>Hablemos</h1>
-          <p className={styles.subtitle}>
-            ¿Quieres ver una demo, tienes dudas sobre planes o necesitas soporte?
-            Elige el canal que prefieras.
-          </p>
-        </header>
+        <RevealSection>
+          <header className={styles.header}>
+            <p className={styles.eyebrow}>Contacto</p>
+            <h1 className={styles.title}>Hablemos</h1>
+            <p className={styles.subtitle}>
+              ¿Quieres ver una demo, tienes dudas sobre planes o necesitas soporte?
+              Elige el canal que prefieras.
+            </p>
+          </header>
+        </RevealSection>
 
-        <div className={styles.grid}>
-          {/* Channels */}
-          <div className={styles.channels}>
-            <p className={styles.channelsTitle}>Canales directos</p>
-            {CHANNELS.map(({ icon: Icon, variant, name, desc, href }) => {
-              const inner = (
-                <>
-                  <span className={`${styles.channelIcon} ${variant ? styles[variant] : ''}`}>
-                    <Icon size={18} aria-hidden="true" />
-                  </span>
-                  <div className={styles.channelBody}>
-                    <p className={styles.channelName}>{name}</p>
-                    <p className={styles.channelDesc}>{desc}</p>
-                  </div>
-                </>
-              )
+        <RevealSection>
+          <div className={styles.grid}>
+            {/* Channels */}
+            <div className={styles.channels}>
+              <p className={styles.channelsTitle}>Canales directos</p>
+              {CHANNELS.map(({ icon: Icon, variant, name, desc, href }) => {
+                const inner = (
+                  <>
+                    <span className={`${styles.channelIcon} ${variant ? styles[variant] : ''}`}>
+                      <Icon size={18} aria-hidden="true" />
+                    </span>
+                    <div className={styles.channelBody}>
+                      <p className={styles.channelName}>{name}</p>
+                      <p className={styles.channelDesc}>{desc}</p>
+                    </div>
+                  </>
+                )
 
-              return href ? (
-                <a
-                  key={name}
-                  href={href}
-                  className={styles.channel}
-                  target={href.startsWith('http') ? '_blank' : undefined}
-                  rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                >
-                  {inner}
-                </a>
-              ) : (
-                <div key={name} className={styles.channel}>{inner}</div>
-              )
-            })}
+                return href ? (
+                  <a
+                    key={name}
+                    href={href}
+                    className={styles.channel}
+                    target={href.startsWith('http') ? '_blank' : undefined}
+                    rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div key={name} className={styles.channel}>{inner}</div>
+                )
+              })}
+            </div>
+
+            {/* Form */}
+            <div className={styles.formCard}>
+              <ContactForm />
+            </div>
           </div>
-
-          {/* Form */}
-          <div className={styles.formCard}>
-            <ContactForm />
-          </div>
-        </div>
+        </RevealSection>
       </div>
     </section>
   )

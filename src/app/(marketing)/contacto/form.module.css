@@ -20,20 +20,20 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text-secondary, var(--text-tertiary));
+  color: var(--mkt-text-2);
 }
 
 .optional {
   font-weight: 400;
-  color: var(--text-tertiary, var(--text-secondary));
+  color: var(--mkt-text-3);
 }
 
 .input {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  color: var(--text-primary, #F1F5F9);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--mkt-text-1);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
   border-radius: 10px;
   padding: 0.75rem 1rem;
   outline: none;
@@ -41,11 +41,11 @@
   width: 100%;
 }
 
-.input::placeholder { color: var(--text-tertiary, var(--text-secondary)); }
+.input::placeholder { color: var(--mkt-text-3); }
 
 .input:focus {
-  border-color: rgba(77, 122, 255, 0.5);
-  background: rgba(77, 122, 255, 0.04);
+  border-color: var(--brand);
+  background: var(--mkt-card);
 }
 
 .textarea { resize: vertical; min-height: 120px; }
@@ -65,7 +65,7 @@
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
-  background: var(--brand, var(--brand));
+  background: var(--brand);
   border: none;
   border-radius: 12px;
   padding: 0.875rem 1.5rem;
@@ -75,7 +75,7 @@
 }
 
 .submitBtn:hover:not(:disabled) {
-  background: var(--brand-dark, var(--brand-dark));
+  background: var(--brand-dark);
   transform: translateY(-1px);
 }
 
@@ -112,13 +112,13 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-primary, #F1F5F9);
+  color: var(--mkt-navy);
 }
 
 .successDesc {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  color: var(--text-secondary, var(--text-tertiary));
+  color: var(--mkt-text-2);
   line-height: 1.6;
 }
 
@@ -127,13 +127,13 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--brand-l, var(--brand-l));
+  color: var(--brand);
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
-  text-decoration-color: rgba(77, 122, 255, 0.4);
+  text-decoration-color: rgba(var(--brand-rgb), 0.4);
 }
 
 @media (max-width: 540px) {

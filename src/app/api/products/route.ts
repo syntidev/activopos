@@ -22,7 +22,7 @@ const productSchema = z.object({
   price_per_kg_usd:   z.number().min(0).nullable().optional(),
   min_stock:          z.number().min(0).default(0),
   stock_quantity:     z.number().int().min(0).default(0),
-  images:             z.array(z.string().url()).nullable().optional(),
+  images:             z.array(z.string()).nullable().optional(),
   is_available:       z.boolean().default(true),
   has_variants:       z.boolean().default(false),
   show_in_catalog:    z.boolean().default(false),

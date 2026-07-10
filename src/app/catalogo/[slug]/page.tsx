@@ -27,6 +27,9 @@ async function getBusiness(slug: string) {
       phone:         true,
       city:          true,
       state:         true,
+      legal_name: true,
+      rif:        true,
+      address:    true,
       catalog_title: true,
       catalog_desc:  true,
       catalog_hours:     true,
@@ -203,6 +206,9 @@ export default async function CatalogoPage({ params }: PageProps) {
         businessHours={business.catalog_hours ?? null}
         businessInstagram={business.catalog_instagram ?? null}
         heroCover={business.catalog_cover_path ?? null}
+        businessLegalName={business.legal_name ?? null}
+        businessRif={business.rif ?? null}
+        businessAddress={business.address ?? null}
       />
 
       {/* ── Footer ──────────────────────────────────────────────── */}

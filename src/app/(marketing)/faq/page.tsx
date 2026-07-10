@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ChevronDown, MessageCircle } from 'lucide-react'
+import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './faq.module.css'
 
 /* ─────────────────────────────────────────────────────────
@@ -135,58 +136,64 @@ export default function FaqPage() {
 
       {/* Hero */}
       <section className={styles.hero}>
-        <div className={styles.heroInner}>
-          <span className={styles.pill}>FAQ</span>
-          <h1 className={styles.h1}>
-            Todo lo que necesitas saber antes de empezar.
-          </h1>
-          <p className={styles.sub}>Sin tecnicismos. Sin letra pequeña. En venezolano.</p>
-        </div>
+        <RevealSection>
+          <div className={styles.heroInner}>
+            <span className={styles.pill}>FAQ</span>
+            <h1 className={styles.h1}>
+              Todo lo que necesitas saber antes de empezar.
+            </h1>
+            <p className={styles.sub}>Sin tecnicismos. Sin letra pequeña. En venezolano.</p>
+          </div>
+        </RevealSection>
       </section>
 
       {/* Categories + accordions */}
       <div className={styles.body}>
         {CATEGORIES.map(cat => (
-          <div key={cat.label} className={styles.category}>
-            <p className={styles.catLabel}>{cat.label}</p>
+          <RevealSection key={cat.label}>
+            <div className={styles.category}>
+              <p className={styles.catLabel}>{cat.label}</p>
 
-            <div className={styles.grid} role="list">
-              {cat.items.map(({ q, a }) => (
-                <details key={q} className={styles.item} role="listitem">
-                  <summary className={styles.summary}>
-                    <span className={styles.question}>{q}</span>
-                    <ChevronDown
-                      size={16}
-                      className={styles.chevron}
-                      aria-hidden="true"
-                    />
-                  </summary>
-                  <p className={styles.answer}>{a}</p>
-                </details>
-              ))}
+              <div className={styles.grid} role="list">
+                {cat.items.map(({ q, a }) => (
+                  <details key={q} className={styles.item} role="listitem">
+                    <summary className={styles.summary}>
+                      <span className={styles.question}>{q}</span>
+                      <ChevronDown
+                        size={16}
+                        className={styles.chevron}
+                        aria-hidden="true"
+                      />
+                    </summary>
+                    <p className={styles.answer}>{a}</p>
+                  </details>
+                ))}
+              </div>
             </div>
-          </div>
+          </RevealSection>
         ))}
 
         {/* CTA final */}
-        <aside className={styles.cta} aria-label="¿Más preguntas?">
-          <div className={styles.ctaContent}>
-            <p className={styles.ctaTitle}>¿Tu pregunta no está aquí?</p>
-            <p className={styles.ctaDesc}>
-              Respondemos en menos de 24 horas — una persona real, sin bots.
-            </p>
-          </div>
-          <a
-            href="https://wa.me/584222654827?text=Tengo%20una%20pregunta%20sobre%20ActivoPOS"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.ctaBtn}
-            aria-label="Escribirnos por WhatsApp"
-          >
-            <MessageCircle size={16} aria-hidden="true" />
-            Escríbenos por WhatsApp
-          </a>
-        </aside>
+        <RevealSection>
+          <aside className={styles.cta} aria-label="¿Más preguntas?">
+            <div className={styles.ctaContent}>
+              <p className={styles.ctaTitle}>¿Tu pregunta no está aquí?</p>
+              <p className={styles.ctaDesc}>
+                Respondemos en menos de 24 horas — una persona real, sin bots.
+              </p>
+            </div>
+            <a
+              href="https://wa.me/584222654827?text=Tengo%20una%20pregunta%20sobre%20ActivoPOS"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.ctaBtn}
+              aria-label="Escribirnos por WhatsApp"
+            >
+              <MessageCircle size={16} aria-hidden="true" />
+              Escríbenos por WhatsApp
+            </a>
+          </aside>
+        </RevealSection>
       </div>
     </>
   )

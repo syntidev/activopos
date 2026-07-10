@@ -20,6 +20,9 @@ const BodySchema = z.object({
   customer_reference: z.string().min(1).max(200).trim(),
   payment_method:     z.string().min(1).max(60).trim(),
   notes:              z.string().max(500).trim().optional(),
+  delivery_type:      z.enum(['pickup', 'delivery']).default('pickup'),
+  recipient_name:     z.string().max(120).trim().optional(),
+  delivery_address:   z.string().max(500).trim().optional(),
 })
 
 type TxClient = Omit<
@@ -257,6 +260,9 @@ export async function POST(
         client_name:    body.customer_name,
         client_phone:   body.customer_phone,
         client_address: body.customer_reference,
+        delivery_type:    body.delivery_type,
+        recipient_name:   body.recipient_name ?? null,
+        delivery_address: body.delivery_address ?? null,
         notes:          noteLines,
         total_usd:      totalUsd,
         total_bs:       totalBs,

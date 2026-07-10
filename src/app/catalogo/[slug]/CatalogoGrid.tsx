@@ -96,6 +96,7 @@ interface Props {
   businessRif?:       string | null | undefined
   businessAddress?:   string | null | undefined
   catalogMode?:       'home' | 'productos'
+  initialCategory?:   string | null
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -178,10 +179,11 @@ export function CatalogoGrid({
   businessHours,
   businessInstagram,
   catalogMode = 'home',
+  initialCategory = null,
 }: Props) {
   const router = useRouter()
 
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory)
   const [activeSub,      setActiveSub]      = useState<string | null>(null)
   const [query,          setQuery]          = useState('')
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
@@ -751,7 +753,9 @@ export function CatalogoGrid({
             className={styles.addBtnFull}
             onClick={e => {
               e.stopPropagation()
-              p.variants.length > 0 ? openModal(p) : addToCart(p, 1)
+              p.variants.length > 0
+                ? router.push(`/catalogo/${slug}/p/${p.id}`)
+                : addToCart(p, 1)
             }}
             aria-label={
               p.variants.length > 0
@@ -938,16 +942,22 @@ export function CatalogoGrid({
                       <span className={styles.catMenuCount}>{categoryCounts.get(cat) ?? 0}</span>
                     </button>
                   ))}
-                  {catalogMode === 'home' && (
-                    <Link
-                      href={`/catalogo/${slug}/productos`}
-                      role="menuitem"
-                      className={styles.catMenuItem}
-                      onClick={() => setCatMenuOpen(false)}
-                    >
-                      Catálogo completo
-                    </Link>
-                  )}
+                  <Link
+                    href={`/catalogo/${slug}`}
+                    role="menuitem"
+                    className={styles.catMenuItem}
+                    onClick={() => setCatMenuOpen(false)}
+                  >
+                    Inicio
+                  </Link>
+                  <Link
+                    href={`/catalogo/${slug}/productos`}
+                    role="menuitem"
+                    className={styles.catMenuItem}
+                    onClick={() => setCatMenuOpen(false)}
+                  >
+                    Catálogo completo
+                  </Link>
                 </div>
               </>
             )}
@@ -1028,7 +1038,7 @@ export function CatalogoGrid({
             <button
               type="button"
               className={styles.catCircleVerTodos}
-              onClick={() => scrollToSection(null)}
+              onClick={() => router.push(`/catalogo/${slug}/productos`)}
             >
               Ver todos →
             </button>
@@ -1209,7 +1219,11 @@ export function CatalogoGrid({
                 <button
                   type="button"
                   className={styles.shelfVerTodos}
-                  onClick={() => scrollToSection(section.key === '__otros__' ? null : section.key)}
+                  onClick={() => router.push(
+                    section.key === '__otros__'
+                      ? `/catalogo/${slug}/productos`
+                      : `/catalogo/${slug}/productos?categoria=${encodeURIComponent(section.key)}`
+                  )}
                   aria-label={`Ver todos los productos de ${section.name}`}
                 >
                   Ver todos →

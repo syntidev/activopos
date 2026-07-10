@@ -633,7 +633,7 @@
   position:     relative;
   width:        100%;
   height:       200px;
-  background:   var(--biz-color, #0038BD);
+  background:   linear-gradient(135deg, var(--biz-color, #0038BD) 0%, var(--mkt-navy) 100%);
   overflow:     hidden;
   flex-shrink:  0;
   color-scheme: light;
@@ -681,6 +681,7 @@
 .heroContent {
   position:       absolute;
   inset:          0;
+  z-index:        1;
   display:        flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -2995,11 +2996,8 @@
 /* ── CATEGORÍAS CIRCULARES ───────────────────────────────── */
 
 .catCircleSection {
-  margin:        0 var(--space-4);
-  background:    var(--color-white);
-  border-radius: 16px;
-  box-shadow:    0 1px 4px rgba(0,0,0,0.08);
-  padding:       var(--space-4) 0;
+  background: var(--color-white);
+  padding:    var(--space-4) 0;
 }
 
 .catCircleHeader {
@@ -3032,15 +3030,13 @@
 .catCircleVerTodos:hover { text-decoration: underline; }
 
 .catCircleTrack {
-  display:                    flex;
-  flex-direction:             row;
-  gap:                        var(--space-3);
-  overflow-x:                 auto;
-  overflow-y:                 hidden;
-  scroll-snap-type:           x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width:            none;
-  padding:                    0 var(--space-4) var(--space-2);
+  display:          flex;
+  justify-content:  center;
+  flex-wrap:        nowrap;
+  overflow-x:       auto;
+  gap:              var(--space-5);
+  padding:          var(--space-2) var(--space-4) var(--space-4);
+  scrollbar-width:  none;
 }
 .catCircleTrack::-webkit-scrollbar { display: none; }
 

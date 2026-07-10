@@ -10,6 +10,7 @@ import styles from '../catalogo.module.css'
 
 interface PageProps {
   params: { slug: string }
+  searchParams: { categoria?: string }
 }
 
 function parseImages(raw: string | null): string[] {
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function CatalogoProductosPage({ params }: PageProps) {
+export default async function CatalogoProductosPage({ params, searchParams }: PageProps) {
   const business = await prisma.business.findFirst({
     where: { catalog_slug: params.slug, catalog_active: true, active: true },
     select: {
@@ -198,6 +199,7 @@ export default async function CatalogoProductosPage({ params }: PageProps) {
         businessRif={business.rif ?? null}
         businessAddress={business.address ?? null}
         catalogMode="productos"
+        initialCategory={searchParams.categoria ?? null}
       />
     </div>
   )

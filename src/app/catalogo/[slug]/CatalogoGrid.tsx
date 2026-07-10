@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
@@ -92,6 +93,7 @@ interface Props {
   businessLegalName?: string | null | undefined
   businessRif?:       string | null | undefined
   businessAddress?:   string | null | undefined
+  catalogMode?:       'home' | 'productos'
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -172,6 +174,7 @@ export function CatalogoGrid({
   heroCover,
   businessHours,
   businessInstagram,
+  catalogMode = 'home',
 }: Props) {
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -416,6 +419,13 @@ export function CatalogoGrid({
   const selectCategory = (cat: string | null) => {
     setActiveCategory(cat)
     if (cat && cat !== FEATURED_KEY) centerChip(cat)
+  }
+
+  // En catalogMode='productos' no hay shelves — el grid siempre es plano,
+  // así que un click de categoría debe filtrar (no hay sección a la que scrollear)
+  const handleCatClick = (cat: string | null) => {
+    if (catalogMode === 'productos') { selectCategory(cat); return }
+    scrollToSection(cat)
   }
 
   // Navegación pura (paradigma food): scrollea a la sección sin filtrar
@@ -847,43 +857,45 @@ export function CatalogoGrid({
               <Search size={18} aria-hidden="true" />
             </button>
 
-            <div ref={categoryTrackRef} className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
-              <button
-                role="tab"
-                aria-selected={tabActive(null)}
-                className={`${styles.categoryTab} ${tabActive(null) ? styles.categoryTabActive : ''}`}
-                onClick={() => scrollToSection(null)}
-              >
-                Todos
-                <span className={styles.categoryTabCount}>{products.length}</span>
-              </button>
-              {hasFeatured && (
+            {(catalogMode === 'productos' || !browseMode) && (
+              <div ref={categoryTrackRef} className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
                 <button
                   role="tab"
-                  data-category={FEATURED_KEY}
-                  aria-selected={tabActive(FEATURED_KEY)}
-                  className={`${styles.categoryTab} ${tabActive(FEATURED_KEY) ? styles.categoryTabActive : ''}`}
-                  onClick={() => selectCategory(FEATURED_KEY)}
+                  aria-selected={tabActive(null)}
+                  className={`${styles.categoryTab} ${tabActive(null) ? styles.categoryTabActive : ''}`}
+                  onClick={() => handleCatClick(null)}
                 >
-                  <Star size={13} aria-hidden="true" />
-                  Destacados
-                  <span className={styles.categoryTabCount}>{products.filter(p => p.isFeatured).length}</span>
+                  Todos
+                  <span className={styles.categoryTabCount}>{products.length}</span>
                 </button>
-              )}
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  role="tab"
-                  data-category={cat}
-                  aria-selected={tabActive(cat)}
-                  className={`${styles.categoryTab} ${tabActive(cat) ? styles.categoryTabActive : ''}`}
-                  onClick={() => scrollToSection(cat)}
-                >
-                  {cat}
-                  <span className={styles.categoryTabCount}>{categoryCounts.get(cat) ?? 0}</span>
-                </button>
-              ))}
-            </div>
+                {hasFeatured && (
+                  <button
+                    role="tab"
+                    data-category={FEATURED_KEY}
+                    aria-selected={tabActive(FEATURED_KEY)}
+                    className={`${styles.categoryTab} ${tabActive(FEATURED_KEY) ? styles.categoryTabActive : ''}`}
+                    onClick={() => selectCategory(FEATURED_KEY)}
+                  >
+                    <Star size={13} aria-hidden="true" />
+                    Destacados
+                    <span className={styles.categoryTabCount}>{products.filter(p => p.isFeatured).length}</span>
+                  </button>
+                )}
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    role="tab"
+                    data-category={cat}
+                    aria-selected={tabActive(cat)}
+                    className={`${styles.categoryTab} ${tabActive(cat) ? styles.categoryTabActive : ''}`}
+                    onClick={() => handleCatClick(cat)}
+                  >
+                    {cat}
+                    <span className={styles.categoryTabCount}>{categoryCounts.get(cat) ?? 0}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {catMenuOpen && (
               <>
@@ -894,7 +906,7 @@ export function CatalogoGrid({
                     type="button"
                     role="menuitem"
                     className={styles.catMenuItem}
-                    onClick={() => { scrollToSection(null); setCatMenuOpen(false) }}
+                    onClick={() => { handleCatClick(null); setCatMenuOpen(false) }}
                   >
                     Todos
                     <span className={styles.catMenuCount}>{products.length}</span>
@@ -916,12 +928,22 @@ export function CatalogoGrid({
                       type="button"
                       role="menuitem"
                       className={styles.catMenuItem}
-                      onClick={() => { scrollToSection(cat); setCatMenuOpen(false) }}
+                      onClick={() => { handleCatClick(cat); setCatMenuOpen(false) }}
                     >
                       {cat}
                       <span className={styles.catMenuCount}>{categoryCounts.get(cat) ?? 0}</span>
                     </button>
                   ))}
+                  {catalogMode === 'home' && (
+                    <Link
+                      href={`/catalogo/${slug}/productos`}
+                      role="menuitem"
+                      className={styles.catMenuItem}
+                      onClick={() => setCatMenuOpen(false)}
+                    >
+                      Catálogo completo
+                    </Link>
+                  )}
                 </div>
               </>
             )}
@@ -929,8 +951,20 @@ export function CatalogoGrid({
         )}
       </div>
 
+      {/* ── Modo catálogo puro — sin hero/shelves, solo título + grid ── */}
+      {catalogMode === 'productos' && (
+        <div className={styles.catalogPageHeader}>
+          <h1 className={styles.catalogPageTitle}>
+            Catálogo de Productos
+          </h1>
+          <p className={styles.catalogPageSubtitle}>
+            Todos los productos disponibles
+          </p>
+        </div>
+      )}
+
       {/* ── Hero banner — solo en vista inicial (sin filtro ni búsqueda) ── */}
-      {browseMode && (
+      {catalogMode === 'home' && browseMode && (
         <section className={styles.heroBanner} aria-label="Presentación del negocio">
           {heroCover && (
             <img src={heroCover} alt={businessName} className={styles.heroBannerImg} />
@@ -953,7 +987,7 @@ export function CatalogoGrid({
       )}
 
       {/* ── Categorías circulares — fila horizontal con scroll ──── */}
-      {browseMode && categories.length > 0 && (
+      {catalogMode === 'home' && browseMode && categories.length > 0 && (
         <section className={styles.catCircleSection} aria-label="Categorías">
           <div className={styles.catCircleHeader}>
             <span className={styles.catCircleTitle}>Explorar Categorías</span>
@@ -1001,7 +1035,7 @@ export function CatalogoGrid({
       )}
 
       {/* ── Destacados — showcase de vista inicial ─────────────── */}
-      {hasFeatured && browseMode && (
+      {catalogMode === 'home' && hasFeatured && browseMode && (
         <section className={styles.featuredSection} data-section="featured" aria-label="Productos destacados">
           <div className={styles.featuredHeader}>
             <Star size={16} aria-hidden="true" />
@@ -1053,7 +1087,7 @@ export function CatalogoGrid({
       )}
 
       {/* ── Nuevos Ingresos — productos con badge 'nuevo' ────────── */}
-      {browseMode && nuevosIngresos.length > 0 && (
+      {catalogMode === 'home' && browseMode && nuevosIngresos.length > 0 && (
         <section className={styles.featuredSection} aria-label="Nuevos ingresos">
           <div className={styles.featuredHeader}>
             <Sparkles size={16} aria-hidden="true" />
@@ -1102,7 +1136,7 @@ export function CatalogoGrid({
             <h2 className={styles.emptyTitle}>Catálogo en construcción</h2>
             <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
           </div>
-        ) : browseMode ? (
+        ) : (browseMode && catalogMode === 'home') ? (
           // Shelves horizontales por categoría — scroll-spy vía catSectionRefs
           sections.map(section => (
             <section

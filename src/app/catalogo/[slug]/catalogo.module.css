@@ -3028,6 +3028,38 @@
 .celebrationBtn:hover  { background: var(--color-brand-hover); }
 .celebrationBtn:active { transform: scale(0.97); }
 
+/* ── MODO CATÁLOGO PRODUCTOS ─────────────────────────────── */
+.catalogPageHeader {
+  padding:       var(--space-4) var(--space-4) var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.catalogPageTitle {
+  font-size:   var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+  margin:      0 0 var(--space-1);
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+}
+
+.catalogPageTitle::before {
+  content:       '';
+  display:       inline-block;
+  width:         8px;
+  height:        8px;
+  border-radius: 50%;
+  background:    var(--biz-color, var(--color-brand));
+  flex-shrink:   0;
+}
+
+.catalogPageSubtitle {
+  font-size: var(--text-sm);
+  color:     var(--color-text-secondary);
+  margin:    0;
+}
+
 /* ── CATEGORÍAS CIRCULARES ───────────────────────────────── */
 
 .catCircleSection {

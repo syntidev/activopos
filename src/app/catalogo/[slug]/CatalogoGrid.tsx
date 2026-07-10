@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
-  Info, AtSign, Phone, Share2, ArrowUp, MapPin, Loader2, SlidersHorizontal, LayoutGrid,
+  Info, AtSign, Phone, Share2, ArrowUp, MapPin, Loader2, SlidersHorizontal, LayoutGrid, Grid,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -866,7 +866,12 @@ export function CatalogoGrid({
             </button>
 
             {(catalogMode === 'productos' || !browseMode) && (
-              <div ref={categoryTrackRef} className={styles.categoryTrack} role="tablist" aria-label="Filtrar por categoría">
+              <div
+                ref={categoryTrackRef}
+                className={`${styles.categoryTrack} ${catalogMode === 'productos' ? styles.catalogChipsHideDesktop : ''}`}
+                role="tablist"
+                aria-label="Filtrar por categoría"
+              >
                 <button
                   role="tab"
                   aria-selected={tabActive(null)}
@@ -965,6 +970,47 @@ export function CatalogoGrid({
         )}
       </div>
 
+      <div className={catalogMode === 'productos' ? styles.catalogLayout : undefined}>
+        {/* ── Sidebar de categorías — solo desktop en modo productos ── */}
+        {catalogMode === 'productos' && (
+          <aside className={styles.catalogSidebar} aria-label="Categorías">
+            <p className={styles.catalogSidebarTitle}>
+              <Grid size={14} aria-hidden="true" />
+              Categorías
+            </p>
+            <button
+              type="button"
+              className={`${styles.catalogSidebarItem} ${!activeCategory ? styles.catalogSidebarItemActive : ''}`}
+              onClick={() => selectCategory(null)}
+            >
+              Todos
+              <span className={styles.catalogSidebarCount}>{products.length}</span>
+            </button>
+            {hasFeatured && (
+              <button
+                type="button"
+                className={`${styles.catalogSidebarItem} ${activeCategory === FEATURED_KEY ? styles.catalogSidebarItemActive : ''}`}
+                onClick={() => selectCategory(FEATURED_KEY)}
+              >
+                Destacados
+                <span className={styles.catalogSidebarCount}>{products.filter(p => p.isFeatured).length}</span>
+              </button>
+            )}
+            {categories.map(cat => (
+              <button
+                key={cat}
+                type="button"
+                className={`${styles.catalogSidebarItem} ${activeCategory === cat ? styles.catalogSidebarItemActive : ''}`}
+                onClick={() => selectCategory(cat)}
+              >
+                {cat}
+                <span className={styles.catalogSidebarCount}>{categoryCounts.get(cat) ?? 0}</span>
+              </button>
+            ))}
+          </aside>
+        )}
+
+      <div className={catalogMode === 'productos' ? styles.catalogContent : undefined}>
       {/* ── Modo catálogo puro — sin hero/shelves, solo título + grid ── */}
       {catalogMode === 'productos' && (
         <div className={styles.catalogPageHeader}>
@@ -1272,6 +1318,8 @@ export function CatalogoGrid({
           </>
         )}
       </main>
+      </div>
+      </div>
 
       {/* ── Volver al inicio ────────────────────────────────────── */}
       {!cartOpen && !selectedProduct && !checkoutOpen && (

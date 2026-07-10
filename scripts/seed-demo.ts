@@ -211,6 +211,47 @@ async function ensureBoutiqueCatalog(businessId: number, userId: number): Promis
   console.log(`  + ${BOUTIQUE_PRODUCTS.length} productos con imagen real creados`)
 }
 
+// Nombres reales en producción (11 productos: los 8 sembrados originalmente por este
+// script/sesiones previas + 3 items ajenos —Glup!, Salsa Piri Piri, Hamburguesa— agregados
+// por otra sesión a la misma cuenta). Este mapa cubre 10; "Hamburguesa" queda sin imagen —
+// no pedido, no se inventa una URL para un producto que no formaba parte del seed original.
+const PRODUCT_IMAGE_UPDATES: Record<string, string> = {
+  'Camisa Oxford Blanca':          'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600',
+  'Pantalón Chino Beige':          'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600',
+  'Vestido Floral':                'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=600',
+  'Zapatos Casuales':              'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600',
+  'Bolso de Cuero':                'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600',
+  'Cinturón de Cuero':             'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=600',
+  'Gorra Snapback':                'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600',
+  'Perfume 100ml':                 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=600',
+  'Glup! Manzanita 600ml':         'https://images.unsplash.com/photo-1527960471264-932f39eb5846?w=600',
+  'Salsa Picante Piri Piri 150cc': 'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=600',
+}
+
+const BOUTIQUE_COVER_URL = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200'
+
+// Idempotente por naturaleza: UPDATE sin condición de "ya existe" — converge al mismo
+// estado final en cualquier corrida, no crea filas, no puede duplicar.
+async function updateBoutiqueImages(businessId: number): Promise<void> {
+  await prisma.business.update({
+    where: { id: businessId },
+    data: { catalog_cover_path: BOUTIQUE_COVER_URL },
+  })
+  console.log('  ✓ catalog_cover_path actualizado')
+
+  for (const [name, url] of Object.entries(PRODUCT_IMAGE_UPDATES)) {
+    const result = await prisma.product.updateMany({
+      where: { business_id: businessId, name },
+      data: { images: JSON.stringify([url]) },
+    })
+    if (result.count > 0) {
+      console.log(`  ✓ imagen actualizada: ${name}`)
+    } else {
+      console.log(`  ⚠ "${name}" no existe en esta DB — sin cambios`)
+    }
+  }
+}
+
 async function main() {
   console.log('Seed cuentas demo — inicio')
   for (const spec of ACCOUNTS) {
@@ -218,6 +259,7 @@ async function main() {
     const { businessId, userId } = await ensureBusiness(spec)
     if (spec.slug === 'boutique-demo') {
       await ensureBoutiqueCatalog(businessId, userId)
+      await updateBoutiqueImages(businessId)
     }
   }
   console.log('\n✅ Seed cuentas demo — listo')

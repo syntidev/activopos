@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo, type CSSProperties } from 'react'
+import { useState, useEffect, useMemo, useRef, type CSSProperties } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Tag, Check } from 'lucide-react'
+import { X, Tag, Check, ImagePlus, Loader2 } from 'lucide-react'
 import mStyles from './modals.module.css'
 import styles from './CategoryModal.module.css'
 
@@ -63,6 +63,52 @@ const HEX_TO_KEY: Record<string, string> = Object.fromEntries(
 )
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 
+/* ── Compresión de imágenes client-side — mismo criterio que useProductForm ── */
+const COMPRESS_THRESHOLD_KB = 800
+const COMPRESS_MAX_DIM      = 1600
+const COMPRESS_QUALITY      = 0.75
+
+async function compressImage(file: File): Promise<File> {
+  if (file.size <= COMPRESS_THRESHOLD_KB * 1024) return file
+
+  return new Promise<File>((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width, height } = img
+      if (width > COMPRESS_MAX_DIM || height > COMPRESS_MAX_DIM) {
+        if (width > height) {
+          height = Math.round(height * (COMPRESS_MAX_DIM / width))
+          width  = COMPRESS_MAX_DIM
+        } else {
+          width  = Math.round(width * (COMPRESS_MAX_DIM / height))
+          height = COMPRESS_MAX_DIM
+        }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width  = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { resolve(file); return }
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return }
+          resolve(new File([blob], file.name.replace(/\.\w+$/, '.webp'), {
+            type: 'image/webp', lastModified: file.lastModified,
+          }))
+        },
+        'image/webp',
+        COMPRESS_QUALITY,
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
+  })
+}
+
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = HEX_COLOR_RE.exec(hex)
   if (!m) return null
@@ -91,16 +137,20 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
   const [name, setName]                   = useState('')
   const [color, setColor]                 = useState(COLOR_HEX[DEFAULT_COLOR_KEY])
   const [requiresPrep, setRequiresPrep]   = useState(false)
-  const [imageUrl, setImageUrl]           = useState('')
+  const [image, setImage]                 = useState<string | null>(null)
+  const [isUploading, setIsUploading]     = useState(false)
+  const [imgError, setImgError]           = useState<string | null>(null)
   const [error, setError]                 = useState('')
   const [isSaving, setIsSaving]           = useState(false)
+  const imgFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isOpen) {
       setName(initialData?.name ?? '')
       setColor(initialData?.color || COLOR_HEX[DEFAULT_COLOR_KEY])
       setRequiresPrep(initialData?.requires_preparation ?? false)
-      setImageUrl(initialData?.image_url ?? '')
+      setImage(initialData?.image_url ?? null)
+      setImgError(null)
       setError('')
       setIsSaving(false)
     }
@@ -114,6 +164,31 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
     () => HEX_TO_KEY[color.toUpperCase()] ?? nearestSwatchKey(color),
     [color]
   )
+
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true)
+    setImgError(null)
+    try {
+      const compressed = await compressImage(file)
+      const fd = new FormData()
+      fd.append('file', compressed)
+      fd.append('type', 'products')
+      const res = await fetch('/api/upload/image', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setImgError(err?.error ?? 'No se pudo subir la imagen')
+        return
+      }
+      const j = await res.json()
+      setImage(j.url as string)
+    } catch {
+      setImgError('Error de conexión al subir la imagen')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const removeImage = () => setImage(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -129,7 +204,7 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
     setError('')
     setIsSaving(true)
     try {
-      await onSave(trimmed, color, requiresPrep, imageUrl.trim() || null)
+      await onSave(trimmed, color, requiresPrep, image)
       onClose()
     } catch {
       setError('Error al guardar. Intenta de nuevo.')
@@ -235,24 +310,53 @@ export function CategoryModal({ isOpen, onClose, initialData, onSave }: Category
 
                 {/* Imagen */}
                 <div className={mStyles.formGroup}>
-                  <label className={mStyles.label} htmlFor="cat-image-url">
-                    Imagen de categoría
-                  </label>
-                  <input
-                    id="cat-image-url"
-                    type="url"
-                    className={mStyles.input}
-                    placeholder="https://..."
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                  />
-                  {imageUrl && (
-                    <img
-                      src={imageUrl}
-                      alt="Vista previa"
-                      className={styles.imagePreview}
+                  <p className={mStyles.label}>Imagen de categoría</p>
+                  <div className={`${styles.imgSlot} ${image ? styles.imgSlotFilled : ''}`}>
+                    <input
+                      ref={imgFileRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                      className={styles.imgFileInput}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleImageUpload(file)
+                        e.target.value = ''
+                      }}
                     />
-                  )}
+                    {image ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={image} alt="Vista previa" className={styles.imgPreview} />
+                        <span className={styles.imgFormatBadge}>WebP</span>
+                        <button
+                          type="button"
+                          className={styles.imgRemoveBtn}
+                          onClick={removeImage}
+                          aria-label="Eliminar imagen"
+                        >
+                          <X size={11} aria-hidden="true" />
+                        </button>
+                      </>
+                    ) : isUploading ? (
+                      <div className={styles.imgUploading}>
+                        <Loader2 size={20} className={styles.spinnerIcon} aria-label="Subiendo..." />
+                        <span className={styles.imgUploadingText}>Comprimiendo y subiendo…</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.imgUploadBtn}
+                        onClick={() => imgFileRef.current?.click()}
+                      >
+                        <ImagePlus size={18} aria-hidden="true" />
+                        <span>Subir imagen</span>
+                      </button>
+                    )}
+                  </div>
+                  {imgError && <p className={mStyles.errorMsg}>{imgError}</p>}
+                  <p className={styles.imgHint}>
+                    Esta imagen aparecerá en el catálogo público para identificar visualmente la categoría.
+                  </p>
                 </div>
 
                 {/* Preview */}

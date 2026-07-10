@@ -34,7 +34,7 @@ CONTEXTO DEL PRODUCTO:
 
 TONO:
 - Español venezolano neutro-comercial
-- Tuteo directo ("tu negocio", "vendés", "cobrás")
+- Tuteo directo ("tu negocio", "vendes", "cobras")
 - Sin jerga startup ni anglicismos innecesarios
 - Cercano, práctico, sin grandilocuencia
 

@@ -44,7 +44,7 @@ const POSTS: SeedPost[] = [
 <p>La mayoría de las bodegas y comercios pequeños en Venezuela empiezan llevando su inventario en un cuaderno o, si el dueño es más organizado, en una hoja de Excel. Funciona bien las primeras semanas — hasta que el negocio crece, entra un empleado nuevo, o simplemente se acumulan los errores de digitación.</p>
 <h3>Lo que se pierde sin un sistema centralizado</h3>
 <ul>
-<li>No sabés en tiempo real cuánto stock queda de cada producto.</li>
+<li>No sabes en tiempo real cuánto stock queda de cada producto.</li>
 <li>Los descuadres entre lo vendido y lo que hay físicamente se detectan tarde, cuando ya es difícil rastrear la causa.</li>
 <li>Cada empleado con acceso a la hoja puede modificar cantidades sin dejar rastro de quién ni cuándo.</li>
 <li>No hay forma fácil de saber qué productos rotan rápido y cuáles se quedan estancados.</li>
@@ -53,7 +53,7 @@ const POSTS: SeedPost[] = [
 <p>Un POS que descuenta el stock automáticamente en cada venta pagada elimina el paso manual de "actualizar el Excel después". El inventario queda siempre al día porque se mueve solo, en el momento exacto del cobro — no cuando alguien se acuerda de anotarlo.</p>
 <h3>Trazabilidad de cada movimiento</h3>
 <p>Cada entrada, ajuste o salida de stock queda registrada con usuario y fecha. Si hay un descuadre, se puede rastrear exactamente qué pasó y quién lo hizo, en vez de adivinar entre cuadernos viejos.</p>
-<p>Migrar de papel a un sistema digital no es solo comodidad — es la diferencia entre saber cuánto stock tenés hoy o descubrirlo cuando ya perdiste una venta por falta de mercancía que creías tener.</p>`,
+<p>Migrar de papel a un sistema digital no es solo comodidad — es la diferencia entre saber cuánto stock tienes hoy o descubrirlo cuando ya perdiste una venta por falta de mercancía que creías tener.</p>`,
   },
   {
     title:    'BCV en tiempo real: por qué tu POS debe actualizarse solo',
@@ -91,7 +91,7 @@ const POSTS: SeedPost[] = [
     meta_description: 'Cómo un catálogo digital conectado a WhatsApp ayuda a tu negocio a recibir pedidos sin depender de redes sociales.',
     daysAgo: 9,
     content: `<h2>El cliente ya no llega preguntando "¿qué tienen?"</h2>
-<p>Cada vez más clientes prefieren revisar qué hay disponible antes de ir al local o de escribir por WhatsApp. Si no tenés un catálogo accesible, esa consulta se pierde o termina en un intercambio largo de fotos y mensajes.</p>
+<p>Cada vez más clientes prefieren revisar qué hay disponible antes de ir al local o de escribir por WhatsApp. Si no tienes un catálogo accesible, esa consulta se pierde o termina en un intercambio largo de fotos y mensajes.</p>
 <h3>Lo que necesita un catálogo digital para funcionar de verdad</h3>
 <ul>
 <li>Precios y disponibilidad reales — no una lista vieja que nadie actualiza.</li>
@@ -150,7 +150,7 @@ const POSTS: SeedPost[] = [
 <h2>Cómo funciona un sistema de variantes real</h2>
 <p>Un producto base (la camisa) tiene un precio y una descripción únicos. Las variantes — talla, color, presentación — cuelgan de ese mismo producto, cada una con su propio stock, pero compartiendo el resto de la información.</p>
 <h3>Ventajas concretas</h3>
-<p>Al vender, el cajero elige el producto y después la variante específica — sin buscar entre decenas de productos casi iguales. El stock se descuenta de la variante exacta, así que siempre sabés cuántas unidades quedan de cada talla o color, no solo del producto en general.</p>
+<p>Al vender, el cajero elige el producto y después la variante específica — sin buscar entre decenas de productos casi iguales. El stock se descuenta de la variante exacta, así que siempre sabes cuántas unidades quedan de cada talla o color, no solo del producto en general.</p>
 <p>Para negocios de ropa, calzado o cualquier producto con presentaciones múltiples, un sistema de variantes bien hecho es la diferencia entre un catálogo manejable y uno que nadie quiere actualizar.</p>`,
   },
 ]

@@ -184,7 +184,7 @@ export default function FaqPage() {
             aria-label="Escribirnos por WhatsApp"
           >
             <MessageCircle size={16} aria-hidden="true" />
-            Escribinos por WhatsApp
+            Escríbenos por WhatsApp
           </a>
         </aside>
       </div>

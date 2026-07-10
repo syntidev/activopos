@@ -1,6 +1,6 @@
 ﻿.section {
   padding: 96px 0;
-  background: var(--lp-bg-card);
+  background: #EEEDF4;
   position: relative;
   z-index: 1;
   overflow: hidden;

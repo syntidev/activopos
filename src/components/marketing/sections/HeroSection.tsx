@@ -257,12 +257,12 @@ export default function HeroSection({ bcvRate }: Props) {
 
         {/* Subtitle */}
         <motion.p className={styles.subtitle} {...fadeUp(0.3)}>
-          POS táctil, BCV automático{' '}
+          El POS venezolano con BCV automático{' '}
           <span className={styles.bcvTag}>
             <RefreshCw size={11} aria-hidden />
             Bs.&nbsp;{rateDisplay}
           </span>
-          , catálogo digital con pedidos por WhatsApp, variantes por talla·peso·color y cotización de servicios.
+          , catálogo digital y escáner de código de barras desde tu celular.
         </motion.p>
 
         {/* CTAs */}

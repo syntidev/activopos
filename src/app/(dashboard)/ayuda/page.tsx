@@ -419,11 +419,19 @@ const BOT_RULES: BotRule[] = [
 const DEFAULT_REPLY = 'No encontré información sobre eso. Puedes preguntarme sobre: ventas, métodos de pago, código de barras, BCV, variantes, catálogo digital, caja, inventario, clientes, finanzas, reportes, configuración o planes.'
 
 function botReply(text: string): string {
-  const q = text.toLowerCase()
+  const q = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  let bestRule = null
+  let bestScore = 0
   for (const rule of BOT_RULES) {
-    if (rule.keywords.some(k => q.includes(k))) return rule.response
+    const score = rule.keywords.filter(k =>
+      q.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
+    ).length
+    if (score > bestScore) {
+      bestScore = score
+      bestRule = rule
+    }
   }
-  return DEFAULT_REPLY
+  return bestScore > 0 ? bestRule!.response : DEFAULT_REPLY
 }
 
 /* ── Chatbot panel ── */

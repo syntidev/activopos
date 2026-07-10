@@ -706,7 +706,7 @@
   transition: background-color var(--transition-fast);
 }
 
-.helpModalBtn:hover { background: var(--cta-dark); }
+.helpModalBtn:hover { background: var(--cta-hover); color: var(--cta-on); }
 
 .helpModalBtn:focus-visible {
   outline: 2px solid var(--cta);

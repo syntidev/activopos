@@ -27,6 +27,7 @@ import {
   Lightbulb,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { helpContent, type HelpModule } from '@/lib/help-content'
 import styles from './ayuda.module.css'
 
 /* ── Help topic content ── */
@@ -239,7 +240,24 @@ const HELP_CARDS: HelpCard[] = [
   },
 ]
 
-/* ── Help modal ── */
+/* ── Help modal ──
+   Fuente única de contenido: los 9 módulos que existen en helpContent
+   (src/lib/help-content.ts) se leen de ahí, no de HELP_TOPICS local, para
+   que ambos modales de ayuda (este y components/help/HelpModal.tsx) nunca
+   diverjan. Devoluciones/Proveedores/Compras/Usuarios no tienen módulo en
+   help-content.ts todavía — siguen usando su contenido local. */
+
+const TITLE_TO_MODULE: Partial<Record<string, HelpModule>> = {
+  'Productos':        'productos',
+  'Inventario':       'inventario',
+  'Ventas (POS)':     'pos',
+  'Clientes':         'clientes',
+  'Reportes':         'reportes',
+  'Catálogo Digital': 'catalogo',
+  'Gestión de Caja':  'caja',
+  'Finanzas':         'finanzas',
+  'Configuraciones':  'configuracion',
+}
 
 const OVERLAY_VARIANTS = {
   hidden: { opacity: 0 },
@@ -254,7 +272,12 @@ const PANEL_VARIANTS = {
 }
 
 function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => void }) {
-  const topic = card ? HELP_TOPICS[card.title] : null
+  const localTopic = card ? HELP_TOPICS[card.title] : null
+  const module = card ? TITLE_TO_MODULE[card.title] : undefined
+  const steps: string[] = module
+    ? helpContent[module].steps.map(s => `${s.title}: ${s.body}`)
+    : localTopic?.steps ?? []
+  const tip = localTopic?.tip
 
   useEffect(() => {
     if (!card) return
@@ -265,7 +288,7 @@ function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => vo
 
   return (
     <AnimatePresence>
-      {card && topic && (
+      {card && steps.length > 0 && (
         <motion.div
           className={styles.helpModalOverlay}
           variants={OVERLAY_VARIANTS}
@@ -306,7 +329,7 @@ function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => vo
 
               {/* Steps */}
               <ol className={styles.helpStepsList}>
-                {topic.steps.map((step, i) => (
+                {steps.map((step, i) => (
                   <li key={i} className={styles.helpStepItem}>
                     <span className={styles.helpStepNum} aria-hidden="true">{i + 1}</span>
                     <span className={styles.helpStepText}>{step}</span>
@@ -315,10 +338,12 @@ function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => vo
               </ol>
 
               {/* Tip */}
-              <div className={styles.helpTipBox} role="note">
-                <Lightbulb size={16} className={styles.helpTipIcon} aria-hidden="true" />
-                <p className={styles.helpTipText}><strong>Tip:</strong> {topic.tip}</p>
-              </div>
+              {tip && (
+                <div className={styles.helpTipBox} role="note">
+                  <Lightbulb size={16} className={styles.helpTipIcon} aria-hidden="true" />
+                  <p className={styles.helpTipText}><strong>Tip:</strong> {tip}</p>
+                </div>
+              )}
 
               {/* Footer */}
               <div className={styles.helpModalFooter}>

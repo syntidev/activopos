@@ -5,6 +5,7 @@ import { z } from 'zod'
 const patchSchema = z.object({
   name:                 z.string().min(1).max(80).optional(),
   color:                z.string().max(20).nullable().optional(),
+  image_url:            z.string().max(500).nullable().optional(),
   sort_order:           z.number().int().optional(),
   requires_preparation: z.boolean().optional(),
 })

@@ -237,6 +237,7 @@ model Category {
   business_id Int
   name        String  @db.VarChar(80)
   color       String? @db.VarChar(20)
+  image_url   String? @db.VarChar(500)
   sort_order            Int     @default(0)
   active                Boolean @default(true)
   requires_preparation  Boolean @default(false)

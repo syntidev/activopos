@@ -53,6 +53,7 @@ const ADMIN_ONLY = [
   '/configuracion',
   '/finanzas',
   '/api/reports',
+  '/reportes',
   '/analytics',
   '/api/analytics',
   '/api/quotations',
@@ -61,6 +62,9 @@ const ADMIN_ONLY = [
   '/usuarios',
   '/api/returns',
   '/api/users',
+  '/productos',
+  '/proveedores',
+  '/inventario',
 ]
 
 

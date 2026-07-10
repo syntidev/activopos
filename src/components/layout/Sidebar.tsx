@@ -99,7 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'INVENTARIO',
     collapsible: true,
     items: [
-      { href: '/productos',  icon: Package,        label: 'Productos',   moduleKey: 'inventory', colorKey: 'inventario' },
+      { href: '/productos',  icon: Package,        label: 'Productos',   moduleKey: 'inventory', colorKey: 'inventario', adminOnly: true },
       { href: '/inventario', icon: ArrowRightLeft, label: 'Movimientos', colorKey: 'inventario', adminOnly: true },
       { href: '/proveedores', icon: Truck,          label: 'Proveedores', colorKey: 'inventario', adminOnly: true },
     ],
@@ -108,7 +108,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'CAJA',
     items: [
       { href: '/caja',     icon: Calculator, label: 'Gestión de Caja', moduleKey: 'caja',     colorKey: 'caja' },
-      { href: '/reportes', icon: BarChart2,  label: 'Reportes',        moduleKey: 'reportes', colorKey: 'caja' },
+      { href: '/reportes', icon: BarChart2,  label: 'Reportes',        moduleKey: 'reportes', colorKey: 'caja', adminOnly: true },
     ],
   },
   {

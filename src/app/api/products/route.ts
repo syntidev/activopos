@@ -149,6 +149,11 @@ export async function GET(req: NextRequest) {
       ])
     )
 
+    // Cajero: nunca ve costo ni utilidad — el GET lo usa tanto el buscador del
+    // POS (cashier lo necesita para vender) como la página admin de Productos,
+    // así que se redacta el campo en vez de bloquear el endpoint entero.
+    const isCashier = session.role === 'cashier'
+
     const result = products
       .map(p => {
         const stock    = stockMap.get(p.id) ?? { quantity: 0, waste: 0, net_qty: 0 }
@@ -160,11 +165,11 @@ export async function GET(req: NextRequest) {
           variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
           price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
           price_per_kg_usd:   p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null,
-          cost_per_unit_usd:  costUsd,
+          cost_per_unit_usd:  isCashier ? null : costUsd,
           min_stock:          Number(p.min_stock),
           stock,
           price_bs:           priceUsd ? priceUsd * rate : null,
-          profit_usd:         priceUsd && costUsd ? priceUsd - costUsd : null,
+          profit_usd:         isCashier ? null : (priceUsd && costUsd ? priceUsd - costUsd : null),
           price_with_iva_usd: ivaEnabled && priceUsd
             ? Math.round(priceUsd * (1 + ivaPct / 100) * 10000) / 10000
             : null,

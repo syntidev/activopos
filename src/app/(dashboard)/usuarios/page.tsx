@@ -31,6 +31,7 @@ interface NewUserForm {
   name:     string
   email:    string
   password: string
+  role:     'admin' | 'cashier'
 }
 
 interface EditUserForm {
@@ -51,7 +52,7 @@ function UsuariosContent() {
 
   // New user modal
   const [showNew,  setShowNew]  = useState(false)
-  const [newForm,  setNewForm]  = useState<NewUserForm>({ name: '', email: '', password: '' })
+  const [newForm,  setNewForm]  = useState<NewUserForm>({ name: '', email: '', password: '', role: 'cashier' })
   const [newError, setNewError] = useState('')
 
   // Edit user modal
@@ -77,7 +78,7 @@ function UsuariosContent() {
   /* ── Create ── */
 
   function openNew() {
-    setNewForm({ name: '', email: '', password: '' })
+    setNewForm({ name: '', email: '', password: '', role: 'cashier' })
     setNewError('')
     setShowNew(true)
   }
@@ -94,11 +95,11 @@ function UsuariosContent() {
       const res = await fetch('/api/users', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name: newForm.name, email: newForm.email, password: newForm.password, role: 'cashier' }),
+        body:    JSON.stringify({ name: newForm.name, email: newForm.email, password: newForm.password, role: newForm.role }),
       })
       const j = await res.json() as { ok?: boolean; error?: string }
       if (res.ok && j.ok) {
-        toast('Cajero creado', 'success')
+        toast(newForm.role === 'admin' ? 'Administrador creado' : 'Cajero creado', 'success')
         setShowNew(false)
         await load()
       } else {
@@ -179,7 +180,7 @@ function UsuariosContent() {
           leftIcon={<Plus size={15} aria-hidden="true" />}
           onClick={openNew}
         >
-          Agregar cajero
+          Agregar usuario
         </Button>
       </div>
 
@@ -246,7 +247,7 @@ function UsuariosContent() {
       <Modal
         open={showNew}
         onClose={() => setShowNew(false)}
-        title="Agregar cajero"
+        title="Agregar usuario"
         size="sm"
         footer={
           <div className={styles.modalFooter}>
@@ -265,7 +266,7 @@ function UsuariosContent() {
               type="submit"
               loading={submitting}
             >
-              Crear cajero
+              Crear usuario
             </Button>
           </div>
         }
@@ -295,6 +296,20 @@ function UsuariosContent() {
             hint="Mínimo 6 caracteres"
             required
           />
+          <div className={styles.selectField}>
+            <label className={styles.selectLabel} htmlFor="new-user-role">
+              Rol
+            </label>
+            <select
+              id="new-user-role"
+              className={styles.select}
+              value={newForm.role}
+              onChange={e => setNewForm(p => ({ ...p, role: e.target.value as 'admin' | 'cashier' }))}
+            >
+              <option value="cashier">Cajero</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
           {newError && <p className={styles.formError} role="alert">{newError}</p>}
         </form>
       </Modal>

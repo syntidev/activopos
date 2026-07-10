@@ -88,6 +88,10 @@ interface Props {
   heroCover?:     string | null
   businessHours:     string | null
   businessInstagram: string | null
+  // Stub temporal CLI-A (Sprint 91) — CLI-B agrega el render en footer
+  businessLegalName?: string | null | undefined
+  businessRif?:       string | null | undefined
+  businessAddress?:   string | null | undefined
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -240,6 +244,13 @@ export function CatalogoGrid({
 
   const hasFeatured = useMemo(() => products.some(p => p.isFeatured), [products])
   const initials    = getInitials(businessName)
+
+  // Sin created_at en CatalogProduct — badge 'nuevo' como proxy de ingreso reciente
+  const nuevosIngresos = useMemo(() =>
+    products
+      .filter(p => p.badge === 'nuevo' && !p.outOfStock)
+      .slice(0, 8)
+  , [products])
 
   const confettiParticles = useMemo(() =>
     Array.from({ length: 60 }, (_, i) => ({
@@ -941,31 +952,47 @@ export function CatalogoGrid({
         </section>
       )}
 
-      {/* ── Category showcase — hasta 4 tiles (clamp anti-desbordamiento) ── */}
+      {/* ── Categorías circulares — fila horizontal con scroll ──── */}
       {browseMode && categories.length > 0 && (
-        <section className={styles.catShowcase} aria-label="Categorías">
-          <div className={styles.catShowcaseGrid}>
-            {categories.slice(0, 4).map(cat => {
+        <section className={styles.catCircleSection} aria-label="Categorías">
+          <div className={styles.catCircleHeader}>
+            <span className={styles.catCircleTitle}>Explorar Categorías</span>
+            <button
+              type="button"
+              className={styles.catCircleVerTodos}
+              onClick={() => scrollToSection(null)}
+            >
+              Ver todos →
+            </button>
+          </div>
+          <div className={styles.catCircleTrack}>
+            {categories.map(cat => {
               const first = products.find(p => p.categoryName === cat && p.image)
               const count = categoryCounts.get(cat) ?? 0
               return (
                 <button
                   key={cat}
                   type="button"
-                  className={styles.catTile}
+                  className={styles.catCircleItem}
                   onClick={() => scrollToSection(cat)}
-                  style={categoryColors[cat] ? ({ '--tile-accent': categoryColors[cat] } as CSSProperties) : undefined}
                 >
-                  {first?.image ? (
-                    <img src={first.image} alt="" className={styles.catTileImg} loading="lazy" aria-hidden="true" />
-                  ) : (
-                    <div className={styles.catTilePlaceholder} aria-hidden="true" />
-                  )}
-                  <div className={styles.catTileOverlay} />
-                  <div className={styles.catTileInfo}>
-                    <span className={styles.catTileName}>{cat}</span>
-                    <span className={styles.catTileCount}>{count} producto{count !== 1 ? 's' : ''}</span>
+                  <div className={styles.catCircleAvatar}>
+                    {first?.image ? (
+                      <img
+                        src={first.image}
+                        alt=""
+                        className={styles.catCircleImg}
+                        loading="lazy"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <span className={styles.catCircleInitial} aria-hidden="true">
+                        {cat.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
+                  <span className={styles.catCircleName}>{cat}</span>
+                  <span className={styles.catCircleCount}>{count}</span>
                 </button>
               )
             })}
@@ -1020,6 +1047,23 @@ export function CatalogoGrid({
                   )}
                 </div>
               </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Nuevos Ingresos — productos con badge 'nuevo' ────────── */}
+      {browseMode && nuevosIngresos.length > 0 && (
+        <section className={styles.featuredSection} aria-label="Nuevos ingresos">
+          <div className={styles.featuredHeader}>
+            <Sparkles size={16} aria-hidden="true" />
+            <span className={styles.featuredTitle}>Nuevos Ingresos</span>
+          </div>
+          <div className={styles.shelfTrack}>
+            {nuevosIngresos.map((p, i) => (
+              <div key={p.id} className={styles.shelfCard}>
+                {renderProductCard(p, i)}
+              </div>
             ))}
           </div>
         </section>

@@ -1,7 +1,7 @@
 .page {
   min-height: calc(100vh - 64px);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(4rem, 8vw, 6rem);
-  background: var(--lp-bg-base);
+  background: var(--mkt-section-a);
 }
 
 .inner {
@@ -10,20 +10,23 @@
 }
 
 .eyebrow {
+  display: inline-flex;
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--brand-l, #4D7AFF);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 100px;
+  padding: 5px 14px;
   margin-bottom: 1rem;
 }
 
 .title {
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 800;
-  color: var(--lp-text-h);
+  font-weight: 700;
+  color: var(--mkt-navy);
   line-height: 1.15;
   letter-spacing: -0.03em;
   text-wrap: balance;
@@ -43,13 +46,18 @@
 
 .section {
   margin-bottom: 4rem;
+  padding: 2rem;
+  border-radius: 16px;
 }
+
+.sectionA { background: var(--mkt-section-a); }
+.sectionB { background: var(--mkt-section-b); }
 
 .sectionTitle {
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--lp-text-h);
+  color: var(--mkt-navy);
   letter-spacing: -0.025em;
   margin-bottom: 1.5rem;
 }
@@ -62,11 +70,14 @@
 
 .step {
   padding: 1.5rem;
-  background: var(--lp-bg-card);
-  border: 1px solid var(--lp-border-light);
-  border-radius: 14px;
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
+  border-radius: 12px;
   box-shadow: var(--lp-shadow-card);
+  transition: border-color 200ms ease;
 }
+
+.step:hover { border-color: var(--brand); }
 
 .stepNum {
   font-family: var(--font-display, 'Fraunces', serif);
@@ -102,12 +113,15 @@
 }
 
 .faqItem {
-  background: var(--lp-bg-card);
-  border: 1px solid var(--lp-border-light);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: var(--lp-shadow-card);
+  transition: border-color 200ms ease;
 }
+
+.faqItem:hover { border-color: var(--brand); }
 
 .faqQ {
   display: flex;
@@ -181,11 +195,14 @@
 
 .tabCard {
   padding: 1.375rem;
-  background: var(--lp-bg-card);
-  border: 1px solid var(--lp-border-light);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
   border-radius: 12px;
   box-shadow: var(--lp-shadow-card);
+  transition: border-color 200ms ease;
 }
+
+.tabCard:hover { border-color: var(--brand); }
 
 .tabCardIcon {
   width: 36px;
@@ -219,8 +236,8 @@
 .ctaBlock {
   margin-top: 3rem;
   padding: 2rem;
-  background: linear-gradient(135deg, rgba(0, 56, 189, 0.06) 0%, rgba(77, 122, 255, 0.03) 100%);
-  border: 1px solid rgba(0, 56, 189, 0.12);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -233,22 +250,22 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 1rem;
   font-weight: 600;
-  color: var(--lp-text-h);
+  color: var(--mkt-navy);
 }
 
 .ctaSubtext {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
-  color: var(--lp-text-body);
+  color: var(--mkt-text-2);
   margin-top: 2px;
 }
 
 .ctaBtn {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #fff;
-  background: var(--brand, #0038BD);
+  background: var(--cta);
   border-radius: 10px;
   padding: 0.75rem 1.5rem;
   text-decoration: none;
@@ -259,7 +276,7 @@
   transition: background 200ms ease;
 }
 
-.ctaBtn:hover { background: var(--brand-dark, #002FA0); }
+.ctaBtn:hover { background: var(--cta-hover); }
 
 @media (max-width: 720px) {
   .stepsGrid   { grid-template-columns: 1fr; }

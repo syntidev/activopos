@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 import AyudaTabs from './AyudaTabs'
+import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './ayuda.module.css'
 
 export const metadata: Metadata = {
@@ -48,53 +49,63 @@ export default function AyudaPage() {
   return (
     <section className={styles.page}>
       <div className={styles.inner}>
-        <p className={styles.eyebrow}>Centro de ayuda</p>
-        <h1 className={styles.title}>¿En qué te ayudamos?</h1>
-        <p className={styles.subtitle}>
-          Guías paso a paso, recursos por tipo de negocio y respuestas rápidas
-          a las preguntas más comunes.
-        </p>
+        <RevealSection>
+          <p className={styles.eyebrow}>Centro de ayuda</p>
+          <h1 className={styles.title}>¿En qué te ayudamos?</h1>
+          <p className={styles.subtitle}>
+            Guías paso a paso, recursos por tipo de negocio y respuestas rápidas
+            a las preguntas más comunes.
+          </p>
+        </RevealSection>
 
         {/* Primeros pasos */}
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Primeros pasos</h2>
-          <div className={styles.stepsGrid}>
-            {STEPS.map(({ title, desc }, i) => (
-              <div key={title} className={styles.step}>
-                <p className={styles.stepNum} aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
-                <p className={styles.stepTitle}>{title}</p>
-                <p className={styles.stepDesc}>{desc}</p>
-              </div>
-            ))}
+        <RevealSection>
+          <div className={`${styles.section} ${styles.sectionA}`}>
+            <h2 className={styles.sectionTitle}>Primeros pasos</h2>
+            <div className={styles.stepsGrid}>
+              {STEPS.map(({ title, desc }, i) => (
+                <div key={title} className={styles.step}>
+                  <p className={styles.stepNum} aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
+                  <p className={styles.stepTitle}>{title}</p>
+                  <p className={styles.stepDesc}>{desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </RevealSection>
 
         {/* Por negocio (tabs) */}
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Por tipo de negocio</h2>
-          <AyudaTabs />
-        </div>
+        <RevealSection>
+          <div className={`${styles.section} ${styles.sectionB}`}>
+            <h2 className={styles.sectionTitle}>Por tipo de negocio</h2>
+            <AyudaTabs />
+          </div>
+        </RevealSection>
 
         {/* FAQ */}
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Preguntas frecuentes</h2>
-          <div className={styles.faqList}>
-            {FAQS.map(({ q, a }) => (
-              <FaqItem key={q} question={q} answer={a} />
-            ))}
+        <RevealSection>
+          <div className={`${styles.section} ${styles.sectionA}`}>
+            <h2 className={styles.sectionTitle}>Preguntas frecuentes</h2>
+            <div className={styles.faqList}>
+              {FAQS.map(({ q, a }) => (
+                <FaqItem key={q} question={q} answer={a} />
+              ))}
+            </div>
           </div>
-        </div>
+        </RevealSection>
 
         {/* CTA */}
-        <div className={styles.ctaBlock}>
-          <div>
-            <p className={styles.ctaText}>¿No encontraste lo que buscabas?</p>
-            <p className={styles.ctaSubtext}>Responderemos en menos de 24 horas.</p>
+        <RevealSection>
+          <div className={styles.ctaBlock}>
+            <div>
+              <p className={styles.ctaText}>¿No encontraste lo que buscabas?</p>
+              <p className={styles.ctaSubtext}>Responderemos en menos de 24 horas.</p>
+            </div>
+            <Link href="/contacto" className={styles.ctaBtn}>
+              Contactar soporte →
+            </Link>
           </div>
-          <Link href="/contacto" className={styles.ctaBtn}>
-            Contactar soporte →
-          </Link>
-        </div>
+        </RevealSection>
       </div>
     </section>
   )

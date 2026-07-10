@@ -1,6 +1,6 @@
 .section {
   padding: 96px 0;
-  background: #F8FAFC;
+  background: #FFFFFF;
   position: relative;
   z-index: 1;
 }
@@ -24,13 +24,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(var(--success-rgb), 0.10);
-  border: 1px solid rgba(var(--success-rgb), 0.25);
-  border-radius: var(--radius-sm);
+  background: #DCE6FF;
+  border-radius: 100px;
   padding: 4px 12px;
   font-size: 11px;
-  font-weight: var(--weight-bold);
-  color: var(--success-text);
+  font-weight: 600;
+  color: #0038BD;
   margin-bottom: var(--space-4);
   font-family: var(--font-sans);
 }
@@ -41,7 +40,7 @@
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.03em;
-  color: #1E293B;
+  color: #0D1B2E;
   text-wrap: balance;
   margin-bottom: var(--space-3-5);
 }
@@ -92,10 +91,16 @@
 
 .demo {
   background: #FFFFFF;
-  border: 1px solid rgba(0, 56, 189, 0.10);
-  border-radius: 20px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.demo:hover {
+  border-color: #0038BD;
+  transform: translateY(-2px);
 }
 
 .demoHead {

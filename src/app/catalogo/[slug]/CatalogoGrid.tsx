@@ -196,7 +196,6 @@ export function CatalogoGrid({
   const [infoOpen,       setInfoOpen]       = useState(false)
   const [visibleCount,   setVisibleCount]   = useState(10)
   const [spyCategory,    setSpyCategory]    = useState<string | null>(null)
-  const [sectionCounts,  setSectionCounts]  = useState<Record<string, number>>({})
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [variantError,    setVariantError]    = useState(false)
@@ -1049,47 +1048,50 @@ export function CatalogoGrid({
             <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
           </div>
         ) : browseMode ? (
-          // Vitrina apilada por categoría — paginación independiente por sección
-          sections.map(section => {
-            const limit = sectionCounts[section.key] ?? 10
-            const shown = section.items.slice(0, limit)
-            const left  = section.items.length - limit
-            return (
-              <section
-                key={section.key}
-                className={styles.catSection}
-                data-cat-key={section.key}
-                ref={el => {
-                  if (el) catSectionRefs.current.set(section.key, el)
-                  else catSectionRefs.current.delete(section.key)
-                }}
-                aria-label={section.name}
+          // Shelves horizontales por categoría — scroll-spy vía catSectionRefs
+          sections.map(section => (
+            <section
+              key={section.key}
+              className={styles.catSection}
+              data-cat-key={section.key}
+              ref={el => {
+                if (el) catSectionRefs.current.set(section.key, el)
+                else catSectionRefs.current.delete(section.key)
+              }}
+              aria-label={section.name}
+            >
+              {/* Header del shelf */}
+              <div
+                className={styles.shelfHeader}
+                style={section.color
+                  ? ({ '--section-accent': section.color } as CSSProperties)
+                  : undefined}
               >
-                <h2
-                  className={styles.catSectionTitle}
-                  style={section.color ? ({ '--section-accent': section.color } as CSSProperties) : undefined}
-                >
+                <h2 className={styles.shelfTitle}>
+                  <span className={styles.shelfTitleAccent} aria-hidden="true" />
                   {section.name}
-                  <span className={styles.catSectionCount}>{section.items.length}</span>
+                  <span className={styles.shelfCount}>{section.items.length}</span>
                 </h2>
-                <div className={styles.productsGrid}>
-                  {shown.map((p, i) => renderProductCard(p, i, section.color))}
-                </div>
-                {left > 0 && (
-                  <div className={styles.loadMoreWrap}>
-                    <button
-                      type="button"
-                      className={styles.loadMoreBtn}
-                      onClick={() => setSectionCounts(s => ({ ...s, [section.key]: (s[section.key] ?? 10) + 10 }))}
-                    >
-                      <span>Ver 10 más</span>
-                      <span className={styles.loadMoreCount}>{left} restantes</span>
-                    </button>
+                <button
+                  type="button"
+                  className={styles.shelfVerTodos}
+                  onClick={() => scrollToSection(section.key === '__otros__' ? null : section.key)}
+                  aria-label={`Ver todos los productos de ${section.name}`}
+                >
+                  Ver todos →
+                </button>
+              </div>
+
+              {/* Track horizontal */}
+              <div className={styles.shelfTrack} role="list" aria-label={`Productos de ${section.name}`}>
+                {section.items.map((p, i) => (
+                  <div key={p.id} className={styles.shelfCard} role="listitem">
+                    {renderProductCard(p, i, section.color)}
                   </div>
-                )}
-              </section>
-            )
-          })
+                ))}
+              </div>
+            </section>
+          ))
         ) : visible.length === 0 ? (
           <div className={styles.empty}>
             {query ? (

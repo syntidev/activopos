@@ -1004,6 +1004,97 @@
   color:       var(--color-text-muted);
 }
 
+/* ── SHELF / RAIL — browse mode por categoría ───────────── */
+
+/* Contenedor del shelf horizontal */
+.shelfTrack {
+  display:                    flex;
+  flex-direction:             row;
+  gap:                        12px;
+  overflow-x:                 auto;
+  overflow-y:                 hidden;
+  scroll-snap-type:           x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width:            none;        /* Firefox */
+  padding:                    0 16px 8px;
+  /* Permite que el último card no quede pegado al borde */
+  padding-right:              calc(16px + 10%);
+}
+.shelfTrack::-webkit-scrollbar { display: none; }
+
+/* Card dentro del shelf — ancho fijo para que se vean parciales */
+.shelfCard {
+  flex-shrink:   0;
+  width:         calc(50vw - 24px);    /* mobile: 2 cards casi completas */
+  scroll-snap-align: start;
+}
+
+@media (min-width: 768px) {
+  .shelfCard {
+    width:  calc(33vw - 20px);          /* tablet: ~3 cards */
+  }
+}
+
+@media (min-width: 1024px) {
+  .shelfCard {
+    width:  220px;                       /* desktop: 4-5 cards fijas */
+  }
+  .shelfTrack {
+    padding-right: 24px;
+  }
+}
+
+/* Header del shelf: nombre categoría + contador + "Ver todos →" */
+.shelfHeader {
+  display:         flex;
+  align-items:     baseline;
+  justify-content: space-between;
+  padding:         0 16px;
+  margin-bottom:   10px;
+}
+
+.shelfTitle {
+  font-size:   var(--text-base);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+}
+
+/* Acento de color izquierdo en el título — usa color de categoría */
+.shelfTitleAccent {
+  display:       inline-block;
+  width:         3px;
+  height:        16px;
+  border-radius: 2px;
+  background:    var(--section-accent, var(--biz-color, var(--color-brand)));
+  flex-shrink:   0;
+}
+
+.shelfCount {
+  font-size:   var(--text-xs);
+  color:       var(--color-text-secondary);
+  font-weight: var(--weight-normal);
+  margin-left: var(--space-1-5);
+}
+
+.shelfVerTodos {
+  font-size:      var(--text-xs);
+  font-weight:    var(--weight-medium);
+  color:          var(--biz-color, var(--color-brand));
+  text-decoration: none;
+  background:     none;
+  border:         none;
+  cursor:         pointer;
+  padding:        0;
+  white-space:    nowrap;
+  flex-shrink:    0;
+}
+.shelfVerTodos:hover {
+  text-decoration: underline;
+}
+
 /* ── LOAD MORE — patrón SYNTImeat ────────────────────────────── */
 
 .loadMoreWrap {

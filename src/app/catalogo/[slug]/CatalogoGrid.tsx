@@ -682,43 +682,52 @@ export function CatalogoGrid({
           {p.categoryName && <p className={styles.productCategory}>{p.categoryName}</p>}
           <h2 className={styles.productName}>{p.name}</h2>
 
-          <div className={styles.productPriceRow}>
-            <div className={styles.productPriceBlock}>
-              {p.catalogVisibility === 'on_request' ? (
-                <span className={styles.priceConsultar}>Consultar precio</span>
-              ) : p.availability === 'discontinued' ? (
-                <span className={styles.priceDiscontinued}>No disponible</span>
-              ) : p.priceUsd > 0 ? (
-                <>
-                  <span className={styles.priceUsd}>
-                    ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          {/* Precios — sin botón circular */}
+          <div className={styles.productPriceBlock}>
+            {p.catalogVisibility === 'on_request' ? (
+              <span className={styles.priceConsultar}>Consultar precio</span>
+            ) : p.availability === 'discontinued' ? (
+              <span className={styles.priceDiscontinued}>No disponible</span>
+            ) : p.priceUsd > 0 ? (
+              <>
+                <span className={styles.priceUsd}>
+                  ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </span>
+                {p.priceBs && (
+                  <span className={styles.priceBs}>
+                    Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
                   </span>
-                  {p.priceBs && (
-                    <span className={styles.priceBs}>
-                      Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className={styles.priceConsultar}>Consultar precio</span>
-              )}
-            </div>
-            {p.catalogVisibility !== 'on_request' &&
-              p.availability !== 'discontinued' &&
-              !p.outOfStock &&
-              p.availability !== 'out_of_stock' &&
-              p.priceUsd > 0 && (
-              <button
-                type="button"
-                className={styles.addBtnCircle}
-                onClick={e => { e.stopPropagation(); p.variants.length > 0 ? openModal(p) : addToCart(p, 1) }}
-                aria-label={p.variants.length > 0 ? `Ver opciones de ${p.name}` : `Agregar ${p.name} al carrito`}
-              >
-                <Plus size={16} aria-hidden="true" />
-              </button>
+                )}
+              </>
+            ) : (
+              <span className={styles.priceConsultar}>Consultar precio</span>
             )}
           </div>
         </div>
+
+        {/* Botón Agregar full-width — fuera del productInfo, al pie del article */}
+        {p.catalogVisibility !== 'on_request' &&
+          p.availability !== 'discontinued' &&
+          !isOut &&
+          p.availability !== 'out_of_stock' &&
+          p.priceUsd > 0 && (
+          <button
+            type="button"
+            className={styles.addBtnFull}
+            onClick={e => {
+              e.stopPropagation()
+              p.variants.length > 0 ? openModal(p) : addToCart(p, 1)
+            }}
+            aria-label={
+              p.variants.length > 0
+                ? `Ver opciones de ${p.name}`
+                : `Agregar ${p.name} al carrito`
+            }
+          >
+            <ShoppingBag size={15} aria-hidden="true" />
+            {p.variants.length > 0 ? 'Ver opciones' : 'Agregar'}
+          </button>
+        )}
       </article>
     )
   }

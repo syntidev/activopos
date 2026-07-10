@@ -252,6 +252,34 @@ async function updateBoutiqueImages(businessId: number): Promise<void> {
   }
 }
 
+// Nombres reales en producción incluyen categorías ajenas a las 4 originales (Alimentos/
+// Bebidas/Salsas — de los items de bodega agregados por otra sesión). Mismas URLs ya
+// verificadas resolubles en Sprint 104 (reutilizan fotos de productos).
+const CATEGORY_IMAGE_UPDATES: Record<string, string> = {
+  'Accesorios': 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400',
+  'Alimentos':  'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=400',
+  'Bebidas':    'https://images.unsplash.com/photo-1527960471264-932f39eb5846?w=400',
+  'Calzado':    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
+  'Otros':      'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400',
+  'Ropa':       'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400',
+  'Salsas':     'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=400',
+}
+
+// Idempotente por naturaleza — mismo patrón que updateBoutiqueImages.
+async function updateBoutiqueCategoryImages(businessId: number): Promise<void> {
+  for (const [name, url] of Object.entries(CATEGORY_IMAGE_UPDATES)) {
+    const result = await prisma.category.updateMany({
+      where: { business_id: businessId, name },
+      data: { image_url: url },
+    })
+    if (result.count > 0) {
+      console.log(`  ✓ categoría imagen: ${name}`)
+    } else {
+      console.log(`  ⚠ categoría "${name}" no existe en esta DB — sin cambios`)
+    }
+  }
+}
+
 async function main() {
   console.log('Seed cuentas demo — inicio')
   for (const spec of ACCOUNTS) {
@@ -260,6 +288,7 @@ async function main() {
     if (spec.slug === 'boutique-demo') {
       await ensureBoutiqueCatalog(businessId, userId)
       await updateBoutiqueImages(businessId)
+      await updateBoutiqueCategoryImages(businessId)
     }
   }
   console.log('\n✅ Seed cuentas demo — listo')

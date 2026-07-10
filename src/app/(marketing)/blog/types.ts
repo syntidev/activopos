@@ -27,20 +27,27 @@ export interface BlogListResponse {
   limit: number
 }
 
-export const BLOG_CATEGORIES: Array<{ key: string; label: string; color: string }> = [
-  { key: 'ventas',       label: 'Ventas',           color: '#0038BD' },
-  { key: 'inventario',   label: 'Inventario',       color: '#16A34A' },
-  { key: 'venezuela',    label: 'Venezuela',        color: '#D97706' },
-  { key: 'tecnologia',   label: 'Tecnología',       color: '#7C3AED' },
-  { key: 'catalogo',     label: 'Catálogo',         color: '#0891B2' },
-  { key: 'casos-exito',  label: 'Casos de éxito',   color: '#EC4899' },
-]
+// /api/blog no expone category_color por categoría — paleta fija de respaldo
+// para las categorías reales conocidas (sembradas en DB). Categorías nuevas que
+// no matcheen caen al azul de marca (categoryColor ya lo maneja por default).
+const CATEGORY_COLOR_MAP: Record<string, string> = {
+  'Ventas':          '#0038BD',
+  'Inventario':      '#16A34A',
+  'Finanzas':        '#D97706',
+  'Venezuela':       '#D97706',
+  'Tecnología':      '#7C3AED',
+  'Catálogo':        '#0891B2',
+  'Casos de éxito':  '#EC4899',
+}
 
 export function categoryColor(category: string | null): string {
   if (!category) return '#0038BD'
-  const found = BLOG_CATEGORIES.find(c => c.label === category || c.key === category)
-  return found?.color ?? '#0038BD'
+  return CATEGORY_COLOR_MAP[category] ?? '#0038BD'
 }
+
+// Categorías reales conocidas (sembradas en DB) — estático porque /api/blog
+// no expone un endpoint ni campo de categorías (ver comentario en CATEGORY_COLOR_MAP).
+export const BLOG_CATEGORIES: string[] = Object.keys(CATEGORY_COLOR_MAP)
 
 // Server Components no pueden usar fetch('/ruta-relativa') — arma la URL absoluta
 // desde NEXT_PUBLIC_APP_URL (ya usado en .env.example para la URL pública de la

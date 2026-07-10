@@ -2090,8 +2090,8 @@ export function CatalogoGrid({
         </div>
       )}
 
-      {/* ── WhatsApp FAB — oculto con modal producto o carrito abiertos, tapaba el CTA ── */}
-      {businessPhone && !selectedProduct && !cartOpen && (
+      {/* ── WhatsApp FAB — solo visible con items en carrito, oculto con overlays abiertos ── */}
+      {cart.length > 0 && businessPhone && !selectedProduct && !cartOpen && !checkoutOpen && (
         <a
           href={`https://wa.me/${businessPhone}?text=${encodeURIComponent('Hola, vi tu catálogo en ActivoPOS y me interesa pedir.')}`}
           target="_blank"

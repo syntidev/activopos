@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { MapPin, Phone, AtSign, Clock } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { getBcvRate } from '@/lib/bcv'
@@ -213,40 +214,90 @@ export default async function CatalogoPage({ params }: PageProps) {
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer className={styles.footer}>
-        <div className={styles.footerBiz}>
-          {displayTitle && (
+        {/* Zona superior — datos del negocio */}
+        <div className={styles.footerTop}>
+
+          {/* Logo + nombre + descripción + RIF */}
+          <div className={styles.footerBrand}>
+            {business.logo_path ? (
+              <img
+                src={business.logo_path}
+                alt={displayTitle}
+                className={styles.footerLogo}
+              />
+            ) : (
+              <div className={styles.footerLogoFallback}>
+                {displayTitle.charAt(0).toUpperCase()}
+              </div>
+            )}
             <p className={styles.footerBizName}>{displayTitle}</p>
-          )}
-          {business.legal_name && (
-            <p className={styles.footerBizLegal}>{business.legal_name}</p>
-          )}
-          {business.rif && (
-            <p className={styles.footerBizRif}>RIF: {business.rif}</p>
-          )}
-          {business.address && (
-            <p className={styles.footerBizAddress}>{business.address}</p>
-          )}
-          {location && (
-            <p className={styles.footerBizCity}>{location}</p>
-          )}
-          {waPhone && (
+            {business.catalog_desc && (
+              <p className={styles.footerBizDesc}>{business.catalog_desc}</p>
+            )}
+            {business.rif && (
+              <p className={styles.footerBizRif}>RIF: {business.rif}</p>
+            )}
+          </div>
+
+          {/* Datos de contacto */}
+          <div className={styles.footerContact}>
+            {business.address && (
+              <div className={styles.footerContactRow}>
+                <MapPin size={14} className={styles.footerIcon} aria-hidden="true" />
+                <span>{business.address}</span>
+              </div>
+            )}
+            {location && (
+              <div className={styles.footerContactRow}>
+                <MapPin size={14} className={styles.footerIcon} aria-hidden="true" />
+                <span>{location}</span>
+              </div>
+            )}
+            {waPhone && (
+              <div className={styles.footerContactRow}>
+                <Phone size={14} className={styles.footerIcon} aria-hidden="true" />
+                <a href={`tel:+${waPhone}`} className={styles.footerLink}>
+                  {business.phone}
+                </a>
+              </div>
+            )}
+            {business.catalog_instagram && (
+              <div className={styles.footerContactRow}>
+                <AtSign size={14} className={styles.footerIcon} aria-hidden="true" />
+                <a
+                  href={`https://instagram.com/${business.catalog_instagram.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.footerLink}
+                >
+                  @{business.catalog_instagram.replace('@', '')}
+                </a>
+              </div>
+            )}
+            {business.catalog_hours && (
+              <div className={styles.footerContactRow}>
+                <Clock size={14} className={styles.footerIcon} aria-hidden="true" />
+                <span>{business.catalog_hours}</span>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Zona inferior — copyright */}
+        <div className={styles.footerBottom}>
+          <span>© {new Date().getFullYear()} {displayTitle}</span>
+          <span>
+            Impulsado por{' '}
             <a
-              href={`https://wa.me/${waPhone}`}
+              href="https://activopos.com"
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.footerBizPhone}
+              className={styles.footerActivoLink}
             >
-              {waPhone}
-            </a>
-          )}
-        </div>
-        <div className={styles.footerPowered}>
-          <p>
-            Impulsado por{' '}
-            <a href="https://activopos.com" target="_blank" rel="noopener noreferrer">
               ActivoPOS
             </a>
-          </p>
+          </span>
         </div>
       </footer>
     </div>

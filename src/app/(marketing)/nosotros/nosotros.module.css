@@ -1,7 +1,7 @@
 .page {
   min-height: calc(100vh - 64px);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem);
-  background: var(--lp-bg-base);
+  background: var(--mkt-section-a);
 }
 
 .inner {
@@ -10,20 +10,23 @@
 }
 
 .eyebrow {
+  display: inline-flex;
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--brand-l, #4D7AFF);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 100px;
+  padding: 5px 14px;
   margin-bottom: 1rem;
 }
 
 .title {
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: clamp(2rem, 5vw, 3.25rem);
-  font-weight: 800;
-  color: var(--lp-text-h);
+  font-weight: 700;
+  color: var(--mkt-navy);
   line-height: 1.15;
   letter-spacing: -0.03em;
   text-wrap: balance;
@@ -51,11 +54,14 @@
 
 .mvCard {
   padding: 2rem;
-  background: var(--lp-bg-card);
-  border: 1px solid var(--lp-border-light);
-  border-radius: 16px;
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
+  border-radius: 12px;
   box-shadow: var(--lp-shadow-card);
+  transition: border-color 200ms ease;
 }
+
+.mvCard:hover { border-color: var(--brand); }
 
 .mvIcon {
   width: 44px;
@@ -101,7 +107,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.625rem;
   font-weight: 700;
-  color: var(--lp-text-h);
+  color: var(--mkt-navy);
   letter-spacing: -0.025em;
   margin-bottom: 1.75rem;
 }
@@ -118,11 +124,14 @@
   align-items: flex-start;
   gap: 0.875rem;
   padding: 1.25rem;
-  background: var(--lp-bg-card);
-  border: 1px solid rgba(0, 56, 189, 0.08);
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
   border-radius: 12px;
   box-shadow: var(--lp-shadow-card);
+  transition: border-color 200ms ease;
 }
+
+.valueItem:hover { border-color: var(--brand); }
 
 .valueNum {
   font-family: var(--font-display, 'Fraunces', serif);
@@ -153,9 +162,9 @@
 /* synti.dev block */
 
 .syntiBlock {
-  background: linear-gradient(135deg, rgba(0, 56, 189, 0.06) 0%, rgba(77, 122, 255, 0.03) 100%);
-  border: 1px solid rgba(0, 56, 189, 0.12);
-  border-radius: 16px;
+  background: var(--mkt-card-subtle);
+  border: 1px solid var(--mkt-border);
+  border-radius: 12px;
   padding: 2.5rem;
   display: flex;
   align-items: center;
@@ -172,7 +181,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--brand, #0038BD);
+  color: var(--brand);
   margin-bottom: 0.5rem;
 }
 
@@ -180,7 +189,7 @@
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 1.375rem;
   font-weight: 700;
-  color: var(--lp-text-h);
+  color: var(--mkt-navy);
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
 }

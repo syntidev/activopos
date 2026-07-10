@@ -105,21 +105,25 @@ export function usePOS() {
     fetchCajaStatus()
   }, [fetchCajaStatus])
 
-  // Búsqueda con debounce 300ms
+  // Búsqueda con debounce 300ms — desde 3 caracteres dispara inmediato (delay=0),
+  // clave para pistolas de código de barras que vuelcan el código completo de un
+  // solo golpe en el input: no hay razón para esperar 300ms si ya hay señal suficiente.
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current)
 
-    if (!search.trim()) {
+    const trimmed = search.trim()
+    if (!trimmed) {
       setSearchResults([])
       setIsSearching(false)
       return
     }
 
     setIsSearching(true)
+    const delay = trimmed.length >= 3 ? 0 : 300
     searchTimer.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/products/search?q=${encodeURIComponent(search.trim())}&limit=20`
+          `/api/products/search?q=${encodeURIComponent(trimmed)}&limit=20`
         )
         const json = await res.json()
         setSearchResults(json.products ?? [])
@@ -128,7 +132,7 @@ export function usePOS() {
       } finally {
         setIsSearching(false)
       }
-    }, 300)
+    }, delay)
 
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current)

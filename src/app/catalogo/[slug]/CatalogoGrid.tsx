@@ -183,9 +183,12 @@ export function CatalogoGrid({
   const [phoneError,     setPhoneError]     = useState(false)
   const [cRef,           setCRef]           = useState('')
   const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
+  const [checkoutStep,    setCheckoutStep]    = useState<1 | 2 | 3>(1)
+  const [deliveryType,    setDeliveryType]    = useState<'pickup' | 'delivery'>('pickup')
+  const [recipientName,   setRecipientName]   = useState('')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
   const [delivery,       setDelivery]       = useState<DeliveryInfo | null>(null)
   const [zoneIdx,        setZoneIdx]        = useState(-1)
-  const [zoneAddress,    setZoneAddress]    = useState('')
   const [gpsLoading,     setGpsLoading]     = useState(false)
   const [gpsError,       setGpsError]       = useState('')
   const [submitting,     setSubmitting]     = useState(false)
@@ -490,11 +493,13 @@ export function CatalogoGrid({
 
   const hasZones     = !!delivery?.enabled && (delivery.zones?.length ?? 0) > 0
   const hasFreeZone  = !!delivery?.enabled && (delivery.zones?.length ?? 0) === 0
-  const deliveryCost = hasZones
-    ? (zoneIdx >= 0 ? delivery!.zones![zoneIdx].precio : 0)
-    : hasFreeZone
-      ? (delivery!.fee_default ?? 0)
-      : 0
+  const deliveryCost = deliveryType !== 'delivery'
+    ? 0
+    : hasZones
+      ? (zoneIdx >= 0 ? delivery!.zones![zoneIdx].precio : 0)
+      : hasFreeZone
+        ? (delivery!.fee_default ?? 0)
+        : 0
   const checkoutTotalUsd = subtotalUsd + deliveryCost
 
   const handleUseMyLocation = () => {
@@ -513,7 +518,7 @@ export function CatalogoGrid({
           )
           if (!res.ok) throw new Error()
           const data = await res.json() as { display_name?: string }
-          if (data.display_name) setZoneAddress(data.display_name)
+          if (data.display_name) setDeliveryAddress(data.display_name)
           else setGpsError('No se pudo determinar la dirección.')
         } catch {
           setGpsError('No se pudo obtener la dirección. Intenta escribirla.')
@@ -531,15 +536,17 @@ export function CatalogoGrid({
   const handleCheckout = async () => {
     if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
     if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
-    if (hasZones && zoneIdx < 0) return
+    if (deliveryType === 'delivery' && hasZones && zoneIdx < 0) return
     setSubmitting(true)
     try {
       const baseRef = cRef.trim() || 'Sin especificar'
-      const referenceWithZone = hasZones
-        ? `${baseRef} · Zona: ${delivery!.zones![zoneIdx].nombre} · Costo delivery: ${fmtUsd(delivery!.zones![zoneIdx].precio)}`
-        : hasFreeZone
-          ? `${baseRef}${zoneAddress.trim() ? ` · Dirección: ${zoneAddress.trim()}` : ''} · Costo delivery: ${fmtUsd(delivery!.fee_default ?? 0)}`
-          : baseRef
+      const referenceWithZone = deliveryType !== 'delivery'
+        ? baseRef
+        : hasZones
+          ? `${baseRef} · Zona: ${delivery!.zones![zoneIdx].nombre} · Costo delivery: ${fmtUsd(delivery!.zones![zoneIdx].precio)}`
+          : hasFreeZone
+            ? `${baseRef}${deliveryAddress.trim() ? ` · Dirección: ${deliveryAddress.trim()}` : ''} · Costo delivery: ${fmtUsd(delivery!.fee_default ?? 0)}`
+            : baseRef
 
       const res = await fetch(`/api/catalog/${slug}/order`, {
         method:  'POST',
@@ -550,6 +557,9 @@ export function CatalogoGrid({
           customer_phone:     cPhone.trim(),
           customer_reference: referenceWithZone,
           payment_method:     cPayment,
+          delivery_type:      deliveryType,
+          recipient_name:     recipientName.trim() || null,
+          delivery_address:   deliveryAddress.trim() || null,
         }),
       })
 
@@ -566,7 +576,8 @@ export function CatalogoGrid({
           setCartOpen(false)
           setCName(''); setCPhone(''); setCRef('')
           setCPayment(paymentMethods[0]?.name ?? '')
-          setZoneIdx(-1); setZoneAddress('')
+          setZoneIdx(-1)
+          setCheckoutStep(1); setDeliveryType('pickup'); setRecipientName(''); setDeliveryAddress('')
         }, 3000)
       }
     } catch { /* user stays in form */ }
@@ -1242,167 +1253,309 @@ export function CatalogoGrid({
         </div>
       )}
 
-      {/* ── Checkout modal ──────────────────────────────────────── */}
+      {/* ── Checkout modal — multipaso ──────────────────────────── */}
       {checkoutOpen && !submitted && (
         <div
           className={styles.checkoutOverlay}
           onClick={e => { if (e.target === e.currentTarget && !submitting) setCheckoutOpen(false) }}
         >
-          <div className={styles.checkoutModal} role="dialog" aria-modal="true" aria-label="Antes de enviar">
-            <div className={styles.checkoutHeader}>
-              <h3 className={styles.checkoutTitle}>Antes de enviar</h3>
-              <p className={styles.checkoutSubtitle}>
-                Déjanos tus datos para personalizar tu pedido.
-              </p>
+          <div className={styles.checkoutModal} role="dialog" aria-modal="true" aria-label="Completar pedido">
+
+            {/* Stepper */}
+            <div className={styles.checkoutStepper}>
+              {([
+                { n: 1, label: 'Contacto' },
+                { n: 2, label: 'Entrega'  },
+                { n: 3, label: 'Pago'     },
+              ] as { n: 1|2|3; label: string }[]).map(({ n, label }, idx) => (
+                <div key={n} className={styles.stepperItem}>
+                  {idx > 0 && (
+                    <div className={`${styles.stepperLine} ${checkoutStep > idx ? styles.done : ''}`} />
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <div className={`${styles.stepperDot} ${
+                      checkoutStep === n ? styles.stepperDotActive :
+                      checkoutStep > n  ? styles.stepperDotDone   :
+                                          styles.stepperDotPending
+                    }`}>
+                      {checkoutStep > n ? '✓' : n}
+                    </div>
+                    <span className={`${styles.stepperLabel} ${checkoutStep === n ? styles.stepperLabelActive : ''}`}>
+                      {label}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className={styles.checkoutFields}>
-              <div className={styles.checkoutFieldGroup}>
-                <label className={styles.checkoutLabel} htmlFor="co-name">
-                  Nombre <span className={styles.checkoutRequired}>*</span>
-                </label>
-                <input
-                  ref={nameRef}
-                  id="co-name"
-                  type="text"
-                  className={styles.checkoutInput}
-                  value={cName}
-                  onChange={e => setCName(e.target.value)}
-                  placeholder="Tu nombre completo"
-                  disabled={submitting}
-                />
-              </div>
-              <div className={styles.checkoutFieldGroup}>
-                <label className={styles.checkoutLabel} htmlFor="co-phone">
-                  WhatsApp <span className={styles.checkoutRequired}>*</span>
-                </label>
-                <input
-                  id="co-phone"
-                  type="tel"
-                  className={`${styles.checkoutInput} ${phoneError ? styles.checkoutInputError : ''}`}
-                  value={cPhone}
-                  onChange={e => { setCPhone(e.target.value); if (phoneError) setPhoneError(false) }}
-                  placeholder="0412XXXXXXX"
-                  aria-invalid={phoneError}
-                  disabled={submitting}
-                />
-                {phoneError && (
-                  <span className={styles.checkoutFieldError}>
-                    Número inválido. Usa un celular venezolano (0412, 0414, 0416, 0424, 0426).
-                  </span>
-                )}
-              </div>
-              <div className={styles.checkoutFieldGroup}>
-                <label className={styles.checkoutLabel} htmlFor="co-ref">
-                  Referencia / Sector <span className={styles.checkoutOptional}>(opcional)</span>
-                </label>
-                <input
-                  id="co-ref"
-                  type="text"
-                  className={styles.checkoutInput}
-                  value={cRef}
-                  onChange={e => setCRef(e.target.value)}
-                  placeholder="Ej: El Paraíso, piso 2"
-                  disabled={submitting}
-                />
-              </div>
-              {paymentMethods.length > 0 && (
-                <div className={styles.checkoutFieldGroup}>
-                  <label className={styles.checkoutLabel} htmlFor="co-payment">
-                    Método de pago <span className={styles.checkoutRequired}>*</span>
-                  </label>
-                  <select
-                    id="co-payment"
-                    className={styles.checkoutSelect}
-                    value={cPayment}
-                    onChange={e => setCPayment(e.target.value)}
-                    disabled={submitting}
-                  >
-                    {paymentMethods.map(pm => (
-                      <option key={pm.id} value={pm.name}>{pm.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
 
-              {hasZones && (
-                <div className={styles.checkoutFieldGroup}>
-                  <label className={styles.checkoutLabel} htmlFor="co-zone">
-                    Zona de entrega <span className={styles.checkoutRequired}>*</span>
-                  </label>
-                  <select
-                    id="co-zone"
-                    className={styles.checkoutSelect}
-                    value={zoneIdx}
-                    onChange={e => setZoneIdx(Number(e.target.value))}
-                    disabled={submitting}
-                  >
-                    <option value={-1} disabled>Selecciona tu zona…</option>
-                    {delivery!.zones!.map((z, i) => (
-                      <option key={z.nombre} value={i}>{z.nombre} — {fmtUsd(z.precio)}</option>
-                    ))}
-                  </select>
+            {/* PASO 1 — Contacto */}
+            {checkoutStep === 1 && (
+              <>
+                <p className={styles.checkoutStepLabel}>Paso 1</p>
+                <h3 className={styles.checkoutStepTitle}>Contacto</h3>
+                <div className={styles.checkoutFields}>
+                  <div className={styles.checkoutFieldGroup}>
+                    <label className={styles.checkoutLabel} htmlFor="co-name">
+                      Nombre <span className={styles.checkoutRequired}>*</span>
+                    </label>
+                    <input
+                      ref={nameRef}
+                      id="co-name"
+                      type="text"
+                      className={styles.checkoutInput}
+                      value={cName}
+                      onChange={e => setCName(e.target.value)}
+                      placeholder="Tu nombre completo"
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className={styles.checkoutFieldGroup}>
+                    <label className={styles.checkoutLabel} htmlFor="co-phone">
+                      WhatsApp <span className={styles.checkoutRequired}>*</span>
+                    </label>
+                    <input
+                      id="co-phone"
+                      type="tel"
+                      inputMode="numeric"
+                      className={`${styles.checkoutInput} ${phoneError ? styles.checkoutInputError : ''}`}
+                      value={cPhone}
+                      onChange={e => { setCPhone(e.target.value); if (phoneError) setPhoneError(false) }}
+                      placeholder="0412XXXXXXX"
+                      aria-invalid={phoneError}
+                      disabled={submitting}
+                    />
+                    {phoneError && (
+                      <span className={styles.checkoutFieldError}>
+                        Número inválido. Usa un celular venezolano (0412, 0414, 0416, 0424, 0426).
+                      </span>
+                    )}
+                  </div>
+                  <div className={styles.checkoutFieldGroup}>
+                    <label className={styles.checkoutLabel} htmlFor="co-ref">
+                      Referencia / Sector <span className={styles.checkoutOptional}>(opcional)</span>
+                    </label>
+                    <input
+                      id="co-ref"
+                      type="text"
+                      className={styles.checkoutInput}
+                      value={cRef}
+                      onChange={e => setCRef(e.target.value)}
+                      placeholder="Ej: El Paraíso, piso 2"
+                      disabled={submitting}
+                    />
+                  </div>
                 </div>
-              )}
-
-              {hasFreeZone && (
-                <div className={styles.checkoutFieldGroup}>
-                  <label className={styles.checkoutLabel} htmlFor="co-zone-address">
-                    Dirección de entrega
-                  </label>
-                  <input
-                    id="co-zone-address"
-                    type="text"
-                    className={styles.checkoutInput}
-                    value={zoneAddress}
-                    onChange={e => setZoneAddress(e.target.value)}
-                    placeholder="Calle, casa/edificio, referencia"
-                    disabled={submitting}
-                  />
+                <div className={styles.checkoutNavRow}>
                   <button
                     type="button"
-                    className={styles.gpsBtn}
-                    onClick={handleUseMyLocation}
-                    disabled={submitting || gpsLoading}
+                    className={styles.cancelBtn}
+                    onClick={() => {
+                      setCheckoutOpen(false)
+                      setCheckoutStep(1); setDeliveryType('pickup'); setRecipientName(''); setDeliveryAddress('')
+                    }}
+                    disabled={submitting}
                   >
-                    {gpsLoading
-                      ? <Loader2 size={14} className={styles.gpsSpinner} aria-hidden="true" />
-                      : <MapPin size={14} aria-hidden="true" />}
-                    {gpsLoading ? 'Obteniendo ubicación…' : 'Usar mi ubicación'}
+                    Cancelar
                   </button>
-                  {gpsError && <span className={styles.gpsError}>{gpsError}</span>}
+                  <button
+                    type="button"
+                    className={styles.btnNext}
+                    disabled={!cName.trim() || !cPhone.trim()}
+                    onClick={() => {
+                      if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
+                      setCheckoutStep(2)
+                    }}
+                  >
+                    Continuar →
+                  </button>
                 </div>
-              )}
+              </>
+            )}
 
-              {(hasZones || hasFreeZone) && (
-                <div className={styles.checkoutTotalRow}>
-                  <span className={styles.checkoutTotalLabel}>Total con delivery</span>
-                  <span className={styles.checkoutTotalValue}>{fmtUsd(checkoutTotalUsd)}</span>
+            {/* PASO 2 — Entrega */}
+            {checkoutStep === 2 && (
+              <>
+                <p className={styles.checkoutStepLabel}>Paso 2</p>
+                <h3 className={styles.checkoutStepTitle}>¿Cómo recibes tu pedido?</h3>
+                <div className={styles.deliveryOptions}>
+                  <button
+                    type="button"
+                    className={`${styles.deliveryOption} ${deliveryType === 'pickup' ? styles.deliveryOptionActive : ''}`}
+                    onClick={() => setDeliveryType('pickup')}
+                  >
+                    <p className={styles.deliveryOptionTitle}>Retirar en tienda</p>
+                    <p className={styles.deliveryOptionDesc}>Pasas a buscar tu pedido directamente en el local.</p>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.deliveryOption} ${deliveryType === 'delivery' ? styles.deliveryOptionActive : ''}`}
+                    onClick={() => setDeliveryType('delivery')}
+                  >
+                    <p className={styles.deliveryOptionTitle}>Envío a domicilio</p>
+                    <p className={styles.deliveryOptionDesc}>Te llevamos el pedido a tu dirección.</p>
+                  </button>
                 </div>
-              )}
-            </div>
-            <div className={styles.checkoutActions}>
-              <button
-                type="button"
-                className={styles.sendBtn}
-                onClick={handleCheckout}
-                disabled={
-                  submitting || !cName.trim() || !cPhone.trim() ||
-                  (paymentMethods.length > 0 && !cPayment) ||
-                  (hasZones && zoneIdx < 0)
-                }
-              >
-                <MessageCircle size={18} aria-hidden="true" />
-                {submitting ? 'Enviando…' : 'Enviar por WhatsApp'}
-              </button>
-              <button
-                type="button"
-                className={styles.cancelBtn}
-                onClick={() => setCheckoutOpen(false)}
-                disabled={submitting}
-              >
-                Cancelar
-              </button>
-            </div>
+
+                {deliveryType === 'delivery' && (
+                  <div className={styles.deliveryFields}>
+                    <div className={styles.checkoutFieldGroup}>
+                      <label className={styles.checkoutLabel} htmlFor="co-recipient">
+                        Nombre de quien recibe
+                      </label>
+                      <input
+                        id="co-recipient"
+                        type="text"
+                        className={styles.checkoutInput}
+                        value={recipientName}
+                        onChange={e => setRecipientName(e.target.value)}
+                        placeholder="Nombre y apellido"
+                        disabled={submitting}
+                      />
+                    </div>
+
+                    {hasZones ? (
+                      <div className={styles.checkoutFieldGroup}>
+                        <label className={styles.checkoutLabel} htmlFor="co-zone">
+                          Zona de entrega <span className={styles.checkoutRequired}>*</span>
+                        </label>
+                        <select
+                          id="co-zone"
+                          className={styles.checkoutSelect}
+                          value={zoneIdx}
+                          onChange={e => setZoneIdx(Number(e.target.value))}
+                          disabled={submitting}
+                        >
+                          <option value={-1} disabled>Selecciona tu zona…</option>
+                          {delivery!.zones!.map((z, i) => (
+                            <option key={z.nombre} value={i}>{z.nombre} — {fmtUsd(z.precio)}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className={styles.checkoutFieldGroup}>
+                        <label className={styles.checkoutLabel} htmlFor="co-address">
+                          Dirección completa
+                        </label>
+                        <input
+                          id="co-address"
+                          type="text"
+                          className={styles.checkoutInput}
+                          value={deliveryAddress}
+                          onChange={e => setDeliveryAddress(e.target.value)}
+                          placeholder="Calle, edificio, referencia"
+                          disabled={submitting}
+                        />
+                        <button
+                          type="button"
+                          className={styles.gpsBtn}
+                          onClick={handleUseMyLocation}
+                          disabled={submitting || gpsLoading}
+                        >
+                          {gpsLoading
+                            ? <Loader2 size={14} className={styles.gpsSpinner} aria-hidden="true" />
+                            : <MapPin size={14} aria-hidden="true" />}
+                          {gpsLoading ? 'Obteniendo ubicación…' : 'Usar mi ubicación'}
+                        </button>
+                        {gpsError && <span className={styles.gpsError}>{gpsError}</span>}
+                      </div>
+                    )}
+
+                    {(hasZones || hasFreeZone) && (
+                      <div className={styles.checkoutTotalRow}>
+                        <span className={styles.checkoutTotalLabel}>Total con delivery</span>
+                        <span className={styles.checkoutTotalValue}>{fmtUsd(checkoutTotalUsd)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className={styles.checkoutNavRow}>
+                  <button type="button" className={styles.btnBack} onClick={() => setCheckoutStep(1)}>
+                    ← Volver
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btnNext}
+                    disabled={deliveryType === 'delivery' && hasZones && zoneIdx < 0}
+                    onClick={() => setCheckoutStep(3)}
+                  >
+                    Continuar →
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* PASO 3 — Pago y confirmación */}
+            {checkoutStep === 3 && (
+              <>
+                <p className={styles.checkoutStepLabel}>Paso 3</p>
+                <h3 className={styles.checkoutStepTitle}>Método de pago</h3>
+
+                {paymentMethods.length > 0 && (
+                  <div className={styles.paymentCards}>
+                    {paymentMethods.map(pm => (
+                      <button
+                        key={pm.id}
+                        type="button"
+                        className={`${styles.paymentCard} ${cPayment === pm.name ? styles.paymentCardActive : ''}`}
+                        onClick={() => setCPayment(pm.name)}
+                        disabled={submitting}
+                      >
+                        <p className={styles.paymentCardName}>{pm.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Resumen antes de confirmar */}
+                <div className={styles.checkoutSummaryBox}>
+                  <div className={styles.checkoutSummaryRow}>
+                    <span className={styles.checkoutSummaryLabel}>Entrega</span>
+                    <span className={styles.checkoutSummaryValue}>
+                      {deliveryType === 'pickup' ? 'Retirar en tienda' : 'Envío a domicilio'}
+                    </span>
+                  </div>
+                  <div className={styles.checkoutSummaryRow}>
+                    <span className={styles.checkoutSummaryLabel}>Contacto</span>
+                    <span className={styles.checkoutSummaryValue}>{cName} · {cPhone}</span>
+                  </div>
+                  {deliveryType === 'delivery' && deliveryAddress && (
+                    <div className={styles.checkoutSummaryRow}>
+                      <span className={styles.checkoutSummaryLabel}>Dirección</span>
+                      <span className={styles.checkoutSummaryValue}>{deliveryAddress}</span>
+                    </div>
+                  )}
+                  {deliveryType === 'delivery' && hasZones && zoneIdx >= 0 && (
+                    <div className={styles.checkoutSummaryRow}>
+                      <span className={styles.checkoutSummaryLabel}>Zona</span>
+                      <span className={styles.checkoutSummaryValue}>{delivery!.zones![zoneIdx].nombre}</span>
+                    </div>
+                  )}
+                  <div className={styles.checkoutSummaryRow}>
+                    <span className={styles.checkoutSummaryLabel}>Total</span>
+                    <span className={styles.checkoutSummaryValue}>
+                      {fmtUsd(checkoutTotalUsd)} · {fmtBs(checkoutTotalUsd * rate)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.checkoutNavRow}>
+                  <button type="button" className={styles.btnBack} onClick={() => setCheckoutStep(2)} disabled={submitting}>
+                    ← Volver
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.sendBtn}
+                    onClick={handleCheckout}
+                    disabled={submitting || !cPayment || cart.length === 0}
+                  >
+                    <MessageCircle size={16} aria-hidden="true" />
+                    {submitting ? 'Enviando…' : 'Enviar por WhatsApp'}
+                  </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}

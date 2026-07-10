@@ -1,0 +1,34 @@
+# ActivoPOS
+> El POS SaaS venezolano para PYMES — ventas, inventario y catálogo digital
+
+## Qué es
+ActivoPOS es un sistema de punto de venta diseñado específicamente para negocios venezolanos. Permite cobrar en USD y Bs con tasa BCV automática, gestionar inventario con variantes, publicar un catálogo digital con pedidos por WhatsApp, y cerrar caja diariamente con reportes en tiempo real.
+
+## Características principales
+- POS táctil con soporte para Pago Móvil, Zelle, USDT, Efectivo y Zinli
+- BCV automático en cada transacción — tasa oficial actualizada en tiempo real
+- Escáner de código de barras desde la cámara del celular — sin hardware adicional
+- Catálogo digital público con pedidos por WhatsApp
+- Variantes de producto: tallas, colores, combinaciones con stock independiente
+- Cierre de caja diario con reporte en USD y Bs
+- Inventario en tiempo real con alertas de stock crítico
+- Cotizaciones de servicios con PDF profesional
+
+## Segmentos atendidos
+Bodegas, abastos, carnicerías, restaurantes, boutiques, farmacias, ferreterías, panaderías, fruterías, peluquerías, licorerías, repuesterías, ópticas, papelerías, tiendas de mascotas, mueblerías, lavanderías, jugueterías, distribuidoras, tiendas deportivas, electrónica
+
+## Planes
+- Mostrador: POS básico para comenzar
+- Negocio: POS + catálogo digital + finanzas completas
+- Pro: todo ilimitado + analytics avanzado
+
+## URLs importantes
+- Landing: https://activopos.com
+- Blog: https://activopos.com/blog
+- Segmentos: https://activopos.com/segmentos
+- Planes: https://activopos.com/planes
+- Registro: https://activopos.com/registro
+
+## Contacto
+- WhatsApp: https://wa.me/584222654827
+- Instagram: https://instagram.com/activopos

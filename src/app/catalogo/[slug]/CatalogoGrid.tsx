@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
-  Info, AtSign, Phone, Share2, ArrowUp,
+  Info, AtSign, Phone, Share2, ArrowUp, MapPin, Loader2,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -186,6 +186,8 @@ export function CatalogoGrid({
   const [delivery,       setDelivery]       = useState<DeliveryInfo | null>(null)
   const [zoneIdx,        setZoneIdx]        = useState(-1)
   const [zoneAddress,    setZoneAddress]    = useState('')
+  const [gpsLoading,     setGpsLoading]     = useState(false)
+  const [gpsError,       setGpsError]       = useState('')
   const [submitting,     setSubmitting]     = useState(false)
   const [submitted,      setSubmitted]      = useState(false)
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
@@ -340,7 +342,15 @@ export function CatalogoGrid({
         }
         if (best) {
           const key = best.target.getAttribute('data-cat-key')
-          if (key) setSpyCategory(key === ORPHAN_KEY ? null : key)
+          if (key) {
+            const resolved = key === ORPHAN_KEY ? null : key
+            setSpyCategory(prev => {
+              // Centra el chip del tab en el track horizontal cuando el scroll-spy
+              // cambia de categoría — antes solo pasaba en clicks explícitos de tab.
+              if (resolved && resolved !== prev) centerChip(resolved)
+              return resolved
+            })
+          }
         }
       },
       { rootMargin: '-12% 0px -70% 0px', threshold: [0, 0.15, 0.4] },
@@ -487,6 +497,37 @@ export function CatalogoGrid({
       ? (delivery!.fee_default ?? 0)
       : 0
   const checkoutTotalUsd = subtotalUsd + deliveryCost
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsError('Tu navegador no soporta geolocalización.')
+      return
+    }
+    setGpsError('')
+    setGpsLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+          )
+          if (!res.ok) throw new Error()
+          const data = await res.json() as { display_name?: string }
+          if (data.display_name) setZoneAddress(data.display_name)
+          else setGpsError('No se pudo determinar la dirección.')
+        } catch {
+          setGpsError('No se pudo obtener la dirección. Intenta escribirla.')
+        } finally {
+          setGpsLoading(false)
+        }
+      },
+      () => {
+        setGpsError('No se pudo acceder a tu ubicación. Revisa los permisos.')
+        setGpsLoading(false)
+      },
+    )
+  }
 
   const handleCheckout = async () => {
     if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
@@ -724,7 +765,7 @@ export function CatalogoGrid({
           onClick={() => setCartOpen(true)}
           aria-label={`Carrito — ${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`}
         >
-          <ShoppingBag size={20} aria-hidden="true" />
+          <ShoppingBag size={20} aria-hidden="true" className={cartBumping ? styles.cartBump : ''} />
           {totalItems > 0 && (
             <span className={`${styles.cartCount} ${cartBumping ? styles.cartBadgeBump : ''}`} aria-hidden="true">
               {totalItems > 99 ? '99+' : totalItems}
@@ -1306,6 +1347,18 @@ export function CatalogoGrid({
                     placeholder="Calle, casa/edificio, referencia"
                     disabled={submitting}
                   />
+                  <button
+                    type="button"
+                    className={styles.gpsBtn}
+                    onClick={handleUseMyLocation}
+                    disabled={submitting || gpsLoading}
+                  >
+                    {gpsLoading
+                      ? <Loader2 size={14} className={styles.gpsSpinner} aria-hidden="true" />
+                      : <MapPin size={14} aria-hidden="true" />}
+                    {gpsLoading ? 'Obteniendo ubicación…' : 'Usar mi ubicación'}
+                  </button>
+                  {gpsError && <span className={styles.gpsError}>{gpsError}</span>}
                 </div>
               )}
 

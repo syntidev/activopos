@@ -71,11 +71,11 @@
   position:      relative;
   aspect-ratio:  1 / 1;
   overflow:      hidden;
-  background:    #F3F4F6;
+  background:    var(--table-header-bg);
 }
 
 @media (min-width: 768px) {
-  .galleryMain { border-radius: 16px; }
+  .galleryMain { border-radius: 12px; }
 }
 
 .galleryMainImg {
@@ -210,7 +210,7 @@
 }
 
 .priceBs {
-  font-size:  var(--text-base);
+  font-size:  var(--text-sm);
   color:      var(--color-text-secondary);
   margin-top: var(--space-1);
 }
@@ -255,8 +255,8 @@
 }
 .variantChipActive {
   border-color: var(--biz-color, var(--color-brand));
-  background:   color-mix(in srgb, var(--biz-color, var(--color-brand)) 10%, white);
-  color:        var(--biz-color, var(--color-brand));
+  background:   var(--biz-color, var(--color-brand));
+  color:        var(--color-white);
   font-weight:  var(--weight-semibold);
 }
 .variantChipDisabled {

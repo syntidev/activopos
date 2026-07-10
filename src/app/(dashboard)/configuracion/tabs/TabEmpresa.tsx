@@ -263,7 +263,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
                   className={styles.posModeRadio}
                 />
                 <span>
-                  <strong>Factura de servicio (A4)</strong>
+                  <strong>Factura de servicio (Carta)</strong>
                   <small>Para talleres, clínicas, gestorías</small>
                 </span>
               </label>

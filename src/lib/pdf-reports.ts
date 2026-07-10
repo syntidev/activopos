@@ -65,8 +65,8 @@ function sectionLabel(doc: import('jspdf').jsPDF, text: string, x: number, y: nu
 
 export async function generateDailyReportPdf(data: DailyReportData): Promise<void> {
   const { jsPDF } = await import('jspdf')
-  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  const pw   = doc.internal.pageSize.getWidth()   // 210
+  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
+  const pw   = doc.internal.pageSize.getWidth()   // 215.9
   const m    = 15  // margin
   const cw   = pw - m * 2  // content width: 180mm
   let y      = m

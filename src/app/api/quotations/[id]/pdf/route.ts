@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest, { params }: Context) {
     const logo = quotation.business.logo_path ? await loadLogo(quotation.business.logo_path) : null
 
     const { jsPDF } = await import('jspdf')
-    const doc  = new jsPDF({ unit: 'mm', format: 'a4' })
+    const doc  = new jsPDF({ unit: 'mm', format: 'letter' })
     const r2   = (x: number) => Math.round(x * 100) / 100
     const rate = Number(quotation.rate_used) || 1
 

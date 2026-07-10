@@ -58,7 +58,7 @@ export async function generateMonthlyPDF(
   ])
 
   const { jsPDF } = await import('jspdf') as typeof import('jspdf')
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
 
   const totalUsd    = Number(salesAgg._sum.total_usd ?? 0)
   const totalBs     = Number(salesAgg._sum.total_bs  ?? 0)

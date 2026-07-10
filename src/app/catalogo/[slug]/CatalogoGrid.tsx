@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
-  Info, AtSign, Phone, Share2, ArrowUp, MapPin, Loader2,
+  Info, AtSign, Phone, Share2, ArrowUp, MapPin, Loader2, SlidersHorizontal,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -962,6 +962,33 @@ export function CatalogoGrid({
           <p className={styles.catalogPageSubtitle}>
             Todos los productos disponibles
           </p>
+          <div className={styles.catalogSearchRow}>
+            <div className={styles.catalogSearchWrap}>
+              <Search size={16} className={styles.catalogSearchIcon} aria-hidden="true" />
+              <input
+                type="search"
+                className={styles.catalogSearchInput}
+                placeholder="Buscar productos..."
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                aria-label="Buscar productos"
+              />
+            </div>
+          </div>
+          <div className={styles.catalogMeta}>
+            <button
+              type="button"
+              className={styles.catalogFiltrosBtn}
+              onClick={() => setCatMenuOpen(o => !o)}
+              aria-expanded={catMenuOpen}
+            >
+              <SlidersHorizontal size={14} aria-hidden="true" />
+              Filtros
+            </button>
+            <span className={styles.catalogCount}>
+              {visible.length} producto{visible.length !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
       )}
 
@@ -1040,8 +1067,17 @@ export function CatalogoGrid({
       {catalogMode === 'home' && hasFeatured && browseMode && (
         <section className={styles.featuredSection} data-section="featured" aria-label="Productos destacados">
           <div className={styles.featuredHeader}>
-            <Star size={16} aria-hidden="true" />
-            <span className={styles.featuredTitle}>Destacados</span>
+            <div className={styles.featuredTitlePill}>
+              <Star size={14} aria-hidden="true" />
+              Productos Destacados
+            </div>
+            <button
+              type="button"
+              className={styles.shelfVerTodos}
+              onClick={() => selectCategory(FEATURED_KEY)}
+            >
+              Ver todos →
+            </button>
           </div>
           <div className={styles.featuredGrid}>
             {products.filter(p => p.isFeatured).map(p => (
@@ -1092,8 +1128,10 @@ export function CatalogoGrid({
       {catalogMode === 'home' && browseMode && nuevosIngresos.length > 0 && (
         <section className={styles.featuredSection} aria-label="Nuevos ingresos">
           <div className={styles.featuredHeader}>
-            <Sparkles size={16} aria-hidden="true" />
-            <span className={styles.featuredTitle}>Nuevos Ingresos</span>
+            <div className={styles.featuredTitlePill}>
+              <Sparkles size={14} aria-hidden="true" />
+              Nuevos Ingresos
+            </div>
           </div>
           <div className={styles.shelfTrack}>
             {nuevosIngresos.map((p, i) => (

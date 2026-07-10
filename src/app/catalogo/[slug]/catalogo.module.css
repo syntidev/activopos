@@ -893,6 +893,8 @@
   scroll-margin-top: 112px;
 }
 
+.catSection:nth-of-type(even) { background: var(--table-header-bg); }
+
 /* Lateral ya lo da .catSection — duplicarlo acá lo dejaría a 32px por lado */
 .catSection .productsGrid { padding: 0; }
 
@@ -917,7 +919,7 @@
 /* Card dentro del shelf — ancho fijo para que se vean parciales */
 .shelfCard {
   flex-shrink:   0;
-  width:         calc(50vw - 24px);    /* mobile: 2 cards casi completas */
+  width:         calc(68vw - 20px);    /* mobile: 1.5 cards — la parcial insinúa scroll */
   scroll-snap-align: start;
 }
 
@@ -3009,10 +3011,14 @@
 }
 
 .catCircleTitle {
-  font-size:   var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color:       var(--color-text-primary);
+  display:      flex;
+  align-items:  center;
+  gap:          var(--space-2);
+  font-size:    var(--text-sm);
+  font-weight:  var(--weight-semibold);
+  color:        var(--color-text-primary);
 }
+.catCircleTitle svg { color: var(--biz-color, var(--color-brand)); }
 
 .catCircleVerTodos {
   font-size:   var(--text-xs);

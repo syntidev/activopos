@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   CheckCircle, Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
-  Info, AtSign, Phone, Share2, ArrowUp, MapPin, Loader2, SlidersHorizontal,
+  Info, AtSign, Phone, Share2, ArrowUp, MapPin, Loader2, SlidersHorizontal, LayoutGrid,
 } from 'lucide-react'
 import styles from './catalogo.module.css'
 
@@ -1019,7 +1019,10 @@ export function CatalogoGrid({
       {catalogMode === 'home' && browseMode && categories.length > 0 && (
         <section className={styles.catCircleSection} aria-label="Categorías">
           <div className={styles.catCircleHeader}>
-            <span className={styles.catCircleTitle}>Explorar Categorías</span>
+            <span className={styles.catCircleTitle}>
+              <LayoutGrid size={16} aria-hidden="true" />
+              Explorar Categorías
+            </span>
             <button
               type="button"
               className={styles.catCircleVerTodos}

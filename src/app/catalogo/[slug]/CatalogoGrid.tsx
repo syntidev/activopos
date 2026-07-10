@@ -1137,16 +1137,18 @@ export function CatalogoGrid({
       </main>
 
       {/* ── Volver al inicio ────────────────────────────────────── */}
-      <button
-        type="button"
-        className={`${styles.backTopBtn} ${showBackTop ? styles.backTopBtnVisible : ''}`}
-        onClick={scrollToTop}
-        aria-label="Volver al inicio"
-        aria-hidden={!showBackTop}
-        tabIndex={showBackTop ? 0 : -1}
-      >
-        <ArrowUp size={20} aria-hidden="true" />
-      </button>
+      {!cartOpen && !selectedProduct && !checkoutOpen && (
+        <button
+          type="button"
+          className={`${styles.backTopBtn} ${showBackTop ? styles.backTopBtnVisible : ''}`}
+          onClick={scrollToTop}
+          aria-label="Volver al inicio"
+          aria-hidden={!showBackTop}
+          tabIndex={showBackTop ? 0 : -1}
+        >
+          <ArrowUp size={20} aria-hidden="true" />
+        </button>
+      )}
 
       {/* ── Cart drawer backdrop ────────────────────────────────── */}
       {cartOpen && (
@@ -1272,7 +1274,7 @@ export function CatalogoGrid({
                   {idx > 0 && (
                     <div className={`${styles.stepperLine} ${checkoutStep > idx ? styles.done : ''}`} />
                   )}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <div className={styles.stepperDotWrapper}>
                     <div className={`${styles.stepperDot} ${
                       checkoutStep === n ? styles.stepperDotActive :
                       checkoutStep > n  ? styles.stepperDotDone   :
@@ -1466,6 +1468,16 @@ export function CatalogoGrid({
                         <span className={styles.checkoutTotalValue}>{fmtUsd(checkoutTotalUsd)}</span>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {deliveryType === 'delivery' && (
+                  <div className={styles.deliveryNotice}>
+                    <span className={styles.deliveryNoticeIcon}>ℹ️</span>
+                    <p className={styles.deliveryNoticeText}>
+                      El costo de envío puede variar según tu zona.
+                      Te contactamos por WhatsApp para coordinarlo antes de confirmar.
+                    </p>
                   </div>
                 )}
 

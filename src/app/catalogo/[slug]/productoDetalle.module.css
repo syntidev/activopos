@@ -189,11 +189,20 @@
   .productName { font-size: var(--text-3xl); }
 }
 
-.productDesc {
+.productDescSection {
+  border-top:  1px solid var(--color-border-subtle);
+  padding-top: var(--space-4);
+}
+.productDescTitle {
+  font-size:     var(--text-sm);
+  font-weight:   var(--weight-semibold);
+  color:         var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+.productDescText {
   font-size:   var(--text-sm);
   color:       var(--color-text-secondary);
   line-height: var(--leading-relaxed);
-  margin:      0;
 }
 
 .priceBlock {
@@ -376,3 +385,97 @@
   transition:      background 150ms ease;
 }
 .btnShare:hover { background: var(--color-surface-2); }
+
+/* Productos relacionados */
+.relatedSection {
+  margin-top:    var(--space-8);
+  padding:       var(--space-6) var(--space-4);
+  background:    var(--color-white);
+  border-top:    1px solid var(--color-border-subtle);
+}
+
+.relatedHeader {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  margin-bottom:   var(--space-4);
+}
+
+.relatedTitle {
+  font-size:   var(--text-base);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+}
+
+.relatedVerTodos {
+  font-size:       var(--text-sm);
+  color:           var(--biz-color, var(--color-brand));
+  text-decoration: none;
+  font-weight:     var(--weight-medium);
+}
+.relatedVerTodos:hover { text-decoration: underline; }
+
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .relatedGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.relatedCard {
+  display:         flex;
+  flex-direction:  column;
+  gap:             var(--space-2);
+  text-decoration: none;
+  border-radius:   var(--radius-lg);
+  overflow:        hidden;
+  background:      var(--color-white);
+  border:          1px solid var(--color-border-subtle);
+  padding:         var(--space-3);
+  transition:      box-shadow 150ms ease;
+}
+.relatedCard:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.relatedImageWrap {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.relatedImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.relatedPlaceholder {
+  font-size:   var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color:       var(--color-text-muted);
+}
+
+.relatedName {
+  font-size:    var(--text-sm);
+  font-weight:  var(--weight-medium);
+  color:        var(--color-text-primary);
+  line-height:  1.3;
+  display:      -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:     hidden;
+}
+
+.relatedPrice {
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-bold);
+  color:       var(--color-text-primary);
+}

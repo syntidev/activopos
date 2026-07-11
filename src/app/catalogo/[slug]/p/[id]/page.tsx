@@ -19,8 +19,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const productId = parseInt(params.id, 10)
   if (isNaN(productId)) return { title: 'Producto no encontrado' }
 
+  // SEC: sin scope por business_id, esta query filtraba por id de producto
+  // solamente — un product_id de OTRO tenant filtraba nombre/desc/imagen en
+  // el <title>/OG de este slug (IDOR cross-tenant). Mismo scope que la page.
+  const business = await prisma.business.findFirst({
+    where:  { catalog_slug: params.slug, catalog_active: true, active: true },
+    select: { id: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true },
+  })
+  if (!business || !isCatalogLive(business)) return { title: 'Producto no encontrado' }
+
   const product = await prisma.product.findFirst({
-    where: { id: productId, active: true, show_in_catalog: true },
+    where: { id: productId, business_id: business.id, active: true, show_in_catalog: true },
     select: { name: true, description: true, images: true },
   })
   if (!product) return { title: 'Producto no encontrado' }
@@ -75,6 +84,33 @@ export default async function ProductoPage({ params }: PageProps) {
   const priceUsd  = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
   const priceBs   = priceUsd > 0 ? priceUsd * rate : null
 
+  const relatedRaw = await prisma.product.findMany({
+    where: {
+      business_id:       business.id,
+      active:            true,
+      show_in_catalog:   true,
+      available_in_pos:  true,
+      category_id:       product.category_id,
+      id:                { not: productId },
+      ...CATALOG_WHERE_FILTER,
+    },
+    select: {
+      id:                 true,
+      name:               true,
+      images:             true,
+      price_per_unit_usd: true,
+      price_per_kg_usd:   true,
+    },
+    take:    4,
+    orderBy: { is_featured: 'desc' },
+  })
+  const relatedProducts = relatedRaw.map(rp => ({
+    id:       rp.id,
+    name:     rp.name,
+    image:    parseImages(rp.images)[0] ?? null,
+    priceUsd: Number(rp.price_per_unit_usd ?? rp.price_per_kg_usd ?? 0),
+  }))
+
   return (
     <div
       data-theme="light"
@@ -104,6 +140,7 @@ export default async function ProductoPage({ params }: PageProps) {
         slug={params.slug}
         rate={rate}
         catalogUrl={`/catalogo/${params.slug}`}
+        relatedProducts={relatedProducts}
       />
     </div>
   )

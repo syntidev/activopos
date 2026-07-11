@@ -6,6 +6,13 @@ import Link from 'next/link'
 import type { CatalogProductVariant } from './CatalogoGrid'
 import styles from './productoDetalle.module.css'
 
+interface RelatedProduct {
+  id:       number
+  name:     string
+  image:    string | null
+  priceUsd: number
+}
+
 interface Props {
   name:          string
   description:   string | null
@@ -20,6 +27,7 @@ interface Props {
   slug:          string
   rate:          number
   catalogUrl:    string
+  relatedProducts: RelatedProduct[]
 }
 
 function fmtUsd(n: number) {
@@ -35,7 +43,7 @@ function capitalize(s: string) {
 export function ProductoDetalle({
   name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessPhone,
-  catalogUrl, rate,
+  catalogUrl, rate, slug, relatedProducts,
 }: Props) {
   const [imageIndex,        setImageIndex]        = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
@@ -143,16 +151,19 @@ export function ProductoDetalle({
 
           <h1 className={styles.productName}>{name}</h1>
 
-          {description && (
-            <p className={styles.productDesc}>{description}</p>
-          )}
-
           <div className={styles.priceBlock}>
             <span className={styles.priceUsd}>{fmtUsd(effectivePrice)}</span>
             {effectivePriceBs !== null && (
               <span className={styles.priceBs}>{fmtBs(effectivePriceBs)}</span>
             )}
           </div>
+
+          {description && (
+            <div className={styles.productDescSection}>
+              <h3 className={styles.productDescTitle}>Descripción</h3>
+              <p className={styles.productDescText}>{description}</p>
+            </div>
+          )}
 
           {/* Variantes */}
           {variantGroups.length > 0 && (
@@ -248,6 +259,39 @@ export function ProductoDetalle({
           </div>
         </div>
       </div>
+
+      {/* Productos relacionados */}
+      {relatedProducts.length > 0 && (
+        <section className={styles.relatedSection}>
+          <div className={styles.relatedHeader}>
+            <h3 className={styles.relatedTitle}>Productos relacionados</h3>
+            <Link href={catalogUrl} className={styles.relatedVerTodos}>
+              Ver todos →
+            </Link>
+          </div>
+          <div className={styles.relatedGrid}>
+            {relatedProducts.map(rp => (
+              <Link
+                key={rp.id}
+                href={`/catalogo/${slug}/p/${rp.id}`}
+                className={styles.relatedCard}
+              >
+                <div className={styles.relatedImageWrap}>
+                  {rp.image ? (
+                    <img src={rp.image} alt={rp.name} className={styles.relatedImage} loading="lazy" />
+                  ) : (
+                    <div className={styles.relatedPlaceholder}>
+                      {rp.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <p className={styles.relatedName}>{rp.name}</p>
+                <p className={styles.relatedPrice}>{fmtUsd(rp.priceUsd)}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

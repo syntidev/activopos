@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { Wallet } from 'lucide-react'
 import styles from './PaymentMethodsSection.module.css'
 
-const METHODS = ['Pago Móvil', 'Zelle', 'Efectivo (USD o Bs)', 'USDT']
+const METHODS = ['Pago Móvil', 'Zelle', 'Binance', 'USDT', 'Zinli', 'PayPal', 'Efectivo Bs/USD']
 
 export default function PaymentMethodsSection() {
   return (

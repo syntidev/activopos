@@ -49,6 +49,7 @@ export default function NuevoProductoPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name:               data.name,
+        description:        data.description ?? null,
         barcode:            data.barcode || null,
         sale_mode:          data.saleMode,
         product_type:       data.productType,

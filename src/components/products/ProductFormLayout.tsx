@@ -81,6 +81,24 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             {f.errors.name && <p className={m.errorMsg}>{f.errors.name}</p>}
           </div>
 
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-description">
+              Descripción
+            </label>
+            <textarea
+              id="np-description"
+              className={m.textarea}
+              value={f.description}
+              onChange={(e) => f.setDescription(e.target.value)}
+              placeholder="Describe el producto: materiales, medidas, usos, beneficios..."
+              rows={3}
+              maxLength={500}
+            />
+            <p className={c.hintExamples}>
+              Aparece en la página del producto en el catálogo digital. Máximo 500 caracteres.
+            </p>
+          </div>
+
           {/* ¿Cómo vendes? */}
           <div className={m.formGroup}>
             <p className={m.label}>¿Cómo vendes este producto?</p>

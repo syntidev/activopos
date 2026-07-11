@@ -121,6 +121,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
 
   /* ── Estado core ── */
   const [name, setName]               = useState('')
+  const [description, setDescription] = useState('')
   const [barcode, setBarcode]         = useState('')
   const [productKind, setProductKind] = useState<ProductKind>('simple')
   const [measuredBy, setMeasuredBy]   = useState<'weight' | 'volume' | 'length'>('weight')
@@ -219,6 +220,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     if (!editProduct) return
 
     setName(editProduct.name)
+    setDescription(editProduct.description ?? '')
     setBarcode(editProduct.barcode ?? '')
 
     if (editProduct.product_type === 'combo' || editProduct.product_type === 'fabricable') {
@@ -478,6 +480,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     try {
       await onSave({
         name:            name.trim(),
+        description:     description.trim() || null,
         barcode:         barcode.trim(),
         saleMode,
         productType,
@@ -524,7 +527,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     // meta
     isEdit,
     // core state
-    name, setName, barcode, setBarcode,
+    name, setName, description, setDescription, barcode, setBarcode,
     productKind, setProductKind, measuredBy, setMeasuredBy,
     unitLabel, setUnitLabel, unitStep, setUnitStep,
     categoryId, setCategoryId,

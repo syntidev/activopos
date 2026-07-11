@@ -17,6 +17,7 @@ const FORM_ID = 'editar-producto-form'
 interface ApiProductDetail {
   id: number
   name: string
+  description: string | null
   barcode: string | null
   sale_mode: EditableProduct['sale_mode']
   category_id: number | null
@@ -53,6 +54,7 @@ function toEditable(p: ApiProductDetail): EditableProduct {
   return {
     id:                 p.id,
     name:               p.name,
+    description:        p.description,
     barcode:            p.barcode,
     sale_mode:          p.sale_mode,
     category_id:        p.category_id,
@@ -139,6 +141,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name:               data.name,
+        description:        data.description ?? null,
         barcode:            data.barcode || null,
         sale_mode:          data.saleMode,
         product_type:       data.productType,

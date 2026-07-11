@@ -46,6 +46,7 @@ interface Category {
 interface Product {
   id: number
   name: string
+  description: string | null
   sku: string | null
   barcode: string | null
   sale_mode: 'unit' | 'weight' | 'service'
@@ -292,6 +293,7 @@ export default function ProductosPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name:               data.name,
+        description:        data.description ?? null,
         barcode:            data.barcode || null,
         sale_mode:          data.saleMode,
         product_type:       data.productType,
@@ -536,6 +538,7 @@ export default function ProductosPage() {
     setEditProduct({
       id:                 product.id,
       name:               product.name,
+      description:        product.description,
       barcode:            product.barcode,
       sale_mode:          product.sale_mode,
       category_id:        product.category_id,

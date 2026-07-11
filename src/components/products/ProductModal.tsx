@@ -24,6 +24,7 @@ type Availability      = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinu
 
 export interface ProductFormData {
   name: string
+  description?: string | null
   barcode: string
   saleMode: 'unit' | 'weight' | 'service'
   categoryId: number | null
@@ -58,6 +59,7 @@ export interface ModalCategory {
 export interface EditableProduct {
   id: number
   name: string
+  description?: string | null
   barcode: string | null
   sale_mode: 'unit' | 'weight' | 'service'
   category_id: number | null
@@ -244,6 +246,7 @@ export function ProductModal({
 
   /* ── Core form state ── */
   const [name, setName]           = useState('')
+  const [description, setDescription] = useState('')
   const [barcode, setBarcode]     = useState('')
   const [productKind, setProductKind] = useState<ProductKind>('simple')
   const [measuredBy, setMeasuredBy]   = useState<'weight' | 'volume' | 'length'>('weight')
@@ -340,7 +343,7 @@ export function ProductModal({
   /* ── Initialize / reset ── */
   useEffect(() => {
     if (!isOpen) {
-      setName(''); setBarcode(''); setCategoryId(null)
+      setName(''); setDescription(''); setBarcode(''); setCategoryId(null)
       setProductKind('simple'); setMeasuredBy('weight'); setUnitLabel('kg'); setUnitStep(0.001)
       setComponents([]); setCompSearch(''); setCompResults([]); setCompQty('1'); setSelectedComp(null)
       setCostMode('unit'); setBulkSize('12'); setCost(''); setIsFixedPrice(false)
@@ -356,6 +359,7 @@ export function ProductModal({
 
     if (editProduct) {
       setName(editProduct.name)
+      setDescription(editProduct.description ?? '')
       setBarcode(editProduct.barcode ?? '')
 
       // Derive productKind from stored product_type + sale_mode
@@ -581,6 +585,7 @@ export function ProductModal({
     try {
       await onSave({
         name:            name.trim(),
+        description:     description.trim() || null,
         barcode:         barcode.trim(),
         saleMode,
         productType,
@@ -671,6 +676,25 @@ export function ProductModal({
                       autoFocus
                     />
                     {errors.name && <p className={mStyles.errorMsg}>{errors.name}</p>}
+                  </div>
+
+                  {/* ── Descripción ── */}
+                  <div className={mStyles.formGroup}>
+                    <label className={mStyles.label} htmlFor="pm-description">
+                      Descripción
+                    </label>
+                    <textarea
+                      id="pm-description"
+                      className={mStyles.textarea}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Describe el producto: materiales, medidas, usos, beneficios..."
+                      rows={3}
+                      maxLength={500}
+                    />
+                    <p className={styles.fixedPriceSub}>
+                      Aparece en la página del producto en el catálogo digital. Máximo 500 caracteres.
+                    </p>
                   </div>
 
                   {/* ── Tipo de producto ── */}

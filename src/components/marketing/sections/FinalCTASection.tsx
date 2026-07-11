@@ -12,7 +12,10 @@ const TRUST = [
 export default function FinalCTASection() {
   return (
     <section className={styles.section} id="final">
-      <div className={styles.bg} aria-hidden />
+      {/* Curva de transición claro → navy — segundo y último uso de Navy (§1, §7) */}
+      <svg className={styles.curve} viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0,110 C480,0 960,0 1440,110 L1440,0 L0,0 Z" fill="var(--mkt-bg)" />
+      </svg>
       <div className={styles.content}>
         <h2 className={styles.title} data-reveal>
           Tu negocio está activo.{' '}

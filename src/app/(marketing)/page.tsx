@@ -7,7 +7,7 @@ import PaymentMethodsSection from '@/components/marketing/sections/PaymentMethod
 import SegmentsSection from '@/components/marketing/sections/SegmentsSection'
 import FeatureTabsSection from '@/components/marketing/sections/FeatureTabsSection'
 import FinancialBrainSection from '@/components/marketing/sections/FinancialBrainSection'
-import EcosystemSection from '@/components/marketing/sections/EcosystemSection'
+import CatalogShowcaseSection from '@/components/marketing/sections/CatalogShowcaseSection'
 import PricingSection from '@/components/marketing/sections/PricingSection'
 import TestimonialsSection from '@/components/marketing/sections/TestimonialsSection'
 import FinalCTASection from '@/components/marketing/sections/FinalCTASection'
@@ -55,8 +55,8 @@ export default async function LandingPage() {
       <SegmentsSection />
       <FeatureTabsSection />
       <FinancialBrainSection bcvRate={bcvRate} />
-      <EcosystemSection />
-      <PricingSection />
+      <CatalogShowcaseSection />
+      <PricingSection bcvRate={bcvRate} />
       <TestimonialsSection />
       <FinalCTASection />
     </div>

@@ -52,7 +52,7 @@ export default async function ProductoPage({ params }: PageProps) {
   const business = await prisma.business.findFirst({
     where:  { catalog_slug: params.slug, catalog_active: true, active: true },
     select: {
-      id: true, name: true, phone: true, theme_color: true,
+      id: true, name: true, phone: true, theme_color: true, logo_path: true,
       catalog_plan: true, subscription_active: true, subscription_expires_at: true,
     },
   })
@@ -141,6 +141,7 @@ export default async function ProductoPage({ params }: PageProps) {
         rate={rate}
         catalogUrl={`/catalogo/${params.slug}`}
         relatedProducts={relatedProducts}
+        businessLogo={business.logo_path}
       />
     </div>
   )

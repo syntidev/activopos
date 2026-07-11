@@ -51,10 +51,12 @@
 }
 
 .headerLogo {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-2-5);
-  min-width:   0;
+  display:         flex;
+  align-items:     center;
+  gap:             var(--space-2-5);
+  min-width:       0;
+  text-decoration: none;
+  color:           inherit;
 }
 
 .headerLogoImg {
@@ -395,6 +397,30 @@
 }
 .navIconBtn:hover { background: var(--color-brand-subtle); color: var(--biz-color, var(--color-brand)); }
 
+.desktopNav {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .desktopNav {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-6);
+    margin-left: var(--space-4);
+  }
+  .navIconBtn:first-child { /* hamburguesa */
+    display: none;
+  }
+}
+.desktopNavLink {
+  font-size:       var(--text-sm);
+  font-weight:     var(--weight-medium);
+  color:           var(--color-text-secondary);
+  text-decoration: none;
+  white-space:     nowrap;
+  transition:      color 150ms ease;
+}
+.desktopNavLink:hover { color: var(--biz-color, var(--color-brand)); }
+
 /* Búsqueda expandible (reemplaza chips al tocar la lupa) */
 .searchExpanded {
   display:     flex;
@@ -633,7 +659,10 @@
   position:     relative;
   width:        100%;
   height:       200px;
-  background:   linear-gradient(135deg, var(--biz-color, #0038BD) 0%, var(--mkt-navy) 100%);
+  background:   linear-gradient(135deg,
+    var(--biz-color, #0038BD) 0%,
+    color-mix(in srgb, var(--biz-color, #0038BD) 60%, var(--mkt-navy)) 100%
+  );
   overflow:     hidden;
   flex-shrink:  0;
   color-scheme: light;
@@ -894,7 +923,8 @@
   scroll-margin-top: 112px;
 }
 
-.catSection:nth-of-type(even) { background: var(--table-header-bg); }
+.catSection:nth-child(even) { background: var(--table-header-bg); }
+.catSection:nth-child(odd)  { background: var(--color-white); }
 
 /* Lateral ya lo da .catSection — duplicarlo acá lo dejaría a 32px por lado */
 .catSection .productsGrid { padding: 0; }
@@ -3073,8 +3103,11 @@
 /* ── CATEGORÍAS CIRCULARES ───────────────────────────────── */
 
 .catCircleSection {
-  background: var(--color-white);
-  padding:    var(--space-4) 0;
+  margin:        var(--space-3) var(--space-4);
+  background:    var(--color-white);
+  border-radius: 16px;
+  box-shadow:    0 1px 6px rgba(0,0,0,0.07);
+  padding:       var(--space-4) 0 var(--space-3);
 }
 
 .catCircleHeader {

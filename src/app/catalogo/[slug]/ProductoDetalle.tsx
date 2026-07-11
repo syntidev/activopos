@@ -28,6 +28,7 @@ interface Props {
   rate:          number
   catalogUrl:    string
   relatedProducts: RelatedProduct[]
+  businessLogo:  string | null
 }
 
 function fmtUsd(n: number) {
@@ -42,8 +43,8 @@ function capitalize(s: string) {
 
 export function ProductoDetalle({
   name, description, images, categoryName, categoryColor,
-  priceUsd, priceBs, variants, businessPhone,
-  catalogUrl, rate, slug, relatedProducts,
+  priceUsd, priceBs, variants, businessPhone, businessName,
+  catalogUrl, rate, slug, relatedProducts, businessLogo,
 }: Props) {
   const [imageIndex,        setImageIndex]        = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
@@ -77,6 +78,20 @@ export function ProductoDetalle({
 
   return (
     <div className={styles.page}>
+
+      {/* Mini header del negocio */}
+      <header className={styles.productHeader}>
+        <Link href={catalogUrl} className={styles.productHeaderBrand}>
+          {businessLogo ? (
+            <img src={businessLogo} alt={businessName} className={styles.productHeaderLogo} />
+          ) : (
+            <span className={styles.productHeaderInitial}>
+              {businessName.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className={styles.productHeaderName}>{businessName}</span>
+        </Link>
+      </header>
 
       {/* Breadcrumb */}
       <nav className={styles.breadcrumb} aria-label="Navegación">
@@ -157,13 +172,6 @@ export function ProductoDetalle({
               <span className={styles.priceBs}>{fmtBs(effectivePriceBs)}</span>
             )}
           </div>
-
-          {description && (
-            <div className={styles.productDescSection}>
-              <h3 className={styles.productDescTitle}>Descripción</h3>
-              <p className={styles.productDescText}>{description}</p>
-            </div>
-          )}
 
           {/* Variantes */}
           {variantGroups.length > 0 && (
@@ -257,6 +265,13 @@ export function ProductoDetalle({
               <Share2 size={18} aria-hidden="true" />
             </button>
           </div>
+
+          {description && (
+            <div className={styles.productDescSection}>
+              <h3 className={styles.productDescTitle}>Descripción</h3>
+              <p className={styles.productDescText}>{description}</p>
+            </div>
+          )}
         </div>
       </div>
 

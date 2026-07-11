@@ -775,7 +775,11 @@ export function CatalogoGrid({
     <>
       {/* ── Sticky header ──────────────────────────────────────── */}
       <header ref={headerRef} className={styles.stickyHeader}>
-        <div className={styles.headerLogo}>
+        <Link
+          href={`/catalogo/${slug}`}
+          className={styles.headerLogo}
+          aria-label={`Ir al inicio de ${businessName}`}
+        >
           {businessLogo ? (
             <img
               src={businessLogo}
@@ -796,7 +800,7 @@ export function CatalogoGrid({
               <span className={styles.headerCity}>{businessCity}</span>
             )}
           </span>
-        </div>
+        </Link>
 
         <button
           type="button"
@@ -864,6 +868,11 @@ export function CatalogoGrid({
             >
               <Search size={18} aria-hidden="true" />
             </button>
+
+            <nav className={styles.desktopNav} aria-label="Navegación principal">
+              <Link href={`/catalogo/${slug}`} className={styles.desktopNavLink}>Inicio</Link>
+              <Link href={`/catalogo/${slug}/productos`} className={styles.desktopNavLink}>Catálogo</Link>
+            </nav>
 
             {(catalogMode === 'productos' || !browseMode) && (
               <div
@@ -1054,9 +1063,11 @@ export function CatalogoGrid({
       {catalogMode === 'home' && browseMode && (
         <section className={styles.heroBanner} aria-label="Presentación del negocio">
           {heroCover && (
-            <img src={heroCover} alt={businessName} className={styles.heroBannerImg} />
+            <>
+              <img src={heroCover} alt={businessName} className={styles.heroBannerImg} />
+              <div className={styles.heroOverlay} />
+            </>
           )}
-          <div className={styles.heroOverlay} />
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>{businessName}</h1>
             {businessDesc && (

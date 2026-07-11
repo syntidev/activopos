@@ -1,6 +1,6 @@
 .section {
   padding: 96px 0;
-  background: #FAFBFC;
+  background: var(--mkt-bg);
 }
 
 .container {
@@ -24,7 +24,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
+  gap: 24px;
 }
 
 @media (max-width: 860px) {
@@ -33,26 +33,18 @@
 
 .card {
   position: relative;
-  background: #FFFFFF;
-  border: 2px solid #0D1B2E;
-  border-radius: 0;
-  box-shadow: 4px 4px 0 #0038BD;
-  padding: 24px;
-  cursor: default;
+  border-radius: 20px;
+  padding: 32px 28px;
+  box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+  transition: box-shadow 200ms ease;
+}
+.card:hover {
+  box-shadow: 0 12px 28px rgba(47, 43, 61, 0.16), 0 0 1px rgba(47, 43, 61, 0.08);
 }
 
-.badge {
-  position: absolute;
-  top: -12px;
-  right: 16px;
-  background: #EF8E01;
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 4px 10px;
-  border-radius: 4px;
-}
+.card_vende    { background: var(--brand-soft); }
+.card_controla { background: var(--sand); }
+.card_entiende { background: var(--success-soft); }
 
 .iconWrap {
   display: inline-flex;
@@ -60,24 +52,27 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: #DCE6FF;
-  color: #0038BD;
+  background: #FFFFFF;
   border-radius: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
+
+.icon_vende    { color: var(--brand); }
+.icon_controla { color: var(--mkt-navy); }
+.icon_entiende { color: var(--success-text); }
 
 .cardTitle {
   font-family: var(--font-display);
-  font-size: 1.1875rem;
-  font-weight: 700;
+  font-size: 1.375rem;
+  font-weight: 800;
   color: #0D1B2E;
   letter-spacing: -0.01em;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .cardSub {
   font-family: var(--font-sans);
   font-size: 0.9375rem;
-  color: #64748B;
-  line-height: 1.55;
+  color: #475569;
+  line-height: 1.6;
 }

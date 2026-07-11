@@ -1,0 +1,58 @@
+.section {
+  padding: 72px 0;
+  background: var(--sand);
+}
+
+.container {
+  max-width: min(900px, 90vw);
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+  text-align: center;
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--sand-light);
+  color: var(--mkt-navy);
+  margin-bottom: 20px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 800;
+  color: #0D1B2E;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #78716C;
+  line-height: 1.6;
+  max-width: 46ch;
+  margin: 0 auto 32px;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.pill {
+  background: #FFFFFF;
+  color: var(--brand);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}

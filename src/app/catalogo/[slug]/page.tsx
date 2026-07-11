@@ -220,6 +220,11 @@ export default async function CatalogoPage({ params }: PageProps) {
         businessHours={business.catalog_hours ?? null}
         businessInstagram={business.catalog_instagram ?? null}
         heroCover={business.catalog_cover_path ?? null}
+        heroCovers={[
+          business.catalog_cover_path,
+          business.catalog_cover_path_2,
+          business.catalog_cover_path_3,
+        ].filter((x): x is string => Boolean(x))}
         businessLegalName={business.legal_name ?? null}
         businessRif={business.rif ?? null}
         businessAddress={business.address ?? null}

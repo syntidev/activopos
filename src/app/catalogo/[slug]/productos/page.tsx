@@ -46,6 +46,9 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       catalog_desc:            true,
       catalog_hours:           true,
       catalog_instagram:       true,
+      catalog_cover_path:      true,
+      catalog_cover_path_2:    true,
+      catalog_cover_path_3:    true,
       theme_color:             true,
       catalog_plan:            true,
       subscription_active:     true,
@@ -195,6 +198,11 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         businessHours={business.catalog_hours ?? null}
         businessInstagram={business.catalog_instagram ?? null}
         heroCover={null}
+        heroCovers={[
+          business.catalog_cover_path,
+          business.catalog_cover_path_2,
+          business.catalog_cover_path_3,
+        ].filter((x): x is string => Boolean(x))}
         businessLegalName={business.legal_name ?? null}
         businessRif={business.rif ?? null}
         businessAddress={business.address ?? null}

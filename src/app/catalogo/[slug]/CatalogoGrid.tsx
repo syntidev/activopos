@@ -89,6 +89,7 @@ interface Props {
   businessCity:   string | null
   businessDesc:   string | null
   heroCover?:     string | null
+  heroCovers?:    string[]
   businessHours:     string | null
   businessInstagram: string | null
   // Stub temporal CLI-A (Sprint 91) — CLI-B agrega el render en footer
@@ -176,6 +177,7 @@ export function CatalogoGrid({
   businessCity,
   businessDesc,
   heroCover,
+  heroCovers,
   businessHours,
   businessInstagram,
   catalogMode = 'home',
@@ -217,6 +219,7 @@ export function CatalogoGrid({
   const [variantError,    setVariantError]    = useState(false)
   const [selectedDim1,    setSelectedDim1]    = useState<string | null>(null)
   const [showBackTop,    setShowBackTop]    = useState(false)
+  const [heroIdx,        setHeroIdx]        = useState(0)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const nameRef   = useRef<HTMLInputElement>(null)
@@ -230,15 +233,6 @@ export function CatalogoGrid({
 
   const scrollToTop = () => {
     getScroller()?.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const scrollToProducts = () => {
-    const scroller = getScroller()
-    const target = scroller?.querySelector<HTMLElement>('[data-section="products"]')
-    if (scroller && target) {
-      const top = target.offsetTop - 116 // debajo del header sticky (≈112px)
-      scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
-    }
   }
 
   // Muestra "volver al inicio" tras bajar una pantalla
@@ -300,6 +294,14 @@ export function CatalogoGrid({
   }, [products, subcatContext])
 
   useEffect(() => { setActiveSub(null) }, [activeCategory])
+
+  // Auto-avance del slider del hero — pausa si solo hay 0-1 imagen
+  useEffect(() => {
+    const covers = heroCovers ?? (heroCover ? [heroCover] : [])
+    if (covers.length <= 1) return
+    const t = setInterval(() => setHeroIdx(i => (i + 1) % covers.length), 5000)
+    return () => clearInterval(t)
+  }, [heroCovers, heroCover])
 
   // Focus the search input when the lupa expands it
   useEffect(() => {
@@ -922,40 +924,7 @@ export function CatalogoGrid({
             {catMenuOpen && (
               <>
                 <div className={styles.catMenuBackdrop} onClick={() => setCatMenuOpen(false)} aria-hidden="true" />
-                <div className={styles.catMenuDropdown} role="menu" aria-label="Todas las categorías">
-                  <p className={styles.catMenuTitle}>Categorías</p>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className={styles.catMenuItem}
-                    onClick={() => { handleCatClick(null); setCatMenuOpen(false) }}
-                  >
-                    Todos
-                    <span className={styles.catMenuCount}>{products.length}</span>
-                  </button>
-                  {hasFeatured && (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className={styles.catMenuItem}
-                      onClick={() => { selectCategory(FEATURED_KEY); setCatMenuOpen(false) }}
-                    >
-                      Destacados
-                      <span className={styles.catMenuCount}>{products.filter(p => p.isFeatured).length}</span>
-                    </button>
-                  )}
-                  {categories.map(cat => (
-                    <button
-                      key={cat}
-                      type="button"
-                      role="menuitem"
-                      className={styles.catMenuItem}
-                      onClick={() => { handleCatClick(cat); setCatMenuOpen(false) }}
-                    >
-                      {cat}
-                      <span className={styles.catMenuCount}>{categoryCounts.get(cat) ?? 0}</span>
-                    </button>
-                  ))}
+                <div className={styles.catMenuDropdown} role="menu" aria-label="Menú">
                   <Link
                     href={`/catalogo/${slug}`}
                     role="menuitem"
@@ -970,7 +939,7 @@ export function CatalogoGrid({
                     className={styles.catMenuItem}
                     onClick={() => setCatMenuOpen(false)}
                   >
-                    Catálogo completo
+                    Catálogo
                   </Link>
                 </div>
               </>
@@ -1060,29 +1029,47 @@ export function CatalogoGrid({
       )}
 
       {/* ── Hero banner — solo en vista inicial (sin filtro ni búsqueda) ── */}
-      {catalogMode === 'home' && browseMode && (
-        <section className={styles.heroBanner} aria-label="Presentación del negocio">
-          {heroCover && (
-            <>
-              <img src={heroCover} alt={businessName} className={styles.heroBannerImg} />
-              <div className={styles.heroOverlay} />
-            </>
-          )}
-          <div className={styles.heroContent}>
-            <h1 className={styles.heroTitle}>{businessName}</h1>
-            {businessDesc && (
-              <p className={styles.heroDesc}>{businessDesc}</p>
+      {catalogMode === 'home' && browseMode && (() => {
+        const covers = heroCovers?.length ? heroCovers : heroCover ? [heroCover] : []
+        if (!covers.length) return (
+          <section className={styles.heroBanner}>
+            <div className={styles.heroOverlay} />
+            <div className={styles.heroContent}>
+              <h1 className={styles.heroTitle}>{businessName}</h1>
+              {businessDesc && <p className={styles.heroDesc}>{businessDesc}</p>}
+            </div>
+          </section>
+        )
+        return (
+          <section
+            className={`${styles.heroBanner} ${styles.heroBannerClickable}`}
+            role="region"
+            aria-label="Banner del negocio"
+            onClick={() => router.push(`/catalogo/${slug}/productos`)}
+          >
+            {covers.map((src, idx) => (
+              <img
+                key={src}
+                src={src}
+                alt={businessName}
+                className={`${styles.heroBannerImg} ${idx === heroIdx ? styles.heroBannerImgActive : styles.heroBannerImgHidden}`}
+                aria-hidden={idx !== heroIdx}
+              />
+            ))}
+            <div className={styles.heroOverlay} />
+            {covers.length > 1 && (
+              <div className={styles.heroDots} aria-hidden="true">
+                {covers.map((_, idx) => (
+                  <span
+                    key={idx}
+                    className={`${styles.heroDot} ${idx === heroIdx ? styles.heroDotActive : ''}`}
+                  />
+                ))}
+              </div>
             )}
-            <button
-              type="button"
-              className={styles.heroCtaBtn}
-              onClick={scrollToProducts}
-            >
-              Ver productos
-            </button>
-          </div>
-        </section>
-      )}
+          </section>
+        )
+      })()}
 
       {/* ── Categorías circulares — fila horizontal con scroll ──── */}
       {catalogMode === 'home' && browseMode && categories.length > 0 && (

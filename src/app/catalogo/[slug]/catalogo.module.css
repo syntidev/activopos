@@ -571,16 +571,6 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.catMenuTitle {
-  font-size:      var(--text-2xs);
-  font-weight:    var(--weight-semibold);
-  letter-spacing: var(--tracking-wider);
-  text-transform: uppercase;
-  color:          var(--color-text-muted);
-  padding:        var(--space-1) var(--space-4) var(--space-2);
-  margin:         0;
-}
-
 .catMenuItem {
   display:         flex;
   justify-content: space-between;
@@ -600,15 +590,6 @@
 .catMenuItem:hover {
   background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 8%, transparent);
   color:      var(--biz-color, var(--color-brand));
-}
-
-.catMenuCount {
-  flex-shrink:   0;
-  font-size:     var(--text-xs);
-  color:         var(--color-text-secondary);
-  background:    var(--color-surface-2);
-  border-radius: var(--radius-full);
-  padding:       2px var(--space-2);
 }
 
 /* Subcategory pills */
@@ -705,6 +686,50 @@
     rgba(0,0,0,0.15) 0%,
     rgba(0,0,0,0.55) 100%
   );
+}
+
+.heroBannerClickable { cursor: pointer; }
+
+.heroBannerImgActive {
+  opacity:    1;
+  transition: opacity 600ms ease;
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+}
+
+.heroBannerImgHidden {
+  opacity:    0;
+  transition: opacity 600ms ease;
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+}
+
+.heroDots {
+  position:  absolute;
+  bottom:    var(--space-4);
+  left:      50%;
+  transform: translateX(-50%);
+  display:   flex;
+  gap:       var(--space-2);
+  z-index:   3;
+}
+
+.heroDot {
+  width:         8px;
+  height:        8px;
+  border-radius: 50%;
+  background:    rgba(255,255,255,0.5);
+  transition:    background 300ms ease;
+}
+
+.heroDotActive {
+  background: #FFFFFF;
 }
 
 .heroContent {
@@ -2659,9 +2684,12 @@
    Relleno con el color del catálogo (--biz-color). */
 .backTopBtn {
   position:        fixed;
-  right:           var(--space-5);
-  bottom:          calc(max(var(--space-5), env(safe-area-inset-bottom, var(--space-5))) + 64px);
-  z-index:         var(--z-toast);
+  right:           var(--space-4);
+  /* +64px levanta el botón por encima del FAB de WhatsApp — bajarlo a
+     bottom:var(--space-6) sin este offset los solaparía, ambos ocupan
+     la misma esquina cuando carrito tiene items y hay scroll */
+  bottom:          calc(var(--space-6) + 64px);
+  z-index:         30;
   width:           44px;
   height:          44px;
   display:         flex;

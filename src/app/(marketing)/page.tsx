@@ -5,10 +5,8 @@ import TickerSection from '@/components/marketing/sections/TickerSection'
 import DifferentiatorsSection from '@/components/marketing/sections/DifferentiatorsSection'
 import PaymentMethodsSection from '@/components/marketing/sections/PaymentMethodsSection'
 import SegmentsSection from '@/components/marketing/sections/SegmentsSection'
-import SpecsSection from '@/components/marketing/sections/SpecsSection'
-import ProblemSection from '@/components/marketing/sections/ProblemSection'
-import ComparisonSection from '@/components/marketing/sections/ComparisonSection'
-import BCVSection from '@/components/marketing/sections/BCVSection'
+import FeatureTabsSection from '@/components/marketing/sections/FeatureTabsSection'
+import FinancialBrainSection from '@/components/marketing/sections/FinancialBrainSection'
 import EcosystemSection from '@/components/marketing/sections/EcosystemSection'
 import PricingSection from '@/components/marketing/sections/PricingSection'
 import TestimonialsSection from '@/components/marketing/sections/TestimonialsSection'
@@ -55,10 +53,8 @@ export default async function LandingPage() {
       <DifferentiatorsSection />
       <PaymentMethodsSection />
       <SegmentsSection />
-      <SpecsSection bcvRate={bcvRate} />
-      <ProblemSection />
-      <ComparisonSection />
-      <BCVSection bcvRate={bcvRate} />
+      <FeatureTabsSection />
+      <FinancialBrainSection bcvRate={bcvRate} />
       <EcosystemSection />
       <PricingSection />
       <TestimonialsSection />

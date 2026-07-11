@@ -1,0 +1,145 @@
+.section {
+  padding: 96px 0;
+  background: var(--mkt-bg);
+}
+
+.container {
+  max-width: min(1140px, 90vw);
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+@media (min-width: 860px) {
+  .container {
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+  }
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4.5vw, 40px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #0D1B2E;
+  text-wrap: balance;
+  margin: 0 0 16px;
+}
+
+.subtitle {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #475569;
+  max-width: 46ch;
+  margin: 0 0 20px;
+}
+
+.bcvPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 9999px;
+}
+
+/* ── "El cerebro" ── */
+.brain {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.monthCard {
+  background: var(--brand);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.monthLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.monthTotal {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.monthUsd {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.monthBs {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.monthSub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.68);
+  margin-top: 2px;
+}
+
+.confirmCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--success-soft);
+  color: var(--success-text);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 14px 18px;
+  border-radius: 14px;
+}
+
+.miniRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.miniCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+}
+
+.miniIcon {
+  color: var(--brand);
+  margin-bottom: 2px;
+}
+
+.miniLabel {
+  font-size: 12px;
+  color: #64748B;
+}
+
+.miniValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0D1B2E;
+}

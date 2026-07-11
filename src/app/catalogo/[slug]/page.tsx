@@ -36,6 +36,8 @@ async function getBusiness(slug: string) {
       catalog_hours:     true,
       catalog_instagram: true,
       catalog_cover_path: true,
+      catalog_cover_path_2: true,
+      catalog_cover_path_3: true,
       theme_color:   true,
       catalog_plan:            true,
       subscription_active:     true,

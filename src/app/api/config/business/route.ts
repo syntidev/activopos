@@ -43,6 +43,19 @@ const PatchSchema = z.object({
     ), 'Path inválido')
     .nullable()
     .optional(),
+  // Slider de hasta 3 banners — mismo guard anti cross-tenant que catalog_cover_path.
+  catalog_cover_path_2: z.string()
+    .refine(v => v === null || (
+      !v.includes('..') && !v.includes('\0') && v.startsWith('/storage/tenants/')
+    ), 'Path inválido')
+    .nullable()
+    .optional(),
+  catalog_cover_path_3: z.string()
+    .refine(v => v === null || (
+      !v.includes('..') && !v.includes('\0') && v.startsWith('/storage/tenants/')
+    ), 'Path inválido')
+    .nullable()
+    .optional(),
 })
 
 export async function GET() {
@@ -75,6 +88,8 @@ export async function GET() {
       catalog_instagram: true,
       catalog_hours: true,
       catalog_cover_path: true,
+      catalog_cover_path_2: true,
+      catalog_cover_path_3: true,
     },
   })
 
@@ -112,6 +127,14 @@ export async function PATCH(request: Request) {
   // El refine ya bloqueó '..'/'\0' y exigió /storage/tenants/; aquí se ata al caller.
   if (businessFields.catalog_cover_path != null &&
       !businessFields.catalog_cover_path.startsWith(`/storage/tenants/${session.businessId}/`)) {
+    return NextResponse.json({ error: 'Ruta de portada inválida' }, { status: 400 })
+  }
+  if (businessFields.catalog_cover_path_2 != null &&
+      !businessFields.catalog_cover_path_2.startsWith(`/storage/tenants/${session.businessId}/`)) {
+    return NextResponse.json({ error: 'Ruta de portada inválida' }, { status: 400 })
+  }
+  if (businessFields.catalog_cover_path_3 != null &&
+      !businessFields.catalog_cover_path_3.startsWith(`/storage/tenants/${session.businessId}/`)) {
     return NextResponse.json({ error: 'Ruta de portada inválida' }, { status: 400 })
   }
 

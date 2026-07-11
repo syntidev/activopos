@@ -9,6 +9,8 @@
 :root {
   /* ── Marketing — Landing page specifics ── */
   --navy:               #1E3A5F;
+  --sand:               #FBF3E7;
+  --sand-light:         #FFEBC2;
 
   /* ── Marketing SEO segment landings (Linear/Stripe-calm) ── */
   --mkt-bg:             #F4F6FB;

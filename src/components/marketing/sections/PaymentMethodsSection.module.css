@@ -1,6 +1,6 @@
 .section {
   padding: 72px 0;
-  background: var(--sand);
+  background: var(--success-light);
 }
 
 .container {
@@ -17,8 +17,8 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: var(--sand-light);
-  color: var(--mkt-navy);
+  background: #FFFFFF;
+  color: var(--success);
   margin-bottom: 20px;
 }
 
@@ -49,7 +49,7 @@
 
 .pill {
   background: #FFFFFF;
-  color: var(--brand);
+  color: var(--success);
   font-size: 14px;
   font-weight: 600;
   padding: 10px 20px;

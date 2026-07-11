@@ -26,8 +26,9 @@ export default function TickerSection() {
       <div className={styles.track} aria-hidden>
         {doubled.map(({ icon: Icon, text }, i) => (
           <span key={i} className={styles.item}>
-            <Icon size={12} />
+            <Icon size={12} aria-hidden="true" />
             {text}
+            <span className={styles.sep} aria-hidden="true">·</span>
           </span>
         ))}
       </div>

@@ -99,6 +99,7 @@
   /* SUCCESS = verde real (#16A34A) — diferente al brand teal — WCAG AA */
   --success:            #16A34A;
   --success-soft:       #F0FDF4;
+  --success-light:      #EAF3DE;
   --success-text:       #15803D;
   --success-rgb:        22, 163, 74;
 

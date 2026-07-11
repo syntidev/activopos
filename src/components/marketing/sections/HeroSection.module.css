@@ -110,21 +110,19 @@
   position: relative;
   z-index: 1;
   width: min(340px, 100%);
-  background: #FFFFFF;
+  background: radial-gradient(circle at 20% 20%, var(--brand-l) 0%, var(--brand) 80%);
   border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  padding: 22px;
+  box-shadow: 0 12px 32px rgba(0, 56, 189, 0.25);
 }
 
 .dayCardHead {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--brand);
+  color: #FFFFFF;
   margin-bottom: 16px;
 }
 
@@ -146,17 +144,17 @@
   font-family: var(--font-display);
   font-size: 34px;
   font-weight: 800;
-  color: #0D1B2E;
+  color: #FFFFFF;
 }
 
 .dayCardBs {
   font-size: 13px;
-  color: #64748B;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .dayCardLabel {
   font-size: 13px;
-  color: #64748B;
+  color: rgba(255, 255, 255, 0.75);
   margin: 0 0 16px;
 }
 
@@ -178,7 +176,7 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #94A3B8;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* ── Curva de transición — único punto de apertura de Navy (§1, §7) ── */

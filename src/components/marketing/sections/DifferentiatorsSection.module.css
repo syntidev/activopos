@@ -33,8 +33,9 @@
 
 .card {
   position: relative;
+  min-height: 180px;
   border-radius: 20px;
-  padding: 32px 28px;
+  padding: 24px;
   box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
   transition: box-shadow 200ms ease;
 }
@@ -42,18 +43,24 @@
   box-shadow: 0 12px 28px rgba(47, 43, 61, 0.16), 0 0 1px rgba(47, 43, 61, 0.08);
 }
 
-.card_vende    { background: var(--brand-soft); }
-.card_controla { background: var(--sand); }
-.card_entiende { background: var(--success-soft); }
+.card_vende {
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.65) 0%, transparent 55%), var(--brand-soft);
+}
+.card_controla {
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.65) 0%, transparent 55%), var(--sand);
+}
+.card_entiende {
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.65) 0%, transparent 55%), var(--success-soft);
+}
 
 .iconWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   background: #FFFFFF;
-  border-radius: 12px;
+  border-radius: 10px;
   margin-bottom: 20px;
 }
 
@@ -63,8 +70,8 @@
 
 .cardTitle {
   font-family: var(--font-display);
-  font-size: 1.375rem;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   color: #0D1B2E;
   letter-spacing: -0.01em;
   margin-bottom: 10px;
@@ -72,7 +79,7 @@
 
 .cardSub {
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
+  font-size: 13px;
   color: #475569;
-  line-height: 1.6;
+  line-height: 1.5;
 }

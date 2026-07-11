@@ -30,7 +30,8 @@
 }
 
 .card {
-  --seg-accent: var(--brand);
+  --seg-bg: var(--brand-soft);
+  --seg-icon: var(--brand);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -54,8 +55,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--seg-accent) 18%, white);
-  color: var(--seg-accent);
+  background: var(--seg-bg);
+  color: var(--seg-icon);
   margin-bottom: 8px;
 }
 

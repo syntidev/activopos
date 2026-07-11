@@ -6,27 +6,31 @@ import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './SegmentsSection.module.css'
 
 interface ApiSegment {
-  slug:      string
-  name:      string
-  tag_line:  string
-  theme_key: string
+  slug:     string
+  name:     string
+  tag_line: string
 }
 
-// Acento visual por theme_key — mismo set de 10 colores ya sellado en
-// tokens.css (#dashboard-root[data-color="..."] → --color-brand), reusado
-// aquí vía CSS var inline (mismo patrón que --biz-color en el catálogo
-// público) porque esos bloques están scoped a #dashboard-root, no a marketing.
-const THEME_ACCENT: Record<string, string> = {
-  'azul-sereno':   '#60A5FA',
-  amanecer:        '#FB923C',
-  aguamarina:      '#34D399',
-  medianoche:      '#818CF8',
-  'tierra-dorada': '#FCD34D',
-  'brasa-viva':    '#FB7185',
-  'cielo-abierto': '#7DD3FC',
-  'menta-fresca':  '#6EE7B7',
-  champan:         '#E9D5A1',
-  jardin:          '#86EFAC',
+interface SegmentAccent {
+  bg:   string
+  icon: string
+}
+
+// Acento visual por slug de segmento (mismo slug que usa SegmentIcon),
+// no por theme_key — cada segmento necesita su propio color, incluso
+// cuando comparte theme_key con otro (ej. ferreterias/repuestos ambos
+// "ferreteria"). Vía CSS var inline, mismo patrón que --biz-color en el
+// catálogo público.
+const SEGMENT_ACCENT: Record<string, SegmentAccent> = {
+  carniceria:     { bg: '#FAECE7', icon: '#993C1D' },
+  restaurante:    { bg: '#FCEBEB', icon: '#A32D2D' },
+  ferreterias:    { bg: '#FAEEDA', icon: '#854F0B' },
+  farmacias:      { bg: '#E1F5EE', icon: '#0F6E56' },
+  'tiendas-ropa': { bg: '#FBEAF0', icon: '#993556' },
+  abastos:        { bg: '#DCE6FF', icon: '#0038BD' },
+  tecnologia:     { bg: '#E1F5EE', icon: '#0F6E56' },
+  repuestos:      { bg: '#FAEEDA', icon: '#854F0B' },
+  servicios:      { bg: '#EEEDFE', icon: '#3C3489' },
 }
 
 // Server Component — fetch al propio endpoint público en vez de Prisma directo
@@ -57,8 +61,10 @@ export default async function SegmentsSection() {
           <>
             <div className={styles.grid}>
               {segments.map(seg => {
-                const accent = THEME_ACCENT[seg.theme_key]
-                const cardStyle = accent ? ({ '--seg-accent': accent } as CSSProperties) : undefined
+                const accent = SEGMENT_ACCENT[seg.slug]
+                const cardStyle = accent
+                  ? ({ '--seg-bg': accent.bg, '--seg-icon': accent.icon } as CSSProperties)
+                  : undefined
                 return (
                   <Link
                     key={seg.slug}

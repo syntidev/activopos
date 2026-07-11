@@ -853,3 +853,19 @@
   --border-positive: #86EFAC;
   --color-brand: #86EFAC;
 }
+
+/* ── Marketing — Segment.theme_key acento (SegmentHero, /para-[slug]) ──
+   --seg-accent/--seg-bg por theme_key real (prisma/seeds/marketing.ts).
+   Fallback en :root para theme_key desconocido. */
+:root {
+  --seg-accent: var(--brand);
+  --seg-bg:     var(--brand-soft);
+}
+[data-theme="calle"]       { --seg-accent: #993C1D; --seg-bg: #FAECE7; }
+[data-theme="restaurante"] { --seg-accent: #A32D2D; --seg-bg: #FCEBEB; }
+[data-theme="ferreteria"]  { --seg-accent: #854F0B; --seg-bg: #FAEEDA; }
+[data-theme="farmacia"]    { --seg-accent: #0F6E56; --seg-bg: #E1F5EE; }
+[data-theme="clinica"]     { --seg-accent: #0F6E56; --seg-bg: #E1F5EE; }
+[data-theme="joyeria"]     { --seg-accent: #993556; --seg-bg: #FBEAF0; }
+[data-theme="tropical"]    { --seg-accent: #0F6E56; --seg-bg: #E1F5EE; }
+[data-theme="oficina"]     { --seg-accent: #3C3489; --seg-bg: #EEEDFE; }

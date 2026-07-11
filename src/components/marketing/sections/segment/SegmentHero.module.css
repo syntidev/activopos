@@ -13,29 +13,36 @@
   align-items: center;
 }
 
+.eyebrow {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  margin-bottom: 18px;
+}
+
 .headline {
   font-family:    var(--font-display);
   font-weight:    800;
-  font-size:      52px;
-  line-height:    1.06;
+  font-size:      44px;
+  line-height:    1.1;
   letter-spacing: -0.02em;
   color:          #FFFFFF;
   margin:         0 0 18px;
   text-wrap:      balance;
 }
 
-.headlineAccent {
-  display: block;
-  color:   var(--cta, #EF8E01);
-}
-
 .subheadline {
-  font-family: var(--font-sans);
-  font-size:   20px;
-  line-height: 1.5;
-  color:       var(--mkt-text-3);
+  font-size:   17px;
+  line-height: 1.55;
+  color:       rgba(255, 255, 255, 0.72);
   margin:      0 0 32px;
-  max-width:   34ch;
+  max-width:   38ch;
 }
 
 .actions {
@@ -48,68 +55,104 @@
 .ctaGhost {
   display:         inline-flex;
   align-items:     center;
-  justify-content: center;
+  gap:             8px;
   height:          52px;
   padding:         0 26px;
   border-radius:   12px;
-  font-family:     var(--font-sans);
-  font-size:       16px;
+  font-size:       15px;
   font-weight:     600;
   text-decoration: none;
-  transition:      transform 150ms ease, background 150ms ease, opacity 150ms ease;
+  transition:      transform 150ms ease, background 150ms ease;
 }
 
 .ctaPrimary {
   background: var(--cta);
   color:      #FFFFFF;
-  box-shadow: var(--lp-cta-glow);
 }
 .ctaPrimary:hover { background: var(--cta-hover); transform: translateY(-1px); }
 
 .ctaGhost {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
   color:      #FFFFFF;
-  border:     1px solid rgba(255, 255, 255, 0.28);
+  border:     1.5px solid rgba(255, 255, 255, 0.22);
 }
-.ctaGhost:hover { background: rgba(255, 255, 255, 0.08); }
+.ctaGhost:hover { background: rgba(255, 255, 255, 0.12); }
 
+/* ── Media — foto/fallback + mockup superpuesto + badge flotante ── */
 .media {
   position: relative;
 }
 
-.mediaImg {
+.mediaImg,
+.mediaFallback {
   width:         100%;
-  height:        auto;
-  border-radius: 16px;
+  aspect-ratio:  4 / 3;
+  border-radius: 20px;
   display:       block;
-  box-shadow:    var(--lp-shadow-demo);
+  object-fit:    cover;
+  box-shadow:    0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
-.mediaPlaceholder {
-  aspect-ratio:    3 / 2;
-  border-radius:   16px;
-  background:      linear-gradient(135deg, #16273f 0%, #0d1b2e 100%);
-  border:          1px solid rgba(255, 255, 255, 0.08);
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  box-shadow:      var(--lp-shadow-demo);
+.mediaFallback {
+  background: radial-gradient(circle at 25% 20%, var(--seg-accent) 0%, var(--seg-bg) 85%);
 }
 
-.mediaMark {
-  font-family:    var(--font-display);
-  font-weight:    800;
-  font-size:      28px;
-  letter-spacing: -0.02em;
-  color:          rgba(255, 255, 255, 0.18);
+.mockCard {
+  position: absolute;
+  left: -20px;
+  bottom: -20px;
+  width: 200px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mockDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.mockName {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: #0D1B2E;
+}
+
+.mockLine,
+.mockLineShort {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--mkt-bg-alt);
+}
+.mockLineShort { width: 60%; }
+
+.priceBadge {
+  position: absolute;
+  top: -16px;
+  right: -12px;
+  background: var(--cta);
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  box-shadow: 0 8px 20px rgba(239, 142, 1, 0.4);
 }
 
 @media (max-width: 860px) {
   .hero  { padding: 56px 20px; }
-  .inner { grid-template-columns: 1fr; gap: 36px; }
-  .headline { font-size: 36px; }
-  .subheadline { font-size: 18px; }
+  .inner { grid-template-columns: 1fr; gap: 44px; }
+  .headline { font-size: 34px; }
+  .subheadline { font-size: 16px; }
   .ctaPrimary, .ctaGhost { flex: 1; }
+  .mockCard { left: 12px; bottom: -16px; width: 170px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

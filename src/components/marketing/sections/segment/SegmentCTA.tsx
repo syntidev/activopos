@@ -4,6 +4,9 @@ import styles from './SegmentCTA.module.css'
 export default function SegmentCTA({ segmentName }: { segmentName: string }) {
   return (
     <section className={styles.section}>
+      <svg className={styles.curve} viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0,110 C480,0 960,0 1440,110 L1440,0 L0,0 Z" fill="var(--mkt-bg)" />
+      </svg>
       <div className={styles.inner}>
         <h2 className={styles.headline}>
           Tu {segmentName} merece un sistema que trabaje como tú.

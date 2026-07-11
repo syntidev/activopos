@@ -1,28 +1,30 @@
 import Link from 'next/link'
+import { MessageCircle, UserPlus } from 'lucide-react'
 import type { SegmentData } from '@/types/marketing'
-import RotatingBadge from '@/components/marketing/shared/RotatingBadge'
 import styles from './SegmentHero.module.css'
 
 export default function SegmentHero({ segment }: { segment: SegmentData }) {
   return (
-    <section className={styles.hero}>
+    <section className={styles.hero} data-theme={segment.theme_key}>
       <div className={styles.inner}>
         <div className={styles.copy}>
-          <RotatingBadge />
-          <h1 className={styles.headline}>
-            {segment.headline}
-            {segment.tag_line && (
-              <span className={styles.headlineAccent}>{segment.tag_line}</span>
-            )}
-          </h1>
+          {segment.tag_line && <span className={styles.eyebrow}>{segment.tag_line}</span>}
+          <h1 className={styles.headline}>{segment.headline}</h1>
           <p className={styles.subheadline}>{segment.subheadline}</p>
           <div className={styles.actions}>
             <Link href="/registro" className={styles.ctaPrimary}>
+              <UserPlus size={17} aria-hidden="true" />
               Crear cuenta gratis
             </Link>
-            <Link href="/catalogo/demo" className={styles.ctaGhost}>
+            <a
+              href="https://wa.me/584222654827?text=Hola%2C+quiero+ver+ActivoPOS+en+acci%C3%B3n"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.ctaGhost}
+            >
+              <MessageCircle size={16} aria-hidden="true" />
               Ver demostración
-            </Link>
+            </a>
           </div>
         </div>
 
@@ -36,10 +38,17 @@ export default function SegmentHero({ segment }: { segment: SegmentData }) {
               height={420}
             />
           ) : (
-            <div className={styles.mediaPlaceholder} aria-hidden="true">
-              <span className={styles.mediaMark}>ActivoPOS</span>
-            </div>
+            <div className={styles.mediaFallback} aria-hidden="true" />
           )}
+
+          <div className={styles.mockCard}>
+            <span className={styles.mockDot} />
+            <span className={styles.mockName}>{segment.name}</span>
+            <span className={styles.mockLine} />
+            <span className={styles.mockLineShort} />
+          </div>
+
+          <span className={styles.priceBadge}>Desde $9/mes</span>
         </div>
       </div>
     </section>

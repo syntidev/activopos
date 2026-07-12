@@ -47,6 +47,9 @@ export async function generateMetadata(
   if (!SLUG_RE.test(slug)) return {}
   const segment = await getSegment(slug)
   if (!segment) return {}
+  const ogImages = segment.hero_image
+    ? [{ url: segment.hero_image, width: 1280, height: 840, alt: `ActivoPOS para ${segment.name}` }]
+    : [{ url: '/og-image.png', width: 1200, height: 630, alt: 'ActivoPOS' }]
   return {
     title:       segment.meta_title,
     description: segment.meta_description,
@@ -56,6 +59,13 @@ export async function generateMetadata(
       description: segment.meta_description,
       locale:      'es_VE',
       type:        'website',
+      images:      ogImages,
+    },
+    twitter: {
+      card:        'summary_large_image',
+      title:       segment.meta_title,
+      description: segment.meta_description,
+      images:      ogImages.map(i => i.url),
     },
   }
 }

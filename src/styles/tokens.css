@@ -47,7 +47,9 @@
   --lp-text-body:       #64748B;
   --lp-text-muted:      #94A3B8;
   --lp-border-light:    rgba(0, 56, 189, 0.10);
-  --lp-shadow-card:     0 2px 12px rgba(0, 0, 0, 0.06);
+  /* Sprint P — alineado a la elevación estándar del rediseño Bento cálido
+     (mismo valor usado en HeroSection/DifferentiatorsSection/etc). */
+  --lp-shadow-card:     0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
 
   /* Success invariant — (marketing)/layout.tsx fuerza data-theme="dark" en
      TODA página de marketing (Sprint I), y --success/-soft/-text SÍ están
@@ -57,7 +59,7 @@
   --lp-success-soft:    #F0FDF4;
   --lp-success-text:    #15803D;
   --lp-success-rgb:     22, 163, 74;
-  --lp-shadow-hover:    0 8px 24px rgba(0, 56, 189, 0.10);
+  --lp-shadow-hover:    0 12px 28px rgba(47, 43, 61, 0.16), 0 0 1px rgba(47, 43, 61, 0.08);
 
   /* ── Brand — Persian Blue (#0038BD) ── */
   --brand-l:            #4D7AFF;

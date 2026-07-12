@@ -7,7 +7,7 @@
 /* ── Hero — light, matches landing hero ─────────────────── */
 
 .hero {
-  background: var(--mkt-section-a);
+  background: var(--mkt-bg);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(3rem, 6vw, 4rem);
   border-bottom: 1px solid var(--mkt-border);
 }
@@ -99,16 +99,14 @@
 
 .item {
   background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
   box-shadow: var(--lp-shadow-card);
-  transition: border-color 200ms ease, box-shadow 200ms ease;
+  transition: box-shadow 200ms ease;
 }
 
 .item:hover,
 .item[open] {
-  border-color: var(--brand);
   box-shadow: var(--lp-shadow-hover);
 }
 
@@ -166,15 +164,13 @@
 .cta {
   margin-top: 4rem;
   padding: 2rem 2.5rem;
-  background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  background: var(--brand-soft);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
   flex-wrap: wrap;
-  box-shadow: var(--lp-shadow-card);
 }
 
 .ctaContent {}

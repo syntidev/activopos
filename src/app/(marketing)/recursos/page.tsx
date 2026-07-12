@@ -62,7 +62,7 @@ export default async function RecursosPage() {
           <h2 className={styles.sectionTitle}>Planes y precios</h2>
           <div className={styles.planGrid}>
             {plans.map(plan => (
-              <Link key={plan.key} href="/#pricing" className={styles.planCard}>
+              <Link key={plan.key} href="/planes" className={styles.planCard}>
                 <span className={styles.planName}>{plan.name}</span>
                 <span className={styles.planPrice}>${plan.price_usd}<span className={styles.planPer}>/mes</span></span>
               </Link>

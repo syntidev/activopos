@@ -1,9 +1,25 @@
 import type { Metadata } from 'next'
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { Store } from 'lucide-react'
 import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './page.module.css'
+
+// Mismo acento por slug ya usado en SegmentsSection.tsx (home) — 9 pares
+// de hex aprobados, no theme_key (theme_key se comparte entre segmentos
+// distintos, ej. ferreterias/repuestos ambos "ferreteria").
+const SEGMENT_ACCENT: Record<string, { bg: string; icon: string }> = {
+  carniceria:     { bg: '#FAECE7', icon: '#993C1D' },
+  restaurante:    { bg: '#FCEBEB', icon: '#A32D2D' },
+  ferreterias:    { bg: '#FAEEDA', icon: '#854F0B' },
+  farmacias:      { bg: '#E1F5EE', icon: '#0F6E56' },
+  'tiendas-ropa': { bg: '#FBEAF0', icon: '#993556' },
+  abastos:        { bg: '#DCE6FF', icon: '#0038BD' },
+  tecnologia:     { bg: '#E1F5EE', icon: '#0F6E56' },
+  repuestos:      { bg: '#FAEEDA', icon: '#854F0B' },
+  servicios:      { bg: '#EEEDFE', icon: '#3C3489' },
+}
 
 export const revalidate = 3600
 
@@ -57,15 +73,21 @@ export default async function SegmentosPage() {
       <section className={styles.section}>
         <RevealSection>
           <div className={styles.grid}>
-            {segments.map(seg => (
-              <Link key={seg.slug} href={`/para-${seg.slug}`} className={styles.card}>
-                <span className={styles.iconWrap} aria-hidden="true">
-                  <SegmentIcon slug={seg.slug} size={26} />
-                </span>
-                <span className={styles.name}>{seg.name}</span>
-                <span className={styles.tagLine}>{seg.tag_line}</span>
-              </Link>
-            ))}
+            {segments.map(seg => {
+              const accent = SEGMENT_ACCENT[seg.slug]
+              const cardStyle = accent
+                ? ({ '--seg-bg': accent.bg, '--seg-icon': accent.icon } as CSSProperties)
+                : undefined
+              return (
+                <Link key={seg.slug} href={`/para-${seg.slug}`} className={styles.card} style={cardStyle}>
+                  <span className={styles.iconWrap} aria-hidden="true">
+                    <SegmentIcon slug={seg.slug} size={26} />
+                  </span>
+                  <span className={styles.name}>{seg.name}</span>
+                  <span className={styles.tagLine}>{seg.tag_line}</span>
+                </Link>
+              )
+            })}
             <Link href="/registro" className={`${styles.card} ${styles.cardGeneric}`}>
               <span className={styles.iconWrap} aria-hidden="true">
                 <Store size={26} strokeWidth={1.5} />

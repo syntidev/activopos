@@ -1,7 +1,7 @@
 .page {
   min-height: calc(100vh - 64px);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(4rem, 8vw, 6rem);
-  background: var(--mkt-section-a);
+  background: var(--mkt-bg);
 }
 
 .inner {
@@ -50,7 +50,7 @@
   border-radius: 16px;
 }
 
-.sectionA { background: var(--mkt-section-a); }
+.sectionA { background: var(--mkt-bg); }
 .sectionB { background: var(--mkt-section-b); }
 
 .sectionTitle {
@@ -71,13 +71,12 @@
 .step {
   padding: 1.5rem;
   background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: var(--lp-shadow-card);
-  transition: border-color 200ms ease;
+  transition: box-shadow 200ms ease;
 }
 
-.step:hover { border-color: var(--brand); }
+.step:hover { box-shadow: var(--lp-shadow-hover); }
 
 .stepNum {
   font-family: var(--font-display, 'Fraunces', serif);
@@ -114,14 +113,13 @@
 
 .faqItem {
   background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
   box-shadow: var(--lp-shadow-card);
-  transition: border-color 200ms ease;
+  transition: box-shadow 200ms ease;
 }
 
-.faqItem:hover { border-color: var(--brand); }
+.faqItem:hover { box-shadow: var(--lp-shadow-hover); }
 
 .faqQ {
   display: flex;
@@ -196,13 +194,12 @@
 .tabCard {
   padding: 1.375rem;
   background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: var(--lp-shadow-card);
-  transition: border-color 200ms ease;
+  transition: box-shadow 200ms ease;
 }
 
-.tabCard:hover { border-color: var(--brand); }
+.tabCard:hover { box-shadow: var(--lp-shadow-hover); }
 
 .tabCardIcon {
   width: 36px;
@@ -236,9 +233,8 @@
 .ctaBlock {
   margin-top: 3rem;
   padding: 2rem;
-  background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 14px;
+  background: var(--brand-soft);
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;

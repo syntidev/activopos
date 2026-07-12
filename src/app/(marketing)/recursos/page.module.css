@@ -1,8 +1,8 @@
-.page { background: var(--mkt-section-a); }
+.page { background: var(--mkt-bg); }
 
 .hero {
-  background: var(--mkt-section-a);
-  padding: 80px 5vw;
+  background: var(--mkt-bg);
+  padding: 96px 5vw;
   text-align: center;
 }
 
@@ -21,7 +21,7 @@
 }
 
 .section {
-  padding: 64px 5vw;
+  padding: 96px 5vw;
   background: var(--mkt-section-b);
 }
 
@@ -52,15 +52,15 @@
   gap: 6px;
   padding: 20px;
   background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: 20px;
+  box-shadow: var(--lp-shadow-card);
   text-decoration: none;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .segmentCard:hover {
-  box-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.10);
-  border-color: var(--brand);
+  box-shadow: var(--lp-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .segName { font-size: 15px; font-weight: 700; color: var(--mkt-navy); }
@@ -75,15 +75,15 @@
   gap: 8px;
   padding: 28px;
   background: var(--mkt-card);
-  border: 1px solid var(--mkt-border);
-  border-radius: 12px;
+  border-radius: 20px;
+  box-shadow: var(--lp-shadow-card);
   text-decoration: none;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .planCard:hover {
-  box-shadow: 0 4px 16px rgba(var(--brand-rgb), 0.10);
-  border-color: var(--brand);
+  box-shadow: var(--lp-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .planName { font-size: 16px; font-weight: 700; color: var(--mkt-navy); }
@@ -91,8 +91,8 @@
 .planPer { font-size: 16px; font-weight: 400; color: var(--mkt-text-3); }
 
 .ctaSection {
-  background: var(--mkt-section-a);
-  padding: 80px 5vw;
+  background: var(--mkt-bg);
+  padding: 96px 5vw;
   text-align: center;
 }
 

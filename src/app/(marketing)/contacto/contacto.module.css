@@ -86,6 +86,16 @@
   box-shadow: var(--lp-shadow-hover);
 }
 
+/* Canal preferido (WhatsApp) — bloque de color con propósito: respuesta más
+   rápida, se distingue visualmente de los otros 2 canales neutros. */
+.channelFeatured {
+  background: var(--brand-soft);
+  box-shadow: none;
+}
+.channelFeatured:hover {
+  box-shadow: 0 8px 20px rgba(0, 56, 189, 0.12);
+}
+
 .channelIcon {
   width: 36px;
   height: 36px;

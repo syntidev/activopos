@@ -67,18 +67,20 @@ export default function ContactoPage() {
                   </>
                 )
 
+                const cardClass = `${styles.channel} ${variant === 'whatsapp' ? styles.channelFeatured : ''}`
+
                 return href ? (
                   <a
                     key={name}
                     href={href}
-                    className={styles.channel}
+                    className={cardClass}
                     target={href.startsWith('http') ? '_blank' : undefined}
                     rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
                   >
                     {inner}
                   </a>
                 ) : (
-                  <div key={name} className={styles.channel}>{inner}</div>
+                  <div key={name} className={cardClass}>{inner}</div>
                 )
               })}
             </div>

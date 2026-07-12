@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth'
 import { getBcvRate } from '@/lib/bcv'
 import { CatalogoGrid } from '../CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from '../CatalogoGrid'
+import { CatalogFooter } from '../CatalogFooter'
 import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
 import styles from '../catalogo.module.css'
 
@@ -208,6 +209,18 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         businessAddress={business.address ?? null}
         catalogMode="productos"
         initialCategory={searchParams.categoria ?? null}
+      />
+      <CatalogFooter
+        displayTitle={displayTitle}
+        logoPath={business.logo_path}
+        catalogDesc={business.catalog_desc ?? null}
+        rif={business.rif ?? null}
+        address={business.address ?? null}
+        location={location}
+        waPhone={waPhone}
+        phone={business.phone}
+        catalogInstagram={business.catalog_instagram ?? null}
+        catalogHours={business.catalog_hours ?? null}
       />
     </div>
   )

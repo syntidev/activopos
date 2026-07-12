@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getBcvRate } from '@/lib/bcv'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { ProductoDetalle } from '../../ProductoDetalle'
+import { CatalogFooter } from '../../CatalogFooter'
 import styles from '../../catalogo.module.css'
 
 interface PageProps {
@@ -54,6 +55,8 @@ export default async function ProductoPage({ params }: PageProps) {
     select: {
       id: true, name: true, phone: true, theme_color: true, logo_path: true,
       catalog_plan: true, subscription_active: true, subscription_expires_at: true,
+      city: true, state: true, catalog_desc: true, catalog_instagram: true,
+      catalog_hours: true, legal_name: true, rif: true, address: true,
     },
   })
   if (!business || !isCatalogLive(business)) notFound()
@@ -83,6 +86,7 @@ export default async function ProductoPage({ params }: PageProps) {
   const imgs      = parseImages(product.images)
   const priceUsd  = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
   const priceBs   = priceUsd > 0 ? priceUsd * rate : null
+  const location  = [business.city, business.state].filter(Boolean).join(', ')
 
   const relatedRaw = await prisma.product.findMany({
     where: {
@@ -142,6 +146,18 @@ export default async function ProductoPage({ params }: PageProps) {
         catalogUrl={`/catalogo/${params.slug}`}
         relatedProducts={relatedProducts}
         businessLogo={business.logo_path}
+      />
+      <CatalogFooter
+        displayTitle={business.name}
+        logoPath={business.logo_path}
+        catalogDesc={business.catalog_desc ?? null}
+        rif={business.rif ?? null}
+        address={business.address ?? null}
+        location={location}
+        waPhone={business.phone?.replace(/\D/g, '') ?? ''}
+        phone={business.phone}
+        catalogInstagram={business.catalog_instagram ?? null}
+        catalogHours={business.catalog_hours ?? null}
       />
     </div>
   )

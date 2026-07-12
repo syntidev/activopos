@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronDown, Beef, Utensils, Wrench, Pill, Shirt, ShoppingBasket, Monitor,
   Car, Briefcase, Coffee, Apple, PawPrint, BookOpen, Sparkles, Sofa, Wind,
-  Dumbbell, Package, Wine, Glasses, Gamepad2, Cpu, Store, type LucideIcon,
+  Dumbbell, Package, Wine, Glasses, Gamepad2, Cpu, Store, Sandwich, Gem,
+  FileText, type LucideIcon,
 } from 'lucide-react'
 import styles from './SegmentsMenu.module.css'
 
@@ -39,6 +40,9 @@ const SEGMENT_ICON: Record<string, LucideIcon> = {
   optica:       Glasses,
   jugueteria:   Gamepad2,
   electronica:  Cpu,
+  'comida-rapida':     Sandwich,
+  bisuteria:           Gem,
+  'gestoria-tramites': FileText,
 }
 
 const iconBoxVariants = {

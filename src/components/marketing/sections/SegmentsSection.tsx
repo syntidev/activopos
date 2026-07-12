@@ -3,34 +3,13 @@ import { ArrowRight, Receipt } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import { SEGMENT_ACCENT } from '@/lib/segment-accent'
 import styles from './SegmentsSection.module.css'
 
 interface ApiSegment {
   slug:     string
   name:     string
   tag_line: string
-}
-
-interface SegmentAccent {
-  bg:   string
-  icon: string
-}
-
-// Acento visual por slug de segmento (mismo slug que usa SegmentIcon),
-// no por theme_key — cada segmento necesita su propio color, incluso
-// cuando comparte theme_key con otro (ej. ferreterias/repuestos ambos
-// "ferreteria"). Vía CSS var inline, mismo patrón que --biz-color en el
-// catálogo público.
-const SEGMENT_ACCENT: Record<string, SegmentAccent> = {
-  carniceria:     { bg: '#FAECE7', icon: '#993C1D' },
-  restaurante:    { bg: '#FCEBEB', icon: '#A32D2D' },
-  ferreterias:    { bg: '#FAEEDA', icon: '#854F0B' },
-  farmacias:      { bg: '#E1F5EE', icon: '#0F6E56' },
-  'tiendas-ropa': { bg: '#FBEAF0', icon: '#993556' },
-  abastos:        { bg: '#DCE6FF', icon: '#0038BD' },
-  tecnologia:     { bg: '#E1F5EE', icon: '#0F6E56' },
-  repuestos:      { bg: '#FAEEDA', icon: '#854F0B' },
-  servicios:      { bg: '#EEEDFE', icon: '#3C3489' },
 }
 
 // Rotación leve por card, sin repetir ángulo entre vecinas (§14, -1.5deg a +1.5deg)

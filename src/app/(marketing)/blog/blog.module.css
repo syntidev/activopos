@@ -163,6 +163,8 @@
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
   text-decoration: none;
   display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .chip:hover { border-color: rgba(0, 56, 189, 0.30); }

@@ -4,22 +4,8 @@ import Link from 'next/link'
 import { Store } from 'lucide-react'
 import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import { SEGMENT_ACCENT } from '@/lib/segment-accent'
 import styles from './page.module.css'
-
-// Mismo acento por slug ya usado en SegmentsSection.tsx (home) — 9 pares
-// de hex aprobados, no theme_key (theme_key se comparte entre segmentos
-// distintos, ej. ferreterias/repuestos ambos "ferreteria").
-const SEGMENT_ACCENT: Record<string, { bg: string; icon: string }> = {
-  carniceria:     { bg: '#FAECE7', icon: '#993C1D' },
-  restaurante:    { bg: '#FCEBEB', icon: '#A32D2D' },
-  ferreterias:    { bg: '#FAEEDA', icon: '#854F0B' },
-  farmacias:      { bg: '#E1F5EE', icon: '#0F6E56' },
-  'tiendas-ropa': { bg: '#FBEAF0', icon: '#993556' },
-  abastos:        { bg: '#DCE6FF', icon: '#0038BD' },
-  tecnologia:     { bg: '#E1F5EE', icon: '#0F6E56' },
-  repuestos:      { bg: '#FAEEDA', icon: '#854F0B' },
-  servicios:      { bg: '#EEEDFE', icon: '#3C3489' },
-}
 
 export const revalidate = 3600
 

@@ -175,6 +175,9 @@
   border: 1px solid rgba(0, 56, 189, 0.08);
   border-radius: 8px;
   padding: 7px 16px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   cursor: pointer;
   transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
 }

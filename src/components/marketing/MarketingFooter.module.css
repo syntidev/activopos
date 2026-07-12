@@ -143,7 +143,9 @@
   color: var(--text-secondary, #94A3B8);
   text-decoration: none;
   transition: color 150ms ease;
-  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .colLink:hover { color: var(--text-primary, #F1F5F9); }

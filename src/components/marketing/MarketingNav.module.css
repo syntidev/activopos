@@ -61,6 +61,9 @@
   color: var(--text-secondary, var(--text-tertiary));
   text-decoration: none;
   transition: color 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .link:hover { color: var(--text-primary, #F1F5F9); }
@@ -78,6 +81,9 @@
   color: var(--text-secondary, var(--text-tertiary));
   text-decoration: none;
   transition: color 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .loginLink:hover { color: var(--text-primary, #F1F5F9); }
@@ -111,8 +117,8 @@
   background: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   color: var(--text-primary, #F1F5F9);
   cursor: pointer;
   transition: border-color 150ms ease;

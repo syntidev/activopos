@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { generateMonthlyPDF } from '@/lib/reports'
 
 const bodySchema = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/),
@@ -59,12 +60,49 @@ export async function POST(req: NextRequest) {
       }),
     ])
 
+    // Generación eager: el cron de n8n espera solo 5 min antes de leer /pending,
+    // tiempo insuficiente para que el dueño abra el dashboard y dispare la
+    // generación lazy. Generamos el PDF acá mismo para cada reporte recién
+    // dejado en 'pending', así queda 'ready' con token listo de inmediato.
+    const toGenerate = await prisma.monthlyReport.findMany({
+      where: { business_id: { in: businessIds }, period, status: 'pending' },
+      select: { id: true, business_id: true },
+    })
+
+    let generated = 0
+    let failed = 0
+    for (const report of toGenerate) {
+      try {
+        const { filePath, token, expiresAt } = await generateMonthlyPDF(report.business_id, period)
+        await prisma.monthlyReport.update({
+          where: { id: report.id },
+          data: {
+            status:           'ready',
+            file_path:        filePath,
+            download_token:   token,
+            token_expires_at: expiresAt,
+            generated_at:     new Date(),
+          },
+        })
+        generated++
+      } catch (err) {
+        console.error(`[mark-pending] fallo generando PDF business_id=${report.business_id} period=${period}:`, err)
+        await prisma.monthlyReport.update({
+          where: { id: report.id },
+          data:  { status: 'failed' },
+        })
+        failed++
+      }
+    }
+
     return NextResponse.json({
-      ok:       true,
+      ok:        true,
       period,
-      total:    businessIds.length,
-      created:  created.count,
-      reset:    updated.count,
+      total:     businessIds.length,
+      created:   created.count,
+      reset:     updated.count,
+      generated,
+      failed,
     })
   } catch (error) {
     console.error('[mark-pending] fallo creando reportes pending:', error)

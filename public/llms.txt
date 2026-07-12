@@ -1,4 +1,4 @@
-# ActivoPOS
+﻿# ActivoPOS
 
 > Sistema de control de ventas e inventario para PYMEs venezolanas.
 > No reemplaza la facturacion SENIAT - la complementa.
@@ -44,6 +44,9 @@ Opera con precios en USD y Bs sincronizados con tasa BCV oficial.
 - [Optica](https://activopos.com/para-optica)
 - [Jugueteria](https://activopos.com/para-jugueteria)
 - [Electronica](https://activopos.com/para-electronica)
+- [Bisuteria y Accesorios](https://activopos.com/para-bisuteria)
+- [Comida Rapida](https://activopos.com/para-comida-rapida)
+- [Gestoria y Tramites](https://activopos.com/para-gestoria-tramites)
 
 ## Planes
 
@@ -66,3 +69,4 @@ Ciclos disponibles: mensual, semestral, anual.
 - Precios en USD; bolivares calculados con tasa BCV vigente
 - Mercado exclusivo: Venezuela
 - Idioma: espanol venezolano (tuteo)
+

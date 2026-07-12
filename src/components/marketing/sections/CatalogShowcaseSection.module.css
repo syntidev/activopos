@@ -1,6 +1,6 @@
 .section {
   padding: 96px 0;
-  background: var(--mkt-bg);
+  background: var(--sand);
 }
 
 .container {
@@ -11,8 +11,8 @@
 
 .head {
   max-width: 640px;
-  margin: 0 auto 44px;
-  text-align: center;
+  margin: 0 0 44px;
+  text-align: left;
 }
 
 .title {

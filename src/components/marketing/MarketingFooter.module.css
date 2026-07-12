@@ -1,10 +1,29 @@
 .footer {
+  position: relative;
+  overflow: hidden;
   background: #0D1B2E;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: clamp(4rem, 10vw, 6.5rem) clamp(1.25rem, 5vw, 3rem) 2.5rem;
 }
 
+.wordmark {
+  position: absolute;
+  left: clamp(1.25rem, 5vw, 3rem);
+  bottom: -0.12em;
+  z-index: 0;
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-weight: 900;
+  font-size: clamp(80px, 12vw, 180px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.10);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .grid {
+  position: relative;
+  z-index: 1;
   max-width: 1140px;
   margin: 0 auto;
   display: grid;
@@ -148,6 +167,8 @@
 .emailLink:hover { opacity: 0.8; }
 
 .bottom {
+  position: relative;
+  z-index: 1;
   max-width: 1140px;
   margin: 4rem auto 0;
   padding-top: 2rem;

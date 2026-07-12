@@ -32,6 +32,7 @@ export default async function MarketingFooter() {
 
   return (
     <footer className={styles.footer}>
+      <span className={styles.wordmark} aria-hidden="true">Activo</span>
       <div className={styles.grid}>
 
         {/* Brand col */}

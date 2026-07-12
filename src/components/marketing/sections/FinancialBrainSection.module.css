@@ -1,6 +1,6 @@
 .section {
   padding: 96px 0;
-  background: var(--mkt-bg);
+  background: var(--brand);
 }
 
 .container {
@@ -26,7 +26,7 @@
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.02em;
-  color: #0D1B2E;
+  color: #FFFFFF;
   text-wrap: balance;
   margin: 0 0 16px;
 }
@@ -34,7 +34,7 @@
 .subtitle {
   font-size: 15px;
   line-height: 1.65;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.75);
   max-width: 46ch;
   margin: 0 0 20px;
 }
@@ -43,8 +43,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
   font-size: 13px;
   font-weight: 600;
   padding: 9px 16px;
@@ -59,12 +59,13 @@
 }
 
 .monthCard {
-  background: var(--brand);
+  background: #FFFFFF;
   border-radius: 20px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
 }
 
 .monthLabel {
@@ -72,7 +73,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.68);
+  color: #64748B;
 }
 
 .monthTotal {
@@ -86,17 +87,17 @@
   font-family: var(--font-display);
   font-size: 32px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: #0D1B2E;
 }
 
 .monthBs {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.72);
+  color: #64748B;
 }
 
 .monthSub {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.68);
+  color: #64748B;
   margin-top: 2px;
 }
 
@@ -125,7 +126,7 @@
   background: #FFFFFF;
   border-radius: 14px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .miniIcon {

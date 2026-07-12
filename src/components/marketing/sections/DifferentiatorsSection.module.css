@@ -44,13 +44,14 @@
 }
 
 .card_vende {
-  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.65) 0%, transparent 55%), var(--brand-soft);
+  background: radial-gradient(circle at 20% 15%, var(--brand-l) 0%, transparent 60%), var(--brand-soft);
 }
 .card_controla {
-  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.65) 0%, transparent 55%), var(--sand);
+  background: radial-gradient(circle at 20% 15%, var(--sand-light) 0%, transparent 60%), var(--sand);
 }
 .card_entiende {
-  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.65) 0%, transparent 55%), var(--success-soft);
+  /* Success reservado a confirmación verificada (§1) — solo se reduce el lavado blanco, sin mezclar verde */
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.35) 0%, transparent 55%), var(--success-soft);
 }
 
 .iconWrap {

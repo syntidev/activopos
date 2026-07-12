@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { useRef, useState, useEffect } from 'react'
+import { motion, useInView, animate } from 'framer-motion'
 import { MessageCircle, UserPlus, TrendingUp } from 'lucide-react'
 import styles from './HeroSection.module.css'
 
@@ -14,10 +15,25 @@ function fmtRate(rate: number): string {
   return rate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const VENTA_HOY_USD = 284.5
+
 export default function HeroSection({ bcvRate }: Props) {
   const rateDisplay = fmtRate(bcvRate)
-  const ventaHoyUsd = 284.5
-  const ventaHoyBs  = ventaHoyUsd * bcvRate
+  const cardRef      = useRef<HTMLDivElement>(null)
+  const isInView      = useInView(cardRef, { once: true })
+  const [ventaHoyUsd, setVentaHoyUsd] = useState(0)
+
+  useEffect(() => {
+    if (!isInView) return
+    const controls = animate(0, VENTA_HOY_USD, {
+      duration: 1.2,
+      ease: [0.25, 0.1, 0.25, 1],
+      onUpdate: v => setVentaHoyUsd(v),
+    })
+    return () => controls.stop()
+  }, [isInView])
+
+  const ventaHoyBs = ventaHoyUsd * bcvRate
 
   return (
     <section className={styles.hero}>
@@ -45,9 +61,25 @@ export default function HeroSection({ bcvRate }: Props) {
           </div>
         </div>
 
-        {/* Tarjeta firma "Tu día" — único elemento animado al cargar (§7) */}
-        <div className={styles.cardWrap}>
+        {/* Tarjeta firma "Tu día" — fan de profundidad + único elemento animado al cargar (§7) */}
+        <div className={styles.cardWrap} ref={cardRef}>
           <div className={styles.halo} aria-hidden="true" />
+          <motion.div
+            className={`${styles.dayCard} ${styles.dayCardBack}`}
+            style={{ rotate: -4 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.05, ease: 'easeOut' }}
+            aria-hidden="true"
+          />
+          <motion.div
+            className={`${styles.dayCard} ${styles.dayCardBack}`}
+            style={{ rotate: 4 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.1, ease: 'easeOut' }}
+            aria-hidden="true"
+          />
           <motion.div
             className={styles.dayCard}
             initial={{ opacity: 0, y: 16 }}

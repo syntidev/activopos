@@ -1,3 +1,7 @@
+'use client'
+
+import { useRef, useState, useEffect } from 'react'
+import { useInView, animate } from 'framer-motion'
 import { RefreshCw, TrendingUp, Clock3, Receipt } from 'lucide-react'
 import styles from './FinancialBrainSection.module.css'
 
@@ -14,10 +18,24 @@ function fmtBs(usd: number, rate: number): string {
   return (usd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+const VENTA_MES_USD  = 6280.4
+const POR_COBRAR_USD = 340.0
+
 export default function FinancialBrainSection({ bcvRate }: Props) {
-  const rateDisplay  = fmtRate(bcvRate)
-  const ventaMesUsd  = 6280.4
-  const porCobrarUsd = 340.0
+  const rateDisplay = fmtRate(bcvRate)
+  const cardRef      = useRef<HTMLDivElement>(null)
+  const isInView      = useInView(cardRef, { once: true })
+  const [ventaMesUsd, setVentaMesUsd] = useState(0)
+
+  useEffect(() => {
+    if (!isInView) return
+    const controls = animate(0, VENTA_MES_USD, {
+      duration: 1.4,
+      ease: [0.25, 0.1, 0.25, 1],
+      onUpdate: v => setVentaMesUsd(v),
+    })
+    return () => controls.stop()
+  }, [isInView])
 
   return (
     <section className={styles.section}>
@@ -34,7 +52,7 @@ export default function FinancialBrainSection({ bcvRate }: Props) {
           </div>
         </div>
 
-        <div className={styles.brain}>
+        <div className={styles.brain} ref={cardRef}>
           <div className={styles.monthCard}>
             <span className={styles.monthLabel}>Tu mes</span>
             <div className={styles.monthTotal}>
@@ -53,7 +71,7 @@ export default function FinancialBrainSection({ bcvRate }: Props) {
             <div className={styles.miniCard}>
               <span className={styles.miniIcon}><Receipt size={15} aria-hidden="true" /></span>
               <span className={styles.miniLabel}>Lo que te deben</span>
-              <span className={styles.miniValue}>${porCobrarUsd.toFixed(2)}</span>
+              <span className={styles.miniValue}>${POR_COBRAR_USD.toFixed(2)}</span>
             </div>
             <div className={styles.miniCard}>
               <span className={styles.miniIcon}><Clock3 size={15} aria-hidden="true" /></span>

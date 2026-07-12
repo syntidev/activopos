@@ -62,6 +62,9 @@ export default function MarketingNav({ segments }: { segments: Segment[] }) {
 
         {isSegmentPage ? (
           <div className={styles.links} role="list">
+            <Link href="/planes" className={styles.link} role="listitem">
+              Planes
+            </Link>
             <Link href="/segmentos" className={styles.link} role="listitem">
               Ver todos los segmentos
             </Link>
@@ -127,9 +130,14 @@ export default function MarketingNav({ segments }: { segments: Segment[] }) {
           </div>
           <nav className={styles.drawerLinks}>
             {isSegmentPage ? (
-              <Link href="/segmentos" className={styles.drawerLink} onClick={close}>
-                Ver todos los segmentos
-              </Link>
+              <>
+                <Link href="/planes" className={styles.drawerLink} onClick={close}>
+                  Planes
+                </Link>
+                <Link href="/segmentos" className={styles.drawerLink} onClick={close}>
+                  Ver todos los segmentos
+                </Link>
+              </>
             ) : (
               <>
                 <Link href={SEGMENTOS_LINK.href} className={styles.drawerLink} onClick={close}>

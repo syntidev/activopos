@@ -54,8 +54,9 @@ function buildCycles(monthlyPrice: number): Record<BillingCycleKey, BillingCycle
 }
 
 // trial no tiene precio — solo los planes de pago tienen ciclo de facturación
+// Precios rectificados por el dueño del negocio 2026-07-11 (antes 9/19/29).
 export const BILLING_CYCLES: Record<Exclude<PlanTier, 'trial'>, Record<BillingCycleKey, BillingCycleAmounts>> = {
-  inicio:   buildCycles(9),
-  pro:      buildCycles(19),
-  business: buildCycles(29),
+  inicio:   buildCycles(15),
+  pro:      buildCycles(25),
+  business: buildCycles(40),
 }

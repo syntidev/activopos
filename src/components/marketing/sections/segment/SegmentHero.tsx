@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import { MessageCircle, UserPlus } from 'lucide-react'
 import type { SegmentData } from '@/types/marketing'
+import { BILLING_CYCLES } from '@/lib/plan-limits'
 import styles from './SegmentHero.module.css'
+
+const FROM_PRICE = Math.round(BILLING_CYCLES.inicio.mensual.monthlyEquivalent)
 
 export default function SegmentHero({ segment }: { segment: SegmentData }) {
   return (
@@ -48,7 +51,7 @@ export default function SegmentHero({ segment }: { segment: SegmentData }) {
             <span className={styles.mockLineShort} />
           </div>
 
-          <span className={styles.priceBadge}>Desde $9/mes</span>
+          <span className={styles.priceBadge}>Desde ${FROM_PRICE}/mes</span>
         </div>
       </div>
     </section>

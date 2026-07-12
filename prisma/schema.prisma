@@ -659,6 +659,7 @@ model MonthlyReport {
   token_expires_at DateTime?
   generated_at     DateTime?
   notified_at      DateTime?
+  wa_url           String?      @db.Text
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt
 

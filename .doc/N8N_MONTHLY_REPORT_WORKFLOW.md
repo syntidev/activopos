@@ -146,9 +146,6 @@ El mismo token debe configurarse en n8n como variable de entorno
 
 ## Endpoints backend requeridos (Sprint 13)
 
-Los siguientes endpoints aún no existen — deben ser creados por CLI-A
-antes de activar este workflow:
-
 | Endpoint                                  | Método | Descripción                          |
 |-------------------------------------------|--------|--------------------------------------|
 | `/api/reports/monthly/mark-pending`       | POST   | Crea MonthlyReport pending p/ período|
@@ -157,6 +154,35 @@ antes de activar este workflow:
 
 El endpoint `/api/r/[token]` (descarga PDF público sin auth) **ya existe** —
 implementado en Sprint 11 (DT-013 pattern).
+
+⚠️ Los 3 endpoints de arriba comprueban `x-api-key` contra `process.env.N8N_API_KEY`
+(nombre real en el código). Este documento dice `ACTIVOPOS_N8N_KEY` en la
+sección de variables de entorno más abajo — **son nombres distintos**. El
+código es la fuente de verdad (ya deployado); si n8n manda el header con
+el nombre `ACTIVOPOS_N8N_KEY` como variable de n8n eso no importa (es solo
+el nombre de la variable EN n8n), pero el `.env` del VPS debe tener
+`N8N_API_KEY=<mismo_valor>`, no `ACTIVOPOS_N8N_KEY`. Verificar antes de
+activar el cron.
+
+## Verificación pendiente (requiere a Carlos — acceso externo)
+
+1. **¿Existe `N8N_API_KEY` en el `.env` del VPS?** No verificable desde acá
+   (sin acceso SSH en esta sesión). Correr en el VPS:
+   ```bash
+   grep N8N_API_KEY /var/www/activopos/.env
+   ```
+   Si no existe, generar un valor random de 32+ chars y agregarlo, luego
+   `pm2 restart activopos` para que tome el nuevo env var.
+
+2. **¿Está el workflow instalado en n8n.syntiweb.com?** Requiere login en
+   n8n (acceso externo, no accesible desde este entorno). Verificar:
+   - Que exista un workflow activo con el Cron `55 23 L * *`
+   - Que la variable de entorno de n8n `ACTIVOPOS_N8N_KEY` (o el nombre que
+     se use en los nodos HTTP Request) tenga el MISMO valor que
+     `N8N_API_KEY` en el `.env` del VPS — si no coinciden, los 3 endpoints
+     van a devolver 401 en cada llamada del workflow.
+   - Que los 3 nodos HTTP Request apunten a `https://activopos.com/api/reports/monthly/...`
+     (no localhost, no IP directa).
 
 ---
 
@@ -174,10 +200,11 @@ implementado en Sprint 11 (DT-013 pattern).
 |-------------------------------|-----------------|
 | `/api/r/[token]`              | ✅ Existe Sprint 11 |
 | MonthlyReportBanner en UI     | ✅ Existe Sprint 11 |
-| mark-pending endpoint         | ❌ Pendiente Sprint 13 |
-| pending endpoint              | ❌ Pendiente Sprint 13 |
-| mark-notified endpoint        | ❌ Pendiente Sprint 13 |
-| Workflow n8n importado        | ❌ Pendiente Sprint 13 |
+| mark-pending endpoint         | ✅ Existe |
+| pending endpoint              | ✅ Existe |
+| mark-notified endpoint        | ✅ Existe — Sprint Reportes-1 (2026-07-12) |
+| `N8N_API_KEY` en .env VPS     | ❓ Sin verificar — requiere Carlos (SSH) |
+| Workflow n8n importado        | ❓ Sin verificar — requiere Carlos (n8n.syntiweb.com) |
 | Envío automático Meta API     | ❌ DT-019 Sprint 13+ |
 
 ---

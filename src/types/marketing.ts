@@ -1,4 +1,4 @@
-// Tipos de la capa de marketing SEO — reflejan los modelos Segment/SegmentFaq/Plan
+// Tipos de la capa de marketing SEO — reflejan los modelos Segment/SegmentFaq
 // de prisma/schema.prisma. Consumidos por las páginas /para-[segmento] y sus secciones.
 
 export type SegmentMode = 'product' | 'service' | 'hybrid'
@@ -27,14 +27,4 @@ export interface SegmentData {
   pain_3:           string
   active:           boolean
   faqs:             SegmentFaq[]
-}
-
-export interface PlanData {
-  id:          string
-  key:         string
-  name:        string
-  price_usd:   number
-  description: string | null
-  features:    string[]
-  sort_order:  number
 }

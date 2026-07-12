@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
-import type { SegmentData, SegmentMode, PlanData } from '@/types/marketing'
+import { getBcvRate } from '@/lib/bcv'
+import type { SegmentData, SegmentMode } from '@/types/marketing'
 import SegmentHero from '@/components/marketing/sections/segment/SegmentHero'
 import SegmentPains from '@/components/marketing/sections/segment/SegmentPains'
 import SegmentFeatures from '@/components/marketing/sections/segment/SegmentFeatures'
@@ -38,22 +39,6 @@ async function getSegment(slug: string): Promise<SegmentData | null> {
   return segment ? toSegmentData(segment) : null
 }
 
-async function getPlans(): Promise<PlanData[]> {
-  const plans = await prisma.plan.findMany({
-    where:   { active: true },
-    orderBy: { sort_order: 'asc' },
-  })
-  return plans.map(p => ({
-    id:          p.id,
-    key:         p.key,
-    name:        p.name,
-    price_usd:   p.price_usd,
-    description: p.description,
-    features:    Array.isArray(p.features) ? (p.features as string[]) : [],
-    sort_order:  p.sort_order,
-  }))
-}
-
 export async function generateMetadata(
   { params }: { params: { segmento: string } },
 ): Promise<Metadata> {
@@ -82,15 +67,15 @@ export default async function SegmentPage(
   const slug = params.segmento.slice(PREFIX.length)
   if (!SLUG_RE.test(slug)) notFound()
 
-  const [segment, plans] = await Promise.all([getSegment(slug), getPlans()])
+  const [segment, bcvRate] = await Promise.all([getSegment(slug), getBcvRate()])
   if (!segment) notFound()
 
   return (
     <div className={styles.page}>
       <SegmentHero segment={segment} />
       <SegmentPains segment={segment} />
-      <SegmentFeatures mode={segment.mode} />
-      <SegmentPricing plans={plans} />
+      <SegmentFeatures mode={segment.mode} pain1={segment.pain_1} />
+      <SegmentPricing bcvRate={bcvRate} />
       <SegmentFAQ faqs={segment.faqs} segmentName={segment.name} />
       <SegmentCTA segmentName={segment.name} />
     </div>

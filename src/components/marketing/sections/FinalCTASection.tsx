@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MessageCircle, UserPlus, CheckCircle } from 'lucide-react'
+import { Store, UserPlus, CheckCircle } from 'lucide-react'
 import styles from './FinalCTASection.module.css'
 
 const TRUST = [
@@ -29,15 +29,10 @@ export default function FinalCTASection() {
             <UserPlus size={20} aria-hidden />
             Empezar gratis
           </Link>
-          <a
-            href="https://wa.me/584222654827?text=Hola%2C+quiero+activar+mi+negocio+con+ActivoPOS"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.ctaBtnGhost}
-          >
-            <MessageCircle size={18} aria-hidden />
-            Ver demostración
-          </a>
+          <Link href="/catalogo/multi-demo" className={styles.ctaBtnGhost}>
+            <Store size={18} aria-hidden />
+            Ver catálogo en vivo
+          </Link>
         </div>
         <div className={styles.trust} data-reveal>
           {TRUST.map((item) => (

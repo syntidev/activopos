@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MessageCircle, UserPlus } from 'lucide-react'
+import { Store, UserPlus } from 'lucide-react'
 import type { SegmentData } from '@/types/marketing'
 import { BILLING_CYCLES } from '@/lib/plan-limits'
 import styles from './SegmentHero.module.css'
@@ -19,15 +19,10 @@ export default function SegmentHero({ segment }: { segment: SegmentData }) {
               <UserPlus size={17} aria-hidden="true" />
               Crear cuenta gratis
             </Link>
-            <a
-              href="https://wa.me/584222654827?text=Hola%2C+quiero+ver+ActivoPOS+en+acci%C3%B3n"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.ctaGhost}
-            >
-              <MessageCircle size={16} aria-hidden="true" />
-              Ver demostración
-            </a>
+            <Link href="/catalogo/multi-demo" className={styles.ctaGhost}>
+              <Store size={16} aria-hidden="true" />
+              Ver catálogo en vivo
+            </Link>
           </div>
         </div>
 

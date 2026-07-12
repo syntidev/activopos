@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRef, useState, useEffect } from 'react'
 import { motion, useInView, animate } from 'framer-motion'
-import { MessageCircle, UserPlus, TrendingUp } from 'lucide-react'
+import { Store, UserPlus, TrendingUp } from 'lucide-react'
 import styles from './HeroSection.module.css'
 
 interface Props {
@@ -49,15 +49,10 @@ export default function HeroSection({ bcvRate }: Props) {
               <UserPlus size={17} aria-hidden="true" />
               Empezar gratis
             </Link>
-            <a
-              href="https://wa.me/584222654827?text=Hola%2C+quiero+ver+ActivoPOS+en+acci%C3%B3n"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.btnGhost}
-            >
-              <MessageCircle size={16} aria-hidden="true" />
-              Ver demostración
-            </a>
+            <Link href="/catalogo/multi-demo" className={styles.btnGhost}>
+              <Store size={16} aria-hidden="true" />
+              Ver catálogo en vivo
+            </Link>
           </div>
         </div>
 

@@ -12,7 +12,7 @@ interface FormState {
 
 const INITIAL: FormState = { name: '', email: '', business: '', message: '' }
 
-const FORMSPREE_URL = 'https://formspree.io/f/activopos-contact'
+const FORMSPREE_URL = 'https://formspree.io/f/xbdnrawe'
 
 export default function ContactForm() {
   const [form, setForm]     = useState<FormState>(INITIAL)

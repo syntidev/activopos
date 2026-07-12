@@ -6,7 +6,7 @@ import styles from './MarketingFooter.module.css'
 const PRODUCT_LINKS = [
   { label: '¿Para quién?',   href: '/#segmentos' },
   { label: 'Cómo funciona',  href: '/#ecosystem' },
-  { label: 'Planes',         href: '/#pricing' },
+  { label: 'Planes',         href: '/planes' },
   { label: 'Recursos',       href: '/recursos' },
   { label: 'Blog',           href: '/blog' },
   { label: 'Demo',           href: 'https://wa.me/584222654827?text=Quiero+ver+una+demo+de+ActivoPOS' },

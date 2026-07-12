@@ -1,5 +1,5 @@
 .section {
-  padding: 72px 0;
+  padding: 96px 0;
   /* Hex literal, deliberado — no var(--success). Confirmado en producción
      (inspección de DOM) que esta sección hereda [data-theme="dark"] de algún
      ancestro, y --success SÍ está sobreescrito ahí (tokens.css:630, #4ADE80),

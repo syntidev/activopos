@@ -18,7 +18,7 @@ const SEGMENTOS_LINK = { label: 'Segmentos', href: '/#segmentos' }
 
 const NAV_LINKS = [
   { label: 'Cómo funciona', href: '/#ecosystem' },
-  { label: 'Planes', href: '/#pricing' },
+  { label: 'Planes', href: '/planes' },
   { label: 'Recursos', href: '/recursos' },
   { label: 'Blog', href: '/blog' },
   { label: 'Ayuda', href: '/soporte' },

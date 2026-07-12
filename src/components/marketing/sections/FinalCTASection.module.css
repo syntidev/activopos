@@ -113,7 +113,7 @@
 }
 
 .trustItem svg {
-  color: var(--success);
+  color: var(--lp-success);
 }
 
 @media (max-width: 640px) {

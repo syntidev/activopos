@@ -66,7 +66,7 @@
 }
 .card_entiende {
   /* Success reservado a confirmación verificada (§1) — solo se reduce el lavado blanco, sin mezclar verde */
-  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.35) 0%, transparent 55%), var(--success-soft);
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.35) 0%, transparent 55%), var(--lp-success-soft);
 }
 
 .iconWrap {
@@ -82,7 +82,7 @@
 
 .icon_vende    { color: var(--brand); }
 .icon_controla { color: var(--mkt-navy); }
-.icon_entiende { color: var(--success-text); }
+.icon_entiende { color: var(--lp-success-text); }
 
 .cardTitle {
   font-family: var(--font-display);

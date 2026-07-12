@@ -105,8 +105,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--success-soft);
-  color: var(--success-text);
+  background: var(--lp-success-soft);
+  color: var(--lp-success-text);
   font-size: 14px;
   font-weight: 700;
   padding: 14px 18px;

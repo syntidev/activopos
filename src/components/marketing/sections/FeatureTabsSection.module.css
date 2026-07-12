@@ -229,7 +229,7 @@
 
 .status_recibido    { background: var(--brand-soft); color: var(--brand); }
 .status_preparacion { background: var(--sand-light); color: var(--mkt-navy); }
-.status_listo        { background: var(--success-soft); color: var(--success-text); }
+.status_listo        { background: var(--lp-success-soft); color: var(--lp-success-text); }
 
 .kitchenItems {
   font-size: 12px;

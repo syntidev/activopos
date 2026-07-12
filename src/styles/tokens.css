@@ -48,6 +48,15 @@
   --lp-text-muted:      #94A3B8;
   --lp-border-light:    rgba(0, 56, 189, 0.10);
   --lp-shadow-card:     0 2px 12px rgba(0, 0, 0, 0.06);
+
+  /* Success invariant — (marketing)/layout.tsx fuerza data-theme="dark" en
+     TODA página de marketing (Sprint I), y --success/-soft/-text SÍ están
+     sobreescritos en ese bloque. Estos --lp-success* fijan el valor light
+     sin importar el tema heredado — mismo patrón que el resto de --lp-*. */
+  --lp-success:         #16A34A;
+  --lp-success-soft:    #F0FDF4;
+  --lp-success-text:    #15803D;
+  --lp-success-rgb:     22, 163, 74;
   --lp-shadow-hover:    0 8px 24px rgba(0, 56, 189, 0.10);
 
   /* ── Brand — Persian Blue (#0038BD) ── */

@@ -121,7 +121,7 @@
 }
 
 .check {
-  color:       var(--success);
+  color:       var(--lp-success);
   flex-shrink: 0;
   margin-top:  2px;
 }

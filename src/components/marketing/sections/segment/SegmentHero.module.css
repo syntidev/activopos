@@ -115,7 +115,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--success);
+  background: var(--lp-success);
 }
 
 .mockName {

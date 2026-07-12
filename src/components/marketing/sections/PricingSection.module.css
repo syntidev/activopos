@@ -156,8 +156,8 @@
 
 .cycleNote {
   font-size: 12px;
-  color: var(--success-text);
-  background: var(--success-soft);
+  color: var(--lp-success-text);
+  background: var(--lp-success-soft);
   border-radius: 8px;
   padding: 6px 10px;
   margin-top: 10px;
@@ -200,7 +200,7 @@
 }
 
 .feats li svg {
-  color: var(--success-text);
+  color: var(--lp-success-text);
   flex-shrink: 0;
   margin-top: 2px;
 }

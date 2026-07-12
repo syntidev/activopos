@@ -32,10 +32,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
 
   // Solo rutas públicas que existen realmente en (marketing) + /registro.
-  // /planes NO existe todavía como ruta — omitido, agregar cuando se cree.
   const staticUrls: MetadataRoute.Sitemap = [
     { url: BASE,                  lastModified: now, changeFrequency: 'weekly',  priority: 1.0 },
     { url: `${BASE}/blog`,        lastModified: now, changeFrequency: 'weekly',  priority: 0.9 },
+    { url: `${BASE}/planes`,      lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${BASE}/segmentos`,   lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/recursos`,    lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/registro`,    lastModified: now, changeFrequency: 'monthly', priority: 0.9 },

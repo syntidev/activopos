@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { signToken, setSessionCookie } from '@/lib/auth'
 import { onboardingLimiter, getClientIp } from '@/lib/rate-limit'
+import { sendRegistrationConfirmationEmail, sendNewBusinessAlertEmail } from '@/lib/mail'
 
 // Ids reales del wizard — ver src/app/registro/data.ts (PAYMENT_METHOD_DEFS/SEEDED_PAYMENT_IDS)
 const PAYMENT_TYPE_IDS = ['pago_movil', 'zelle', 'efectivo_usd', 'efectivo_bs', 'binance', 'transferencia'] as const
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
   const cobroData = buildCobroData(dedupedMethods)
   const dedupedCategories = Array.from(new Set(data.categories ?? []))
 
-  let business!: { id: number }
+  let business!: { id: number; catalog_plan: string | null }
   let user!: { id: number; name: string }
 
   try {
@@ -270,6 +271,15 @@ export async function POST(req: NextRequest) {
   })
 
   setSessionCookie(token)
+
+  // Correos best-effort — un fallo de SMTP nunca debe tumbar un registro ya persistido
+  const createdAt = new Date()
+  Promise.all([
+    sendRegistrationConfirmationEmail(email, data.owner_name, data.business_name),
+    sendNewBusinessAlertEmail(data.business_name, business.catalog_plan ?? 'trial', createdAt),
+  ]).catch(err => {
+    console.error('[onboarding/setup] fallo envío de correo (no bloqueante):', err)
+  })
 
   return NextResponse.json(
     { ok: true, business_id: business.id, user_id: user.id },

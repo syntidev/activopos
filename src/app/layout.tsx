@@ -44,6 +44,16 @@ export const metadata: Metadata = {
       { url: '/apple-touch-icon.png', sizes: '180x180' },
     ],
   },
+  other: {
+    'meta-author': 'ActivoPOS — synti.dev',
+    'geo.region':    'VE',
+    'geo.placename': 'Venezuela',
+    'robots': 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+  },
+  openGraph: {
+    locale: 'es_VE',
+    alternateLocale: ['es_ES'],
+  },
 }
 
 export default function RootLayout({

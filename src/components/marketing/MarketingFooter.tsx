@@ -72,7 +72,7 @@ export default async function MarketingFooter() {
             </a>
           </div>
           <a
-            href="https://syntiweb.com"
+            href="https://synti.dev"
             target="_blank"
             rel="noopener noreferrer"
             className={styles.syntiLink}
@@ -144,7 +144,7 @@ export default async function MarketingFooter() {
         </p>
         <p className={styles.bottomRight}>
           Hecho con ♥ en Venezuela ·{' '}
-          <a href="https://syntiweb.com" target="_blank" rel="noopener noreferrer">
+          <a href="https://synti.dev" target="_blank" rel="noopener noreferrer">
             synti.dev
           </a>
         </p>

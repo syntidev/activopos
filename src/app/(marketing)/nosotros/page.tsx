@@ -30,7 +30,7 @@ export default function NosotrosPage() {
             ActivoPOS nació de la frustración de ver negocios venezolanos operando
             con cuadernos, hojas de cálculo o sistemas extranjeros que ignoran la
             realidad del mercado local. Somos el equipo de{' '}
-            <a href="https://syntiweb.com" target="_blank" rel="noopener noreferrer" className={styles.syntiLink}>
+            <a href="https://synti.dev" target="_blank" rel="noopener noreferrer" className={styles.syntiLink}>
               synti.dev
             </a>
             {' '}y construimos software que funciona aquí, ahora.
@@ -98,7 +98,7 @@ export default function NosotrosPage() {
               </p>
             </div>
             <a
-              href="https://syntiweb.com"
+              href="https://synti.dev"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.syntiLink}

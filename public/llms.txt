@@ -1,4 +1,4 @@
-﻿# ActivoPOS
+# ActivoPOS
 
 > Sistema de control de ventas e inventario para PYMEs venezolanas.
 > No reemplaza la facturacion SENIAT - la complementa.
@@ -55,7 +55,7 @@ Ciclos disponibles: mensual, semestral, anual.
 
 ## Empresa
 
-- Desarrollado por SYNTIdev - syntiweb.com
+- Desarrollado por SYNTIdev - synti.dev
 - WhatsApp: https://wa.me/584222654827
 - Instagram: https://instagram.com/activopos
 

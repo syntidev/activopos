@@ -19,6 +19,9 @@ const TABS: TabDef[] = [
   { key: 'cocina',    label: 'Cocina',    Icon: ChefHat },
 ]
 
+// Rotación leve por panel, sin repetir ángulo entre vecinos (§14, -1.5deg a +1.5deg)
+const ROTATE: Record<TabKey, number> = { cobros: -1, variantes: 1.3, cocina: -1.4 }
+
 const VARIANT_DEMOS = [
   { Icon: Shirt,     name: 'Camisa Polo',   spec: 'Talla M · Azul',  price: '$15.00' },
   { Icon: Beef,      name: 'Lomo de Res',   spec: '1.0 kg · Entero', price: '$8.50'  },
@@ -86,7 +89,8 @@ export default function FeatureTabsSection() {
                   o USDT — tu cliente paga como ya te paga, tú ves el ticket en USD y Bs al mismo tiempo.
                 </p>
               </div>
-              <div className={styles.demo}>
+              <div className={styles.demo} style={{ rotate: `${ROTATE.cobros}deg` }}>
+                <CreditCard size={90} aria-hidden="true" className={styles.ghostIcon} />
                 <div className={styles.demoHead}>
                   <RefreshCw size={13} aria-hidden="true" />
                   BCV congelado en la venta
@@ -119,7 +123,8 @@ export default function FeatureTabsSection() {
                   sentido para tu producto. El sistema calcula el precio y descuenta el inventario solo.
                 </p>
               </div>
-              <div className={styles.demo}>
+              <div className={styles.demo} style={{ rotate: `${ROTATE.variantes}deg` }}>
+                <Ruler size={90} aria-hidden="true" className={styles.ghostIcon} />
                 {VARIANT_DEMOS.map(v => (
                   <div key={v.name} className={styles.variantRow}>
                     <span className={styles.variantIcon}><v.Icon size={16} aria-hidden="true" /></span>
@@ -150,7 +155,8 @@ export default function FeatureTabsSection() {
                   ve exactamente lo que falta, sin gritar de un lado a otro.
                 </p>
               </div>
-              <div className={styles.demo}>
+              <div className={styles.demo} style={{ rotate: `${ROTATE.cocina}deg` }}>
+                <ChefHat size={90} aria-hidden="true" className={styles.ghostIcon} />
                 {KITCHEN_DEMOS.map(k => (
                   <div key={k.id} className={styles.kitchenRow}>
                     <div className={styles.kitchenHead}>

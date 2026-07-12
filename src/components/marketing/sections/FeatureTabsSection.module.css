@@ -89,9 +89,25 @@
 }
 
 .demo {
+  position: relative;
+  overflow: hidden;
   background: var(--mkt-bg);
   border-radius: 16px;
   padding: 20px;
+}
+
+/* ── Ícono fantasma — decorativo, esquina inferior derecha (§14) ── */
+.ghostIcon {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  color: #0D1B2E;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .ghostIcon { display: none; }
 }
 
 /* ── Panel Cobros ── */

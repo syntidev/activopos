@@ -33,6 +33,9 @@ const SEGMENT_ACCENT: Record<string, SegmentAccent> = {
   servicios:      { bg: '#EEEDFE', icon: '#3C3489' },
 }
 
+// Rotación leve por card, sin repetir ángulo entre vecinas (§14, -1.5deg a +1.5deg)
+const ROTATE_SEQUENCE = [-1.2, 1, -0.8, 1.4, -1, 0.7, -1.4, 1.1, -0.6, 1.3]
+
 // Server Component — fetch al propio endpoint público en vez de Prisma directo
 // (pedido explícito del sprint: reusar el mismo contrato que /segmentos y el
 // nav dropdown consumen, no duplicar la query).
@@ -60,11 +63,12 @@ export default async function SegmentsSection() {
         {segments.length > 0 && (
           <>
             <div className={styles.grid}>
-              {segments.map(seg => {
+              {segments.map((seg, i) => {
                 const accent = SEGMENT_ACCENT[seg.slug]
-                const cardStyle = accent
-                  ? ({ '--seg-bg': accent.bg, '--seg-icon': accent.icon } as CSSProperties)
-                  : undefined
+                const cardStyle = {
+                  ...(accent ? { '--seg-bg': accent.bg, '--seg-icon': accent.icon } : {}),
+                  rotate: `${ROTATE_SEQUENCE[i % ROTATE_SEQUENCE.length]}deg`,
+                } as CSSProperties
                 return (
                   <Link
                     key={seg.slug}
@@ -72,6 +76,9 @@ export default async function SegmentsSection() {
                     className={styles.card}
                     style={cardStyle}
                   >
+                    <span className={styles.ghostIcon} aria-hidden="true">
+                      <SegmentIcon slug={seg.slug} size={72} />
+                    </span>
                     <span className={styles.cardIcon}>
                       <SegmentIcon slug={seg.slug} size={22} />
                     </span>

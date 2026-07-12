@@ -17,6 +17,9 @@ const PILARES: Pilar[] = [
   { Icon: TrendingUp,   title: 'Entiende', sub: 'De cada venta, sabes qué de verdad ganaste. Sin calculadora, sin Excel.',        variant: 'entiende' },
 ]
 
+// Rotación leve por card, sin repetir ángulo entre vecinas (§14, -1.5deg a +1.5deg)
+const ROTATE: Record<Pilar['variant'], number> = { vende: -1.2, controla: 1, entiende: -0.8 }
+
 export default function DifferentiatorsSection() {
   return (
     <section className={styles.section}>
@@ -36,12 +39,14 @@ export default function DifferentiatorsSection() {
             <motion.div
               key={title}
               className={`${styles.card} ${styles[`card_${variant}`]}`}
+              style={{ rotate: ROTATE[variant] }}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, ease: 'easeOut', delay: i * 0.08 }}
               whileHover={{ y: -2, transition: { duration: 0.15 } }}
             >
+              <Icon size={100} aria-hidden="true" className={styles.ghostIcon} />
               <span className={styles.iconWrap}>
                 <Icon size={22} aria-hidden="true" className={styles[`icon_${variant}`]} />
               </span>

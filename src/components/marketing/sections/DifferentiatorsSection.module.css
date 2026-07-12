@@ -33,11 +33,26 @@
 
 .card {
   position: relative;
+  overflow: hidden;
   min-height: 180px;
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
   transition: box-shadow 200ms ease;
+}
+
+/* ── Ícono fantasma — decorativo, esquina inferior derecha (§14) ── */
+.ghostIcon {
+  position: absolute;
+  right: -16px;
+  bottom: -16px;
+  color: #0D1B2E;
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .ghostIcon { display: none; }
 }
 .card:hover {
   box-shadow: 0 12px 28px rgba(47, 43, 61, 0.16), 0 0 1px rgba(47, 43, 61, 0.08);

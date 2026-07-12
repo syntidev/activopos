@@ -108,7 +108,7 @@
 .syntiLink {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.75rem;
-  color: var(--text-tertiary, #64748B);
+  color: var(--mkt-footer-muted);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -126,7 +126,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-tertiary, #64748B);
+  color: var(--mkt-footer-muted);
   margin-bottom: 1rem;
 }
 
@@ -184,7 +184,7 @@
 .bottomRight {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.75rem;
-  color: var(--text-tertiary, #64748B);
+  color: var(--mkt-footer-muted);
   line-height: 1.5;
 }
 

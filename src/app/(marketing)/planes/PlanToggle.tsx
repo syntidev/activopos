@@ -33,6 +33,7 @@ export default function PlanToggle({ bcvRate }: Props) {
   return (
     <section className={styles.toggleSection}>
       <div className={styles.container}>
+        <h2 className={styles.sectionTitle}>Elige tu plan</h2>
         <div className={styles.cycleTabs} role="tablist" aria-label="Ciclo de facturación">
           {CYCLE_ORDER.map(c => (
             <button

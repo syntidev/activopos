@@ -8,7 +8,7 @@ import styles from './faq.module.css'
 ───────────────────────────────────────────────────────── */
 
 export const metadata: Metadata = {
-  title: 'Preguntas Frecuentes — ActivoPOS | POS Venezuela',
+  title: 'Preguntas Frecuentes — POS Venezuela',
   description:
     'Resuelve tus dudas antes de empezar. ¿Reemplaza el SENIAT? ¿Funciona sin internet? ¿Cuánto cuesta? Todo sobre ActivoPOS en una sola página.',
   alternates: {

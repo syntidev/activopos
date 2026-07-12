@@ -19,7 +19,6 @@ const fraunces = Fraunces({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   themeColor: '#EF8E01',
 }
 

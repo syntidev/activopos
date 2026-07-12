@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: 'Contacto',
   description:
     'Escríbenos por WhatsApp, correo o el formulario. Respondemos en menos de 24 horas.',
+  alternates: {
+    canonical: 'https://activopos.com/contacto',
+  },
 }
 
 const CHANNELS = [

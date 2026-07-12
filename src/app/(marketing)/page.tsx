@@ -15,9 +15,12 @@ import LandingAnimations from '@/components/marketing/LandingAnimations'
 import styles from './page.module.css'
 
 export const metadata: Metadata = {
-  title: 'ActivoPOS — El POS para negocios que andan activos',
+  title: 'El POS para negocios que andan activos',
   description:
     'POS táctil, BCV automático, catálogo digital, variantes por especificación y cotización de servicios. Diseñado para Venezuela.',
+  alternates: {
+    canonical: 'https://activopos.com',
+  },
   openGraph: {
     title: 'ActivoPOS — El POS para negocios que andan activos',
     description: 'Sistema de punto de venta e inventario para PYMES venezolanas.',
@@ -38,6 +41,26 @@ const ORGANIZATION_JSON_LD = {
   sameAs: ['https://instagram.com/activopos'],
 }
 
+const SOFTWARE_APPLICATION_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'ActivoPOS',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  description: 'Sistema de control de ventas e inventario para PYMEs venezolanas. No reemplaza la facturación SENIAT, la complementa.',
+  url: 'https://activopos.com',
+  offers: [
+    { '@type': 'Offer', name: 'Mostrador', price: '15.00', priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
+    { '@type': 'Offer', name: 'Negocio',   price: '25.00', priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
+    { '@type': 'Offer', name: 'Pro',       price: '40.00', priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
+  ],
+  provider: {
+    '@type': 'Organization',
+    name: 'SYNTIdev',
+    url: 'https://synti.dev',
+  },
+}
+
 export default async function LandingPage() {
   const bcvRate = await getBcvRate()
 
@@ -46,6 +69,10 @@ export default async function LandingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_APPLICATION_JSON_LD).replace(/</g, '\\u003c') }}
       />
       <LandingAnimations />
       <HeroSection bcvRate={bcvRate} />

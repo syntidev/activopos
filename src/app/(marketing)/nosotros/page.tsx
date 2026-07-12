@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: 'Nosotros',
   description:
     'Conoce el equipo detrás de ActivoPOS y la misión que nos mueve: democratizar el control de ventas para los negocios venezolanos.',
+  alternates: {
+    canonical: 'https://activopos.com/nosotros',
+  },
 }
 
 const VALUES = [

@@ -35,9 +35,26 @@ const PUBLIC_EXACT = new Set([
   '/landing.html',
   '/sitemap.xml',
   '/robots.txt',
+  '/llms.txt',
+  '/catalogo',                         // landing sin slug — fallback público, no requiere auth
   '/api/reports/monthly/pending',      // n8n: lista pending (x-api-key)
   '/api/reports/monthly/mark-pending', // n8n: marca todos como pending (x-api-key)
 ])
+
+// Segmentos top-level de rutas protegidas conocidas — (dashboard), (admin) y /api/*.
+// Cualquier ruta que NO matchee público NI esta lista es desconocida para el
+// sistema: se deja pasar (NextResponse.next) para que Next.js resuelva el 404
+// nativo en vez de redirigir a /login (evita el soft-404 loop que desperdicia
+// crawl budget de Google). Si agregas una carpeta nueva bajo (dashboard) o
+// (admin), agrégala aquí también.
+const PROTECTED_PREFIXES = [
+  '/analytics', '/ayuda', '/caja', '/catalogo-digital', '/clientes', '/configuracion',
+  '/cotizaciones', '/devoluciones', '/escritorio', '/finanzas', '/inventario', '/kds',
+  '/onboarding', '/pedidos', '/pos', '/productos', '/proveedores', '/reportes',
+  '/tu-dia', '/usuarios', '/ventas',
+  '/admin', '/blog-admin', '/businesses', '/invoices', '/settings', '/stats', '/tickets',
+  '/api/',
+]
 
 // URLs del route-group (admin): /businesses y /stats no viven bajo /admin,
 // así que se listan explícitamente para que el middleware las cubra (defense-in-depth)
@@ -88,6 +105,12 @@ export async function middleware(req: NextRequest) {
 
   // Prefijos públicos (login, catálogo, auth API)
   if (PUBLIC_PREFIXES.some(p => pathname.startsWith(p))) {
+    return NextResponse.next()
+  }
+
+  // Ruta desconocida (no pública, no protegida conocida) — deja que Next.js
+  // resuelva el 404 nativo. NUNCA redirect a /login para rutas inexistentes.
+  if (!PROTECTED_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 

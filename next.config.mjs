@@ -9,6 +9,16 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.activopos.com' }],
+        destination: 'https://activopos.com/:path*',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig

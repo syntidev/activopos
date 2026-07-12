@@ -7,7 +7,7 @@ import PlanToggle from './PlanToggle'
 import styles from './page.module.css'
 
 export const metadata: Metadata = {
-  title: 'Planes y precios — ActivoPOS',
+  title: 'Planes y precios',
   description:
     'Compara los 3 planes de ActivoPOS en detalle: Mostrador, Negocio y Pro. Precios reales en USD, ciclo mensual, semestral o anual, sin sorpresas.',
   alternates: { canonical: '/planes' },

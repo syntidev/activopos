@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { Check, MessageCircle, ArrowRight } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier, type BillingCycleKey } from '@/lib/plan-limits'
-import styles from './PricingSection.module.css'
+import styles from './page.module.css'
 
 interface Props {
   bcvRate: number
@@ -12,57 +11,13 @@ interface Props {
 
 const WA_BASE = 'https://wa.me/584222654827'
 
+const TIERS: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
+
 const CYCLE_ORDER: BillingCycleKey[] = ['mensual', 'semestral', 'anual']
 
 const CYCLE_LABEL: Record<BillingCycleKey, string> = {
   mensual: 'Mensual', trimestral: 'Trimestral', semestral: 'Semestral', anual: 'Anual',
 }
-
-interface PlanCopy {
-  tier:     Exclude<PlanTier, 'trial'>
-  feats:    string[]
-  featured: boolean
-  badge:    string | null
-}
-
-const PLANS: PlanCopy[] = [
-  {
-    tier: 'inicio',
-    feats: [
-      'POS táctil en cualquier pantalla',
-      'BCV automático en cada venta',
-      'Hasta 3 usuarios',
-      'Hasta 100 productos',
-    ],
-    featured: false,
-    badge: null,
-  },
-  {
-    tier: 'pro',
-    feats: [
-      'Todo lo de Mostrador',
-      'Catálogo digital con pedidos por WhatsApp',
-      'Cotizaciones en PDF',
-      'Cuentas por cobrar y finanzas completas',
-      'Hasta 10 usuarios',
-      'Hasta 500 productos',
-    ],
-    featured: true,
-    badge: 'Más popular',
-  },
-  {
-    tier: 'business',
-    feats: [
-      'Todo lo de Negocio',
-      'Analytics avanzado',
-      'Usuarios y productos ilimitados',
-      'Panel de cocina (KDS)',
-      'Soporte prioritario',
-    ],
-    featured: false,
-    badge: null,
-  },
-]
 
 function fmtMoney(n: number): string {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -72,17 +27,12 @@ function fmtBs(usd: number, rate: number): string {
   return (usd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export default function PricingSection({ bcvRate }: Props) {
+export default function PlanToggle({ bcvRate }: Props) {
   const [cycle, setCycle] = useState<BillingCycleKey>('mensual')
 
   return (
-    <section className={styles.section} id="precios">
+    <section className={styles.toggleSection}>
       <div className={styles.container}>
-        <div className={styles.head}>
-          <h2 className={styles.title}>Un plan para cada etapa de tu negocio.</h2>
-          <p className={styles.subtitle}>Sin contrato anual. Cambias de plan cuando quieras.</p>
-        </div>
-
         <div className={styles.cycleTabs} role="tablist" aria-label="Ciclo de facturación">
           {CYCLE_ORDER.map(c => (
             <button
@@ -99,13 +49,14 @@ export default function PricingSection({ bcvRate }: Props) {
         </div>
 
         <div className={styles.grid}>
-          {PLANS.map(({ tier, feats, featured, badge }) => {
+          {TIERS.map(tier => {
             const amounts    = BILLING_CYCLES[tier][cycle]
             const hasSavings = amounts.savingsAmount > 0
+            const featured    = tier === 'pro'
             const waMsg       = encodeURIComponent(`Hola, me interesa el plan ${PLAN_DISPLAY[tier]} de ActivoPOS`)
             return (
               <div key={tier} className={`${styles.card} ${featured ? styles.cardFeatured : ''}`}>
-                {badge && <span className={styles.badge}>{badge}</span>}
+                {featured && <span className={styles.badge}>Más popular</span>}
                 <h3 className={styles.planName}>{PLAN_DISPLAY[tier]}</h3>
                 <div className={styles.priceRow}>
                   <span className={styles.priceUsd}>{fmtMoney(amounts.monthlyEquivalent)}</span>
@@ -118,11 +69,6 @@ export default function PricingSection({ bcvRate }: Props) {
                     {hasSavings && <> · ahorras {fmtMoney(amounts.savingsAmount)}</>}
                   </span>
                 )}
-                <ul className={styles.feats}>
-                  {feats.map(f => (
-                    <li key={f}><Check size={14} aria-hidden="true" />{f}</li>
-                  ))}
-                </ul>
                 <a
                   href={`${WA_BASE}?text=${waMsg}`}
                   target="_blank"
@@ -135,13 +81,6 @@ export default function PricingSection({ bcvRate }: Props) {
               </div>
             )
           })}
-        </div>
-
-        <div className={styles.moreWrap}>
-          <Link href="/planes" className={styles.moreLink}>
-            Ver todos los detalles
-            <ArrowRight size={15} aria-hidden="true" />
-          </Link>
         </div>
       </div>
     </section>

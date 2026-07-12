@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import styles from './page.module.css'
 
@@ -9,19 +10,23 @@ export const metadata: Metadata = {
   description: 'Descubre cómo ActivoPOS se adapta a tu negocio venezolano. POS para carnicerías, restaurantes, ferreterías, farmacias y más.',
 }
 
+const PLAN_TIERS: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
+
 export default async function RecursosPage() {
-  const [segments, plans] = await Promise.all([
-    prisma.segment.findMany({
-      where: { active: true },
-      orderBy: { sort_order: 'asc' },
-      select: { slug: true, name: true, tag_line: true, headline: true },
-    }),
-    prisma.plan.findMany({
-      where: { active: true },
-      orderBy: { sort_order: 'asc' },
-      select: { key: true, name: true, price_usd: true },
-    }),
-  ])
+  const segments = await prisma.segment.findMany({
+    where: { active: true },
+    orderBy: { sort_order: 'asc' },
+    select: { slug: true, name: true, tag_line: true, headline: true },
+  })
+
+  // Fuente única de verdad de precios — plan-limits.ts, igual que /planes,
+  // PricingSection y SegmentPricing. Ya NO se lee la tabla `plans` de la DB
+  // (evita que 2 fuentes puedan volver a divergir en el precio real).
+  const plans = PLAN_TIERS.map(tier => ({
+    key:       tier,
+    name:      PLAN_DISPLAY[tier],
+    price_usd: BILLING_CYCLES[tier].mensual.monthlyEquivalent,
+  }))
 
   return (
     <div className={styles.page}>

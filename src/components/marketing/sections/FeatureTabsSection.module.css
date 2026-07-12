@@ -99,7 +99,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -135,7 +135,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #64748B;
+  color: var(--mkt-text-2);
 }
 
 /* ── Panel Variantes ── */
@@ -175,7 +175,7 @@
 
 .variantSpec {
   font-size: 12px;
-  color: #64748B;
+  color: var(--mkt-text-2);
 }
 
 .variantPrice {

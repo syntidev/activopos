@@ -27,7 +27,7 @@
 
 .subtitle {
   font-size: 15px;
-  color: #64748B;
+  color: var(--mkt-text-2);
   line-height: 1.6;
 }
 

@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { HelpButton } from '@/components/help/HelpButton'
 import type { UserRecord, UserRole } from '@/types'
 import styles from './usuarios.module.css'
 
@@ -383,6 +384,7 @@ function UsuariosContent() {
         </form>
       </Modal>
 
+      <HelpButton module="usuarios" />
     </div>
   )
 }

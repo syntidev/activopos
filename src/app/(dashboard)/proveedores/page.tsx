@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { HelpButton } from '@/components/help/HelpButton'
 import type { Supplier } from './types'
 import styles from './proveedores.module.css'
 
@@ -274,6 +275,7 @@ export default function ProveedoresPage() {
           />
         </div>
       </Modal>
+      <HelpButton module="proveedores" />
     </div>
   )
 }

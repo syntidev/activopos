@@ -189,6 +189,31 @@
   margin: 0;
 }
 
+/* ── Tip ── */
+.tipBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(var(--brand-rgb), 0.12);
+  border: 1px solid rgba(var(--brand-rgb), 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 16px;
+}
+
+.tipIcon {
+  color: var(--brand-l);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.tipText {
+  font-size: 0.83rem;
+  color: rgba(255, 255, 255, 0.80);
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* ── FAQs ── */
 .faqsList {
   display: flex;

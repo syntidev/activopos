@@ -7,6 +7,7 @@ import {
   AlertCircle, Clock, X,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { HelpButton } from '@/components/help/HelpButton'
 import styles from './devoluciones.module.css'
 
 /* ── Types ── */
@@ -457,6 +458,7 @@ function DevolucionesContent() {
           </div>
         )}
       </section>
+      <HelpButton module="devoluciones" />
     </div>
   )
 }

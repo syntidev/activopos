@@ -11,6 +11,7 @@ import { GastosSection }   from './GastosSection'
 import { ResumenSection }  from './ResumenSection'
 import { PylSection }      from './PylSection'
 import { TabCategorias }   from '../configuracion/tabs/TabCategorias'
+import { HelpButton }      from '@/components/help/HelpButton'
 import styles from './finanzas.module.css'
 
 const TABS = [
@@ -138,6 +139,7 @@ export default function FinanzasPage() {
           {tab === 'categorias' && <TabCategorias businessId={0} />}
         </ErrorBoundary>
       </div>
+      <HelpButton module="finanzas" />
     </div>
   )
 }

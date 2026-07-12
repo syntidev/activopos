@@ -18,6 +18,7 @@ export interface HelpContent {
   title: string
   steps: HelpStep[]
   faqs:  HelpFaq[]
+  tip?:  string
 }
 
 export const helpContent = {
@@ -73,6 +74,7 @@ export const helpContent = {
         a: 'Selecciona el método de pago "Crédito" y elige el cliente registrado. El saldo queda en su ficha.',
       },
     ],
+    tip: 'Puedes pausar una venta y atender otra al mismo tiempo.',
   },
 
   /* ── PRODUCTOS ────────────────────────────────────────── */
@@ -130,6 +132,7 @@ export const helpContent = {
         a: 'Verifica que tenga: precio mayor a 0, opción "Visible en catálogo" marcada, y que el catálogo esté activo en Configuración.',
       },
     ],
+    tip: 'Agrégale el código de barras para venderlo más rápido con el escáner.',
   },
 
   /* ── INVENTARIO ───────────────────────────────────────── */
@@ -167,6 +170,7 @@ export const helpContent = {
         a: 'Sí. Cada variante (talla, color) tiene su propio stock que descuenta por separado.',
       },
     ],
+    tip: 'Cada movimiento queda guardado — revisa el historial completo desde cada producto.',
   },
 
   /* ── CAJA ─────────────────────────────────────────────── */
@@ -204,6 +208,7 @@ export const helpContent = {
         a: 'No. La tasa se congela al abrir la caja y se mantiene hasta el cierre.',
       },
     ],
+    tip: 'Haz cortes de caja al mediodía si manejas mucho efectivo.',
   },
 
   /* ── CLIENTES ─────────────────────────────────────────── */
@@ -237,6 +242,7 @@ export const helpContent = {
         a: 'En Clientes filtra por Estado: Con deuda. Se ordena por monto pendiente.',
       },
     ],
+    tip: 'Los clientes con crédito quedan registrados en Finanzas para su cobranza.',
   },
 
   /* ── FINANZAS ─────────────────────────────────────────── */
@@ -274,6 +280,7 @@ export const helpContent = {
         a: 'La utilidad incluye ventas a crédito aún no cobradas y excluye salidas de efectivo no operativas.',
       },
     ],
+    tip: 'Cobra las deudas desde el perfil del cliente o desde Finanzas directamente.',
   },
 
   /* ── REPORTES ─────────────────────────────────────────── */
@@ -307,6 +314,7 @@ export const helpContent = {
         a: 'La utilidad incluye ventas a crédito. El efectivo solo cuenta lo cobrado en físico.',
       },
     ],
+    tip: 'Filtra por cajero para ver el rendimiento de cada empleado.',
   },
 
   /* ── CATÁLOGO DIGITAL ─────────────────────────────────── */
@@ -404,6 +412,7 @@ export const helpContent = {
         a: 'El sistema ofrece al cliente elegir entre retirar en tienda o envío a domicilio. Si elige domicilio, ingresa su dirección y GPS opcional. El costo de envío se coordina por WhatsApp.',
       },
     ],
+    tip: 'El stock del catálogo se actualiza solo — si se acaba un producto, nadie lo puede pedir.',
   },
 
   /* ── CONFIGURACIÓN ────────────────────────────────────── */
@@ -441,6 +450,135 @@ export const helpContent = {
         a: 'Configuración → Catálogo Digital → Color principal. El catálogo adopta ese color en botones, chips y acentos.',
       },
     ],
+    tip: 'El tema oscuro/claro se cambia desde Apariencia y aplica al instante.',
+  },
+
+  /* ── DEVOLUCIONES ──────────────────────────────────────── */
+  devoluciones: {
+    title: 'Devoluciones',
+    steps: [
+      {
+        title: 'Busca la venta a revertir',
+        body:  'Ve a Reportes y busca la venta que quieres revertir, filtrando por fecha o cliente.',
+      },
+      {
+        title: 'Anula con un motivo',
+        body:  'Haz clic en "Anular" e ingresa el motivo de la devolución para dejar registro.',
+      },
+      {
+        title: 'Verifica el stock',
+        body:  'El sistema reintegra el stock automáticamente al producto original.',
+      },
+    ],
+    faqs: [
+      {
+        q: '¿Puedo anular solo parte de una venta?',
+        a: 'No. La anulación revierte la venta completa. Para cambios parciales, anula y crea una venta nueva con los productos correctos.',
+      },
+      {
+        q: '¿El cliente pierde el pago al anular?',
+        a: 'No queda registrado automáticamente. Si ya cobraste, debes coordinar el reembolso por fuera del sistema.',
+      },
+      {
+        q: '¿Quién puede anular ventas?',
+        a: 'Solo usuarios con rol administrador. Los cajeros no tienen ese permiso.',
+      },
+    ],
+    tip: 'Solo el administrador puede anular ventas para mayor control del negocio.',
+  },
+
+  /* ── PROVEEDORES ───────────────────────────────────────── */
+  proveedores: {
+    title: 'Proveedores',
+    steps: [
+      {
+        title: 'Registra el proveedor',
+        body:  'Ve a Proveedores → botón "Nuevo" y escribe el nombre, RIF y teléfono del proveedor.',
+      },
+      {
+        title: 'Guarda para usarlo en Compras',
+        body:  'Una vez guardado queda disponible para asignarlo al registrar una Compra.',
+      },
+      {
+        title: 'Búscalo cuando crezca tu lista',
+        body:  'Usa el buscador por nombre o RIF para encontrarlo rápido.',
+      },
+    ],
+    faqs: [
+      {
+        q: '¿Puedo editar los datos de un proveedor?',
+        a: 'Sí. Desde la lista de Proveedores, toca el proveedor y edita sus datos en cualquier momento.',
+      },
+      {
+        q: '¿Qué pasa si borro un proveedor con compras registradas?',
+        a: 'Las compras ya registradas quedan intactas en el historial, solo se pierde el vínculo para compras nuevas.',
+      },
+    ],
+    tip: 'Búscalo por nombre o RIF cuando tu lista de proveedores crezca.',
+  },
+
+  /* ── COMPRAS ───────────────────────────────────────────── */
+  compras: {
+    title: 'Compras',
+    steps: [
+      {
+        title: 'Crea una nueva compra',
+        body:  'Ve a Proveedores → Compras → "Nueva Compra".',
+      },
+      {
+        title: 'Elige proveedor y productos',
+        body:  'Selecciona el proveedor y agrega los productos con su cantidad y costo real.',
+      },
+      {
+        title: 'Marca el estado',
+        body:  'Marca "Recibida" si ya tienes la mercancía, o "Pendiente" si quedaste a deber al proveedor.',
+      },
+      {
+        title: 'El stock sube solo',
+        body:  'Si la compra queda "Recibida", el stock de cada producto se actualiza automáticamente.',
+      },
+    ],
+    faqs: [
+      {
+        q: '¿Qué diferencia hay entre compra y entrada manual de inventario?',
+        a: 'La compra registra el costo real y el proveedor, y puede quedar como deuda (CxP). La entrada manual es solo un ajuste de stock sin esos datos.',
+      },
+      {
+        q: '¿Puedo editar una compra ya recibida?',
+        a: 'No directamente — si hay un error, regístralo como ajuste de inventario para mantener el historial correcto.',
+      },
+    ],
+    tip: 'Una compra pendiente aparece como deuda en Finanzas → Cuentas por Pagar.',
+  },
+
+  /* ── USUARIOS ──────────────────────────────────────────── */
+  usuarios: {
+    title: 'Usuarios',
+    steps: [
+      {
+        title: 'Crea el usuario',
+        body:  'Ve a Configuración → Usuarios → Nuevo Usuario.',
+      },
+      {
+        title: 'Asigna rol',
+        body:  'Asigna nombre, cédula, contraseña y rol: cajero o administrador.',
+      },
+      {
+        title: 'Diferencia de acceso',
+        body:  'El cajero solo ve el POS; el administrador tiene acceso completo al sistema.',
+      },
+    ],
+    faqs: [
+      {
+        q: '¿Cuántos usuarios puedo tener?',
+        a: 'Según tu plan: Mostrador 2, Negocio 5, Pro ilimitado.',
+      },
+      {
+        q: '¿Puedo desactivar un usuario sin borrarlo?',
+        a: 'Sí. Desactívalo desde su ficha para quitarle el acceso sin perder su historial de ventas.',
+      },
+    ],
+    tip: 'Cambia la contraseña de un cajero desde su perfil si se la olvida.',
   },
 
 } satisfies Record<string, HelpContent>

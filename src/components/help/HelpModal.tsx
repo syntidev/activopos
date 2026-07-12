@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { HelpCircle, X } from 'lucide-react'
+import { HelpCircle, Lightbulb, X } from 'lucide-react'
 import { helpContent, type HelpModule } from '@/lib/help-content'
 import styles from './HelpModal.module.css'
 
@@ -116,6 +116,14 @@ export function HelpModal({ module, onClose }: HelpModalProps) {
                 </li>
               ))}
             </ol>
+          )}
+
+          {/* Tip */}
+          {activeTab === 'steps' && content.tip && (
+            <div className={styles.tipBox} role="note">
+              <Lightbulb size={16} className={styles.tipIcon} aria-hidden="true" />
+              <p className={styles.tipText}><strong>Tip:</strong> {content.tip}</p>
+            </div>
           )}
 
           {/* FAQs */}

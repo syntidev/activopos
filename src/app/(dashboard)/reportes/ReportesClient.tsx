@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { MonthlyReportBanner } from '@/components/reports/MonthlyReportBanner'
 import { VentasPage } from '../ventas/VentasPage'
+import { HelpButton } from '@/components/help/HelpButton'
 import styles from './reportes.module.css'
 
 /* ── Types ── */
@@ -972,6 +973,7 @@ function ReportesInner({ isAdmin }: { isAdmin: boolean }) {
           <CierresTab />
         </div>
       )}
+      <HelpButton module="reportes" />
     </div>
   )
 }

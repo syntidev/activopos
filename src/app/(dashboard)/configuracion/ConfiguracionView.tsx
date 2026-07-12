@@ -13,6 +13,7 @@ import {
   Crown,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
+import { HelpButton } from '@/components/help/HelpButton'
 import styles from './configuracion.module.css'
 import { TabGeneral }         from './tabs/TabGeneral'
 import { TabEmpresa }         from './tabs/TabEmpresa'
@@ -102,6 +103,7 @@ export function ConfiguracionView({ session }: ConfiguracionViewProps) {
           />
         )}
       </main>
+      <HelpButton module="configuracion" />
     </div>
   )
 }

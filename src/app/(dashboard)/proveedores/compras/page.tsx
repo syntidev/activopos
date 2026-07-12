@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { useToast } from '@/components/ui/Toast'
 import type { Supplier, ProductOption } from '../types'
+import { HelpButton } from '@/components/help/HelpButton'
 import proveedoresStyles from '../proveedores.module.css'
 import styles from './compras.module.css'
 
@@ -749,6 +750,7 @@ function ComprasContent() {
           </>
         )}
       </Modal>
+      <HelpButton module="compras" />
     </div>
   )
 }

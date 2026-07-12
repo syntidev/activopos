@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ExternalLink, Download, Eye, EyeOff, MessageSquare, QrCode, X } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { HelpButton } from '@/components/help/HelpButton'
 import styles from './catalogo-admin.module.css'
 
 /* ── Types ───────────────────────────────────────────────── */
@@ -317,6 +318,7 @@ function CatalogoAdminContent() {
         </>
       )}
 
+      <HelpButton module="catalogo" />
     </div>
   )
 }

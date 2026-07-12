@@ -18,6 +18,7 @@ import { CargoModal } from '@/components/pos/CargoModal'
 import { CreditoModal } from '@/components/pos/CreditoModal'
 import { QtyInput } from '@/components/pos/QtyInput'
 import { VariantSelector } from '@/components/products/VariantSelector'
+import { HelpButton } from '@/components/help/HelpButton'
 import { useToast } from '@/components/ui'
 import { useHardwareScanner } from '@/hooks/useHardwareScanner'
 import type { ProductForPOS } from '@/lib/pos'
@@ -302,6 +303,7 @@ export default function POSPage() {
           }
         }}
       />
+      <HelpButton module="pos" />
     </div>
   )
 }

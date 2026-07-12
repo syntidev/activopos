@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import {
   Search,
   Package,
@@ -24,131 +24,11 @@ import {
   RotateCw,
   ExternalLink,
   ChevronRight,
-  Lightbulb,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
-import { helpContent, type HelpModule } from '@/lib/help-content'
+import { HelpModal } from '@/components/help/HelpModal'
+import { type HelpModule } from '@/lib/help-content'
 import styles from './ayuda.module.css'
-
-/* ── Help topic content ── */
-
-interface HelpTopic {
-  steps: string[]
-  tip: string
-}
-
-const HELP_TOPICS: Record<string, HelpTopic> = {
-  Productos: {
-    steps: [
-      'Ve a Productos → botón "Nuevo Producto".',
-      'Escribe el nombre, el precio en USD y el costo (para saber tu ganancia real).',
-      'Escoge si se vende por unidad o por peso (kg).',
-      'Si tiene tallas, colores u otras variantes, actívalas y agrégalas.',
-      'Guarda — ya puedes venderlo desde el Punto de Venta.',
-    ],
-    tip: 'Agrégale el código de barras para venderlo más rápido con el escáner.',
-  },
-  Inventario: {
-    steps: [
-      'Ve a Inventario y busca el producto.',
-      'Presiona "Entrada" cuando te llegue mercancía nueva y anota cantidad y costo.',
-      'Usa "Ajuste" si algo se dañó, se perdió o hiciste un conteo distinto.',
-      'Usa "Consumo interno" si sacaste producto para uso propio del negocio.',
-    ],
-    tip: 'Cada movimiento queda guardado — revisa el historial completo desde cada producto.',
-  },
-  'Ventas (POS)': {
-    steps: [
-      'Abre el Punto de Venta desde el menú lateral.',
-      'Busca o escanea el producto que quieres vender.',
-      'Ingresa la cantidad — el sistema calcula el total en USD y Bs.',
-      'Selecciona el método de pago y procesa la venta.',
-    ],
-    tip: 'Puedes pausar una venta y atender otra al mismo tiempo.',
-  },
-  Devoluciones: {
-    steps: [
-      'Ve a Reportes y busca la venta que quieres revertir.',
-      'Haz clic en "Anular" e ingresa el motivo de la devolución.',
-      'El sistema registrará la devolución y reintegrará el stock.',
-    ],
-    tip: 'Solo el administrador puede anular ventas para mayor control del negocio.',
-  },
-  Clientes: {
-    steps: [
-      'Ve a la sección Clientes y presiona "Nuevo Cliente".',
-      'Ingresa nombre, teléfono y cédula o RIF.',
-      'Desde el POS puedes asignar la venta a ese cliente.',
-    ],
-    tip: 'Los clientes con crédito quedan registrados en Finanzas para su cobranza.',
-  },
-  Reportes: {
-    steps: [
-      'Ve a Reportes y selecciona el rango de fechas.',
-      'Revisa el resumen: ventas, métodos de pago y productos más vendidos.',
-      'Usa "Exportar PDF" para guardar o imprimir el reporte.',
-    ],
-    tip: 'Filtra por cajero para ver el rendimiento de cada empleado.',
-  },
-  'Catálogo Digital': {
-    steps: [
-      'Ve a Catálogo Digital para ver tu tienda en línea.',
-      'Descarga el código QR o copia el enlace para compartirlo por WhatsApp o redes.',
-      'Desde cada producto, activa "Mostrar en catálogo" para que salga publicado.',
-      'Los pedidos que hagan tus clientes llegan directo al módulo Pedidos.',
-    ],
-    tip: 'El stock del catálogo se actualiza solo — si se acaba un producto, nadie lo puede pedir.',
-  },
-  'Gestión de Caja': {
-    steps: [
-      'Ve a Gestión de Caja y abre un turno con el monto inicial en efectivo.',
-      'Durante el turno todas las ventas se registran automáticamente.',
-      'Al cerrar, ingresa el efectivo contado para el cuadre.',
-    ],
-    tip: 'Haz cortes de caja al mediodía si manejas mucho efectivo.',
-  },
-  Finanzas: {
-    steps: [
-      'Ve a Finanzas para ver los ingresos y gastos del negocio.',
-      'Registra gastos como alquiler, servicios o pagos a proveedores.',
-      'Las ventas a crédito aparecen en Cuentas por Cobrar.',
-    ],
-    tip: 'Cobra las deudas desde el perfil del cliente o desde Finanzas directamente.',
-  },
-  Proveedores: {
-    steps: [
-      'Ve a Proveedores → botón "Nuevo".',
-      'Escribe el nombre, RIF y teléfono del proveedor.',
-      'Guarda — ya queda disponible para usarlo al registrar una Compra.',
-    ],
-    tip: 'Búscalo por nombre o RIF cuando tu lista de proveedores crezca.',
-  },
-  Compras: {
-    steps: [
-      'Ve a Proveedores → pestaña Compras → "Nueva Compra".',
-      'Elige el proveedor y agrega los productos con cantidad y costo.',
-      'Marca "Recibida" si ya tienes la mercancía, o "Pendiente" si quedaste a deber.',
-      'Guarda — si quedó recibida, tu stock sube automático.',
-    ],
-    tip: 'Una compra pendiente aparece como deuda en Finanzas → Cuentas por Pagar.',
-  },
-  Usuarios: {
-    steps: [
-      'Ve a Configuración → Usuarios → Nuevo Usuario.',
-      'Asigna nombre, cédula, contraseña y rol (cajero o administrador).',
-      'El cajero solo verá el POS; el administrador tiene acceso completo.',
-    ],
-    tip: 'Cambia la contraseña de un cajero desde su perfil si se la olvida.',
-  },
-  Configuraciones: {
-    steps: [
-      'Ve a Configuración para personalizar tu negocio.',
-      'Agrega el nombre del negocio, logo y teléfono.',
-      'Configura la tasa BCV y el formato del ticket de venta.',
-    ],
-    tip: 'El tema oscuro/claro se cambia desde Apariencia y aplica al instante.',
-  },
-}
 
 /* ── Help articles ── */
 
@@ -241,122 +121,25 @@ const HELP_CARDS: HelpCard[] = [
 ]
 
 /* ── Help modal ──
-   Fuente única de contenido: los 9 módulos que existen en helpContent
-   (src/lib/help-content.ts) se leen de ahí, no de HELP_TOPICS local, para
-   que ambos modales de ayuda (este y components/help/HelpModal.tsx) nunca
-   diverjan. Devoluciones/Proveedores/Compras/Usuarios no tienen módulo en
-   help-content.ts todavía — siguen usando su contenido local. */
+   Fuente única de contenido: los 13 títulos de HELP_CARDS mapean 1:1 a
+   los 13 módulos de helpContent (src/lib/help-content.ts) — un solo
+   componente de modal (components/help/HelpModal.tsx) para toda la app,
+   sin versión local duplicada. */
 
-const TITLE_TO_MODULE: Partial<Record<string, HelpModule>> = {
+const TITLE_TO_MODULE: Record<string, HelpModule> = {
   'Productos':        'productos',
   'Inventario':       'inventario',
   'Ventas (POS)':     'pos',
+  'Devoluciones':     'devoluciones',
   'Clientes':         'clientes',
   'Reportes':         'reportes',
   'Catálogo Digital': 'catalogo',
   'Gestión de Caja':  'caja',
   'Finanzas':         'finanzas',
+  'Proveedores':      'proveedores',
+  'Compras':          'compras',
+  'Usuarios':         'usuarios',
   'Configuraciones':  'configuracion',
-}
-
-const OVERLAY_VARIANTS = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.18 } },
-  exit: { opacity: 0, transition: { duration: 0.14 } },
-}
-
-const PANEL_VARIANTS = {
-  hidden: { opacity: 0, scale: 0.96, y: 8 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, stiffness: 340, damping: 28 } },
-  exit: { opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.14 } },
-}
-
-function HelpModal({ card, onClose }: { card: HelpCard | null; onClose: () => void }) {
-  const localTopic = card ? HELP_TOPICS[card.title] : null
-  const module = card ? TITLE_TO_MODULE[card.title] : undefined
-  const steps: string[] = module
-    ? helpContent[module].steps.map(s => `${s.title}: ${s.body}`)
-    : localTopic?.steps ?? []
-  const tip = localTopic?.tip
-
-  useEffect(() => {
-    if (!card) return
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [card, onClose])
-
-  return (
-    <AnimatePresence>
-      {card && steps.length > 0 && (
-        <motion.div
-          className={styles.helpModalOverlay}
-          variants={OVERLAY_VARIANTS}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          onClick={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-label={card.title}
-        >
-          <motion.div
-            className={styles.helpModalPanel}
-            variants={PANEL_VARIANTS}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.helpModalContent}>
-              {/* Header */}
-              <div className={styles.helpModalHeader}>
-                <div className={styles.helpModalIconWrap} aria-hidden="true">
-                  <card.icon size={22} />
-                </div>
-                <div className={styles.helpModalTitleGroup}>
-                  <h2 className={styles.helpModalTitle}>{card.title}</h2>
-                  <p className={styles.helpModalDesc}>{card.description}</p>
-                </div>
-                <button
-                  className={styles.helpModalClose}
-                  onClick={onClose}
-                  aria-label="Cerrar"
-                >
-                  <X size={18} aria-hidden="true" />
-                </button>
-              </div>
-
-              {/* Steps */}
-              <ol className={styles.helpStepsList}>
-                {steps.map((step, i) => (
-                  <li key={i} className={styles.helpStepItem}>
-                    <span className={styles.helpStepNum} aria-hidden="true">{i + 1}</span>
-                    <span className={styles.helpStepText}>{step}</span>
-                  </li>
-                ))}
-              </ol>
-
-              {/* Tip */}
-              {tip && (
-                <div className={styles.helpTipBox} role="note">
-                  <Lightbulb size={16} className={styles.helpTipIcon} aria-hidden="true" />
-                  <p className={styles.helpTipText}><strong>Tip:</strong> {tip}</p>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className={styles.helpModalFooter}>
-                <button className={styles.helpModalBtn} onClick={onClose}>
-                  Entendido
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
 }
 
 /* ── Chatbot local fallback ── */
@@ -365,6 +148,10 @@ interface BotRule { keywords: string[]; response: string }
 
 const BOT_RULES: BotRule[] = [
   { keywords: ['hola','buenos','buenas'], response: '¡Hola! Soy el asistente de ActivoPOS. Pregúntame sobre ventas, pagos, código de barras, BCV, variantes, catálogo, caja, inventario, clientes, finanzas, reportes, configuración o planes.' },
+
+  // 0. Productos — sin esta regla, "producto"/"productos" no matcheaba nada
+  // y caía en la keyword suelta 'pro' de Planes (substring de "producto") — respuesta incoherente.
+  { keywords: ['producto','productos','nuevo producto','agregar producto','crear producto','precio de producto','costo del producto'], response: 'Para crear un producto: ve a Productos → "Nuevo Producto". Escribe el nombre, el precio en USD y el costo (para ver tu ganancia real). Elige si se vende por unidad o por peso, y activa variantes si tiene tallas o colores. Guarda — ya puedes venderlo desde el POS.' },
 
   // 1. POS — vender, pagos, descuentos, crédito
   { keywords: ['vender','venta','cobrar','pos','punto de venta','como vendo'], response: 'Para vender: abre la Caja primero, luego ve al Punto de Venta. Busca el producto por nombre, código o escáner. Ingresa la cantidad — el sistema calcula el total en USD y Bs. Elige el método de pago y cobra.' },
@@ -394,8 +181,12 @@ const BOT_RULES: BotRule[] = [
   // 8. Clientes
   { keywords: ['cliente','clientes','directorio','deuda','historial de compras'], response: 'Registra clientes con nombre, teléfono y cédula o RIF — es obligatorio para venderles a crédito. Cada ficha muestra su historial de compras y lo que debe. Filtra por "Con deuda" para ver a quién cobrar.' },
 
-  // 9. Finanzas
-  { keywords: ['finanzas','gasto','gastos','utilidad','ganancia','compra','compras'], response: 'En Finanzas registras gastos (luz, alquiler, empleados) y compras a proveedor (mercancía con su costo real). La diferencia importa: una compra aumenta tu inventario, un gasto no. La utilidad es ventas menos costos y gastos del período — exporta el detalle en Excel para tu contador.' },
+  // 9. Finanzas — 'compra'/'compras' se movió a su propia regla (9b): competía
+  // mal contra la pregunta real "cómo registro una compra a proveedor".
+  { keywords: ['finanzas','gasto','gastos','utilidad','ganancia'], response: 'En Finanzas registras gastos (luz, alquiler, empleados) y ves tu utilidad real: ventas menos costos y gastos del período. Exporta el detalle en Excel para tu contador.' },
+
+  // 9b. Compras a proveedor
+  { keywords: ['compra','compras','nueva compra','proveedor'], response: 'Para registrar una compra: ve a Proveedores → pestaña Compras → "Nueva Compra". Elige el proveedor y agrega los productos con cantidad y costo. Marca "Recibida" si ya tienes la mercancía (tu stock sube automático) o "Pendiente" si quedaste a deber (aparece en Finanzas → Cuentas por Pagar).' },
 
   // 10. Reportes
   { keywords: ['reporte','reportes','ventas del dia','cuanto vendi','exportar'], response: 'En Reportes eliges el período (hoy, semana, mes o rango personalizado) y ves el total por método de pago y por producto. Puedes exportar a Excel o PDF.' },
@@ -403,8 +194,10 @@ const BOT_RULES: BotRule[] = [
   // 11. Configuración
   { keywords: ['configuracion','logo','modulos','usuario','usuarios','cajero','pin','contraseña'], response: 'En Configuración editas el logo y datos del negocio, activas métodos de pago, activas o desactivas módulos según tu plan, y agregas usuarios. Los cajeros usan un PIN de 4 dígitos para autorizar descuentos; solo ven el POS, mientras que el administrador tiene acceso completo.' },
 
-  // 12. Planes
-  { keywords: ['plan','planes','precio','cuanto cuesta','mostrador','negocio','pro','upgrade','mejorar plan'], response: 'Hay tres planes: Mostrador (POS básico, hasta 100 productos y 3 usuarios), Negocio (agrega Catálogo Digital, hasta 500 productos y 10 usuarios) y Pro (todo ilimitado + asistente IA). Puedes mejorar tu plan desde Configuración.' },
+  // 12. Planes — 'precio'/'cuanto cuesta'/'pro' sueltos se sacaron: 'pro' es
+  // substring de "producto"/"proveedor" (match falso constante) y 'precio' sin
+  // calificar competía con preguntas de precio de producto (regla 0).
+  { keywords: ['plan','planes','cuanto cuesta activopos','cuanto cuesta el sistema','precio del plan','plan mostrador','plan negocio','plan pro','upgrade','mejorar plan'], response: 'Hay tres planes: Mostrador (POS básico, hasta 100 productos y 3 usuarios), Negocio (agrega Catálogo Digital, hasta 500 productos y 10 usuarios) y Pro (todo ilimitado + asistente IA). Puedes mejorar tu plan desde Configuración.' },
 
   // 13. Preguntas frecuentes venezolanas
   { keywords: ['seniat','factura fiscal','factura legal'], response: 'ActivoPOS no reemplaza tu facturación fiscal ante el SENIAT — la complementa. Los tickets que genera son comprobantes de venta para tu control interno, no facturas fiscales.' },
@@ -441,6 +234,7 @@ interface ChatMessage {
   type: 'bot' | 'user'
   text: string
   isPending?: boolean
+  source?: 'ai' | 'fallback'
 }
 
 function ChatPanel({ onClose }: { onClose: () => void }) {
@@ -468,10 +262,13 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
     setIsLoading(true)
 
     let botText = botReply(text)
+    let source: ChatMessage['source'] = 'fallback'
+    let isPermissionMsg = false
 
     try {
       const ctrl = new AbortController()
-      const timeoutId = setTimeout(() => ctrl.abort(), 8000)
+      // 12s (antes 8s) — Haiku con contexto de negocio a veces pasaba de 8s y caía a fallback de más
+      const timeoutId = setTimeout(() => ctrl.abort(), 12000)
 
       const res = await fetch('/api/ai/chat', {
         method:  'POST',
@@ -483,9 +280,10 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
 
       if (res.status === 403) {
         botText = 'Solo administradores pueden usar el asistente IA.'
+        isPermissionMsg = true
       } else if (res.ok) {
         const data = await res.json() as { response?: string }
-        botText = data.response ?? botReply(text)
+        if (data.response) { botText = data.response; source = 'ai' }
       }
       // 5xx or other errors → keep local fallback already in botText
     } catch {
@@ -493,7 +291,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
     } finally {
       setIsLoading(false)
       setMessages(prev => prev.map(m =>
-        m.id === pendingId ? { ...m, text: botText, isPending: false } : m
+        m.id === pendingId ? { ...m, text: botText, isPending: false, source: isPermissionMsg ? undefined : source } : m
       ))
     }
   }
@@ -535,6 +333,11 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
             className={`${styles.chatBubble} ${msg.type === 'user' ? styles.chatBubbleUser : styles.chatBubbleBot}${msg.isPending ? ` ${styles.chatBubblePending}` : ''}`}
           >
             {msg.isPending && <span className={styles.chatSpinner} aria-hidden="true" />}
+            {msg.type === 'bot' && msg.source && (
+              <span className={styles.chatSourceTag}>
+                {msg.source === 'ai' ? 'IA' : 'Rápida'}
+              </span>
+            )}
             {msg.text}
           </div>
         ))}
@@ -716,7 +519,14 @@ function AyudaContent() {
       </div>
 
       {/* Help modal */}
-      <HelpModal card={activeCard} onClose={() => setActiveCard(null)} />
+      <AnimatePresence>
+        {activeCard && (
+          <HelpModal
+            module={TITLE_TO_MODULE[activeCard.title]}
+            onClose={() => setActiveCard(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Floating chat bubble */}
       <button

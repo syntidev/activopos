@@ -11,6 +11,7 @@ import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
 import { useScanner } from '@/hooks/useScanner'
 import { StockModal } from '@/components/products/StockModal'
+import { HelpButton } from '@/components/help/HelpButton'
 import styles from './inventario.module.css'
 
 /* ── Types ── */
@@ -1275,6 +1276,7 @@ function InventarioContent() {
           onSaved={handleConsumeSaved}
         />
       )}
+      <HelpButton module="inventario" />
     </div>
   )
 }

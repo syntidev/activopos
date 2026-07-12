@@ -1,34 +1,68 @@
-# ActivoPOS
-> El POS SaaS venezolano para PYMES — ventas, inventario y catálogo digital
+﻿# ActivoPOS
 
-## Qué es
-ActivoPOS es un sistema de punto de venta diseñado específicamente para negocios venezolanos. Permite cobrar en USD y Bs con tasa BCV automática, gestionar inventario con variantes, publicar un catálogo digital con pedidos por WhatsApp, y cerrar caja diariamente con reportes en tiempo real.
+> Sistema de control de ventas e inventario para PYMEs venezolanas.
+> No reemplaza la facturacion SENIAT - la complementa.
 
-## Características principales
-- POS táctil con soporte para Pago Móvil, Zelle, USDT, Efectivo y Zinli
-- BCV automático en cada transacción — tasa oficial actualizada en tiempo real
-- Escáner de código de barras desde la cámara del celular — sin hardware adicional
-- Catálogo digital público con pedidos por WhatsApp
-- Variantes de producto: tallas, colores, combinaciones con stock independiente
-- Cierre de caja diario con reporte en USD y Bs
-- Inventario en tiempo real con alertas de stock crítico
-- Cotizaciones de servicios con PDF profesional
+ActivoPOS es un SaaS POS multi-tenant para pequenas y medianas empresas
+en Venezuela. Registra ventas, controla inventario, genera reportes
+financieros y publica catalogo digital con checkout por WhatsApp.
+Opera con precios en USD y Bs sincronizados con tasa BCV oficial.
 
-## Segmentos atendidos
-Bodegas, abastos, carnicerías, restaurantes, boutiques, farmacias, ferreterías, panaderías, fruterías, peluquerías, licorerías, repuesterías, ópticas, papelerías, tiendas de mascotas, mueblerías, lavanderías, jugueterías, distribuidoras, tiendas deportivas, electrónica
+## Paginas principales
+
+- [Inicio](https://activopos.com/)
+- [Planes y precios](https://activopos.com/planes)
+- [Segmentos](https://activopos.com/segmentos)
+- [Blog](https://activopos.com/blog)
+- [Recursos](https://activopos.com/recursos)
+- [FAQ](https://activopos.com/faq)
+- [Soporte](https://activopos.com/soporte)
+- [Nosotros](https://activopos.com/nosotros)
+- [Contacto](https://activopos.com/contacto)
+
+## Por tipo de negocio
+
+- [Carniceria](https://activopos.com/para-carniceria)
+- [Restaurante](https://activopos.com/para-restaurante)
+- [Ferreteria](https://activopos.com/para-ferreterias)
+- [Farmacia](https://activopos.com/para-farmacias)
+- [Tienda de Ropa](https://activopos.com/para-tiendas-ropa)
+- [Abasto y Bodega](https://activopos.com/para-abastos)
+- [Tecnologia y Electronicos](https://activopos.com/para-tecnologia)
+- [Tienda de Repuestos](https://activopos.com/para-repuestos)
+- [Servicios y Oficina](https://activopos.com/para-servicios)
+- [Panaderia](https://activopos.com/para-panaderia)
+- [Fruteria](https://activopos.com/para-fruteria)
+- [Mascotas](https://activopos.com/para-mascotas)
+- [Papeleria](https://activopos.com/para-papeleria)
+- [Belleza](https://activopos.com/para-belleza)
+- [Muebleria](https://activopos.com/para-muebleria)
+- [Lavanderia](https://activopos.com/para-lavanderia)
+- [Deportes](https://activopos.com/para-deportes)
+- [Distribuidora](https://activopos.com/para-mayorista)
+- [Licoreria](https://activopos.com/para-licoreria)
+- [Optica](https://activopos.com/para-optica)
+- [Jugueteria](https://activopos.com/para-jugueteria)
+- [Electronica](https://activopos.com/para-electronica)
 
 ## Planes
-- Mostrador: POS básico para comenzar
-- Negocio: POS + catálogo digital + finanzas completas
-- Pro: todo ilimitado + analytics avanzado
 
-## URLs importantes
-- Landing: https://activopos.com
-- Blog: https://activopos.com/blog
-- Segmentos: https://activopos.com/segmentos
-- Planes: https://activopos.com/planes
-- Registro: https://activopos.com/registro
+- Mostrador: 15 USD/mes - hasta 100 productos, hasta 3 usuarios
+- Negocio: 25 USD/mes - hasta 500 productos, hasta 10 usuarios, catalogo digital
+- Pro: 40 USD/mes - ilimitado, KDS cocina, analytics avanzado, soporte prioritario
 
-## Contacto
+Ciclos disponibles: mensual, semestral, anual.
+
+## Empresa
+
+- Desarrollado por SYNTIdev - syntiweb.com
 - WhatsApp: https://wa.me/584222654827
 - Instagram: https://instagram.com/activopos
+
+## Notas para agentes IA
+
+- NO genera facturas fiscales SENIAT
+- NO procesa pagos - transporta datos de pago al cobrador
+- Precios en USD; bolivares calculados con tasa BCV vigente
+- Mercado exclusivo: Venezuela
+- Idioma: espanol venezolano (tuteo)

@@ -598,7 +598,7 @@
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--mkt-cta-on);
   background: var(--cta);
   border-radius: var(--radius-lg);
   padding: 0.875rem 1.75rem;

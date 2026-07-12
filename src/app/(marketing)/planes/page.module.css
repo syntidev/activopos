@@ -95,7 +95,7 @@
   top: -12px;
   right: 20px;
   background: var(--cta);
-  color: #FFFFFF;
+  color: var(--mkt-cta-on);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -195,9 +195,22 @@
 
 .tableWrap {
   overflow-x: auto;
-  background: #FFFFFF;
   border-radius: 20px;
   box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+  /* Affordance de scroll horizontal en mobile (min-width:560px de .table
+     vs viewport angosto): sombras de borde nativas en CSS, sin JS. Las 2
+     capas "local" son fades blancos que se mueven con el contenido y
+     tapan la sombra correspondiente al llegar al inicio/fin del scroll;
+     las 2 capas "scroll" son las sombras oscuras fijas al viewport. */
+  background:
+    linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0)) 0 0,
+    linear-gradient(to left,  #FFFFFF 30%, rgba(255, 255, 255, 0)) 100% 0,
+    linear-gradient(to right, rgba(13, 27, 46, 0.18), rgba(13, 27, 46, 0)) 0 0,
+    linear-gradient(to left,  rgba(13, 27, 46, 0.18), rgba(13, 27, 46, 0)) 100% 0;
+  background-repeat: no-repeat;
+  background-color: #FFFFFF;
+  background-size: 24px 100%, 24px 100%, 10px 100%, 10px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 .table {

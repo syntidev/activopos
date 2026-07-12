@@ -67,7 +67,7 @@
 
 .ctaPrimary {
   background: var(--cta);
-  color:      #FFFFFF;
+  color:      var(--mkt-cta-on);
 }
 .ctaPrimary:hover { background: var(--cta-hover); transform: translateY(-1px); }
 
@@ -138,7 +138,7 @@
   top: -16px;
   right: -12px;
   background: var(--cta);
-  color: #FFFFFF;
+  color: var(--mkt-cta-on);
   font-size: 13px;
   font-weight: 700;
   padding: 8px 16px;

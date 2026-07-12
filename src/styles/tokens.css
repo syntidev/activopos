@@ -93,6 +93,10 @@
   --cta-border:         #FED7AA;
   --cta-on:             #FFFFFF;
   --cta-rgb:            239, 142, 1;
+  /* Texto sobre --cta en marketing — #FFFFFF da 2.46:1 (falla WCAG AA).
+     var(--mkt-navy) da 7.04:1. No se toca --cta-on: ese token es consumido
+     por dashboard/POS (Procesar Pago, Declarar Cierre), fuera de alcance. */
+  --mkt-cta-on:         var(--mkt-navy);
 
   /* ── WhatsApp ── */
   --whatsapp:           #25D366;

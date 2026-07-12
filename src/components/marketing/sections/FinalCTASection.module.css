@@ -75,7 +75,7 @@
 
 .ctaBtn {
   background: var(--cta);
-  color: #FFFFFF;
+  color: var(--mkt-cta-on);
   border: none;
   padding: 16px 36px;
   border-radius: 12px;

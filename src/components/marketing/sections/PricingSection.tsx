@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Check, MessageCircle, ArrowRight } from 'lucide-react'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier, type BillingCycleKey } from '@/lib/plan-limits'
+import { featuresForTier } from '@/lib/plan-features'
 import styles from './PricingSection.module.css'
 
 interface Props {
@@ -20,48 +21,14 @@ const CYCLE_LABEL: Record<BillingCycleKey, string> = {
 
 interface PlanCopy {
   tier:     Exclude<PlanTier, 'trial'>
-  feats:    string[]
   featured: boolean
   badge:    string | null
 }
 
 const PLANS: PlanCopy[] = [
-  {
-    tier: 'inicio',
-    feats: [
-      'POS táctil en cualquier pantalla',
-      'BCV automático en cada venta',
-      'Hasta 3 usuarios',
-      'Hasta 100 productos',
-    ],
-    featured: false,
-    badge: null,
-  },
-  {
-    tier: 'pro',
-    feats: [
-      'Todo lo de Mostrador',
-      'Catálogo digital con pedidos por WhatsApp',
-      'Cotizaciones en PDF',
-      'Cuentas por cobrar y finanzas completas',
-      'Hasta 10 usuarios',
-      'Hasta 500 productos',
-    ],
-    featured: true,
-    badge: 'Más popular',
-  },
-  {
-    tier: 'business',
-    feats: [
-      'Todo lo de Negocio',
-      'Analytics avanzado',
-      'Usuarios y productos ilimitados',
-      'Panel de cocina (KDS)',
-      'Soporte prioritario',
-    ],
-    featured: false,
-    badge: null,
-  },
+  { tier: 'inicio',   featured: false, badge: null },
+  { tier: 'pro',      featured: true,  badge: 'Más popular' },
+  { tier: 'business', featured: false, badge: null },
 ]
 
 function fmtMoney(n: number): string {
@@ -99,10 +66,11 @@ export default function PricingSection({ bcvRate }: Props) {
         </div>
 
         <div className={styles.grid}>
-          {PLANS.map(({ tier, feats, featured, badge }) => {
+          {PLANS.map(({ tier, featured, badge }) => {
             const amounts    = BILLING_CYCLES[tier][cycle]
             const hasSavings = amounts.savingsAmount > 0
             const waMsg       = encodeURIComponent(`Hola, me interesa el plan ${PLAN_DISPLAY[tier]} de ActivoPOS`)
+            const feats       = featuresForTier(tier)
             return (
               <div key={tier} className={`${styles.card} ${featured ? styles.cardFeatured : ''}`}>
                 {badge && <span className={styles.badge}>{badge}</span>}
@@ -120,7 +88,13 @@ export default function PricingSection({ bcvRate }: Props) {
                 )}
                 <ul className={styles.feats}>
                   {feats.map(f => (
-                    <li key={f}><Check size={14} aria-hidden="true" />{f}</li>
+                    <li key={f.label}>
+                      <Check size={14} aria-hidden="true" />
+                      <span>
+                        <span className={styles.featLabel}>{f.label}</span>
+                        <span className={styles.featDesc}>{f.desc}</span>
+                      </span>
+                    </li>
                   ))}
                 </ul>
                 <a

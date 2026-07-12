@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Check, X, MessageCircle } from 'lucide-react'
 import { getBcvRate } from '@/lib/bcv'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
+import { PLAN_FEATURES } from '@/lib/plan-features'
 import PlanToggle from './PlanToggle'
 import styles from './page.module.css'
 
@@ -20,26 +21,6 @@ export const metadata: Metadata = {
 export const revalidate = 300
 
 const TIERS: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
-
-interface FeatureRow {
-  label: string
-  values: [boolean | string, boolean | string, boolean | string]
-}
-
-const FEATURES: FeatureRow[] = [
-  { label: 'POS táctil en cualquier pantalla',              values: [true, true, true] },
-  { label: 'BCV automático en cada venta',                   values: [true, true, true] },
-  { label: 'Pago Móvil, Zelle, Efectivo, USDT',              values: [true, true, true] },
-  { label: 'Gestión de proveedores',                         values: [true, true, true] },
-  { label: 'Usuarios',                                       values: ['Hasta 3', 'Hasta 10', 'Ilimitados'] },
-  { label: 'Productos',                                      values: ['Hasta 100', 'Hasta 500', 'Ilimitados'] },
-  { label: 'Catálogo digital con pedidos por WhatsApp',      values: [false, true, true] },
-  { label: 'Cotizaciones en PDF',                             values: [false, true, true] },
-  { label: 'Cuentas por cobrar y finanzas completas',        values: [false, true, true] },
-  { label: 'Analytics avanzado',                              values: [false, false, true] },
-  { label: 'Panel de cocina (KDS)',                           values: [false, false, true] },
-  { label: 'Soporte prioritario',                             values: [false, false, true] },
-]
 
 const FAQS = [
   {
@@ -114,9 +95,12 @@ export default async function PlanesPage() {
                 </tr>
               </thead>
               <tbody>
-                {FEATURES.map(row => (
+                {PLAN_FEATURES.map(row => (
                   <tr key={row.label}>
-                    <th scope="row" className={styles.rowLabel}>{row.label}</th>
+                    <th scope="row" className={styles.rowLabel}>
+                      <span className={styles.rowLabelText}>{row.label}</span>
+                      <span className={styles.rowLabelDesc}>{row.desc}</span>
+                    </th>
                     {row.values.map((v, i) => (
                       <td key={i} className={styles.cell}>
                         {typeof v === 'boolean'

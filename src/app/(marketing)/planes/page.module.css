@@ -210,13 +210,35 @@
   border-bottom: 1px solid var(--mkt-bg-alt);
 }
 
-.thFeature,
-.rowLabel {
+.thFeature {
   text-align: left;
   font-size: 13px;
   font-weight: 600;
   color: var(--mkt-text-2);
   padding: 14px 20px;
+}
+
+.rowLabel {
+  text-align: left;
+  padding: 14px 20px;
+  vertical-align: top;
+}
+
+.rowLabelText {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkt-text-1);
+}
+
+.rowLabelDesc {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--mkt-text-3);
+  line-height: 1.4;
+  margin-top: 2px;
+  max-width: 34ch;
 }
 
 .thPlan {

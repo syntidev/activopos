@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import SegmentsMenu from './shared/SegmentsMenu'
 import styles from './MarketingNav.module.css'
@@ -27,6 +28,8 @@ const NAV_LINKS = [
 ]
 
 export default function MarketingNav({ segments }: { segments: Segment[] }) {
+  const pathname = usePathname()
+  const isSegmentPage = pathname?.startsWith('/para-') ?? false
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -57,22 +60,36 @@ export default function MarketingNav({ segments }: { segments: Segment[] }) {
           </span>
         </Link>
 
-        <div className={styles.links} role="list">
-          <SegmentsMenu segments={segments} />
-          {NAV_LINKS.map(({ label, href }) => (
-            <Link key={href} href={href} className={styles.link} role="listitem">
-              {label}
+        {isSegmentPage ? (
+          <div className={styles.links} role="list">
+            <Link href="/segmentos" className={styles.link} role="listitem">
+              Ver todos los segmentos
             </Link>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className={styles.links} role="list">
+            <SegmentsMenu segments={segments} />
+            {NAV_LINKS.map(({ label, href }) => (
+              <Link key={href} href={href} className={styles.link} role="listitem">
+                {label}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <div className={styles.actions}>
           <Link href="/login" className={styles.loginLink}>
             Iniciar sesión
           </Link>
-          <Link href="/login" className={styles.ctaBtn}>
-            Ingresar →
-          </Link>
+          {isSegmentPage ? (
+            <Link href="/registro" className={styles.ctaBtn}>
+              Empezar gratis →
+            </Link>
+          ) : (
+            <Link href="/login" className={styles.ctaBtn}>
+              Ingresar →
+            </Link>
+          )}
         </div>
 
         <button
@@ -109,23 +126,37 @@ export default function MarketingNav({ segments }: { segments: Segment[] }) {
             </button>
           </div>
           <nav className={styles.drawerLinks}>
-            <Link href={SEGMENTOS_LINK.href} className={styles.drawerLink} onClick={close}>
-              {SEGMENTOS_LINK.label}
-            </Link>
-            {NAV_LINKS.map(({ label, href }) => (
-              <Link key={href} href={href} className={styles.drawerLink} onClick={close}>
-                {label}
+            {isSegmentPage ? (
+              <Link href="/segmentos" className={styles.drawerLink} onClick={close}>
+                Ver todos los segmentos
               </Link>
-            ))}
+            ) : (
+              <>
+                <Link href={SEGMENTOS_LINK.href} className={styles.drawerLink} onClick={close}>
+                  {SEGMENTOS_LINK.label}
+                </Link>
+                {NAV_LINKS.map(({ label, href }) => (
+                  <Link key={href} href={href} className={styles.drawerLink} onClick={close}>
+                    {label}
+                  </Link>
+                ))}
+              </>
+            )}
           </nav>
           <div className={styles.drawerDivider} aria-hidden="true"/>
           <div className={styles.drawerActions}>
             <Link href="/login" className={styles.drawerLoginLink} onClick={close}>
               Iniciar sesión
             </Link>
-            <Link href="/login" className={styles.drawerCta} onClick={close}>
-              Ingresar →
-            </Link>
+            {isSegmentPage ? (
+              <Link href="/registro" className={styles.drawerCta} onClick={close}>
+                Empezar gratis →
+              </Link>
+            ) : (
+              <Link href="/login" className={styles.drawerCta} onClick={close}>
+                Ingresar →
+              </Link>
+            )}
           </div>
         </div>
       </div>

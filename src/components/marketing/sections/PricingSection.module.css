@@ -165,13 +165,20 @@
   width: fit-content;
 }
 
+.inheritsFrom {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0D1B2E;
+  margin: 20px 0 0;
+}
+
 .feats {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 13px;
   flex: 1;
-  margin: 20px 0 24px;
+  margin: 12px 0 24px;
   padding: 0;
 }
 

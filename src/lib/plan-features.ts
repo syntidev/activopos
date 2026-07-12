@@ -86,9 +86,30 @@ export function featuresForTier(tier: Exclude<PlanTier, 'trial'>): PlanFeatureLi
   const idx = TIER_INDEX[tier]
   return PLAN_FEATURES
     .filter(row => row.values[idx] !== false)
-    .map(row => {
+    .map(row => formatFeatureLine(row, idx))
+}
+
+const TIER_ORDER: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
+
+function formatFeatureLine(row: PlanFeatureRow, idx: number): PlanFeatureLine {
+  const v = row.values[idx]
+  const label = typeof v === 'string' ? `${v} ${row.label.charAt(0).toLowerCase()}${row.label.slice(1)}` : row.label
+  return { label, desc: row.desc }
+}
+
+// Solo los features que ESTE tier agrega o mejora sobre el tier anterior —
+// cubre tanto flags que pasan de false→true como valores medibles que suben
+// (ej. "Hasta 3" → "Hasta 10" usuarios) — para mostrar "Todo lo de X, más:"
+// en vez de repetir la lista completa heredada.
+export function exclusiveFeaturesForTier(tier: Exclude<PlanTier, 'trial'>): PlanFeatureLine[] {
+  const idx = TIER_INDEX[tier]
+  const prevIdx = TIER_ORDER.indexOf(tier) - 1
+  return PLAN_FEATURES
+    .filter(row => {
       const v = row.values[idx]
-      const label = typeof v === 'string' ? `${v} ${row.label.charAt(0).toLowerCase()}${row.label.slice(1)}` : row.label
-      return { label, desc: row.desc }
+      if (v === false) return false
+      if (prevIdx < 0) return true
+      return row.values[prevIdx] !== v
     })
+    .map(row => formatFeatureLine(row, idx))
 }

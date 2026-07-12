@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Check, MessageCircle, ArrowRight } from 'lucide-react'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier, type BillingCycleKey } from '@/lib/plan-limits'
-import { featuresForTier } from '@/lib/plan-features'
+import { featuresForTier, exclusiveFeaturesForTier } from '@/lib/plan-features'
 import styles from './PricingSection.module.css'
 
 interface Props {
@@ -20,15 +20,16 @@ const CYCLE_LABEL: Record<BillingCycleKey, string> = {
 }
 
 interface PlanCopy {
-  tier:     Exclude<PlanTier, 'trial'>
-  featured: boolean
-  badge:    string | null
+  tier:          Exclude<PlanTier, 'trial'>
+  featured:      boolean
+  badge:         string | null
+  inheritsFrom:  string | null
 }
 
 const PLANS: PlanCopy[] = [
-  { tier: 'inicio',   featured: false, badge: null },
-  { tier: 'pro',      featured: true,  badge: 'Más popular' },
-  { tier: 'business', featured: false, badge: null },
+  { tier: 'inicio',   featured: false, badge: null,              inheritsFrom: null },
+  { tier: 'pro',      featured: true,  badge: 'Más popular',     inheritsFrom: 'Todo lo de Mostrador, más:' },
+  { tier: 'business', featured: false, badge: null,              inheritsFrom: 'Todo lo de Negocio, más:' },
 ]
 
 function fmtMoney(n: number): string {
@@ -66,11 +67,11 @@ export default function PricingSection({ bcvRate }: Props) {
         </div>
 
         <div className={styles.grid}>
-          {PLANS.map(({ tier, featured, badge }) => {
+          {PLANS.map(({ tier, featured, badge, inheritsFrom }) => {
             const amounts    = BILLING_CYCLES[tier][cycle]
             const hasSavings = amounts.savingsAmount > 0
             const waMsg       = encodeURIComponent(`Hola, me interesa el plan ${PLAN_DISPLAY[tier]} de ActivoPOS`)
-            const feats       = featuresForTier(tier)
+            const feats       = inheritsFrom ? exclusiveFeaturesForTier(tier) : featuresForTier(tier)
             return (
               <div key={tier} className={`${styles.card} ${featured ? styles.cardFeatured : ''}`}>
                 {badge && <span className={styles.badge}>{badge}</span>}
@@ -86,6 +87,7 @@ export default function PricingSection({ bcvRate }: Props) {
                     {hasSavings && <> · ahorras {fmtMoney(amounts.savingsAmount)}</>}
                   </span>
                 )}
+                {inheritsFrom && <p className={styles.inheritsFrom}>{inheritsFrom}</p>}
                 <ul className={styles.feats}>
                   {feats.map(f => (
                     <li key={f.label}>

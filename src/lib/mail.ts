@@ -1,5 +1,19 @@
 import nodemailer, { Transporter } from 'nodemailer'
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Bloquea inyección de headers SMTP vía CR/LF en campos que llegan a subject
+function sanitizeHeader(s: string): string {
+  return s.replace(/[\r\n]/g, ' ')
+}
+
 let transporter: Transporter | undefined
 
 function getTransporter(): Transporter {
@@ -31,22 +45,24 @@ function getFrom(): string {
 }
 
 export async function sendRegistrationConfirmationEmail(to: string, ownerName: string, businessName: string): Promise<void> {
+  const subjectName = sanitizeHeader(businessName)
   await getTransporter().sendMail({
     from: getFrom(),
     to,
-    subject: `Bienvenido a ActivoPOS, ${businessName}`,
+    subject: `Bienvenido a ActivoPOS, ${subjectName}`,
     text: `Hola ${ownerName},\n\nTu cuenta de ActivoPOS para "${businessName}" fue creada exitosamente.\n\nYa puedes iniciar sesión y comenzar a vender.\n\n— El equipo de ActivoPOS`,
-    html: `<p>Hola ${ownerName},</p><p>Tu cuenta de ActivoPOS para <strong>${businessName}</strong> fue creada exitosamente.</p><p>Ya puedes iniciar sesión y comenzar a vender.</p><p>— El equipo de ActivoPOS</p>`,
+    html: `<p>Hola ${escapeHtml(ownerName)},</p><p>Tu cuenta de ActivoPOS para <strong>${escapeHtml(businessName)}</strong> fue creada exitosamente.</p><p>Ya puedes iniciar sesión y comenzar a vender.</p><p>— El equipo de ActivoPOS</p>`,
   })
 }
 
 export async function sendNewBusinessAlertEmail(businessName: string, plan: string, createdAt: Date): Promise<void> {
   const fecha = createdAt.toLocaleString('es-VE', { dateStyle: 'medium', timeStyle: 'short' })
+  const subjectName = sanitizeHeader(businessName)
   await getTransporter().sendMail({
     from: getFrom(),
     to: 'hola@activopos.com',
-    subject: `Nuevo negocio registrado: ${businessName}`,
+    subject: `Nuevo negocio registrado: ${subjectName}`,
     text: `Nuevo negocio registrado.\n\nNombre: ${businessName}\nPlan: ${plan}\nFecha: ${fecha}`,
-    html: `<p>Nuevo negocio registrado.</p><ul><li><strong>Nombre:</strong> ${businessName}</li><li><strong>Plan:</strong> ${plan}</li><li><strong>Fecha:</strong> ${fecha}</li></ul>`,
+    html: `<p>Nuevo negocio registrado.</p><ul><li><strong>Nombre:</strong> ${escapeHtml(businessName)}</li><li><strong>Plan:</strong> ${escapeHtml(plan)}</li><li><strong>Fecha:</strong> ${fecha}</li></ul>`,
   })
 }

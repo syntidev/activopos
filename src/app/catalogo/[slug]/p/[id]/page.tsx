@@ -118,7 +118,7 @@ export default async function ProductoPage({ params }: PageProps) {
   return (
     <div
       data-theme="light"
-      className={styles.root}
+      className={`${styles.root} ${styles.rootDetail}`}
       style={business.theme_color
         ? ({ '--biz-color': business.theme_color } as React.CSSProperties)
         : undefined}

@@ -2732,6 +2732,19 @@
   border-top:  1px solid var(--color-border-subtle);
 }
 
+/* Página de detalle de producto (/p/[id]) — NO usa header sticky, así que
+   no necesita el scrollport interno de .root (height:100dvh + overflow
+   hidden/auto, ver comentario en .root). Ese patrón es para la grilla del
+   catálogo (sticky header de categorías). Aquí se neutraliza para que la
+   página use el scroll normal del documento — el footer, como último hijo
+   de flex-column, queda garantizado al final sin depender de que ningún
+   navegador móvil calcule bien el layout dentro de un scrollport anidado. */
+.rootDetail {
+  height:    auto;
+  min-height: 100dvh;
+  overflow:  visible;
+}
+
 .footerTop {
   background:     var(--color-white);
   padding:        var(--space-6) var(--space-4);

@@ -660,6 +660,7 @@ model MonthlyReport {
   generated_at     DateTime?
   notified_at      DateTime?
   wa_url           String?      @db.Text
+  seen_at          DateTime?
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt
 

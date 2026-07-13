@@ -8,7 +8,7 @@
   overflow: hidden;
   background: var(--mkt-navy);
   border-top: 1px solid var(--lp-border);
-  padding: clamp(4rem, 10vw, 6.5rem) clamp(1.25rem, 5vw, 3rem) 2.5rem;
+  padding: clamp(3rem, 7vw, 5rem) clamp(1.25rem, 5vw, 3rem) 2.5rem;
 }
 
 /* Bloque inferior — wordmark contorno + isotipo superpuesto centrado.
@@ -20,7 +20,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: clamp(140px, 16vw, 230px);
+  /* Antes clamp(140px,16vw,230px), independiente del font-size del
+     wordmark (clamp(48px,12vw,220px)) -- a 1280px eso era 204.8px de
+     contenedor vs ~153.6px de texto, ~51px de colchón muerto (por
+     encima del umbral de 20-30px). Cálculo estático, no medido en
+     DevTools real (sin browser tool en este entorno) -- pero el
+     desface es lo bastante grande como para no depender de la
+     precisión exacta de métricas de fuente del navegador. Atado ahora
+     directo al font-size del wordmark + un margen fijo pequeño, una
+     sola fuente de verdad en vez de dos fórmulas independientes. */
+  min-height: calc(clamp(48px, 12vw, 220px) + 16px);
   margin: 2rem 0 1.5rem;
   overflow: hidden;
   padding-inline: 24px;
@@ -203,6 +212,12 @@
   gap: 0.75rem;
 }
 
+/* min-height:44px es touch-target, solo tiene sentido donde hay touch
+   (mobile) -- en desktop con mouse era puro colchón muerto: con 6-7
+   links por columna, ~12-16px de sobra por link (44px vs ~28-32px que
+   necesita el texto) sumaba 70-100px extra en la columna más alta,
+   que es lo que determina el alto total del footer (columnas van en
+   paralelo, no apiladas). Base ahora 32px (desktop), 44px solo <768px. */
 .colLink {
   font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
   font-size: 0.875rem;
@@ -212,7 +227,11 @@
   transition: color 150ms ease;
   display: flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 32px;
+}
+
+@media (max-width: 767px) {
+  .colLink { min-height: 44px; }
 }
 
 .colLink:hover { color: var(--text-primary, #F1F5F9); }

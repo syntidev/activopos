@@ -211,20 +211,57 @@ const BOT_RULES: BotRule[] = [
 
 const DEFAULT_REPLY = 'No encontré información sobre eso. Puedes preguntarme sobre: ventas, métodos de pago, código de barras, BCV, variantes, catálogo digital, caja, inventario, clientes, finanzas, reportes, configuración o planes.'
 
+function normalizeText(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// L\u00edmite de palabra (\b) \u2014 antes era substring plano, por eso 'pro' (Planes)
+// matcheaba dentro de "producto"/"proveedor". Con \b, un keyword corto que
+// es prefijo de una palabra m\u00e1s larga en la query (ej. 'cliente' dentro de
+// "clientes") tampoco matchea \u2014 como efecto secundario, ya no infla el score
+// contando singular Y plural de la misma idea por separado.
+function keywordMatches(query: string, keyword: string): boolean {
+  return new RegExp(`\\b${escapeRegex(normalizeText(keyword))}\\b`).test(query)
+}
+
 function botReply(text: string): string {
-  const q = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  let bestRule = null
+  const q = normalizeText(text)
   let bestScore = 0
+  let bestRules: BotRule[] = []
+
   for (const rule of BOT_RULES) {
-    const score = rule.keywords.filter(k =>
-      q.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
-    ).length
+    const matched = rule.keywords.filter(k => keywordMatches(q, k))
+    if (matched.length === 0) continue
+
+    // Defensa extra: si una keyword matcheada es substring de otra keyword
+    // matcheada de la MISMA regla, se cuenta solo la m\u00e1s larga (cubre casos
+    // que \b no deduplica, ej. 'ropa' y una futura 'ropa deportiva').
+    const deduped = matched.filter(k =>
+      !matched.some(other => other !== k && other.includes(k) && other.length > k.length)
+    )
+
+    // Score = suma de longitud de las keywords matcheadas, no cantidad \u2014
+    // favorece matches largos/espec\u00edficos ("metodos de pago") sobre
+    // coincidencias cortas gen\u00e9ricas, y es el desempate real entre reglas
+    // (antes: primera regla del array ganaba siempre en empate).
+    const score = deduped.reduce((sum, k) => sum + k.length, 0)
+
     if (score > bestScore) {
       bestScore = score
-      bestRule = rule
+      bestRules = [rule]
+    } else if (score === bestScore && score > 0) {
+      bestRules.push(rule)
     }
   }
-  return bestScore > 0 ? bestRule!.response : DEFAULT_REPLY
+
+  if (bestRules.length === 0) return DEFAULT_REPLY
+  // Empate real entre 2+ t\u00f3picos igual de espec\u00edficos \u2014 se mencionan ambos
+  // en vez de descartar arbitrariamente al que aparece primero en el array.
+  return bestRules.map(r => r.response).join('\n\n')
 }
 
 /* ── Chatbot panel ── */

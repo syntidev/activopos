@@ -1,15 +1,26 @@
 /* Full-bleed rotated ribbon — escapa el padding lateral de .section vía
-   el truco 100vw + left:50% + márgenes negativos. El .section padre ya
-   tiene overflow:hidden (safety net), así que no hace falta repetirlo
-   aquí — evitaría que las esquinas del strip rotado se recorten mal. */
+   el truco 100vw + left:50% + márgenes negativos.
+   Un rectángulo de ancho W rotado θ crece en alto ~W·sin(θ) repartido
+   mitad arriba/mitad abajo del centro — con W=100vw y θ=2.5deg eso es
+   ~2.18vw de sangrado por lado, que CRECE con el viewport. Un margin
+   fijo no lo cubre en pantallas muy anchas (por eso invadía el título
+   del CTA). padding-top/bottom en vw absorbe ese sangrado siempre,
+   y overflow:hidden aquí (no solo en .section) contiene las esquinas
+   rotadas sin recortarlas, porque el padding ya les da espacio de sobra
+   (3vw > 2.18vw calculado, con margen). El margin-bottom que queda es
+   solo el gap visual limpio hacia el título, ya no carga la contención. */
 .wrap {
-  position:      relative;
-  width:         100vw;
-  left:          50%;
-  right:         50%;
-  margin-left:   -50vw;
-  margin-right:  -50vw;
-  margin-bottom: 48px;
+  position:       relative;
+  width:          100vw;
+  left:           50%;
+  right:          50%;
+  margin-left:    -50vw;
+  margin-right:   -50vw;
+  padding-top:    3vw;
+  padding-bottom: 3vw;
+  margin-bottom:  32px;
+  overflow:       hidden;
+  z-index:        0;
 }
 
 .rotated {

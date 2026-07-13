@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useProductForm } from '@/hooks/useProductForm'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ProductFormLayout } from '@/components/products/ProductFormLayout'
+import { SaveFab } from '@/components/products/SaveFab'
 import type { ProductFormData, ModalCategory } from '@/components/products/ProductModal'
 import m from '@/components/products/modals.module.css'
 import s from './NuevoProducto.module.css'
@@ -148,6 +149,8 @@ export default function NuevoProductoPage() {
         onClose={() => setShowCategoryModal(false)}
         onSave={handleSaveCategory}
       />
+
+      <SaveFab formId={FORM_ID} isSaving={f.isSaving} />
     </div>
   )
 }

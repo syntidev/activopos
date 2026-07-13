@@ -1,6 +1,16 @@
+/* height (no min-height): con solo min-height, .root crecía por encima
+   de 100dvh cuando el contenido era largo, y .content (flex:1;
+   overflow-y:auto más abajo) nunca quedaba acotado -- su scroll nunca
+   se activaba de verdad, scrolleaba el <body> entero en su lugar. Eso
+   rompía cualquier position:sticky anidado dentro de .content (su
+   ancestro de scroll real pasaba a ser .content, pero .content jamás
+   generaba un scroll propio para que la sticky reaccionara) -- el
+   header de /productos/nuevo desaparecía al hacer scroll por esto,
+   no por z-index. Con height fijo, .content queda acotado y su
+   overflow-y:auto se activa de verdad. */
 .root {
   display: flex;
-  min-height: 100dvh;
+  height: 100dvh;
   background-color: var(--color-bg);
 }
 

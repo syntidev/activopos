@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useProductForm } from '@/hooks/useProductForm'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ProductFormLayout } from '@/components/products/ProductFormLayout'
+import { SaveFab } from '@/components/products/SaveFab'
 import type { ProductFormData, ModalCategory, EditableProduct } from '@/components/products/ProductModal'
 import m from '@/components/products/modals.module.css'
 import s from '../../nuevo/NuevoProducto.module.css'
@@ -250,6 +251,10 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         onClose={() => setShowCategoryModal(false)}
         onSave={handleSaveCategory}
       />
+
+      {!loading && !loadError && (
+        <SaveFab formId={FORM_ID} isSaving={f.isSaving} disabled={!editProduct} />
+      )}
     </div>
   )
 }

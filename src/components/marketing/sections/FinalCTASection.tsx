@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Store, UserPlus, CheckCircle } from 'lucide-react'
+import FeatureMarquee from './FeatureMarquee'
 import styles from './FinalCTASection.module.css'
 
 const TRUST = [
@@ -16,6 +17,7 @@ export default function FinalCTASection() {
       <svg className={styles.curve} viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true">
         <path d="M0,110 C480,0 960,0 1440,110 L1440,0 L0,0 Z" fill="var(--mkt-bg)" />
       </svg>
+      <FeatureMarquee />
       <div className={styles.content}>
         <h2 className={styles.title} data-reveal>
           Tu negocio está activo.{' '}

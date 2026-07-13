@@ -1,0 +1,34 @@
+/* Full-bleed rotated ribbon — escapa el padding lateral de .section vía
+   el truco 100vw + left:50% + márgenes negativos. El .section padre ya
+   tiene overflow:hidden (safety net), así que no hace falta repetirlo
+   aquí — evitaría que las esquinas del strip rotado se recorten mal. */
+.wrap {
+  position:      relative;
+  width:         100vw;
+  left:          50%;
+  right:         50%;
+  margin-left:   -50vw;
+  margin-right:  -50vw;
+  margin-bottom: 48px;
+}
+
+.rotated {
+  transform:  rotate(-2.5deg);
+  background: rgba(255, 255, 255, 0.06);
+  padding:    10px 0;
+  overflow:   hidden;
+}
+
+.track {
+  display: flex;
+  width:   max-content;
+}
+
+.item {
+  font-size:      12px;
+  letter-spacing: 2px;
+  color:          rgba(255, 255, 255, 0.4);
+  font-weight:    600;
+  white-space:    nowrap;
+  padding-right:  2rem;
+}

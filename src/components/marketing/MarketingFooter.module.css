@@ -6,19 +6,36 @@
   padding: clamp(4rem, 10vw, 6.5rem) clamp(1.25rem, 5vw, 3rem) 2.5rem;
 }
 
+/* Wordmark contorno — bottom positivo (no negativo) para que el corte
+   sea de altura (parte superior de la letra sale del footer), no un
+   texto casi invisible pegado al borde inferior. Valor de --wm-bottom
+   ajustable: no hay browser tool en este entorno para confirmar el
+   60-70% de altura visible pedido — revisar en DevTools y afinar acá
+   si hace falta, es el único número a tocar. */
 .wordmark {
+  --wm-bottom: 6%;
   position: absolute;
-  left: clamp(1.25rem, 5vw, 3rem);
-  bottom: -0.12em;
+  left: 50%;
+  bottom: var(--wm-bottom);
+  transform: translateX(-50%);
   z-index: 0;
   font-family: var(--font-display, 'Fraunces', serif);
   font-weight: 900;
-  font-size: clamp(80px, 12vw, 180px);
+  font-size: clamp(120px, 15vw, 220px);
   line-height: 1;
   letter-spacing: -0.03em;
-  color: rgba(255, 255, 255, 0.10);
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.16);
   pointer-events: none;
   white-space: nowrap;
+}
+
+/* Fallback para navegadores sin soporte de text-stroke (evita texto
+   invisible) — Firefox lo soporta parcialmente, esto cubre el resto. */
+@supports not (-webkit-text-stroke: 1px black) {
+  .wordmark {
+    color: rgba(255, 255, 255, 0.08);
+  }
 }
 
 .grid {

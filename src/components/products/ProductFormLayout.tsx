@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   X, Plus, ImagePlus, Loader2, Layers, Globe, Star,
   Box, Scale, Wrench, Boxes, Search, ScanBarcode, Pencil, Trash2,
@@ -56,6 +57,14 @@ interface ProductFormLayoutProps {
  * derecha   = Precio + Inventario (stock/alerta) + Variantes (toggle + chips/tabla)
  */
 export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormLayoutProps) {
+  /* Guía de descuento mayorista — solo interfaz de entrada (Mayoristas-Guia-1):
+     %/$ acá calculan y escriben en f.wholesalePriceUsd/PerKgUsd, que siguen
+     siendo los únicos campos que viajan al payload/schema. Estado local,
+     no forma parte de useProductForm. */
+  const [wholesaleMode, setWholesaleMode] = useState<'percent' | 'fixed'>('percent')
+  const [wholesalePct, setWholesalePct]   = useState('')
+  const [wholesaleAmt, setWholesaleAmt]   = useState('')
+
   return (
     <>
       {/* ══ Columna izquierda ══ */}
@@ -654,44 +663,129 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             </label>
           </div>
 
-          {f.showWholesale && (
-            <div className={m.formGroup}>
-              <label className={m.label} htmlFor="np-wholesale">
-                Precio Mayorista {f.saleMode === 'weight' ? `por ${f.unitLabel}` : 'Unitario'} ($)
-              </label>
-              <div className={c.inputPrefix}>
-                <span className={c.prefixSymbol}>$</span>
-                {f.saleMode === 'weight' ? (
-                  <input
-                    id="np-wholesale"
-                    type="number"
-                    inputMode="numeric"
-                    className={c.prefixInput}
-                    placeholder="0.00"
-                    value={f.wholesalePricePerKgUsd}
-                    onChange={(e) => f.setWholesalePricePerKgUsd(e.target.value)}
-                    min="0"
-                    step="0.01"
-                  />
+          {f.showWholesale && (() => {
+            const normalPrice = f.computed.displayPrice
+            const setWholesaleRaw = f.saleMode === 'weight' ? f.setWholesalePricePerKgUsd : f.setWholesalePriceUsd
+            const wholesaleRaw   = f.saleMode === 'weight' ? f.wholesalePricePerKgUsd : f.wholesalePriceUsd
+            const wholesaleValue = parseFloat(wholesaleRaw) || 0
+            const wholesaleUtility = wholesaleValue - f.computed.costPerUnit
+
+            return (
+              <>
+                <div className={m.formGroup}>
+                  <p className={m.label}>Calcular Descuento Por</p>
+                  <div className={c.pillGroup} role="radiogroup" aria-label="Modo de descuento mayorista">
+                    {(['percent', 'fixed'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="radio"
+                        aria-checked={wholesaleMode === mode}
+                        className={`${c.pill} ${wholesaleMode === mode ? c.pillActive : ''}`}
+                        onClick={() => setWholesaleMode(mode)}
+                      >
+                        {mode === 'percent' ? '% Descuento' : '$ Fijo'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {wholesaleMode === 'percent' ? (
+                  <div className={m.formGroup}>
+                    <label className={m.label} htmlFor="np-wholesale-pct">Descuento (%)</label>
+                    <div className={c.inputPrefix}>
+                      <span className={c.prefixSymbol}>%</span>
+                      <input
+                        id="np-wholesale-pct"
+                        type="number"
+                        inputMode="numeric"
+                        className={c.prefixInput}
+                        placeholder="0"
+                        value={wholesalePct}
+                        onChange={(e) => {
+                          setWholesalePct(e.target.value)
+                          const pct = parseFloat(e.target.value)
+                          if (!isNaN(pct) && normalPrice > 0) {
+                            setWholesaleRaw((normalPrice * (1 - pct / 100)).toFixed(2))
+                          }
+                        }}
+                        min="0" max="100" step="0.1"
+                      />
+                    </div>
+                  </div>
                 ) : (
-                  <input
-                    id="np-wholesale"
-                    type="number"
-                    inputMode="numeric"
-                    className={c.prefixInput}
-                    placeholder="0.00"
-                    value={f.wholesalePriceUsd}
-                    onChange={(e) => f.setWholesalePriceUsd(e.target.value)}
-                    min="0"
-                    step="0.01"
-                  />
+                  <div className={m.formGroup}>
+                    <label className={m.label} htmlFor="np-wholesale-amt">Descuento ($)</label>
+                    <div className={c.inputPrefix}>
+                      <span className={c.prefixSymbol}>$</span>
+                      <input
+                        id="np-wholesale-amt"
+                        type="number"
+                        inputMode="numeric"
+                        className={c.prefixInput}
+                        placeholder="0.00"
+                        value={wholesaleAmt}
+                        onChange={(e) => {
+                          setWholesaleAmt(e.target.value)
+                          const amt = parseFloat(e.target.value)
+                          if (!isNaN(amt)) {
+                            setWholesaleRaw(Math.max(0, normalPrice - amt).toFixed(2))
+                          }
+                        }}
+                        min="0" step="0.01"
+                      />
+                    </div>
+                  </div>
                 )}
-              </div>
-              <p className={c.fixedPriceSub}>
-                Vacío = sin precio mayorista, se cobra el precio de venta normal.
-              </p>
-            </div>
-          )}
+
+                {normalPrice > 0 && (
+                  <p className={c.fixedPriceSub}>
+                    Precio normal {f.fmtUsd(normalPrice)} − {wholesaleMode === 'percent'
+                      ? `${wholesalePct || 0}%`
+                      : f.fmtUsd(parseFloat(wholesaleAmt) || 0)} = {f.fmtUsd(wholesaleValue)} mayorista
+                  </p>
+                )}
+
+                <div className={m.formGroup}>
+                  <label className={m.label} htmlFor="np-wholesale">
+                    Precio Mayorista {f.saleMode === 'weight' ? `por ${f.unitLabel}` : 'Unitario'} ($)
+                  </label>
+                  <div className={c.inputPrefix}>
+                    <span className={c.prefixSymbol}>$</span>
+                    <input
+                      id="np-wholesale"
+                      type="number"
+                      inputMode="numeric"
+                      className={c.prefixInput}
+                      placeholder="0.00"
+                      value={wholesaleRaw}
+                      onChange={(e) => setWholesaleRaw(e.target.value)}
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <p className={c.fixedPriceSub}>
+                    Vacío = sin precio mayorista, se cobra el precio de venta normal.
+                    También podés editarlo directo, sin usar el % o $ de arriba.
+                  </p>
+                </div>
+
+                {wholesaleValue > 0 && (
+                  <div className={`${c.utilityCard} ${wholesaleUtility < 0 ? c.utilityCardNegative : ''}`}>
+                    <div className={c.utilityInfo}>
+                      <span className={`${c.utilityLabel} ${wholesaleUtility < 0 ? c.utilityLabelNegative : ''}`}>
+                        Utilidad con precio mayorista
+                      </span>
+                      <span className={c.utilitySub}>por unidad</span>
+                    </div>
+                    <span className={`${c.utilityAmount} ${wholesaleUtility < 0 ? c.utilityAmountNegative : ''}`}>
+                      {f.fmtUsd(wholesaleUtility)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </section>
 
         {/* ── Card: Detalles internos — ubicación y notas, SIN toggle propio

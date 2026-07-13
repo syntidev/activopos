@@ -467,6 +467,20 @@ export async function POST(req: NextRequest) {
                 where: { id: item.variant_id },
                 data:  { stock: { decrement: item.quantity } },
               })
+              // DT-09: dual-mechanism — net_inventory (agregado de InventoryEntry
+              // que lee GET /api/products) debe seguir a variant.stock. Sin esto la
+              // venta directa de variante congela net_inventory. waste=qty descuenta
+              // del inventario neto. Mismo registro que pay/route.ts; el reverso lo
+              // hace void/route.ts (ambos ya correctos).
+              inventoryDeductions.push({
+                business_id: session.businessId,
+                product_id:  item.product_id,
+                quantity:    0,
+                waste:       item.quantity,
+                entry_type:  'sale',
+                notes:       `VENTA #${ticket_number} (variante ${item.variant_id})`,
+                created_by:  session.userId,
+              })
             } else {
               inventoryDeductions.push({
                 business_id: session.businessId,

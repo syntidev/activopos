@@ -52,6 +52,10 @@ interface Product {
   sale_mode: 'unit' | 'weight' | 'service'
   price_per_unit_usd: number
   cost_per_unit_usd: number | null
+  wholesale_price_usd?: number | null
+  wholesale_price_per_kg_usd?: number | null
+  location?: string | null
+  notes?: string | null
   stock_quantity: number
   min_stock: number | null
   category: Category | null
@@ -304,6 +308,10 @@ export default function ProductosPage() {
         category_id:        data.categoryId,
         cost_per_unit_usd:  data.costPerUnitUsd,
         price_per_unit_usd: data.pricePerUnitUsd,
+        wholesale_price_usd:        data.wholesalePriceUsd,
+        wholesale_price_per_kg_usd: data.wholesalePricePerKgUsd,
+        location:           data.location || null,
+        notes:              data.notes || null,
         is_available:       data.isAvailable,
         catalog_visibility: data.catalogVisibility,
         availability:       data.availability,
@@ -544,6 +552,10 @@ export default function ProductosPage() {
       category_id:        product.category_id,
       cost_per_unit_usd:  product.cost_per_unit_usd,
       price_per_unit_usd: product.price_per_unit_usd,
+      wholesale_price_usd:        product.wholesale_price_usd,
+      wholesale_price_per_kg_usd: product.wholesale_price_per_kg_usd,
+      location:           product.location,
+      notes:              product.notes,
       is_available:       product.is_available,
       catalog_visibility: product.catalog_visibility,
       availability:       product.availability,

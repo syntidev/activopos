@@ -16,6 +16,7 @@ export interface ClientRecord {
   phone: string | null
   email: string | null
   notes: string | null
+  price_tier: 'detal' | 'mayorista'
   created_at: Date
   pending_balance_usd: number
 }

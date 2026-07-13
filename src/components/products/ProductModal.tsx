@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search, Pencil, Trash2, ScanBarcode } from 'lucide-react'
+import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search, Pencil, Trash2, ScanBarcode, Warehouse, MapPin } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
@@ -30,6 +30,10 @@ export interface ProductFormData {
   categoryId: number | null
   costPerUnitUsd: number
   pricePerUnitUsd: number
+  wholesalePriceUsd?: number | null
+  wholesalePricePerKgUsd?: number | null
+  location?: string
+  notes?: string
   stockInitial: number
   stockAlertThreshold: number
   isAvailable: boolean
@@ -65,6 +69,10 @@ export interface EditableProduct {
   category_id: number | null
   cost_per_unit_usd: number | null
   price_per_unit_usd: number
+  wholesale_price_usd?: number | null
+  wholesale_price_per_kg_usd?: number | null
+  location?: string | null
+  notes?: string | null
   is_available?: boolean
   catalog_visibility?: CatalogVisibility
   availability?: Availability
@@ -261,6 +269,11 @@ export function ProductModal({
   const [price, setPrice]         = useState('')
   const [stockInitial, setStockInitial]             = useState('0')
   const [stockAlertThreshold, setStockAlertThreshold] = useState('5')
+  const [showWholesale, setShowWholesale]         = useState(false)
+  const [wholesalePriceUsd, setWholesalePriceUsd] = useState('')
+  const [wholesalePricePerKgUsd, setWholesalePricePerKgUsd] = useState('')
+  const [location, setLocation]                   = useState('')
+  const [productNotes, setProductNotes]           = useState('')
   const [errors, setErrors]       = useState<Record<string, string>>({})
   const [isSaving, setIsSaving]   = useState(false)
 
@@ -348,6 +361,8 @@ export function ProductModal({
       setComponents([]); setCompSearch(''); setCompResults([]); setCompQty('1'); setSelectedComp(null)
       setCostMode('unit'); setBulkSize('12'); setCost(''); setIsFixedPrice(false)
       setMargin('30'); setPrice(''); setStockInitial('0'); setStockAlertThreshold('5'); setErrors({})
+      setShowWholesale(false); setWholesalePriceUsd(''); setWholesalePricePerKgUsd('')
+      setLocation(''); setProductNotes('')
       setIsSaving(false); setImages([null, null, null]); setIsAvailable(true)
       setCatalogVisibility('hidden'); setAvailability('in_stock')
       setHasVariants(false); setVariants([])
@@ -405,6 +420,14 @@ export function ProductModal({
         const m = ((p - c) / p) * 100
         setMargin(Math.max(0, m).toFixed(1))
       }
+
+      const wUsd  = editProduct.wholesale_price_usd
+      const wKg   = editProduct.wholesale_price_per_kg_usd
+      setWholesalePriceUsd(wUsd != null ? String(wUsd) : '')
+      setWholesalePricePerKgUsd(wKg != null ? String(wKg) : '')
+      setShowWholesale((wUsd != null && wUsd > 0) || (wKg != null && wKg > 0))
+      setLocation(editProduct.location ?? '')
+      setProductNotes(editProduct.notes ?? '')
     }
   }, [isOpen, editProduct])
 
@@ -596,6 +619,10 @@ export function ProductModal({
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
         pricePerUnitUsd: computed.displayPrice,
+        wholesalePriceUsd:      wholesalePriceUsd.trim()      ? parseFloat(wholesalePriceUsd)      : null,
+        wholesalePricePerKgUsd: wholesalePricePerKgUsd.trim() ? parseFloat(wholesalePricePerKgUsd) : null,
+        location: location.trim(),
+        notes:    productNotes.trim(),
         stockInitial:         Math.max(parseInt(stockInitial) || 0, 0),
         stockAlertThreshold:  Math.max(parseInt(stockAlertThreshold) || 0, 0),
         isAvailable,
@@ -1241,6 +1268,100 @@ export function ProductModal({
                     <span className={`${styles.utilityAmount} ${computed.utility < 0 ? styles.utilityAmountNegative : ''}`}>
                       {fmtUsd(computed.utility)}
                     </span>
+                  </div>
+
+                  <div className={mStyles.divider} />
+
+                  {/* ── Precio Mayorista (colapsable, opcional) ── */}
+                  <div className={styles.fixedPriceRow}>
+                    <div className={styles.fixedPriceLabel}>
+                      <Warehouse size={14} className={styles.toggleIcon} aria-hidden="true" />
+                      <div>
+                        <span className={styles.fixedPriceTitle}>Precio Mayorista</span>
+                        <span className={styles.fixedPriceSub}>
+                          Precio especial para clientes con tier &ldquo;Mayorista&rdquo;
+                        </span>
+                      </div>
+                    </div>
+                    <label className={styles.toggle} aria-label="Mostrar precio mayorista">
+                      <input
+                        type="checkbox"
+                        className={styles.toggleInput}
+                        checked={showWholesale}
+                        onChange={(e) => setShowWholesale(e.target.checked)}
+                      />
+                      <span className={styles.toggleTrack} />
+                      <span className={styles.toggleThumb} />
+                    </label>
+                  </div>
+
+                  {showWholesale && (
+                    <div className={mStyles.formGroup}>
+                      <label className={mStyles.label} htmlFor="pm-wholesale">
+                        Precio Mayorista {saleMode === 'weight' ? `por ${unitLabel}` : 'Unitario'} ($)
+                      </label>
+                      <div className={styles.inputPrefix}>
+                        <span className={styles.prefixSymbol}>$</span>
+                        {saleMode === 'weight' ? (
+                          <input
+                            id="pm-wholesale"
+                            type="number"
+                            inputMode="numeric"
+                            className={styles.prefixInput}
+                            placeholder="0.00"
+                            value={wholesalePricePerKgUsd}
+                            onChange={(e) => setWholesalePricePerKgUsd(e.target.value)}
+                            min="0"
+                            step="0.01"
+                          />
+                        ) : (
+                          <input
+                            id="pm-wholesale"
+                            type="number"
+                            inputMode="numeric"
+                            className={styles.prefixInput}
+                            placeholder="0.00"
+                            value={wholesalePriceUsd}
+                            onChange={(e) => setWholesalePriceUsd(e.target.value)}
+                            min="0"
+                            step="0.01"
+                          />
+                        )}
+                      </div>
+                      <p className={styles.fixedPriceSub}>
+                        Vacío = sin precio mayorista, se cobra el precio de venta normal.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── Ubicación ── */}
+                  <div className={mStyles.formGroup}>
+                    <label className={mStyles.label} htmlFor="pm-location">
+                      <MapPin size={13} className={styles.toggleIcon} aria-hidden="true" />
+                      Ubicación (opcional)
+                    </label>
+                    <input
+                      id="pm-location"
+                      type="text"
+                      className={mStyles.input}
+                      placeholder="Ej: Pasillo 3, Estante B"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      maxLength={120}
+                    />
+                  </div>
+
+                  {/* ── Notas internas ── */}
+                  <div className={mStyles.formGroup}>
+                    <label className={mStyles.label} htmlFor="pm-notes">Notas (opcional)</label>
+                    <textarea
+                      id="pm-notes"
+                      className={mStyles.textarea}
+                      placeholder="Información interna del producto..."
+                      value={productNotes}
+                      onChange={(e) => setProductNotes(e.target.value)}
+                      rows={2}
+                    />
                   </div>
 
                   {/* ── Stock inicial (solo creación, sin variantes) ── */}

@@ -16,14 +16,15 @@ interface ClienteFormModalProps {
 }
 
 interface FormState {
-  name:   string
-  cedula: string
-  phone:  string
-  email:  string
-  notes:  string
+  name:       string
+  cedula:     string
+  phone:      string
+  email:      string
+  notes:      string
+  price_tier: 'detal' | 'mayorista'
 }
 
-const EMPTY: FormState = { name: '', cedula: '', phone: '', email: '', notes: '' }
+const EMPTY: FormState = { name: '', cedula: '', phone: '', email: '', notes: '', price_tier: 'detal' }
 
 interface FieldErrors {
   name?:   string
@@ -48,11 +49,12 @@ export function ClienteFormModal({
   useEffect(() => {
     if (client) {
       setForm({
-        name:   client.name,
-        cedula: client.cedula ?? '',
-        phone:  client.phone  ?? '',
-        email:  client.email  ?? '',
-        notes:  client.notes  ?? '',
+        name:       client.name,
+        cedula:     client.cedula ?? '',
+        phone:      client.phone  ?? '',
+        email:      client.email  ?? '',
+        notes:      client.notes  ?? '',
+        price_tier: client.price_tier ?? 'detal',
       })
     } else {
       setForm(EMPTY)
@@ -87,6 +89,10 @@ export function ClienteFormModal({
       phone:  form.phone.trim()   || undefined,
       email:  form.email.trim()   || undefined,
       notes:  form.notes.trim()   || undefined,
+      // POST /api/clients (crear) no acepta price_tier todavía — solo PATCH.
+      // Enviarlo en creación no rompe nada (Zod lo ignora), pero mostrarlo como
+      // si funcionara sería fachada — por eso el selector solo se ve en edición.
+      ...(isEdit ? { price_tier: form.price_tier } : {}),
     }
 
     try {
@@ -189,6 +195,23 @@ export function ClienteFormModal({
             rows={3}
           />
         </div>
+
+        {isEdit && (
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor="client-price-tier">
+              Tipo de precio
+            </label>
+            <select
+              id="client-price-tier"
+              className={styles.select}
+              value={form.price_tier}
+              onChange={(e) => setForm((prev) => ({ ...prev, price_tier: e.target.value as 'detal' | 'mayorista' }))}
+            >
+              <option value="detal">Detal</option>
+              <option value="mayorista">Mayorista</option>
+            </select>
+          </div>
+        )}
 
         {serverError && (
           <p className={styles.serverError} role="alert">{serverError}</p>

@@ -50,6 +50,24 @@
   outline: none;
 }
 
+.select {
+  width: 100%;
+  padding: var(--space-2-5) var(--space-3);
+  background-color: var(--input-bg);
+  border: var(--border-width-thin) solid var(--input-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.select:focus {
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
+  outline: none;
+}
+
 .serverError {
   font-size: var(--text-sm);
   color: var(--color-danger-text);

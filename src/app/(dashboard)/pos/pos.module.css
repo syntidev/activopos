@@ -434,6 +434,16 @@
   transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
 
+.tierBadge {
+  flex-shrink: 0;
+  background: var(--color-brand);
+  color: var(--color-text-on-brand);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .clienteBtn:hover {
     border-color: var(--color-border-strong);

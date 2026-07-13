@@ -198,9 +198,10 @@ export function usePOS() {
   const setClient = useCallback((client: ClientForPOS | null) => {
     setTicket(prev => ({
       ...prev,
-      client_id:    client?.id ?? null,
-      client_name:  client?.name ?? '',
-      client_phone: client?.phone ?? '',
+      client_id:         client?.id ?? null,
+      client_name:       client?.name ?? '',
+      client_phone:      client?.phone ?? '',
+      client_price_tier: client?.price_tier,
     }))
   }, [])
 

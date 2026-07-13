@@ -79,6 +79,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         ...product,
         price_per_unit_usd: product.price_per_unit_usd ? Number(product.price_per_unit_usd) : null,
         price_per_kg_usd: product.price_per_kg_usd ? Number(product.price_per_kg_usd) : null,
+        wholesale_price_usd: product.wholesale_price_usd != null ? Number(product.wholesale_price_usd) : null,
+        wholesale_price_per_kg_usd: product.wholesale_price_per_kg_usd != null ? Number(product.wholesale_price_per_kg_usd) : null,
         cost_per_unit_usd: costUsd,
         min_stock: Number(product.min_stock),
         stock_alert_threshold: product.stock_alert_threshold,

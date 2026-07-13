@@ -169,6 +169,8 @@ export async function GET(req: NextRequest) {
           variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
           price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
           price_per_kg_usd:   p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null,
+          wholesale_price_usd:        p.wholesale_price_usd        != null ? Number(p.wholesale_price_usd)        : null,
+          wholesale_price_per_kg_usd: p.wholesale_price_per_kg_usd != null ? Number(p.wholesale_price_per_kg_usd) : null,
           cost_per_unit_usd:  isCashier ? null : costUsd,
           min_stock:          Number(p.min_stock),
           stock,

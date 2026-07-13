@@ -47,8 +47,8 @@ export async function GET() {
         p.category?.name ?? '',
         p.product_type,
         p.base_unit_label,
-        p.wholesale_price_usd ?? '',
-        p.wholesale_price_per_kg_usd ?? '',
+        p.wholesale_price_usd != null ? Number(p.wholesale_price_usd) : '',
+        p.wholesale_price_per_kg_usd != null ? Number(p.wholesale_price_per_kg_usd) : '',
         p.location ?? '',
         p.notes ?? '',
       ]

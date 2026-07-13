@@ -273,8 +273,8 @@ model Product {
   price_per_kg_usd   Decimal?          @db.Decimal(10, 2)
   price_per_unit_usd Decimal?          @db.Decimal(10, 2)
   cost_per_unit_usd  Decimal?          @db.Decimal(10, 4)
-  wholesale_price_usd        Float?
-  wholesale_price_per_kg_usd Float?
+  wholesale_price_usd        Decimal?          @db.Decimal(10, 2)
+  wholesale_price_per_kg_usd Decimal?          @db.Decimal(10, 2)
   location                   String?   @db.VarChar(120)
   notes                      String?   @db.Text
   min_stock              Decimal           @default(0) @db.Decimal(8, 3)

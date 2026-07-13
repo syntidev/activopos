@@ -24,6 +24,7 @@ import {
   Receipt,
   Truck,
 } from 'lucide-react'
+import { DashboardReportAlert } from '@/components/reports/DashboardReportAlert'
 import styles from './escritorio.module.css'
 
 const NEW_TENANT_WINDOW_DAYS = 7
@@ -303,6 +304,8 @@ export default function EscritorioPage() {
 
   return (
     <div className={`${styles.page} page-container`}>
+
+      <DashboardReportAlert />
 
       {/* ── Bienvenida (solo tenants nuevos, no descartada) ── */}
       {showWelcome && (

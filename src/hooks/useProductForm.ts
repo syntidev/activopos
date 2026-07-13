@@ -136,6 +136,11 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [price, setPrice]             = useState('')
   const [stockInitial, setStockInitial]               = useState('0')
   const [stockAlertThreshold, setStockAlertThreshold] = useState('5')
+  const [showWholesale, setShowWholesale]         = useState(false)
+  const [wholesalePriceUsd, setWholesalePriceUsd] = useState('')
+  const [wholesalePricePerKgUsd, setWholesalePricePerKgUsd] = useState('')
+  const [location, setLocation]                   = useState('')
+  const [productNotes, setProductNotes]           = useState('')
   const [errors, setErrors]           = useState<Record<string, string>>({})
   const [isSaving, setIsSaving]       = useState(false)
 
@@ -265,6 +270,14 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
       const m = ((p - c) / p) * 100
       setMargin(Math.max(0, m).toFixed(1))
     }
+
+    const wUsd = editProduct.wholesale_price_usd
+    const wKg  = editProduct.wholesale_price_per_kg_usd
+    setWholesalePriceUsd(wUsd != null ? String(wUsd) : '')
+    setWholesalePricePerKgUsd(wKg != null ? String(wKg) : '')
+    setShowWholesale((wUsd != null && wUsd > 0) || (wKg != null && wKg > 0))
+    setLocation(editProduct.location ?? '')
+    setProductNotes(editProduct.notes ?? '')
   }, [editProduct])
 
   /* ── Cargar variantes DB al editar un producto simple/peso existente ── */
@@ -491,6 +504,10 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
         pricePerUnitUsd: computed.displayPrice,
+        wholesalePriceUsd:      wholesalePriceUsd.trim()      ? parseFloat(wholesalePriceUsd)      : null,
+        wholesalePricePerKgUsd: wholesalePricePerKgUsd.trim() ? parseFloat(wholesalePricePerKgUsd) : null,
+        location: location.trim(),
+        notes:    productNotes.trim(),
         stockInitial:        hasVariants ? 0 : Math.max(parseInt(stockInitial) || 0, 0),
         stockAlertThreshold: Math.max(parseInt(stockAlertThreshold) || 0, 0),
         isAvailable,
@@ -534,6 +551,11 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     costMode, setCostMode, bulkSize, setBulkSize, cost, setCost,
     isFixedPrice, setIsFixedPrice, margin, setMargin, price, setPrice,
     stockInitial, setStockInitial, stockAlertThreshold, setStockAlertThreshold,
+    showWholesale, setShowWholesale,
+    wholesalePriceUsd, setWholesalePriceUsd,
+    wholesalePricePerKgUsd, setWholesalePricePerKgUsd,
+    location, setLocation,
+    productNotes, setProductNotes,
     errors, setErrors, isSaving,
     // derived
     saleMode, productType, unitType, computed, fmtUsd,

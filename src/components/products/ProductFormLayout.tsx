@@ -3,6 +3,7 @@
 import {
   X, Plus, ImagePlus, Loader2, Layers, Globe, Star,
   Box, Scale, Wrench, Boxes, Search, ScanBarcode, Pencil, Trash2,
+  Warehouse, MapPin,
 } from 'lucide-react'
 import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProductForm'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
@@ -625,6 +626,100 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             <span className={`${c.utilityAmount} ${f.computed.utility < 0 ? c.utilityAmountNegative : ''}`}>
               {f.fmtUsd(f.computed.utility)}
             </span>
+          </div>
+
+          <div className={m.divider} />
+
+          {/* ── Precio Mayorista (colapsable, opcional) ── */}
+          <div className={c.fixedPriceRow}>
+            <div className={c.fixedPriceLabel}>
+              <Warehouse size={14} className={c.toggleIcon} aria-hidden="true" />
+              <div>
+                <span className={c.fixedPriceTitle}>Precio Mayorista</span>
+                <span className={c.fixedPriceSub}>
+                  Precio especial para clientes con tier &ldquo;Mayorista&rdquo;
+                </span>
+              </div>
+            </div>
+            <label className={c.toggle} aria-label="Mostrar precio mayorista">
+              <input
+                type="checkbox"
+                className={c.toggleInput}
+                checked={f.showWholesale}
+                onChange={(e) => f.setShowWholesale(e.target.checked)}
+              />
+              <span className={c.toggleTrack} />
+              <span className={c.toggleThumb} />
+            </label>
+          </div>
+
+          {f.showWholesale && (
+            <div className={m.formGroup}>
+              <label className={m.label} htmlFor="np-wholesale">
+                Precio Mayorista {f.saleMode === 'weight' ? `por ${f.unitLabel}` : 'Unitario'} ($)
+              </label>
+              <div className={c.inputPrefix}>
+                <span className={c.prefixSymbol}>$</span>
+                {f.saleMode === 'weight' ? (
+                  <input
+                    id="np-wholesale"
+                    type="number"
+                    inputMode="numeric"
+                    className={c.prefixInput}
+                    placeholder="0.00"
+                    value={f.wholesalePricePerKgUsd}
+                    onChange={(e) => f.setWholesalePricePerKgUsd(e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
+                ) : (
+                  <input
+                    id="np-wholesale"
+                    type="number"
+                    inputMode="numeric"
+                    className={c.prefixInput}
+                    placeholder="0.00"
+                    value={f.wholesalePriceUsd}
+                    onChange={(e) => f.setWholesalePriceUsd(e.target.value)}
+                    min="0"
+                    step="0.01"
+                  />
+                )}
+              </div>
+              <p className={c.fixedPriceSub}>
+                Vacío = sin precio mayorista, se cobra el precio de venta normal.
+              </p>
+            </div>
+          )}
+
+          {/* ── Ubicación ── */}
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-location">
+              <MapPin size={13} className={c.toggleIcon} aria-hidden="true" />
+              Ubicación (opcional)
+            </label>
+            <input
+              id="np-location"
+              type="text"
+              className={m.input}
+              placeholder="Ej: Pasillo 3, Estante B"
+              value={f.location}
+              onChange={(e) => f.setLocation(e.target.value)}
+              maxLength={120}
+            />
+          </div>
+
+          {/* ── Notas internas ── */}
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-notes">Notas (opcional)</label>
+            <textarea
+              id="np-notes"
+              className={m.textarea}
+              placeholder="Información interna del producto..."
+              value={f.productNotes}
+              onChange={(e) => f.setProductNotes(e.target.value)}
+              rows={2}
+            />
           </div>
         </section>
 

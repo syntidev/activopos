@@ -23,6 +23,10 @@ interface ApiProductDetail {
   category_id: number | null
   cost_per_unit_usd: number | null
   price_per_unit_usd: number | null
+  wholesale_price_usd?: number | null
+  wholesale_price_per_kg_usd?: number | null
+  location?: string | null
+  notes?: string | null
   is_available?: boolean
   catalog_visibility?: EditableProduct['catalog_visibility']
   availability?: EditableProduct['availability']
@@ -60,6 +64,10 @@ function toEditable(p: ApiProductDetail): EditableProduct {
     category_id:        p.category_id,
     cost_per_unit_usd:  p.cost_per_unit_usd,
     price_per_unit_usd: p.price_per_unit_usd ?? 0,
+    wholesale_price_usd:        p.wholesale_price_usd,
+    wholesale_price_per_kg_usd: p.wholesale_price_per_kg_usd,
+    location:           p.location,
+    notes:              p.notes,
     is_available:       p.is_available,
     catalog_visibility: p.catalog_visibility,
     availability:       p.availability,
@@ -151,6 +159,10 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         category_id:        data.categoryId,
         cost_per_unit_usd:  data.costPerUnitUsd,
         price_per_unit_usd: data.pricePerUnitUsd,
+        wholesale_price_usd:        data.wholesalePriceUsd        ?? null,
+        wholesale_price_per_kg_usd: data.wholesalePricePerKgUsd ?? null,
+        location:           data.location || null,
+        notes:              data.notes    || null,
         is_available:       data.isAvailable,
         catalog_visibility: data.catalogVisibility,
         availability:       data.availability,

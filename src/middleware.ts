@@ -37,8 +37,9 @@ const PUBLIC_EXACT = new Set([
   '/robots.txt',
   '/llms.txt',
   '/catalogo',                         // landing sin slug — fallback público, no requiere auth
-  '/api/reports/monthly/pending',      // n8n: lista pending (x-api-key)
-  '/api/reports/monthly/mark-pending', // n8n: marca todos como pending (x-api-key)
+  '/api/reports/monthly/pending',        // n8n: lista pending (x-api-key)
+  '/api/reports/monthly/mark-pending',   // n8n: marca todos como pending (x-api-key)
+  '/api/reports/monthly/mark-notified',  // n8n: marca notificado + guarda wa_url (x-api-key)
 ])
 
 // Segmentos top-level de rutas protegidas conocidas — (dashboard), (admin) y /api/*.

@@ -13,9 +13,13 @@ const TRUST = [
 export default function FinalCTASection() {
   return (
     <section className={styles.section} id="final">
-      {/* Curva de transición claro → navy — segundo y último uso de Navy (§1, §7) */}
+      {/* Curva de transición navy-2 (Testimonios) → navy (base, esta sección) —
+          antes tenía fill var(--mkt-bg) (claro), un resto de cuando Testimonios
+          no era navy; con las 3 zonas ahora en tonos de navy distintos, el
+          fill debe ser el tono de la sección de ARRIBA para que la curva
+          se lea como costura entre ambas, no como un parche claro suelto. */}
       <svg className={styles.curve} viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0,110 C480,0 960,0 1440,110 L1440,0 L0,0 Z" fill="var(--mkt-bg)" />
+        <path d="M0,110 C480,0 960,0 1440,110 L1440,0 L0,0 Z" fill="var(--mkt-navy-2)" />
       </svg>
       <FeatureMarquee />
       <div className={styles.content}>

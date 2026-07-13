@@ -16,6 +16,14 @@
   --mkt-bg:             #F4F6FB;
   --mkt-bg-alt:         #EEF2FF;
   --mkt-navy:           #0D1B2E;
+  /* Variación tonal de la zona navy de cierre (Testimonios/CTA final/
+     Footer) para que no se lea como un bloque plano. Nota: por luminancia
+     relativa real, --mkt-navy (L=.0107) es el MÁS OSCURO de los 3, no
+     --mkt-navy-3 (L=.0255, en realidad el MÁS CLARO) -- el pedido original
+     etiquetaba "más claro"/"más oscuro" al revés de sus propios hex.
+     Implementado literal por hex tal como se especificó, no por adjetivo. */
+  --mkt-navy-2:         #132035;
+  --mkt-navy-3:         #1A2D47;
   /* Footer usa var(--text-tertiary) global (dashboard-compartido, #64748B
      en dark theme) sobre este navy -> 3.64:1, falla WCAG AA. Token nuevo
      scoped a marketing en vez de tocar --text-tertiary (usado también en

@@ -2,7 +2,7 @@
   position: relative;
   overflow: hidden;
   padding: 96px 0;
-  background: var(--mkt-navy);
+  background: var(--mkt-navy-2);
 }
 
 .section::before {

@@ -1,7 +1,14 @@
+/* Transición hacia navy-3 vía gradiente sutil (no curva SVG, a diferencia
+   del seam Testimonios/CTA final) -- el wordmark gigante ya ocupa
+   visualmente esta zona, una curva adicional competiría con él. El
+   gradiente cubre solo el padding-top del footer, luego queda en el
+   tono navy-3 sólido para el resto de la sección. */
 .footer {
   position: relative;
   overflow: hidden;
-  background: #0D1B2E;
+  background:
+    linear-gradient(to bottom, var(--mkt-navy), var(--mkt-navy-3) clamp(4rem, 10vw, 6.5rem)),
+    var(--mkt-navy-3);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: clamp(4rem, 10vw, 6.5rem) clamp(1.25rem, 5vw, 3rem) 2.5rem;
 }

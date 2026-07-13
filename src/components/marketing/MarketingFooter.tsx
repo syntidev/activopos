@@ -32,7 +32,7 @@ export default async function MarketingFooter() {
   })
 
   return (
-    <footer data-theme="light" className={styles.footer}>
+    <footer className={styles.footer}>
       <div className={styles.grid}>
 
         {/* Brand col */}

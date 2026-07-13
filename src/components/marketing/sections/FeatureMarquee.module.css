@@ -23,9 +23,12 @@
   z-index:        0;
 }
 
+/* Colores invertidos para fondo claro (Landing-Bookend-Final): FinalCTA
+   pasó de navy a var(--mkt-bg-alt), la cinta ya no puede usar blanco
+   translúcido -- quedaría invisible sobre un fondo claro. */
 .rotated {
   transform:  rotate(-2.5deg);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(13, 27, 46, 0.05);
   padding:    10px 0;
   overflow:   hidden;
 }
@@ -38,7 +41,7 @@
 .item {
   font-size:      12px;
   letter-spacing: 2px;
-  color:          rgba(255, 255, 255, 0.4);
+  color:          var(--mkt-text-2);
   font-weight:    600;
   white-space:    nowrap;
   padding-right:  2rem;

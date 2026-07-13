@@ -25,11 +25,11 @@
   --footer-badge-glow:   rgba(0, 0, 0, 0.5);
   --footer-badge-press:  rgba(0, 0, 0, 0.35);
   --footer-divider-line: rgba(255, 255, 255, 0.15);
-  /* Variación tonal de Testimonios/CTA final (footer volvió a fondo claro
-     en Footer-5, ya no usa navy -- --mkt-navy-3 se retiró, era su único
-     consumidor). Por luminancia real, --mkt-navy (L=.0107) es más oscuro
-     que --mkt-navy-2 (L=.0143). */
-  --mkt-navy-2:         #132035;
+  /* Footer usa var(--text-tertiary) global (dashboard-compartido, #64748B
+     en dark theme) sobre este navy -> 3.64:1, falla WCAG AA. Token scoped
+     a marketing en vez de tocar --text-tertiary (usado también en
+     dashboard/escritorio.module.css, fuera de alcance). 4.87:1 sobre navy. */
+  --mkt-footer-muted:   #7A899F;
   --mkt-text-1:         #0F172A;
   --mkt-text-2:         #475569;
   --mkt-text-3:         #56657A; /* era #94A3B8 (2.56:1 sobre blanco, falla WCAG AA) -> 5.94:1 */

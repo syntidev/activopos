@@ -1,9 +1,11 @@
+/* Landing-Bookend-Final: vuelve a claro (var(--mkt-bg-alt)) -- el CTA
+   amber ya tiene contraste/sombra propia, no necesita fondo oscuro. */
 .section {
   padding: 120px clamp(1.25rem, 5vw, 3rem) 96px;
   text-align: center;
   position: relative;
   overflow: hidden;
-  background: var(--mkt-navy);
+  background: var(--mkt-bg-alt);
 }
 
 .curve {
@@ -29,7 +31,7 @@
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  color: #FFFFFF;
+  color: var(--mkt-text-1);
   text-wrap: balance;
   margin-bottom: 20px;
 }
@@ -41,7 +43,7 @@
 
 .subtitle {
   font-size: clamp(15px, 2vw, 17px);
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--mkt-text-2);
   max-width: 480px;
   margin: 0 auto 40px;
   line-height: 1.65;
@@ -57,9 +59,9 @@
 }
 
 .ctaBtnGhost {
-  color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  color: var(--mkt-text-1);
+  background: var(--mkt-card);
+  border: 1.5px solid var(--mkt-border);
   padding: 15px 30px;
   border-radius: 12px;
   font-size: clamp(15px, 2vw, 17px);
@@ -71,7 +73,7 @@
   gap: 8px;
   transition: background 150ms ease;
 }
-.ctaBtnGhost:hover { background: rgba(255, 255, 255, 0.12); }
+.ctaBtnGhost:hover { background: var(--mkt-bg); }
 
 .ctaBtn {
   background: var(--cta);
@@ -108,7 +110,7 @@
   align-items: center;
   gap: 6px;
   font-size: clamp(14px, 2vw, 16px);
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--mkt-text-2);
   font-weight: 500;
 }
 

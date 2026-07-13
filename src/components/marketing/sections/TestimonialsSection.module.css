@@ -1,15 +1,17 @@
+/* Landing-Bookend-Final: vuelve a claro (var(--sand), mismo tratamiento
+   que CatalogShowcaseSection) -- solo Hero+Footer quedan en navy. */
 .section {
   position: relative;
   overflow: hidden;
   padding: 96px 0;
-  background: var(--mkt-navy-2);
+  background: var(--sand);
 }
 
 .section::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(13, 27, 46, 0.04) 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
 }
@@ -28,7 +30,7 @@
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  color: #FFFFFF;
+  color: var(--mkt-text-1);
   text-wrap: balance;
   text-align: center;
   margin-bottom: 48px;

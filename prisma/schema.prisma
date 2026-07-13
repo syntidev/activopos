@@ -23,6 +23,11 @@ enum SaleMode {
   package
 }
 
+enum ClientPriceTier {
+  detal
+  mayorista
+}
+
 enum OrderStatus {
   received
   preparing
@@ -268,6 +273,10 @@ model Product {
   price_per_kg_usd   Decimal?          @db.Decimal(10, 2)
   price_per_unit_usd Decimal?          @db.Decimal(10, 2)
   cost_per_unit_usd  Decimal?          @db.Decimal(10, 4)
+  wholesale_price_usd        Float?
+  wholesale_price_per_kg_usd Float?
+  location                   String?   @db.VarChar(120)
+  notes                      String?   @db.Text
   min_stock              Decimal           @default(0) @db.Decimal(8, 3)
   stock_alert_threshold  Int               @default(5)
   images             String?           @db.Text
@@ -327,6 +336,7 @@ model Client {
   email       String?  @db.VarChar(120)
   cedula      String?  @db.VarChar(15)
   notes       String?  @db.Text
+  price_tier  ClientPriceTier @default(detal)
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt

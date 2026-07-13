@@ -2,6 +2,8 @@ import type { SaleMode } from '@/types/products'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
+export type ClientPriceTier = 'detal' | 'mayorista'
+
 export interface ProductForPOS {
   id: number
   name: string
@@ -9,6 +11,8 @@ export interface ProductForPOS {
   base_unit_label: string
   price_per_unit_usd: number | null
   price_per_kg_usd: number | null
+  wholesale_price_usd?: number | null
+  wholesale_price_per_kg_usd?: number | null
   cost_per_unit_usd: number | null
   image_path: string | null
   is_favorite: boolean
@@ -21,6 +25,7 @@ export interface ClientForPOS {
   name: string
   phone: string | null
   cedula: string | null
+  price_tier?: ClientPriceTier
 }
 
 export interface PaymentInput {
@@ -68,6 +73,12 @@ export interface TicketState {
   client_id: number | null
   client_name: string
   client_phone: string
+  // Tier del cliente asociado — 'mayorista' aplica wholesale_price al agregar
+  // ítems. undefined/'detal' = precio de detal (comportamiento por defecto).
+  // ponytail: el componente POS (CLI-B) debe setear esto al seleccionar un
+  // cliente mayorista; sin ese wiring el carrito muestra detal, pero el SERVER
+  // (sales/route.ts) ya cobra mayorista de forma autoritativa por su cuenta.
+  client_price_tier?: ClientPriceTier
   notes: string
   discount_global_pct: number
   cargo_global_pct: number
@@ -102,8 +113,14 @@ interface SaleApiItem {
 const round2 = (n: number) => Math.round(n * 100) / 100
 const round4 = (n: number) => Math.round(n * 10000) / 10000
 
-const effectivePrice = (p: ProductForPOS): number =>
-  (p.sale_mode === 'weight' ? p.price_per_kg_usd : p.price_per_unit_usd) ?? 0
+const effectivePrice = (p: ProductForPOS, tier?: ClientPriceTier): number => {
+  const retail = (p.sale_mode === 'weight' ? p.price_per_kg_usd : p.price_per_unit_usd) ?? 0
+  if (tier === 'mayorista') {
+    const wholesale = (p.sale_mode === 'weight' ? p.wholesale_price_per_kg_usd : p.wholesale_price_usd) ?? 0
+    if (wholesale > 0) return wholesale
+  }
+  return retail
+}
 
 // ── Cálculos puros ────────────────────────────────────────────────────────────
 
@@ -148,7 +165,7 @@ export const agregarItem = (
   const existing = ticket.items.find(i => i.product_id === product.id && !i.variant_id)
   if (existing) return actualizarCantidad(ticket, product.id, existing.quantity + qty)
 
-  const price = effectivePrice(product)
+  const price = effectivePrice(product, ticket.client_price_tier)
   const { usd, bs } = calcularSubtotalItem(qty, price, ticket.rate)
   const item: TicketItem = {
     product_id:       product.id,
@@ -180,7 +197,7 @@ export const agregarItemConVariante = (
     return actualizarCantidadVariante(ticket, product.id, variant.id, existing.quantity + qty)
   }
 
-  const basePrice  = effectivePrice(product)
+  const basePrice  = effectivePrice(product, ticket.client_price_tier)
   const totalPrice = basePrice + variant.price_extra_usd
   const { usd, bs } = calcularSubtotalItem(qty, totalPrice, ticket.rate)
 

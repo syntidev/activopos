@@ -8,6 +8,7 @@ const patchSchema = z.object({
   email: z.string().email().max(120).nullable().optional(),
   cedula: z.string().max(15).nullable().optional(),
   notes: z.string().nullable().optional(),
+  price_tier: z.enum(['detal', 'mayorista']).optional(),
 })
 
 type RouteContext = { params: { id: string } }

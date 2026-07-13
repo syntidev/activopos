@@ -251,6 +251,7 @@ export async function POST(req: NextRequest) {
           id: true, name: true, base_unit_label: true,
           product_type: true, unit_type: true, unit_step: true,
           price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true,
+          wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
           components: {
             select: {
               id: true, component_id: true, quantity: true, unit_label: true,
@@ -275,6 +276,17 @@ export async function POST(req: NextRequest) {
         })
         clientId = created.id
       }
+
+      // Tier de precio del cliente asociado — decide detal vs mayorista.
+      // business_id explícito: dentro del $transaction (prisma base) la capa de
+      // tenant NO se propaga, hay que filtrar a mano. Cliente inexistente o
+      // recién creado (crédito) → 'detal' por default, sin precio mayorista.
+      const clientTier = clientId
+        ? (await tx.client.findFirst({
+            where:  { id: clientId, business_id: session.businessId },
+            select: { price_tier: true },
+          }))?.price_tier ?? 'detal'
+        : 'detal'
 
       // Fetch variants for items that specify one
       const variantIds = body.items
@@ -313,10 +325,20 @@ export async function POST(req: NextRequest) {
         }
 
         // SEC-01: price always from DB — variant price_usd takes priority over product price
-        // unit_price_override accepted only after admin authorization validated above
+        // unit_price_override accepted only after admin authorization validated above.
+        // Tier mayorista: si el cliente es mayorista y el producto tiene precio
+        // mayorista > 0 para su modo de venta, se usa ese en lugar del de detal.
+        // Las variantes conservan su propio price_usd (no hay wholesale por variante).
+        let basePrice = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        if (clientTier === 'mayorista' && variant?.price_usd == null) {
+          const wholesale = item.sale_mode === 'weight'
+            ? Number(product.wholesale_price_per_kg_usd ?? 0)
+            : Number(product.wholesale_price_usd ?? 0)
+          if (wholesale > 0) basePrice = wholesale
+        }
         const dbPrice = variant?.price_usd != null
           ? Number(variant.price_usd)
-          : Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+          : basePrice
         const priceUsd = item.unit_price_override ?? dbPrice
         if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
 

@@ -38,11 +38,15 @@
   width:   max-content;
 }
 
+/* Sin padding-right: MARQUEE_TEXT ya termina en " ✦ " (separador propio),
+   agregar padding extra aquí creaba una costura ~2x más ancha que
+   cualquier separador interno del texto -- eso era el "espacio en
+   blanco visible antes de repetirse", no que el texto renderizara una
+   sola vez (ya se duplica 2x en el track, verificado antes de asumir). */
 .item {
   font-size:      12px;
   letter-spacing: 2px;
   color:          var(--mkt-text-2);
   font-weight:    600;
   white-space:    nowrap;
-  padding-right:  2rem;
 }

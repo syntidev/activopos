@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Share2, MessageCircle, ExternalLink } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { FooterBrandIcon } from './FooterBrandIcon'
 import styles from './MarketingFooter.module.css'
 
 const PRODUCT_LINKS = [
@@ -31,8 +32,7 @@ export default async function MarketingFooter() {
   })
 
   return (
-    <footer className={styles.footer}>
-      <span className={styles.wordmark} aria-hidden="true">ActivoPOS</span>
+    <footer data-theme="light" className={styles.footer}>
       <div className={styles.grid}>
 
         {/* Brand col */}
@@ -136,6 +136,11 @@ export default async function MarketingFooter() {
             hola@activopos.com
           </a>
         </div>
+      </div>
+
+      <div className={styles.wordmarkBlock}>
+        <span className={styles.wordmark} aria-hidden="true">ActivoPOS</span>
+        <FooterBrandIcon />
       </div>
 
       <div className={styles.bottom}>

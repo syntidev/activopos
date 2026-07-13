@@ -16,14 +16,6 @@
   --mkt-bg:             #F4F6FB;
   --mkt-bg-alt:         #EEF2FF;
   --mkt-navy:           #0D1B2E;
-  /* Badge de isotipo del footer (Footer-6) — wrapper de profundidad
-     glass sobre el wordmark. La guía de marca nombra estos valores como
-     var(--ap-*), un prefijo aspiracional que nunca se implementó en este
-     archivo -- los reales son --mkt-*; se crean aquí scoped al footer. */
-  --footer-badge-border: rgba(255, 255, 255, 0.12);
-  --footer-badge-bg:     rgba(255, 255, 255, 0.06);
-  --footer-badge-glow:   rgba(0, 0, 0, 0.5);
-  --footer-badge-press:  rgba(0, 0, 0, 0.35);
   --footer-divider-line: rgba(255, 255, 255, 0.15);
   /* Footer usa var(--text-tertiary) global (dashboard-compartido, #64748B
      en dark theme) sobre este navy -> 3.64:1, falla WCAG AA. Token scoped

@@ -16,6 +16,15 @@
   --mkt-bg:             #F4F6FB;
   --mkt-bg-alt:         #EEF2FF;
   --mkt-navy:           #0D1B2E;
+  /* Badge de isotipo del footer (Footer-6) — wrapper de profundidad
+     glass sobre el wordmark. La guía de marca nombra estos valores como
+     var(--ap-*), un prefijo aspiracional que nunca se implementó en este
+     archivo -- los reales son --mkt-*; se crean aquí scoped al footer. */
+  --footer-badge-border: rgba(255, 255, 255, 0.12);
+  --footer-badge-bg:     rgba(255, 255, 255, 0.06);
+  --footer-badge-glow:   rgba(0, 0, 0, 0.5);
+  --footer-badge-press:  rgba(0, 0, 0, 0.35);
+  --footer-divider-line: rgba(255, 255, 255, 0.15);
   /* Variación tonal de Testimonios/CTA final (footer volvió a fondo claro
      en Footer-5, ya no usa navy -- --mkt-navy-3 se retiró, era su único
      consumidor). Por luminancia real, --mkt-navy (L=.0107) es más oscuro

@@ -13,9 +13,10 @@ export function FooterBrandIcon() {
       aria-label="Volver arriba"
     >
       <img
-        src="/brand/activopos/activopos-logo-icon.svg"
-        alt=""
-        aria-hidden="true"
+        src="/brand/activopos/activopos-logo-flat-negative.svg"
+        alt="ActivoPOS"
+        width={40}
+        height={40}
         className={styles.brandIconImg}
       />
     </button>

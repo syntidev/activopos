@@ -139,8 +139,10 @@ export default async function MarketingFooter() {
       </div>
 
       <div className={styles.wordmarkBlock}>
+        <div className={styles.wordmarkDivider} aria-hidden="true" />
         <span className={styles.wordmark} aria-hidden="true">ActivoPOS</span>
         <FooterBrandIcon />
+        <div className={styles.wordmarkFade} aria-hidden="true" />
       </div>
 
       <div className={styles.bottom}>

@@ -1,0 +1,345 @@
+/* ============================================================
+   ProductBentoSection — bento asimétrico con componentes reales
+   reconstruidos (Escritorio, Tu Día, POS, Catálogo Digital).
+   Reemplaza a DifferentiatorsSection (3 cards idénticas, diagnóstico
+   Landing-Definitivo). DifferentiatorsSection.tsx/.module.css quedan
+   en disco sin uso -- ver commit para detalle, no se borraron.
+   ============================================================ */
+
+.section {
+  padding: 96px 0;
+  background: var(--mkt-bg);
+}
+
+.container {
+  max-width: min(1140px, 90vw);
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #0D1B2E;
+  text-align: center;
+  text-wrap: balance;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--mkt-text-2);
+  text-align: center;
+  max-width: 46ch;
+  margin: 0 auto 48px;
+}
+
+/* ── Grid bento -- tamaños desiguales de verdad, dense para no dejar
+   huecos innecesarios (gaps residuales al final de la cuadrícula son
+   parte normal del estilo bento, no un bug). ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(160px, auto);
+  grid-auto-flow: dense;
+  gap: 20px;
+}
+
+.tile {
+  border-radius: 20px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+}
+
+/* Grande: 2 columnas x 2 filas */
+.tileCobrado {
+  grid-column: span 2;
+  grid-row: span 2;
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: var(--card-hero-shadow);
+  justify-content: center;
+  gap: 10px;
+}
+
+.heroIconCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--hero-chip-bg);
+  color: var(--brand-on);
+  margin-bottom: 4px;
+}
+
+.kpiLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.kpiValue {
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpiSub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+}
+
+.trendSvg {
+  width: 100%;
+  height: 48px;
+  color: #FFFFFF;
+  margin: 4px 0 12px;
+}
+
+.tileCopyOnColor {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Mediana ancha: 2 columnas x 1 fila -- bloque de color sólido con la
+   card "Tu Día" anidada encima (componente real dentro de otro). */
+.tileTudia {
+  grid-column: span 2;
+  grid-row: span 1;
+  background: var(--cta);
+  gap: 14px;
+}
+
+.tudiaCard {
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 20px rgba(13, 27, 46, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tudiaIconCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--cta) 14%, transparent);
+  color: var(--cta);
+  margin-bottom: 2px;
+}
+
+.tudiaHeadline {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: #0D1B2E;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.tudiaBody {
+  font-size: 13px;
+  color: var(--mkt-text-2);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Pequeña/mediana: 1 columna x 1 fila */
+.tileMargen {
+  grid-column: span 1;
+  grid-row: span 1;
+  gap: 6px;
+}
+
+.tileLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mkt-text-3);
+}
+
+.tileBigValue {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: #0D1B2E;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.progressTrack {
+  height: 6px;
+  background: var(--mkt-bg-alt);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 6px 0 10px;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 9999px;
+  transition: width 0.15s linear;
+}
+
+.tileCopy {
+  font-size: 13px;
+  color: var(--mkt-text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Pequeña/mediana: 1 columna x 1 fila -- ticket POS */
+.tileTicket {
+  grid-column: span 1;
+  grid-row: span 1;
+  gap: 8px;
+}
+
+/* Estándar único de ícono decorativo (Colorimetria-Final, reutilizado
+   aquí): 40x40, 12px, blanco, sombra propia, ícono Persian Blue -- salvo
+   Cobrado/Tu Día que recrean el ícono real del dashboard (heroIconCircle/
+   tudiaIconCircle, circulares, otro sistema, no genérico). */
+.tileIconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  color: var(--brand);
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.ticketRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--mkt-text-2);
+}
+
+.ticketDivider {
+  height: 1px;
+  background: var(--mkt-bg-alt);
+  margin: 6px 0;
+}
+
+.ticketTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0D1B2E;
+}
+
+.ticketTotalPrices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.ticketTotalBs {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--mkt-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mediana ancha: 2 columnas x 1 fila -- card de Catálogo Digital */
+.tileCatalogo {
+  grid-column: span 2;
+  grid-row: span 1;
+  gap: 12px;
+}
+
+.catalogCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--mkt-bg-alt);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.catalogImg {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--cta) 100%);
+}
+
+.catalogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.catalogName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0D1B2E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catalogPriceUsd {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0D1B2E;
+}
+
+.catalogPriceBs {
+  font-size: 11px;
+  color: var(--mkt-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tileCobrado,
+  .tileTudia,
+  .tileCatalogo { grid-column: span 2; }
+  .tileMargen,
+  .tileTicket   { grid-column: span 1; }
+}
+
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; gap: 14px; }
+  .tile { grid-column: span 1 !important; grid-row: span 1 !important; }
+  .tileCobrado { min-height: 220px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressFill { transition: none; }
+  .tudiaCard { transition: none; }
+}

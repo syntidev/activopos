@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { getBcvRate } from '@/lib/bcv'
 import HeroSection from '@/components/marketing/sections/HeroSection'
 import TickerSection from '@/components/marketing/sections/TickerSection'
-import DifferentiatorsSection from '@/components/marketing/sections/DifferentiatorsSection'
+import ProductBentoSection from '@/components/marketing/sections/ProductBentoSection'
 import PaymentMethodsSection from '@/components/marketing/sections/PaymentMethodsSection'
 import SegmentsSection from '@/components/marketing/sections/SegmentsSection'
 import FeatureTabsSection from '@/components/marketing/sections/FeatureTabsSection'
@@ -77,7 +77,7 @@ export default async function LandingPage() {
       <LandingAnimations />
       <HeroSection bcvRate={bcvRate} />
       <TickerSection />
-      <DifferentiatorsSection />
+      <ProductBentoSection />
       <PaymentMethodsSection />
       <SegmentsSection />
       <FeatureTabsSection />

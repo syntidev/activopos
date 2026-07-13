@@ -6,6 +6,7 @@ import {
   Warehouse, MapPin,
 } from 'lucide-react'
 import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProductForm'
+import { AccordionCard } from './AccordionCard'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import type { ModalCategory } from './ProductModal'
 import m from './modals.module.css'
@@ -61,9 +62,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
       <div className={s.column}>
 
         {/* ── Card: Información básica ── */}
-        <section className={s.card}>
-          <h2 className={s.cardTitle}>Información básica</h2>
-
+        <AccordionCard title="Información básica" defaultOpen hasError={!!f.errors.name}>
           <div className={m.formGroup}>
             <label className={m.label} htmlFor="np-name">
               Nombre del Producto
@@ -270,11 +269,10 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               </button>
             </div>
           </div>
-        </section>
+        </AccordionCard>
 
         {/* ── Card: Imágenes ── */}
-        <section className={s.card}>
-          <h2 className={s.cardTitle}>Imágenes</h2>
+        <AccordionCard title="Imágenes" defaultOpen hasError={!!f.imgError}>
           <div className={c.imgGrid}>
             {([0, 1, 2] as const).map((slot) => (
               <div key={slot} className={`${c.imgSlot} ${f.images[slot] ? c.imgSlotFilled : ''}`}>
@@ -322,12 +320,10 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             ))}
           </div>
           {f.imgError && <p className={m.errorMsg}>{f.imgError}</p>}
-        </section>
+        </AccordionCard>
 
         {/* ── Card: Catálogo ── */}
-        <section className={s.card}>
-          <h2 className={s.cardTitle}>Catálogo</h2>
-
+        <AccordionCard title="Catálogo" defaultOpen>
           <div className={m.formGroup}>
             <label className={m.label} htmlFor="np-category">Categoría</label>
             <select
@@ -463,16 +459,18 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               </label>
             </div>
           )}
-        </section>
+        </AccordionCard>
       </div>
 
       {/* ══ Columna derecha ══ */}
       <div className={s.column}>
 
-        {/* ── Card: Precio ── */}
-        <section className={s.card}>
-          <h2 className={s.cardTitle}>Precio</h2>
-
+        {/* ── Card: Precio (solo costo/margen/precio/utilidad) ── */}
+        <AccordionCard
+          title="Precio"
+          defaultOpen
+          hasError={!!(f.errors.cost || f.errors.margin || f.errors.price)}
+        >
           {/* Modo de costo */}
           <div className={m.formGroup}>
             <p className={m.label}>Ingresar Costo Por</p>
@@ -627,10 +625,13 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               {f.fmtUsd(f.computed.utility)}
             </span>
           </div>
+        </AccordionCard>
 
-          <div className={m.divider} />
-
-          {/* ── Precio Mayorista (colapsable, opcional) ── */}
+        {/* ── Card: Precio Mayorista — el toggle YA es el mecanismo de
+            expand/collapse (igual que Variantes), no se envuelve en
+            AccordionCard genérico. Colapsada por defecto porque
+            f.showWholesale arranca en false. ── */}
+        <section className={s.card}>
           <div className={c.fixedPriceRow}>
             <div className={c.fixedPriceLabel}>
               <Warehouse size={14} className={c.toggleIcon} aria-hidden="true" />
@@ -691,8 +692,12 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               </p>
             </div>
           )}
+        </section>
 
-          {/* ── Ubicación ── */}
+        {/* ── Card: Detalles internos — ubicación y notas, SIN toggle propio
+            (siempre visibles dentro del body una vez expandida la card;
+            son 2 campos simples, no necesitan ocultarse entre sí). ── */}
+        <AccordionCard title="Detalles internos" defaultOpen={false}>
           <div className={m.formGroup}>
             <label className={m.label} htmlFor="np-location">
               <MapPin size={13} className={c.toggleIcon} aria-hidden="true" />
@@ -709,7 +714,6 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             />
           </div>
 
-          {/* ── Notas internas ── */}
           <div className={m.formGroup}>
             <label className={m.label} htmlFor="np-notes">Notas (opcional)</label>
             <textarea
@@ -721,13 +725,11 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               rows={2}
             />
           </div>
-        </section>
+        </AccordionCard>
 
         {/* ── Card: Inventario (stock + alerta — sin variantes) ── */}
         {f.saleMode !== 'service' && (
-          <section className={s.card}>
-            <h2 className={s.cardTitle}>Inventario</h2>
-
+          <AccordionCard title="Inventario" defaultOpen>
             {!f.hasVariants && (
               <div className={m.formGroup}>
                 <label className={m.label} htmlFor="np-stock">Stock Inicial</label>
@@ -759,7 +761,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               />
               <p className={c.fixedPriceSub}>Avisar cuando el stock llegue a este nivel</p>
             </div>
-          </section>
+          </AccordionCard>
         )}
 
         {/* ── Card: Variantes (toggle + chips/tabla — propia tarjeta) ── */}

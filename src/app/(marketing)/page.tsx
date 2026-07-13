@@ -3,6 +3,7 @@ import { getBcvRate } from '@/lib/bcv'
 import HeroSection from '@/components/marketing/sections/HeroSection'
 import TickerSection from '@/components/marketing/sections/TickerSection'
 import ProductBentoSection from '@/components/marketing/sections/ProductBentoSection'
+import FeatureListBentoSection from '@/components/marketing/sections/FeatureListBentoSection'
 import PaymentMethodsSection from '@/components/marketing/sections/PaymentMethodsSection'
 import SegmentsSection from '@/components/marketing/sections/SegmentsSection'
 import FeatureTabsSection from '@/components/marketing/sections/FeatureTabsSection'
@@ -78,6 +79,7 @@ export default async function LandingPage() {
       <HeroSection bcvRate={bcvRate} />
       <TickerSection />
       <ProductBentoSection />
+      <FeatureListBentoSection />
       <PaymentMethodsSection />
       <SegmentsSection />
       <FeatureTabsSection />

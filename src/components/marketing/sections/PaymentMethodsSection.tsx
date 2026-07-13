@@ -1,10 +1,25 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Wallet } from 'lucide-react'
+import { Wallet, Smartphone, Send, Bitcoin, Coins, CreditCard, Banknote } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import styles from './PaymentMethodsSection.module.css'
 
-const METHODS = ['Pago Móvil', 'Zelle', 'Binance', 'USDT', 'Zinli', 'PayPal', 'Efectivo Bs/USD']
+/* Ícono + color semántico por método, Tipo E de DESIGN_SYSTEM.md
+   (.doc/DESIGN_SYSTEM.md:239-247) -- la caja del ícono es siempre
+   blanca (ver .pillIcon), el color varía solo en el ícono. Zinli/PayPal
+   no están en Tipo E -- gris neutro (#6B7280, mismo tono que "Débito"
+   en la tabla), asumido por ausencia de semántica definida. */
+const METHODS: Array<{ name: string; Icon: LucideIcon; color: string }> = [
+  { name: 'Pago Móvil',      Icon: Smartphone, color: '#16A34A' },
+  { name: 'Zelle',           Icon: Send,       color: '#2563EB' },
+  { name: 'Binance',         Icon: Bitcoin,    color: '#F59E0B' },
+  { name: 'USDT',            Icon: Coins,      color: '#F59E0B' },
+  { name: 'Zinli',           Icon: CreditCard, color: '#6B7280' },
+  { name: 'PayPal',          Icon: CreditCard, color: '#6B7280' },
+  { name: 'Efectivo Bs/USD', Icon: Banknote,   color: '#9333EA' },
+]
 
 export default function PaymentMethodsSection() {
   return (
@@ -24,8 +39,13 @@ export default function PaymentMethodsSection() {
           No somos pasarela de pago. Guardamos el dato, tu cliente lo recibe listo.
         </p>
         <div className={styles.pills}>
-          {METHODS.map(m => (
-            <span key={m} className={styles.pill}>{m}</span>
+          {METHODS.map(({ name, Icon, color }) => (
+            <span key={name} className={styles.pill}>
+              <span className={styles.pillIcon} style={{ '--pm-icon': color } as CSSProperties}>
+                <Icon size={18} aria-hidden="true" />
+              </span>
+              {name}
+            </span>
           ))}
         </div>
       </motion.div>

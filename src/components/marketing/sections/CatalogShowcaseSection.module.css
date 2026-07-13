@@ -1,6 +1,6 @@
 .section {
   padding: 96px 0;
-  background: var(--sand);
+  background: var(--mkt-bg);
 }
 
 .container {
@@ -54,15 +54,18 @@
   box-shadow: 0 12px 28px rgba(47, 43, 61, 0.16), 0 0 1px rgba(47, 43, 61, 0.08);
 }
 
+/* Estándar único de ícono (Colorimetria-Final): 40x40, 12px, blanco,
+   sombra propia -- sin tinte pastel por card. */
 .cardIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--sand-light);
-  color: var(--mkt-navy);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  color: var(--brand);
   margin-bottom: 16px;
 }
 

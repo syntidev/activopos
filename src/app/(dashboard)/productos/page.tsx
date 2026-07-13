@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeftRight,
+  Download,
 } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
 import { useToast } from '@/components/ui/Toast'
@@ -630,6 +631,15 @@ export default function ProductosPage() {
             <Upload size={15} aria-hidden="true" />
             Migración
           </button>
+
+          <a
+            href="/api/products/export"
+            className={styles.btnAction}
+            aria-label="Exportar catálogo a Excel"
+          >
+            <Download size={15} aria-hidden="true" />
+            Exportar
+          </a>
 
           <Button
             variant="primary"

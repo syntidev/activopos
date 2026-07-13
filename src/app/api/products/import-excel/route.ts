@@ -26,6 +26,10 @@ interface RowValidation {
   category:     string | null
   product_type: ProductTypeLiteral
   unit_label:   string
+  wholesale_price_usd:        number | null
+  wholesale_price_per_kg_usd: number | null
+  location:     string | null
+  notes:        string | null
 }
 
 interface RowError {
@@ -67,8 +71,33 @@ function validateRow(
 
   const unit_label = toString(raw['unit_label'] ?? raw['Unidad'] ?? 'und') || 'und'
 
+  // Campos opcionales — solo se validan/incluyen si vienen con valor.
+  const whUnitRaw = raw['wholesale_price_usd'] ?? raw['Precio Mayorista USD']
+  const wholesale_price_usd = whUnitRaw !== undefined && toString(whUnitRaw) !== '' ? toNum(whUnitRaw) : null
+  if (wholesale_price_usd !== null && wholesale_price_usd < 0) {
+    return { error: { row: rowNum, message: '"wholesale_price_usd" debe ser ≥ 0' } }
+  }
+
+  const whKgRaw = raw['wholesale_price_per_kg_usd'] ?? raw['Precio Mayorista Kg USD']
+  const wholesale_price_per_kg_usd = whKgRaw !== undefined && toString(whKgRaw) !== '' ? toNum(whKgRaw) : null
+  if (wholesale_price_per_kg_usd !== null && wholesale_price_per_kg_usd < 0) {
+    return { error: { row: rowNum, message: '"wholesale_price_per_kg_usd" debe ser ≥ 0' } }
+  }
+
+  const locRaw = toString(raw['location'] ?? raw['Ubicación'] ?? '')
+  const location = locRaw || null
+  if (location !== null && location.length > 120) {
+    return { error: { row: rowNum, message: '"location" supera 120 caracteres' } }
+  }
+
+  const notesRaw = toString(raw['notes'] ?? raw['Notas'] ?? '')
+  const notes = notesRaw || null
+
   return {
-    valid: { row: rowNum, name, price_usd: price, cost_usd: cost, stock, category, product_type, unit_label },
+    valid: {
+      row: rowNum, name, price_usd: price, cost_usd: cost, stock, category, product_type, unit_label,
+      wholesale_price_usd, wholesale_price_per_kg_usd, location, notes,
+    },
   }
 }
 
@@ -171,6 +200,10 @@ export async function POST(req: NextRequest) {
             base_unit_label:    row.unit_label,
             price_per_unit_usd: row.price_usd,
             cost_per_unit_usd:  row.cost_usd,
+            wholesale_price_usd:        row.wholesale_price_usd,
+            wholesale_price_per_kg_usd: row.wholesale_price_per_kg_usd,
+            location:                   row.location,
+            notes:                      row.notes,
           },
         })
 
@@ -181,6 +214,11 @@ export async function POST(req: NextRequest) {
               product_id:        product.id,
               quantity:          row.stock,
               cost_per_unit_usd: row.cost_usd ?? 0,
+              // DT Sprint 44.5: entry_type explícito. Carga inicial de import =
+              // 'adjustment' (valor válido del String entry_type, ver schema:
+              // purchase|adjustment|sale|return|reservation). Antes heredaba el
+              // default implícito.
+              entry_type:        'adjustment',
               notes:             'Importación Excel',
               created_by:        session.userId,
             },

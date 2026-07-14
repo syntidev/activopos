@@ -185,9 +185,16 @@
    VISUALMENTE tapado bajo el ícono en la esquina. Aplicado a las 20
    cards por igual (una sola regla compartida, no decidido por
    título) -- más simple y verificable que evaluar caso por caso cuál
-   título es "lo bastante largo" para colisionar. */
+   título es "lo bastante largo" para colisionar.
+   Icono-Posicion-Real: 48px era 4px insuficiente -- el ícono ocupa
+   desde right:12px hasta right:12+40=52px del borde, no 48px, así que
+   el texto podía renderizar hasta 4px DENTRO del área real del ícono.
+   Corregido a 52px (despeje real, no aproximado). El defecto principal
+   reportado (título tapado, cortado incluso con "espacio de sobra") no
+   estaba acá -- ver widthFor() en el .tsx, causa raíz real: el ancho
+   asignado a cada card ahora es consciente de la longitud del título. */
 .cardTitle {
-  padding-right: 48px;
+  padding-right: 52px;
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;

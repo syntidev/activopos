@@ -93,12 +93,34 @@ const FEATURES: FeatureCard[] = [
 const ROW1 = FEATURES.slice(0, 10)
 const ROW2 = FEATURES.slice(10, 20)
 
-/* 3 anchos únicos (150/190/240), cíclicos con offset distinto por fila
-   para que ni las vecinas de una misma fila, ni las cards en la misma
-   posición horizontal entre fila 1 y 2, coincidan casi nunca. */
+/* Icono-Posicion-Real: widthFor ERA puramente cíclico (index % 3), ciego a
+   la longitud del título -- causa raíz real del solapamiento título/ícono
+   reportado con captura real ("Precio Mayorista"->150px, "Catálogo
+   Digital"->190px, "Inventario"->150px, los 3 títulos citados en el
+   reporte, ninguno con espacio real para su texto). Las 3 hipótesis del
+   prompt (position:relative faltante, padding-right sobreescrito,
+   nowrap mal calculado) se verificaron FALSAS leyendo el CSS real -- el
+   defecto estaba acá, en qué ancho le tocaba a cada título, no en cómo
+   se dibuja el ícono.
+
+   Ahora cada título solo puede recibir un ancho donde su texto quepa
+   completo antes del ícono (estimación 8.2px/carácter, Fraunces bold
+   15px -- MISMO método ya usado en el commit anterior, no es medición
+   real de browser, no hay browser tool en este entorno). RESERVED_PX
+   = padding lateral de card (16+16) + despeje real del ícono (top:12,
+   right:12, 40x40 -> ocupa desde 12px hasta 52px del borde derecho,
+   no 48px como tenía el padding-right viejo). Entre los anchos que sí
+   caben, se cicla por posición para conservar la asimetría "sin patrón
+   fijo" -- ya no es un ciclo ciego de 3, es un ciclo sobre las opciones
+   válidas de cada título. */
 const WIDTHS = [150, 190, 240]
-function widthFor(indexInRow: number, rowOffset: number): number {
-  return WIDTHS[(indexInRow + rowOffset) % WIDTHS.length]
+const CHARS_PX_ESTIMATE = 8.2
+const RESERVED_PX = 32 + 52 // padding L+R de .card + despeje real del ícono flotante
+
+function widthFor(title: string, indexInRow: number, rowOffset: number): number {
+  const fitting = WIDTHS.filter(w => w - RESERVED_PX >= title.length * CHARS_PX_ESTIMATE)
+  const pool = fitting.length > 0 ? fitting : [Math.max(...WIDTHS)]
+  return pool[(indexInRow + rowOffset) % pool.length]
 }
 
 function Stage({ card }: { card: FeatureCard }) {
@@ -185,7 +207,7 @@ function FeatureRow({ cards, rowOffset }: { cards: FeatureCard[]; rowOffset: num
             <FeatureCardEl
               key={`${copyKey}-${card.key}`}
               card={card}
-              width={widthFor(i, rowOffset)}
+              width={widthFor(card.title, i, rowOffset)}
             />
           ))
         ))}

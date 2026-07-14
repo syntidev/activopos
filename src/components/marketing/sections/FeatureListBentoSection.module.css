@@ -105,23 +105,17 @@
    sombra NUEVA del adenda para separarse del fondo mesh claro.
    height fija 130px (Solo-Horizontal-Final: CERO card ocupa más de
    1 fila -- nunca grid-row:span 2, ninguna excepción) + overflow:hidden
-   real (adenda: ningún texto puede desbordar su propia card). */
-/* Tensión real, documentada en vez de ignorada: 130px de alto fijo +
-   ícono sellado 40x40 (Colorimetria-Final, no negociable) + hasta 2
-   líneas de descripción (adenda) + el Stage animado dejan MUY poco
-   margen. Padding comprimido a 14px/16px (antes 20px) para recuperar
-   espacio real -- con esto, el peor caso (card de 150px con
-   descripción que ocupa las 2 líneas completas) deja el Stage con
-   apenas unos px visibles; overflow:hidden garantiza que nunca se
-   desborda el borde de la card, pero en ese caso extremo el Stage
-   puede quedar parcialmente recortado. No hay forma de eliminar esa
-   tensión sin violar alguna de las 3 reglas (ícono sellado, 2 líneas,
-   130px fijo) -- se prioriza cero overflow visual (lo pedido
-   explícito) sobre garantizar el 100% del Stage siempre visible. */
+   real (adenda: ningún texto puede desbordar su propia card).
+   Icono-Flotante-Final: la tensión de espacio documentada en el
+   commit anterior (Solo-Horizontal-Final) se resuelve acá -- el ícono
+   sale del flujo (position:absolute en .iconBox, ver abajo), ya no
+   consume su propia fila+margen. position:relative para anclar esa
+   posición absoluta a la card, no al viewport. */
 .card {
   /* width: sin regla aquí -- viene del inline style por-card en el
      .tsx (widthFor: 150/190/240px), siempre gana sobre cualquier
      regla de este archivo sin !important */
+  position: relative;
   height: 130px;
   background: #FFFFFF;
   border-radius: 20px;
@@ -160,10 +154,18 @@
   color: #0D1B2E;
 }
 
-/* Estándar único de ícono (Colorimetria-Final): blanco + Persian Blue,
-   SIN excepción -- también en cards de color, por diseño (no se anula
-   aquí a propósito). */
+/* Estándar único de ícono (Colorimetria-Final): 40x40, blanco +
+   Persian Blue, SIN excepción -- también en cards de color, por
+   diseño (no se anula aquí a propósito). Icono-Flotante-Final: sale
+   del flujo (absolute), esquina superior derecha, flota ENCIMA del
+   texto sin reservarle espacio (pedido explícito) -- el respiro real
+   para que el título no quede tapado lo da .cardTitle (padding-right),
+   no este elemento. */
 .iconBox {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -174,12 +176,18 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   color: var(--brand);
   flex-shrink: 0;
-  margin-bottom: 6px;
 }
 
 /* Adenda Solo-Horizontal-Final: título máximo 1 línea, trunca con "…"
-   -- nunca desborda ni corta a la mitad. */
+   -- nunca desborda ni corta a la mitad. padding-right (Icono-
+   Flotante-Final): el ícono flota encima sin reservar espacio en el
+   flujo -- este padding evita que el texto de títulos largos quede
+   VISUALMENTE tapado bajo el ícono en la esquina. Aplicado a las 20
+   cards por igual (una sola regla compartida, no decidido por
+   título) -- más simple y verificable que evaluar caso por caso cuál
+   título es "lo bastante largo" para colisionar. */
 .cardTitle {
+  padding-right: 48px;
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;

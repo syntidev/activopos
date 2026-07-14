@@ -153,9 +153,12 @@ function Stage({ card }: { card: FeatureCard }) {
   }
 }
 
-/* Solo-Horizontal-Final (adenda): overflow:hidden real por card, título
-   1 línea (nowrap+ellipsis vía CSS), descripción 2 líneas (line-clamp
-   vía CSS) -- ningún texto puede desbordar su propia card. */
+/* Icono-Flotante-Final: el ícono sale del flujo vertical (position:
+   absolute, esquina superior derecha, ver .module.css .iconBox) --
+   ya no consume su propia fila, libera espacio real para texto+Stage
+   en las cards de 130px. overflow:hidden real por card, título 1
+   línea (nowrap+ellipsis), descripción 2 líneas (line-clamp) siguen
+   sin cambios -- ningún texto puede desbordar su propia card. */
 function FeatureCardEl({ card, width }: { card: FeatureCard; width: number }) {
   return (
     <div

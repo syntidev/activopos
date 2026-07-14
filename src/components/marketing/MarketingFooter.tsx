@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Share2, MessageCircle, ExternalLink } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { WA_BASE } from '@/lib/marketing-contact'
 import styles from './MarketingFooter.module.css'
 
 const PRODUCT_LINKS = [
@@ -9,7 +10,7 @@ const PRODUCT_LINKS = [
   { label: 'Planes',         href: '/planes' },
   { label: 'Recursos',       href: '/recursos' },
   { label: 'Blog',           href: '/blog' },
-  { label: 'Demo',           href: 'https://wa.me/584222654827?text=Quiero+ver+una+demo+de+ActivoPOS' },
+  { label: 'Demo',           href: `${WA_BASE}?text=Quiero+ver+una+demo+de+ActivoPOS` },
 ]
 
 const COMPANY_LINKS = [
@@ -60,7 +61,7 @@ export default async function MarketingFooter() {
               Instagram
             </a>
             <a
-              href="https://wa.me/584222654827"
+              href={WA_BASE}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.socialLink}

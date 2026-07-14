@@ -3,6 +3,7 @@ import { Check, X, MessageCircle } from 'lucide-react'
 import { getBcvRate } from '@/lib/bcv'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import { PLAN_FEATURES } from '@/lib/plan-features'
+import { WA_BASE } from '@/lib/marketing-contact'
 import PlanToggle from './PlanToggle'
 import styles from './page.module.css'
 
@@ -136,7 +137,7 @@ export default async function PlanesPage() {
         <div className={styles.container}>
           <h2 className={styles.ctaTitle}>¿Tienes dudas sobre cuál plan elegir?</h2>
           <a
-            href="https://wa.me/584222654827?text=Hola%2C+tengo+dudas+sobre+los+planes+de+ActivoPOS"
+            href={`${WA_BASE}?text=Hola%2C+tengo+dudas+sobre+los+planes+de+ActivoPOS`}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.ctaBtn}

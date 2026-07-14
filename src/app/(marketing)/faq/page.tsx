@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ChevronDown, MessageCircle } from 'lucide-react'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import { WA_BASE } from '@/lib/marketing-contact'
 import styles from './faq.module.css'
 
 /* ─────────────────────────────────────────────────────────
@@ -183,7 +184,7 @@ export default function FaqPage() {
               </p>
             </div>
             <a
-              href="https://wa.me/584222654827?text=Tengo%20una%20pregunta%20sobre%20ActivoPOS"
+              href={`${WA_BASE}?text=Tengo%20una%20pregunta%20sobre%20ActivoPOS`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.ctaBtn}

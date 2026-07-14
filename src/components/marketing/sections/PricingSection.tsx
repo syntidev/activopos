@@ -5,13 +5,12 @@ import Link from 'next/link'
 import { Check, MessageCircle, ArrowRight } from 'lucide-react'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier, type BillingCycleKey } from '@/lib/plan-limits'
 import { featuresForTier, exclusiveFeaturesForTier } from '@/lib/plan-features'
+import { WA_BASE } from '@/lib/marketing-contact'
 import styles from './PricingSection.module.css'
 
 interface Props {
   bcvRate: number
 }
-
-const WA_BASE = 'https://wa.me/584222654827'
 
 const CYCLE_ORDER: BillingCycleKey[] = ['mensual', 'semestral', 'anual']
 

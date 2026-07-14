@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier, type BillingCycleKey } from '@/lib/plan-limits'
+import { WA_BASE } from '@/lib/marketing-contact'
 import styles from './page.module.css'
 
 interface Props {
   bcvRate: number
 }
-
-const WA_BASE = 'https://wa.me/584222654827'
 
 const TIERS: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
 

@@ -45,7 +45,7 @@ export default function CatalogShowcaseSection() {
         </div>
 
         <div className={styles.moreWrap}>
-          <Link href="/catalogo/demo" className={styles.moreLink}>
+          <Link href="/catalogo/multi-demo" className={styles.moreLink}>
             Ver catálogo de ejemplo
             <ArrowRight size={15} aria-hidden="true" />
           </Link>

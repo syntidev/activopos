@@ -42,7 +42,18 @@
   .grid { grid-template-columns: 1fr; }
 }
 
+/* Mismo criterio que SegmentsSection/.ghostIcon: oculto en mobile
+   angosto, no aporta y sí puede recargar la card. */
+@media (max-width: 640px) {
+  .ghostIcon { display: none; }
+}
+
+/* Homologa-Catalogo-Final: position:relative + overflow:hidden --
+   ancla y recorta el .ghostIcon a la card, mismo criterio que
+   SegmentsSection.module.css .card (línea 35-36 de ese archivo). */
 .card {
+  position: relative;
+  overflow: hidden;
   min-height: 180px;
   background: #FFFFFF;
   border-radius: 20px;
@@ -54,19 +65,18 @@
   box-shadow: 0 12px 28px rgba(47, 43, 61, 0.16), 0 0 1px rgba(47, 43, 61, 0.08);
 }
 
-/* Estándar único de ícono (Colorimetria-Final): 40x40, 12px, blanco,
-   sombra propia -- sin tinte pastel por card. */
-.cardIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+/* Homologa-Catalogo-Final: reemplaza el ícono chico (40x40, propia fila,
+   margin-bottom:16px) por el mismo ícono fantasma de fondo ya usado en
+   SegmentsSection.module.css .ghostIcon y FeatureListBentoSection
+   .ghostIcon -- grande, opacity baja, esquina inferior derecha,
+   pointer-events:none, detrás del texto en vez de ocupar su propia fila. */
+.ghostIcon {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
   color: var(--brand);
-  margin-bottom: 16px;
+  opacity: 0.1;
+  pointer-events: none;
 }
 
 .cardTitle {

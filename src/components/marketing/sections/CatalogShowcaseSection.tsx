@@ -35,8 +35,8 @@ export default function CatalogShowcaseSection() {
         <div className={styles.grid}>
           {PREVIEWS.map(({ Icon, title, desc }) => (
             <div key={title} className={styles.card}>
-              <span className={styles.cardIcon}>
-                <Icon size={20} aria-hidden="true" />
+              <span className={styles.ghostIcon} aria-hidden="true">
+                <Icon size={72} />
               </span>
               <h3 className={styles.cardTitle}>{title}</h3>
               <p className={styles.cardDesc}>{desc}</p>

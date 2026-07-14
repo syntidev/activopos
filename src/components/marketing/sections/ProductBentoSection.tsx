@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, useReducedMotion, animate } from 'framer-motion'
 import type { Variants } from 'framer-motion'
-import { DollarSign, Sun, MessageCircle, Wallet } from 'lucide-react'
+import { DollarSign, Sun, MessageCircle, ShoppingCart } from 'lucide-react'
 import styles from './ProductBentoSection.module.css'
 
 /* Datos de ejemplo curados a mano -- NUNCA screenshots de la cuenta demo
@@ -15,11 +15,13 @@ import styles from './ProductBentoSection.module.css'
 const COBRADO_USD  = 431.40
 const BCV_RATE      = 36.735 // Bs.15,847.20 / $431.40 -- misma tasa reusada en Ticket y Catálogo
 const MARGEN_PCT   = 42.6
-const TICKET_ITEMS  = [
-  { name: '2 × Harina P.A.N.', usd: 1.70 },
-  { name: 'Instalación 2h',    usd: 50.00 },
+/* Carrito-POS-1: reemplaza el ticket -- mismo patrón de datos, ahora con
+   cantidad (paradigma qty × price sellado del proyecto). */
+const CART_ITEMS = [
+  { name: 'Camisa Polo Azul', qty: 2, usd: 15.00 },
+  { name: 'Gorra Negra',      qty: 1, usd: 8.50 },
 ]
-const TICKET_TOTAL_USD = TICKET_ITEMS.reduce((sum, i) => sum + i.usd, 0)
+const CART_TOTAL_USD = CART_ITEMS.reduce((sum, i) => sum + i.qty * i.usd, 0)
 
 function fmtUsd(n: number): string {
   return '$' + n.toFixed(2)
@@ -138,24 +140,26 @@ export default function ProductBentoSection() {
             <p className={styles.tileCopy}>De cada venta, sabes cuánto ganaste de verdad.</p>
           </motion.div>
 
-          {/* Ticket POS -- regla dual currency sellada: USD y Bs siempre juntos */}
+          {/* Carrito -- regla dual currency sellada: USD y Bs siempre juntos.
+              Paradigma qty × price (sellado): cantidad se muestra, nunca
+              se ingresa un monto en Bs para calcular la cantidad. */}
           <motion.div className={`${styles.tile} ${styles.tileTicket}`} variants={tileVariants}>
-            <span className={styles.tileIconBox}><Wallet size={16} aria-hidden="true" /></span>
-            {TICKET_ITEMS.map(i => (
+            <span className={styles.tileIconBox}><ShoppingCart size={16} aria-hidden="true" /></span>
+            {CART_ITEMS.map(i => (
               <div key={i.name} className={styles.ticketRow}>
-                <span>{i.name}</span>
-                <span>{fmtUsd(i.usd)}</span>
+                <span>{i.qty} × {i.name}</span>
+                <span>{fmtUsd(i.qty * i.usd)}</span>
               </div>
             ))}
             <div className={styles.ticketDivider} />
             <div className={styles.ticketTotalRow}>
               <span>Total</span>
               <span className={styles.ticketTotalPrices}>
-                <span>{fmtUsd(TICKET_TOTAL_USD)}</span>
-                <span className={styles.ticketTotalBs}>{fmtBs(TICKET_TOTAL_USD * BCV_RATE)}</span>
+                <span>{fmtUsd(CART_TOTAL_USD)}</span>
+                <span className={styles.ticketTotalBs}>{fmtBs(CART_TOTAL_USD * BCV_RATE)}</span>
               </span>
             </div>
-            <p className={styles.tileCopy}>El BCV se actualiza solo. Tu cliente paga como quiera.</p>
+            <p className={styles.tileCopy}>Tu cliente arma el carrito, tú ves el total al instante.</p>
           </motion.div>
 
           {/* Catálogo Digital -- card de producto real (radius 14px, precio

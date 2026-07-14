@@ -2,8 +2,10 @@
    FeatureListBentoSection — Bento-Infinito-1 (reconstruido, ver .tsx
    y el commit para el detalle de qué brief original faltaba).
    Fondo mesh CLARO (corrección del adenda, no el navy oscuro original)
-   + 20 cards de función con 6 patrones de micro-animación reutilizables
-   + fila de segmentos sin animación.
+   + 20 cards de función con 6 patrones de micro-animación reutilizables.
+   Correccion-Final-2: quitados los segmentos que se habían colado acá
+   (viven en SegmentsSection.tsx, aparte); grid estático reemplazado por
+   scroll horizontal infinito con grupos de 3 (1 alta + 2 apiladas).
    ============================================================ */
 
 /* ── Fondo mesh claro: base + 4 manchas difuminadas con drift ── */
@@ -63,13 +65,51 @@
   margin: 0 auto 48px;
 }
 
-/* ── Grid: flujo natural (no forzado a "2 filas" -- con 20+ cards de
-   tamaño variable esa restricción no es viable, crece lo que necesite). */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(130px, auto);
-  gap: 20px;
+/* ── Scroll horizontal infinito (Correccion-Final-2, reemplaza el grid
+   estático) -- contenedor oculta, el track interno se anima. Mismo
+   principio que la cinta del footer (FeatureMarquee.tsx/.module.css):
+   contenido duplicado 2x, translateX(-50%) mueve exactamente una copia. */
+.scrollWrap {
+  overflow: hidden;
+  width: 100%;
+}
+
+.scrollTrack {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: scrollTrack 50s linear infinite;
+}
+
+@keyframes scrollTrack {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Un grupo = 1 card alta (columna propia) + 2 cards apiladas de media
+   altura (otra columna) -- alternando tamaño real, no solo 2 categorías */
+.scrollGroup {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.groupTall {
+  display: flex;
+}
+.groupTall .card {
+  flex: 1;
+}
+
+.groupStack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.groupStack .card {
+  flex: 1;
+  min-height: 140px;
 }
 
 /* Idéntico a ProductBentoSection.module.css .tile (radius/sombra) +
@@ -81,6 +121,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  flex-shrink: 0;
 }
 
 /* ── Variantes de color -- proporción ~1 de cada 4-5 cards (5 de 20).
@@ -287,44 +328,15 @@
   }
   .accDot, .giroFace { opacity: 1; }
   .flowRow { opacity: 1; transform: none; }
+  /* El scroll horizontal se congela en su frame actual (paused, no
+     none/reset) -- pedido explícito así en Correccion-Final-2. */
+  .scrollTrack { animation-play-state: paused; }
 }
 
-/* ── Segmentos -- ghost icon girado + nombre, SIN micro-animación
-   (diferencia visual explícita vs. las cards de función). ── */
-.segmentCard {
-  position: relative;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  padding: 14px;
-  display: flex;
-  align-items: flex-end;
-  min-height: 90px;
-}
-
-.segmentGhost {
-  position: absolute;
-  right: -10px;
-  bottom: -10px;
-  color: var(--mkt-navy, #0D1B2E);
-  opacity: 0.14;
-  pointer-events: none;
-}
-
-.segmentName {
-  position: relative;
-  z-index: 1;
-  font-size: 12px;
-  font-weight: 700;
-  color: #0D1B2E;
-}
-
-/* ── Responsive -- spans se anulan, grid a 1 columna en mobile ── */
-@media (max-width: 900px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
-  .card, .segmentCard { grid-column: span 1 !important; grid-row: span 1 !important; }
-}
-
+/* ── Responsive -- el scroll y sus animaciones se mantienen en mobile
+   (pedido explícito), solo se achica el gap/ancho de card ── */
 @media (max-width: 640px) {
-  .grid { grid-template-columns: 1fr; gap: 14px; }
+  .scrollTrack, .scrollGroup { gap: 10px; }
+  .groupTall .card, .groupStack .card { padding: 16px; }
+  .groupStack .card { min-height: 120px; }
 }

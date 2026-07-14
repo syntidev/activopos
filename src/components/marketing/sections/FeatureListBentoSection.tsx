@@ -1,18 +1,19 @@
-import type { CSSProperties } from 'react'
 import {
   ScanBarcode, Boxes, ChartColumn, Store, Users, Wallet, FileText, RotateCcw,
   ShoppingBag, PiggyBank, Activity, TrendingUp, Receipt, FileSpreadsheet,
   ChefHat, Bell, Columns3, Ruler, Palette, Warehouse,
   type LucideIcon,
 } from 'lucide-react'
-import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import styles from './FeatureListBentoSection.module.css'
 
-/* Bento-Infinito-1 (reconstruido -- ver commit: el brief original con
-   TAREA 1-4 nunca llegó a esta sesión, solo TAREA 5 + un adenda de
-   corrección. Reconstruido con la info real disponible, sin inventar
-   lo que faltaba: estructura "2 filas" para 20+ items no es viable con
-   spans normales, se usa flujo natural de CSS Grid en su lugar). */
+/* Correccion-Final-2: sacados los segmentos que se habían colado acá
+   (fetch/render de SegmentsSection duplicado -- reportado, confirmado
+   y eliminado). Esta sección queda EXCLUSIVAMENTE con las 20 cards de
+   función. SegmentsSection.tsx sigue existiendo aparte, sin tocar.
+   Layout: scroll horizontal infinito (antes grid estático) -- ver
+   .module.css .scrollTrack/.scrollGroup. colSpan/rowSpan por-card ya
+   no aplican (el alto/ancho ahora lo da la posición dentro del grupo
+   de 3: 1 tall + 2 apiladas), se quitaron de la data. */
 
 type Pattern = 'acumulador' | 'flujo' | 'barras' | 'lineas' | 'pulso' | 'giro'
 type CardColor = 'blue' | 'green' | 'purple' | 'amber'
@@ -25,8 +26,6 @@ interface FeatureCard {
   descExtra?: string
   pattern:  Pattern
   color?:   CardColor
-  colSpan?: 1 | 2
-  rowSpan?: 1 | 2
   giroFaces?: [string, string]
   flujo?:   { pos: string; neg: string }
 }
@@ -37,13 +36,13 @@ interface FeatureCard {
    ("no literal 1 a 1", tal como pide el propio brief). */
 const FEATURES: FeatureCard[] = [
   {
-    key: 'pos', Icon: ScanBarcode, pattern: 'lineas', colSpan: 2, rowSpan: 2,
+    key: 'pos', Icon: ScanBarcode, pattern: 'lineas',
     title: 'Punto de Venta',
     desc: 'Cobra en segundos, en cualquier moneda.',
     descExtra: 'Efectivo, Pago Móvil, Zelle o Binance — como ya te paguen.',
   },
   {
-    key: 'catalogo', Icon: Store, pattern: 'acumulador', color: 'purple', colSpan: 2,
+    key: 'catalogo', Icon: Store, pattern: 'acumulador', color: 'purple',
     title: 'Catálogo Digital',
     desc: 'Tu vitrina, abierta las 24 horas.',
   },
@@ -51,29 +50,29 @@ const FEATURES: FeatureCard[] = [
   { key: 'inventario',   Icon: Boxes,          pattern: 'acumulador', title: 'Inventario',          desc: 'Sabes qué tienes, sin contar a mano.' },
   { key: 'pedidos',      Icon: ShoppingBag,    pattern: 'acumulador', title: 'Pedidos',             desc: 'Tu cliente arma el pedido, a ti te llega listo.' },
   {
-    key: 'finanzas', Icon: PiggyBank, pattern: 'flujo', color: 'green', colSpan: 2,
+    key: 'finanzas', Icon: PiggyBank, pattern: 'flujo', color: 'green',
     title: 'Finanzas', desc: 'Lo que entra y lo que sale, siempre claro.',
     flujo: { pos: '+$340.00', neg: '-$128.50' },
   },
   {
-    key: 'caja', Icon: Wallet, pattern: 'flujo', color: 'green', colSpan: 2,
+    key: 'caja', Icon: Wallet, pattern: 'flujo', color: 'green',
     title: 'Caja', desc: 'Abre y cierra caja sin cuadrar a ojo.',
     flujo: { pos: '+$92.00', neg: '-$15.00' },
   },
   {
-    key: 'devoluciones', Icon: RotateCcw, pattern: 'flujo', rowSpan: 2,
+    key: 'devoluciones', Icon: RotateCcw, pattern: 'flujo',
     title: 'Devoluciones', desc: 'Sin dolores de cabeza cuando algo se devuelve.',
     flujo: { pos: '+1 stock', neg: '-1 venta' },
   },
-  { key: 'reportes',     Icon: ChartColumn,    pattern: 'barras', color: 'blue', rowSpan: 2, title: 'Reportes',         desc: 'Tu negocio en números, cuando quieras verlo.' },
-  { key: 'pulso',        Icon: Activity,       pattern: 'barras', rowSpan: 2,                title: 'Pulso del Negocio', desc: 'Cómo va tu negocio, de un vistazo.' },
-  { key: 'margen',       Icon: TrendingUp,     pattern: 'barras',                            title: 'Margen y Utilidad', desc: 'Cuánto ganaste de verdad, en cada venta.' },
-  { key: 'ticket',       Icon: Receipt,        pattern: 'lineas', rowSpan: 2,                title: 'Emisión de Ticket', desc: 'Tu ticket térmico, listo al instante.' },
-  { key: 'cotizaciones', Icon: FileText,       pattern: 'lineas', colSpan: 2,                title: 'Cotizaciones',      desc: 'Manda un presupuesto en un clic.' },
-  { key: 'facturas',     Icon: FileSpreadsheet,pattern: 'lineas',                            title: 'Facturas',         desc: 'Tu factura, sin pelear con el Excel.' },
-  { key: 'kds',          Icon: ChefHat,        pattern: 'pulso',                             title: 'KDS Cocina',       desc: 'Tu cocina ve el pedido, sin gritar de un lado a otro.' },
-  { key: 'notificaciones', Icon: Bell,         pattern: 'pulso',                             title: 'Notificaciones',   desc: 'Te avisa antes de que se te olvide.' },
-  { key: 'kanban',       Icon: Columns3,       pattern: 'pulso', colSpan: 2,                 title: 'Pedidos Kanban',   desc: 'Cada pedido, en su columna, sin perderlo de vista.' },
+  { key: 'reportes',     Icon: ChartColumn,    pattern: 'barras', color: 'blue', title: 'Reportes',         desc: 'Tu negocio en números, cuando quieras verlo.' },
+  { key: 'pulso',        Icon: Activity,       pattern: 'barras',                title: 'Pulso del Negocio', desc: 'Cómo va tu negocio, de un vistazo.' },
+  { key: 'margen',       Icon: TrendingUp,     pattern: 'barras',                title: 'Margen y Utilidad', desc: 'Cuánto ganaste de verdad, en cada venta.' },
+  { key: 'ticket',       Icon: Receipt,        pattern: 'lineas',                title: 'Emisión de Ticket', desc: 'Tu ticket térmico, listo al instante.' },
+  { key: 'cotizaciones', Icon: FileText,       pattern: 'lineas',                title: 'Cotizaciones',      desc: 'Manda un presupuesto en un clic.' },
+  { key: 'facturas',     Icon: FileSpreadsheet,pattern: 'lineas',                title: 'Facturas',         desc: 'Tu factura, sin pelear con el Excel.' },
+  { key: 'kds',          Icon: ChefHat,        pattern: 'pulso',                 title: 'KDS Cocina',       desc: 'Tu cocina ve el pedido, sin gritar de un lado a otro.' },
+  { key: 'notificaciones', Icon: Bell,         pattern: 'pulso',                 title: 'Notificaciones',   desc: 'Te avisa antes de que se te olvide.' },
+  { key: 'kanban',       Icon: Columns3,       pattern: 'pulso',                 title: 'Pedidos Kanban',   desc: 'Cada pedido, en su columna, sin perderlo de vista.' },
   {
     key: 'variantes', Icon: Ruler, pattern: 'giro',
     title: 'Variantes', desc: 'Talla, color o medida — como realmente vendes.',
@@ -91,24 +90,21 @@ const FEATURES: FeatureCard[] = [
   },
 ]
 
-/* Segmentos: MISMO fetch que SegmentsSection.tsx (no se duplica la
-   query, mismo contrato de /api/marketing/segments). Solo ícono
-   fantasma girado + nombre -- sin micro-animación, para diferenciarlos
-   de las cards de función que sí "actúan" (pedido explícito). */
-interface ApiSegment { slug: string; name: string; tag_line: string }
+/* Grupos de 3 -- 1 tall + 2 apiladas, patrón pedido para el scroll
+   horizontal. 20/3 = 6 grupos completos + 1 grupo de 2 (se renderiza
+   con la celda inferior vacía, CSS Grid lo tolera sin error). */
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
+const GROUPS = chunk(FEATURES, 3)
 
-const SEGMENT_ROTATE = [-1.2, 1, -0.8, 1.4, -1, 0.7, -1.4, 1.1]
-
-async function getSegments(): Promise<ApiSegment[]> {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/marketing/segments`, {
-      next: { revalidate: 300 },
-    })
-    if (!res.ok) return []
-    return await res.json() as ApiSegment[]
-  } catch {
-    return []
-  }
+/* Ancho variable 150-220px por card, cíclico sobre el índice global
+   (no aleatorio -- reproducible, sin layout shift entre renders) */
+const WIDTHS = [160, 190, 220, 175, 205]
+function widthFor(globalIndex: number): number {
+  return WIDTHS[globalIndex % WIDTHS.length]
 }
 
 function Stage({ card }: { card: FeatureCard }) {
@@ -163,51 +159,63 @@ function Stage({ card }: { card: FeatureCard }) {
   }
 }
 
-export default async function FeatureListBentoSection() {
-  const segments = (await getSegments()).slice(0, 8)
+function FeatureCardEl({ card, globalIndex }: { card: FeatureCard; globalIndex: number }) {
+  return (
+    <div
+      className={`${styles.card} ${card.color ? styles[`card_${card.color}`] : ''}`}
+      style={{ width: `${widthFor(globalIndex)}px` }}
+    >
+      <span className={styles.iconBox}>
+        <card.Icon size={20} aria-hidden="true" />
+      </span>
+      <h3 className={styles.cardTitle}>{card.title}</h3>
+      <p className={styles.cardDesc}>{card.desc}</p>
+      {card.descExtra && <p className={styles.cardDescExtra}>{card.descExtra}</p>}
+      <Stage card={card} />
+    </div>
+  )
+}
 
+/* Un grupo = 1 card alta (col 1, ocupa ambas filas) + hasta 2 cards
+   apiladas de media altura (col 2). */
+function FeatureGroup({ group, groupIndex }: { group: FeatureCard[]; groupIndex: number }) {
+  const baseIndex = groupIndex * 3
+  return (
+    <div className={styles.scrollGroup}>
+      {group[0] && (
+        <div className={styles.groupTall}>
+          <FeatureCardEl card={group[0]} globalIndex={baseIndex} />
+        </div>
+      )}
+      {(group[1] || group[2]) && (
+        <div className={styles.groupStack}>
+          {group[1] && <FeatureCardEl card={group[1]} globalIndex={baseIndex + 1} />}
+          {group[2] && <FeatureCardEl card={group[2]} globalIndex={baseIndex + 2} />}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function FeatureListBentoSection() {
   return (
     <section className={styles.section}>
       <div className={styles.container}>
         <h2 className={styles.title}>Todo lo que ya no tienes que anotar a mano.</h2>
         <p className={styles.subtitle}>Veinte funciones, un solo sistema.</p>
 
-        <div className={styles.grid}>
-          {FEATURES.map((card) => {
-            const cardStyle: CSSProperties = {
-              gridColumn: `span ${card.colSpan ?? 1}`,
-              gridRow: `span ${card.rowSpan ?? 1}`,
-            }
-            return (
-              <div
-                key={card.key}
-                className={`${styles.card} ${card.color ? styles[`card_${card.color}`] : ''}`}
-                style={cardStyle}
-              >
-                <span className={styles.iconBox}>
-                  <card.Icon size={20} aria-hidden="true" />
-                </span>
-                <h3 className={styles.cardTitle}>{card.title}</h3>
-                <p className={styles.cardDesc}>{card.desc}</p>
-                {card.descExtra && <p className={styles.cardDescExtra}>{card.descExtra}</p>}
-                <Stage card={card} />
-              </div>
-            )
-          })}
-
-          {/* Segmentos -- solo ghost icon girado + nombre, sin animación */}
-          {segments.map((seg, i) => (
-            <div
-              key={seg.slug}
-              className={styles.segmentCard}
-              style={{ rotate: `${SEGMENT_ROTATE[i % SEGMENT_ROTATE.length]}deg` }}
-            >
-              <span className={styles.segmentGhost} aria-hidden="true">
-                <SegmentIcon slug={seg.slug} size={56} />
-              </span>
-              <span className={styles.segmentName}>{seg.name}</span>
-            </div>
-          ))}
+        <div className={styles.scrollWrap}>
+          <div className={styles.scrollTrack}>
+            {(['a', 'b'] as const).map(copyKey => (
+              GROUPS.map((group, groupIndex) => (
+                <FeatureGroup
+                  key={`${copyKey}-${groupIndex}`}
+                  group={group}
+                  groupIndex={groupIndex}
+                />
+              ))
+            ))}
+          </div>
         </div>
       </div>
     </section>

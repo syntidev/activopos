@@ -62,7 +62,7 @@ interface NavItem {
   label: string
   moduleKey?: string
   colorKey?: string
-  badgeKey?: 'pending_orders'
+  badgeKey?: 'pending_orders' | 'cxp_vencidas'
   /** Oculta el item a cashier aunque el grupo sea visible (item con datos de costo) */
   adminOnly?: boolean
   /** Además del toggle en modules_enabled, requiere que el plan del tenant lo incluya */
@@ -116,7 +116,7 @@ const NAV_GROUPS: NavGroup[] = [
     adminOnly: true,
     collapsible: true,
     items: [
-      { href: '/finanzas',     icon: TrendingUp, label: 'Finanzas',     moduleKey: 'finanzas', colorKey: 'caja' },
+      { href: '/finanzas',     icon: TrendingUp, label: 'Finanzas',     moduleKey: 'finanzas', colorKey: 'caja', badgeKey: 'cxp_vencidas' },
       { href: '/cotizaciones', icon: FileText,   label: 'Cotizaciones',                        colorKey: 'caja' },
     ],
   },
@@ -322,6 +322,14 @@ function NavContent({
                             aria-label={`${sidebarCounts?.pendingOrders} pedidos pendientes`}
                           >
                             {(sidebarCounts?.pendingOrders ?? 0) > 9 ? '9+' : sidebarCounts?.pendingOrders}
+                          </span>
+                        )}
+                        {item.badgeKey === 'cxp_vencidas' && (sidebarCounts?.cxpVencidas ?? 0) > 0 && (
+                          <span
+                            className={styles.itemBadgeRed}
+                            aria-label={`${sidebarCounts?.cxpVencidas} cuentas por pagar vencidas`}
+                          >
+                            {(sidebarCounts?.cxpVencidas ?? 0) > 9 ? '9+' : sidebarCounts?.cxpVencidas}
                           </span>
                         )}
                       </span>

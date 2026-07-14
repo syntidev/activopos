@@ -10,11 +10,12 @@ const itemSchema = z.object({
 })
 
 const purchaseSchema = z.object({
-  supplier_id: z.number().int().positive(),
-  reference:   z.string().trim().max(50).optional(),
-  notes:       z.string().trim().optional(),
-  status:      z.enum(['received', 'pending']).default('received'), // cancelled solo vía PATCH
-  items:       z.array(itemSchema).min(1),
+  supplier_id:  z.number().int().positive(),
+  reference:    z.string().trim().max(50).optional(),
+  notes:        z.string().trim().optional(),
+  status:       z.enum(['received', 'pending']).default('received'), // cancelled solo vía PATCH
+  credit_days:  z.number().int().positive().max(365).optional(), // solo aplica si status='pending' — vencimiento de la CxP generada
+  items:        z.array(itemSchema).min(1),
 })
 
 export async function GET(req: NextRequest) {
@@ -126,8 +127,14 @@ export async function POST(req: NextRequest) {
         })),
       })
 
-      // Compra a crédito (mercancía recibida sin pagar) → genera deuda en CxP
+      // Compra a crédito (mercancía recibida sin pagar) → genera deuda en CxP.
+      // due_date: si no se da credit_days, queda null y el bucket de CxP cae al
+      // fallback de 30 días desde created_at — mismo patrón que CxC con Sale.due_date.
       if (data.status === 'pending') {
+        const dueDate = data.credit_days
+          ? new Date(Date.now() + data.credit_days * 86_400_000)
+          : null
+
         await tx.gasto.create({
           data: {
             business_id: session.businessId,
@@ -135,7 +142,7 @@ export async function POST(req: NextRequest) {
             monto_usd:   totalUsd,
             categoria:   'proveedor',
             is_paid:     false,
-            due_date:    null,
+            due_date:    dueDate,
             supplier:    supplier.name,       // legacy texto
             supplier_id: data.supplier_id,    // FK — la CxP hereda el proveedor de la compra
             purchase_id: created.id,          // FK — para cerrar esta CxP al anular la compra

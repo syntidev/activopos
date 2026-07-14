@@ -9,7 +9,11 @@ export async function GET() {
       where: { status: 'received' }, // business_id inyectado por el tenant layer
     })
 
-    return NextResponse.json({ ok: true, pending_orders: pendingOrders })
+    const cxpVencidas = await db.gasto.count({
+      where: { is_paid: false, due_date: { lt: new Date() } }, // business_id inyectado por el tenant layer
+    })
+
+    return NextResponse.json({ ok: true, pending_orders: pendingOrders, cxp_vencidas: cxpVencidas })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
     throw e

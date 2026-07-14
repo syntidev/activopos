@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, useReducedMotion, animate } from 'framer-motion'
 import type { Variants } from 'framer-motion'
-import { DollarSign, Sun, MessageCircle, ShoppingCart } from 'lucide-react'
+import { DollarSign, Sun, ShoppingCart } from 'lucide-react'
 import styles from './ProductBentoSection.module.css'
 
 /* Datos de ejemplo curados a mano -- NUNCA screenshots de la cuenta demo
@@ -160,21 +160,6 @@ export default function ProductBentoSection() {
               </span>
             </div>
             <p className={styles.tileCopy}>Tu cliente arma el carrito, tú ves el total al instante.</p>
-          </motion.div>
-
-          {/* Catálogo Digital -- card de producto real (radius 14px, precio
-              USD+Bs, mismo patrón que catalogo.module.css .productCard) */}
-          <motion.div className={`${styles.tile} ${styles.tileCatalogo}`} variants={tileVariants}>
-            <div className={styles.catalogCard}>
-              <div className={styles.catalogImg} aria-hidden="true" />
-              <div className={styles.catalogBody}>
-                <span className={styles.catalogName}>Camisa Polo Azul</span>
-                <span className={styles.catalogPriceUsd}>$15.00</span>
-                <span className={styles.catalogPriceBs}>Bs. 550.65</span>
-              </div>
-              <span className={styles.tileIconBox}><MessageCircle size={16} aria-hidden="true" /></span>
-            </div>
-            <p className={styles.tileCopy}>Tu vitrina, abierta las 24 horas.</p>
           </motion.div>
         </motion.div>
       </div>

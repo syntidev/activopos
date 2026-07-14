@@ -74,8 +74,12 @@
   width: 100%;
 }
 
+/* Ajustes-Puntuales-1: sin patrón "tall + stack" (forma de "edificio")
+   -- align-items:stretch iguala la altura de TODAS las cards a la más
+   alta de la fila, solo el ANCHO varía por card (ver widthFor en .tsx). */
 .scrollTrack {
   display: flex;
+  align-items: stretch;
   gap: 14px;
   width: max-content;
   animation: scrollTrack 50s linear infinite;
@@ -84,32 +88,6 @@
 @keyframes scrollTrack {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
-}
-
-/* Un grupo = 1 card alta (columna propia) + 2 cards apiladas de media
-   altura (otra columna) -- alternando tamaño real, no solo 2 categorías */
-.scrollGroup {
-  display: flex;
-  align-items: stretch;
-  gap: 14px;
-  flex-shrink: 0;
-}
-
-.groupTall {
-  display: flex;
-}
-.groupTall .card {
-  flex: 1;
-}
-
-.groupStack {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.groupStack .card {
-  flex: 1;
-  min-height: 140px;
 }
 
 /* Idéntico a ProductBentoSection.module.css .tile (radius/sombra) +
@@ -336,7 +314,6 @@
 /* ── Responsive -- el scroll y sus animaciones se mantienen en mobile
    (pedido explícito), solo se achica el gap/ancho de card ── */
 @media (max-width: 640px) {
-  .scrollTrack, .scrollGroup { gap: 10px; }
-  .groupTall .card, .groupStack .card { padding: 16px; }
-  .groupStack .card { min-height: 120px; }
+  .scrollTrack { gap: 10px; }
+  .card { padding: 16px; }
 }

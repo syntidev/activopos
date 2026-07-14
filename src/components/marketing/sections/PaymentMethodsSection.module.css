@@ -1,4 +1,6 @@
 .section {
+  position: relative;
+  overflow: hidden;
   padding: 96px 0;
   /* Hex literal, deliberado — no var(--success). Confirmado en producción
      (inspección de DOM) que esta sección hereda [data-theme="dark"] de algún
@@ -9,23 +11,27 @@
   background: #16A34A;
 }
 
+/* Isotipo como marca de agua (Ajustes-Puntuales-1) -- reemplaza el
+   .iconWrap flotante. Lado derecho, grande, muy sutil (0.1), detrás
+   del texto -- mismo patrón "ghost icon" ya usado en otras secciones. */
+.watermark {
+  position: absolute;
+  top: 50%;
+  right: -60px;
+  width: 340px;
+  height: 340px;
+  transform: translateY(-50%);
+  opacity: 0.1;
+  pointer-events: none;
+}
+
 .container {
+  position: relative;
+  z-index: 1;
   max-width: min(900px, 90vw);
   margin: 0 auto;
   padding: 0 clamp(1.25rem, 5vw, 3rem);
   text-align: center;
-}
-
-.iconWrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.10);
-  color: #FFFFFF;
-  margin-bottom: 20px;
 }
 
 .title {

@@ -270,65 +270,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Mediana ancha: 2 columnas x 1 fila -- card de Catálogo Digital */
-.tileCatalogo {
-  grid-column: span 2;
-  grid-row: span 1;
-  gap: 12px;
-}
-
-.catalogCard {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--mkt-bg-alt);
-  border-radius: 14px;
-  padding: 12px;
-}
-
-.catalogImg {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--cta) 100%);
-}
-
-.catalogBody {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  min-width: 0;
-}
-
-.catalogName {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0D1B2E;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.catalogPriceUsd {
-  font-size: 15px;
-  font-weight: 700;
-  color: #0D1B2E;
-}
-
-.catalogPriceBs {
-  font-size: 11px;
-  color: var(--mkt-text-3);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tileCobrado,
-  .tileTudia,
-  .tileCatalogo { grid-column: span 2; }
+  .tileTudia    { grid-column: span 2; }
   .tileMargen,
   .tileTicket   { grid-column: span 1; }
 }

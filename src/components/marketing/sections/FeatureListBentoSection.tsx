@@ -11,9 +11,10 @@ import styles from './FeatureListBentoSection.module.css'
    y eliminado). Esta sección queda EXCLUSIVAMENTE con las 20 cards de
    función. SegmentsSection.tsx sigue existiendo aparte, sin tocar.
    Layout: scroll horizontal infinito (antes grid estático) -- ver
-   .module.css .scrollTrack/.scrollGroup. colSpan/rowSpan por-card ya
-   no aplican (el alto/ancho ahora lo da la posición dentro del grupo
-   de 3: 1 tall + 2 apiladas), se quitaron de la data. */
+   .module.css .scrollTrack. colSpan/rowSpan por-card ya no aplican.
+   Ajustes-Puntuales-1: se quitó también el patrón "1 tall + 2
+   apiladas" (forma de "edificio") -- todas las cards a la misma
+   altura ahora, solo varía el ancho (widthFor). */
 
 type Pattern = 'acumulador' | 'flujo' | 'barras' | 'lineas' | 'pulso' | 'giro'
 type CardColor = 'blue' | 'green' | 'purple' | 'amber'
@@ -90,15 +91,10 @@ const FEATURES: FeatureCard[] = [
   },
 ]
 
-/* Grupos de 3 -- 1 tall + 2 apiladas, patrón pedido para el scroll
-   horizontal. 20/3 = 6 grupos completos + 1 grupo de 2 (se renderiza
-   con la celda inferior vacía, CSS Grid lo tolera sin error). */
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = []
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
-  return out
-}
-const GROUPS = chunk(FEATURES, 3)
+/* Ajustes-Puntuales-1: se quitó el patrón "1 tall + 2 apiladas" (forma
+   de "edificio") -- todas las cards a la MISMA altura ahora, solo varía
+   el ANCHO. Ver .module.css .scrollTrack (align-items:stretch iguala
+   la altura al elemento más alto de la fila, sin fijar un valor a mano). */
 
 /* Ancho variable 150-220px por card, cíclico sobre el índice global
    (no aleatorio -- reproducible, sin layout shift entre renders) */
@@ -176,27 +172,6 @@ function FeatureCardEl({ card, globalIndex }: { card: FeatureCard; globalIndex: 
   )
 }
 
-/* Un grupo = 1 card alta (col 1, ocupa ambas filas) + hasta 2 cards
-   apiladas de media altura (col 2). */
-function FeatureGroup({ group, groupIndex }: { group: FeatureCard[]; groupIndex: number }) {
-  const baseIndex = groupIndex * 3
-  return (
-    <div className={styles.scrollGroup}>
-      {group[0] && (
-        <div className={styles.groupTall}>
-          <FeatureCardEl card={group[0]} globalIndex={baseIndex} />
-        </div>
-      )}
-      {(group[1] || group[2]) && (
-        <div className={styles.groupStack}>
-          {group[1] && <FeatureCardEl card={group[1]} globalIndex={baseIndex + 1} />}
-          {group[2] && <FeatureCardEl card={group[2]} globalIndex={baseIndex + 2} />}
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function FeatureListBentoSection() {
   return (
     <section className={styles.section}>
@@ -207,12 +182,8 @@ export default function FeatureListBentoSection() {
         <div className={styles.scrollWrap}>
           <div className={styles.scrollTrack}>
             {(['a', 'b'] as const).map(copyKey => (
-              GROUPS.map((group, groupIndex) => (
-                <FeatureGroup
-                  key={`${copyKey}-${groupIndex}`}
-                  group={group}
-                  groupIndex={groupIndex}
-                />
+              FEATURES.map((card, i) => (
+                <FeatureCardEl key={`${copyKey}-${card.key}`} card={card} globalIndex={i} />
               ))
             ))}
           </div>

@@ -228,7 +228,7 @@
 }
 
 .status_recibido    { background: var(--brand-soft); color: var(--brand); }
-.status_preparacion { background: var(--sand-light); color: var(--mkt-navy); }
+.status_preparacion { background: var(--warning-soft); color: var(--warning-text); }
 .status_listo        { background: var(--lp-success-soft); color: var(--lp-success-text); }
 
 .kitchenItems {

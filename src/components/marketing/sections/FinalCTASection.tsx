@@ -13,11 +13,14 @@ const TRUST = [
 export default function FinalCTASection() {
   return (
     <section className={styles.section} id="final">
-      {/* Curva de transición sand (Testimonios) → mkt-bg-alt (esta sección) —
-          ambas zonas volvieron a claro (Landing-Bookend-Final); el fill sigue
-          siendo el tono de la sección de ARRIBA, mismo criterio que antes. */}
+      {/* Curva de transición -- el fill sigue el tono de la sección de ARRIBA
+          (mismo criterio de siempre). Testimonios usa var(--sand) hasta
+          Colorimetria-Final (commit 374a9e8), ahí pasó a var(--mkt-bg) --
+          esta curva quedó huérfana con --sand, produciendo la franja crema
+          reportada (Crema-Final). Corregido a mkt-bg para que coincida con
+          el fondo real de Testimonios hoy. */}
       <svg className={styles.curve} viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0,110 C480,0 960,0 1440,110 L1440,0 L0,0 Z" fill="var(--sand)" />
+        <path d="M0,110 C480,0 960,0 1440,110 L1440,0 L0,0 Z" fill="var(--mkt-bg)" />
       </svg>
       <FeatureMarquee />
       <div className={styles.content}>

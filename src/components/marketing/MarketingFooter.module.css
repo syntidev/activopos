@@ -230,20 +230,25 @@
   min-height: 32px;
 }
 
-/* Footer-Mobile-Fix: el wordmark se achica vía clamp() en mobile
-   (font-size clamp(48px,12vw,220px) -- piso 48px), pero .bottom seguía
-   con margin-top:4rem (64px) fijo y .footer/.wordmarkBlock con su
-   padding/margin de desktop -- el desbalance "arriba se achica, abajo
-   no" dejaba un hueco vacío. Valores de .wordmarkBlock (2rem 0 1.5rem)
-   y .bottom (margin-top 4rem) confirmados leyendo el archivo real antes
-   de tocar; .footer ya era parcialmente responsive (clamp), solo se
-   fuerza aquí a los valores pedidos en vez de su piso de clamp. */
+/* Footer-Mobile-Fix (+ Footer-Mobile-Fix-2, valores alineados): el
+   wordmark se achica vía clamp() en mobile (font-size clamp(48px,12vw,
+   220px) -- piso 48px), pero .bottom seguía con margin-top:4rem (64px)
+   fijo y .footer/.wordmarkBlock con su padding/margin de desktop -- el
+   desbalance "arriba se achica, abajo no" dejaba un hueco vacío. Este
+   override YA estaba aplicado desde Footer-Mobile-Fix (commit 8fe2dab)
+   -- verificado leyendo el archivo real antes de tocar, no estaba
+   "nunca corregido" como asumía el prompt de seguimiento. Si en
+   producción se sigue viendo el margen viejo, lo más probable es que
+   el commit no se haya desplegado al VPS todavía (git push a GitHub
+   no implica deploy -- ver CLAUDE.md: requiere git pull + build + pm2
+   restart en el servidor). Valores ajustados aquí a los pedidos
+   explícitos esta vez (20px/12px, antes 24px/16-12px). */
 @media (max-width: 767px) {
   .colLink { min-height: 44px; }
 
-  .footer { padding: 2.5rem 1.25rem 1.5rem; }
-  .wordmarkBlock { margin: 1rem 0 0.75rem; }
-  .bottom { margin-top: 1.5rem; }
+  .footer { padding: 2rem 1.25rem 1.25rem; }
+  .wordmarkBlock { margin: 0.75rem 0 0.5rem; }
+  .bottom { margin-top: 1.25rem; }
 }
 
 .colLink:hover { color: var(--text-primary, #F1F5F9); }

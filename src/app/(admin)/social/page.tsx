@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check } from 'lucide-react'
 import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
 
-type Tipo = 'post' | 'story' | 'carrusel'
+type Tipo   = 'post' | 'story' | 'carrusel'
+type Estado = 'pendiente' | 'generado' | 'publicado' | 'error'
 
 interface SocialAsset {
   id:         number
@@ -16,11 +17,16 @@ interface SocialAsset {
 }
 
 interface SocialPost {
-  id:       number
-  tipo:     Tipo
-  caption:  string | null
-  hashtags: string[] | null
-  assets:   SocialAsset[]
+  id:         number
+  tipo:       Tipo
+  nicho:      string | null
+  titulo:     string
+  estado:     Estado
+  imagen_url: string | null
+  caption:    string | null
+  hashtags:   string[] | null
+  created_at: string
+  assets:     SocialAsset[]
 }
 
 const TIPOS: { value: Tipo; label: string; icon: typeof ImageIcon }[] = [
@@ -28,6 +34,19 @@ const TIPOS: { value: Tipo; label: string; icon: typeof ImageIcon }[] = [
   { value: 'story',    label: 'Story',    icon: Smartphone },
   { value: 'carrusel', label: 'Carrusel', icon: Layers     },
 ]
+
+const ESTADO_BADGE: Record<Estado, string> = {
+  generado:  adminStyles.badgeActive,
+  publicado: adminStyles.badgeInfo,
+  pendiente: adminStyles.badgeTrial,
+  error:     adminStyles.badgeDanger,
+}
+
+function formatFecha(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-VE', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  })
+}
 
 export default function SocialPage() {
   const [tipo, setTipo]           = useState<Tipo>('post')
@@ -41,6 +60,16 @@ export default function SocialPage() {
   const [error, setError]     = useState<string | null>(null)
   const [post, setPost]       = useState<SocialPost | null>(null)
   const [copied, setCopied]   = useState(false)
+  const [history, setHistory] = useState<SocialPost[]>([])
+
+  const loadHistory = useCallback(() => {
+    fetch('/api/admin/social')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error()))
+      .then((body: { posts: SocialPost[] }) => setHistory(body.posts ?? []))
+      .catch(() => {})
+  }, [])
+
+  useEffect(loadHistory, [loadHistory])
 
   // Cada imagen tarda ~10s en NVIDIA NIM. Un carrusel de 4 son ~40s de espera,
   // así que la UI dice cuánto falta en vez de dejar al usuario adivinando.
@@ -72,8 +101,11 @@ export default function SocialPage() {
       if (!res.ok || !body.post) throw new Error(body.error ?? 'Falló la generación')
 
       setPost(body.post)
+      loadHistory()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado')
+      // El endpoint deja la fila en estado 'error' aunque falle: el historial debe mostrarla.
+      loadHistory()
     } finally {
       setLoading(false)
     }
@@ -260,6 +292,50 @@ export default function SocialPage() {
           )}
         </section>
       </div>
+
+      <section className={styles.history}>
+        <h2 className={adminStyles.sectionTitle}>Generados</h2>
+
+        {history.length === 0 ? (
+          <p className={adminStyles.emptyState}>Todavía no has generado ninguna pieza.</p>
+        ) : (
+          <ul className={styles.historyGrid} role="list">
+            {history.map(item => (
+              <li key={item.id}>
+                {/* Click = cargar la pieza en el lienzo de arriba, que ya sabe mostrarla
+                    completa y copiar su caption. No hace falta una vista aparte. */}
+                <button
+                  type="button"
+                  className={`${styles.card} ${post?.id === item.id ? styles.cardActive : ''}`}
+                  onClick={() => { setPost(item); setCopied(false) }}
+                  aria-label={`Ver "${item.titulo}"`}
+                >
+                  <span className={styles.thumb}>
+                    {item.imagen_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={item.imagen_url} alt="" loading="lazy" />
+                    ) : (
+                      <ImageIcon size={20} strokeWidth={1.5} aria-hidden="true" />
+                    )}
+                  </span>
+
+                  <span className={styles.cardBody}>
+                    <span className={styles.cardTitle}>{item.titulo}</span>
+                    <span className={styles.cardMeta}>
+                      {formatFecha(item.created_at)}
+                      {item.nicho && ` · ${item.nicho}`}
+                      {item.tipo === 'carrusel' && ` · ${item.assets.length} slides`}
+                    </span>
+                    <span className={`${adminStyles.badge} ${ESTADO_BADGE[item.estado]}`}>
+                      {item.estado}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </>
   )
 }

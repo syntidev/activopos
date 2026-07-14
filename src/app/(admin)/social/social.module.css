@@ -218,3 +218,87 @@
   line-height: 1.6;
   color: var(--brand-l);
 }
+
+/* ── Historial ────────────────────────────────────────────────── */
+
+.history {
+  margin-top: var(--space-6);
+}
+
+.historyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  background: var(--bg-card);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  border-color: var(--brand-l);
+}
+
+.cardActive {
+  border-color: var(--brand);
+}
+
+.thumb {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  /* 3:4, la proporción real de las piezas. */
+  width: 54px;
+  height: 72px;
+  overflow: hidden;
+  color: var(--text-muted);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Sin esto el badge se estira a todo el ancho de la columna. */
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.cardTitle {
+  /* align-items:flex-start deja de estirar los hijos: sin este tope, un título largo
+     se sale de la card en vez de elidirse. */
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+}

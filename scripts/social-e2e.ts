@@ -15,10 +15,10 @@ config()
 
 // Import diferido: src/lib/prisma construye el adapter MariaDB leyendo process.env,
 // así que dotenv tiene que haber corrido antes.
-const { prisma }                            = require('../src/lib/prisma')
-const { FORMATS }                           = require('../src/lib/social/brand')
-const { generateBackground, generateCopy }  = require('../src/lib/social/gemini')
-const { composeSlide }                      = require('../src/lib/social/compose')
+const { prisma }             = require('../src/lib/prisma')
+const { generateCopy }       = require('../src/lib/social/gemini')   // copy: Gemini
+const { generateBackground } = require('../src/lib/social/image')    // imagen: NVIDIA NIM
+const { composeSlide }       = require('../src/lib/social/compose')
 
 const NICHO    = 'bodega'
 const GANCHO   = 'Cierro la caja y no me cuadra el efectivo'
@@ -26,6 +26,7 @@ const OBJETIVO = 'Que el dueño de bodega pruebe ActivoPOS gratis'
 
 async function main(): Promise<void> {
   assert.ok(process.env.GEMINI_API_KEY, 'GEMINI_API_KEY ausente en .env')
+  assert.ok(process.env.NVIDIA_API_KEY, 'NVIDIA_API_KEY ausente en .env')
 
   const post = await prisma.socialPost.create({
     data: { tipo: 'post', nicho: NICHO, titulo: GANCHO.slice(0, 200), estado: 'pendiente' },
@@ -39,8 +40,9 @@ async function main(): Promise<void> {
   assert.ok(slide?.titulo && slide.subtitulo && slide.escena, 'copy incompleto')
   console.log(`Copy   -> "${slide.titulo}" / "${slide.subtitulo}"`)
 
-  const background = await generateBackground(slide.escena, NICHO, FORMATS.post.aspect)
-  console.log(`Fondo  -> ${background.length} bytes`)
+  const t0         = Date.now()
+  const background = await generateBackground(slide.escena, NICHO, 'post')
+  console.log(`Fondo  -> ${background.length} bytes en ${((Date.now() - t0) / 1000).toFixed(1)}s (NVIDIA NIM)`)
 
   const composed = await composeSlide({
     background, titulo: slide.titulo, subtitulo: slide.subtitulo, formato: 'post',

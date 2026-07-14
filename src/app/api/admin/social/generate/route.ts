@@ -5,12 +5,12 @@ import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { FORMATS } from '@/lib/social/brand'
-import { generateBackground, generateCopy } from '@/lib/social/gemini'
+import { generateCopy } from '@/lib/social/gemini'
+import { generateBackground } from '@/lib/social/image'
 import { composeSlide } from '@/lib/social/compose'
 
-// Un carrusel de 6 slides son 6 llamadas al modelo de imagen con throttle de 7s entre
-// ellas (free tier: 10 RPM). El default de Next.js no alcanza.
+// El copy sale de Gemini; la imagen de NVIDIA NIM (~9s por slide). Un carrusel de 6
+// slides pasa de largo el default de Next.js.
 export const runtime     = 'nodejs'
 export const maxDuration = 300
 
@@ -47,7 +47,6 @@ export async function POST(req: NextRequest) {
   }
 
   const slideCount = body.tipo === 'carrusel' ? (body.slides ?? 4) : 1
-  const { aspect } = FORMATS[body.tipo]
 
   // Se crea en 'pendiente' antes de llamar a Gemini: si la generación muere a mitad de un
   // carrusel queda rastro en DB con el error, en vez de desaparecer sin dejar huella.
@@ -74,12 +73,12 @@ export async function POST(req: NextRequest) {
     const slides = copy.slides.slice(0, slideCount)
     if (slides.length === 0) throw new Error('Gemini no devolvió slides')
 
-    // Secuencial a propósito: generateBackground comparte un throttle de 10 RPM.
-    // En paralelo solo llegaríamos al 429 más rápido.
+    // Secuencial a propósito: NVIDIA no publica el límite de concurrencia y en paralelo
+    // solo llegaríamos al 429 más rápido.
     const assets: { orden: number; imagen_url: string; titulo: string; subtitulo: string }[] = []
     for (let index = 0; index < slides.length; index++) {
       const slide      = slides[index]
-      const background = await generateBackground(slide.escena, body.nicho, aspect)
+      const background = await generateBackground(slide.escena, body.nicho, body.tipo)
       const composed   = await composeSlide({
         background,
         titulo:    slide.titulo,

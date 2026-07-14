@@ -37,11 +37,12 @@ export const ASSETS = {
 
 export type SocialFormat = 'post' | 'story' | 'carrusel'
 
-// aspect = valor que acepta Gemini imageConfig. width/height = lienzo final exacto.
-export const FORMATS: Record<SocialFormat, { aspect: string; width: number; height: number }> = {
-  post:     { aspect: '3:4',  width: 1080, height: 1440 },
-  carrusel: { aspect: '3:4',  width: 1080, height: 1440 },
-  story:    { aspect: '9:16', width: 1080, height: 1920 },
+// Lienzo final al que compose.ts encuadra. Las dimensiones que acepta el generador de
+// imagen son otras y viven en image.ts — no las mezcles.
+export const FORMATS: Record<SocialFormat, { width: number; height: number }> = {
+  post:     { width: 1080, height: 1440 },
+  carrusel: { width: 1080, height: 1440 },
+  story:    { width: 1080, height: 1920 },
 }
 
 /**

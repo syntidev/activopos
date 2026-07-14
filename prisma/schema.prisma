@@ -1012,3 +1012,58 @@ model BlogPost {
 
   @@map("blog_posts")
 }
+
+// ── Generador de contenido social (interno de ActivoPOS, panel admin) ──
+
+enum SocialPostType {
+  post
+  story
+  carrusel
+}
+
+enum SocialPostStatus {
+  pendiente
+  generado
+  publicado
+  error
+}
+
+model SocialPost {
+  id               Int              @id @default(autoincrement())
+  // Null = contenido de la marca ActivoPOS. Reservado por si un tenant genera el suyo.
+  business_id      Int?
+  tipo             SocialPostType   @default(post)
+  nicho            String?          @db.VarChar(80)
+  titulo           String           @db.VarChar(200)
+  descripcion      String?          @db.Text
+  caption          String?          @db.Text
+  hashtags         Json?
+  estado           SocialPostStatus @default(pendiente)
+  imagen_url       String?          @db.VarChar(500)
+  error_msg        String?          @db.VarChar(500)
+  buffer_id        String?          @db.VarChar(80)
+  fecha_programada DateTime?
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+
+  assets SocialAsset[]
+
+  @@index([estado])
+  @@index([business_id])
+  @@map("social_posts")
+}
+
+model SocialAsset {
+  id         Int      @id @default(autoincrement())
+  post_id    Int
+  orden      Int      @default(0)
+  imagen_url String   @db.VarChar(500)
+  titulo     String?  @db.VarChar(200)
+  subtitulo  String?  @db.VarChar(200)
+  created_at DateTime @default(now())
+
+  post SocialPost @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+  @@map("social_assets")
+}

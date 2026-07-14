@@ -53,3 +53,6 @@ pos-*.jpg
 
 graphify-out/
 pos-*.png
+
+# Artefactos de scripts de verificacion (social-smoke, social-e2e)
+.tmp/

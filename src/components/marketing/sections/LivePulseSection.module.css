@@ -1,0 +1,270 @@
+/* ============================================================
+   LivePulseSection — sección 2, inmediatamente después del Hero.
+   Fondo claro (var(--mkt-bg)) -- Navy queda solo en Hero+Footer
+   (bookend ya sellado hoy), este widget no reabre esa regla.
+   Tokens citados tal como aparecen en tokens.css (ver commit):
+   --font-display, --brand, --success, --mkt-bg, --mkt-text-2/3,
+   --shadow-card-elevated, --cta.
+   ============================================================ */
+
+.section {
+  padding: 96px 0;
+  background: var(--mkt-bg);
+}
+
+.container {
+  max-width: min(1140px, 90vw);
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (min-width: 860px) {
+  .container {
+    grid-template-columns: 1.05fr 1fr;
+    gap: 64px;
+  }
+}
+
+/* ── Columna izquierda ── */
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #0D1B2E;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--mkt-text-2);
+  line-height: 1.6;
+  max-width: 46ch;
+  margin: 0;
+}
+
+.bullets {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--mkt-text-2);
+  line-height: 1.5;
+}
+
+.bulletDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.bulletTitle {
+  color: #0D1B2E;
+  font-weight: 700;
+}
+
+/* Ghost/outline -- --cta (ámbar) reservado a Procesar Pago/Declarar
+   Cierre, no se usa aquí (pedido explícito) */
+.ctaBtn {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: 1.5px solid var(--brand);
+  background: transparent;
+  color: var(--brand);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.ctaBtn:hover { background: var(--brand); color: #FFFFFF; }
+.ctaBtn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* ── Columna derecha — widget LivePulseCard ── */
+.card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: var(--shadow-card-elevated);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chartLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mkt-text-2);
+}
+
+.liveIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--success);
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: liveDotPulse 2s ease-in-out infinite;
+}
+@keyframes liveDotPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+/* Gráfico tipo mercado -- contenido duplicado 2x, translateX(-50%)
+   mueve exactamente un set de BARS, costura invisible (mismo técnica
+   que FeatureMarquee.tsx de un sprint anterior) */
+.chartWrap {
+  height: 80px;
+  overflow: hidden;
+  position: relative;
+}
+
+.chartTrack {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 100%;
+  width: max-content;
+  animation: chartScroll 12s linear infinite;
+}
+
+@keyframes chartScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.chartBar {
+  width: 8px;
+  border-radius: 3px 3px 0 0;
+  flex-shrink: 0;
+}
+.barUp    { background: var(--success); }
+.barBrand { background: var(--brand); }
+
+/* Feed de eventos -- ver .tsx: 3 slots, offsets vía animation-delay
+   negativo (mismo keyframe reutilizado, sin JS/estado) */
+.eventFeed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--mkt-bg-alt);
+  padding-top: 14px;
+}
+
+.eventSlot {
+  position: relative;
+  height: 40px;
+}
+
+.eventItem {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  animation: eventCycle 9s ease-in-out infinite;
+}
+@keyframes eventCycle {
+  0%, 4%    { opacity: 0; transform: translateY(6px); }
+  8%, 29%   { opacity: 1; transform: translateY(0); }
+  33%, 100% { opacity: 0; transform: translateY(-6px); }
+}
+
+/* Caja SIEMPRE blanca (estándar único de ícono ya sellado) -- solo el
+   ícono cambia de color por evento, mismo criterio ya usado en
+   PaymentMethodsSection para métodos de pago. */
+.eventIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+.eventIcon_green { color: var(--success); }
+.eventIcon_blue  { color: var(--brand); }
+.eventIcon_amber { color: var(--cta); }
+
+.eventText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.eventTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #0D1B2E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eventDetail {
+  font-size: 11px;
+  color: var(--mkt-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chartTrack { animation: none; }
+  .liveDot    { animation: none; opacity: 1; }
+  .eventItem  { animation: none; opacity: 0; }
+  .eventItem:first-child { opacity: 1; }
+}

@@ -1,90 +1,117 @@
 /* ============================================================
-   FeatureListBentoSection — grid de 8 módulos, bento gris claro,
-   tokens idénticos a ProductBentoSection.module.css (título, texto
-   secundario, radius y sombra de card, gap del grid) -- valores
-   copiados literal, no aproximados, ver commit para la cita exacta.
+   FeatureListBentoSection — Bento-Infinito-1 (reconstruido, ver .tsx
+   y el commit para el detalle de qué brief original faltaba).
+   Fondo mesh CLARO (corrección del adenda, no el navy oscuro original)
+   + 20 cards de función con 6 patrones de micro-animación reutilizables
+   + fila de segmentos sin animación.
    ============================================================ */
 
-/* FeatureList-Bento-3: fondo de gris claro -> foto real, MISMO
-   tratamiento que TestimonialsSection.module.css (overlay apilado en la
-   misma background-image, sin pseudo-elemento). Cards siguen blancas
-   opacas -- su contraste no depende del fondo. */
+/* ── Fondo mesh claro: base + 4 manchas difuminadas con drift ── */
 .section {
   position: relative;
+  overflow: hidden;
   padding: 96px 0;
-  background-image:
-    linear-gradient(to right, rgba(13, 27, 46, 0.55), rgba(13, 27, 46, 0.15)),
-    url('/marketing/testimonials-bg.webp');
-  background-size: cover;
-  background-position: center;
+  background: #EEF1F8; /* el prompt ofrecía var(--mkt-bg) como alternativa
+    si coincidiera -- no coincide (#F4F6FB != #EEF1F8, verificado), se usa
+    el hex literal explícito como pide el propio texto en ese caso */
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: blobDrift 16s ease-in-out infinite;
+}
+
+.blobBlue   { width: 340px; height: 340px; top: -60px;  left: -60px;  background: #B5D4F4; animation-duration: 18s; }
+.blobGreen  { width: 300px; height: 300px; bottom: -40px; left: 30%;  background: #C0DD97; animation-duration: 20s; animation-delay: -4s; }
+.blobAmber  { width: 320px; height: 320px; top: -50px;  right: -40px; background: #FAC775; animation-duration: 15s; animation-delay: -8s; }
+.blobPurple { width: 300px; height: 300px; bottom: -60px; right: 40px; background: #CECBF6; animation-duration: 17s; animation-delay: -2s; }
+
+@keyframes blobDrift {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(15px, -15px); }
 }
 
 .container {
+  position: relative;
+  z-index: 1;
   max-width: min(1140px, 90vw);
   margin: 0 auto;
   padding: 0 clamp(1.25rem, 5vw, 3rem);
 }
 
-/* Idéntico a ProductBentoSection.module.css .title, color a blanco +
-   sombra -- mismo motivo que TestimonialsSection: sobre foto oscura, el
-   #0D1B2E anterior (pensado para var(--mkt-bg) claro) sería ilegible. */
 .title {
   font-family: var(--font-display);
   font-size: clamp(28px, 5vw, 44px);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  color: #FFFFFF;
-  text-shadow: 0 2px 12px rgba(13, 27, 46, 0.45);
+  color: #0D1B2E;
   text-align: center;
   text-wrap: balance;
   margin: 0 0 12px;
 }
 
-/* Mismo motivo -- var(--mkt-text-2) es gris medio pensado para fondo
-   claro, ilegible sobre la foto. Blanco a 80% para no competir con el
-   título pero seguir legible en ambas zonas del overlay. */
 .subtitle {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--mkt-text-2);
   text-align: center;
   max-width: 46ch;
   margin: 0 auto 48px;
 }
 
-/* 8 pares (col-span,row-span) ÚNICOS entre sí (ver comentario en el
-   .tsx) -- grid-auto-rows fijo para que los row-span de 2/3 den una
-   altura predecible, mismo criterio que ProductBentoSection.module.css. */
+/* ── Grid: flujo natural (no forzado a "2 filas" -- con 20+ cards de
+   tamaño variable esa restricción no es viable, crece lo que necesite). */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(120px, auto);
+  grid-auto-rows: minmax(130px, auto);
   gap: 20px;
 }
 
-.card_pos           { grid-column: span 2; grid-row: span 2; }
-.card_inventario    { grid-column: span 2; grid-row: span 1; }
-.card_reportes      { grid-column: span 1; grid-row: span 3; }
-.card_catalogo      { grid-column: span 1; grid-row: span 1; }
-.card_clientes      { grid-column: span 3; grid-row: span 1; }
-.card_caja          { grid-column: span 1; grid-row: span 2; }
-.card_cotizaciones  { grid-column: span 2; grid-row: span 3; }
-.card_devoluciones  { grid-column: span 3; grid-row: span 2; }
-
-/* Idéntico a ProductBentoSection.module.css .tile: radius 20px,
-   mismo box-shadow exacto */
+/* Idéntico a ProductBentoSection.module.css .tile (radius/sombra) +
+   sombra NUEVA del adenda para separarse del fondo mesh claro */
 .card {
   background: #FFFFFF;
   border-radius: 20px;
-  padding: 22px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
 }
 
-/* Estándar único de ícono (Colorimetria-Final / Landing-Definitivo):
-   40x40, 12px, blanco, sombra propia, Persian Blue -- mismo tratamiento
-   que .tileIconBox en ProductBentoSection.module.css */
+/* ── Variantes de color -- proporción ~1 de cada 4-5 cards (5 de 20).
+   Verificado contraste real (WCAG, texto normal 13px, umbral 4.5:1)
+   antes de aplicar los hex pedidos textualmente:
+   - Persian Blue #0038BD vs blanco: 9.13:1 -- pasa, sin cambios
+   - Verde #1D9E75 vs blanco: 3.39:1 -- NO pasa texto normal (solo
+     texto grande). Oscurecido a #188462 (mismo tono, -HSL lightness)
+     -> 4.65:1, pasa
+   - Morado #7F77DD vs blanco: 3.76:1 -- mismo problema. Oscurecido a
+     #7067D9 -> 4.53:1, pasa
+   - Ámbar var(--cta) #EF8E01 vs blanco: 2.46:1 -- reprueba incluso
+     texto grande. Texto oscuro (#0D1B2E) en su lugar -> 7.04:1, pasa */
+.card_blue   { background: var(--brand); }
+.card_green  { background: #188462; }
+.card_purple { background: #7067D9; }
+.card_amber  { background: var(--cta); }
+
+.card_blue .cardTitle, .card_blue .cardDesc, .card_blue .cardDescExtra,
+.card_green .cardTitle, .card_green .cardDesc, .card_green .cardDescExtra,
+.card_purple .cardTitle, .card_purple .cardDesc, .card_purple .cardDescExtra {
+  color: #FFFFFF;
+}
+
+.card_amber .cardTitle, .card_amber .cardDesc, .card_amber .cardDescExtra {
+  color: #0D1B2E;
+}
+
+/* Estándar único de ícono (Colorimetria-Final): blanco + Persian Blue,
+   SIN excepción -- también en cards de color, por diseño (no se anula
+   aquí a propósito). */
 .iconBox {
   width: 40px;
   height: 40px;
@@ -94,8 +121,9 @@
   justify-content: center;
   background: #FFFFFF;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  color: var(--brand);
   flex-shrink: 0;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .cardTitle {
@@ -104,32 +132,197 @@
   font-weight: 700;
   color: #0D1B2E;
   letter-spacing: -0.01em;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 
 .cardDesc {
   font-size: 13px;
   color: var(--mkt-text-2);
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0;
 }
 
 .cardDescExtra {
   font-size: 13px;
   color: var(--mkt-text-2);
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 4px 0 0;
 }
 
-/* Spans se anulan -- todas las 8 cards vuelven a 1x1, el grid pasa a
-   2 columnas (900px) y luego a 1 (640px, hereda el reset de spans). */
+/* ══════════════════════════════════════════════════════════
+   6 patrones de micro-animación reutilizables (TAREA 5) -- cada
+   .stage* se monta debajo del texto, 2-4s infinite ease-in-out,
+   staggered vía animation-delay por elemento.
+   ══════════════════════════════════════════════════════════ */
+.stageAcumulador, .stageFlujo, .stageBarras, .stageLineas, .stagePulso, .stageGiro {
+  margin-top: 10px;
+}
+
+/* 1. ACUMULADOR -- "+" apareciendo/desvaneciendo en posiciones random */
+.stageAcumulador { position: relative; height: 32px; }
+.accDot {
+  position: absolute;
+  top: 4px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 56, 189, 0.12);
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: accPulse 2.4s ease-in-out infinite;
+}
+@keyframes accPulse {
+  0%, 100% { opacity: 0; transform: translateY(4px) scale(0.7); }
+  50%      { opacity: 1; transform: translateY(-2px) scale(1); }
+}
+.card_purple .accDot { background: rgba(255, 255, 255, 0.25); color: #FFFFFF; }
+
+/* 2. FLUJO ENTRADA/SALIDA -- + / - alternando, entrando de lados opuestos */
+.stageFlujo { display: flex; flex-direction: column; gap: 4px; height: 40px; justify-content: center; }
+.flowRow {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: flowSlide 3s ease-in-out infinite;
+}
+.flowPos { color: #16A34A; --flow-x: -14px; }
+.flowNeg { color: #DC2626; --flow-x: 14px; animation-delay: 1.5s; }
+@keyframes flowSlide {
+  0%          { opacity: 0; transform: translateX(var(--flow-x)); }
+  15%, 45%    { opacity: 1; transform: translateX(0); }
+  60%, 100%   { opacity: 0; transform: translateX(calc(var(--flow-x) * -1)); }
+}
+.card_green .flowPos { color: #FFFFFF; }
+.card_green .flowNeg { color: rgba(255, 255, 255, 0.65); }
+
+/* 3. BARRAS CRECIENTES -- mini gráfico pulsando en altura */
+.stageBarras { display: flex; align-items: flex-end; gap: 5px; height: 34px; }
+.bar {
+  width: 8px;
+  height: 100%;
+  background: var(--brand);
+  border-radius: 3px;
+  transform-origin: bottom;
+  animation: barPulse 2s ease-in-out infinite;
+}
+.bar:nth-child(1) { height: 55%; }
+.bar:nth-child(2) { height: 80%; }
+.bar:nth-child(3) { height: 40%; }
+.bar:nth-child(4) { height: 95%; }
+@keyframes barPulse {
+  0%, 100% { transform: scaleY(0.55); }
+  50%      { transform: scaleY(1); }
+}
+.card_blue .bar { background: rgba(255, 255, 255, 0.85); }
+
+/* 4. LÍNEAS IMPRIMIÉNDOSE -- barras horizontales expandiendo 0->100% */
+.stageLineas { display: flex; flex-direction: column; gap: 5px; height: 34px; justify-content: center; }
+.lineTrack {
+  display: block;
+  height: 5px;
+  background: var(--mkt-bg-alt);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.lineFill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--brand);
+  border-radius: 3px;
+  animation: lineGrow 2.4s ease-in-out infinite;
+}
+@keyframes lineGrow {
+  0%        { width: 0%; }
+  30%, 70%  { width: 100%; }
+  100%      { width: 0%; }
+}
+
+/* 5. PULSO DE PUNTO -- punto "en vivo" parpadeando suave */
+.stagePulso { display: flex; align-items: center; gap: 7px; height: 24px; }
+.pulsoDot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #DC2626;
+  animation: dotPulse 1.8s ease-in-out infinite;
+}
+.pulsoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mkt-text-3);
+}
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1); }
+}
+
+/* 6. GIRO/CAMBIO -- 2 estados alternando con flip */
+.stageGiro { position: relative; height: 28px; perspective: 240px; }
+.giroFace {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  animation: giroFlip 3s ease-in-out infinite;
+}
+.giroFaceB { color: var(--cta); animation-delay: 1.5s; }
+@keyframes giroFlip {
+  0%, 40%   { opacity: 1; transform: rotateX(0deg); }
+  50%, 90%  { opacity: 0; transform: rotateX(90deg); }
+  100%      { opacity: 1; transform: rotateX(0deg); }
+}
+.card_amber .giroFace, .card_amber .giroFaceB { color: #0D1B2E; }
+
+@media (prefers-reduced-motion: reduce) {
+  .blob, .accDot, .flowRow, .bar, .lineFill, .pulsoDot, .giroFace {
+    animation: none;
+  }
+  .accDot, .giroFace { opacity: 1; }
+  .flowRow { opacity: 1; transform: none; }
+}
+
+/* ── Segmentos -- ghost icon girado + nombre, SIN micro-animación
+   (diferencia visual explícita vs. las cards de función). ── */
+.segmentCard {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-end;
+  min-height: 90px;
+}
+
+.segmentGhost {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  color: var(--mkt-navy, #0D1B2E);
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+.segmentName {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0D1B2E;
+}
+
+/* ── Responsive -- spans se anulan, grid a 1 columna en mobile ── */
 @media (max-width: 900px) {
   .grid { grid-template-columns: repeat(2, 1fr); }
-  .card_pos, .card_inventario, .card_reportes, .card_catalogo,
-  .card_clientes, .card_caja, .card_cotizaciones, .card_devoluciones {
-    grid-column: span 1;
-    grid-row: span 1;
-  }
+  .card, .segmentCard { grid-column: span 1 !important; grid-row: span 1 !important; }
 }
 
 @media (max-width: 640px) {

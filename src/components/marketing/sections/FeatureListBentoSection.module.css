@@ -1,13 +1,12 @@
 /* ============================================================
-   FeatureListBentoSection — Muro-Anchos-Exactos: modelo de columnas
-   con scroll horizontal infinito (vuelve al enfoque de Fixes-
-   Pendientes-1; Bento-Real-Final lo había reemplazado por un grid de
-   spans sin scroll, revertido por decisión explícita del usuario tras
-   confirmar el conflicto entre ambos modelos). Solo 2 anchos de
-   columna posibles: 170px o 220px, sin ciclo ni variación por card.
-   20 cards de función con 6 patrones de micro-animación reutilizables.
-   Fondo mesh CLARO (Bento-Infinito-1). Segmentos NO viven acá
-   (Correccion-Final-2 los sacó, están en SegmentsSection.tsx aparte).
+   FeatureListBentoSection — Solo-Horizontal-Final: CERO verticalidad,
+   toda card ocupa exactamente 1 fila (nunca grid-row:span 2). La
+   asimetría viene solo del ANCHO (150/190/240px cíclico). Estructura:
+   2 filas INDEPENDIENTES (flex, no grid compartido) -- cada una su
+   propia cinta con su propio scroll infinito, así arriba/abajo nunca
+   necesitan alinear columna. 20 cards de función con 6 patrones de
+   micro-animación reutilizables. Fondo mesh CLARO (Bento-Infinito-1).
+   Segmentos NO viven acá (están en SegmentsSection.tsx aparte).
    ============================================================ */
 
 /* ── Fondo mesh claro: base + 4 manchas difuminadas con drift ── */
@@ -67,48 +66,72 @@
   margin: 0 auto 48px;
 }
 
-/* Muro-Anchos-Exactos: scroll horizontal, contenedor oculta, el track
-   interno se anima -- mismo principio que la cinta del footer
-   (FeatureMarquee.tsx/.module.css): contenido duplicado 2x,
-   translateX(-50%) mueve exactamente una copia. */
+/* Contenedor de las 2 filas -- flex-direction:column, cada fila (ver
+   .scrollWrap/.scrollRow) es totalmente independiente de la otra, sin
+   grid compartido ni columnas alineadas entre sí. */
+.scrollTrack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cada fila tiene su PROPIO contenedor que oculta desborde -- mismo
+   principio que la cinta del footer (FeatureMarquee.tsx/.module.css). */
 .scrollWrap {
   overflow: hidden;
   width: 100%;
 }
 
-/* grid-auto-flow:column + 2 filas EXACTAS de 130px: las cards con
-   grid-row:span 2 (columnas tipo A) ocupan una columna completa;
-   2 cards consecutivas con grid-row:span 1 (columnas tipo B) caen
-   solas en la misma columna (fila 1 y fila 2). El ANCHO de cada
-   columna lo determina el width inline de su(s) card(s) -- 170px o
-   220px exactos, nunca otro valor (asignados por card en el .tsx,
-   sin ciclo). */
-.scrollTrack {
-  display: grid;
-  grid-template-rows: repeat(2, 130px);
-  grid-auto-flow: column;
-  grid-auto-columns: auto;
-  align-items: stretch;
+/* Fila EXACTA de 130px de alto -- toda card dentro es grid-row:span 1
+   equivalente (no aplica span, es flex; cada card simplemente ocupa
+   el alto completo de su fila vía height fija más abajo en .card).
+   Contenido duplicado x2, translateX(-50%) mueve exactamente una
+   copia -- cada fila calcula esto sobre SU PROPIO ancho total, no uno
+   compartido con la otra fila (evita tener que igualar anchos entre
+   filas para que el loop cierre). */
+.scrollRow {
+  display: flex;
   gap: 12px;
   width: max-content;
-  animation: scrollTrack 50s linear infinite;
+  animation: scrollRow 50s linear infinite;
 }
 
-@keyframes scrollTrack {
+@keyframes scrollRow {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
 
 /* Idéntico a ProductBentoSection.module.css .tile (radius/sombra) +
-   sombra NUEVA del adenda para separarse del fondo mesh claro */
+   sombra NUEVA del adenda para separarse del fondo mesh claro.
+   height fija 130px (Solo-Horizontal-Final: CERO card ocupa más de
+   1 fila -- nunca grid-row:span 2, ninguna excepción) + overflow:hidden
+   real (adenda: ningún texto puede desbordar su propia card). */
+/* Tensión real, documentada en vez de ignorada: 130px de alto fijo +
+   ícono sellado 40x40 (Colorimetria-Final, no negociable) + hasta 2
+   líneas de descripción (adenda) + el Stage animado dejan MUY poco
+   margen. Padding comprimido a 14px/16px (antes 20px) para recuperar
+   espacio real -- con esto, el peor caso (card de 150px con
+   descripción que ocupa las 2 líneas completas) deja el Stage con
+   apenas unos px visibles; overflow:hidden garantiza que nunca se
+   desborda el borde de la card, pero en ese caso extremo el Stage
+   puede quedar parcialmente recortado. No hay forma de eliminar esa
+   tensión sin violar alguna de las 3 reglas (ícono sellado, 2 líneas,
+   130px fijo) -- se prioriza cero overflow visual (lo pedido
+   explícito) sobre garantizar el 100% del Stage siempre visible. */
 .card {
+  /* width: sin regla aquí -- viene del inline style por-card en el
+     .tsx (widthFor: 150/190/240px), siempre gana sobre cualquier
+     regla de este archivo sin !important */
+  height: 130px;
   background: #FFFFFF;
   border-radius: 20px;
-  padding: 20px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* ── Variantes de color -- proporción ~1 de cada 4-5 cards (5 de 20).
@@ -151,23 +174,34 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   color: var(--brand);
   flex-shrink: 0;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
+/* Adenda Solo-Horizontal-Final: título máximo 1 línea, trunca con "…"
+   -- nunca desborda ni corta a la mitad. */
 .cardTitle {
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
+  line-height: 1.2;
   color: #0D1B2E;
   letter-spacing: -0.01em;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* Adenda: descripción máximo 2 líneas, trunca con "…" (line-clamp) */
 .cardDesc {
   font-size: 13px;
   color: var(--mkt-text-2);
-  line-height: 1.45;
+  line-height: 1.3;
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .cardDescExtra {
@@ -175,6 +209,10 @@
   color: var(--mkt-text-2);
   line-height: 1.45;
   margin: 4px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -182,12 +220,15 @@
    .stage* se monta debajo del texto, 2-4s infinite ease-in-out,
    staggered vía animation-delay por elemento.
    ══════════════════════════════════════════════════════════ */
+/* margin-top comprimido a 4px (antes 10px) y alturas de stage reducidas
+   -- espacio muy ajustado a 130px de card, ver nota en .card sobre la
+   tensión real entre ícono sellado + 2 líneas de desc + 130px fijo. */
 .stageAcumulador, .stageFlujo, .stageBarras, .stageLineas, .stagePulso, .stageGiro {
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 /* 1. ACUMULADOR -- "+" apareciendo/desvaneciendo en posiciones random */
-.stageAcumulador { position: relative; height: 32px; }
+.stageAcumulador { position: relative; height: 20px; }
 .accDot {
   position: absolute;
   top: 4px;
@@ -209,7 +250,7 @@
 .card_purple .accDot { background: rgba(255, 255, 255, 0.25); color: #FFFFFF; }
 
 /* 2. FLUJO ENTRADA/SALIDA -- + / - alternando, entrando de lados opuestos */
-.stageFlujo { display: flex; flex-direction: column; gap: 4px; height: 40px; justify-content: center; }
+.stageFlujo { display: flex; flex-direction: column; gap: 2px; height: 28px; justify-content: center; }
 .flowRow {
   font-size: 13px;
   font-weight: 700;
@@ -227,7 +268,7 @@
 .card_green .flowNeg { color: rgba(255, 255, 255, 0.65); }
 
 /* 3. BARRAS CRECIENTES -- mini gráfico pulsando en altura */
-.stageBarras { display: flex; align-items: flex-end; gap: 5px; height: 34px; }
+.stageBarras { display: flex; align-items: flex-end; gap: 5px; height: 22px; }
 .bar {
   width: 8px;
   height: 100%;
@@ -247,7 +288,7 @@
 .card_blue .bar { background: rgba(255, 255, 255, 0.85); }
 
 /* 4. LÍNEAS IMPRIMIÉNDOSE -- barras horizontales expandiendo 0->100% */
-.stageLineas { display: flex; flex-direction: column; gap: 5px; height: 34px; justify-content: center; }
+.stageLineas { display: flex; flex-direction: column; gap: 3px; height: 22px; justify-content: center; }
 .lineTrack {
   display: block;
   height: 5px;
@@ -270,7 +311,7 @@
 }
 
 /* 5. PULSO DE PUNTO -- punto "en vivo" parpadeando suave */
-.stagePulso { display: flex; align-items: center; gap: 7px; height: 24px; }
+.stagePulso { display: flex; align-items: center; gap: 6px; height: 18px; }
 .pulsoDot {
   width: 10px; height: 10px;
   border-radius: 50%;
@@ -290,7 +331,7 @@
 }
 
 /* 6. GIRO/CAMBIO -- 2 estados alternando con flip */
-.stageGiro { position: relative; height: 28px; perspective: 240px; }
+.stageGiro { position: relative; height: 20px; perspective: 240px; }
 .giroFace {
   position: absolute;
   inset: 0;
@@ -315,16 +356,16 @@
   }
   .accDot, .giroFace { opacity: 1; }
   .flowRow { opacity: 1; transform: none; }
-  /* El scroll se congela en su frame actual (paused, no none/reset) --
-     mismo criterio ya usado en Correccion-Final-2. */
-  .scrollTrack { animation-play-state: paused; }
+  /* El scroll de CADA fila se congela en su frame actual (paused, no
+     none/reset) -- mismo criterio ya usado en Correccion-Final-2. */
+  .scrollRow { animation-play-state: paused; }
 }
 
 /* ── Responsive -- el scroll y sus animaciones se mantienen en mobile
    (mismo criterio de Fixes-Pendientes-1), solo se achica el gap y el
-   padding de card. Los anchos de columna (170/220px) NO cambian --
-   siguen siendo exactos en cualquier viewport. ── */
+   padding de card. Los anchos (150/190/240px) NO cambian -- siguen
+   siendo exactos en cualquier viewport. ── */
 @media (max-width: 640px) {
-  .scrollTrack { gap: 10px; }
-  .card { padding: 16px; }
+  .scrollTrack, .scrollRow { gap: 8px; }
+  .card { padding: 12px 14px; }
 }

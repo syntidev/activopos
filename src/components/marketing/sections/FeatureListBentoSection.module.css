@@ -74,11 +74,19 @@
   width: 100%;
 }
 
-/* Ajustes-Puntuales-1: sin patrón "tall + stack" (forma de "edificio")
-   -- align-items:stretch iguala la altura de TODAS las cards a la más
-   alta de la fila, solo el ANCHO varía por card (ver widthFor en .tsx). */
+/* Fixes-Pendientes-1: contenedor con 2 FILAS fijas simultáneas
+   (grid-template-rows, no flex de 1 sola fila) -- grid-auto-flow:column
+   acomoda las cards en 2 filas x N columnas automáticamente, cada
+   columna toma el ancho de su card (grid-auto-columns:auto + el width
+   inline por-card de widthFor en el .tsx, sin cambios ahí). align-items
+   sigue en stretch -- ahora estira cada card a los 170px de su fila,
+   no a la card más alta del conjunto (ya no aplica ese caso, cada card
+   ocupa 1 sola celda desde Ajustes-Puntuales-1). */
 .scrollTrack {
-  display: flex;
+  display: grid;
+  grid-template-rows: repeat(2, 170px);
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
   align-items: stretch;
   gap: 14px;
   width: max-content;

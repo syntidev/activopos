@@ -166,6 +166,16 @@
   height: 80px;
   overflow: hidden;
   position: relative;
+  width: 100%;
+  /* min-width:0 -- Fixes-Pendientes-1. .chartWrap es hijo flex de .card
+     (flex-direction:column); sin esto, el min-width:auto implícito de
+     todo flex-item le impide encogerse por debajo del ancho intrínseco
+     de .chartTrack (width:max-content, ancho real de 28 barras
+     dobladas) -- overflow:hidden nunca llegaba a activarse de verdad,
+     el contenedor crecía para acomodar el contenido en vez de recortarlo.
+     Visible solo en mobile porque ahí el ancho disponible es menor que
+     ese intrínseco; en desktop sobraba espacio y el bug quedaba oculto. */
+  min-width: 0;
 }
 
 .chartTrack {

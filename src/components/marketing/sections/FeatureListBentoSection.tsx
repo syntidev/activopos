@@ -104,18 +104,17 @@ const ROW2 = FEATURES.slice(10, 20)
    se dibuja el ícono.
 
    Ahora cada título solo puede recibir un ancho donde su texto quepa
-   completo antes del ícono (estimación 8.2px/carácter, Fraunces bold
-   15px -- MISMO método ya usado en el commit anterior, no es medición
-   real de browser, no hay browser tool en este entorno). RESERVED_PX
-   = padding lateral de card (16+16) + despeje real del ícono (top:12,
-   right:12, 40x40 -> ocupa desde 12px hasta 52px del borde derecho,
-   no 48px como tenía el padding-right viejo). Entre los anchos que sí
-   caben, se cicla por posición para conservar la asimetría "sin patrón
-   fijo" -- ya no es un ciclo ciego de 3, es un ciclo sobre las opciones
-   válidas de cada título. */
+   completo (estimación 8.2px/carácter, Fraunces bold 15px -- MISMO
+   método ya usado en el commit anterior, no es medición real de
+   browser, no hay browser tool en este entorno). RESERVED_PX = solo
+   el padding lateral de card (16+16) -- Icono-Fondo-Segmentos quita
+   el despeje de ícono flotante (antes +52px) porque el ícono fantasma
+   vive DETRÁS del texto, ya no compite por ancho con él. Entre los
+   anchos que sí caben, se cicla por posición para conservar la
+   asimetría "sin patrón fijo". */
 const WIDTHS = [150, 190, 240]
 const CHARS_PX_ESTIMATE = 8.2
-const RESERVED_PX = 32 + 52 // padding L+R de .card + despeje real del ícono flotante
+const RESERVED_PX = 32 // padding L+R de .card únicamente
 
 function widthFor(title: string, indexInRow: number, rowOffset: number): number {
   const fitting = WIDTHS.filter(w => w - RESERVED_PX >= title.length * CHARS_PX_ESTIMATE)
@@ -175,20 +174,23 @@ function Stage({ card }: { card: FeatureCard }) {
   }
 }
 
-/* Icono-Flotante-Final: el ícono sale del flujo vertical (position:
-   absolute, esquina superior derecha, ver .module.css .iconBox) --
-   ya no consume su propia fila, libera espacio real para texto+Stage
-   en las cards de 130px. overflow:hidden real por card, título 1
-   línea (nowrap+ellipsis), descripción 2 líneas (line-clamp) siguen
-   sin cambios -- ningún texto puede desbordar su propia card. */
+/* Icono-Fondo-Segmentos: el ícono flotante (40x40, esquina superior
+   derecha) generaba conflicto recurrente con el título pese a los 2
+   intentos previos de ajustarle el despeje -- se reemplaza por el
+   MISMO patrón de ícono fantasma ya usado en SegmentsSection.tsx/
+   .module.css (.ghostIcon: grande, opacity baja, position:absolute
+   en la esquina, pointer-events:none, detrás del texto en vez de
+   compitiendo por espacio con él). Título y descripción ya no
+   reservan padding-right artificial -- usan el ancho completo de la
+   card, overflow:hidden real por card sigue sin cambios. */
 function FeatureCardEl({ card, width }: { card: FeatureCard; width: number }) {
   return (
     <div
       className={`${styles.card} ${card.color ? styles[`card_${card.color}`] : ''}`}
       style={{ width: `${width}px` }}
     >
-      <span className={styles.iconBox}>
-        <card.Icon size={20} aria-hidden="true" />
+      <span className={styles.ghostIcon} aria-hidden="true">
+        <card.Icon size={72} />
       </span>
       <h3 className={styles.cardTitle}>{card.title}</h3>
       <p className={styles.cardDesc}>{card.desc}</p>

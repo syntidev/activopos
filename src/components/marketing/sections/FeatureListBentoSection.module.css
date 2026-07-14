@@ -106,15 +106,18 @@
    height fija 130px (Solo-Horizontal-Final: CERO card ocupa más de
    1 fila -- nunca grid-row:span 2, ninguna excepción) + overflow:hidden
    real (adenda: ningún texto puede desbordar su propia card).
-   Icono-Flotante-Final: la tensión de espacio documentada en el
-   commit anterior (Solo-Horizontal-Final) se resuelve acá -- el ícono
-   sale del flujo (position:absolute en .iconBox, ver abajo), ya no
-   consume su propia fila+margen. position:relative para anclar esa
-   posición absoluta a la card, no al viewport. */
+   Icono-Fondo-Segmentos: el ícono flotante (top-right, absolute) se
+   reemplaza por un ícono fantasma de fondo -- mismo patrón que
+   SegmentsSection.module.css .ghostIcon. --card-icon define el color
+   del ícono fantasma, blanco por defecto (cards blancas) y sobreescrito
+   a blanco puro en cards de color más abajo (mismo valor, pero
+   declarado explícito por si el default cambia). position:relative
+   se mantiene -- ancla el ghostIcon a la card, no al viewport. */
 .card {
   /* width: sin regla aquí -- viene del inline style por-card en el
      .tsx (widthFor: 150/190/240px), siempre gana sobre cualquier
      regla de este archivo sin !important */
+  --card-icon: var(--brand);
   position: relative;
   height: 130px;
   background: #FFFFFF;
@@ -139,10 +142,10 @@
      #7067D9 -> 4.53:1, pasa
    - Ámbar var(--cta) #EF8E01 vs blanco: 2.46:1 -- reprueba incluso
      texto grande. Texto oscuro (#0D1B2E) en su lugar -> 7.04:1, pasa */
-.card_blue   { background: var(--brand); }
-.card_green  { background: #188462; }
-.card_purple { background: #7067D9; }
-.card_amber  { background: var(--cta); }
+.card_blue   { background: var(--brand); --card-icon: #FFFFFF; }
+.card_green  { background: #188462; --card-icon: #FFFFFF; }
+.card_purple { background: #7067D9; --card-icon: #FFFFFF; }
+.card_amber  { background: var(--cta); --card-icon: #0D1B2E; }
 
 .card_blue .cardTitle, .card_blue .cardDesc, .card_blue .cardDescExtra,
 .card_green .cardTitle, .card_green .cardDesc, .card_green .cardDescExtra,
@@ -154,47 +157,31 @@
   color: #0D1B2E;
 }
 
-/* Estándar único de ícono (Colorimetria-Final): 40x40, blanco +
-   Persian Blue, SIN excepción -- también en cards de color, por
-   diseño (no se anula aquí a propósito). Icono-Flotante-Final: sale
-   del flujo (absolute), esquina superior derecha, flota ENCIMA del
-   texto sin reservarle espacio (pedido explícito) -- el respiro real
-   para que el título no quede tapado lo da .cardTitle (padding-right),
-   no este elemento. */
-.iconBox {
+/* Icono-Fondo-Segmentos: reemplaza el ícono flotante (2 commits
+   previos ajustándole el despeje sin resolver el conflicto de raíz)
+   por el MISMO patrón ya usado en SegmentsSection.module.css
+   .ghostIcon -- grande, opacity baja, esquina inferior derecha,
+   pointer-events:none. Al vivir DETRÁS del texto (no reserva espacio,
+   no compite por ancho) el conflicto título/ícono desaparece por
+   diseño, no por cálculo de despeje. Oculto en mobile (<640px, ver
+   media query al final) igual que en Segmentos -- cards angostas ahí,
+   el ícono decorativo no aporta y sí puede recargar. */
+.ghostIcon {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  color: var(--brand);
-  flex-shrink: 0;
+  right: -10px;
+  bottom: -10px;
+  color: var(--card-icon);
+  opacity: 0.1;
+  pointer-events: none;
 }
 
 /* Adenda Solo-Horizontal-Final: título máximo 1 línea, trunca con "…"
-   -- nunca desborda ni corta a la mitad. padding-right (Icono-
-   Flotante-Final): el ícono flota encima sin reservar espacio en el
-   flujo -- este padding evita que el texto de títulos largos quede
-   VISUALMENTE tapado bajo el ícono en la esquina. Aplicado a las 20
-   cards por igual (una sola regla compartida, no decidido por
-   título) -- más simple y verificable que evaluar caso por caso cuál
-   título es "lo bastante largo" para colisionar.
-   Icono-Posicion-Real: 48px era 4px insuficiente -- el ícono ocupa
-   desde right:12px hasta right:12+40=52px del borde, no 48px, así que
-   el texto podía renderizar hasta 4px DENTRO del área real del ícono.
-   Corregido a 52px (despeje real, no aproximado). El defecto principal
-   reportado (título tapado, cortado incluso con "espacio de sobra") no
-   estaba acá -- ver widthFor() en el .tsx, causa raíz real: el ancho
-   asignado a cada card ahora es consciente de la longitud del título. */
+   -- nunca desborda ni corta a la mitad (red de seguridad; con
+   widthFor() consciente de longitud de título, en la práctica no
+   debería activarse). Icono-Fondo-Segmentos: ya no reserva
+   padding-right -- el ícono fantasma vive detrás del texto, usa el
+   ancho completo de la card. */
 .cardTitle {
-  padding-right: 52px;
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
@@ -383,4 +370,5 @@
 @media (max-width: 640px) {
   .scrollTrack, .scrollRow { gap: 8px; }
   .card { padding: 12px 14px; }
+  .ghostIcon { display: none; }
 }

@@ -10,22 +10,25 @@ interface FeatureCard {
   title: string
   desc:  string
   descExtra?: string
-  big?:  boolean
 }
 
-/* Las 2 primeras (big:true) van span 2 -- mismo orden en que se listan
-   en el prompt, produce el layout pedido sin necesitar grid-auto-flow:
-   dense (fila 1 = las 2 grandes llenando las 4 columnas, filas 2-3 =
-   las 6 compactas). */
+/* FeatureList-Bento-3: el prompt pedía 8 pares (col-span,row-span) pero
+   3 pares se repetían (Inventario/Clientes/Devoluciones los 3 en 2x1;
+   Catálogo/Caja/Cotizaciones los 3 en 1x1) -- verificado antes de
+   implementar, contradice el propio criterio de verificación del prompt
+   ("ninguna card mide exactamente igual a otra"). Reasignado a 8 pares
+   (col,row) ÚNICOS entre sí, spans y clase por card en el .module.css
+   (mismo patrón que .tileCobrado/.tileTudia en ProductBentoSection.tsx,
+   no un boolean "big" genérico). */
 const FEATURES: FeatureCard[] = [
   {
-    key: 'pos', Icon: ScanBarcode, big: true,
+    key: 'pos', Icon: ScanBarcode,
     title: 'Punto de Venta',
     desc: 'Cobra en segundos, en cualquier moneda.',
     descExtra: 'Efectivo, Pago Móvil, Zelle o Binance — como ya te paguen.',
   },
   {
-    key: 'inventario', Icon: Boxes, big: true,
+    key: 'inventario', Icon: Boxes,
     title: 'Inventario',
     desc: 'Sabes qué tienes, sin contar a mano.',
     descExtra: 'Entra, sale y se ajusta solo con cada venta.',
@@ -46,14 +49,14 @@ export default function FeatureListBentoSection() {
         <p className={styles.subtitle}>Ocho módulos, un solo sistema.</p>
 
         <div className={styles.grid}>
-          {FEATURES.map(({ key, Icon, title, desc, descExtra, big }) => (
-            <div key={key} className={`${styles.card} ${big ? styles.cardBig : ''}`}>
+          {FEATURES.map(({ key, Icon, title, desc, descExtra }) => (
+            <div key={key} className={`${styles.card} ${styles[`card_${key}`]}`}>
               <span className={styles.iconBox}>
                 <Icon size={20} color="#0038BD" aria-hidden="true" />
               </span>
               <h3 className={styles.cardTitle}>{title}</h3>
               <p className={styles.cardDesc}>{desc}</p>
-              {big && descExtra && <p className={styles.cardDescExtra}>{descExtra}</p>}
+              {descExtra && <p className={styles.cardDescExtra}>{descExtra}</p>}
             </div>
           ))}
         </div>

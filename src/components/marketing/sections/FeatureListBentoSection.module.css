@@ -5,9 +5,18 @@
    copiados literal, no aproximados, ver commit para la cita exacta.
    ============================================================ */
 
+/* FeatureList-Bento-3: fondo de gris claro -> foto real, MISMO
+   tratamiento que TestimonialsSection.module.css (overlay apilado en la
+   misma background-image, sin pseudo-elemento). Cards siguen blancas
+   opacas -- su contraste no depende del fondo. */
 .section {
+  position: relative;
   padding: 96px 0;
-  background: var(--mkt-bg);
+  background-image:
+    linear-gradient(to right, rgba(13, 27, 46, 0.55), rgba(13, 27, 46, 0.15)),
+    url('/marketing/testimonials-bg.webp');
+  background-size: cover;
+  background-position: center;
 }
 
 .container {
@@ -16,54 +25,61 @@
   padding: 0 clamp(1.25rem, 5vw, 3rem);
 }
 
-/* Idéntico a ProductBentoSection.module.css .title */
+/* Idéntico a ProductBentoSection.module.css .title, color a blanco +
+   sombra -- mismo motivo que TestimonialsSection: sobre foto oscura, el
+   #0D1B2E anterior (pensado para var(--mkt-bg) claro) sería ilegible. */
 .title {
   font-family: var(--font-display);
   font-size: clamp(28px, 5vw, 44px);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  color: #0D1B2E;
+  color: #FFFFFF;
+  text-shadow: 0 2px 12px rgba(13, 27, 46, 0.45);
   text-align: center;
   text-wrap: balance;
   margin: 0 0 12px;
 }
 
-/* Idéntico a ProductBentoSection.module.css .subtitle */
+/* Mismo motivo -- var(--mkt-text-2) es gris medio pensado para fondo
+   claro, ilegible sobre la foto. Blanco a 80% para no competir con el
+   título pero seguir legible en ambas zonas del overlay. */
 .subtitle {
   font-size: 15px;
-  color: var(--mkt-text-2);
+  color: rgba(255, 255, 255, 0.8);
   text-align: center;
   max-width: 46ch;
   margin: 0 auto 48px;
 }
 
-/* grid-template-rows: repeat(2, auto) tal como pide el prompt -- 2 cards
-   span-2 + 6 cards span-1 sobre 4 columnas suman 10 celdas, más de lo
-   que caben 2 filas explícitas (8 celdas); CSS Grid genera automática-
-   mente una 3ra fila implícita para las 2 cards que sobran (comporta-
-   miento correcto y esperado, no un bug). */
+/* 8 pares (col-span,row-span) ÚNICOS entre sí (ver comentario en el
+   .tsx) -- grid-auto-rows fijo para que los row-span de 2/3 den una
+   altura predecible, mismo criterio que ProductBentoSection.module.css. */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, auto);
+  grid-auto-rows: minmax(120px, auto);
   gap: 20px;
 }
+
+.card_pos           { grid-column: span 2; grid-row: span 2; }
+.card_inventario    { grid-column: span 2; grid-row: span 1; }
+.card_reportes      { grid-column: span 1; grid-row: span 3; }
+.card_catalogo      { grid-column: span 1; grid-row: span 1; }
+.card_clientes      { grid-column: span 3; grid-row: span 1; }
+.card_caja          { grid-column: span 1; grid-row: span 2; }
+.card_cotizaciones  { grid-column: span 2; grid-row: span 3; }
+.card_devoluciones  { grid-column: span 3; grid-row: span 2; }
 
 /* Idéntico a ProductBentoSection.module.css .tile: radius 20px,
    mismo box-shadow exacto */
 .card {
-  grid-column: span 1;
   background: #FFFFFF;
   border-radius: 20px;
   padding: 22px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
-}
-
-.cardBig {
-  grid-column: span 2;
 }
 
 /* Estándar único de ícono (Colorimetria-Final / Landing-Definitivo):
@@ -105,13 +121,17 @@
   margin: 4px 0 0;
 }
 
+/* Spans se anulan -- todas las 8 cards vuelven a 1x1, el grid pasa a
+   2 columnas (900px) y luego a 1 (640px, hereda el reset de spans). */
 @media (max-width: 900px) {
   .grid { grid-template-columns: repeat(2, 1fr); }
-  .cardBig { grid-column: span 2; }
+  .card_pos, .card_inventario, .card_reportes, .card_catalogo,
+  .card_clientes, .card_caja, .card_cotizaciones, .card_devoluciones {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
 }
 
 @media (max-width: 640px) {
   .grid { grid-template-columns: 1fr; gap: 14px; }
-  .card,
-  .cardBig { grid-column: span 1; }
 }

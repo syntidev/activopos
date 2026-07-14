@@ -49,7 +49,12 @@ const parseId = (raw: string) => {
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
+
+    // El detalle expone cost_per_unit_usd y profit_usd. Es dato financiero: solo
+    // admin/super_admin. El POS del cashier usa /api/products/search (redactado),
+    // nunca este detalle. Sin este guard, un cashier lo saca por API directa.
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const id = parseId(params.id)
     if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })

@@ -12,6 +12,9 @@ const cobrarSchema = z.object({
   reference:         z.string().max(100).optional(),
 })
 
+// PERMISOS — INTENCIONAL: sin guard de rol. cashier cobra pedidos como admin (es la
+// caja del mostrador). No expone costo/utilidad. Sellado en MATRIZ_..._SELLADA.md (#2).
+
 /* ── POST /api/orders/[id]/cobrar — convert Order to a paid Sale ── */
 
 export async function POST(req: NextRequest, { params }: Context) {

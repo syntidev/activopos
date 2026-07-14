@@ -13,6 +13,10 @@ const PatchSchema = z.object({
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  // Config del negocio: solo admin/super_admin. El cashier ya recibe theme/theme_color
+  // dentro de /api/config/business (que su POS/header sí consumen), así que bloquear este
+  // endpoint no le quita nada operativo — solo cierra el acceso por API directa a la tab.
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   const business = await prisma.business.findUnique({
     where:  { id: session.businessId },

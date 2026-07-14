@@ -21,7 +21,12 @@ const entrySchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
+
+    // Los movimientos exponen cost_per_unit_usd. Dato financiero: solo admin/super_admin.
+    // Consumido solo por /inventario y /reportes, ambas bloqueadas al cashier por middleware;
+    // este guard cierra el acceso por API directa.
+    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const productId = req.nextUrl.searchParams.get('product_id')
 

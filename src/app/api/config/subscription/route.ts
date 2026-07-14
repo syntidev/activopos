@@ -10,6 +10,9 @@ const PatchSchema = z.object({
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  // Datos de plan/facturación: solo admin/super_admin. Consumido solo por la tab de Plan,
+  // bloqueada al cashier por middleware; este guard cierra el acceso por API directa.
+  if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   const business = await prisma.business.findUnique({
     where:  { id: session.businessId },

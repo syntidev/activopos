@@ -7,6 +7,14 @@ import { getBcvRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
 import { sendPushToBusinessSubscribers } from '@/lib/push-notify'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PERMISOS — INTENCIONAL: Pedidos NO tiene guard de rol. cashier ve/crea/edita
+// pedidos igual que admin. Es atención al cliente en mostrador, no dato financiero
+// sensible (el costo/utilidad no se expone aquí). Decisión de negocio sellada en
+// .doc/MATRIZ_ROLES_PERMISOS_SELLADA.md (hallazgo #2). NO agregar un check de rol
+// sin reconfirmar con Carlos — la ausencia de guard aquí es deliberada, no un hueco.
+// ─────────────────────────────────────────────────────────────────────────────
+
 /* ── Query schema ── */
 
 const querySchema = z.object({

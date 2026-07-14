@@ -4,6 +4,9 @@ import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 
+// PERMISOS — INTENCIONAL: sin guard de rol. cashier edita/cancela pedidos como admin.
+// Atención al cliente, no dato sensible. Sellado en MATRIZ_ROLES_PERMISOS_SELLADA.md (#2).
+
 const VALID_TRANSITIONS: Record<string, string[]> = {
   received:   ['preparing', 'cancelled'],
   preparing:  ['ready', 'cancelled'],

@@ -3,6 +3,9 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 type Context = { params: { id: string } }
 
+// PERMISOS — INTENCIONAL: sin guard de rol. cashier cancela pedidos como admin.
+// Atención al cliente, no dato sensible. Sellado en MATRIZ_ROLES_PERMISOS_SELLADA.md (#2).
+
 /* ── POST /api/orders/[id]/cancelar ── */
 
 export async function POST(_req: NextRequest, { params }: Context) {

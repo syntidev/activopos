@@ -21,7 +21,7 @@ const querySchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
 
     const params = Object.fromEntries(req.nextUrl.searchParams.entries())
     const query = querySchema.parse(params)
@@ -60,9 +60,19 @@ export async function GET(req: NextRequest) {
       db.sale.count({ where }),
     ])
 
+    // Costo por ítem es dato financiero — cashier no lo ve (mismo criterio que
+    // /api/sales y /api/finanzas). Se despoja del payload en el backend; nunca se
+    // confía en que el frontend oculte la columna. admin/super_admin ven todo.
+    const payload = session.role === 'cashier'
+      ? sales.map(({ items, ...sale }) => ({
+          ...sale,
+          items: items.map(({ cost_per_unit_usd, ...item }) => item),
+        }))
+      : sales
+
     return NextResponse.json({
       ok: true,
-      sales,
+      sales: payload,
       pagination: {
         page: query.page,
         limit: query.limit,

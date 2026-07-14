@@ -79,13 +79,20 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
 
     const id = parseId(params.id)
     if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const body = await req.json()
     const data = patchSchema.parse(body)
+
+    // price_tier (detal/mayorista) reclasifica al cliente de forma permanente y cambia
+    // el precio de TODAS sus compras futuras — es distinto de un override de precio puntual
+    // en una venta. Solo admin/super_admin. cashier puede editar datos de contacto, no el tier.
+    if (data.price_tier !== undefined && session.role === 'cashier') {
+      return NextResponse.json({ error: 'Sin permiso para cambiar el tipo de precio' }, { status: 403 })
+    }
 
     const existing = await db.client.findFirst({
       where: { id }, // business_id inyectado por el tenant layer

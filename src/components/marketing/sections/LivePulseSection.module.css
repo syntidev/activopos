@@ -115,6 +115,8 @@
 
 /* ── Columna derecha — widget LivePulseCard ── */
 .card {
+  max-width: 100%;
+  box-sizing: border-box;
   background: #FFFFFF;
   border-radius: 20px;
   box-shadow: var(--shadow-card-elevated);
@@ -163,10 +165,19 @@
    mueve exactamente un set de BARS, costura invisible (mismo técnica
    que FeatureMarquee.tsx de un sprint anterior) */
 .chartWrap {
-  height: 80px;
+  /* aspect-ratio 7/2 = 3.5:1 (Bento-Real-Final, dentro del rango 3-4:1
+     pedido) en vez de height:80px fijo -- a 80px fijo, en desktop con
+     .card ~450-500px de ancho la proporción real rondaba 6-7.5:1,
+     demasiado aplastado respecto al ancho disponible. */
+  aspect-ratio: 7 / 2;
   overflow: hidden;
   position: relative;
   width: 100%;
+  /* padding-right de respiro -- la barra más a la derecha quedaba
+     justo al ras del borde del contenedor (0px de margen), se leía
+     como si tocara/cruzara el borde de la card aunque ya no desbordaba
+     de verdad (ver min-width:0 debajo). */
+  padding-right: 8px;
   /* min-width:0 -- Fixes-Pendientes-1. .chartWrap es hijo flex de .card
      (flex-direction:column); sin esto, el min-width:auto implícito de
      todo flex-item le impide encogerse por debajo del ancho intrínseco
@@ -176,6 +187,7 @@
      Visible solo en mobile porque ahí el ancho disponible es menor que
      ese intrínseco; en desktop sobraba espacio y el bug quedaba oculto. */
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .chartTrack {

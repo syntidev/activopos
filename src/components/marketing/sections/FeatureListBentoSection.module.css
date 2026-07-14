@@ -1,11 +1,9 @@
 /* ============================================================
-   FeatureListBentoSection — Bento-Infinito-1 (reconstruido, ver .tsx
-   y el commit para el detalle de qué brief original faltaba).
-   Fondo mesh CLARO (corrección del adenda, no el navy oscuro original)
-   + 20 cards de función con 6 patrones de micro-animación reutilizables.
-   Correccion-Final-2: quitados los segmentos que se habían colado acá
-   (viven en SegmentsSection.tsx, aparte); grid estático reemplazado por
-   scroll horizontal infinito con grupos de 3 (1 alta + 2 apiladas).
+   FeatureListBentoSection — Bento-Real-Final: composición fija de
+   6 columnas × 5 filas (30 celdas), sin scroll ni overflow -- 20 cards
+   de función con 6 patrones de micro-animación reutilizables.
+   Fondo mesh CLARO (Bento-Infinito-1). Segmentos NO viven acá
+   (Correccion-Final-2 los sacó, están en SegmentsSection.tsx aparte).
    ============================================================ */
 
 /* ── Fondo mesh claro: base + 4 manchas difuminadas con drift ── */
@@ -65,38 +63,23 @@
   margin: 0 auto 48px;
 }
 
-/* ── Scroll horizontal infinito (Correccion-Final-2, reemplaza el grid
-   estático) -- contenedor oculta, el track interno se anima. Mismo
-   principio que la cinta del footer (FeatureMarquee.tsx/.module.css):
-   contenido duplicado 2x, translateX(-50%) mueve exactamente una copia. */
-.scrollWrap {
-  overflow: hidden;
-  width: 100%;
-}
-
-/* Fixes-Pendientes-1: contenedor con 2 FILAS fijas simultáneas
-   (grid-template-rows, no flex de 1 sola fila) -- grid-auto-flow:column
-   acomoda las cards en 2 filas x N columnas automáticamente, cada
-   columna toma el ancho de su card (grid-auto-columns:auto + el width
-   inline por-card de widthFor en el .tsx, sin cambios ahí). align-items
-   sigue en stretch -- ahora estira cada card a los 170px de su fila,
-   no a la card más alta del conjunto (ya no aplica ese caso, cada card
-   ocupa 1 sola celda desde Ajustes-Puntuales-1). */
-.scrollTrack {
+/* Bento-Real-Final: composición FIJA sin scroll ni overflow -- 20 cards
+   en 6 columnas × 5 filas exactas (verificado: 1×4 + 4×2 + 3×2 + 12×1
+   = 30 celdas = 6×5). grid-auto-flow:dense es obligatorio -- sin esto
+   los spans de 2 filas dejan huecos que el algoritmo normal no rellena
+   retrocediendo a celdas libres anteriores. */
+.grid {
   display: grid;
-  grid-template-rows: repeat(2, 170px);
-  grid-auto-flow: column;
-  grid-auto-columns: auto;
-  align-items: stretch;
-  gap: 14px;
-  width: max-content;
-  animation: scrollTrack 50s linear infinite;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 130px;
+  grid-auto-flow: row dense;
+  gap: 12px;
 }
 
-@keyframes scrollTrack {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
+.size2x2 { grid-column: span 2; grid-row: span 2; }
+.size2x1 { grid-column: span 2; grid-row: span 1; }
+.size1x2 { grid-column: span 1; grid-row: span 2; }
+.size1x1 { grid-column: span 1; grid-row: span 1; }
 
 /* Idéntico a ProductBentoSection.module.css .tile (radius/sombra) +
    sombra NUEVA del adenda para separarse del fondo mesh claro */
@@ -107,7 +90,6 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
-  flex-shrink: 0;
 }
 
 /* ── Variantes de color -- proporción ~1 de cada 4-5 cards (5 de 20).
@@ -314,14 +296,18 @@
   }
   .accDot, .giroFace { opacity: 1; }
   .flowRow { opacity: 1; transform: none; }
-  /* El scroll horizontal se congela en su frame actual (paused, no
-     none/reset) -- pedido explícito así en Correccion-Final-2. */
-  .scrollTrack { animation-play-state: paused; }
 }
 
-/* ── Responsive -- el scroll y sus animaciones se mantienen en mobile
-   (pedido explícito), solo se achica el gap/ancho de card ── */
+/* ── Responsive -- mobile colapsa a 2 columnas. Solo la card 2x2 (Punto
+   de Venta) reduce su row-span a 1 (2x2->2x1, pedido explícito); el
+   resto de tamaños se mantiene igual (2x1 ya cabe entero en 2 columnas,
+   1x2/1x1 no cambian). ── */
+@media (max-width: 768px) {
+  .grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 120px; }
+  .size2x2 { grid-row: span 1; }
+}
+
 @media (max-width: 640px) {
-  .scrollTrack { gap: 10px; }
+  .grid { gap: 10px; }
   .card { padding: 16px; }
 }

@@ -56,19 +56,31 @@ function useCountUp(target: number, active: boolean): number {
   return value
 }
 
-/* Línea de tendencia -- se dibuja progresivamente (pathLength) al entrar
-   en viewport. pathLength de framer-motion es el equivalente moderno de
-   animar stroke-dasharray a mano. */
+/* Bento-Real-Final: polyline recta (segmentos rectos L,L,L...) reemplazada
+   por curva suave (cubic bezier, C) + área con relleno degradado -- se ve
+   como gráfico financiero real, no una línea quebrada. El relleno de área
+   es estático (decorativo, blanco->transparente); solo el trazo de la
+   línea conserva la animación "se dibuja solo" (pathLength) al entrar en
+   viewport. */
 function TrendLine({ active }: { active: boolean }) {
   return (
-    <svg viewBox="0 0 240 60" className={styles.trendSvg} aria-hidden="true">
+    <svg viewBox="0 0 300 100" preserveAspectRatio="none" className={styles.trendSvg} aria-hidden="true">
+      <defs>
+        <linearGradient id="areaFade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M0,75 C40,70 60,50 100,52 C140,54 160,25 200,20 C240,15 260,10 300,5 L300,100 L0,100 Z"
+        fill="url(#areaFade)"
+      />
       <motion.path
-        d="M0,48 L21.8,44.4 L43.6,45.6 L65.5,40.8 L87.3,37.2 L109,39 L130.9,33.6 L152.7,30 L174.5,32.4 L196.4,25.2 L218.2,21.6 L240,18"
+        d="M0,75 C40,70 60,50 100,52 C140,54 160,25 200,20 C240,15 260,10 300,5"
         fill="none"
         stroke="currentColor"
-        strokeWidth={3}
+        strokeWidth={2.5}
         strokeLinecap="round"
-        strokeLinejoin="round"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: active ? 1 : 0 }}
         transition={{ duration: 1.1, ease: 'easeOut', delay: 0.15 }}

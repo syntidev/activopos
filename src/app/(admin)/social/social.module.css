@@ -1,0 +1,220 @@
+/* Generador de contenido social — panel admin (tema oscuro forzado por ForceDarkTheme) */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    /* El formulario no crece; el lienzo se queda con el resto. */
+    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  }
+}
+
+/* ── Formulario ───────────────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.input:focus-visible,
+.textarea:focus-visible,
+.select:focus-visible {
+  outline: none;
+  border-color: var(--brand-l);
+  box-shadow: var(--shadow-brand);
+}
+
+/* Tipo de pieza: 3 opciones, se eligen de un vistazo — un select las escondería. */
+.typeGroup {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.typeBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.typeBtn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--brand-l);
+}
+
+.typeBtnActive {
+  color: var(--brand-on);
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* Touch target minimo 44px. */
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand-on);
+  cursor: pointer;
+  background: var(--brand);
+  border: none;
+  border-radius: var(--radius-md);
+  transition: background 0.15s ease;
+}
+
+.submitBtn:hover:not(:disabled) { background: var(--brand-hover); }
+.submitBtn:disabled             { cursor: not-allowed; opacity: 0.6; }
+
+.spin { animation: spin 1s linear infinite; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}
+
+.error {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: var(--radius-md);
+}
+
+/* ── Lienzo de resultado ──────────────────────────────────────── */
+
+.canvas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: var(--space-5);
+  font-size: 14px;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-card);
+  border-radius: var(--radius-lg);
+}
+
+.hint {
+  max-width: 34ch;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.slides {
+  display: grid;
+  /* Las piezas son verticales: caben varias sin que ninguna se aplaste. */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-3);
+}
+
+.slide {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.slideImg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.slideIndex {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand-on);
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 999px;
+}
+
+.captionBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--space-4);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.caption {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.hashtags {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--brand-l);
+}

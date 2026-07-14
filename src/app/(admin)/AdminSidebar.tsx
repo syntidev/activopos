@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap, FileText, Menu } from 'lucide-react'
+import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap, FileText, Menu, Sparkles } from 'lucide-react'
 import styles from './admin.module.css'
 
 const NAV = [
-  { href: '/businesses',     icon: Building2, label: 'Negocios'      },
-  { href: '/blog-admin',     icon: FileText,  label: 'Blog'          },
-  { href: '/invoices',       icon: Receipt,   label: 'Facturas'      },
+  { href: '/businesses',     icon: Building2, label: 'Negocios'         },
+  { href: '/blog-admin',     icon: FileText,  label: 'Blog'             },
+  { href: '/social',         icon: Sparkles,  label: 'Contenido Social' },
+  { href: '/invoices',       icon: Receipt,   label: 'Facturas'         },
   { href: '/tickets',        icon: Headset,   label: 'Tickets'       },
   { href: '/stats',          icon: BarChart3, label: 'Estadísticas'  },
   { href: '/settings',       icon: Settings,  label: 'Config global' },

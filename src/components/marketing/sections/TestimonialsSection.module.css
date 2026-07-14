@@ -1,20 +1,21 @@
-/* Landing-Bookend-Final: vuelve a claro -- solo Hero+Footer quedan en
-   navy. Colorimetria-Final: crema (var(--sand)) -> gris-azulado neutro
-   (var(--mkt-bg)), mismo tratamiento que CatalogShowcaseSection. */
+/* Textura-Testimonios-2: gradiente de puntos (::before) reemplazado por
+   foto real (public/marketing/testimonials-bg.webp, 292KB, 1671x940).
+   Overlay de gradiente apilado en la MISMA propiedad background-image
+   (capa 1 = overlay, capa 2 = foto) -- evita reintroducir un pseudo-
+   elemento solo para la sombra, mismo resultado visual con menos código.
+   Foto es CSS background-image de una section con padding+contenido real
+   -- no genera layout shift (a diferencia de un <img> sin dimensiones);
+   next/image no aplica aquí porque no hay elemento <img> en el JSX, solo
+   una propiedad CSS. */
 .section {
   position: relative;
   overflow: hidden;
   padding: 96px 0;
-  background: var(--mkt-bg);
-}
-
-.section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, rgba(13, 27, 46, 0.04) 1px, transparent 1px);
-  background-size: 28px 28px;
-  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(13, 27, 46, 0.55), rgba(13, 27, 46, 0.15)),
+    url('/marketing/testimonials-bg.webp');
+  background-size: cover;
+  background-position: center;
 }
 
 .container {
@@ -25,13 +26,20 @@
   padding: 0 clamp(1.25rem, 5vw, 3rem);
 }
 
+/* El prompt asumía "blanco, ya ajustado en un commit anterior" -- falso,
+   verificado: seguía en var(--mkt-text-1) (#0F172A, oscuro), heredado de
+   cuando el fondo era claro (var(--mkt-bg)). Sobre la foto oscura con
+   overlay sería ilegible -- corregido a blanco con sombra de texto para
+   que también se lea sobre la zona más clara de la derecha de la foto
+   (el overlay ahí es más tenue, 0.15). */
 .title {
   font-family: var(--font-display);
   font-size: clamp(32px, 5.5vw, 52px);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  color: var(--mkt-text-1);
+  color: #FFFFFF;
+  text-shadow: 0 2px 12px rgba(13, 27, 46, 0.45);
   text-wrap: balance;
   text-align: center;
   margin-bottom: 48px;

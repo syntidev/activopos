@@ -683,8 +683,8 @@
   inset:      0;
   background: linear-gradient(
     to bottom,
-    rgba(0,0,0,0.15) 0%,
-    rgba(0,0,0,0.55) 100%
+    rgba(0,0,0,0.05) 0%,
+    rgba(0,0,0,0.35) 100%
   );
 }
 
@@ -776,6 +776,8 @@
   cursor:        pointer;
   transition:    background 150ms ease, color 150ms ease;
   margin-top:    var(--space-1);
+  text-shadow:   0 1px 3px rgba(0,0,0,0.4);
+  box-shadow:    0 1px 6px rgba(0,0,0,0.25);
 }
 .heroCtaBtn:hover {
   background: var(--color-white);

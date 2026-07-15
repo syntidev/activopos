@@ -23,7 +23,7 @@ import styles from './FeatureListBentoSection.module.css'
    ancho doblado, sin depender de la otra. */
 
 type Pattern = 'acumulador' | 'flujo' | 'barras' | 'lineas' | 'pulso' | 'giro'
-type CardColor = 'blue' | 'green' | 'purple' | 'amber'
+type CardColor = 'blue' | 'green' | 'brandDark' | 'brandSoft'
 
 interface FeatureCard {
   key:      string
@@ -51,11 +51,11 @@ const FEATURES: FeatureCard[] = [
   },
   { key: 'pulso', Icon: Activity, pattern: 'barras', title: 'Pulso del Negocio', desc: 'Cómo va tu negocio, de un vistazo.' },
   {
-    key: 'mayorista', Icon: Warehouse, pattern: 'giro', color: 'amber',
+    key: 'mayorista', Icon: Warehouse, pattern: 'giro', color: 'brandSoft',
     title: 'Precio Mayorista', desc: 'Un precio para el cliente, otro para el mayorista.',
     giroFaces: ['$10.00', '$8.00'],
   },
-  { key: 'catalogo', Icon: Store, pattern: 'acumulador', color: 'purple', title: 'Catálogo Digital', desc: 'Tu vitrina, abierta las 24 horas.' },
+  { key: 'catalogo', Icon: Store, pattern: 'acumulador', color: 'brandDark', title: 'Catálogo Digital', desc: 'Tu vitrina, abierta las 24 horas.' },
   {
     key: 'multitema', Icon: Palette, pattern: 'giro',
     title: 'Multi-tema', desc: 'Tu negocio, con la cara que tú quieras.',

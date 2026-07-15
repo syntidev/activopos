@@ -121,8 +121,15 @@
 .tileTudia {
   grid-column: span 2;
   grid-row: span 1;
-  background: var(--cta);
+  background: var(--sand); /* Sand sellado -- reemplaza var(--cta) ámbar decorativo
+    (ámbar es exclusivo de CTAs primarios). Mantiene calidez, sin violar paleta. */
   gap: 14px;
+}
+
+/* texto sobre Sand claro -- navy legible (el .tileCopyOnColor base es blanco,
+   correcto para el tile azul KPI que lo comparte; acá se sobreescribe) */
+.tileTudia .tileCopyOnColor {
+  color: var(--mkt-text-2);
 }
 
 .tudiaCard {
@@ -142,8 +149,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--cta) 14%, transparent);
-  color: var(--cta);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand);
   margin-bottom: 2px;
 }
 

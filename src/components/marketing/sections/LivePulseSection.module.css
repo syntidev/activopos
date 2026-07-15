@@ -9,7 +9,7 @@
 
 .section {
   padding: 96px 0;
-  background: var(--mkt-bg);
+  background: var(--mkt-bg-alt);
 }
 
 .container {

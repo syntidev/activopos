@@ -9,33 +9,13 @@
    Segmentos NO viven acá (están en SegmentsSection.tsx aparte).
    ============================================================ */
 
-/* ── Fondo mesh claro: base + 4 manchas difuminadas con drift ── */
 .section {
   position: relative;
   overflow: hidden;
   padding: 96px 0;
-  background: #EEF1F8; /* el prompt ofrecía var(--mkt-bg) como alternativa
-    si coincidiera -- no coincide (#F4F6FB != #EEF1F8, verificado), se usa
-    el hex literal explícito como pide el propio texto en ese caso */
-}
-
-.blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(55px);
-  opacity: 0.5;
-  pointer-events: none;
-  animation: blobDrift 16s ease-in-out infinite;
-}
-
-.blobBlue   { width: 340px; height: 340px; top: -60px;  left: -60px;  background: #B5D4F4; animation-duration: 18s; }
-.blobGreen  { width: 300px; height: 300px; bottom: -40px; left: 30%;  background: #C0DD97; animation-duration: 20s; animation-delay: -4s; }
-.blobAmber  { width: 320px; height: 320px; top: -50px;  right: -40px; background: #FAC775; animation-duration: 15s; animation-delay: -8s; }
-.blobPurple { width: 300px; height: 300px; bottom: -60px; right: 40px; background: #CECBF6; animation-duration: 17s; animation-delay: -2s; }
-
-@keyframes blobDrift {
-  0%, 100% { transform: translate(0, 0); }
-  50%      { transform: translate(15px, -15px); }
+  background: var(--mkt-bg-alt); /* alternancia sellada A-B-A-B del bloque post-Hero:
+    Pain (base) -> LivePulse (alt) -> ProductBento (base) -> aquí FeatureList (alt)
+    -> verde PaymentMethods. Rompe el bloque monótono de 4 secciones claras iguales. */
 }
 
 .container {
@@ -132,28 +112,27 @@
 }
 
 /* ── Variantes de color -- proporción ~1 de cada 4-5 cards (5 de 20).
-   Verificado contraste real (WCAG, texto normal 13px, umbral 4.5:1)
-   antes de aplicar los hex pedidos textualmente:
-   - Persian Blue #0038BD vs blanco: 9.13:1 -- pasa, sin cambios
-   - Verde #1D9E75 vs blanco: 3.39:1 -- NO pasa texto normal (solo
-     texto grande). Oscurecido a #188462 (mismo tono, -HSL lightness)
-     -> 4.65:1, pasa
-   - Morado #7F77DD vs blanco: 3.76:1 -- mismo problema. Oscurecido a
-     #7067D9 -> 4.53:1, pasa
-   - Ámbar var(--cta) #EF8E01 vs blanco: 2.46:1 -- reprueba incluso
-     texto grande. Texto oscuro (#0D1B2E) en su lugar -> 7.04:1, pasa */
-.card_blue   { background: var(--brand); --card-icon: #FFFFFF; }
-.card_green  { background: #188462; --card-icon: #FFFFFF; }
-.card_purple { background: #7067D9; --card-icon: #FFFFFF; }
-.card_amber  { background: var(--cta); --card-icon: #0D1B2E; }
+   SOLO paleta sellada ActivoPOS: Persian Blue family + verde success.
+   Ámbar (--cta) queda EXCLUSIVO de CTAs; morado no existe en la paleta
+   -- ambos eliminados (antes card_amber/card_purple decorativos).
+   Contraste WCAG verificado (texto normal 13px, umbral 4.5:1):
+   - Persian Blue --brand #0038BD vs blanco: 9.13:1 -- pasa
+   - Verde #188462 vs blanco: 4.65:1 -- pasa
+   - Persian Blue oscuro --brand-dark #002FA0 vs blanco: >9:1 -- pasa
+   - Persian Blue claro --brand-soft #DCE6FF con texto navy #0D1B2E:
+     ~14:1 -- pasa (tile claro, distinto de las cards default blancas) */
+.card_blue      { background: var(--brand);      --card-icon: #FFFFFF; }
+.card_green     { background: #188462;           --card-icon: #FFFFFF; }
+.card_brandDark { background: var(--brand-dark);  --card-icon: #FFFFFF; }
+.card_brandSoft { background: var(--brand-soft);  --card-icon: var(--brand); }
 
 .card_blue .cardTitle, .card_blue .cardDesc, .card_blue .cardDescExtra,
 .card_green .cardTitle, .card_green .cardDesc, .card_green .cardDescExtra,
-.card_purple .cardTitle, .card_purple .cardDesc, .card_purple .cardDescExtra {
+.card_brandDark .cardTitle, .card_brandDark .cardDesc, .card_brandDark .cardDescExtra {
   color: #FFFFFF;
 }
 
-.card_amber .cardTitle, .card_amber .cardDesc, .card_amber .cardDescExtra {
+.card_brandSoft .cardTitle, .card_brandSoft .cardDesc, .card_brandSoft .cardDescExtra {
   color: #0D1B2E;
 }
 
@@ -249,7 +228,7 @@
   0%, 100% { opacity: 0; transform: translateY(4px) scale(0.7); }
   50%      { opacity: 1; transform: translateY(-2px) scale(1); }
 }
-.card_purple .accDot { background: rgba(255, 255, 255, 0.25); color: #FFFFFF; }
+.card_brandDark .accDot { background: rgba(255, 255, 255, 0.25); color: #FFFFFF; }
 
 /* 2. FLUJO ENTRADA/SALIDA -- + / - alternando, entrando de lados opuestos */
 .stageFlujo { display: flex; flex-direction: column; gap: 2px; height: 28px; justify-content: center; }
@@ -344,16 +323,16 @@
   color: var(--brand);
   animation: giroFlip 3s ease-in-out infinite;
 }
-.giroFaceB { color: var(--cta); animation-delay: 1.5s; }
+.giroFaceB { color: var(--brand-dark); animation-delay: 1.5s; }
 @keyframes giroFlip {
   0%, 40%   { opacity: 1; transform: rotateX(0deg); }
   50%, 90%  { opacity: 0; transform: rotateX(90deg); }
   100%      { opacity: 1; transform: rotateX(0deg); }
 }
-.card_amber .giroFace, .card_amber .giroFaceB { color: #0D1B2E; }
+.card_brandSoft .giroFace, .card_brandSoft .giroFaceB { color: #0D1B2E; }
 
 @media (prefers-reduced-motion: reduce) {
-  .blob, .accDot, .flowRow, .bar, .lineFill, .pulsoDot, .giroFace {
+  .accDot, .flowRow, .bar, .lineFill, .pulsoDot, .giroFace {
     animation: none;
   }
   .accDot, .giroFace { opacity: 1; }

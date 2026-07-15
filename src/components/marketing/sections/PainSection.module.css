@@ -1,0 +1,119 @@
+/* ============================================================
+   PainSection — inmediatamente después del Hero, antes de LivePulse
+   (AIDA: problema antes de mostrar la solución en vivo). Fondo claro
+   (var(--mkt-bg)), cards elevadas blancas (sin borde, solo sombra —
+   mismo estándar sellado que el resto de la landing). Tokens citados
+   tal como aparecen en tokens.css: --font-display, --mkt-bg,
+   --mkt-text-1/2, --shadow-card-elevated, --warning-soft, --warning-text.
+   ============================================================ */
+
+.section {
+  padding: 96px 0;
+  background: var(--mkt-bg);
+}
+
+.container {
+  max-width: min(1140px, 90vw);
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4.5vw, 44px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--mkt-text-1);
+  text-align: center;
+  text-wrap: balance;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--mkt-text-2);
+  line-height: 1.6;
+  max-width: 52ch;
+  text-align: center;
+  margin: 0 auto 48px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+.card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: var(--shadow-card-elevated);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-elevated-hover);
+}
+
+.cardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--warning-soft);
+  color: var(--warning-text);
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--mkt-text-1);
+  margin: 0;
+}
+
+.cardDesc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mkt-text-2);
+  margin: 0;
+  flex-grow: 1;
+}
+
+.consequence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: var(--warning-soft);
+  color: var(--warning-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

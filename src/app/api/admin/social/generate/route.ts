@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mkdir, writeFile } from 'fs/promises'
-import { join } from 'path'
-import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateCopy } from '@/lib/social/gemini'
 import { generateBackground } from '@/lib/social/image'
 import { composeSlide } from '@/lib/social/compose'
+import { uploadImage } from '@/lib/social/cloudinary'
 
 // El copy sale de Gemini; la imagen de NVIDIA NIM (~9s por slide). Un carrusel de 6
 // slides pasa de largo el default de Next.js.
@@ -23,13 +21,6 @@ const bodySchema = z.object({
   slides:    z.number().int().min(1).max(8).optional(),
 })
 
-async function saveImage(buffer: Buffer): Promise<string> {
-  const filename = `${randomUUID()}.webp`
-  const dir      = join(process.cwd(), 'public', 'uploads', 'social')
-  await mkdir(dir, { recursive: true, mode: 0o755 })
-  await writeFile(join(dir, filename), buffer)
-  return `/uploads/social/${filename}`
-}
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -87,7 +78,7 @@ export async function POST(req: NextRequest) {
       })
       assets.push({
         orden:      index,
-        imagen_url: await saveImage(composed),
+        imagen_url: await uploadImage(composed),
         titulo:     slide.titulo,
         subtitulo:  slide.subtitulo,
       })

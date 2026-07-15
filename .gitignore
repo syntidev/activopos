@@ -56,3 +56,6 @@ pos-*.png
 
 # Artefactos de scripts de verificacion (social-smoke, social-e2e)
 .tmp/
+
+# Carpeta temporal de referencia (Socialia / OpenCarrusel) — contiene .env.local de terceros
+TempSocialia/

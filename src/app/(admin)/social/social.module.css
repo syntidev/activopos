@@ -1,5 +1,36 @@
 /* Generador de contenido social — panel admin (tema oscuro forzado por ForceDarkTheme) */
 
+/* ── Pestañas Generador / Calendario ─────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  margin-bottom: -1px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.tabBtn:hover { color: var(--text-primary); }
+
+.tabBtnActive {
+  color: var(--brand-l);
+  border-bottom-color: var(--brand);
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

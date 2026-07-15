@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check } from 'lucide-react'
+import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays } from 'lucide-react'
+import { CalendarTab } from './CalendarTab'
 import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
 
@@ -49,6 +50,7 @@ function formatFecha(iso: string): string {
 }
 
 export default function SocialPage() {
+  const [tab, setTab]             = useState<'generador' | 'calendario'>('generador')
   const [tipo, setTipo]           = useState<Tipo>('post')
   const [nicho, setNicho]         = useState('')
   const [gancho, setGancho]       = useState('')
@@ -128,6 +130,31 @@ export default function SocialPage() {
         </p>
       </header>
 
+      <div className={styles.tabs} role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'generador'}
+          className={`${styles.tabBtn} ${tab === 'generador' ? styles.tabBtnActive : ''}`}
+          onClick={() => setTab('generador')}
+        >
+          <Sparkles size={15} aria-hidden="true" /> Generador
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'calendario'}
+          className={`${styles.tabBtn} ${tab === 'calendario' ? styles.tabBtnActive : ''}`}
+          onClick={() => setTab('calendario')}
+        >
+          <CalendarDays size={15} aria-hidden="true" /> Calendario
+        </button>
+      </div>
+
+      {tab === 'calendario' && <CalendarTab />}
+
+      {tab === 'generador' && (
+      <>
       <div className={styles.layout}>
         <form className={styles.form} onSubmit={e => void handleSubmit(e)}>
           <div className={styles.field}>
@@ -336,6 +363,8 @@ export default function SocialPage() {
           </ul>
         )}
       </section>
+      </>
+      )}
     </>
   )
 }

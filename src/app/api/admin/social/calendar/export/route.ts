@@ -10,14 +10,8 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role !== 'super_admin') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const businessIdRaw = req.nextUrl.searchParams.get('business_id')
-  const businessId = businessIdRaw ? parseInt(businessIdRaw, 10) : NaN
-  if (isNaN(businessId)) {
-    return NextResponse.json({ error: 'Query param "business_id" requerido' }, { status: 400 })
-  }
-
+  // Contenido de marca ActivoPOS, sin tenant: se exporta el calendario completo.
   const entries = await prisma.socialCalendarEntry.findMany({
-    where:   { business_id: businessId },
     orderBy: { dia: 'asc' },
   })
 
@@ -52,7 +46,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse(buffer, {
     headers: {
       'Content-Type':        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="calendario_social_business${businessId}.xlsx"`,
+      'Content-Disposition': `attachment; filename="calendario_social_activopos.xlsx"`,
     },
   })
 }

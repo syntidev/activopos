@@ -197,7 +197,6 @@ model Business {
   monthly_reports    MonthlyReport[]
   quotations         Quotation[]
   returns            Return[]
-  social_calendar_entries SocialCalendarEntry[]
   invoices           Invoice[]
   support_tickets    SupportTicket[]
   expense_categories ExpenseCategory[]
@@ -1031,8 +1030,6 @@ enum SocialPostStatus {
 
 model SocialPost {
   id               Int              @id @default(autoincrement())
-  // Null = contenido de la marca ActivoPOS. Reservado por si un tenant genera el suyo.
-  business_id      Int?
   tipo             SocialPostType   @default(post)
   nicho            String?          @db.VarChar(80)
   titulo           String           @db.VarChar(200)
@@ -1057,7 +1054,6 @@ model SocialPost {
   calendar_entries SocialCalendarEntry[]
 
   @@index([estado])
-  @@index([business_id])
   @@map("social_posts")
 }
 
@@ -1078,8 +1074,6 @@ model SocialAsset {
 
 model SocialCalendarEntry {
   id              Int      @id @default(autoincrement())
-  business_id     Int
-  business        Business @relation(fields: [business_id], references: [id])
   dia             DateTime @db.Date
   tipo            String
   segmento        String
@@ -1096,6 +1090,6 @@ model SocialCalendarEntry {
   social_post     SocialPost? @relation(fields: [social_post_id], references: [id])
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
-  @@index([business_id, dia])
+  @@index([dia])
   @@map("social_calendar_entries")
 }

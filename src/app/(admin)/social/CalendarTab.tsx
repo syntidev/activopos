@@ -6,15 +6,8 @@ import { Modal } from '@/components/ui/Modal'
 import adminStyles from '../admin.module.css'
 import styles from './calendar.module.css'
 
-interface Tenant {
-  id:   number
-  name: string
-}
-
 interface CalendarEntry {
   id:             number
-  business_id:    number
-  business:       { id: number; name: string }
   dia:            string
   tipo:           string
   segmento:       string
@@ -68,11 +61,9 @@ function formatDia(iso: string): string {
 }
 
 export function CalendarTab() {
-  const [tenants, setTenants]       = useState<Tenant[]>([])
-  const [businessId, setBusinessId] = useState<number | ''>('')
-  const [entries, setEntries]       = useState<CalendarEntry[]>([])
-  const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState<string | null>(null)
+  const [entries, setEntries] = useState<CalendarEntry[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -84,23 +75,15 @@ export function CalendarTab() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    fetch('/api/admin/tenants')
-      .then(r => r.ok ? r.json() : Promise.reject(new Error()))
-      .then((body: { tenants: Tenant[] }) => setTenants(body.tenants ?? []))
-      .catch(() => {})
-  }, [])
-
   const loadEntries = useCallback(() => {
     setLoading(true)
     setError(null)
-    const qs = businessId ? `?business_id=${businessId}` : ''
-    fetch(`/api/admin/social/calendar${qs}`)
+    fetch('/api/admin/social/calendar')
       .then(r => r.ok ? r.json() : Promise.reject(new Error()))
       .then((body: { entries: CalendarEntry[] }) => setEntries(body.entries ?? []))
       .catch(() => setError('No se pudo cargar el calendario.'))
       .finally(() => setLoading(false))
-  }, [businessId])
+  }, [])
 
   useEffect(loadEntries, [loadEntries])
 
@@ -132,12 +115,10 @@ export function CalendarTab() {
   }
 
   async function handleSave() {
-    if (!businessId) { setFormError('Selecciona un negocio primero.'); return }
     setSaving(true)
     setFormError(null)
     try {
       const payload = {
-        business_id:    Number(businessId),
         dia:            form.dia,
         tipo:           form.tipo.trim(),
         segmento:       form.segmento.trim(),
@@ -182,14 +163,12 @@ export function CalendarTab() {
   }
 
   async function handleImport(file: File) {
-    if (!businessId) return
     setImporting(true)
     setImportResult(null)
     setError(null)
     try {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('business_id', String(businessId))
       const res = await fetch('/api/admin/social/calendar/import', { method: 'POST', body: fd })
       const body = await res.json() as { error?: string; created?: number; skipped?: number; errors?: ImportResult['errors'] }
       if (!res.ok) throw new Error(body.error ?? 'Falló la importación')
@@ -209,17 +188,7 @@ export function CalendarTab() {
           <h2 className={adminStyles.tableTitle}>Calendario editorial</h2>
 
           <div className={adminStyles.filterBar}>
-            <select
-              className={adminStyles.planSelect}
-              value={businessId}
-              onChange={e => setBusinessId(e.target.value ? Number(e.target.value) : '')}
-              aria-label="Filtrar por negocio"
-            >
-              <option value="">Todos los negocios</option>
-              {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-
-            <button type="button" className={styles.toolBtn} onClick={openNew} disabled={!businessId}>
+            <button type="button" className={styles.toolBtn} onClick={openNew}>
               <Plus size={15} aria-hidden="true" /> Nuevo
             </button>
 
@@ -227,7 +196,7 @@ export function CalendarTab() {
               type="button"
               className={styles.toolBtn}
               onClick={() => fileInputRef.current?.click()}
-              disabled={!businessId || importing}
+              disabled={importing}
             >
               {importing
                 ? <Loader2 size={15} className={styles.spin} aria-hidden="true" />
@@ -246,27 +215,15 @@ export function CalendarTab() {
               }}
             />
 
-            {businessId ? (
-              <a className={styles.toolBtn} href={`/api/admin/social/calendar/export?business_id=${businessId}`}>
-                <Download size={15} aria-hidden="true" /> Exportar Excel
-              </a>
-            ) : (
-              <button type="button" className={styles.toolBtn} disabled>
-                <Download size={15} aria-hidden="true" /> Exportar Excel
-              </button>
-            )}
+            <a className={styles.toolBtn} href="/api/admin/social/calendar/export">
+              <Download size={15} aria-hidden="true" /> Exportar Excel
+            </a>
 
-            {/* Sin gate de businessId: template/route.ts es genérico, no recibe
-                ni valida business_id -- confirmado leyendo el endpoint real. */}
             <a className={styles.toolBtn} href="/api/admin/social/calendar/template">
               <FileDown size={15} aria-hidden="true" /> Descargar plantilla
             </a>
           </div>
         </div>
-
-        {!businessId && (
-          <p className={styles.hintBar}>Selecciona un negocio para crear, importar o exportar entradas.</p>
-        )}
 
         {importResult && (
           <div className={styles.importResult}>
@@ -284,17 +241,12 @@ export function CalendarTab() {
         ) : error ? (
           <p className={adminStyles.emptyState}>{error}</p>
         ) : entries.length === 0 ? (
-          <p className={adminStyles.emptyState}>
-            {businessId
-              ? 'Este negocio no tiene entradas en el calendario todavía.'
-              : 'No hay entradas registradas. Selecciona un negocio para crear la primera.'}
-          </p>
+          <p className={adminStyles.emptyState}>No hay entradas en el calendario todavía.</p>
         ) : (
           <table className={adminStyles.table}>
             <thead>
               <tr>
                 <th>Día</th>
-                <th>Negocio</th>
                 <th>Tipo</th>
                 <th>Segmento</th>
                 <th>Título</th>
@@ -306,7 +258,6 @@ export function CalendarTab() {
               {entries.map(entry => (
                 <tr key={entry.id}>
                   <td>{formatDia(entry.dia)}</td>
-                  <td>{entry.business.name}</td>
                   <td>{entry.tipo}</td>
                   <td>{entry.segmento}</td>
                   <td className={adminStyles.tdName}>{entry.titulo}</td>

@@ -83,15 +83,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Archivo demasiado grande (máx 5 MB)' }, { status: 413 })
   }
 
-  const businessIdRaw = formData.get('business_id')
-  const businessId = businessIdRaw ? parseInt(String(businessIdRaw), 10) : NaN
-  if (isNaN(businessId)) {
-    return NextResponse.json({ error: 'Campo "business_id" requerido' }, { status: 400 })
-  }
-
-  const business = await prisma.business.findUnique({ where: { id: businessId }, select: { id: true } })
-  if (!business) return NextResponse.json({ error: 'business_id no existe' }, { status: 400 })
-
   const dryRun = formData.get('dry_run') === 'true'
 
   const buffer   = Buffer.from(await file.arrayBuffer())
@@ -119,10 +110,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, dry_run: true, valid: validRows.length, errors })
   }
 
-  // Dedup para round-trip: mismo business_id + dia + titulo ya existente → skip,
-  // no duplica (criterio explícito: "reimportar sin duplicados").
+  // Dedup para round-trip: mismo dia + titulo ya existente → skip, no duplica
+  // (criterio explícito: "reimportar sin duplicados"). Sin tenant: dedup global.
   const existing = await prisma.socialCalendarEntry.findMany({
-    where:  { business_id: businessId },
     select: { dia: true, titulo: true },
   })
   const existingKeys = new Set(existing.map(e => `${e.dia.toISOString().slice(0, 10)}|${e.titulo}`))
@@ -140,7 +130,6 @@ export async function POST(req: NextRequest) {
     try {
       await prisma.socialCalendarEntry.create({
         data: {
-          business_id:    businessId,
           dia:            row.dia,
           tipo:           row.tipo,
           segmento:       row.segmento,

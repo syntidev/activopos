@@ -6,7 +6,6 @@ import { prisma } from '@/lib/prisma'
 const LIMIT = 200
 
 const createSchema = z.object({
-  business_id:     z.number().int().positive(),
   dia:             z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'dia debe ser YYYY-MM-DD'),
   tipo:            z.string().min(1).max(40),
   segmento:        z.string().min(1).max(80),
@@ -27,24 +26,20 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role !== 'super_admin') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const sp          = req.nextUrl.searchParams
-  const businessId   = sp.get('business_id')
-  const diaDesde     = sp.get('dia_desde')
-  const diaHasta     = sp.get('dia_hasta')
+  const sp       = req.nextUrl.searchParams
+  const diaDesde = sp.get('dia_desde')
+  const diaHasta = sp.get('dia_hasta')
 
+  // Contenido de marca ActivoPOS, sin tenant: se listan TODAS las entradas.
   const entries = await prisma.socialCalendarEntry.findMany({
-    where: {
-      ...(businessId ? { business_id: parseInt(businessId, 10) } : {}),
-      ...((diaDesde || diaHasta) ? {
-        dia: {
-          ...(diaDesde ? { gte: new Date(diaDesde) } : {}),
-          ...(diaHasta ? { lte: new Date(diaHasta) } : {}),
-        },
-      } : {}),
-    },
+    where: (diaDesde || diaHasta) ? {
+      dia: {
+        ...(diaDesde ? { gte: new Date(diaDesde) } : {}),
+        ...(diaHasta ? { lte: new Date(diaHasta) } : {}),
+      },
+    } : {},
     orderBy: { dia: 'asc' },
     take:    LIMIT,
-    include: { business: { select: { id: true, name: true } } },
   })
 
   return NextResponse.json({ ok: true, entries })
@@ -65,9 +60,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   }
 
-  const business = await prisma.business.findUnique({ where: { id: body.business_id }, select: { id: true } })
-  if (!business) return NextResponse.json({ error: 'business_id no existe' }, { status: 400 })
-
   if (body.social_post_id != null) {
     const post = await prisma.socialPost.findUnique({ where: { id: body.social_post_id }, select: { id: true } })
     if (!post) return NextResponse.json({ error: 'social_post_id no existe' }, { status: 400 })
@@ -75,7 +67,6 @@ export async function POST(req: NextRequest) {
 
   const entry = await prisma.socialCalendarEntry.create({
     data: {
-      business_id:    body.business_id,
       dia:            new Date(body.dia),
       tipo:           body.tipo,
       segmento:       body.segmento,

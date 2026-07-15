@@ -197,6 +197,7 @@ model Business {
   monthly_reports    MonthlyReport[]
   quotations         Quotation[]
   returns            Return[]
+  social_calendar_entries SocialCalendarEntry[]
   invoices           Invoice[]
   support_tickets    SupportTicket[]
   expense_categories ExpenseCategory[]
@@ -1043,10 +1044,17 @@ model SocialPost {
   error_msg        String?          @db.VarChar(500)
   buffer_id        String?          @db.VarChar(80)
   fecha_programada DateTime?
+  // Campos del calendario de contenido (distintos de buffer_id/estado arriba,
+  // que pertenecen al generador standalone) — content_engine identifica qué
+  // motor de IA generó el post cuando viene de una SocialCalendarEntry.
+  content_engine   String?          @db.VarChar(40)
+  buffer_post_id   String?          @db.VarChar(80)
+  buffer_status    String           @default("draft") @db.VarChar(20)
   created_at       DateTime         @default(now())
   updated_at       DateTime         @updatedAt
 
-  assets SocialAsset[]
+  assets           SocialAsset[]
+  calendar_entries SocialCalendarEntry[]
 
   @@index([estado])
   @@index([business_id])
@@ -1066,4 +1074,28 @@ model SocialAsset {
 
   @@index([post_id])
   @@map("social_assets")
+}
+
+model SocialCalendarEntry {
+  id              Int      @id @default(autoincrement())
+  business_id     Int
+  business        Business @relation(fields: [business_id], references: [id])
+  dia             DateTime @db.Date
+  tipo            String
+  segmento        String
+  objetivo        String
+  titulo          String
+  subtitulo       String?  @db.Text
+  caption         String?  @db.Text
+  hashtags        String?  @db.Text
+  estado          String   @default("pendiente")
+  content_engine  String
+  buffer_post_id  String?
+  notas           String?  @db.Text
+  social_post_id  Int?
+  social_post     SocialPost? @relation(fields: [social_post_id], references: [id])
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  @@index([business_id, dia])
+  @@map("social_calendar_entries")
 }

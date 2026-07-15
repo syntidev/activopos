@@ -17,6 +17,13 @@ import { ProviderError, withRetry } from './retry'
 const NVIDIA_MODEL = 'nvidia/llama-3.3-nemotron-super-49b-v1'
 const GEMINI_MODEL = 'gemini-3-flash-preview'
 
+// Mismo sistema tipográfico que la landing (src/app/(marketing)/layout.tsx): Fraunces display
+// + DM Sans body. Se inyecta como primer <style> de cada slide porque el HTML es autocontenido
+// (iframe aislado / Puppeteer standalone, no hereda el CSS del proyecto). El @import debe ir
+// antes de cualquier otra regla CSS, por eso va prepend.
+const FONT_IMPORT =
+  `<style>@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800;9..144,900&family=DM+Sans:wght@300;400;500;600&display=swap');</style>`
+
 // Fase B: 4:5 (1080×1350) es el default de feed — el más soportado por Buffer para
 // programar (verificado 15 jul). No confundir con FORMATS de brand.ts (3:4), que es el
 // lienzo del pipeline de difusión (image.ts), otro flujo.
@@ -92,9 +99,12 @@ REGLAS DEL HTML DE CADA SLIDE (obligatorias):
 6. Colores de la marca ActivoPOS: primary ${BRAND.primary}, primaryDark ${BRAND.primaryDark},
    primaryLight ${BRAND.primaryLight}, soft ${BRAND.soft}, texto sobre marca ${BRAND.onBrand}.
    Fondos sólidos o gradientes de marca; contraste de texto siempre alto (AA).
-7. Tipografía: 'Fraunces' para títulos, 'Inter' para cuerpo (font-family, se cargan solas).
+7. Tipografía (las fuentes ya se cargan por un @import inyectado — tú solo usas font-family):
+   títulos/hook → font-family:'Fraunces', serif; subtítulos/cuerpo → font-family:'DM Sans', sans-serif.
    Título del HOOK muy grande (100-130px); cuerpo 34-44px. line-height ceñido en títulos.
 8. Un mensaje por slide. El texto largo se ajusta con word-wrap; nunca se corta ni se sale.
+   PROHIBIDO markdown: nada de **negrita**, ## títulos, ni - listas. Es HTML puro — para
+   énfasis usa <strong>, para listas <ul><li>. Un ** en el texto se ve literal y es un error.
 9. PROHIBIDO mencionar SENIAT en cualquier slide o texto.
 
 Además del array de slides, genera:
@@ -206,6 +216,8 @@ async function tryProvider(
       const raw     = await withRetry(() => call(system, user))
       const content = resultSchema.parse(extractJson(raw))
       assertRenderable(content, input.formato)
+      // El font-load no se deja al criterio del modelo: se prepone el @import fijo a cada slide.
+      content.slides = content.slides.map(s => ({ ...s, html: FONT_IMPORT + s.html }))
       return content
     } catch {
       // siguiente intento

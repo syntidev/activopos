@@ -56,8 +56,8 @@ export default function FinancialBrainSection({ bcvRate }: Props) {
           <div className={styles.monthCard}>
             <span className={styles.monthLabel}>Tu mes</span>
             <div className={styles.monthTotal}>
-              <span className={styles.monthUsd}>${ventaMesUsd.toFixed(2)}</span>
-              <span className={styles.monthBs}>Bs.&nbsp;{fmtBs(ventaMesUsd, bcvRate)}</span>
+              <span className={`${styles.monthUsd} tabular-nums`}>${ventaMesUsd.toFixed(2)}</span>
+              <span className={`${styles.monthBs} tabular-nums`}>Bs.&nbsp;{fmtBs(ventaMesUsd, bcvRate)}</span>
             </div>
             <span className={styles.monthSub}>Vendido este mes</span>
           </div>

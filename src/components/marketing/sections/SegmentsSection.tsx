@@ -39,6 +39,15 @@ export default async function SegmentsSection() {
         <h2 className={styles.headline}>
           Si produces, vendes o prestas un servicio<br />en Venezuela, esto es para ti.
         </h2>
+        {segments.length === 0 && (
+          <p className={styles.fallback}>
+            No pudimos cargar los segmentos ahora mismo.{' '}
+            <Link href="/segmentos" className={styles.moreLink}>
+              Ver todos los segmentos
+              <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </p>
+        )}
         {segments.length > 0 && (
           <>
             <div className={styles.grid}>

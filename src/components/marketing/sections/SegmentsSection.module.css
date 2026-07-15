@@ -13,6 +13,12 @@
   margin:      0 0 48px;
 }
 
+.fallback {
+  text-align:  center;
+  color:       var(--mkt-text-2);
+  font-size:   15px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

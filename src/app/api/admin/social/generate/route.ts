@@ -6,6 +6,39 @@ import { generateCopy } from '@/lib/social/gemini'
 import { generateBackground } from '@/lib/social/image'
 import { composeSlide } from '@/lib/social/compose'
 import { uploadImage } from '@/lib/social/cloudinary'
+import { generateHtmlContent } from '@/lib/social/html-generator'
+import { renderSlideToPng, closeBrowser } from '@/lib/social/render-slide'
+
+type Asset = { orden: number; imagen_url: string; titulo: string; subtitulo: string }
+
+// Carrusel (Fase B+C): copy+HTML por html-generator, cada slide renderizado a PNG por
+// Puppeteer y subido a Cloudinary. Reemplaza el pipeline de imagen única (difusión) solo
+// para carrusel; post/story siguen con difusión (imagen fotográfica de fondo).
+async function generateCarrusel(
+  nicho: string, gancho: string, objetivo: string, count: number,
+): Promise<{ assets: Asset[]; caption: string; hashtags: string[] }> {
+  const content = await generateHtmlContent({
+    topic: gancho, segmento: nicho, objetivo, formato: 'carrusel',
+  })
+  const slides = content.slides.slice(0, count)
+  if (slides.length === 0) throw new Error('El motor de contenido no devolvió slides')
+
+  const assets: Asset[] = []
+  try {
+    for (let i = 0; i < slides.length; i++) {
+      const png = await renderSlideToPng(slides[i].html, '4:5')
+      assets.push({
+        orden:      i,
+        imagen_url: await uploadImage(png, 'image/png'),
+        titulo:     slides[i].notes || `Slide ${i + 1}`,
+        subtitulo:  '',
+      })
+    }
+  } finally {
+    await closeBrowser()
+  }
+  return { assets, caption: content.caption, hashtags: content.hashtags }
+}
 
 // El copy sale de Gemini; la imagen de NVIDIA NIM (~9s por slide). Un carrusel de 6
 // slides pasa de largo el default de Next.js.
@@ -52,47 +85,49 @@ export async function POST(req: NextRequest) {
   })
 
   try {
-    const copy = await generateCopy({
-      tipo:      body.tipo,
-      nicho:     body.nicho,
-      gancho:    body.gancho,
-      beneficio: body.beneficio,
-      objetivo:  body.objetivo,
-      slides:    slideCount,
-    })
+    let assets: Asset[]
+    let caption: string
+    let hashtags: string[]
+    let contentEngine: string
 
-    const slides = copy.slides.slice(0, slideCount)
-    if (slides.length === 0) throw new Error('Gemini no devolvió slides')
+    if (body.tipo === 'carrusel') {
+      // Fase B+C: HTML renderizado a PNG.
+      const r = await generateCarrusel(body.nicho, body.gancho, body.objetivo, slideCount)
+      assets = r.assets; caption = r.caption; hashtags = r.hashtags; contentEngine = 'html_render'
+    } else {
+      // post/story: imagen fotográfica de fondo (difusión NVIDIA) + overlay sharp.
+      const copy = await generateCopy({
+        tipo: body.tipo, nicho: body.nicho, gancho: body.gancho,
+        beneficio: body.beneficio, objetivo: body.objetivo, slides: slideCount,
+      })
+      const slides = copy.slides.slice(0, slideCount)
+      if (slides.length === 0) throw new Error('Gemini no devolvió slides')
 
-    // Secuencial a propósito: NVIDIA no publica el límite de concurrencia y en paralelo
-    // solo llegaríamos al 429 más rápido.
-    const assets: { orden: number; imagen_url: string; titulo: string; subtitulo: string }[] = []
-    for (let index = 0; index < slides.length; index++) {
-      const slide      = slides[index]
-      const background = await generateBackground(slide.escena, body.nicho, body.tipo)
-      const composed   = await composeSlide({
-        background,
-        titulo:    slide.titulo,
-        subtitulo: slide.subtitulo,
-        formato:   body.tipo,
-      })
-      assets.push({
-        orden:      index,
-        imagen_url: await uploadImage(composed),
-        titulo:     slide.titulo,
-        subtitulo:  slide.subtitulo,
-      })
+      assets = []
+      for (let index = 0; index < slides.length; index++) {
+        const slide      = slides[index]
+        const background = await generateBackground(slide.escena, body.nicho, body.tipo)
+        const composed   = await composeSlide({
+          background, titulo: slide.titulo, subtitulo: slide.subtitulo, formato: body.tipo,
+        })
+        assets.push({
+          orden: index, imagen_url: await uploadImage(composed),
+          titulo: slide.titulo, subtitulo: slide.subtitulo,
+        })
+      }
+      caption = copy.caption; hashtags = copy.hashtags; contentEngine = 'diffusion'
     }
 
     const updated = await prisma.socialPost.update({
       where: { id: post.id },
       data:  {
-        titulo:     slides[0].titulo,
-        caption:    copy.caption,
-        hashtags:   copy.hashtags,
-        estado:     'generado',
-        imagen_url: assets[0].imagen_url,
-        assets:     { create: assets },
+        titulo:         assets[0].titulo,
+        caption,
+        hashtags,
+        content_engine: contentEngine,
+        estado:         'generado',
+        imagen_url:     assets[0].imagen_url,
+        assets:         { create: assets },
       },
       include: { assets: { orderBy: { orden: 'asc' } } },
     })

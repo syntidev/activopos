@@ -1,10 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays } from 'lucide-react'
+import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays, Send } from 'lucide-react'
+import { Modal } from '@/components/ui/Modal'
 import { CalendarTab } from './CalendarTab'
 import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
+
+type Channel = 'instagram' | 'facebook'
 
 type Tipo   = 'post' | 'story' | 'carrusel'
 type Estado = 'pendiente' | 'generado' | 'publicado' | 'error'
@@ -18,16 +21,17 @@ interface SocialAsset {
 }
 
 interface SocialPost {
-  id:         number
-  tipo:       Tipo
-  nicho:      string | null
-  titulo:     string
-  estado:     Estado
-  imagen_url: string | null
-  caption:    string | null
-  hashtags:   string[] | null
-  created_at: string
-  assets:     SocialAsset[]
+  id:             number
+  tipo:           Tipo
+  nicho:          string | null
+  titulo:         string
+  estado:         Estado
+  imagen_url:     string | null
+  caption:        string | null
+  hashtags:       string[] | null
+  content_engine: string | null
+  created_at:     string
+  assets:         SocialAsset[]
 }
 
 const TIPOS: { value: Tipo; label: string; icon: typeof ImageIcon }[] = [
@@ -63,6 +67,14 @@ export default function SocialPage() {
   const [post, setPost]       = useState<SocialPost | null>(null)
   const [copied, setCopied]   = useState(false)
   const [history, setHistory] = useState<SocialPost[]>([])
+
+  // Publicación (Fase E → Buffer)
+  const [pubOpen, setPubOpen]         = useState(false)
+  const [pubChannels, setPubChannels] = useState<Channel[]>(['instagram'])
+  const [pubDueAt, setPubDueAt]       = useState('')
+  const [publishing, setPublishing]   = useState(false)
+  const [pubError, setPubError]       = useState<string | null>(null)
+  const [pubOk, setPubOk]             = useState<string | null>(null)
 
   const loadHistory = useCallback(() => {
     fetch('/api/admin/social')
@@ -119,6 +131,46 @@ export default function SocialPage() {
     await navigator.clipboard.writeText(`${post.caption ?? ''}\n\n${hashtags}`.trim())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  function openPublish() {
+    setPubChannels(['instagram'])
+    setPubDueAt('')
+    setPubError(null)
+    setPubOk(null)
+    setPubOpen(true)
+  }
+
+  function toggleChannel(ch: Channel) {
+    setPubChannels(prev => prev.includes(ch) ? prev.filter(c => c !== ch) : [...prev, ch])
+  }
+
+  async function handlePublish() {
+    if (!post || pubChannels.length === 0) return
+    setPublishing(true)
+    setPubError(null)
+    setPubOk(null)
+    try {
+      const res = await fetch('/api/admin/social/publish', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          social_post_id: post.id,
+          channels:       pubChannels,
+          // datetime-local es hora local; se convierte a ISO UTC para Buffer.
+          ...(pubDueAt ? { due_at: new Date(pubDueAt).toISOString() } : {}),
+        }),
+      })
+      const body = await res.json() as { error?: string; status?: string }
+      if (!res.ok) throw new Error(body.error ?? 'Falló la publicación')
+      setPubOk(pubDueAt ? 'Programado en Buffer.' : 'Enviado a la cola de Buffer.')
+      loadHistory()
+      setTimeout(() => setPubOpen(false), 1600)
+    } catch (err) {
+      setPubError(err instanceof Error ? err.message : 'Error inesperado')
+    } finally {
+      setPublishing(false)
+    }
   }
 
   return (
@@ -305,15 +357,26 @@ export default function SocialPage() {
                     {post.hashtags.map(h => `#${h}`).join(' ')}
                   </p>
                 )}
-                <button
-                  type="button"
-                  className={`${adminStyles.actionLink} ${adminStyles.actionBtn}`}
-                  onClick={() => void copyCaption()}
-                >
-                  {copied
-                    ? <><Check size={14} aria-hidden="true" /> Copiado</>
-                    : <><Copy size={14} aria-hidden="true" /> Copiar caption</>}
-                </button>
+                <div className={styles.captionActions}>
+                  <button
+                    type="button"
+                    className={`${adminStyles.actionLink} ${adminStyles.actionBtn}`}
+                    onClick={() => void copyCaption()}
+                  >
+                    {copied
+                      ? <><Check size={14} aria-hidden="true" /> Copiado</>
+                      : <><Copy size={14} aria-hidden="true" /> Copiar caption</>}
+                  </button>
+                  {post.imagen_url && (
+                    <button
+                      type="button"
+                      className={styles.submitBtn}
+                      onClick={openPublish}
+                    >
+                      <Send size={14} aria-hidden="true" /> Publicar
+                    </button>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -353,8 +416,13 @@ export default function SocialPage() {
                       {item.nicho && ` · ${item.nicho}`}
                       {item.tipo === 'carrusel' && ` · ${item.assets.length} slides`}
                     </span>
-                    <span className={`${adminStyles.badge} ${ESTADO_BADGE[item.estado]}`}>
-                      {item.estado}
+                    <span className={styles.cardBadges}>
+                      <span className={`${adminStyles.badge} ${ESTADO_BADGE[item.estado]}`}>
+                        {item.estado}
+                      </span>
+                      <span className={`${adminStyles.badge} ${adminStyles.badgeInfo}`}>
+                        {item.content_engine === 'html_render' ? 'Carrusel HTML' : 'Imagen'}
+                      </span>
                     </span>
                   </span>
                 </button>
@@ -365,6 +433,65 @@ export default function SocialPage() {
       </section>
       </>
       )}
+
+      <Modal
+        open={pubOpen}
+        onClose={() => setPubOpen(false)}
+        title="Publicar en Buffer"
+        footer={
+          <>
+            <button type="button" className={styles.tabBtn} onClick={() => setPubOpen(false)} disabled={publishing}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className={styles.submitBtn}
+              onClick={() => void handlePublish()}
+              disabled={publishing || pubChannels.length === 0}
+            >
+              {publishing
+                ? <><Loader2 size={15} className={styles.spin} aria-hidden="true" /> Enviando…</>
+                : <><Send size={15} aria-hidden="true" /> Publicar</>}
+            </button>
+          </>
+        }
+      >
+        <div className={styles.form}>
+          <div className={styles.field}>
+            <span className={styles.label}>Canales</span>
+            <div className={styles.typeGroup} role="group" aria-label="Canales">
+              {(['instagram', 'facebook'] as Channel[]).map(ch => (
+                <button
+                  key={ch}
+                  type="button"
+                  className={`${styles.typeBtn} ${pubChannels.includes(ch) ? styles.typeBtnActive : ''}`}
+                  onClick={() => toggleChannel(ch)}
+                  aria-pressed={pubChannels.includes(ch)}
+                >
+                  {ch === 'instagram' ? 'Instagram' : 'Facebook'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="pub-due">Fecha y hora (opcional)</label>
+            <input
+              id="pub-due"
+              type="datetime-local"
+              className={styles.input}
+              value={pubDueAt}
+              onChange={e => setPubDueAt(e.target.value)}
+            />
+            <span className={styles.hint}>
+              Vacío = se agrega a la cola (próximo slot). Con fecha = programado a esa hora.
+            </span>
+          </div>
+
+          {pubError && <p className={styles.error} role="alert">{pubError}</p>}
+          {pubOk && <p className={styles.hashtags} role="status">{pubOk}</p>}
+        </div>
+      </Modal>
     </>
   )
 }

@@ -250,6 +250,19 @@
   color: var(--brand-l);
 }
 
+.captionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.cardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 /* ── Historial ────────────────────────────────────────────────── */
 
 .history {

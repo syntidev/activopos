@@ -46,12 +46,10 @@ export const SEGMENTOS = [
   'lavandería', 'distribuidora',
 ] as const
 
-export type Objetivo = 'Vender' | 'Enseñar' | 'Dar a Conocer'
-
 export interface HtmlGenInput {
   topic:    string
   segmento: string
-  objetivo: Objetivo
+  objetivo: string   // texto libre del formulario; se interpola en el prompt
   formato:  SocialFormat
 }
 

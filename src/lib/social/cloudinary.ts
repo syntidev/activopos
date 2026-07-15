@@ -20,7 +20,7 @@ interface CloudinaryResponse {
   error?:      { message?: string }
 }
 
-export async function uploadImage(buffer: Buffer): Promise<string> {
+export async function uploadImage(buffer: Buffer, mime = 'image/webp'): Promise<string> {
   const cloud  = process.env.CLOUDINARY_CLOUD_NAME
   const preset = process.env.CLOUDINARY_UPLOAD_PRESET
   if (!cloud || !preset) {
@@ -30,7 +30,7 @@ export async function uploadImage(buffer: Buffer): Promise<string> {
   const form = new FormData()
   // Uint8Array (no Buffer directo): Buffer no satisface BlobPart bajo TS strict
   // porque su ArrayBufferLike puede ser SharedArrayBuffer.
-  form.append('file', new Blob([new Uint8Array(buffer)], { type: 'image/webp' }))
+  form.append('file', new Blob([new Uint8Array(buffer)], { type: mime }))
   form.append('upload_preset', preset)
   form.append('folder', FOLDER)
 

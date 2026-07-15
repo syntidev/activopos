@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { MessageCircle, Mail, Clock } from 'lucide-react'
+import { MessageCircle, Share2, Mail, Clock } from 'lucide-react'
 import ContactForm from './ContactForm'
 import RevealSection from '@/components/marketing/shared/RevealSection'
-import { WA_BASE } from '@/lib/marketing-contact'
+import { WA_BASE, FACEBOOK_URL } from '@/lib/marketing-contact'
 import styles from './contacto.module.css'
 
 export const metadata: Metadata = {
@@ -21,6 +21,13 @@ const CHANNELS = [
     name: 'WhatsApp',
     desc: 'Respuesta inmediata en horario hábil',
     href: `${WA_BASE}?text=Hola%2C+quiero+saber+m%C3%A1s+sobre+ActivoPOS`,
+  },
+  {
+    icon: Share2,
+    variant: undefined,
+    name: 'Facebook',
+    desc: 'Síguenos en facebook.com/activopos',
+    href: FACEBOOK_URL,
   },
   {
     icon: Mail,

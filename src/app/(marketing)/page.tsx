@@ -40,7 +40,7 @@ const ORGANIZATION_JSON_LD = {
   url: 'https://activopos.com',
   logo: 'https://activopos.com/activopos-logo-flat-positive.png',
   description: 'POS SaaS para negocios venezolanos',
-  sameAs: ['https://instagram.com/activopos'],
+  sameAs: ['https://instagram.com/activopos', 'https://facebook.com/activopos'],
 }
 
 const SOFTWARE_APPLICATION_JSON_LD = {

@@ -113,6 +113,7 @@ function buildLlmsTxt(): string {
   lines.push(`- Referencia cambiaria: ${COMPANY.exchangeReference}`)
   lines.push(`- Canal comercial: WhatsApp - ${COMPANY.whatsapp}`)
   lines.push(`- Instagram: ${COMPANY.instagram}`)
+  lines.push(`- Facebook: ${COMPANY.facebook}`)
   lines.push('')
 
   lines.push('## 14. Descripcion IA')

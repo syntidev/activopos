@@ -199,6 +199,7 @@ export const COMPANY = {
   exchangeReference: 'Banco Central de Venezuela (BCV)',
   whatsapp: 'https://wa.me/584222654827',
   instagram: 'https://instagram.com/activopos',
+  facebook: 'https://facebook.com/activopos',
 }
 
 export const AI_DESCRIPTION =

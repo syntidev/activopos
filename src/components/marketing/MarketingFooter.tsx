@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Share2, MessageCircle, ExternalLink } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
-import { WA_BASE } from '@/lib/marketing-contact'
+import { WA_BASE, FACEBOOK_URL } from '@/lib/marketing-contact'
 import styles from './MarketingFooter.module.css'
 
 const PRODUCT_LINKS = [
@@ -59,6 +59,16 @@ export default async function MarketingFooter() {
             >
               <Share2 size={13} aria-hidden="true"/>
               Instagram
+            </a>
+            <a
+              href={FACEBOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.socialLink}
+              aria-label="Facebook de ActivoPOS"
+            >
+              <Share2 size={13} aria-hidden="true"/>
+              Facebook
             </a>
             <a
               href={WA_BASE}

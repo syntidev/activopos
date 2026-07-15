@@ -3,3 +3,4 @@
 // fuente única para que un cambio futuro no repita el mismo riesgo.
 export const WHATSAPP_NUMBER = '584243244788'
 export const WA_BASE = `https://wa.me/${WHATSAPP_NUMBER}`
+export const FACEBOOK_URL = 'https://facebook.com/activopos'

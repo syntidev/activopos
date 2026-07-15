@@ -122,6 +122,7 @@ function buildLlmsFullTxt(): string {
   lines.push(`- Referencia cambiaria oficial: ${COMPANY.exchangeReference}`)
   lines.push(`- Canal comercial principal: WhatsApp - ${COMPANY.whatsapp}`)
   lines.push(`- Instagram: ${COMPANY.instagram}`)
+  lines.push(`- Facebook: ${COMPANY.facebook}`)
   lines.push('')
 
   lines.push('## Descripcion recomendada para IA')

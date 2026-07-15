@@ -1,0 +1,172 @@
+/* Calendario editorial — pestaña dentro del módulo social (panel admin, tema oscuro) */
+
+.calendarTab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.toolBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.toolBtn:hover:not(:disabled) {
+  color: var(--brand-l);
+  border-color: var(--brand-l);
+}
+
+.toolBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* Mismo ritmo horizontal que .tableHeader (admin.module.css) -- ambas
+   viven dentro de .tableWrap, entre el header y la tabla. */
+.hintBar {
+  padding: var(--space-3) var(--space-6) 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.importResult {
+  margin: var(--space-3) var(--space-6) 0;
+  padding: var(--space-3) var(--space-4);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+}
+
+.importResult ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--danger);
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.spin { animation: spin 1s linear infinite; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}
+
+/* ── Formulario del modal ─────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 560px) {
+  .formRow { grid-template-columns: 1fr; }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.input:focus-visible,
+.textarea:focus-visible {
+  outline: none;
+  border-color: var(--brand-l);
+  box-shadow: var(--shadow-brand);
+}
+
+.error {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  transition: background 0.15s ease;
+}
+
+.btnPrimary {
+  color: var(--brand-on);
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.btnPrimary:hover:not(:disabled) { background: var(--brand-hover); }
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

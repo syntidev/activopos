@@ -31,6 +31,13 @@
 
 /* ── Columna izquierda ── */
 .copy {
+  /* min-width:0 -- .copy es item de .container{display:grid}. Todo
+     grid/flex item tiene un min-width:auto implícito basado en el
+     contenido, que max-width:100% NO puede vencer (el auto-min actúa
+     como piso por debajo del cual max-width no reduce). Mismo bug ya
+     diagnosticado en .chartWrap (ver más abajo) -- acá aplica al
+     grid item en sí, no a un hijo interno. */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -115,6 +122,18 @@
 
 /* ── Columna derecha — widget LivePulseCard ── */
 .card {
+  /* Causa raíz real del desborde horizontal mobile (Fix-Overflow-LivePulse):
+     .card es item de .container{display:grid}. max-width:100% ya estaba
+     puesto pero es INEFECTIVO por sí solo -- el min-width:auto implícito
+     de todo grid item (basado en el contenido) actúa como un PISO que
+     max-width no puede vencer; en mobile (grid-template-columns:1fr, una
+     sola columna) ese piso podía exceder el ancho real del viewport.
+     min-width:0 anula ese piso, dejando que max-width:100% funcione de
+     verdad. Mismo mecanismo ya diagnosticado y corregido en .chartWrap
+     (línea ~181 de este archivo) -- ese fix contenía el ancho intrínseco
+     DENTRO de la card, pero nunca se aplicó a la card como grid item en
+     sí, que es el nivel donde el desborde de viewport realmente ocurre. */
+  min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
   background: #FFFFFF;

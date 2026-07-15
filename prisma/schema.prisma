@@ -171,7 +171,7 @@ model Business {
   whatsapp             String?  @db.VarChar(30)
   max_discount_pct              Float    @default(0)
   allow_cashier_price_override  Boolean  @default(false)
-  modules_enabled             String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics") @db.VarChar(500)
+  modules_enabled             String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,suppliers") @db.VarChar(500)
   notifications_last_read     DateTime?
   ai_tokens_used_month        Int       @default(0)
   ai_tokens_limit_month       Int       @default(100)

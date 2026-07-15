@@ -6,7 +6,7 @@ import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
 
 const ALLOWED_MODULES = [
   'pos', 'inventory', 'caja', 'pedidos', 'catalog',
-  'finanzas', 'reportes', 'analytics', 'kds', 'delivery',
+  'finanzas', 'reportes', 'analytics', 'kds', 'delivery', 'suppliers',
 ] as const
 
 // core modules are always active — matches TabModulos.tsx alwaysOn:true.

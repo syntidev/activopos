@@ -101,7 +101,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/productos',  icon: Package,        label: 'Productos',   moduleKey: 'inventory', colorKey: 'inventario', adminOnly: true },
       { href: '/inventario', icon: ArrowRightLeft, label: 'Movimientos', colorKey: 'inventario', adminOnly: true },
-      { href: '/proveedores', icon: Truck,          label: 'Proveedores', colorKey: 'inventario', adminOnly: true },
+      { href: '/proveedores', icon: Truck,          label: 'Proveedores', moduleKey: 'suppliers', colorKey: 'inventario', adminOnly: true },
     ],
   },
   {

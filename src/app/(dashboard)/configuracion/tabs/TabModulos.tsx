@@ -26,9 +26,10 @@ const MODULES: Module[] = [
   { key: 'finanzas',  label: 'Finanzas',           desc: 'CxC, CxP y control financiero',        Icon: TrendingUp,   alwaysOn: false },
   { key: 'reportes',  label: 'Reportes',           desc: 'Informes y exportación de datos',      Icon: BarChart2,    alwaysOn: false },
   { key: 'analytics', label: 'Pulso del Negocio',  desc: 'Métricas y tendencias avanzadas',      Icon: Activity,     alwaysOn: false },
+  { key: 'suppliers', label: 'Proveedores',        desc: 'Gestión de proveedores y compras',     Icon: Truck,        alwaysOn: false },
 ]
 
-const DEFAULT_ENABLED = new Set(['pos', 'inventory', 'caja', 'pedidos', 'catalog', 'finanzas', 'reportes', 'analytics'])
+const DEFAULT_ENABLED = new Set(['pos', 'inventory', 'caja', 'pedidos', 'catalog', 'finanzas', 'reportes', 'analytics', 'suppliers'])
 
 // Sidebar (DashboardShell) vive en un árbol de componentes separado y solo
 // hace fetch de enabledModules una vez al montar. Sin este evento, un toggle

@@ -17,7 +17,19 @@ const ENDPOINT = 'https://api.buffer.com'
 // IDs confirmados de la cuenta Buffer de ActivoPOS (no son secretos; la API key sí).
 export const BUFFER_ORG_ID     = '6a5721bec42babc842adff34'
 export const BUFFER_IG_CHANNEL = '6a5721ed80cc80cdcab9209c'
-// Facebook: NO se agrega hasta confirmar que el canal está conectado en Buffer.
+export const BUFFER_FB_CHANNEL = '6a5730b680cc80cdcab9804d'
+
+export const BUFFER_CHANNELS = {
+  instagram: BUFFER_IG_CHANNEL,
+  facebook:  BUFFER_FB_CHANNEL,
+} as const
+
+export type BufferChannelName = keyof typeof BUFFER_CHANNELS
+
+// CreatePostInput.channelId es un SCALAR NON_NULL (verificado por introspection
+// real del schema de Buffer, no acepta lista) — publicar a varios canales
+// requiere una mutation createPost independiente por canal, nunca un array en
+// la misma llamada. Ver publish/route.ts para el loop multi-canal.
 
 interface GraphQLResponse<T> {
   data?:   T
@@ -70,13 +82,20 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
       }
     }`
 
+  // metadata es channel-scoped (PostInputMetaData.instagram / .facebook son objetos
+  // distintos, verificado por introspection) — mandar el bloque equivocado para el
+  // channelId real, aunque Buffer probablemente lo ignore, no es correcto. Se arma
+  // solo el bloque del canal que realmente se está publicando.
+  const metadata = input.channelId === BUFFER_FB_CHANNEL
+    ? { facebook: { type: input.igType ?? 'post' } }
+    : { instagram: { type: input.igType ?? 'post', shouldShareToFeed: true } }
+
   const postInput: Record<string, unknown> = {
     channelId:      input.channelId,
     text:           input.text,
     schedulingType: 'automatic',
     assets:         [{ image: { url: input.imageUrl } }],
-    // Instagram exige declarar el tipo de pieza; shouldShareToFeed publica también al feed.
-    metadata:       { instagram: { type: input.igType ?? 'post', shouldShareToFeed: true } },
+    metadata,
     ...(input.dueAt
       ? { mode: 'customScheduled', dueAt: input.dueAt }
       : { mode: 'addToQueue' }),

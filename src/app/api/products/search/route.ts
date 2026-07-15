@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 function parseImages(raw: string | null): string[] | null {
   if (!raw) return null
@@ -9,7 +9,7 @@ function parseImages(raw: string | null): string[] | null {
 
 export async function GET(req: NextRequest) {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
 
     const sp           = req.nextUrl.searchParams
     const q            = sp.get('q')?.trim() ?? ''
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
         // business_id inyectado por el tenant layer
         _sum: { quantity: true, waste: true },
       }),
-      getBcvRate(),
+      getActiveRate(session.businessId).then(r => r.rate),
     ])
 
     const stockMap = new Map(

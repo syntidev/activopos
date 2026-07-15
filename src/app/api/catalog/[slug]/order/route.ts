@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive } from '@/lib/catalog'
 
@@ -185,7 +185,7 @@ export async function POST(
 
   const needsKds = dbProducts.some(p => p.category?.requires_preparation === true)
 
-  const rate = await getBcvRate()
+  const { rate } = await getActiveRate(business.id)
 
   // Reservas automáticas se atribuyen al admin del negocio — la ruta es pública, sin sesión
   const adminUser = await prisma.user.findFirst({

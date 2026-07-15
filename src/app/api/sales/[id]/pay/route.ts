@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 class InsufficientStockError extends Error {}
 
@@ -68,7 +68,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Método de pago no válido para este negocio' }, { status: 403 })
     }
 
-    const rate         = await getBcvRate()
+    const { rate }     = await getActiveRate(session.businessId)
     const totalBs      = Number(sale.total_bs)
     const totalUsd     = Number(sale.total_usd)
     const payTotalBs   = body.payments.reduce((acc, p) => acc + p.amount_bs,  0)

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import { CatalogFooter } from './CatalogFooter'
@@ -102,7 +102,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       },
       orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
     }),
-    getBcvRate(),
+    getActiveRate(business.id).then(r => r.rate),
     prisma.inventoryEntry.groupBy({
       by:    ['product_id'],
       where: { business_id: business.id },

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
 import { sendPushToBusinessSubscribers } from '@/lib/push-notify'
 
@@ -125,8 +125,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createSchema.parse(body)
 
-    // Fetch BCV rate outside the transaction — avoids holding the tx open during a network call
-    const rate = await getBcvRate()
+    // Fetch active rate (manual override del tenant o BCV) fuera de la transacción
+    const { rate } = await getActiveRate(session.businessId)
 
     const order = await prisma.$transaction(async (tx) => {
       // A5-1: prices from DB — anti price-tampering (never trust client-supplied prices)

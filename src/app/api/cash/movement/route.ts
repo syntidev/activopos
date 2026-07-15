@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 const movementSchema = z.object({
   type: z.enum(['in', 'out']),
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No hay caja abierta' }, { status: 400 })
     }
 
-    const rate = await getBcvRate()
+    const { rate } = await getActiveRate(session.businessId)
 
     // Validación cruzada — tolerancia ±5% por redondeo y spread BCV/paralelo.
     // Cero-cero se deja pasar (movimiento en cero puede ser válido para notas).

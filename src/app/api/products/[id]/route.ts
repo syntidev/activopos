@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -68,7 +68,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         where: { product_id: id }, // business_id inyectado por el tenant layer
         _sum: { quantity: true, waste: true },
       }),
-      getBcvRate(),
+      getActiveRate(session.businessId).then(r => r.rate),
     ])
 
     if (!product) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })

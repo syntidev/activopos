@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit } from '@/lib/plan-guard'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { z } from 'zod'
 
 const productSchema = z.object({
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
         // business_id inyectado por el tenant layer
         _sum: { quantity: true, waste: true },
       }),
-      getBcvRate(),
+      getActiveRate(session.businessId).then(r => r.rate),
       // Business es la raíz del tenant (no tiene business_id) → no se filtra.
       db.business.findUnique({
         where:  { id: session.businessId },

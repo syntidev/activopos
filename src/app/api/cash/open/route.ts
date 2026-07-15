@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 const openSchema = z.object({
   opening_amount_usd: z.number().min(0),
@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = openSchema.parse(await req.json())
 
-    // getBcvRate fuera de la transacción — evita network call bloqueando TX
-    const rate = await getBcvRate()
+    // getActiveRate fuera de la transacción — evita network call bloqueando TX
+    const { rate } = await getActiveRate(session.businessId)
 
     const register = await prisma.$transaction(async (tx) => {
       const existing = await tx.cashRegister.findFirst({

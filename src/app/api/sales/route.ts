@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { createNotification } from '@/lib/notifications'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const rate = await getBcvRate()
+    const { rate } = await getActiveRate(session.businessId)
 
     const { sale, componentAlertIds } = await prisma.$transaction(async (tx) => {
       const productIds = body.items.map(i => i.product_id)

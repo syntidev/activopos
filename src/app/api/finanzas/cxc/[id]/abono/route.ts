@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
 
 const abonoSchema = z.object({
@@ -33,8 +33,8 @@ export async function POST(req: NextRequest, { params }: Context) {
     })
     if (!payMethod) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
-    // Fetch BCV rate outside tx — network call must not hold the transaction open
-    const rate     = await getBcvRate(session.businessId)
+    // Fetch active rate (manual override del tenant o BCV) fuera de tx
+    const { rate } = await getActiveRate(session.businessId)
     const amountBs = Math.round(body.amount_usd * rate * 100) / 100
 
     // CX-RACE fix: saldo check + create inside a single interactive transaction.

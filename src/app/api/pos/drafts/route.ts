@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
 
 const MAX_DRAFTS = 5
@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = createDraftSchema.parse(await req.json())
 
-    // FIX 3: BCV rate fetched before transaction — avoids holding pool connection during network call
-    const rate = await getBcvRate()
+    // FIX 3: active rate fetched before transaction — avoids holding pool connection during network call
+    const { rate } = await getActiveRate(session.businessId)
 
     const draft = await prisma.$transaction(async (tx) => {
       const count = await tx.sale.count({

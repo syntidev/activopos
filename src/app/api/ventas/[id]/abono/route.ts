@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 type RouteContext = { params: { id: string } }
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         where: { id: body.payment_method_id, business_id: session.businessId, is_active: true },
         select: { id: true },
       }),
-      getBcvRate(),
+      getActiveRate(session.businessId).then(r => r.rate),
       prisma.cashRegister.findFirst({
         where: { business_id: session.businessId, closed_at: null },
         select: { id: true },

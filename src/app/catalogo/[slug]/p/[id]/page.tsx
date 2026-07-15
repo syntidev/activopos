@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { ProductoDetalle } from '../../ProductoDetalle'
 import { CatalogFooter } from '../../CatalogFooter'
@@ -79,7 +79,7 @@ export default async function ProductoPage({ params }: PageProps) {
         },
       },
     }),
-    getBcvRate(),
+    getActiveRate(business.id).then(r => r.rate),
   ])
   if (!product) notFound()
 

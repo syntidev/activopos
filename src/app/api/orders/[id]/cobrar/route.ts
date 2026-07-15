@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 
 type Context = { params: { id: string } }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, { params }: Context) {
     if (!pm) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
     // Network call must be outside the transaction
-    const rate = await getBcvRate()
+    const { rate } = await getActiveRate(session.businessId)
 
     // $transaction en prisma base: business_id manual adentro (la extension no se propaga al tx)
     const { saleId } = await prisma.$transaction(async (tx) => {

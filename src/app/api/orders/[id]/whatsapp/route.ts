@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { getBcvRate, formatBs, formatUsd } from '@/lib/bcv'
+import { getActiveRate, formatBs, formatUsd } from '@/lib/bcv'
 
 interface CobroData {
   pago_movil_banco?:    string
@@ -56,7 +56,7 @@ export async function GET(
         where:  { id: session.businessId },
         select: { name: true, cobro_data: true },
       }),
-      getBcvRate(),
+      getActiveRate(session.businessId).then(r => r.rate),
     ])
 
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })

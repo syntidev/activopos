@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 
@@ -61,8 +61,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       await clearPinAttempts(session.businessId, session.userId)
     }
 
-    // FIX 3: BCV rate fetched before transaction — avoids holding pool connection during network call
-    const rate = await getBcvRate()
+    // FIX 3: active rate fetched before transaction — avoids holding pool connection during network call
+    const { rate } = await getActiveRate(session.businessId)
 
     const draft = await prisma.$transaction(async (tx) => {
       const existing = await tx.sale.findFirst({

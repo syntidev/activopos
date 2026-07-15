@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { getBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 export async function GET(): Promise<NextResponse> {
   try {
@@ -58,7 +58,7 @@ export async function GET(): Promise<NextResponse> {
           },
         },
       }),
-      getBcvRate(),
+      getActiveRate(session.businessId).then(r => r.rate),
     ])
 
     // Preserve recency order from groupBy

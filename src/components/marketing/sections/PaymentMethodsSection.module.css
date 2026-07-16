@@ -11,20 +11,6 @@
   background: #16A34A;
 }
 
-/* Isotipo como marca de agua (Ajustes-Puntuales-1) -- reemplaza el
-   .iconWrap flotante. Lado derecho, grande, muy sutil (0.1), detrás
-   del texto -- mismo patrón "ghost icon" ya usado en otras secciones. */
-.watermark {
-  position: absolute;
-  top: 50%;
-  right: -60px;
-  width: 340px;
-  height: 340px;
-  transform: translateY(-50%);
-  opacity: 0.1;
-  pointer-events: none;
-}
-
 .container {
   position: relative;
   z-index: 1;

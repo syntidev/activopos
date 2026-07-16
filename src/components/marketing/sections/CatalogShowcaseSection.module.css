@@ -42,12 +42,6 @@
   .grid { grid-template-columns: 1fr; }
 }
 
-/* Mismo criterio que SegmentsSection/.ghostIcon: oculto en mobile
-   angosto, no aporta y sí puede recargar la card. */
-@media (max-width: 640px) {
-  .ghostIcon { display: none; }
-}
-
 /* Homologa-Catalogo-Final: position:relative + overflow:hidden --
    ancla y recorta el .ghostIcon a la card, mismo criterio que
    SegmentsSection.module.css .card (línea 35-36 de ese archivo). */

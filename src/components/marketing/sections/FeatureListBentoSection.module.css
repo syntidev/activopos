@@ -349,5 +349,4 @@
 @media (max-width: 640px) {
   .scrollTrack, .scrollRow { gap: 8px; }
   .card { padding: 12px 14px; }
-  .ghostIcon { display: none; }
 }

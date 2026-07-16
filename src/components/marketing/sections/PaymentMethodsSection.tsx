@@ -25,15 +25,6 @@ const METHODS: Array<{ name: string; Icon: LucideIcon; color: string }> = [
 export default function PaymentMethodsSection() {
   return (
     <section className={styles.section}>
-      {/* Isotipo como marca de agua -- reemplaza el ícono flotante
-          (Ajustes-Puntuales-1), mismo patrón "ghost icon" ya usado en
-          otras secciones (SegmentsSection, DifferentiatorsSection) */}
-      <img
-        src="/brand/activopos/activopos-logo-icon.svg"
-        alt=""
-        aria-hidden="true"
-        className={styles.watermark}
-      />
       <motion.div
         className={styles.container}
         initial={{ opacity: 0, y: 24 }}

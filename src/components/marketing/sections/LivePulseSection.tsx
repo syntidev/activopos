@@ -1,16 +1,37 @@
+import Link from 'next/link'
 import {
   DollarSign, RefreshCw, ScanBarcode, UserPlus, Receipt, MessageCircle,
-  FileText, RotateCcw, type LucideIcon,
+  FileText, RotateCcw, TrendingUp, Clock3, type LucideIcon,
 } from 'lucide-react'
 import styles from './LivePulseSection.module.css'
 
-/* Server Component puro -- todas las animaciones son CSS (@keyframes),
-   cero JS/'use client' necesario: ni el scroll de barras, ni el feed
-   de eventos (offsets vía animation-delay negativo), ni el pulso del
-   punto "activo" requieren estado ni interactividad. */
+/* Sección fusionada (LivePulse + ProductBento + 2 tiles únicos de
+   FinancialBrain): "prueba" de la landing -- el producto en vivo (feed +
+   chart, todo CSS/@keyframes, Server Component puro) a la derecha, y las
+   cifras de dinero destiladas a stat-grid a la izquierda. Sin bullets
+   (redundantes con PainSection). Los valores son datos de ejemplo curados
+   a mano, misma tasa BCV implícita entre sí -- nunca screenshots de la
+   cuenta demo. */
 
 const BARS = [45, 68, 32, 80, 55, 90, 40, 62, 75, 35, 88, 50, 70, 42]
 const BARS_AVG = BARS.reduce((s, v) => s + v, 0) / BARS.length
+
+/* Stat-grid izquierdo: rescata Cobrado + Margen de ProductBento y
+   "Lo que te deben" (CxC) + "Tu mejor hora" (analytics) de
+   FinancialBrain -- los 2 únicos mensajes no redundantes de esa sección.
+   Dual moneda sellada: todo valor monetario muestra USD y Bs juntos. */
+interface Stat {
+  Icon:  LucideIcon
+  label: string
+  value: string
+  sub:   string
+}
+const STATS: Stat[] = [
+  { Icon: DollarSign, label: 'Cobrado hoy',     value: '$431.40', sub: 'Bs. 15.847,48' },
+  { Icon: TrendingUp, label: 'Margen bruto',    value: '42.6%',   sub: 'de cada venta' },
+  { Icon: Receipt,    label: 'Lo que te deben', value: '$340.00', sub: 'Bs. 12.489,90' },
+  { Icon: Clock3,     label: 'Tu mejor hora',   value: '6:00 PM', sub: 'viernes' },
+]
 
 interface FeedEvent {
   Icon:   LucideIcon
@@ -42,35 +63,30 @@ const SLOTS: FeedEvent[][] = [
   [EVENTS[2], EVENTS[5], EVENTS[8]],
 ]
 
-const BULLETS = [
-  { title: 'Ves cada venta',        desc: 'en el momento que ocurre.' },
-  { title: 'Sabes qué falta',       desc: 'antes de que se te acabe.' },
-  { title: 'Nunca cuadras a ciegas', desc: 'todo cuadra solo.' },
-]
-
 export default function LivePulseSection() {
   return (
     <section className={styles.section}>
       <div className={styles.container}>
         <div className={styles.copy}>
-          <span className={styles.eyebrow}>Tiempo real</span>
-          <h2 className={styles.title}>Tu negocio.<br />En vivo.</h2>
+          <span className={styles.eyebrow}>En vivo</span>
+          <h2 className={styles.title}>Tu negocio,<br />en vivo y en criollo.</h2>
           <p className={styles.subtitle}>
-            Cada venta, cada ajuste de inventario, cada movimiento se refleja al instante.
-            No tienes que ir a buscarlo — ya está ahí cuando lo necesitas.
+            Cada venta, cada número — al instante. Sin Excel, sin libreta, sin calculadora.
+            Tu negocio te habla en criollo, cada noche.
           </p>
-          <ul className={styles.bullets}>
-            {BULLETS.map(b => (
-              <li key={b.title} className={styles.bullet}>
-                <span className={styles.bulletDot} aria-hidden="true" />
-                <span>
-                  <strong className={styles.bulletTitle}>{b.title}</strong>
-                  {' — '}{b.desc}
-                </span>
-              </li>
+
+          <div className={styles.statGrid}>
+            {STATS.map(s => (
+              <div key={s.label} className={styles.statCard}>
+                <span className={styles.statIcon}><s.Icon size={16} aria-hidden="true" /></span>
+                <span className={styles.statLabel}>{s.label}</span>
+                <span className={`${styles.statValue} tabular-nums`}>{s.value}</span>
+                <span className={`${styles.statSub} tabular-nums`}>{s.sub}</span>
+              </div>
             ))}
-          </ul>
-          <button type="button" className={styles.ctaBtn}>Ver cómo funciona</button>
+          </div>
+
+          <Link href="/como-funciona" className={styles.ctaBtn}>Ver cómo funciona</Link>
         </div>
 
         <div className={styles.card}>

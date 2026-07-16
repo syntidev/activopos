@@ -6,7 +6,7 @@ import styles from './MarketingFooter.module.css'
 
 const PRODUCT_LINKS = [
   { label: '¿Para quién?',   href: '/#segmentos' },
-  { label: 'Cómo funciona',  href: '/#ecosystem' },
+  { label: 'Cómo funciona',  href: '/como-funciona' },
   { label: 'Planes',         href: '/planes' },
   { label: 'Recursos',       href: '/recursos' },
   { label: 'Blog',           href: '/blog' },

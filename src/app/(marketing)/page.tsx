@@ -4,13 +4,8 @@ import HeroSection from '@/components/marketing/sections/HeroSection'
 import PainSection from '@/components/marketing/sections/PainSection'
 import LivePulseSection from '@/components/marketing/sections/LivePulseSection'
 import TickerSection from '@/components/marketing/sections/TickerSection'
-import ProductBentoSection from '@/components/marketing/sections/ProductBentoSection'
 import FeatureListBentoSection from '@/components/marketing/sections/FeatureListBentoSection'
-import PaymentMethodsSection from '@/components/marketing/sections/PaymentMethodsSection'
 import SegmentsSection from '@/components/marketing/sections/SegmentsSection'
-import FeatureTabsSection from '@/components/marketing/sections/FeatureTabsSection'
-import FinancialBrainSection from '@/components/marketing/sections/FinancialBrainSection'
-import CatalogShowcaseSection from '@/components/marketing/sections/CatalogShowcaseSection'
 import PricingSection from '@/components/marketing/sections/PricingSection'
 import TestimonialsSection from '@/components/marketing/sections/TestimonialsSection'
 import FinalCTASection from '@/components/marketing/sections/FinalCTASection'
@@ -82,13 +77,8 @@ export default async function LandingPage() {
       <PainSection />
       <LivePulseSection />
       <TickerSection />
-      <ProductBentoSection />
       <FeatureListBentoSection />
-      <PaymentMethodsSection />
       <SegmentsSection />
-      <FeatureTabsSection />
-      <FinancialBrainSection bcvRate={bcvRate} />
-      <CatalogShowcaseSection />
       <PricingSection bcvRate={bcvRate} />
       <TestimonialsSection />
       <FinalCTASection />

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { Check, MessageCircle, ArrowRight } from 'lucide-react'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier, type BillingCycleKey } from '@/lib/plan-limits'
 import { featuresForTier, exclusiveFeaturesForTier } from '@/lib/plan-features'
 import { WA_BASE } from '@/lib/marketing-contact'
+import { PAYMENT_METHODS } from '@/components/marketing/shared/payment-methods'
 import styles from './PricingSection.module.css'
 
 interface Props {
@@ -110,6 +111,23 @@ export default function PricingSection({ bcvRate }: Props) {
               </div>
             )
           })}
+        </div>
+
+        {/* Franja de métodos de pago -- versión corta de la ex-sección
+            PaymentMethodsSection, ahora dentro de Planes. Los planes,
+            precios y CTAs de arriba quedan intactos. */}
+        <div className={styles.paymentStrip}>
+          <span className={styles.paymentStripLabel}>Cobra como ya le cobras a tu cliente:</span>
+          <div className={styles.paymentPills}>
+            {PAYMENT_METHODS.map(({ name, Icon, color }) => (
+              <span key={name} className={styles.paymentPill}>
+                <span className={styles.paymentPillIcon} style={{ '--pm-icon': color } as CSSProperties}>
+                  <Icon size={15} aria-hidden="true" />
+                </span>
+                {name}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className={styles.moreWrap}>

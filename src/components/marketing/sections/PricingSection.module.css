@@ -74,6 +74,55 @@
   .grid { grid-template-columns: 1fr; }
 }
 
+/* Franja de métodos de pago dentro de Planes (versión corta de la
+   ex-PaymentMethodsSection). Caja de ícono siempre blanca, solo el
+   ícono cambia de color (--pm-icon, semántico Tipo E). */
+.paymentStrip {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.paymentStripLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mkt-text-2);
+}
+
+.paymentPills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.paymentPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  color: #0D1B2E;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px 6px 6px;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.paymentPillIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+  color: var(--pm-icon, var(--brand));
+}
+
 .card {
   position: relative;
   display: flex;

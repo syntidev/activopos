@@ -18,7 +18,7 @@ interface Segment {
 const SEGMENTOS_LINK = { label: 'Segmentos', href: '/#segmentos' }
 
 const NAV_LINKS = [
-  { label: 'Cómo funciona', href: '/#ecosystem' },
+  { label: 'Cómo funciona', href: '/como-funciona' },
   { label: 'Planes', href: '/planes' },
   { label: 'Recursos', href: '/recursos' },
   { label: 'Blog', href: '/blog' },

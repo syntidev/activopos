@@ -9,10 +9,10 @@ import { mkdirSync, writeFileSync } from 'fs'
 import assert from 'assert'
 import sharp from 'sharp'
 import { composeSlide } from '../src/lib/social/compose'
-import { FORMATS } from '../src/lib/social/brand'
+import { ASPECT_DIMENSIONS } from '../src/lib/social/brand'
 
 async function main(): Promise<void> {
-  const { width, height } = FORMATS.post
+  const { width, height } = ASPECT_DIMENSIONS['3:4']
 
   // Fondo sintético: sustituye a la imagen de Gemini para no gastar cuota.
   const background = await sharp({
@@ -24,6 +24,7 @@ async function main(): Promise<void> {
     titulo:    'Cobra en Bs sin calculadora',
     subtitulo: 'La tasa BCV entra sola y el vuelto sale exacto — & sin cuentas a mano.',
     formato:   'post',
+    aspect:    '3:4',
   })
 
   const meta = await sharp(out).metadata()

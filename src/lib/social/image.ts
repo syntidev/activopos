@@ -1,4 +1,4 @@
-import { type SocialFormat } from './brand'
+import { type Aspect } from './brand'
 import { ProviderError, withRetry } from './retry'
 
 /**
@@ -17,16 +17,30 @@ import { ProviderError, withRetry } from './retry'
 const ENDPOINT = 'https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev'
 
 // El modelo solo acepta width/height de una lista discreta (768..1344, paso 64);
-// cualquier otro valor devuelve 422. Se elige el par más cercano a cada formato y
-// sharp termina de encuadrar al lienzo final en compose.ts.
-const GEN_SIZE: Record<SocialFormat, { width: number; height: number }> = {
-  post:     { width: 960, height: 1280 },  // 3:4 exacto
-  carrusel: { width: 960, height: 1280 },  // 3:4 exacto
-  story:    { width: 768, height: 1344 },  // 4:7 — lo más cercano a 9:16 que admite
+// cualquier otro valor devuelve 422. Se elige el par más cercano a cada aspect y
+// sharp termina de encuadrar al lienzo final en compose.ts. Independiente del tipo de
+// pieza (post/story/carrusel) desde que el selector de formato de salida lo desacopló.
+const GEN_SIZE: Record<Aspect, { width: number; height: number }> = {
+  '4:5':  { width: 1024, height: 1280 },  // 0.8 exacto
+  '3:4':  { width: 960,  height: 1280 },  // 0.75 exacto
+  '9:16': { width: 768,  height: 1344 },  // 0.571 -- lo más cercano a 0.5625 que admite
 }
 
 interface FluxResponse {
   artifacts?: { base64: string; finishReason?: string }[]
+}
+
+// Dirección de escena/personaje real (PIEZA 1) -- cuando el usuario llena alguno de estos
+// 3 campos en el formulario, reemplazan la escena genérica que arma Gemini (más específicos
+// e intencionales que su adivinanza). Vacíos → mismo comportamiento de siempre (fallback).
+export interface SceneDirection {
+  personaje?: string
+  lugar?:     string
+  accion?:    string
+}
+
+function hasDirection(d?: SceneDirection): d is SceneDirection {
+  return !!d && !!(d.personaje?.trim() || d.lugar?.trim() || d.accion?.trim())
 }
 
 /**
@@ -35,10 +49,23 @@ interface FluxResponse {
  * restricciones van formuladas en POSITIVO — paredes lisas, envases sin etiqueta —
  * que es lo único que un difusor sabe seguir.
  */
-function buildPrompt(escena: string, nicho: string): string {
-  return `Photorealistic documentary photograph, shot on a 50mm lens at f/1.8. ${escena}
+function buildPrompt(escena: string, nicho: string, direction?: SceneDirection): string {
+  // Mismo patrón de composición que Socialia (persona + escena + acción + contexto de
+  // marca) -- pero construido acá directo, no delegado a Gemini: son más específicos e
+  // intencionales que la "escena" genérica que el copy adivina por nicho.
+  const subjectLine = hasDirection(direction)
+    ? [
+        direction.personaje?.trim() ? `Subject: ${direction.personaje.trim()}.` : '',
+        direction.accion?.trim()    ? `Action: ${direction.accion.trim()}.`     : '',
+      ].filter(Boolean).join(' ')
+    : escena
+  const settingLine = hasDirection(direction) && direction.lugar?.trim()
+    ? `Setting: ${direction.lugar.trim()}, a real Venezuelan small business (${nicho}).`
+    : `Setting: a real Venezuelan small business (${nicho}).`
 
-Setting: a real Venezuelan small business (${nicho}). Authentic and lived-in, never stock-photo generic.
+  return `Photorealistic documentary photograph, shot on a 50mm lens at f/1.8. ${subjectLine}
+
+${settingLine} Authentic and lived-in, never stock-photo generic.
 Natural window light, shallow depth of field, filmic grain, true-to-life colors.
 Bare clean walls. Plain unbranded packaging. Blank surfaces. Empty picture frames.
 The lower third of the frame stays calm, dark and uncluttered.`
@@ -47,12 +74,13 @@ The lower third of the frame stays calm, dark and uncluttered.`
 export async function generateBackground(
   escena: string,
   nicho: string,
-  formato: SocialFormat,
+  aspect: Aspect,
+  direction?: SceneDirection,
 ): Promise<Buffer> {
   const key = process.env.NVIDIA_API_KEY
   if (!key) throw new ProviderError('NVIDIA_API_KEY no configurada en el servidor', 500)
 
-  const { width, height } = GEN_SIZE[formato]
+  const { width, height } = GEN_SIZE[aspect]
 
   const artifact = await withRetry(async () => {
     const res = await fetch(ENDPOINT, {
@@ -63,7 +91,7 @@ export async function generateBackground(
         Accept:         'application/json',
       },
       body: JSON.stringify({
-        prompt: buildPrompt(escena, nicho),
+        prompt: buildPrompt(escena, nicho, direction),
         width,
         height,
         steps: 40,

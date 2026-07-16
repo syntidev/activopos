@@ -1,6 +1,7 @@
 import type { Browser } from 'puppeteer'
 import puppeteer from 'puppeteer'
 import sharp from 'sharp'
+import { type Aspect, ASPECT_DIMENSIONS } from './brand'
 
 /**
  * Pipeline de render: HTML de slide → PNG a dimensiones exactas de Instagram.
@@ -8,16 +9,11 @@ import sharp from 'sharp'
  * Adaptado de TempSocialia/Referencia_OpenCarrusel/src/lib/export-slides.ts. El slide es
  * HTML de nivel body (lo genera html-generator.ts); wrapSlideHtml lo mete en un documento
  * completo con el contenedor a tamaño exacto. Puppeteer lo screenshotea y sharp fuerza sRGB.
+ *
+ * Aspect y ASPECT_DIMENSIONS viven en brand.ts -- única fuente de verdad para el lienzo
+ * final, compartida con compose.ts (pipeline de difusión).
  */
-
-export type Aspect = '4:5' | '3:4' | '9:16'
-
-// Único lugar donde viven estas dimensiones (evita hardcodear el número en varios archivos).
-export const ASPECT_DIMENSIONS: Record<Aspect, { width: number; height: number }> = {
-  '4:5':  { width: 1080, height: 1350 },  // default de feed
-  '3:4':  { width: 1080, height: 1440 },
-  '9:16': { width: 1080, height: 1920 },  // story / reel
-}
+export type { Aspect }
 
 // Chromium filtra memoria si se acumulan páginas/instancias. Se reinicia el browser cada
 // N renders (mismo patrón que la referencia) para acotar el crecimiento del proceso.

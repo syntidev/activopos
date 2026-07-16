@@ -41,11 +41,11 @@ async function main(): Promise<void> {
   console.log(`Copy   -> "${slide.titulo}" / "${slide.subtitulo}"`)
 
   const t0         = Date.now()
-  const background = await generateBackground(slide.escena, NICHO, 'post')
+  const background = await generateBackground(slide.escena, NICHO, '3:4')
   console.log(`Fondo  -> ${background.length} bytes en ${((Date.now() - t0) / 1000).toFixed(1)}s (NVIDIA NIM)`)
 
   const composed = await composeSlide({
-    background, titulo: slide.titulo, subtitulo: slide.subtitulo, formato: 'post',
+    background, titulo: slide.titulo, subtitulo: slide.subtitulo, formato: 'post', aspect: '3:4',
   })
 
   const filename = `${randomUUID()}.webp`

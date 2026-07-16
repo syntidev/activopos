@@ -8,6 +8,8 @@ import { composeSlide } from '@/lib/social/compose'
 import { uploadImage } from '@/lib/social/cloudinary'
 import { generateHtmlContent } from '@/lib/social/html-generator'
 import { renderSlideToPng, closeBrowser } from '@/lib/social/render-slide'
+import type { Aspect } from '@/lib/social/brand'
+import type { SceneDirection } from '@/lib/social/image'
 
 type Asset = { orden: number; imagen_url: string; titulo: string; subtitulo: string }
 
@@ -16,7 +18,7 @@ type Asset = { orden: number; imagen_url: string; titulo: string; subtitulo: str
 // para carrusel; post/story siguen con difusión (imagen fotográfica de fondo).
 async function generateCarrusel(
   nicho: string, gancho: string | undefined, objetivo: string, count: number,
-  segmentSlug: string | undefined, stylePresetId: number | undefined,
+  segmentSlug: string | undefined, stylePresetId: number | undefined, aspect: Aspect,
 ): Promise<{ assets: Asset[]; caption: string; hashtags: string[] }> {
   const content = await generateHtmlContent({
     topic: gancho, segment_slug: segmentSlug, segmento: nicho, objetivo,
@@ -28,7 +30,7 @@ async function generateCarrusel(
   const assets: Asset[] = []
   try {
     for (let i = 0; i < slides.length; i++) {
-      const png = await renderSlideToPng(slides[i].html, '4:5')
+      const png = await renderSlideToPng(slides[i].html, aspect)
       assets.push({
         orden:      i,
         imagen_url: await uploadImage(png, 'image/png'),
@@ -56,6 +58,11 @@ const bodySchema = z.object({
   objetivo:         z.string().min(1).max(120),
   slides:           z.number().int().min(1).max(8).optional(),
   style_preset_id:  z.number().int().positive().optional(),
+  aspect:           z.enum(['4:5', '3:4', '9:16']).default('4:5'),
+  // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión (post/story).
+  personaje:        z.string().max(200).optional(),
+  lugar:            z.string().max(200).optional(),
+  accion:           z.string().max(200).optional(),
 }).refine(
   b => b.tipo === 'carrusel' ? (!!b.gancho?.trim() || !!b.segment_slug) : !!b.gancho?.trim(),
   { message: 'Debes dar un gancho (o, en carrusel, elegir un segmento)', path: ['gancho'] },
@@ -107,7 +114,7 @@ export async function POST(req: NextRequest) {
       // Fase B+C: HTML renderizado a PNG.
       const r = await generateCarrusel(
         body.nicho, body.gancho, body.objetivo, slideCount,
-        body.segment_slug, body.style_preset_id,
+        body.segment_slug, body.style_preset_id, body.aspect,
       )
       assets = r.assets; caption = r.caption; hashtags = r.hashtags; contentEngine = 'html_render'
     } else {
@@ -122,12 +129,16 @@ export async function POST(req: NextRequest) {
       const slides = copy.slides.slice(0, slideCount)
       if (slides.length === 0) throw new Error('Gemini no devolvió slides')
 
+      const direction: SceneDirection = {
+        personaje: body.personaje, lugar: body.lugar, accion: body.accion,
+      }
       assets = []
       for (let index = 0; index < slides.length; index++) {
         const slide      = slides[index]
-        const background = await generateBackground(slide.escena, body.nicho, body.tipo)
+        const background = await generateBackground(slide.escena, body.nicho, body.aspect, direction)
         const composed   = await composeSlide({
-          background, titulo: slide.titulo, subtitulo: slide.subtitulo, formato: body.tipo,
+          background, titulo: slide.titulo, subtitulo: slide.subtitulo,
+          formato: body.tipo, aspect: body.aspect,
         })
         assets.push({
           orden: index, imagen_url: await uploadImage(composed),

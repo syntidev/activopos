@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 import sharp from 'sharp'
-import { ASSETS, BRAND, FORMATS, type SocialFormat } from './brand'
+import { ASSETS, ASPECT_DIMENSIONS, BRAND, type Aspect, type SocialFormat } from './brand'
 
 /**
  * Composición del overlay de marca sobre el fondo generado por Gemini.
@@ -59,11 +59,12 @@ export interface ComposeInput {
   background: Buffer
   titulo:     string
   subtitulo:  string
-  formato:    SocialFormat
+  formato:    SocialFormat   // solo determina tamaño de fuente (story = letras más grandes)
+  aspect:     Aspect         // determina el lienzo final -- selector del formulario
 }
 
 export async function composeSlide(input: ComposeInput): Promise<Buffer> {
-  const { width, height } = FORMATS[input.formato]
+  const { width, height } = ASPECT_DIMENSIONS[input.aspect]
 
   const [title, subtitle] = await Promise.all([
     renderText(input.titulo, {

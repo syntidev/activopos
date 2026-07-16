@@ -10,7 +10,8 @@ config()
 
 async function main(): Promise<void> {
   const { generateHtmlContent } = await import('../src/lib/social/html-generator')
-  const { renderSlideToPng, closeBrowser, ASPECT_DIMENSIONS } = await import('../src/lib/social/render-slide')
+  const { renderSlideToPng, closeBrowser } = await import('../src/lib/social/render-slide')
+  const { ASPECT_DIMENSIONS } = await import('../src/lib/social/brand')
   const { uploadImage } = await import('../src/lib/social/cloudinary')
   const sharp = (await import('sharp')).default
 

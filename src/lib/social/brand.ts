@@ -37,12 +37,16 @@ export const ASSETS = {
 
 export type SocialFormat = 'post' | 'story' | 'carrusel'
 
-// Lienzo final al que compose.ts encuadra. Las dimensiones que acepta el generador de
-// imagen son otras y viven en image.ts — no las mezcles.
-export const FORMATS: Record<SocialFormat, { width: number; height: number }> = {
-  post:     { width: 1080, height: 1440 },
-  carrusel: { width: 1080, height: 1440 },
-  story:    { width: 1080, height: 1920 },
+// Dimensión de salida elegida en el formulario -- independiente de SocialFormat (tipo de
+// pieza). Única fuente de verdad para el lienzo final: compose.ts (difusión) y
+// render-slide.ts (HTML/carrusel) leen de acá, image.ts mapea a la lista discreta que
+// acepta FLUX (GEN_SIZE en image.ts).
+export type Aspect = '4:5' | '3:4' | '9:16'
+
+export const ASPECT_DIMENSIONS: Record<Aspect, { width: number; height: number }> = {
+  '4:5':  { width: 1080, height: 1350 }, // default de feed
+  '3:4':  { width: 1080, height: 1440 }, // grid nuevo de Instagram
+  '9:16': { width: 1080, height: 1920 }, // story / reel
 }
 
 /**

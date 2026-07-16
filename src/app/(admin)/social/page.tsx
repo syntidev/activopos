@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays, Send } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { CalendarTab } from './CalendarTab'
+import { MobilePreview } from './MobilePreview'
 import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
 
@@ -11,6 +12,13 @@ type Channel = 'instagram' | 'facebook'
 
 type Tipo   = 'post' | 'story' | 'carrusel'
 type Estado = 'pendiente' | 'generado' | 'publicado' | 'error'
+type Aspect = '4:5' | '3:4' | '9:16'
+
+const ASPECTS: { value: Aspect; label: string; hint: string }[] = [
+  { value: '4:5',  label: '4:5',  hint: '1080×1350 — feed' },
+  { value: '3:4',  label: '3:4',  hint: '1080×1440 — grid nuevo' },
+  { value: '9:16', label: '9:16', hint: '1080×1920 — story/reel' },
+]
 
 interface SocialAsset {
   id:         number
@@ -74,12 +82,17 @@ export default function SocialPage() {
   const [slides, setSlides]       = useState(4)
   const [segmentSlug, setSegmentSlug]     = useState('')
   const [stylePresetId, setStylePresetId] = useState('')
+  const [aspect, setAspect]     = useState<Aspect>('4:5')
+  const [personaje, setPersonaje] = useState('')
+  const [lugar, setLugar]         = useState('')
+  const [accion, setAccion]       = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
   const [post, setPost]       = useState<SocialPost | null>(null)
   const [copied, setCopied]   = useState(false)
   const [history, setHistory] = useState<SocialPost[]>([])
+  const [activeIdx, setActiveIdx] = useState(0)
   const [segments, setSegments]         = useState<SegmentOption[]>([])
   const [stylePresets, setStylePresets] = useState<StylePresetOption[]>([])
 
@@ -99,6 +112,9 @@ export default function SocialPage() {
   }, [])
 
   useEffect(loadHistory, [loadHistory])
+
+  // Nueva pieza cargada (generada o desde el historial) -- vuelve a mostrar el primer slide.
+  useEffect(() => { setActiveIdx(0) }, [post?.id])
 
   // Segmentos (marketing) y presets de estilo -- listas de solo-lectura, se piden una vez.
   useEffect(() => {
@@ -135,11 +151,16 @@ export default function SocialPage() {
           tipo,
           nicho:    nicho.trim(),
           objetivo: objetivo.trim(),
+          aspect,
           ...(gancho.trim() ? { gancho: gancho.trim() } : {}),
           ...(beneficio.trim() ? { beneficio: beneficio.trim() } : {}),
           ...(tipo === 'carrusel' ? { slides } : {}),
           ...(tipo === 'carrusel' && segmentSlug ? { segment_slug: segmentSlug } : {}),
           ...(stylePresetId ? { style_preset_id: Number(stylePresetId) } : {}),
+          // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión.
+          ...(tipo !== 'carrusel' && personaje.trim() ? { personaje: personaje.trim() } : {}),
+          ...(tipo !== 'carrusel' && lugar.trim()     ? { lugar: lugar.trim() }         : {}),
+          ...(tipo !== 'carrusel' && accion.trim()    ? { accion: accion.trim() }       : {}),
         }),
       })
 
@@ -260,6 +281,25 @@ export default function SocialPage() {
             </div>
           </div>
 
+          <div className={styles.field}>
+            <span className={styles.label}>Formato de salida</span>
+            <div className={styles.typeGroup} role="group" aria-label="Dimensión de la imagen">
+              {ASPECTS.map(({ value, label, hint }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`${styles.typeBtn} ${aspect === value ? styles.typeBtnActive : ''}`}
+                  onClick={() => setAspect(value)}
+                  disabled={loading}
+                  aria-pressed={aspect === value}
+                  title={hint}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {tipo === 'carrusel' && (
             <div className={styles.field}>
               <label className={styles.label} htmlFor="slides">Slides</label>
@@ -354,6 +394,49 @@ export default function SocialPage() {
             />
           </div>
 
+          {tipo !== 'carrusel' && (
+            <>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="personaje">Personaje (opcional)</label>
+                <input
+                  id="personaje"
+                  className={styles.input}
+                  value={personaje}
+                  onChange={e => setPersonaje(e.target.value)}
+                  placeholder="dueña de bodega, 40 años, delantal"
+                  maxLength={200}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="lugar">Escena / lugar (opcional)</label>
+                <input
+                  id="lugar"
+                  className={styles.input}
+                  value={lugar}
+                  onChange={e => setLugar(e.target.value)}
+                  placeholder="detrás del mostrador, luz de mañana"
+                  maxLength={200}
+                  disabled={loading}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="accion">Acción / motivo (opcional)</label>
+                <input
+                  id="accion"
+                  className={styles.input}
+                  value={accion}
+                  onChange={e => setAccion(e.target.value)}
+                  placeholder="contando billetes con alivio"
+                  maxLength={200}
+                  disabled={loading}
+                />
+              </div>
+            </>
+          )}
+
           <div className={styles.field}>
             <label className={styles.label} htmlFor="objetivo">Objetivo</label>
             <input
@@ -402,23 +485,36 @@ export default function SocialPage() {
 
           {post && (
             <>
-              <div className={styles.slides}>
-                {post.assets.map(asset => (
-                  <figure key={asset.id} className={styles.slide}>
-                    {post.assets.length > 1 && (
+              {/* Mockup de teléfono -- cómo se ve realmente en el feed, antes de publicar
+                  (mismo criterio que SlideRenderer de Open Carrusel: contenedor escalado a
+                  proporción real, acá con la pieza ya rasterizada en vez de un iframe HTML). */}
+              <MobilePreview
+                imageUrl={post.assets[activeIdx]?.imagen_url ?? post.imagen_url ?? ''}
+                caption={post.caption}
+              />
+
+              {post.assets.length > 1 && (
+                <div className={styles.slides}>
+                  {post.assets.map((asset, i) => (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      className={`${styles.slide} ${i === activeIdx ? styles.slideActive : ''}`}
+                      onClick={() => setActiveIdx(i)}
+                      aria-label={`Ver slide ${asset.orden + 1}`}
+                      aria-pressed={i === activeIdx}
+                    >
                       <span className={styles.slideIndex}>{asset.orden + 1}</span>
-                    )}
-                    {/* next/image no aporta aquí: son piezas recién generadas, de un solo uso,
-                        y sharp ya las entregó optimizadas. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      className={styles.slideImg}
-                      src={asset.imagen_url}
-                      alt={asset.titulo ?? `Slide ${asset.orden + 1}`}
-                    />
-                  </figure>
-                ))}
-              </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        className={styles.slideImg}
+                        src={asset.imagen_url}
+                        alt={asset.titulo ?? `Slide ${asset.orden + 1}`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className={styles.captionBox}>
                 <p className={styles.caption}>{post.caption}</p>

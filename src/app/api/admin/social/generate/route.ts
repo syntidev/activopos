@@ -58,7 +58,7 @@ const bodySchema = z.object({
   objetivo:         z.string().min(1).max(120),
   slides:           z.number().int().min(1).max(8).optional(),
   style_preset_id:  z.number().int().positive().optional(),
-  aspect:           z.enum(['4:5', '3:4', '9:16']).default('4:5'),
+  aspect:           z.enum(['1:1', '4:5', '3:4', '9:16']).default('4:5'),
   // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión (post/story).
   personaje:        z.string().max(200).optional(),
   lugar:            z.string().max(200).optional(),

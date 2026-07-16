@@ -41,11 +41,12 @@ export type SocialFormat = 'post' | 'story' | 'carrusel'
 // pieza). Única fuente de verdad para el lienzo final: compose.ts (difusión) y
 // render-slide.ts (HTML/carrusel) leen de acá, image.ts mapea a la lista discreta que
 // acepta FLUX (GEN_SIZE en image.ts).
-export type Aspect = '4:5' | '3:4' | '9:16'
+export type Aspect = '1:1' | '4:5' | '3:4' | '9:16'
 
 export const ASPECT_DIMENSIONS: Record<Aspect, { width: number; height: number }> = {
-  '4:5':  { width: 1080, height: 1350 }, // default de feed
-  '3:4':  { width: 1080, height: 1440 }, // grid nuevo de Instagram
+  '1:1':  { width: 1080, height: 1080 }, // post cuadrado
+  '4:5':  { width: 1080, height: 1350 }, // post vertical clásico
+  '3:4':  { width: 1080, height: 1440 }, // post vertical nuevo (grid Instagram)
   '9:16': { width: 1080, height: 1920 }, // story / reel
 }
 

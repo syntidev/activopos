@@ -21,6 +21,7 @@ const ENDPOINT = 'https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-de
 // sharp termina de encuadrar al lienzo final en compose.ts. Independiente del tipo de
 // pieza (post/story/carrusel) desde que el selector de formato de salida lo desacopló.
 const GEN_SIZE: Record<Aspect, { width: number; height: number }> = {
+  '1:1':  { width: 1024, height: 1024 },  // 1.0 exacto
   '4:5':  { width: 1024, height: 1280 },  // 0.8 exacto
   '3:4':  { width: 960,  height: 1280 },  // 0.75 exacto
   '9:16': { width: 768,  height: 1344 },  // 0.571 -- lo más cercano a 0.5625 que admite

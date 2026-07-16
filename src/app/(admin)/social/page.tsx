@@ -12,13 +12,29 @@ type Channel = 'instagram' | 'facebook'
 
 type Tipo   = 'post' | 'story' | 'carrusel'
 type Estado = 'pendiente' | 'generado' | 'publicado' | 'error'
-type Aspect = '4:5' | '3:4' | '9:16'
+type Aspect = '1:1' | '4:5' | '3:4' | '9:16'
 
-const ASPECTS: { value: Aspect; label: string; hint: string }[] = [
-  { value: '4:5',  label: '4:5',  hint: '1080×1350 — feed' },
-  { value: '3:4',  label: '3:4',  hint: '1080×1440 — grid nuevo' },
-  { value: '9:16', label: '9:16', hint: '1080×1920 — story/reel' },
+// Solo post y carrusel dejan elegir dimensión -- story se fija a 9:16 automáticamente
+// (ver STORY_ASPECT más abajo), no tiene sentido mostrarla como opción aquí.
+const POST_ASPECTS: { value: Aspect; label: string; hint: string }[] = [
+  { value: '1:1', label: '1:1', hint: '1080×1080 — cuadrado' },
+  { value: '4:5', label: '4:5', hint: '1080×1350 — vertical clásico' },
+  { value: '3:4', label: '3:4', hint: '1080×1440 — vertical nuevo' },
 ]
+
+const STORY_ASPECT: Aspect = '9:16'
+const DEFAULT_POST_ASPECT: Aspect = '4:5'
+
+// Estructural (no importado de CalendarTab.tsx): CalendarEntry ahí ya trae todos estos
+// campos, no hace falta acoplar los dos archivos por un tipo compartido.
+interface CalendarEntryBrief {
+  id:        number
+  tipo:      string
+  segmento:  string
+  objetivo:  string
+  titulo:    string
+  subtitulo: string | null
+}
 
 interface SocialAsset {
   id:         number
@@ -90,13 +106,14 @@ export default function SocialPage() {
   const [slides, setSlides]       = useState(4)
   const [segmentSlug, setSegmentSlug]     = useState('')
   const [stylePresetId, setStylePresetId] = useState('')
-  const [aspect, setAspect]     = useState<Aspect>('4:5')
+  const [aspect, setAspect]     = useState<Aspect>(DEFAULT_POST_ASPECT)
   const [personaje, setPersonaje] = useState('')
   const [lugar, setLugar]         = useState('')
   const [accion, setAccion]       = useState('')
   const [scenePresets, setScenePresets]   = useState<ScenePresetOption[]>([])
   const [scenePresetId, setScenePresetId] = useState('')
   const [savingScenePreset, setSavingScenePreset] = useState(false)
+  const [linkedCalendarEntryId, setLinkedCalendarEntryId] = useState<number | null>(null)
 
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -135,6 +152,13 @@ export default function SocialPage() {
 
   // Nueva pieza cargada (generada o desde el historial) -- vuelve a mostrar el primer slide.
   useEffect(() => { setActiveIdx(0) }, [post?.id])
+
+  // Story se fija a 9:16 automáticamente -- el usuario no elige acá. Al volver a
+  // post/carrusel, si quedó 9:16 (heredado de story) cae al default de feed.
+  useEffect(() => {
+    if (tipo === 'story') setAspect(STORY_ASPECT)
+    else setAspect(prev => (prev === STORY_ASPECT ? DEFAULT_POST_ASPECT : prev))
+  }, [tipo])
 
   // Segmentos (marketing) y presets de estilo -- listas de solo-lectura, se piden una vez.
   useEffect(() => {
@@ -198,6 +222,27 @@ export default function SocialPage() {
 
       setPost(body.post)
       loadHistory()
+
+      // Puente Calendario -> Generador (PIEZA 1, punto 4): si esta generación vino de
+      // "Usar" en una entrada del calendario, se vincula de vuelta -- pendiente -> generado.
+      if (linkedCalendarEntryId) {
+        const linkId = linkedCalendarEntryId
+        setLinkedCalendarEntryId(null)
+        try {
+          const linkRes = await fetch(`/api/admin/social/calendar/${linkId}`, {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+              estado:         'generado',
+              social_post_id: body.post.id,
+              ...(body.post.content_engine ? { content_engine: body.post.content_engine } : {}),
+            }),
+          })
+          if (!linkRes.ok) throw new Error()
+        } catch {
+          setError('Se generó la pieza, pero no se pudo vincular con la entrada del calendario.')
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado')
       // El endpoint deja la fila en estado 'error' aunque falle: el historial debe mostrarla.
@@ -300,6 +345,27 @@ export default function SocialPage() {
     }
   }
 
+  // El campo "tipo" del calendario es texto libre (import de Excel, edición manual) --
+  // nunca el enum estricto del generador. Coincide por substring, no exacto.
+  function detectTipoFromCalendar(raw: string): Tipo {
+    const t = raw.trim().toLowerCase()
+    if (t.includes('carrus')) return 'carrusel'
+    if (t.includes('story') || t.includes('historia')) return 'story'
+    return 'post'
+  }
+
+  function handleUseCalendarEntry(entry: CalendarEntryBrief) {
+    setTipo(detectTipoFromCalendar(entry.tipo))
+    setNicho(entry.segmento)
+    setGancho(entry.titulo)
+    setBeneficio(entry.subtitulo ?? '')
+    setObjetivo(entry.objetivo)
+    setLinkedCalendarEntryId(entry.id)
+    setPost(null)
+    setError(null)
+    setTab('generador')
+  }
+
   function applyScenePreset(id: string) {
     setScenePresetId(id)
     const preset = scenePresets.find(p => String(p.id) === id)
@@ -364,7 +430,7 @@ export default function SocialPage() {
         </button>
       </div>
 
-      {tab === 'calendario' && <CalendarTab />}
+      {tab === 'calendario' && <CalendarTab onUseEntry={handleUseCalendarEntry} />}
 
       {tab === 'generador' && (
       <>
@@ -391,21 +457,25 @@ export default function SocialPage() {
 
           <div className={styles.field}>
             <span className={styles.label}>Formato de salida</span>
-            <div className={styles.typeGroup} role="group" aria-label="Dimensión de la imagen">
-              {ASPECTS.map(({ value, label, hint }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`${styles.typeBtn} ${aspect === value ? styles.typeBtnActive : ''}`}
-                  onClick={() => setAspect(value)}
-                  disabled={loading}
-                  aria-pressed={aspect === value}
-                  title={hint}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {tipo === 'story' ? (
+              <p className={styles.hint}>9:16 — 1080×1920 (automático para story)</p>
+            ) : (
+              <div className={styles.typeGroup} role="group" aria-label="Dimensión de la imagen">
+                {POST_ASPECTS.map(({ value, label, hint }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`${styles.typeBtn} ${aspect === value ? styles.typeBtnActive : ''}`}
+                    onClick={() => setAspect(value)}
+                    disabled={loading}
+                    aria-pressed={aspect === value}
+                    title={hint}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {tipo === 'carrusel' && (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, Upload, Download, FileDown, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Upload, Download, FileDown, Pencil, Trash2, Loader2, Sparkles } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import adminStyles from '../admin.module.css'
 import styles from './calendar.module.css'
@@ -60,7 +60,14 @@ function formatDia(iso: string): string {
   return new Date(iso).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export function CalendarTab() {
+interface CalendarTabProps {
+  // Puente Calendario -> Generador (patrón Socialia): "Usar" pre-llena el formulario del
+  // Generador con esta entrada y cambia de pestaña. La vinculación de vuelta
+  // (social_post_id, estado generado) la hace SocialPage después de generar con éxito.
+  onUseEntry?: (entry: CalendarEntry) => void
+}
+
+export function CalendarTab({ onUseEntry }: CalendarTabProps) {
   const [entries, setEntries] = useState<CalendarEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -268,6 +275,17 @@ export function CalendarTab() {
                   </td>
                   <td>
                     <div className={styles.rowActions}>
+                      {onUseEntry && (
+                        <button
+                          type="button"
+                          className={`${adminStyles.actionLink} ${adminStyles.actionBtn}`}
+                          onClick={() => onUseEntry(entry)}
+                          aria-label={`Usar "${entry.titulo}" en el Generador`}
+                          title="Usar en el Generador"
+                        >
+                          <Sparkles size={14} aria-hidden="true" />
+                        </button>
+                      )}
                       <button
                         type="button"
                         className={`${adminStyles.actionLink} ${adminStyles.actionBtn}`}

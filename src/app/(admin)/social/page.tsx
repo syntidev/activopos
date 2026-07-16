@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays, Send, Trash2 } from 'lucide-react'
+import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays, Send, Trash2, BookmarkPlus } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { CalendarTab } from './CalendarTab'
 import { MobilePreview } from './MobilePreview'
@@ -37,6 +37,14 @@ interface StylePresetOption {
   id:       number
   name:     string
   business: { name: string }
+}
+
+interface ScenePresetOption {
+  id:        number
+  name:      string
+  personaje: string | null
+  escena:    string | null
+  accion:    string | null
 }
 
 interface SocialPost {
@@ -86,6 +94,9 @@ export default function SocialPage() {
   const [personaje, setPersonaje] = useState('')
   const [lugar, setLugar]         = useState('')
   const [accion, setAccion]       = useState('')
+  const [scenePresets, setScenePresets]   = useState<ScenePresetOption[]>([])
+  const [scenePresetId, setScenePresetId] = useState('')
+  const [savingScenePreset, setSavingScenePreset] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -136,6 +147,15 @@ export default function SocialPage() {
       .then((body: { presets: StylePresetOption[] }) => setStylePresets(body.presets ?? []))
       .catch(() => {})
   }, [])
+
+  const loadScenePresets = useCallback(() => {
+    fetch('/api/admin/social/scene-presets')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error()))
+      .then((body: { presets: ScenePresetOption[] }) => setScenePresets(body.presets ?? []))
+      .catch(() => {})
+  }, [])
+
+  useEffect(loadScenePresets, [loadScenePresets])
 
   // Cada imagen tarda ~10s en NVIDIA NIM. Un carrusel de 4 son ~40s de espera,
   // así que la UI dice cuánto falta en vez de dejar al usuario adivinando.
@@ -277,6 +297,40 @@ export default function SocialPage() {
       setError('No se pudieron eliminar las piezas seleccionadas.')
     } finally {
       setBulkDeleting(false)
+    }
+  }
+
+  function applyScenePreset(id: string) {
+    setScenePresetId(id)
+    const preset = scenePresets.find(p => String(p.id) === id)
+    if (!preset) return
+    setPersonaje(preset.personaje ?? '')
+    setLugar(preset.escena ?? '')
+    setAccion(preset.accion ?? '')
+  }
+
+  async function handleSaveScenePreset() {
+    if (!personaje.trim() && !lugar.trim() && !accion.trim()) return
+    const name = prompt('Nombre del preset (ej. "Dueña de bodega, mañana")')?.trim()
+    if (!name) return
+    setSavingScenePreset(true)
+    try {
+      const res = await fetch('/api/admin/social/scene-presets', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          name,
+          ...(personaje.trim() ? { personaje: personaje.trim() } : {}),
+          ...(lugar.trim()     ? { escena: lugar.trim() }         : {}),
+          ...(accion.trim()    ? { accion: accion.trim() }        : {}),
+        }),
+      })
+      if (!res.ok) throw new Error()
+      loadScenePresets()
+    } catch {
+      setError('No se pudo guardar el preset.')
+    } finally {
+      setSavingScenePreset(false)
     }
   }
 
@@ -451,12 +505,28 @@ export default function SocialPage() {
           {tipo !== 'carrusel' && (
             <>
               <div className={styles.field}>
+                <label className={styles.label} htmlFor="scenePreset">Usar preset guardado</label>
+                <select
+                  id="scenePreset"
+                  className={styles.select}
+                  value={scenePresetId}
+                  onChange={e => applyScenePreset(e.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">Escribir manualmente</option>
+                  {scenePresets.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.field}>
                 <label className={styles.label} htmlFor="personaje">Personaje (opcional)</label>
                 <input
                   id="personaje"
                   className={styles.input}
                   value={personaje}
-                  onChange={e => setPersonaje(e.target.value)}
+                  onChange={e => { setPersonaje(e.target.value); setScenePresetId('') }}
                   placeholder="dueña de bodega, 40 años, delantal"
                   maxLength={200}
                   disabled={loading}
@@ -469,7 +539,7 @@ export default function SocialPage() {
                   id="lugar"
                   className={styles.input}
                   value={lugar}
-                  onChange={e => setLugar(e.target.value)}
+                  onChange={e => { setLugar(e.target.value); setScenePresetId('') }}
                   placeholder="detrás del mostrador, luz de mañana"
                   maxLength={200}
                   disabled={loading}
@@ -482,12 +552,24 @@ export default function SocialPage() {
                   id="accion"
                   className={styles.input}
                   value={accion}
-                  onChange={e => setAccion(e.target.value)}
+                  onChange={e => { setAccion(e.target.value); setScenePresetId('') }}
                   placeholder="contando billetes con alivio"
                   maxLength={200}
                   disabled={loading}
                 />
               </div>
+
+              <button
+                type="button"
+                className={`${adminStyles.actionLink} ${adminStyles.actionBtn}`}
+                onClick={() => void handleSaveScenePreset()}
+                disabled={savingScenePreset || (!personaje.trim() && !lugar.trim() && !accion.trim())}
+              >
+                {savingScenePreset
+                  ? <Loader2 size={14} className={styles.spin} aria-hidden="true" />
+                  : <BookmarkPlus size={14} aria-hidden="true" />}
+                Guardar como preset
+              </button>
             </>
           )}
 

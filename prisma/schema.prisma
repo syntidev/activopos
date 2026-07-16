@@ -1108,3 +1108,17 @@ model SocialStylePreset {
   @@index([business_id])
   @@map("social_style_presets")
 }
+
+// Personaje/Escena/Acción para el motor de difusión (image.ts, NVIDIA FLUX) -- distinto
+// de SocialStylePreset (design_rules del HTML/carrusel). Sin business_id a propósito:
+// biblioteca de dirección propia del admin, no contenido por-negocio.
+model SocialScenePreset {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(120)
+  personaje  String?  @db.Text
+  escena     String?  @db.Text
+  accion     String?  @db.Text
+  created_at DateTime @default(now())
+
+  @@map("social_scene_presets")
+}

@@ -4,7 +4,7 @@ import { getBcvRate } from '@/lib/bcv'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import { PLAN_FEATURES } from '@/lib/plan-features'
 import { WA_BASE } from '@/lib/marketing-contact'
-import PlanToggle from './PlanToggle'
+import PricingSection from '@/components/marketing/sections/PricingSection'
 import styles from './page.module.css'
 
 export const metadata: Metadata = {
@@ -80,7 +80,7 @@ export default async function PlanesPage() {
         </div>
       </section>
 
-      <PlanToggle bcvRate={bcvRate} />
+      <PricingSection bcvRate={bcvRate} showHeader={false} showMoreLink={false} />
 
       <section className={styles.matrixSection}>
         <div className={styles.container}>

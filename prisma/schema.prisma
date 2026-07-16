@@ -206,6 +206,7 @@ model Business {
   business_devices   BusinessDevice[]
   suppliers          Supplier[]
   purchases          Purchase[]
+  social_style_presets SocialStylePreset[]
 
   @@map("businesses")
 }
@@ -1092,4 +1093,18 @@ model SocialCalendarEntry {
   updated_at      DateTime @updatedAt
   @@index([dia])
   @@map("social_calendar_entries")
+}
+
+model SocialStylePreset {
+  id            Int      @id @default(autoincrement())
+  business_id   Int
+  name          String   @db.VarChar(120)
+  design_rules  String   @db.Text
+  example_html  String?  @db.Text
+  created_at    DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id])
+  @@map("social_style_presets")
 }

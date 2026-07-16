@@ -20,6 +20,17 @@ interface SocialAsset {
   subtitulo:  string | null
 }
 
+interface SegmentOption {
+  slug: string
+  name: string
+}
+
+interface StylePresetOption {
+  id:       number
+  name:     string
+  business: { name: string }
+}
+
 interface SocialPost {
   id:             number
   tipo:           Tipo
@@ -61,12 +72,16 @@ export default function SocialPage() {
   const [beneficio, setBeneficio] = useState('')
   const [objetivo, setObjetivo]   = useState('')
   const [slides, setSlides]       = useState(4)
+  const [segmentSlug, setSegmentSlug]     = useState('')
+  const [stylePresetId, setStylePresetId] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
   const [post, setPost]       = useState<SocialPost | null>(null)
   const [copied, setCopied]   = useState(false)
   const [history, setHistory] = useState<SocialPost[]>([])
+  const [segments, setSegments]         = useState<SegmentOption[]>([])
+  const [stylePresets, setStylePresets] = useState<StylePresetOption[]>([])
 
   // Publicación (Fase E → Buffer)
   const [pubOpen, setPubOpen]         = useState(false)
@@ -85,11 +100,26 @@ export default function SocialPage() {
 
   useEffect(loadHistory, [loadHistory])
 
+  // Segmentos (marketing) y presets de estilo -- listas de solo-lectura, se piden una vez.
+  useEffect(() => {
+    fetch('/api/marketing/segments')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error()))
+      .then((data: SegmentOption[]) => setSegments(data))
+      .catch(() => {})
+    fetch('/api/admin/social/style-presets')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error()))
+      .then((body: { presets: StylePresetOption[] }) => setStylePresets(body.presets ?? []))
+      .catch(() => {})
+  }, [])
+
   // Cada imagen tarda ~10s en NVIDIA NIM. Un carrusel de 4 son ~40s de espera,
   // así que la UI dice cuánto falta en vez de dejar al usuario adivinando.
   const imageCount  = tipo === 'carrusel' ? slides : 1
   const etaSegundos = imageCount * 10
-  const canSubmit   = !!nicho.trim() && !!gancho.trim() && !!objetivo.trim() && !loading
+  // El segmento real (segment_slug) solo sustituye al gancho en carrusel -- el backend
+  // (bodySchema.refine en generate/route.ts) rechaza segment_slug para post/story.
+  const ganchoSatisfecho = tipo === 'carrusel' ? (!!gancho.trim() || !!segmentSlug) : !!gancho.trim()
+  const canSubmit = !!nicho.trim() && ganchoSatisfecho && !!objetivo.trim() && !loading
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -104,10 +134,12 @@ export default function SocialPage() {
         body:    JSON.stringify({
           tipo,
           nicho:    nicho.trim(),
-          gancho:   gancho.trim(),
           objetivo: objetivo.trim(),
+          ...(gancho.trim() ? { gancho: gancho.trim() } : {}),
           ...(beneficio.trim() ? { beneficio: beneficio.trim() } : {}),
           ...(tipo === 'carrusel' ? { slides } : {}),
+          ...(tipo === 'carrusel' && segmentSlug ? { segment_slug: segmentSlug } : {}),
+          ...(stylePresetId ? { style_preset_id: Number(stylePresetId) } : {}),
         }),
       })
 
@@ -243,6 +275,42 @@ export default function SocialPage() {
             </div>
           )}
 
+          {tipo === 'carrusel' && (
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="segmento">Segmento (opcional)</label>
+              <select
+                id="segmento"
+                className={styles.select}
+                value={segmentSlug}
+                onChange={e => setSegmentSlug(e.target.value)}
+                disabled={loading}
+              >
+                <option value="">Tema libre (usa el Gancho de abajo)</option>
+                {segments.map(s => (
+                  <option key={s.slug} value={s.slug}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {tipo === 'carrusel' && (
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="preset">Estilo</label>
+              <select
+                id="preset"
+                className={styles.select}
+                value={stylePresetId}
+                onChange={e => setStylePresetId(e.target.value)}
+                disabled={loading}
+              >
+                <option value="">Diseño default</option>
+                {stylePresets.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.business.name})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className={styles.field}>
             <label className={styles.label} htmlFor="nicho">Nicho</label>
             <input
@@ -258,7 +326,9 @@ export default function SocialPage() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="gancho">Gancho</label>
+            <label className={styles.label} htmlFor="gancho">
+              Gancho{tipo === 'carrusel' && segmentSlug ? ' (opcional -- el segmento ya da el tema)' : ''}
+            </label>
             <textarea
               id="gancho"
               className={styles.textarea}
@@ -267,7 +337,7 @@ export default function SocialPage() {
               placeholder="Cierro la caja y no me cuadra el efectivo"
               maxLength={300}
               disabled={loading}
-              required
+              required={!(tipo === 'carrusel' && !!segmentSlug)}
             />
           </div>
 

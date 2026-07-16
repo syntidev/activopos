@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
 import { BRAND, PRODUCT_CONTEXT, type SocialFormat } from './brand'
 import { ProviderError, withRetry } from './retry'
 
@@ -47,10 +48,44 @@ export const SEGMENTOS = [
 ] as const
 
 export interface HtmlGenInput {
-  topic:    string
-  segmento: string
-  objetivo: string   // texto libre del formulario; se interpola en el prompt
-  formato:  SocialFormat
+  topic?:           string   // opcional cuando segment_slug resuelve el tema real
+  segment_slug?:    string   // slug de Segment (marketing) -- semilla el arco con headline+pains reales
+  segmento:         string
+  objetivo:         string   // texto libre del formulario; se interpola en el prompt
+  formato:          SocialFormat
+  style_preset_id?: number   // SocialStylePreset -- inyecta design_rules en el prompt
+}
+
+interface ResolvedContext {
+  topic:       string
+  designRules: string | null
+  presetName:  string | null
+}
+
+/** Resuelve, UNA vez por generación, el tema real (topic libre o Segment) y el preset de
+ *  estilo (si viene) -- evita repetir queries por cada intento/proveedor en tryProvider(). */
+async function resolveContext(input: HtmlGenInput): Promise<ResolvedContext> {
+  let topic: string
+  if (input.segment_slug) {
+    const segment = await prisma.segment.findUnique({ where: { slug: input.segment_slug } })
+    if (!segment) throw new ProviderError(`Segmento "${input.segment_slug}" no existe`, 404)
+    topic = `${segment.headline} — dolores reales del segmento: ${segment.pain_1} / ${segment.pain_2} / ${segment.pain_3}`
+  } else if (input.topic) {
+    topic = input.topic
+  } else {
+    throw new ProviderError('Falta topic o segment_slug', 400)
+  }
+
+  let designRules: string | null = null
+  let presetName:  string | null = null
+  if (input.style_preset_id) {
+    const preset = await prisma.socialStylePreset.findUnique({ where: { id: input.style_preset_id } })
+    if (!preset) throw new ProviderError(`Preset de estilo ${input.style_preset_id} no existe`, 404)
+    designRules = preset.design_rules
+    presetName  = preset.name
+  }
+
+  return { topic, designRules, presetName }
 }
 
 const slideSchema = z.object({
@@ -66,7 +101,7 @@ export type HtmlContent = z.infer<typeof resultSchema>
 
 // ── Prompt ────────────────────────────────────────────────────────────────
 
-function buildSystemPrompt(input: HtmlGenInput): string {
+function buildSystemPrompt(input: HtmlGenInput, ctx: ResolvedContext): string {
   const { width, height } = DIMENSIONS[input.formato]
 
   return `${PRODUCT_CONTEXT}
@@ -104,6 +139,10 @@ REGLAS DEL HTML DE CADA SLIDE (obligatorias):
    PROHIBIDO markdown: nada de **negrita**, ## títulos, ni - listas. Es HTML puro — para
    énfasis usa <strong>, para listas <ul><li>. Un ** en el texto se ve literal y es un error.
 9. PROHIBIDO mencionar SENIAT en cualquier slide o texto.
+${ctx.designRules ? `
+REGLAS DE ESTILO DEL PRESET "${ctx.presetName}" (prioridad sobre las reglas visuales genéricas
+de arriba cuando haya conflicto -- colores, tipografía o composición del preset ganan):
+${ctx.designRules}` : ''}
 
 Además del array de slides, genera:
 - caption: copy de Instagram (150-300 caracteres) con gancho, valor y CTA a activopos.com.
@@ -113,8 +152,8 @@ Estructura EXACTA de salida (JSON, sin ningún texto fuera de él):
 {"slides":[{"html":"<div style=...>...</div>","notes":"rol del slide"}],"caption":"","hashtags":[]}`
 }
 
-function buildUserPrompt(input: HtmlGenInput): string {
-  return `TEMA: "${input.topic}"
+function buildUserPrompt(input: HtmlGenInput, ctx: ResolvedContext): string {
+  return `TEMA: "${ctx.topic}"
 SEGMENTO: ${input.segmento}
 OBJETIVO: ${input.objetivo}
 Genera el contenido ahora. Responde SOLO con el JSON.`
@@ -202,10 +241,11 @@ function assertRenderable(content: HtmlContent, formato: SocialFormat): void {
 async function tryProvider(
   call: (s: string, u: string) => Promise<string>,
   input: HtmlGenInput,
+  ctx: ResolvedContext,
   maxAttempts = 2,
 ): Promise<HtmlContent | null> {
-  const system = buildSystemPrompt(input)
-  const user   = buildUserPrompt(input)
+  const system = buildSystemPrompt(input, ctx)
+  const user   = buildUserPrompt(input, ctx)
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -225,10 +265,12 @@ async function tryProvider(
 }
 
 export async function generateHtmlContent(input: HtmlGenInput): Promise<HtmlContent> {
-  const viaNvidia = await tryProvider(callNvidia, input)
+  const ctx = await resolveContext(input)
+
+  const viaNvidia = await tryProvider(callNvidia, input, ctx)
   if (viaNvidia) return viaNvidia
 
-  const viaGemini = await tryProvider(callGemini, input)
+  const viaGemini = await tryProvider(callGemini, input, ctx)
   if (viaGemini) return viaGemini
 
   throw new ProviderError('Ni NVIDIA (Nemotron) ni Gemini devolvieron HTML válido', 502)

@@ -15,10 +15,12 @@ type Asset = { orden: number; imagen_url: string; titulo: string; subtitulo: str
 // Puppeteer y subido a Cloudinary. Reemplaza el pipeline de imagen única (difusión) solo
 // para carrusel; post/story siguen con difusión (imagen fotográfica de fondo).
 async function generateCarrusel(
-  nicho: string, gancho: string, objetivo: string, count: number,
+  nicho: string, gancho: string | undefined, objetivo: string, count: number,
+  segmentSlug: string | undefined, stylePresetId: number | undefined,
 ): Promise<{ assets: Asset[]; caption: string; hashtags: string[] }> {
   const content = await generateHtmlContent({
-    topic: gancho, segmento: nicho, objetivo, formato: 'carrusel',
+    topic: gancho, segment_slug: segmentSlug, segmento: nicho, objetivo,
+    formato: 'carrusel', style_preset_id: stylePresetId,
   })
   const slides = content.slides.slice(0, count)
   if (slides.length === 0) throw new Error('El motor de contenido no devolvió slides')
@@ -46,13 +48,18 @@ export const runtime     = 'nodejs'
 export const maxDuration = 300
 
 const bodySchema = z.object({
-  tipo:      z.enum(['post', 'story', 'carrusel']),
-  nicho:     z.string().min(1).max(80),
-  gancho:    z.string().min(1).max(300),
-  beneficio: z.string().max(300).optional(),
-  objetivo:  z.string().min(1).max(120),
-  slides:    z.number().int().min(1).max(8).optional(),
-})
+  tipo:             z.enum(['post', 'story', 'carrusel']),
+  nicho:            z.string().min(1).max(80),
+  gancho:           z.string().max(300).optional(),
+  segment_slug:     z.string().max(80).optional(),
+  beneficio:        z.string().max(300).optional(),
+  objetivo:         z.string().min(1).max(120),
+  slides:           z.number().int().min(1).max(8).optional(),
+  style_preset_id:  z.number().int().positive().optional(),
+}).refine(
+  b => b.tipo === 'carrusel' ? (!!b.gancho?.trim() || !!b.segment_slug) : !!b.gancho?.trim(),
+  { message: 'Debes dar un gancho (o, en carrusel, elegir un segmento)', path: ['gancho'] },
+)
 
 
 export async function POST(req: NextRequest) {
@@ -74,11 +81,17 @@ export async function POST(req: NextRequest) {
 
   // Se crea en 'pendiente' antes de llamar a Gemini: si la generación muere a mitad de un
   // carrusel queda rastro en DB con el error, en vez de desaparecer sin dejar huella.
+  // Con segment_slug (sin gancho) el título real sale del contenido generado -- se
+  // sobreescribe abajo con assets[0].titulo; este es solo el placeholder de la fila 'pendiente'.
+  const tituloPlaceholder = body.gancho?.trim()
+    ? body.gancho.slice(0, 200)
+    : `Segmento: ${body.segment_slug}`
+
   const post = await prisma.socialPost.create({
     data: {
       tipo:        body.tipo,
       nicho:       body.nicho,
-      titulo:      body.gancho.slice(0, 200),
+      titulo:      tituloPlaceholder,
       descripcion: body.beneficio ?? null,
       estado:      'pendiente',
     },
@@ -92,10 +105,16 @@ export async function POST(req: NextRequest) {
 
     if (body.tipo === 'carrusel') {
       // Fase B+C: HTML renderizado a PNG.
-      const r = await generateCarrusel(body.nicho, body.gancho, body.objetivo, slideCount)
+      const r = await generateCarrusel(
+        body.nicho, body.gancho, body.objetivo, slideCount,
+        body.segment_slug, body.style_preset_id,
+      )
       assets = r.assets; caption = r.caption; hashtags = r.hashtags; contentEngine = 'html_render'
     } else {
       // post/story: imagen fotográfica de fondo (difusión NVIDIA) + overlay sharp.
+      // El refine de bodySchema ya garantiza gancho presente aquí (solo carrusel admite
+      // segment_slug como sustituto); este guard solo estrecha el tipo para TS.
+      if (!body.gancho) throw new Error('gancho requerido para post/story')
       const copy = await generateCopy({
         tipo: body.tipo, nicho: body.nicho, gancho: body.gancho,
         beneficio: body.beneficio, objetivo: body.objetivo, slides: slideCount,

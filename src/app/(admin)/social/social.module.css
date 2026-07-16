@@ -284,12 +284,79 @@
   margin-top: var(--space-6);
 }
 
+.historyHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.historyControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.historyControls .select {
+  width: auto;
+  min-width: 160px;
+}
+
 .historyGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-3);
   margin-top: var(--space-3);
   list-style: none;
+}
+
+.historyItem {
+  position: relative;
+}
+
+.historyCheck {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--brand);
+}
+
+.historyDelete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  color: #FFFFFF;
+  background: rgba(0, 0, 0, 0.55);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.historyItem:hover .historyDelete,
+.historyItem:focus-within .historyDelete {
+  opacity: 1;
+}
+
+.historyDelete:hover {
+  background: var(--danger);
+}
+
+.historyDelete:disabled {
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .card {

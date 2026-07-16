@@ -51,6 +51,13 @@
   gap: 12px;
 }
 
+/* Quiebre forzado a 4+3 solo en tablet+ (los 4 caben cómodos ≥768px).
+   En mobile no aplica -- los pills envuelven natural sin dejar hueco. */
+.pillBreak { display: none; }
+@media (min-width: 768px) {
+  .pillBreak { display: block; flex-basis: 100%; height: 0; }
+}
+
 .pill {
   display: inline-flex;
   align-items: center;

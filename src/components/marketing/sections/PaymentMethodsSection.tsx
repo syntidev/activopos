@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { Smartphone, Send, Bitcoin, Coins, CreditCard, Banknote } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { CSSProperties } from 'react'
+import { Fragment, type CSSProperties } from 'react'
 import styles from './PaymentMethodsSection.module.css'
 
 /* Ícono + color semántico por método, Tipo E de DESIGN_SYSTEM.md
@@ -14,7 +14,7 @@ import styles from './PaymentMethodsSection.module.css'
    Orden: nacional primero (Ajustes-Puntuales-1). */
 const METHODS: Array<{ name: string; Icon: LucideIcon; color: string }> = [
   { name: 'Pago Móvil',      Icon: Smartphone, color: '#16A34A' },
-  { name: 'Efectivo Bs/USD', Icon: Banknote,   color: '#9333EA' },
+  { name: 'Efectivo Bs/USD', Icon: Banknote,   color: '#16A34A' },
   { name: 'Zelle',           Icon: Send,       color: '#2563EB' },
   { name: 'Zinli',           Icon: CreditCard, color: '#6B7280' },
   { name: 'Binance',         Icon: Bitcoin,    color: '#F59E0B' },
@@ -37,13 +37,17 @@ export default function PaymentMethodsSection() {
           No somos pasarela de pago. Guardamos el dato, tu cliente lo recibe listo.
         </p>
         <div className={styles.pills}>
-          {METHODS.map(({ name, Icon, color }) => (
-            <span key={name} className={styles.pill}>
-              <span className={styles.pillIcon} style={{ '--pm-icon': color } as CSSProperties}>
-                <Icon size={18} aria-hidden="true" />
+          {METHODS.map(({ name, Icon, color }, i) => (
+            <Fragment key={name}>
+              <span className={styles.pill}>
+                <span className={styles.pillIcon} style={{ '--pm-icon': color } as CSSProperties}>
+                  <Icon size={18} aria-hidden="true" />
+                </span>
+                {name}
               </span>
-              {name}
-            </span>
+              {/* quiebre forzado 4+3 (≥768px): fila pareja en vez de 5+2 */}
+              {i === 3 && <span className={styles.pillBreak} aria-hidden="true" />}
+            </Fragment>
           ))}
         </div>
       </motion.div>

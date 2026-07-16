@@ -11,6 +11,10 @@ import styles from './PricingSection.module.css'
 
 interface Props {
   bcvRate: number
+  /* Reuso en /planes: ese page ya tiene hero propio + link circular
+     no aplica. Ambos default true -> home sin cambios. */
+  showHeader?: boolean
+  showMoreLink?: boolean
 }
 
 const CYCLE_ORDER: BillingCycleKey[] = ['mensual', 'semestral', 'anual']
@@ -40,16 +44,18 @@ function fmtBs(usd: number, rate: number): string {
   return (usd * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export default function PricingSection({ bcvRate }: Props) {
+export default function PricingSection({ bcvRate, showHeader = true, showMoreLink = true }: Props) {
   const [cycle, setCycle] = useState<BillingCycleKey>('mensual')
 
   return (
     <section className={styles.section} id="precios">
       <div className={styles.container}>
-        <div className={styles.head}>
-          <h2 className={styles.title}>Un plan para cada etapa de tu negocio.</h2>
-          <p className={styles.subtitle}>Sin contrato anual. Cambias de plan cuando quieras.</p>
-        </div>
+        {showHeader && (
+          <div className={styles.head}>
+            <h2 className={styles.title}>Un plan para cada etapa de tu negocio.</h2>
+            <p className={styles.subtitle}>Sin contrato anual. Cambias de plan cuando quieras.</p>
+          </div>
+        )}
 
         <div className={styles.cycleTabs} role="tablist" aria-label="Ciclo de facturación">
           {CYCLE_ORDER.map(c => (
@@ -130,12 +136,14 @@ export default function PricingSection({ bcvRate }: Props) {
           </div>
         </div>
 
-        <div className={styles.moreWrap}>
-          <Link href="/planes" className={styles.moreLink}>
-            Ver todos los detalles
-            <ArrowRight size={15} aria-hidden="true" />
-          </Link>
-        </div>
+        {showMoreLink && (
+          <div className={styles.moreWrap}>
+            <Link href="/planes" className={styles.moreLink}>
+              Ver todos los detalles
+              <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   )

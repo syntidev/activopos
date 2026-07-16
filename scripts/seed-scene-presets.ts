@@ -34,7 +34,7 @@ const PRESETS = [
   },
   {
     name:      'Ferretería — mostrador',
-    personaje: 'dueño de ferretería, descendencia europea, 55 años, piel clara, cabello canoso, camisa a cuadros',
+    personaje: 'dueña de ferretería, descendencia europea, 55 años, piel clara, cabello canoso, camisa a cuadros',
     escena:    'entre estantes de tornillos y herramientas colgadas',
     accion:    'mostrando una herramienta a un cliente',
   },
@@ -52,7 +52,7 @@ const PRESETS = [
   },
   {
     name:      'Repuestos — estantería',
-    personaje: 'dueño de repuestos, mezcla mestiza con ascendencia europea, piel trigueña, pómulos marcados, cabello negro entrecano, 45 años, overol de trabajo',
+    personaje: 'dueña de repuestos, mezcla mestiza con ascendencia europea, piel trigueña, pómulos marcados, cabello negro entrecano, 45 años, overol de trabajo',
     escena:    'estantería llena de piezas y cajas etiquetadas',
     accion:    'buscando una pieza específica en un estante',
   },

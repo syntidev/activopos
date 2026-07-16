@@ -5,12 +5,15 @@
  *
  * Fenotipo explícito y distinto en cada uno a propósito: sin dirección, un difusor
  * (FLUX) tiende a repetir el mismo look "por defecto" para "Venezuela" en generaciones
- * sucesivas. Venezuela es mezcla real -- europea (española/canaria/italiana/portuguesa/
- * alemana de Colonia Tovar), árabe (libanesa/siria, muy presente en el comercio),
- * indígena (genérica/wayuu/pemón), afrodescendiente, zamba/mulata, mestiza, e inmigración
- * india/asiática real en profesiones como medicina -- se reparte un fenotipo distinto de
- * esas familias entre los 26, ninguno repetido literalmente, ninguno el default oscuro/
- * caribeño único.
+ * sucesivas. Foco estricto en comercio popular venezolano real (bodegas, abastos,
+ * ferreterías, farmacias, talleres) -- mestizo/a (el más común, base de la población),
+ * descendencia europea (español/canario/italiano/portugués, presente en comercio de
+ * generaciones), descendencia árabe (libanesa/siria, muy presente en el comercio real),
+ * afrodescendiente/zambo (especialmente costa/oriente), y mezclas combinadas entre esos.
+ * Sin perfiles profesionales/médicos ni comunidades indígenas específicas -- no
+ * representan al dueño típico de este tipo de negocio, se siente forzado en vez de
+ * auténtico. Se reparte un fenotipo distinto de esas familias entre los 26, ninguno
+ * repetido literalmente, ninguno el default oscuro/caribeño único.
  *
  * Upsert real por name (update si ya existe, create si no) -- se puede correr de nuevo
  * para corregir texto sin duplicar filas ni perder el id.
@@ -49,7 +52,7 @@ const PRESETS = [
   },
   {
     name:      'Repuestos — estantería',
-    personaje: 'dueño de repuestos, rasgos indígenas marcados, pómulos altos, piel cobriza, cabello negro lacio, 45 años, overol de trabajo',
+    personaje: 'dueño de repuestos, mezcla mestiza con ascendencia europea, piel trigueña, pómulos marcados, cabello negro entrecano, 45 años, overol de trabajo',
     escena:    'estantería llena de piezas y cajas etiquetadas',
     accion:    'buscando una pieza específica en un estante',
   },
@@ -91,7 +94,7 @@ const PRESETS = [
   },
   {
     name:      'Clínica — consultorio',
-    personaje: 'doctora, ascendencia india (comunidad india en Venezuela), piel morena cálida, cabello negro liso, bata blanca',
+    personaje: 'doctora, mestiza, piel trigueña, cabello negro liso corto, bata blanca',
     escena:    'en el consultorio, escritorio con instrumentos médicos',
     accion:    'revisando una carpeta de historia clínica',
   },
@@ -109,13 +112,13 @@ const PRESETS = [
   },
   {
     name:      'Distribuidora — bodega',
-    personaje: 'dueño, descendencia alemana (Colonia Tovar), piel muy clara, ojos azules, cabello rubio, 50 años',
+    personaje: 'dueño, descendencia española, piel clara, cabello cano, complexión robusta, 55 años',
     escena:    'bodega grande con pallets y cajas apiladas',
     accion:    'revisando una lista de inventario en una tablilla',
   },
   {
     name:      'Electrónica — mostrador',
-    personaje: 'técnica, indígena wayuu, piel cobriza oscura, cabello negro grueso trenzado',
+    personaje: 'técnica joven, mulata, piel canela clara, cabello rizado corto',
     escena:    'mostrador con celulares y televisores exhibidos',
     accion:    'mostrando un celular a un cliente',
   },
@@ -175,7 +178,7 @@ const PRESETS = [
   },
   {
     name:      'Tecnología — taller',
-    personaje: 'técnico joven, indígena pemón, piel cobriza, cabello negro corto',
+    personaje: 'técnico joven, mezcla mestiza con ascendencia árabe, piel trigueña, cabello negro corto, barba corta',
     escena:    'mesa de trabajo con computadoras desarmadas',
     accion:    'reparando una laptop con un destornillador',
   },

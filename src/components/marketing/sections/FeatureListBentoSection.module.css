@@ -81,34 +81,41 @@
   to   { transform: translateX(-50%); }
 }
 
-/* Idéntico a ProductBentoSection.module.css .tile (radius/sombra) +
-   sombra NUEVA del adenda para separarse del fondo mesh claro.
-   height fija 130px (Solo-Horizontal-Final: CERO card ocupa más de
-   1 fila -- nunca grid-row:span 2, ninguna excepción) + overflow:hidden
-   real (adenda: ningún texto puede desbordar su propia card).
-   Icono-Fondo-Segmentos: el ícono flotante (top-right, absolute) se
-   reemplaza por un ícono fantasma de fondo -- mismo patrón que
-   SegmentsSection.module.css .ghostIcon. --card-icon define el color
-   del ícono fantasma, blanco por defecto (cards blancas) y sobreescrito
-   a blanco puro en cards de color más abajo (mismo valor, pero
-   declarado explícito por si el default cambia). position:relative
-   se mantiene -- ancla el ghostIcon a la card, no al viewport. */
+/* Bento de 2 tamaños, ALTO FIJO idéntico para las 20 cards -> ambas filas
+   miden exactamente lo mismo (criterio de Carlos: "2 filas de la misma
+   altura, cero disparidad"). El tamaño lo da .size_sq / .size_rect según
+   el CONTENIDO real de cada card (asignado en el .tsx), no la posición.
+   justify-content:space-between -> .cardHead pega arriba y el Stage abajo,
+   así el alto fijo se llena sin hueco vacío. overflow:hidden + clamps ->
+   ningún texto desborda ni se corta a mitad de palabra. */
 .card {
-  /* width: sin regla aquí -- viene del inline style por-card en el
-     .tsx (widthFor: 150/190/240px), siempre gana sobre cualquier
-     regla de este archivo sin !important */
   --card-icon: var(--brand);
   position: relative;
-  height: 130px;
+  height: 172px;
   background: #FFFFFF;
   border-radius: 20px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+/* Los 2 tamaños del bento. Cuadrado (~igual ancho que alto) para contenido
+   corto; rectangular HORIZONTAL (casi 2x de ancho, MISMO alto) para
+   contenido pesado. Rectangular = más ANCHO, nunca más alto. */
+.size_sq   { width: 184px; }
+.size_rect { width: 340px; }
+
+/* Bloque de texto -- arriba de la card; el Stage queda abajo por el
+   space-between del .card. gap chico entre título y descripción. */
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 /* ── Variantes de color -- proporción ~1 de cada 4-5 cards (5 de 20).
@@ -154,12 +161,9 @@
   pointer-events: none;
 }
 
-/* Adenda Solo-Horizontal-Final: título máximo 1 línea, trunca con "…"
-   -- nunca desborda ni corta a la mitad (red de seguridad; con
-   widthFor() consciente de longitud de título, en la práctica no
-   debería activarse). Icono-Fondo-Segmentos: ya no reserva
-   padding-right -- el ícono fantasma vive detrás del texto, usa el
-   ancho completo de la card. */
+/* Título hasta 2 líneas (wrap, NO nowrap-ellipsis) -- los títulos largos
+   ("Precio Mayorista", "Pulso del Negocio", "Emisión de Ticket") deben
+   verse completos, nunca cortados con "…". */
 .cardTitle {
   font-family: var(--font-display);
   font-size: 15px;
@@ -167,13 +171,15 @@
   line-height: 1.2;
   color: #0D1B2E;
   letter-spacing: -0.01em;
-  margin: 0 0 2px;
-  white-space: nowrap;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* Adenda: descripción máximo 2 líneas, trunca con "…" (line-clamp) */
+/* Descripción hasta 2 líneas. Las cuadradas llevan desc corto que cabe en 2
+   líneas completo; las largas van en rect (más ancho) y también caben en 2. */
 .cardDesc {
   font-size: 13px;
   color: var(--mkt-text-2);
@@ -190,10 +196,9 @@
   color: var(--mkt-text-2);
   line-height: 1.45;
   margin: 4px 0 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  /* Sin line-clamp: fluye completo (única card con descExtra). Con
+     min-height + stretch la card crece y la fila se iguala -> cero
+     truncado sin importar la longitud del texto. */
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -201,11 +206,10 @@
    .stage* se monta debajo del texto, 2-4s infinite ease-in-out,
    staggered vía animation-delay por elemento.
    ══════════════════════════════════════════════════════════ */
-/* margin-top comprimido a 4px (antes 10px) y alturas de stage reducidas
-   -- espacio muy ajustado a 130px de card, ver nota en .card sobre la
-   tensión real entre ícono sellado + 2 líneas de desc + 130px fijo. */
+/* El Stage es el segundo hijo flex de .card; el space-between del .card ya lo
+   pega al fondo, así que no necesita margin-top propio. */
 .stageAcumulador, .stageFlujo, .stageBarras, .stageLineas, .stagePulso, .stageGiro {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 /* 1. ACUMULADOR -- "+" apareciendo/desvaneciendo en posiciones random */
@@ -342,11 +346,12 @@
   .scrollRow { animation-play-state: paused; }
 }
 
-/* ── Responsive -- el scroll y sus animaciones se mantienen en mobile
-   (mismo criterio de Fixes-Pendientes-1), solo se achica el gap y el
-   padding de card. Los anchos (150/190/240px) NO cambian -- siguen
-   siendo exactos en cualquier viewport. ── */
+/* ── Responsive -- el scroll y sus animaciones se mantienen en mobile;
+   se achican gap, padding y los 2 tamaños (proporción cuadrado/rect y
+   alto FIJO idéntico se conservan en cualquier viewport). ── */
 @media (max-width: 640px) {
   .scrollTrack, .scrollRow { gap: 8px; }
-  .card { padding: 12px 14px; }
+  .card { height: 156px; padding: 13px 15px; }
+  .size_sq   { width: 164px; }
+  .size_rect { width: 296px; }
 }

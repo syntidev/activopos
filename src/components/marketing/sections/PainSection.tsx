@@ -70,6 +70,9 @@ export default function PainSection() {
                 visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.23, 1, 0.32, 1] } },
               }}
             >
+              <span className={styles.ghostIcon} aria-hidden="true">
+                <Icon size={72} />
+              </span>
               <span className={styles.cardIcon}>
                 <Icon size={22} aria-hidden="true" />
               </span>

@@ -149,6 +149,38 @@ box-shadow: 0 2px 8px rgba(47,43,61,0.10), 0 0 1px rgba(47,43,61,0.06);
 border: none;
 ```
 
+### REGLA — Ghost icon de marca de agua (irrompible, aplicar por defecto)
+
+**Toda card blanca de contenido en marketing/dashboard DEBE llevar un ghost
+icon de marca de agua en la esquina inferior** — sutil, color de marca,
+relacionado al contenido de la card (reutilizar el ícono semántico de la
+propia card cuando exista). El próximo agente que cree una card nueva lo
+aplica por defecto, sin que Carlos lo pida.
+
+```css
+/* La card contenedora: */
+position: relative;
+overflow: hidden;
+
+/* El ghost: */
+.ghostIcon {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  color: var(--brand);   /* color de marca */
+  opacity: 0.08 – 0.10;  /* cards grandes: 72px @ 0.08-0.10 */
+  pointer-events: none;
+}
+```
+Referencia canónica: `FeatureListBentoSection.module.css .ghostIcon` (72px).
+También aplicado en `PainSection` (72px) y `LivePulseSection` stat-grid.
+
+**EXCEPCIÓN — stat-grid muy denso:** si la card es parte de un stat-grid
+compacto donde el ícono compite con el número, reducir a `size 56 @ opacity
+0.07` (o evaluar quitarlo). Documentar la excepción cuando aplique.
+Ejemplo aplicado: las 4 stat cards de la sección "En vivo"
+(`LivePulseSection .statGhost`, 56px @ 0.07).
+
 ### Tipo A — KPI con ícono circular (módulos generales)
 ```css
 padding: 14px 18px;

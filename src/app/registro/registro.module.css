@@ -1,6 +1,50 @@
 /* ── Layout base ── */
 
 .root {
+  /* /registro consume la familia MARKETING (misma que /login), NO los
+     tokens --color-* del dashboard (theme-aware -> renderizaban navy en
+     dark). Se remapean los --color-* SOLO dentro de este .root (scope
+     CSS) -> el sistema de tokens global queda intacto, el dashboard no
+     cambia. Resultado: /registro siempre claro, jamás hereda dark.
+     Colores de entrada del usuario suavizados: borde de input a #D5DCE8
+     (mismo de /login). */
+  --color-bg:             var(--mkt-bg);
+  --color-surface:        #FFFFFF;
+  --color-surface-2:      var(--mkt-bg-alt);
+  --color-brand:          var(--brand);
+  --color-text-primary:   var(--mkt-text-1);
+  --color-text-secondary: var(--mkt-text-2);
+  --color-text-muted:     var(--mkt-text-3);
+  --color-border:         #D5DCE8;
+  --color-border-subtle:  var(--mkt-border);
+  --color-white:          #FFFFFF;
+  --accent-rgb:           var(--brand-rgb);
+  --color-teal-subtle:    var(--brand-soft);
+  --color-success:        #16A34A;
+  --color-success-text:   #15803D;
+  --color-success-subtle: #DCFCE7;
+  --color-danger-text:    #DC2626;
+  --color-danger-soft:    #FEE2E2;
+  --color-warning-text:   #D97706;
+  --color-warning-subtle: #FEF3C7;
+  --color-warning-border: #FDE68A;
+
+  /* Componente <Input> compartido (ui/Input) usa sus propios tokens
+     --input-* + --color-*-subtle (theme-aware -> navy en dark). Se
+     remapean acá también, scoped a /registro -> los inputs de nombre/
+     correo quedan blancos como los de /login. Fuera de /registro el
+     Input compartido sigue usando sus tokens normales. */
+  --input-bg:             #FFFFFF;
+  --input-border:         #D5DCE8;
+  --input-border-focus:   var(--brand);
+  --input-border-error:   #DC2626;
+  --input-placeholder:    #9AA6B8;
+  --input-text:           var(--mkt-text-1);
+  --color-brand-subtle:   var(--brand-soft);
+  --color-danger-subtle:  #FEE2E2;
+  --color-border-focus:   var(--brand);
+  --color-border-strong:  var(--mkt-border-dashed);
+
   min-height: 100dvh;
   background: var(--color-bg);
   font-family: var(--font-sans);
@@ -61,6 +105,23 @@
   outline: none;
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+/* Autofill de Chrome pinta su propio fondo (oscuro si el navegador está
+   en dark) -> los inputs de nombre/correo salían navy mientras el resto
+   quedaba blanco. Se fuerza blanco vía box-shadow inset (única forma de
+   vencer -webkit-autofill) + se congela la transición. Mismo fix que
+   /login -> colores de entrada del usuario uniformes y suaves. */
+.fieldInput:-webkit-autofill,
+.fieldInput:-webkit-autofill:hover,
+.fieldInput:-webkit-autofill:focus,
+.slugInput:-webkit-autofill,
+.createInput:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset;
+  box-shadow: 0 0 0 1000px #FFFFFF inset;
+  -webkit-text-fill-color: var(--color-text-primary);
+  caret-color: var(--color-text-primary);
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 .fieldError {

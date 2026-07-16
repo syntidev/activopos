@@ -54,6 +54,16 @@
   white-space: nowrap;
 }
 
+/* Mobile: el wordmark es el remate de marca -- MÁS prominente que en
+   desktop, casi llenando el ancho disponible. 16vw a 375px = 60px
+   (llena sin desbordar el usable ~327px; overflow:hidden del bloque
+   es la red de seguridad). */
+@media (max-width: 640px) {
+  .wordmark {
+    font-size: 16vw;
+  }
+}
+
 /* rgba(13,27,46,.10) tal como pedía el prompt habría sido invisible: es
    el MISMO color que el fondo navy del footer (#0D1B2E = rgb(13,27,46)),
    contraste 1:1. Se usa blanco suave en su lugar -- el mismo valor que
@@ -61,13 +71,17 @@
    cambios de fondo (git show a2fb61b), ya probado como marca de agua
    sutil sobre este navy exacto. */
 .wordmarkActivo {
-  color: rgba(255, 255, 255, 0.10);
+  /* Subido 0.10 -> 0.24: se LEE claramente sobre el navy sin volverse
+     texto sólido (sigue leyéndose como marca de agua). */
+  color: rgba(255, 255, 255, 0.24);
 }
 
 /* "POS" siempre en el ámbar de marca, a opacidad reducida para que siga
    leyéndose como marca de agua y no compita con el contenido de arriba. */
 .wordmarkPos {
-  color: rgba(239, 142, 1, 0.18);
+  /* Subido 0.18 -> 0.50: el ámbar se nota como acento real de marca,
+     no diluido, sin volverse CTA sólido. */
+  color: rgba(239, 142, 1, 0.50);
 }
 
 /* Línea divisora sobre el wordmark -- ya no depende de un badge, sigue

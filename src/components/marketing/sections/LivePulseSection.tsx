@@ -38,6 +38,7 @@ interface FeedEvent {
   color:  'green' | 'blue' | 'amber'
   title:  string
   detail: string
+  time:   string
 }
 
 /* Único caso donde el ícono varía de color por evento -- mismo criterio
@@ -45,15 +46,15 @@ interface FeedEvent {
    blanca siempre, solo el ícono cambia. Venta=verde (positivo), CxP y
    devolución=ámbar (dinero/stock en reversa), el resto Persian Blue. */
 const EVENTS: FeedEvent[] = [
-  { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Pago Móvil · $18.50' },
-  { Icon: RefreshCw,     color: 'blue',  title: 'Tasa BCV actualizada', detail: 'Bs. 36.74 por $' },
-  { Icon: ScanBarcode,   color: 'blue',  title: 'Producto escaneado',   detail: 'Harina P.A.N. 1kg' },
-  { Icon: UserPlus,      color: 'blue',  title: 'Cliente nuevo',        detail: 'María G. · Boutique' },
-  { Icon: Receipt,       color: 'amber', title: 'Cuenta por pagar',     detail: 'Distribuidora Polar · $120.00' },
-  { Icon: MessageCircle, color: 'blue',  title: 'Pedido de catálogo',   detail: 'WhatsApp · 3 productos' },
-  { Icon: FileText,      color: 'blue',  title: 'Cotización enviada',   detail: '$430.00' },
-  { Icon: RotateCcw,     color: 'amber', title: 'Devolución procesada', detail: 'Camisa Talla M' },
-  { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Zelle · $42.00' },
+  { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Pago Móvil · $18.50',          time: 'ahora' },
+  { Icon: RefreshCw,     color: 'blue',  title: 'Tasa BCV actualizada', detail: 'Bs. 36.74 por $',              time: 'hace 1 min' },
+  { Icon: ScanBarcode,   color: 'blue',  title: 'Producto escaneado',   detail: 'Harina P.A.N. 1kg',            time: 'hace 2 min' },
+  { Icon: UserPlus,      color: 'blue',  title: 'Cliente nuevo',        detail: 'María G. · Boutique',          time: 'hace 4 min' },
+  { Icon: Receipt,       color: 'amber', title: 'Cuenta por pagar',     detail: 'Distribuidora Polar · $120.00', time: 'hace 6 min' },
+  { Icon: MessageCircle, color: 'blue',  title: 'Pedido de catálogo',   detail: 'WhatsApp · 3 productos',       time: 'hace 8 min' },
+  { Icon: FileText,      color: 'blue',  title: 'Cotización enviada',   detail: '$430.00',                      time: 'hace 12 min' },
+  { Icon: RotateCcw,     color: 'amber', title: 'Devolución procesada', detail: 'Camisa Talla M',               time: 'hace 15 min' },
+  { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Zelle · $42.00',               time: 'hace 18 min' },
 ]
 
 /* 3 slots, 3 eventos cada uno (round-robin sobre el banco de 9) */
@@ -78,6 +79,7 @@ export default function LivePulseSection() {
           <div className={styles.statGrid}>
             {STATS.map(s => (
               <div key={s.label} className={styles.statCard}>
+                <span className={styles.statGhost} aria-hidden="true"><s.Icon size={56} /></span>
                 <span className={styles.statIcon}><s.Icon size={16} aria-hidden="true" /></span>
                 <span className={styles.statLabel}>{s.label}</span>
                 <span className={`${styles.statValue} tabular-nums`}>{s.value}</span>
@@ -126,6 +128,7 @@ export default function LivePulseSection() {
                       <span className={styles.eventTitle}>{ev.title}</span>
                       <span className={styles.eventDetail}>{ev.detail}</span>
                     </span>
+                    <span className={styles.eventTime}>{ev.time}</span>
                   </div>
                 ))}
               </div>

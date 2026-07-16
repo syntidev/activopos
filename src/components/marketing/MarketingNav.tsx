@@ -81,18 +81,15 @@ export default function MarketingNav({ segments }: { segments: Segment[] }) {
         )}
 
         <div className={styles.actions}>
+          {/* Dos destinos DISTINTOS, sin redundancia: sesión existente -> /login,
+             cuenta nueva -> /registro. Antes ambos iban a /login fuera de las
+             páginas de segmento (los "2 botones al mismo lugar" reportados). */}
           <Link href="/login" className={styles.loginLink}>
             Iniciar sesión
           </Link>
-          {isSegmentPage ? (
-            <Link href="/registro" className={styles.ctaBtn}>
-              Empezar gratis →
-            </Link>
-          ) : (
-            <Link href="/login" className={styles.ctaBtn}>
-              Ingresar →
-            </Link>
-          )}
+          <Link href="/registro" className={styles.ctaBtn}>
+            Empezar gratis →
+          </Link>
         </div>
 
         <button
@@ -156,15 +153,9 @@ export default function MarketingNav({ segments }: { segments: Segment[] }) {
             <Link href="/login" className={styles.drawerLoginLink} onClick={close}>
               Iniciar sesión
             </Link>
-            {isSegmentPage ? (
-              <Link href="/registro" className={styles.drawerCta} onClick={close}>
-                Empezar gratis →
-              </Link>
-            ) : (
-              <Link href="/login" className={styles.drawerCta} onClick={close}>
-                Ingresar →
-              </Link>
-            )}
+            <Link href="/registro" className={styles.drawerCta} onClick={close}>
+              Empezar gratis →
+            </Link>
           </div>
         </div>
       </div>

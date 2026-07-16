@@ -80,6 +80,8 @@
 }
 
 .statCard {
+  position: relative;
+  overflow: hidden;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -88,6 +90,18 @@
   border-radius: 14px;
   padding: 14px 16px;
   box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+}
+
+/* Ghost icon de marca de agua (regla sellada de cards, ver DESIGN_SYSTEM.md).
+   Stat-grid denso -> opacity 0.07 y size 56 (menor que el 72/0.1 de las
+   cards grandes) para que no compita con el número. */
+.statGhost {
+  position: absolute;
+  right: -12px;
+  bottom: -12px;
+  color: var(--brand);
+  opacity: 0.07;
+  pointer-events: none;
 }
 
 .statIcon {
@@ -297,6 +311,19 @@
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  flex: 1;
+}
+
+/* Timestamp relativo a la derecha -- llena el espacio muerto de la fila
+   con contenido útil (patrón real de activity-feed) en vez de dejar el
+   ~20% derecho vacío. */
+.eventTime {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--mkt-text-3);
+  white-space: nowrap;
+  align-self: flex-start;
+  padding-top: 1px;
 }
 
 .eventTitle {

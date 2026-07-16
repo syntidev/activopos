@@ -1,0 +1,225 @@
+{
+  "name": "ActivoPOS - Reporte Mensual WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "55 23 L * *"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-4a1a-8a1a-000000000001",
+      "name": "Cron Mensual",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://activopos.com/api/reports/monthly/mark-pending",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.N8N_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ period: $now.minus({ months: 1 }).toFormat('yyyy-MM') }) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0002-4a1a-8a1a-000000000002",
+      "name": "Nodo 1 - Marcar reportes pending",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "minutes"
+      },
+      "id": "a1b2c3d4-0003-4a1a-8a1a-000000000003",
+      "name": "Nodo 2 - Esperar 5 minutos",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [680, 300],
+      "webhookId": "b2c3d4e5-0003-4a1a-8a1a-000000000003"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://activopos.com/api/reports/monthly/pending",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.N8N_API_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0004-4a1a-8a1a-000000000004",
+      "name": "Nodo 3 - Obtener reportes pending",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "reports",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0005-4a1a-8a1a-000000000005",
+      "name": "Extraer array reports",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "a1b2c3d4-0006-4a1a-8a1a-000000000006",
+      "name": "Nodo 4 - Loop por negocio",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.business.whatsapp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0007-4a1a-8a1a-000000000007",
+      "name": "Tiene WhatsApp",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1560, 220],
+      "notesInFlow": true,
+      "notes": "Manejo de error documentado: 'Si un negocio no tiene whatsapp_phone -> Skip (no iterar)'"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1-mensaje",
+              "name": "mensaje",
+              "type": "string",
+              "value": "=ActivoPOS | Tu reporte de {{ $json.period }} ya está listo.\n\n📊 Ventas del mes, top productos y comparativo.\n\nDescarga tu PDF aquí:\nhttps://activopos.com/api/r/{{ $json.download_token }}\n\n(Disponible por 30 días)"
+            },
+            {
+              "id": "c1-url-wa",
+              "name": "url_wa",
+              "type": "string",
+              "value": "=https://wa.me/{{ $json.business.whatsapp }}?text={{ encodeURIComponent($json.mensaje) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0008-4a1a-8a1a-000000000008",
+      "name": "Nodo 5 - Construir mensaje WhatsApp",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1780, 220],
+      "notesInFlow": true,
+      "notes": "BLOQUEADO: $json.download_token no existe hoy en la respuesta real de GET /pending (verificado contra el código, 2026-07-12). Requiere agregar download_token al select de pending/route.ts antes de que este nodo funcione."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://activopos.com/api/reports/monthly/mark-notified",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.N8N_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ report_id: $json.id, wa_url: $json.url_wa, notified_at: $now.toISO() }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0009-4a1a-8a1a-000000000009",
+      "name": "Nodo 6 - Registrar notificacion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 220],
+      "notesInFlow": true,
+      "notes": "neverError=true implementa 'Si mark-notified falla -> Continue (log en n8n, no bloquea otros negocios)' del doc"
+    }
+  ],
+  "connections": {
+    "Cron Mensual": {
+      "main": [[{ "node": "Nodo 1 - Marcar reportes pending", "type": "main", "index": 0 }]]
+    },
+    "Nodo 1 - Marcar reportes pending": {
+      "main": [[{ "node": "Nodo 2 - Esperar 5 minutos", "type": "main", "index": 0 }]]
+    },
+    "Nodo 2 - Esperar 5 minutos": {
+      "main": [[{ "node": "Nodo 3 - Obtener reportes pending", "type": "main", "index": 0 }]]
+    },
+    "Nodo 3 - Obtener reportes pending": {
+      "main": [[{ "node": "Extraer array reports", "type": "main", "index": 0 }]]
+    },
+    "Extraer array reports": {
+      "main": [[{ "node": "Nodo 4 - Loop por negocio", "type": "main", "index": 0 }]]
+    },
+    "Nodo 4 - Loop por negocio": {
+      "main": [
+        [],
+        [{ "node": "Tiene WhatsApp", "type": "main", "index": 0 }]
+      ]
+    },
+    "Tiene WhatsApp": {
+      "main": [
+        [{ "node": "Nodo 5 - Construir mensaje WhatsApp", "type": "main", "index": 0 }],
+        [{ "node": "Nodo 4 - Loop por negocio", "type": "main", "index": 0 }]
+      ]
+    },
+    "Nodo 5 - Construir mensaje WhatsApp": {
+      "main": [[{ "node": "Nodo 6 - Registrar notificacion", "type": "main", "index": 0 }]]
+    },
+    "Nodo 6 - Registrar notificacion": {
+      "main": [[{ "node": "Nodo 4 - Loop por negocio", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

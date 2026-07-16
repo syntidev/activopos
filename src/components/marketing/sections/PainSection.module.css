@@ -53,6 +53,8 @@
 }
 
 .card {
+  position: relative;
+  overflow: hidden;
   background: #FFFFFF;
   border-radius: 20px;
   box-shadow: var(--shadow-card-elevated);
@@ -61,6 +63,18 @@
   flex-direction: column;
   gap: 12px;
   transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+/* Ghost icon de marca de agua (regla sellada de cards, ver DESIGN_SYSTEM.md)
+   -- mismo tratamiento que FeatureListBentoSection: 72px, esquina inferior
+   derecha, color de marca, opacity baja, detrás del contenido. */
+.ghostIcon {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  color: var(--brand);
+  opacity: 0.08;
+  pointer-events: none;
 }
 
 .card:hover {
@@ -75,8 +89,10 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--warning-soft);
-  color: var(--warning-text);
+  /* Ámbar fuerte (mismo #EF8E01 del pill) sobre tinte ámbar suave --
+     el dolor se siente desde el ícono, no solo desde el pill. */
+  background: var(--cta-soft);
+  color: var(--cta);
   flex-shrink: 0;
 }
 
@@ -105,8 +121,11 @@
   margin-top: 4px;
   padding: 6px 12px;
   border-radius: 9999px;
-  background: var(--sand);
-  color: var(--mkt-text-1);
+  /* Ámbar real (#EF8E01) -- excepción documentada al uso solo-CTA:
+     aquí es color de ALERTA/dolor en contexto emocional del copy, no
+     decorativo ni CTA. Texto navy #0D1B2E da 7.04:1 (blanco falla 2.46:1). */
+  background: var(--cta);
+  color: #0D1B2E;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;

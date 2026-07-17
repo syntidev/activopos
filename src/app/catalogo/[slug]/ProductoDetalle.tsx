@@ -1,9 +1,13 @@
 'use client'
 
-import { useState, useMemo, type CSSProperties } from 'react'
-import { ArrowLeft, Share2, Plus, Minus, MessageCircle } from 'lucide-react'
+import { useEffect, useState, useMemo, type CSSProperties } from 'react'
+import { ArrowLeft, Share2, Plus, Minus, MessageCircle, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
-import type { CatalogProductVariant } from './CatalogoGrid'
+import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
+import { useCart } from './CartContext'
+import { CartHeaderButton } from './CartHeaderButton'
+import { CartDrawer } from './CartDrawer'
+import { fmtUsd, fmtBs, capitalize } from './catalogUtils'
 import styles from './productoDetalle.module.css'
 
 interface RelatedProduct {
@@ -14,6 +18,7 @@ interface RelatedProduct {
 }
 
 interface Props {
+  productId:     number
   name:          string
   description:   string | null
   images:        string[]
@@ -26,30 +31,29 @@ interface Props {
   businessName:  string
   slug:          string
   rate:          number
+  paymentMethods: PaymentMethod[]
   catalogUrl:    string
   relatedProducts: RelatedProduct[]
   businessLogo:  string | null
 }
 
-function fmtUsd(n: number) {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-function fmtBs(n: number) {
-  return `Bs. ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 export function ProductoDetalle({
-  name, description, images, categoryName, categoryColor,
+  productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessPhone, businessName,
-  catalogUrl, rate, slug, relatedProducts, businessLogo,
+  catalogUrl, rate, slug, paymentMethods, relatedProducts, businessLogo,
 }: Props) {
+  const { addToCart, cartOpen, checkoutOpen, setCartOpen } = useCart()
   const [imageIndex,        setImageIndex]        = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [qty,               setQty]               = useState(1)
   const [variantError,      setVariantError]      = useState(false)
+
+  // Scroll lock — el drawer/checkout del carrito puede abrirse desde esta página también
+  useEffect(() => {
+    const locked = cartOpen || checkoutOpen
+    document.body.style.overflow = locked ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [cartOpen, checkoutOpen])
 
   const selectedVariant  = variants.find(v => v.id === selectedVariantId) ?? null
   const effectivePrice   = priceUsd + (selectedVariant?.precio_extra ?? 0)
@@ -91,6 +95,7 @@ export function ProductoDetalle({
           )}
           <span className={styles.productHeaderName}>{businessName}</span>
         </Link>
+        <CartHeaderButton />
       </header>
 
       {/* Breadcrumb */}
@@ -241,6 +246,26 @@ export function ProductoDetalle({
 
           {/* CTAs */}
           <div className={styles.ctas}>
+            <button
+              type="button"
+              className={styles.btnAddCart}
+              onClick={() => {
+                if (variants.length > 0 && !selectedVariant) { setVariantError(true); return }
+                addToCart({
+                  product_id:    productId,
+                  name,
+                  qty,
+                  price_usd:     effectivePrice,
+                  image_url:     images[0] ?? null,
+                  variant_id:    selectedVariant?.id,
+                  variant_label: selectedVariant ? `${capitalize(selectedVariant.tipo)}: ${selectedVariant.valor}` : undefined,
+                })
+                setCartOpen(true)
+              }}
+            >
+              <ShoppingBag size={18} aria-hidden="true" />
+              Agregar al carrito
+            </button>
             <a
               href={waUrl}
               target="_blank"
@@ -307,6 +332,8 @@ export function ProductoDetalle({
           </div>
         </section>
       )}
+
+      <CartDrawer slug={slug} rate={rate} paymentMethods={paymentMethods} />
     </div>
   )
 }

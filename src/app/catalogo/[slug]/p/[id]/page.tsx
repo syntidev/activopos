@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { ProductoDetalle } from '../../ProductoDetalle'
+import type { PaymentMethod } from '../../CatalogoGrid'
 import { CatalogFooter } from '../../CatalogFooter'
 import styles from '../../catalogo.module.css'
 
@@ -61,7 +62,7 @@ export default async function ProductoPage({ params }: PageProps) {
   })
   if (!business || !isCatalogLive(business)) notFound()
 
-  const [product, rate] = await Promise.all([
+  const [product, rate, paymentMethods] = await Promise.all([
     prisma.product.findFirst({
       where: {
         id:               productId,
@@ -80,6 +81,11 @@ export default async function ProductoPage({ params }: PageProps) {
       },
     }),
     getActiveRate(business.id).then(r => r.rate),
+    prisma.paymentMethod.findMany({
+      where:   { business_id: business.id, is_active: true },
+      select:  { id: true, name: true, type: true },
+      orderBy: { sort_order: 'asc' },
+    }),
   ])
   if (!product) notFound()
 
@@ -124,6 +130,7 @@ export default async function ProductoPage({ params }: PageProps) {
         : undefined}
     >
       <ProductoDetalle
+        productId={product.id}
         name={product.name}
         description={product.description}
         images={imgs}
@@ -143,6 +150,7 @@ export default async function ProductoPage({ params }: PageProps) {
         businessName={business.name}
         slug={params.slug}
         rate={rate}
+        paymentMethods={paymentMethods as PaymentMethod[]}
         catalogUrl={`/catalogo/${params.slug}`}
         relatedProducts={relatedProducts}
         businessLogo={business.logo_path}

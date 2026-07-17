@@ -76,13 +76,13 @@ const PRESETS = [
   },
   {
     name:      'Belleza — salón',
-    personaje: 'estilista, mulata, piel canela oscura, cabello afro voluminoso',
+    personaje: 'estilista, mulato, piel canela oscura, cabello afro voluminoso',
     escena:    'en el salón, sillas y espejos alrededor',
     accion:    'peinando a una clienta con secador',
   },
   {
     name:      'Bisutería — vitrina',
-    personaje: 'vendedora, descendencia portuguesa, piel clara, cabello rubio ceniza recogido',
+    personaje: 'vendedor, descendencia portuguesa, piel clara, cabello rubio ceniza corto',
     escena:    'junto a la vitrina de aretes y collares',
     accion:    'mostrando una pieza de bisutería a una clienta',
   },
@@ -112,7 +112,7 @@ const PRESETS = [
   },
   {
     name:      'Distribuidora — bodega',
-    personaje: 'dueño, descendencia española, piel clara, cabello cano, complexión robusta, 55 años',
+    personaje: 'dueña, descendencia española, piel clara, cabello cano, complexión robusta, 55 años',
     escena:    'bodega grande con pallets y cajas apiladas',
     accion:    'revisando una lista de inventario en una tablilla',
   },
@@ -142,7 +142,7 @@ const PRESETS = [
   },
   {
     name:      'Lavandería — máquinas',
-    personaje: 'dueña, zamba mayor, piel oscura curtida, cabello canoso rizado, 60 años',
+    personaje: 'dueño, zambo mayor, piel oscura curtida, cabello canoso rizado, 60 años',
     escena:    'entre lavadoras industriales y ropa colgada',
     accion:    'doblando ropa recién lavada',
   },

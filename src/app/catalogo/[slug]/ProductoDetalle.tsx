@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, type CSSProperties } from 'react'
-import { ArrowLeft, Share2, Plus, Minus, MessageCircle, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
 import { useCart } from './CartContext'
@@ -27,7 +27,6 @@ interface Props {
   priceUsd:      number
   priceBs:       number | null
   variants:      CatalogProductVariant[]
-  businessPhone: string
   businessName:  string
   slug:          string
   rate:          number
@@ -39,10 +38,10 @@ interface Props {
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
-  priceUsd, priceBs, variants, businessPhone, businessName,
+  priceUsd, priceBs, variants, businessName,
   catalogUrl, rate, slug, paymentMethods, relatedProducts, businessLogo,
 }: Props) {
-  const { addToCart, cartOpen, checkoutOpen, setCartOpen } = useCart()
+  const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
   const [imageIndex,        setImageIndex]        = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
   const [qty,               setQty]               = useState(1)
@@ -74,11 +73,22 @@ export function ProductoDetalle({
     return Array.from(map.entries()).map(([tipo, options]) => ({ tipo, options }))
   }, [variants])
 
-  const waUrl = businessPhone
-    ? `https://wa.me/${businessPhone}?text=${encodeURIComponent(
-        `Hola, quiero pedir: ${name}${selectedVariant ? ` (${selectedVariant.valor})` : ''} x${qty} — ${fmtUsd(effectivePrice * qty)}`
-      )}`
-    : '#'
+  // Agrega el producto actual (con la variante/cantidad elegida) al carrito.
+  // Devuelve false si falta elegir variante — ambos CTAs (Agregar / Pedir
+  // ahora) comparten esta misma validación y forma de item.
+  const addCurrentToCart = (): boolean => {
+    if (variants.length > 0 && !selectedVariant) { setVariantError(true); return false }
+    addToCart({
+      product_id:    productId,
+      name,
+      qty,
+      price_usd:     effectivePrice,
+      image_url:     images[0] ?? null,
+      variant_id:    selectedVariant?.id,
+      variant_label: selectedVariant ? `${capitalize(selectedVariant.tipo)}: ${selectedVariant.valor}` : undefined,
+    })
+    return true
+  }
 
   return (
     <div className={styles.page}>
@@ -249,38 +259,19 @@ export function ProductoDetalle({
             <button
               type="button"
               className={styles.btnAddCart}
-              onClick={() => {
-                if (variants.length > 0 && !selectedVariant) { setVariantError(true); return }
-                addToCart({
-                  product_id:    productId,
-                  name,
-                  qty,
-                  price_usd:     effectivePrice,
-                  image_url:     images[0] ?? null,
-                  variant_id:    selectedVariant?.id,
-                  variant_label: selectedVariant ? `${capitalize(selectedVariant.tipo)}: ${selectedVariant.valor}` : undefined,
-                })
-                setCartOpen(true)
-              }}
+              onClick={() => { if (addCurrentToCart()) setCartOpen(true) }}
             >
               <ShoppingBag size={18} aria-hidden="true" />
               Agregar al carrito
             </button>
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               className={styles.btnPedir}
-              onClick={e => {
-                if (variants.length > 0 && !selectedVariant) {
-                  e.preventDefault()
-                  setVariantError(true)
-                }
-              }}
+              onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
             >
-              <MessageCircle size={18} aria-hidden="true" />
+              <Zap size={18} aria-hidden="true" />
               Pedir ahora · {fmtUsd(effectivePrice * qty)}
-            </a>
+            </button>
             <button
               type="button"
               className={styles.btnShare}

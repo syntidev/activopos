@@ -146,7 +146,6 @@ export default async function ProductoPage({ params }: PageProps) {
           precio_extra:    Number(v.precio_extra),
           combination_key: v.combination_key,
         }))}
-        businessPhone={business.phone?.replace(/\D/g, '') ?? ''}
         businessName={business.name}
         slug={params.slug}
         rate={rate}

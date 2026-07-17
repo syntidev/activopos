@@ -1,7 +1,7 @@
 // Service Worker — ActivoPOS PWA
 // Estrategia: Network First con fallback a cache
 
-const CACHE_NAME = 'activopos-v1'
+const CACHE_NAME = 'activopos-v2'
 const OFFLINE_URL = '/offline.html'
 
 const STATIC_ASSETS = [

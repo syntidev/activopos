@@ -186,10 +186,17 @@ export default async function CatalogoPage({ params }: PageProps) {
   const categoryColors: Record<string, string | null> = {}
   Array.from(catMeta.entries()).forEach(([name, meta]) => { categoryColors[name] = meta.color })
 
-  // Imagen propia de categoría (círculos del catálogo) — viene de Category.image_url,
-  // no del producto al azar
+  // Imagen del círculo de categoría: la propia de Category.image_url si existe; si NO
+  // (dato faltante, la causa de círculos vacíos en cada demo — nota Carlos 16 jul),
+  // fallback a la imagen del primer producto de esa categoría (catalogProducts ya viene
+  // ordenado is_featured desc -> el "destacado" representa la categoría). Así el círculo
+  // nunca sale vacío aunque nadie haya subido la imagen a mano.
   const categoryImages: Record<string, string | null> = {}
-  dbCategories.forEach(c => { categoryImages[c.name] = c.image_url ?? null })
+  dbCategories.forEach(c => {
+    if (c.image_url) { categoryImages[c.name] = c.image_url; return }
+    const firstWithImg = catalogProducts.find(p => p.categoryName === c.name && p.image)
+    categoryImages[c.name] = firstWithImg?.image ?? null
+  })
 
   const displayTitle = business.catalog_title ?? business.name
   const location     = [business.city, business.state].filter(Boolean).join(', ')

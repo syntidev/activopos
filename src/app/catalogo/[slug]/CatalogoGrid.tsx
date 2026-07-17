@@ -208,6 +208,9 @@ export function CatalogoGrid({
   const [gpsError,       setGpsError]       = useState('')
   const [submitting,     setSubmitting]     = useState(false)
   const [submitted,      setSubmitted]      = useState(false)
+  // Sin esto, un pedido que falla (stock, 422, red) no mostraba NADA -- el botón
+  // "Enviar" parecía no hacer nada (fachada de éxito). Ver handleCheckout.
+  const [checkoutError,  setCheckoutError]  = useState<string | null>(null)
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
   const [cartBumping,    setCartBumping]    = useState(false)
   const [searchExpanded, setSearchExpanded] = useState(false)
@@ -567,6 +570,7 @@ export function CatalogoGrid({
     if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
     if (deliveryType === 'delivery' && hasZones && zoneIdx < 0) return
     setSubmitting(true)
+    setCheckoutError(null)
     try {
       const baseRef = cRef.trim() || 'Sin especificar'
       const referenceWithZone = deliveryType !== 'delivery'
@@ -594,10 +598,15 @@ export function CatalogoGrid({
 
       if (res.ok) {
         const data = await res.json() as { whatsapp_url: string | null }
-        setSubmitted(true)
-        if (data.whatsapp_url) {
-          window.open(data.whatsapp_url, '_blank', 'noopener,noreferrer')
+        if (!data.whatsapp_url) {
+          // Pedido creado pero el negocio no tiene WhatsApp configurado -> sin este aviso
+          // el cliente creía que "no pasó nada". Se le da su número de pedido igual.
+          setCheckoutError('Tu pedido se registró, pero este negocio aún no tiene WhatsApp configurado. Contáctalo directamente para coordinar.')
+          setCart([])
+          return
         }
+        setSubmitted(true)
+        window.open(data.whatsapp_url, '_blank', 'noopener,noreferrer')
         setCart([])
         setTimeout(() => {
           setSubmitted(false)
@@ -608,8 +617,14 @@ export function CatalogoGrid({
           setZoneIdx(-1)
           setCheckoutStep(1); setDeliveryType('pickup'); setRecipientName(''); setDeliveryAddress('')
         }, 3000)
+      } else {
+        // 409 stock, 422 validación, 429 rate limit, 404... antes se tragaba en silencio.
+        const data = await res.json().catch(() => null) as { error?: string } | null
+        setCheckoutError(data?.error ?? 'No se pudo enviar el pedido. Revisa los datos e intenta de nuevo.')
       }
-    } catch { /* user stays in form */ }
+    } catch {
+      setCheckoutError('Error de conexión. Revisa tu internet e intenta de nuevo.')
+    }
     finally { setSubmitting(false) }
   }
 
@@ -1733,6 +1748,10 @@ export function CatalogoGrid({
                     </span>
                   </div>
                 </div>
+
+                {checkoutError && (
+                  <p className={styles.checkoutError} role="alert">{checkoutError}</p>
+                )}
 
                 <div className={styles.checkoutNavRow}>
                   <button type="button" className={styles.btnBack} onClick={() => setCheckoutStep(2)} disabled={submitting}>

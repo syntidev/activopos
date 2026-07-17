@@ -2549,6 +2549,19 @@
   flex-wrap:  nowrap;
 }
 
+/* Error de checkout -- antes un pedido fallido no mostraba nada (el botón parecía
+   muerto). Ahora el cliente ve exactamente por qué no se envió. */
+.checkoutError {
+  margin:        var(--space-3) 0 0;
+  padding:       10px 12px;
+  font-size:     13px;
+  line-height:   1.4;
+  color:         var(--danger-text);
+  background:    var(--danger-soft);
+  border:        1px solid rgba(var(--danger-rgb), 0.3);
+  border-radius: 10px;
+}
+
 .btnBack {
   flex:          1;
   height:        44px;

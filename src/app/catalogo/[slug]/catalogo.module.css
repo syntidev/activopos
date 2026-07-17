@@ -3255,7 +3255,10 @@
   display:          flex;
   justify-content:  flex-start; /* fallback si el browser no soporta safe center */
   justify-content:  safe center;
-  flex-wrap:        nowrap;
+  /* wrap (no nowrap): con 8+ categorías se parten en 2 filas donde hay espacio,
+     en vez de quedar en 1 sola fila con scroll horizontal. overflow-x:auto queda
+     inofensivo -- al envolverse ya no hay desborde horizontal que scrollear. */
+  flex-wrap:        wrap;
   overflow-x:       auto;
   gap:              var(--space-5);
   padding-top:      var(--space-2);

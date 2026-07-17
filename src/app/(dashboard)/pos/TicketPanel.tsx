@@ -120,7 +120,11 @@ export function TicketPanel({
                 <span>+${totals.cargo_usd.toFixed(2)}</span>
               </div>
             )}
-            {ticket.iva_pct > 0 && (
+            {/* IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo
+                fiscal: la línea se mostraba pero el cobro nunca se persistía
+                realmente). ticket.iva_pct siempre es 0 en producción hoy
+                (Business.iva_enabled=false en los 5 negocios reales). */}
+            {false && ticket.iva_pct > 0 && (
               <div className={`${styles.totalRow} ${styles.totalRowIva}`}>
                 <span>IVA ({ticket.iva_pct}%)</span>
                 <span>+${totals.iva_usd.toFixed(2)}</span>

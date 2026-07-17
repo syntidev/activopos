@@ -140,7 +140,10 @@ export async function GET(_req: NextRequest, { params }: Context) {
     const ivaPct    = Number(sale.business.iva_pct ?? 0)
     let subtotalUsd: number
     let ivaAmount:   number
-    if (ivaEnabled && ivaPct > 0) {
+    // IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo fiscal:
+    // esta matemática inversa fabricaba una línea de IVA a partir del total
+    // ya cobrado, que nunca se persistió realmente como impuesto separado).
+    if (false && ivaEnabled && ivaPct > 0) {
       subtotalUsd = totalUsd / (1 + ivaPct / 100)
       ivaAmount   = totalUsd - subtotalUsd
     } else {
@@ -152,7 +155,8 @@ export async function GET(_req: NextRequest, { params }: Context) {
     doc.setFont('helvetica', 'normal')
     doc.text(`Subtotal USD: $${subtotalUsd.toFixed(2)}`, 195, y, { align: 'right' })
     y += 6
-    if (ivaEnabled) {
+    // IVA desconectado -- ver auditoría 2026-07-16, no borrar.
+    if (false && ivaEnabled) {
       doc.text(`IVA (${ivaPct}%): $${ivaAmount.toFixed(2)}`, 195, y, { align: 'right' })
       y += 6
     }

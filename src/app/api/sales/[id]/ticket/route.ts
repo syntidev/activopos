@@ -78,13 +78,24 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     let subtotalUsd: number
     let ivaAmount: number
-    if (ivaEnabled && ivaPct > 0) {
+    // IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo fiscal:
+    // esta matemática inversa fabricaba una línea de IVA a partir del total
+    // ya cobrado, que nunca se persistió realmente como impuesto separado).
+    if (false && ivaEnabled && ivaPct > 0) {
       subtotalUsd = totalUsd / (1 + ivaPct / 100)
       ivaAmount   = totalUsd - subtotalUsd
     } else {
       subtotalUsd = totalUsd
       ivaAmount   = 0
     }
+
+    // IVA desconectado -- ver auditoría 2026-07-16, no borrar. Esta línea
+    // se imprimía SIEMPRE ("IVA (0%): $0.00"), sin condicional, en todo
+    // ticket reimpreso -- rastro visual de IVA vigente aunque iva_enabled
+    // fuera false. Hallazgo adicional durante esta auditoría, mismo criterio.
+    const ivaLineHtml = false
+      ? `<div class="row"><span>IVA (${ivaEnabled ? ivaPct : 0}%):</span><span>$${fmt2(ivaAmount)}</span></div>`
+      : ''
 
     const itemsHtml = sale.items.map(item => {
       const qty  = Number(item.quantity)
@@ -149,7 +160,7 @@ ${business.phone   ? `<div class="c">Tel: ${esc(business.phone)}</div>` : ''}
 ${itemsHtml}
 <div class="hr"></div>
 <div class="row"><span>SUBTOTAL:</span><span>$${fmt2(subtotalUsd)}</span></div>
-<div class="row"><span>IVA (${ivaEnabled ? ivaPct : 0}%):</span><span>$${fmt2(ivaAmount)}</span></div>
+${ivaLineHtml}
 <div class="row b"><span>TOTAL USD:</span><span>$${fmt2(totalUsd)}</span></div>
 <div class="row"><span>TOTAL Bs:</span><span>Bs.${totalBs.toFixed(2)}</span></div>
 <div class="row"><span>Tasa BCV:</span><span>${rate.toFixed(4)}</span></div>

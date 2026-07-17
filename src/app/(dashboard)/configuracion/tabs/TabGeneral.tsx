@@ -355,68 +355,78 @@ export function TabGeneral({ businessId: _businessId }: Props) {
           </Button>
         </div>
 
-        <div className={styles.formDividerCompact} />
-
-        {/* ── IVA ── */}
-        <h3 className={styles.formCardTitle}>
-          <Percent size={16} aria-hidden="true" />
-          Impuesto al Valor Agregado (IVA)
-        </h3>
-
-        <div className={styles.toggleRow}>
-          <div>
-            <p className={styles.toggleLabel}>Cobrar IVA</p>
-            <p className={styles.toggleHint}>Se suma al total del ticket al momento de cobrar</p>
-          </div>
-          <button
-            type="button"
-            className={`${styles.toggleBtn} ${iva.iva_enabled ? styles.toggleBtnOn : ''}`}
-            onClick={() => setIva(v => ({ ...v, iva_enabled: !v.iva_enabled }))}
-            aria-pressed={iva.iva_enabled}
-            aria-label={iva.iva_enabled ? 'Desactivar IVA' : 'Activar IVA'}
-          >
-            <span className={`${styles.toggleKnob} ${iva.iva_enabled ? styles.toggleKnobOn : ''}`} />
-          </button>
-        </div>
-
-        {iva.iva_enabled && (
+        {/* IVA desconectado -- ver auditoría 2026-07-16, NO BORRAR. El toggle
+            mostraba/calculaba IVA en pantalla y ticket pero nunca se cobraba
+            ni persistía como impuesto fiscal real -- riesgo fiscal confirmado.
+            Oculto hasta que exista el módulo fiscal real que lo respalde.
+            Business.iva_enabled/iva_pct, /api/config/iva, calcularTotales
+            (lib/pos.ts) y las líneas de IVA en Ticket/CobroModal/PDF quedan
+            intactos en código, solo esta UI y las de display se desactivan. */}
+        {false && (
           <>
-            <div className={styles.formDivider} />
+            <div className={styles.formDividerCompact} />
 
-            <Input
-              label="Porcentaje de IVA"
-              type="number"
-              step="0.01"
-              min="0"
-              max="30"
-              placeholder="16"
-              value={String(iva.iva_pct)}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value)
-                if (!isNaN(val) && val >= 0 && val <= 30) setIva(v => ({ ...v, iva_pct: val }))
-              }}
-              hint="Venezuela: 16 % (tasa general)"
-            />
+            <h3 className={styles.formCardTitle}>
+              <Percent size={16} aria-hidden="true" />
+              Impuesto al Valor Agregado (IVA)
+            </h3>
 
-            <p className={styles.ivaPreview}>
-              Producto de{' '}
-              <span className={styles.ivaPreviewAmount}>$10.00</span>
-              {' '}→ total{' '}
-              <span className={styles.ivaPreviewAmount}>${ivaPreviewTotal}</span>
-              {' '}(+${ivaPreviewTax} IVA)
-            </p>
+            <div className={styles.toggleRow}>
+              <div>
+                <p className={styles.toggleLabel}>Cobrar IVA</p>
+                <p className={styles.toggleHint}>Se suma al total del ticket al momento de cobrar</p>
+              </div>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${iva.iva_enabled ? styles.toggleBtnOn : ''}`}
+                onClick={() => setIva(v => ({ ...v, iva_enabled: !v.iva_enabled }))}
+                aria-pressed={iva.iva_enabled}
+                aria-label={iva.iva_enabled ? 'Desactivar IVA' : 'Activar IVA'}
+              >
+                <span className={`${styles.toggleKnob} ${iva.iva_enabled ? styles.toggleKnobOn : ''}`} />
+              </button>
+            </div>
 
-            <p className={styles.ivaWarning}>
-              Activar IVA modifica el monto final del ticket. Verifica con tu asesor contable antes de activar.
-            </p>
+            {iva.iva_enabled && (
+              <>
+                <div className={styles.formDivider} />
+
+                <Input
+                  label="Porcentaje de IVA"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="30"
+                  placeholder="16"
+                  value={String(iva.iva_pct)}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value)
+                    if (!isNaN(val) && val >= 0 && val <= 30) setIva(v => ({ ...v, iva_pct: val }))
+                  }}
+                  hint="Venezuela: 16 % (tasa general)"
+                />
+
+                <p className={styles.ivaPreview}>
+                  Producto de{' '}
+                  <span className={styles.ivaPreviewAmount}>$10.00</span>
+                  {' '}→ total{' '}
+                  <span className={styles.ivaPreviewAmount}>${ivaPreviewTotal}</span>
+                  {' '}(+${ivaPreviewTax} IVA)
+                </p>
+
+                <p className={styles.ivaWarning}>
+                  Activar IVA modifica el monto final del ticket. Verifica con tu asesor contable antes de activar.
+                </p>
+              </>
+            )}
+
+            <div className={styles.saveRow}>
+              <Button variant="primary" onClick={handleSaveIva} loading={savingIva}>
+                Guardar IVA
+              </Button>
+            </div>
           </>
         )}
-
-        <div className={styles.saveRow}>
-          <Button variant="primary" onClick={handleSaveIva} loading={savingIva}>
-            Guardar IVA
-          </Button>
-        </div>
 
         <div className={styles.formDividerCompact} />
 

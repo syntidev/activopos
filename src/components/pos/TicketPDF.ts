@@ -140,8 +140,10 @@ export function generarTicketPDF(data: PrintTicketData, format: '58mm' | '80mm' 
     data.discountUsd > 0
       ? `<div class="row"><span>Descuento</span><span>-${esc(fUSD(data.discountUsd))}</span></div>`
       : '',
-    data.ivaUsd && data.ivaUsd > 0
-      ? `<div class="row"><span>IVA ${data.ivaPct ?? 0}%</span><span>+${esc(fUSD(data.ivaUsd))}</span></div>`
+    // IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo fiscal:
+    // se imprimía en el PDF sin cobrarse/persistirse realmente).
+    false && (data.ivaUsd ?? 0) > 0
+      ? `<div class="row"><span>IVA ${data.ivaPct ?? 0}%</span><span>+${esc(fUSD(data.ivaUsd ?? 0))}</span></div>`
       : '',
     `<div class="row"><span>Total USD</span><span>${esc(fUSD(data.totalUsd))}</span></div>`,
     `<div class="total-bs">${esc(fBs(data.totalBs))}</div>`,

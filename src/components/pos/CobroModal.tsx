@@ -264,7 +264,9 @@ export function CobroModal({
               Bs.&nbsp;{totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
             </span>
             <span className={styles.totalUsd}>${totalUsd.toFixed(2)} USD</span>
-            {totals.iva_usd > 0 && (
+            {/* IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo
+                fiscal: se mostraba "incluido" sin persistirse realmente). */}
+            {false && totals.iva_usd > 0 && (
               <span className={styles.ivaLine}>IVA incl. ${totals.iva_usd.toFixed(2)}</span>
             )}
           </div>

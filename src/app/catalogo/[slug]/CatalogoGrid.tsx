@@ -736,6 +736,13 @@ export function CatalogoGrid({
           {p.categoryName && <p className={styles.productCategory}>{p.categoryName}</p>}
           <h2 className={styles.productName}>{p.name}</h2>
 
+          {/* Rating placeholder estático (sin data de reseñas todavía) -- señal de
+              "tienda real", mismo patrón que la referencia. Cero lógica/estado. */}
+          <span className={styles.productStars} aria-hidden="true">
+            <span className={styles.productStarsIcons}>☆☆☆☆☆</span>
+            <span className={styles.productStarsLabel}>Sin reseñas</span>
+          </span>
+
           {/* Precios — sin botón circular */}
           <div className={styles.productPriceBlock}>
             {p.catalogVisibility === 'on_request' ? (

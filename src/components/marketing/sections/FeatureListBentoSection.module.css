@@ -1,11 +1,11 @@
 /* ============================================================
-   FeatureListBentoSection — Solo-Horizontal-Final: CERO verticalidad,
-   toda card ocupa exactamente 1 fila (nunca grid-row:span 2). La
-   asimetría viene solo del ANCHO (150/190/240px cíclico). Estructura:
-   2 filas INDEPENDIENTES (flex, no grid compartido) -- cada una su
-   propia cinta con su propio scroll infinito, así arriba/abajo nunca
-   necesitan alinear columna. 20 cards de función con 6 patrones de
-   micro-animación reutilizables. Fondo mesh CLARO (Bento-Infinito-1).
+   FeatureListBentoSection — Masonry real (stretcher bond): 2 filas
+   INDEPENDIENTES (flex, no grid compartido), cada una su propia cinta
+   con scroll infinito -- la fila 2 lleva un offset de medio-ladrillo
+   permanente (.scrollRowOffset) para que NUNCA alinee columna con la
+   fila 1, patrón de pared de ladrillos real, no grid alineado. 20
+   cards de función con 6 patrones de micro-animación reutilizables.
+   Fondo mesh CLARO (Bento-Infinito-1).
    Segmentos NO viven acá (están en SegmentsSection.tsx aparte).
    ============================================================ */
 
@@ -80,6 +80,16 @@
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+
+/* Masonry real (stretcher bond): fila 2 desfasada medio "ladrillo" contra
+   fila 1 -- NO alineación columna-por-columna. margin-left (no transform,
+   que la animación ya controla ese eje) crea un offset de posición BASE
+   permanente; como ambas filas tienen exacto el mismo ancho total (5 rect
+   + 5 sq cada una), scrollean a la misma velocidad -> el desfase nunca
+   deriva, se ve escalonado siempre, no solo al cargar. Negativo (no
+   positivo) para que la fila arranque ya llena, sin tira vacía a la
+   izquierda mientras la animación está en pausa (reduced-motion). */
+.scrollRowOffset { margin-left: -98px; }
 
 /* Bento de 2 tamaños, ALTO FIJO idéntico para las 20 cards -> ambas filas
    miden exactamente lo mismo (criterio de Carlos: "2 filas de la misma
@@ -354,4 +364,5 @@
   .card { height: 156px; padding: 13px 15px; }
   .size_sq   { width: 164px; }
   .size_rect { width: 296px; }
+  .scrollRowOffset { margin-left: -86px; }
 }

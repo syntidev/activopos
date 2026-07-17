@@ -89,7 +89,7 @@ const ROW2: FeatureCard[] = [
   },
   { key: 'kds', Icon: ChefHat, pattern: 'pulso', size: 'rect', title: 'KDS Cocina', desc: 'Tu cocina ve el pedido, sin gritar de un lado a otro.' },
   { key: 'pedidos', Icon: ShoppingBag, pattern: 'acumulador', size: 'sq', title: 'Pedidos', desc: 'Tu cliente arma el pedido, a ti te llega listo.' },
-  { key: 'kanban', Icon: Columns3, pattern: 'pulso', size: 'rect', title: 'Pedidos Kanban', desc: 'Cada pedido, en su columna, sin perderlo de vista.' },
+  { key: 'kanban', Icon: Columns3, pattern: 'pulso', color: 'brandSoft', size: 'rect', title: 'Pedidos Kanban', desc: 'Cada pedido, en su columna, sin perderlo de vista.' },
   {
     key: 'multitema', Icon: Palette, pattern: 'giro', size: 'sq',
     title: 'Multi-tema', desc: 'Tu negocio, con la cara que tú quieras.',
@@ -178,10 +178,15 @@ function FeatureCardEl({ card }: { card: FeatureCard }) {
   )
 }
 
-function FeatureRow({ cards }: { cards: FeatureCard[] }) {
+/* Masonry real (stretcher bond): fila 2 recibe offset=true -> margin-left
+   negativo de medio "ladrillo" (ver CSS .scrollRowOffset). Como las 2 filas
+   tienen EXACTO el mismo conteo rect/sq (5+5 cada una), su ancho total es
+   idéntico -> misma velocidad de scroll -> el desfase se mantiene
+   CONSTANTE para siempre, nunca deriva ni se re-alinea con el tiempo. */
+function FeatureRow({ cards, offset }: { cards: FeatureCard[]; offset?: boolean }) {
   return (
     <div className={styles.scrollWrap}>
-      <div className={styles.scrollRow}>
+      <div className={`${styles.scrollRow} ${offset ? styles.scrollRowOffset : ''}`}>
         {(['a', 'b'] as const).map(copyKey => (
           cards.map(card => (
             <FeatureCardEl key={`${copyKey}-${card.key}`} card={card} />
@@ -201,7 +206,7 @@ export default function FeatureListBentoSection() {
 
         <div className={styles.scrollTrack}>
           <FeatureRow cards={ROW1} />
-          <FeatureRow cards={ROW2} />
+          <FeatureRow cards={ROW2} offset />
         </div>
       </div>
     </section>

@@ -366,10 +366,14 @@ export default function SocialPage() {
     setTab('generador')
   }
 
-  function applyScenePreset(id: string) {
-    setScenePresetId(id)
-    const preset = scenePresets.find(p => String(p.id) === id)
-    if (!preset) return
+  // Cada segmento agrupa >=1 variantes de personaje bajo el mismo `name` (mismo género/
+  // fenotipo repetido siempre se sentía forzado -- Carlos pidió variación real). Se elige
+  // una al azar cada vez que se selecciona el segmento, no siempre la misma.
+  function applyScenePreset(name: string) {
+    setScenePresetId(name)
+    const variants = scenePresets.filter(p => p.name === name)
+    if (!variants.length) return
+    const preset = variants[Math.floor(Math.random() * variants.length)]
     setPersonaje(preset.personaje ?? '')
     setLugar(preset.escena ?? '')
     setAccion(preset.accion ?? '')
@@ -584,9 +588,12 @@ export default function SocialPage() {
                   disabled={loading}
                 >
                   <option value="">Escribir manualmente</option>
-                  {scenePresets.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {scenePresets
+                    .map(p => p.name)
+                    .filter((name, i, arr) => arr.indexOf(name) === i)
+                    .map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
                 </select>
               </div>
 

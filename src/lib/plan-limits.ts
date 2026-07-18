@@ -26,28 +26,33 @@ export interface BillingCycleAmounts {
   totalAmount:       number
   monthlyEquivalent: number
   savingsAmount:     number
+  // % de ahorro de marketing (redondo, sellado) — NO se computa desde el total.
+  // El % real (savingsAmount / rate lleno) da 12/21/32; el mostrado es 10/20/30.
+  savingsPct:        number
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
 // Precios definitivos del único plan pago ($19/mes), ciclos con descuento por
 // permanencia. Los totales son fijos (ya incluyen el descuento) — NO se derivan
-// de 19 × N. monthlyEquivalent y savingsAmount se calculan desde el total real.
-function cycle(totalAmount: number, months: number): BillingCycleAmounts {
+// de 19 × N. monthlyEquivalent y savingsAmount se calculan desde el total real;
+// savingsPct es el número de marketing acordado, fijo por ciclo.
+function cycle(totalAmount: number, months: number, savingsPct: number): BillingCycleAmounts {
   const MONTHLY = 19
   return {
     totalAmount,
     monthlyEquivalent: round2(totalAmount / months),
     savingsAmount:     round2(MONTHLY * months - totalAmount),
+    savingsPct,
   }
 }
 
 // Solo negocio_activo tiene ciclo de facturación — gratis no vence ni cobra.
 export const BILLING_CYCLES: Record<Exclude<PlanTier, 'gratis'>, Record<BillingCycleKey, BillingCycleAmounts>> = {
   negocio_activo: {
-    mensual:    cycle(19,  1),
-    trimestral: cycle(50,  3),
-    semestral:  cycle(90,  6),
-    anual:      cycle(156, 12),
+    mensual:    cycle(19,  1,  0),
+    trimestral: cycle(50,  3,  10),
+    semestral:  cycle(90,  6,  20),
+    anual:      cycle(156, 12, 30),
   },
 }

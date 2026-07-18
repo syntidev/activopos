@@ -1,124 +1,120 @@
 import type { PlanTier } from './plan-limits'
 
-export interface PlanFeatureRow {
-  label:  string
-  desc:   string
-  // [gratis, negocio_activo]
-  values: [boolean | string, boolean | string]
+// Fuente única de copy de features para la vitrina pública. Curado desde el
+// INVENTARIO_FUNCIONES (17 jul 2026, barrido de código) — sólo funciones reales
+// y conectadas. NO incluye: KDS, Analytics avanzado, PDF de reportes (DT-11).
+// Consumido por PricingSection.tsx (home + /planes), SegmentPricing.tsx y la
+// comparativa de /planes.
+
+// Gratis — lista corta (card + comparativa). 6 líneas, sólo el qué.
+export const GRATIS_FEATURES: string[] = [
+  'POS táctil en cualquier pantalla',
+  'BCV automático en cada venta',
+  'Pago Móvil, Zelle, Efectivo, USDT',
+  'Código de barras con la cámara del celular — no necesitas pistola lectora',
+  'Hasta 40 productos',
+  '1 usuario',
+]
+
+// Negocio Activo — highlights de conversión para la card (5 líneas). El detalle
+// completo NO se repite aquí: vive en la comparativa por categoría (abajo).
+export const NEGOCIO_HIGHLIGHTS: string[] = [
+  'Todo lo del Gratis, sin límites',
+  'Catálogo digital con checkout WhatsApp',
+  'Multi-ticket, pago mixto y venta a crédito',
+  'Finanzas completas y punto de equilibrio',
+  'Hasta 10 usuarios, productos ilimitados',
+]
+
+// Lista de features de una card por tier (label-only, cards compactas y parejas).
+export function featuresForTier(tier: PlanTier): string[] {
+  return tier === 'gratis' ? GRATIS_FEATURES : NEGOCIO_HIGHLIGHTS
 }
 
-// Fuente única de verdad — consumida por PricingSection.tsx (home),
-// /planes/page.tsx (tabla comparativa) y SegmentPricing.tsx. Modelo de 2 planes.
-export const PLAN_FEATURES: PlanFeatureRow[] = [
+// ── Comparativa por categoría (Negocio Activo, grid de 2 columnas) ──
+export type FeatureCategory = 'venta' | 'catalogo' | 'clientes' | 'proveedores' | 'finanzas' | 'equipo'
+
+export const FEATURE_CATEGORY_LABEL: Record<FeatureCategory, string> = {
+  venta:       'Venta',
+  catalogo:    'Catálogo',
+  clientes:    'Clientes',
+  proveedores: 'Proveedores',
+  finanzas:    'Finanzas',
+  equipo:      'Equipo',
+}
+
+export interface FeatureCategoryGroup {
+  category: FeatureCategory
+  label:    string
+  items:    string[]
+}
+
+// El detalle completo de Negocio Activo, agrupado por categoría. Curado desde el
+// INVENTARIO_FUNCIONES — cada línea traza a una función real y conectada.
+export const NEGOCIO_CATEGORIES: FeatureCategoryGroup[] = [
   {
-    label:  'POS táctil en cualquier pantalla',
-    desc:   'Funciona en celular, tablet o computadora — sin instalar nada aparte.',
-    values: [true, true],
+    category: 'venta',
+    label:    FEATURE_CATEGORY_LABEL.venta,
+    items: [
+      'Multi-ticket (hasta 5 a la vez)',
+      'Variantes combinadas (talla + color)',
+      'Venta por peso (kg)',
+      'Pago mixto (varios métodos)',
+      'Venta a crédito con plazos',
+      'Descuento y cargo con PIN',
+      'Cotizaciones con PDF descargable',
+      'Devoluciones con reintegro de stock',
+    ],
   },
   {
-    label:  'BCV automático en cada venta',
-    desc:   'La tasa se actualiza sola y se congela en el momento del cobro.',
-    values: [true, true],
+    category: 'catalogo',
+    label:    FEATURE_CATEGORY_LABEL.catalogo,
+    items: [
+      'Vitrina digital pública con QR',
+      'Checkout por WhatsApp',
+      'Pedidos en tablero Kanban',
+      'Tema visual: 10 colores + modo oscuro/claro',
+    ],
   },
   {
-    label:  'Pago Móvil, Zelle, Efectivo, USDT',
-    desc:   'Tu cliente paga como ya te paga — sin cambiar su forma de cobrar.',
-    values: [true, true],
+    category: 'clientes',
+    label:    FEATURE_CATEGORY_LABEL.clientes,
+    items: [
+      'Historial y cuentas por cobrar',
+      'Precio mayorista por cliente',
+    ],
   },
   {
-    label:  'Usuarios',
-    desc:   'Cada cajero entra con su propio usuario y permisos.',
-    values: ['1', 'Hasta 10'],
+    category: 'proveedores',
+    label:    FEATURE_CATEGORY_LABEL.proveedores,
+    items: [
+      'Compras con reversión automática de stock',
+      'Cuentas por pagar',
+    ],
   },
   {
-    label:  'Productos',
-    desc:   'Tu catálogo completo, con stock actualizado en cada venta.',
-    values: ['Hasta 40', 'Ilimitados'],
+    category: 'finanzas',
+    label:    FEATURE_CATEGORY_LABEL.finanzas,
+    items: [
+      'Estado de resultados',
+      'Punto de equilibrio con proyección',
+      'Gastos por categoría',
+      'Exportar a Excel',
+    ],
   },
   {
-    label:  'Gestión de proveedores',
-    desc:   'Registra a quién le compras y qué te falta reponer.',
-    values: [false, true],
-  },
-  {
-    label:  'Catálogo digital con pedidos por WhatsApp',
-    desc:   'Tu inventario, visible en tutienda.activopos.com, sin que muevas un dedo.',
-    values: [false, true],
-  },
-  {
-    label:  'Cotizaciones en PDF',
-    desc:   'Envía presupuestos profesionales antes de cerrar la venta.',
-    values: [false, true],
-  },
-  {
-    label:  'Cuentas por cobrar y finanzas completas',
-    desc:   'Sabes quién te debe y cuánto ganaste de verdad, sin Excel.',
-    values: [false, true],
-  },
-  {
-    label:  'Reportes en Excel',
-    desc:   'Exporta tus ventas y finanzas para tu contador o tu banco.',
-    values: [false, true],
-  },
-  {
-    label:  'Tema visual del catálogo',
-    desc:   '9 colores curados + modo claro/oscuro para tu tienda pública.',
-    values: [false, true],
-  },
-  {
-    label:  'Analytics avanzado',
-    desc:   'Ve tendencias, mejor hora de venta y qué producto te está dejando más plata.',
-    values: [false, true],
-  },
-  {
-    label:  'Panel de cocina (KDS)',
-    desc:   'Tu cocina ve el pedido armado, en el momento — sin gritar de un lado a otro.',
-    values: [false, true],
-  },
-  {
-    label:  'Soporte prioritario',
-    desc:   'Te respondemos primero, antes que al resto de la fila.',
-    values: [false, true],
+    category: 'equipo',
+    label:    FEATURE_CATEGORY_LABEL.equipo,
+    items: [
+      'Hasta 10 usuarios',
+      'Roles y permisos diferenciados',
+      'PIN de seguridad',
+    ],
   },
 ]
 
-export const TIER_INDEX: Record<PlanTier, number> = {
-  gratis: 0, negocio_activo: 1,
-}
-
-export interface PlanFeatureLine {
-  label: string
-  desc:  string
-}
-
-// Bullets reales incluidos en un tier, con el valor (si es medible) prefijado
-// al label — ej. "Hasta 10 usuarios" en vez de "Usuarios" + "Hasta 10" sueltos.
-export function featuresForTier(tier: PlanTier): PlanFeatureLine[] {
-  const idx = TIER_INDEX[tier]
-  return PLAN_FEATURES
-    .filter(row => row.values[idx] !== false)
-    .map(row => formatFeatureLine(row, idx))
-}
-
-const TIER_ORDER: PlanTier[] = ['gratis', 'negocio_activo']
-
-function formatFeatureLine(row: PlanFeatureRow, idx: number): PlanFeatureLine {
-  const v = row.values[idx]
-  const label = typeof v === 'string' ? `${v} ${row.label.charAt(0).toLowerCase()}${row.label.slice(1)}` : row.label
-  return { label, desc: row.desc }
-}
-
-// Solo los features que ESTE tier agrega o mejora sobre el tier anterior —
-// para mostrar "Todo lo de Gratis, más:" sin repetir la lista heredada.
-export function exclusiveFeaturesForTier(tier: PlanTier): PlanFeatureLine[] {
-  const idx = TIER_INDEX[tier]
-  const prevIdx = TIER_ORDER.indexOf(tier) - 1
-  return PLAN_FEATURES
-    .filter(row => {
-      const v = row.values[idx]
-      if (v === false) return false
-      if (prevIdx < 0) return true
-      return row.values[prevIdx] !== v
-    })
-    .map(row => formatFeatureLine(row, idx))
+// Categorías incluidas en un tier. Sólo Negocio Activo tiene el grid; Gratis
+// muestra su lista corta y no la comparativa por categoría.
+export function featuresByCategoryForTier(tier: PlanTier): FeatureCategoryGroup[] {
+  return tier === 'negocio_activo' ? NEGOCIO_CATEGORIES : []
 }

@@ -44,9 +44,9 @@ export default function SegmentPricing({ bcvRate }: Props) {
                 </p>
                 <ul className={styles.features}>
                   {feats.map(f => (
-                    <li key={f.label} className={styles.feature}>
+                    <li key={f} className={styles.feature}>
                       <Check size={16} strokeWidth={2.5} className={styles.check} aria-hidden="true" />
-                      <span>{f.label}</span>
+                      <span>{f}</span>
                     </li>
                   ))}
                 </ul>

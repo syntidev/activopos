@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { Check, X, MessageCircle } from 'lucide-react'
+import { Check, MessageCircle } from 'lucide-react'
 import { getParallelRate } from '@/lib/bcv'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
-import { PLAN_FEATURES } from '@/lib/plan-features'
+import { featuresForTier, featuresByCategoryForTier } from '@/lib/plan-features'
 import { WA_BASE } from '@/lib/marketing-contact'
 import PricingSection from '@/components/marketing/sections/PricingSection'
 import styles from './page.module.css'
@@ -30,15 +30,15 @@ const FAQS = [
   },
   {
     q: '¿Hay contrato?',
-    a: 'No. Todos los planes son mes a mes (o el ciclo que elijas). Sin contrato anual obligatorio, sin letra pequeña.',
+    a: 'No hay contrato ni permanencia obligatoria. Pagas mes a mes, y si eliges un ciclo más largo (trimestral, semestral o anual) obtienes un descuento — pero sigue siendo tu decisión, sin letra pequeña.',
   },
   {
     q: '¿Qué pasa si no pago?',
-    a: 'Tu cuenta pasa a modo de solo lectura — puedes ver tu historial pero no registrar ventas nuevas hasta ponerte al día. Nunca perdemos tu información.',
+    a: 'Si tienes el plan Negocio Activo y no renuevas, se bloquean los módulos de pago — catálogo digital, finanzas, proveedores, exportables y alta de nuevos productos o usuarios — hasta que te pongas al día. Tu POS sigue funcionando para que no se te pare el día a día, y nunca perdemos tu información. El plan Gratis no tiene este riesgo: no vence ni se corta.',
   },
   {
-    q: '¿Los precios incluyen impuestos?',
-    a: 'Los precios mostrados son en USD, antes de cualquier impuesto o comisión de tu método de pago. ActivoPOS no genera tu factura fiscal SENIAT — la complementa.',
+    q: '¿El plan Gratis vence?',
+    a: 'No. El plan Gratis es permanente: no vence, no pide tarjeta y no se convierte en pago solo. Úsalo el tiempo que quieras; subes a Negocio Activo únicamente cuando lo necesites.',
   },
 ]
 
@@ -64,6 +64,8 @@ export default async function PlanesPage() {
   // Precio de suscripción en Bs = tasa paralela, nunca BCV. 0 => la card oculta el Bs.
   const bcvRate = (await getParallelRate()) ?? 0
   const productJsonLd = buildProductJsonLd()
+  const gratisFeats = featuresForTier('gratis')
+  const paidGroups = featuresByCategoryForTier('negocio_activo')
 
   return (
     <div className={styles.page}>
@@ -83,39 +85,43 @@ export default async function PlanesPage() {
 
       <PricingSection bcvRate={bcvRate} showHeader={false} showMoreLink={false} />
 
-      <section className={styles.matrixSection}>
+      <section className={styles.compareSection}>
         <div className={styles.container}>
           <h2 className={styles.sectionTitle}>Todo lo que incluye cada plan</h2>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col" className={styles.thFeature}>Función</th>
-                  {TIERS.map(tier => (
-                    <th key={tier} scope="col" className={styles.thPlan}>{PLAN_DISPLAY[tier]}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {PLAN_FEATURES.map(row => (
-                  <tr key={row.label}>
-                    <th scope="row" className={styles.rowLabel}>
-                      <span className={styles.rowLabelText}>{row.label}</span>
-                      <span className={styles.rowLabelDesc}>{row.desc}</span>
-                    </th>
-                    {row.values.map((v, i) => (
-                      <td key={i} className={styles.cell}>
-                        {typeof v === 'boolean'
-                          ? (v
-                            ? <Check size={16} aria-label="Incluido" className={styles.checkYes} />
-                            : <X size={16} aria-label="No incluido" className={styles.checkNo} />)
-                          : v}
-                      </td>
-                    ))}
-                  </tr>
+          <div className={styles.compareGrid}>
+            <div className={styles.comparePanel}>
+              <h3 className={styles.comparePlanName}>Gratis</h3>
+              <p className={styles.comparePlanNote}>Lo esencial para empezar a vender hoy, sin pagar nada.</p>
+              <ul className={styles.compareList}>
+                {gratisFeats.map(f => (
+                  <li key={f}>
+                    <Check size={15} aria-hidden="true" />
+                    <span>{f}</span>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </div>
+
+            <div className={`${styles.comparePanel} ${styles.comparePanelFeatured}`}>
+              <span className={styles.compareBadge}>Todo incluido</span>
+              <h3 className={styles.comparePlanName}>Negocio Activo</h3>
+              <p className={styles.comparePlanNote}>Todo lo de Gratis, más cada módulo del sistema.</p>
+              <div className={styles.categoryGrid}>
+                {paidGroups.map(group => (
+                  <div key={group.category} className={styles.categoryBlock}>
+                    <span className={styles.categoryLabel}>{group.label}</span>
+                    <ul className={styles.categoryList}>
+                      {group.items.map(f => (
+                        <li key={f}>
+                          <Check size={14} aria-hidden="true" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>

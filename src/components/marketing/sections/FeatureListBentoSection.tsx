@@ -1,7 +1,7 @@
 import {
   ScanBarcode, Boxes, ChartColumn, Store, Users, Wallet, FileText, RotateCcw,
   ShoppingBag, PiggyBank, Activity, TrendingUp, Receipt, FileSpreadsheet,
-  ChefHat, Bell, Columns3, Ruler, Palette, Warehouse,
+  Camera, Bell, Columns3, Ruler, Palette, Warehouse,
   type LucideIcon,
 } from 'lucide-react'
 import styles from './FeatureListBentoSection.module.css'
@@ -87,7 +87,7 @@ const ROW2: FeatureCard[] = [
     title: 'Variantes', desc: 'Talla, color o medida — como realmente vendes.',
     giroFaces: ['Talla M', 'Talla L'],
   },
-  { key: 'kds', Icon: ChefHat, pattern: 'pulso', size: 'rect', title: 'KDS Cocina', desc: 'Tu cocina ve el pedido, sin gritar de un lado a otro.' },
+  { key: 'escaner', Icon: Camera, pattern: 'pulso', size: 'rect', title: 'Escáner con Cámara', desc: 'Lee el código con la cámara del celular — sin pistola lectora.' },
   { key: 'pedidos', Icon: ShoppingBag, pattern: 'acumulador', size: 'sq', title: 'Pedidos', desc: 'Tu cliente arma el pedido, a ti te llega listo.' },
   { key: 'kanban', Icon: Columns3, pattern: 'pulso', color: 'brandSoft', size: 'rect', title: 'Pedidos Kanban', desc: 'Cada pedido, en su columna, sin perderlo de vista.' },
   {

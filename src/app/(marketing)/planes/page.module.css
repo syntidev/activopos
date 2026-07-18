@@ -181,8 +181,8 @@
   transform: translateY(-1px);
 }
 
-/* ── Feature matrix ── */
-.matrixSection {
+/* ── Comparativa por planes ── */
+.compareSection {
   padding: 24px 0 72px;
 }
 
@@ -196,90 +196,133 @@
   margin: 0 0 32px;
 }
 
-.tableWrap {
-  overflow-x: auto;
+/* Gratis (angosto, lista corta) | Negocio Activo (ancho, grid por categoría). */
+.compareGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.55fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .compareGrid { grid-template-columns: 1fr; }
+}
+
+.comparePanel {
+  position: relative;
+  background: #FFFFFF;
   border-radius: 20px;
+  padding: 28px;
   box-shadow: 0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
-  /* Affordance de scroll horizontal en mobile (min-width:560px de .table
-     vs viewport angosto): sombras de borde nativas en CSS, sin JS. Las 2
-     capas "local" son fades blancos que se mueven con el contenido y
-     tapan la sombra correspondiente al llegar al inicio/fin del scroll;
-     las 2 capas "scroll" son las sombras oscuras fijas al viewport. */
-  background:
-    linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0)) 0 0,
-    linear-gradient(to left,  #FFFFFF 30%, rgba(255, 255, 255, 0)) 100% 0,
-    linear-gradient(to right, rgba(13, 27, 46, 0.18), rgba(13, 27, 46, 0)) 0 0,
-    linear-gradient(to left,  rgba(13, 27, 46, 0.18), rgba(13, 27, 46, 0)) 100% 0;
-  background-repeat: no-repeat;
-  background-color: #FFFFFF;
-  background-size: 24px 100%, 24px 100%, 10px 100%, 10px 100%;
-  background-attachment: local, local, scroll, scroll;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 560px;
+.comparePanelFeatured {
+  box-shadow: 0 0 0 2px var(--brand), 0 12px 28px rgba(0, 56, 189, 0.16);
 }
 
-.table thead tr {
-  border-bottom: 1px solid var(--mkt-bg-alt);
+.compareBadge {
+  position: absolute;
+  top: -12px;
+  right: 24px;
+  background: var(--cta);
+  color: var(--mkt-cta-on);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 4px 12px;
+  border-radius: 9999px;
 }
 
-.thFeature {
-  text-align: left;
+.comparePlanName {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: #0D1B2E;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.comparePlanNote {
   font-size: 13px;
-  font-weight: 600;
   color: var(--mkt-text-2);
-  padding: 14px 20px;
+  line-height: 1.5;
+  margin: 6px 0 20px;
 }
 
-.rowLabel {
-  text-align: left;
-  padding: 14px 20px;
-  vertical-align: top;
+/* Lista corta de Gratis — una columna, sólo el qué. */
+.compareList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
 }
 
-.rowLabelText {
-  display: block;
-  font-size: 13px;
+.compareList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--mkt-text-1);
-}
-
-.rowLabelDesc {
-  display: block;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--mkt-text-3);
   line-height: 1.4;
+}
+
+.compareList li svg {
+  color: var(--success);
+  flex-shrink: 0;
   margin-top: 2px;
-  max-width: 34ch;
 }
 
-.thPlan {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  color: #0D1B2E;
-  text-align: center;
-  padding: 14px 16px;
+/* Grid de 2 columnas de Negocio Activo, agrupado por categoría. */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 28px;
 }
 
-.table tbody tr {
-  border-bottom: 1px solid var(--mkt-bg);
+@media (max-width: 520px) {
+  .categoryGrid { grid-template-columns: 1fr; }
 }
-.table tbody tr:last-child { border-bottom: none; }
 
-.cell {
-  text-align: center;
+.categoryBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.categoryLabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.categoryList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+}
+
+.categoryList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   font-size: 13px;
-  color: var(--mkt-text-2);
-  padding: 12px 16px;
+  color: var(--mkt-text-1);
+  line-height: 1.4;
 }
 
-.checkYes { color: var(--success); }
-.checkNo  { color: #CBD5E1; }
+.categoryList li svg {
+  color: var(--success);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
 
 /* ── FAQ ── */
 .faqSection {

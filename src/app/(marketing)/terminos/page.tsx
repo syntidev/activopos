@@ -13,7 +13,7 @@ export default function TerminosPage() {
       <div className={styles.inner}>
         <p className={styles.eyebrow}>Legal</p>
         <h1 className={styles.title}>Términos y Condiciones</h1>
-        <p className={styles.updated}>Última actualización: junio 2026</p>
+        <p className={styles.updated}>Última actualización: julio 2026</p>
 
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>1. Aceptación de términos</h2>
@@ -86,12 +86,22 @@ export default function TerminosPage() {
         <div className={styles.divider} aria-hidden="true" />
 
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>7. Precios y facturación</h2>
+          <h2 className={styles.sectionTitle}>7. Precios, facturación y cancelación</h2>
           <p className={styles.body}>
-            Los precios de los planes se expresan en USD. Nos reservamos el derecho
-            de modificar los precios con 30 días de aviso previo. No ofrecemos
-            reembolsos por períodos parciales salvo falla comprobable del servicio
-            atribuible a nuestra infraestructura.
+            Los precios de los planes se expresan en USD. El plan Gratis no genera
+            cargo alguno y es de duración indefinida. El plan Negocio Activo se cobra
+            por adelantado según el ciclo de facturación elegido (mensual, trimestral,
+            semestral o anual); los ciclos más largos aplican un descuento sobre la
+            tarifa mensual. Nos reservamos el derecho de modificar los precios con 30
+            días de aviso previo.
+          </p>
+          <p className={styles.body}>
+            Los pagos de suscripción no son reembolsables. En caso de cancelación
+            anticipada, el monto abonado por el ciclo de facturación en curso no se
+            reintegra total ni parcialmente; conservas el acceso al plan contratado
+            hasta el fin del ciclo ya pagado y, al concluir, tu cuenta continúa en el
+            plan Gratis sin pérdida de información. La única excepción a esta política
+            es una falla comprobable del servicio atribuible a nuestra infraestructura.
           </p>
         </div>
 

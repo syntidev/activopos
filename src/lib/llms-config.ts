@@ -156,12 +156,11 @@ export const NOT_INCLUDED = [
 ]
 
 export const PLANS: Plan[] = [
-  { name: 'Mostrador', priceUsd: 15, shortDescription: 'hasta 100 productos, hasta 3 usuarios.', fullDescription: 'hasta 100 productos, hasta 3 usuarios. Pensado para negocios pequeños con un solo punto de venta.' },
-  { name: 'Negocio', priceUsd: 25, shortDescription: 'hasta 500 productos, hasta 10 usuarios, catálogo digital.', fullDescription: 'hasta 500 productos, hasta 10 usuarios, incluye catálogo digital. Pensado para negocios en crecimiento que quieren vender también fuera del local físico.' },
-  { name: 'Pro', priceUsd: 40, shortDescription: 'ilimitado, KDS cocina, analytics avanzado, soporte prioritario.', fullDescription: 'productos ilimitados, módulo KDS de cocina, analytics avanzado, soporte prioritario. Pensado para negocios con mayor volumen de operación o con necesidad de gestión de cocina.' },
+  { name: 'Gratis', priceUsd: 0, shortDescription: 'hasta 40 productos, 1 usuario, POS y dual moneda BCV. Gratis permanente.', fullDescription: 'hasta 40 productos y 1 usuario, con POS táctil, lector de código de barras por la cámara del móvil y precios simultáneos en USD y Bs a tasa BCV. Gratis de forma permanente, para empezar a vender sin costo.' },
+  { name: 'Negocio Activo', priceUsd: 19, shortDescription: 'productos ilimitados, hasta 10 usuarios, catálogo digital, finanzas completas.', fullDescription: 'productos ilimitados, hasta 10 usuarios, catálogo digital con checkout por WhatsApp, gestión de clientes y proveedores, finanzas completas (cuentas por cobrar y por pagar, punto de equilibrio) y cotizaciones con PDF. Único plan pago, 19 USD al mes con descuento por permanencia en ciclos trimestral, semestral y anual.' },
 ]
 
-export const BILLING_CYCLES = 'mensual, semestral, anual'
+export const BILLING_CYCLES = 'mensual, trimestral, semestral, anual'
 
 export const FAQ: FaqItem[] = [
   { question: '¿Hace facturación SENIAT?', answer: 'No.' },

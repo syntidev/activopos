@@ -1109,7 +1109,7 @@ export function CatalogoGrid({
       {!cartOpen && !selectedProduct && !checkoutOpen && (
         <button
           type="button"
-          className={`${styles.backTopBtn} ${showBackTop ? styles.backTopBtnVisible : ''}`}
+          className={`${styles.backTopBtn} ${showBackTop ? styles.backTopBtnVisible : ''} ${cart.length > 0 && businessPhone ? styles.backTopBtnStacked : ''}`}
           onClick={scrollToTop}
           aria-label="Volver al inicio"
           aria-hidden={!showBackTop}
@@ -1292,6 +1292,16 @@ export function CatalogoGrid({
                       )}
                     </>
                   ) : (
+                    // ponytail: bug conocido sin resolver -- selectedVariantId es unico y
+                    // compartido entre TODOS los grupos aqui, asi que un producto con 2+
+                    // tipos sin combination_key (ej. "talla" y "color" como filas separadas,
+                    // no combinadas) puede "pisar" un grupo con el otro al elegir. Mismo bug
+                    // que se corrigio en ProductoDetalle.tsx para el modelo combinado -- este
+                    // es el modelo legacy sin combination_key. Auditoria 18 jul confirmo
+                    // impacto real: 1 solo producto en toda la DB con 2+ tipos aqui ("Camisa
+                    // Polo", business_id=1 "Mi Negocio Demo" -- dato de prueba, no tenant
+                    // real). No se corrige por bajo impacto; subir de prioridad si aparece un
+                    // producto real de un tenant con este modelo de datos.
                     variantGroups.map(g => (
                       <div key={g.tipo} className={styles.variantGroup}>
                         <span className={styles.variantGroupLabel}>{capitalize(g.tipo)}</span>

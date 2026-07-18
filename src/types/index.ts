@@ -79,6 +79,9 @@ export interface BusinessConfig {
   current_rate:                number
   allow_cashier_price_override: boolean
   pos_mode?:                   'ticket' | 'invoice'
+  catalog_title?:              string | null
+  catalog_desc?:               string | null
+  catalog_desc_enabled?:       boolean
   catalog_instagram?:          string | null
   catalog_hours?:              string | null
   catalog_cover_path?:         string | null

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Building2, Upload } from 'lucide-react'
+import { Building2, Upload, Store } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { Input }    from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
@@ -23,6 +23,9 @@ interface EmpresaForm {
   email:            string
   quotation_footer: string
   pos_mode:         PosMode
+  catalog_title:    string
+  catalog_desc:     string
+  catalog_desc_enabled: boolean
   catalog_instagram: string
   catalog_hours:     string
 }
@@ -30,6 +33,7 @@ interface EmpresaForm {
 const EMPTY_FORM: EmpresaForm = {
   name: '', legal_name: '', rif: '', address: '', city: '', state: '', phone: '', email: '', quotation_footer: '',
   pos_mode: 'ticket',
+  catalog_title: '', catalog_desc: '', catalog_desc_enabled: true,
   catalog_instagram: '', catalog_hours: '',
 }
 
@@ -64,6 +68,9 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         // el formulario no puede pre-poblarse; el guardado sí funciona vía PATCH.
         quotation_footer: '',
         pos_mode: b.pos_mode ?? 'ticket',
+        catalog_title:        b.catalog_title ?? '',
+        catalog_desc:         b.catalog_desc ?? '',
+        catalog_desc_enabled: b.catalog_desc_enabled ?? true,
         catalog_instagram: b.catalog_instagram ?? '',
         catalog_hours:     b.catalog_hours ?? '',
       })
@@ -100,6 +107,9 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
           // aquí produciría 400 "Datos inválidos". String vacío sí es válido y permite borrar el texto.
           quotation_footer: form.quotation_footer.trim(),
           pos_mode: form.pos_mode,
+          catalog_title:        form.catalog_title.trim() || null,
+          catalog_desc:         form.catalog_desc.trim() || null,
+          catalog_desc_enabled: form.catalog_desc_enabled,
           catalog_instagram: form.catalog_instagram.trim().replace(/^@+/, '') || null,
           catalog_hours:     form.catalog_hours.trim() || null,
         }),
@@ -294,6 +304,57 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
             onChange={set('quotation_footer')}
             placeholder="Ej: Precios válidos por 3 días. Forma de pago: transferencia o efectivo."
           />
+        </div>
+
+      </div>
+
+      {/* ── Catálogo público -- antes catalog_desc solo se escribía 1 vez en
+          el wizard de /registro, sin ninguna UI de edición posterior
+          (confirmado por diagnóstico). catalog_title tampoco tenía form. ── */}
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>
+          <Store size={16} aria-hidden="true" />
+          Catálogo público
+        </h3>
+
+        <div className={styles.formFields}>
+          <Input
+            label="Título del catálogo"
+            value={form.catalog_title}
+            onChange={set('catalog_title')}
+            placeholder={form.name || 'Mi Negocio'}
+            hint="Opcional — si lo dejas vacío, se usa el nombre del negocio"
+          />
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor="catalog_desc">Descripción del catálogo</label>
+            <textarea
+              id="catalog_desc"
+              className={styles.textarea}
+              value={form.catalog_desc}
+              onChange={set('catalog_desc')}
+              placeholder="Ej: Encuentra de todo en un solo lugar: víveres, limpieza, charcutería y más."
+            />
+            <p className={styles.logoDropHint}>
+              Si la dejas vacía, tus clientes ven un texto genérico según tu rubro.
+            </p>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div>
+              <p className={styles.toggleLabel}>Mostrar descripción en el catálogo</p>
+              <p className={styles.toggleHint}>Apágalo si prefieres solo tu portada, sin texto encima</p>
+            </div>
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${form.catalog_desc_enabled ? styles.toggleBtnOn : ''}`}
+              onClick={() => setForm(prev => ({ ...prev, catalog_desc_enabled: !prev.catalog_desc_enabled }))}
+              aria-pressed={form.catalog_desc_enabled}
+              aria-label={form.catalog_desc_enabled ? 'Ocultar descripción del catálogo' : 'Mostrar descripción del catálogo'}
+            >
+              <span className={`${styles.toggleKnob} ${form.catalog_desc_enabled ? styles.toggleKnobOn : ''}`} />
+            </button>
+          </div>
         </div>
 
         <div className={styles.formDivider} />

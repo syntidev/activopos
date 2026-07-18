@@ -18,6 +18,20 @@ function parseImages(raw: string | null): string[] {
   try { return JSON.parse(raw) as string[] } catch { return [] }
 }
 
+/* Fallback de descripción cuando el negocio no escribió catalog_desc (o lo
+   desactivó con el toggle): usa el headline real del Segment (oración
+   completa tipo "Vendés al kilo. Cobrás en dólares y Bs.") en vez de
+   tag_line (categorías separadas por · — menos natural como texto de hero).
+   Match EXACTO por slug -- Business.segment usa el vocabulario del wizard
+   de /registro (bodega, ferreteria, farmacia...), que NO siempre coincide
+   con Segment.slug (ferreterias, farmacias, plural -- ver diagnóstico). Si
+   no hay match, cae en null -- mismo comportamiento que "sin segmento". */
+async function getSegmentFallbackDesc(segment: string | null): Promise<string | null> {
+  if (!segment) return null
+  const seg = await prisma.segment.findFirst({ where: { slug: segment }, select: { headline: true } })
+  return seg?.headline ?? null
+}
+
 async function getBusiness(slug: string) {
   return prisma.business.findFirst({
     where: { catalog_slug: slug, catalog_active: true, active: true },
@@ -33,6 +47,8 @@ async function getBusiness(slug: string) {
       address:    true,
       catalog_title: true,
       catalog_desc:  true,
+      catalog_desc_enabled: true,
+      segment:       true,
       catalog_hours:     true,
       catalog_instagram: true,
       catalog_cover_path: true,
@@ -201,6 +217,11 @@ export default async function CatalogoPage({ params }: PageProps) {
   const displayTitle = business.catalog_title ?? business.name
   const location     = [business.city, business.state].filter(Boolean).join(', ')
   const waPhone      = business.phone?.replace(/\D/g, '') ?? ''
+  // Toggle apagado -> nada, sin importar si hay texto guardado (no se pierde,
+  // solo se oculta). Toggle prendido -> texto propio, o fallback de segmento.
+  const businessDesc = business.catalog_desc_enabled
+    ? (business.catalog_desc ?? await getSegmentFallbackDesc(business.segment))
+    : null
 
   return (
     <div
@@ -223,7 +244,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         businessName={displayTitle}
         businessLogo={business.logo_path}
         businessCity={location || null}
-        businessDesc={business.catalog_desc ?? null}
+        businessDesc={businessDesc}
         businessHours={business.catalog_hours ?? null}
         businessInstagram={business.catalog_instagram ?? null}
         heroCover={business.catalog_cover_path ?? null}
@@ -240,7 +261,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       <CatalogFooter
         displayTitle={displayTitle}
         logoPath={business.logo_path}
-        catalogDesc={business.catalog_desc ?? null}
+        catalogDesc={businessDesc}
         rif={business.rif ?? null}
         address={business.address ?? null}
         location={location}

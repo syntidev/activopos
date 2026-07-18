@@ -44,6 +44,7 @@ export function ProductoDetalle({
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
   const [imageIndex,        setImageIndex]        = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
+  const [selectedDim1,      setSelectedDim1]      = useState<string | null>(null)
   const [qty,               setQty]               = useState(1)
   const [variantError,      setVariantError]      = useState(false)
 
@@ -72,6 +73,20 @@ export function ProductoDetalle({
     }
     return Array.from(map.entries()).map(([tipo, options]) => ({ tipo, options }))
   }, [variants])
+
+  // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
+  // Mismo patrón que CatalogoGrid — dim1 (talla) filtra las opciones de dim2 (color);
+  // solo al elegir dim2 se fija selectedVariantId (la fila real con stock/precio).
+  const isCombinedVariant = variants.some(v => v.combination_key)
+  const combinedDimLabels = isCombinedVariant ? (variants[0]?.tipo ?? '').split('+') : []
+  const combinedDim1Label = combinedDimLabels[0] ?? 'Talla'
+  const combinedDim2Label = combinedDimLabels[1] ?? 'Color'
+  const combinedDim1Options = isCombinedVariant
+    ? Array.from(new Set(variants.map(v => v.combination_key!.split('-')[0])))
+    : []
+  const combinedDim2Options = isCombinedVariant && selectedDim1 !== null
+    ? variants.filter(v => v.combination_key!.startsWith(`${selectedDim1}-`))
+    : []
 
   // Agrega el producto actual (con la variante/cantidad elegida) al carrito.
   // Devuelve false si falta elegir variante — ambos CTAs (Agregar / Pedir
@@ -191,31 +206,79 @@ export function ProductoDetalle({
           {/* Variantes */}
           {variantGroups.length > 0 && (
             <div className={styles.variants}>
-              {variantGroups.map(g => (
-                <div key={g.tipo} className={styles.variantGroup}>
-                  <span className={styles.variantLabel}>{capitalize(g.tipo)}</span>
-                  <div className={styles.variantChips}>
-                    {g.options.map(v => {
-                      const soldOut = v.stock <= 0
-                      const active  = selectedVariantId === v.id
-                      return (
+              {isCombinedVariant ? (
+                <>
+                  <div className={styles.variantGroup}>
+                    <span className={styles.variantLabel}>{capitalize(combinedDim1Label)}</span>
+                    <div className={styles.variantChips}>
+                      {combinedDim1Options.map(opt => (
                         <button
-                          key={v.id}
+                          key={opt}
                           type="button"
-                          className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
-                          onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
-                          disabled={soldOut}
-                          aria-pressed={active}
-                          aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
+                          className={`${styles.variantChip} ${selectedDim1 === opt ? styles.variantChipActive : ''}`}
+                          onClick={() => { setSelectedDim1(opt); setSelectedVariantId(null); setVariantError(false) }}
+                          aria-pressed={selectedDim1 === opt}
                         >
-                          {v.valor}
-                          {soldOut && <span className={styles.soldOutLabel}>Agotado</span>}
+                          {opt}
                         </button>
-                      )
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+
+                  {selectedDim1 !== null && (
+                    <div className={styles.variantGroup}>
+                      <span className={styles.variantLabel}>{capitalize(combinedDim2Label)}</span>
+                      <div className={styles.variantChips}>
+                        {combinedDim2Options.map(v => {
+                          const soldOut = v.stock <= 0
+                          const active  = selectedVariantId === v.id
+                          const label   = v.combination_key!.slice(selectedDim1.length + 1)
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
+                              onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
+                              disabled={soldOut}
+                              aria-pressed={active}
+                              aria-label={`${combinedDim2Label}: ${label}${soldOut ? ' — agotado' : ''}`}
+                            >
+                              {label}
+                              {soldOut && <span className={styles.soldOutLabel}>Agotado</span>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                variantGroups.map(g => (
+                  <div key={g.tipo} className={styles.variantGroup}>
+                    <span className={styles.variantLabel}>{capitalize(g.tipo)}</span>
+                    <div className={styles.variantChips}>
+                      {g.options.map(v => {
+                        const soldOut = v.stock <= 0
+                        const active  = selectedVariantId === v.id
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
+                            onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
+                            disabled={soldOut}
+                            aria-pressed={active}
+                            aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
+                          >
+                            {v.valor}
+                            {soldOut && <span className={styles.soldOutLabel}>Agotado</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
               {variantError && (
                 <p className={styles.variantError}>Selecciona una opción para continuar</p>
               )}

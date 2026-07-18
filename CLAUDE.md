@@ -400,13 +400,20 @@ npx tsc --noEmit                    # 0 errores TypeScript
 npm run build 2>&1 | tail -10       # Compiled successfully
 
 # Deploy VPS
+# CRITICO: pm2 stop ANTES de borrar .next -- si el proceso viejo sigue vivo
+# (o PM2 lo reinicia) en la ventana entre "rm -rf .next" y que termine el
+# build, next start falla con "Could not find a production build" y PM2
+# reintenta en loop cerrado (crash-loop confirmado: 220+ ocurrencias en logs
+# historicos, causa de un pico de 401 restarts acumulados). Detener primero
+# elimina la ventana de crash por completo.
 cd /var/www/activopos
 git pull origin main
 npx prisma generate
 npx prisma migrate deploy
+pm2 stop activopos
 rm -rf .next
 npm run build
-pm2 restart activopos
+pm2 restart activopos --update-env
 pm2 save
 curl -s http://localhost:3003/api/rates/bcv   # Verificar que BCV responde
 

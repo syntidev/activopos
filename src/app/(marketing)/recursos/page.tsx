@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Descubre cómo ActivoPOS se adapta a tu negocio venezolano. POS para carnicerías, restaurantes, ferreterías, farmacias y más.',
 }
 
-const PLAN_TIERS: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
+const PLAN_TIERS: PlanTier[] = ['gratis', 'negocio_activo']
 
 export default async function RecursosPage() {
   const segments = await prisma.segment.findMany({
@@ -25,7 +25,7 @@ export default async function RecursosPage() {
   const plans = PLAN_TIERS.map(tier => ({
     key:       tier,
     name:      PLAN_DISPLAY[tier],
-    price_usd: BILLING_CYCLES[tier].mensual.monthlyEquivalent,
+    price_usd: tier === 'gratis' ? 0 : BILLING_CYCLES[tier].mensual.monthlyEquivalent,
   }))
 
   return (

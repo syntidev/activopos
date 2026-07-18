@@ -69,7 +69,7 @@ export async function GET() {
 
   // El catálogo digital, además del toggle, requiere plan pro/business.
   // Sidebar lo usa para ocultar el módulo aunque esté "activado" en modules_enabled.
-  const plan = (business.catalog_plan as PlanTier | null) ?? 'trial'
+  const plan = (business.catalog_plan as PlanTier | null) ?? 'gratis'
   const catalog_plan_allows = PLAN_LIMITS[plan]?.catalog ?? false
 
   return NextResponse.json({

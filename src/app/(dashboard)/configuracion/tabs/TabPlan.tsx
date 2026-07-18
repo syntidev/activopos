@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Crown, Calendar, ExternalLink, AlertCircle, Rocket, Check, X, MessageCircle } from 'lucide-react'
-import { BILLING_CYCLES, PLAN_DISPLAY, type BillingCycleKey } from '@/lib/plan-limits'
+import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier, type BillingCycleKey } from '@/lib/plan-limits'
 import styles from './TabPlan.module.css'
 
 const CYCLE_LABEL: Record<BillingCycleKey, string> = {
@@ -25,11 +25,9 @@ function fmtMoney(n: number): string {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-type PlanTier = 'trial' | 'inicio' | 'pro' | 'business'
-
 interface PlanUsageData {
   plan:           PlanTier
-  status:         'active' | 'trial' | 'expired' | 'suspended'
+  status:         'active' | 'expired' | 'suspended'
   expires_at:     string | null
   days_remaining: number | null
   usage: {
@@ -41,10 +39,8 @@ interface PlanUsageData {
 }
 
 const PLAN_BADGE_CLASS: Record<PlanTier, string> = {
-  trial:    styles.planBadgeTrial,
-  inicio:   styles.planBadgeInicio,
-  pro:      styles.planBadgePro,
-  business: styles.planBadgeBusiness,
+  gratis:         styles.planBadgeInicio,
+  negocio_activo: styles.planBadgeBusiness,
 }
 
 function usageBarClass(used: number, limit: number): string {
@@ -90,7 +86,7 @@ function FeatureRow({ label, enabled, requiredPlan }: { label: string; enabled: 
   )
 }
 
-function BillingCycleSelector({ plan }: { plan: Exclude<PlanTier, 'trial'> }) {
+function BillingCycleSelector({ plan }: { plan: Exclude<PlanTier, 'gratis'> }) {
   const [selectedCycle, setSelectedCycle] = useState<BillingCycleKey>('mensual')
 
   const amounts  = BILLING_CYCLES[plan][selectedCycle]
@@ -166,7 +162,7 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
     `Hola ActivoPOS, quiero cambiar mi plan. Mi negocio ID es ${businessId}. Plan actual: ${PLAN_DISPLAY[data.plan]}.`
   )
   const showExpiryAlert = data.days_remaining !== null && data.days_remaining >= 0 && data.days_remaining < 7
-  const isUpgradeable   = data.plan === 'trial' || data.plan === 'inicio'
+  const isUpgradeable   = data.plan === 'gratis'
 
   return (
     <div className={styles.usageCard}>
@@ -189,11 +185,11 @@ function PlanUsageSection({ businessId }: { businessId: number }) {
       </div>
 
       <div className={styles.featuresBox}>
-        <FeatureRow label="Catálogo digital" enabled={data.usage.catalog_enabled} requiredPlan="Pro o superior" />
-        <FeatureRow label="Asistente IA"     enabled={data.usage.ai_enabled}      requiredPlan="Business" />
+        <FeatureRow label="Catálogo digital" enabled={data.usage.catalog_enabled} requiredPlan="Negocio Activo" />
+        <FeatureRow label="Asistente IA"     enabled={data.usage.ai_enabled}      requiredPlan="Negocio Activo" />
       </div>
 
-      {data.plan !== 'trial' && <BillingCycleSelector plan={data.plan} />}
+      {data.plan !== 'gratis' && <BillingCycleSelector plan={data.plan} />}
 
       {showExpiryAlert && (
         <div className={styles.expiryAlert}>

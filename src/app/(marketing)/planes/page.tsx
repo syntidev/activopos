@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Check, X, MessageCircle } from 'lucide-react'
-import { getBcvRate } from '@/lib/bcv'
+import { getParallelRate } from '@/lib/bcv'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import { PLAN_FEATURES } from '@/lib/plan-features'
 import { WA_BASE } from '@/lib/marketing-contact'
@@ -10,18 +10,18 @@ import styles from './page.module.css'
 export const metadata: Metadata = {
   title: 'Planes y precios',
   description:
-    'Compara los 3 planes de ActivoPOS en detalle: Mostrador, Negocio y Pro. Precios reales en USD, ciclo mensual, semestral o anual, sin sorpresas.',
+    'ActivoPOS tiene 2 planes: Gratis para siempre y Negocio Activo con todo incluido. Precios reales en USD, ciclo mensual, trimestral, semestral o anual, sin sorpresas.',
   alternates: { canonical: '/planes' },
   openGraph: {
     title: 'Planes y precios — ActivoPOS',
-    description: 'Compara los 3 planes de ActivoPOS en detalle. Precios reales en USD.',
+    description: 'Gratis para siempre o Negocio Activo con todo incluido. Precios reales en USD.',
     url: 'https://activopos.com/planes',
   },
 }
 
 export const revalidate = 300
 
-const TIERS: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
+const TIERS: PlanTier[] = ['gratis', 'negocio_activo']
 
 const FAQS = [
   {
@@ -51,7 +51,7 @@ function buildProductJsonLd() {
     brand: { '@type': 'Brand', name: 'ActivoPOS' },
     offers: {
       '@type': 'Offer',
-      price: BILLING_CYCLES[tier].mensual.monthlyEquivalent.toFixed(2),
+      price: tier === 'gratis' ? '0.00' : BILLING_CYCLES[tier].mensual.monthlyEquivalent.toFixed(2),
       priceCurrency: 'USD',
       priceValidUntil: '2027-01-01',
       availability: 'https://schema.org/InStock',
@@ -61,7 +61,8 @@ function buildProductJsonLd() {
 }
 
 export default async function PlanesPage() {
-  const bcvRate = await getBcvRate()
+  // Precio de suscripción en Bs = tasa paralela, nunca BCV. 0 => la card oculta el Bs.
+  const bcvRate = (await getParallelRate()) ?? 0
   const productJsonLd = buildProductJsonLd()
 
   return (

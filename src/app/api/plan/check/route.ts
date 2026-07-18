@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       where:  { id: session.businessId },
       select: { catalog_plan: true, subscription_active: true, subscription_expires_at: true },
     })
-    const plan = (business?.catalog_plan as PlanTier | null) ?? 'trial'
+    const plan = (business?.catalog_plan as PlanTier | null) ?? 'gratis'
     const isPlanLimited = business?.subscription_active
       && !(business.subscription_expires_at && new Date() > business.subscription_expires_at)
 

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
-import { getBcvRate } from '@/lib/bcv'
+import { getParallelRate } from '@/lib/bcv'
 import type { SegmentData, SegmentMode } from '@/types/marketing'
 import SegmentHero from '@/components/marketing/sections/segment/SegmentHero'
 import SegmentPains from '@/components/marketing/sections/segment/SegmentPains'
@@ -77,7 +77,9 @@ export default async function SegmentPage(
   const slug = params.segmento.slice(PREFIX.length)
   if (!SLUG_RE.test(slug)) notFound()
 
-  const [segment, bcvRate] = await Promise.all([getSegment(slug), getBcvRate()])
+  // Precio de suscripción en Bs = tasa paralela, nunca BCV. 0 => la card oculta el Bs.
+  const [segment, parallelRate] = await Promise.all([getSegment(slug), getParallelRate()])
+  const bcvRate = parallelRate ?? 0
   if (!segment) notFound()
 
   return (

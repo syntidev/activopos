@@ -3,12 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
 
-type SubscriptionStatus = 'active' | 'trial' | 'expired' | 'suspended'
+type SubscriptionStatus = 'active' | 'expired' | 'suspended'
 
-function deriveStatus(plan: PlanTier, subscriptionActive: boolean, expiresAt: Date | null): SubscriptionStatus {
+function deriveStatus(subscriptionActive: boolean, expiresAt: Date | null): SubscriptionStatus {
   if (!subscriptionActive) return 'suspended'
   if (expiresAt && new Date() > expiresAt) return 'expired'
-  if (plan === 'trial') return 'trial'
   return 'active'
 }
 
@@ -23,8 +22,8 @@ export async function GET() {
     })
     if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
 
-    const plan   = (business.catalog_plan as PlanTier | null) ?? 'trial'
-    const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.trial
+    const plan   = (business.catalog_plan as PlanTier | null) ?? 'gratis'
+    const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.gratis
 
     const [productsUsed, usersUsed] = await Promise.all([
       db.product.count({ where: { active: true } }), // business_id inyectado
@@ -42,7 +41,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       plan,
-      status:      deriveStatus(plan, business.subscription_active, expiresAt),
+      status:      deriveStatus(business.subscription_active, expiresAt),
       expires_at:  expiresAt ? expiresAt.toISOString().slice(0, 10) : null,
       usage: {
         products:        { used: productsUsed, limit: limits.products },

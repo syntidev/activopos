@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
@@ -22,6 +23,8 @@ export async function GET(req: NextRequest) {
   try {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    const planGate = await checkPlanLimit('access_export')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const sp        = req.nextUrl.searchParams
     const fromParam = sp.get('from')

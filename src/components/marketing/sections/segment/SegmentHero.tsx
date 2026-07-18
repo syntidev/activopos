@@ -4,7 +4,7 @@ import type { SegmentData } from '@/types/marketing'
 import { BILLING_CYCLES } from '@/lib/plan-limits'
 import styles from './SegmentHero.module.css'
 
-const FROM_PRICE = Math.round(BILLING_CYCLES.inicio.mensual.monthlyEquivalent)
+const FROM_PRICE = Math.round(BILLING_CYCLES.negocio_activo.mensual.monthlyEquivalent)
 
 export default function SegmentHero({ segment }: { segment: SegmentData }) {
   return (

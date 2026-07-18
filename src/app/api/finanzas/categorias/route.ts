@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -22,6 +23,8 @@ export async function GET() {
   try {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    const planGate = await checkPlanLimit('access_finanzas')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const count = await db.expenseCategory.count() // business_id inyectado
     if (count === 0) {
@@ -50,6 +53,8 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  const planGate = await checkPlanLimit('access_finanzas')
+  if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
   try {
     const body = createSchema.parse(await req.json())

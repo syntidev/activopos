@@ -10,8 +10,8 @@ export function isCatalogLive(business: {
   subscription_active:     boolean
   subscription_expires_at: Date | null
 }): boolean {
-  const plan   = (business.catalog_plan as PlanTier | null) ?? 'trial'
-  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.trial
+  const plan   = (business.catalog_plan as PlanTier | null) ?? 'gratis'
+  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.gratis
   if (!limits.catalog)            return false
   if (!business.subscription_active) return false
   if (business.subscription_expires_at && new Date() > business.subscription_expires_at) return false

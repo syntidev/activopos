@@ -24,16 +24,15 @@ const CYCLE_LABEL: Record<BillingCycleKey, string> = {
 }
 
 interface PlanCopy {
-  tier:          Exclude<PlanTier, 'trial'>
+  tier:          PlanTier
   featured:      boolean
   badge:         string | null
   inheritsFrom:  string | null
 }
 
 const PLANS: PlanCopy[] = [
-  { tier: 'inicio',   featured: false, badge: null,              inheritsFrom: null },
-  { tier: 'pro',      featured: true,  badge: 'Más popular',     inheritsFrom: 'Todo lo de Mostrador, más:' },
-  { tier: 'business', featured: false, badge: null,              inheritsFrom: 'Todo lo de Negocio, más:' },
+  { tier: 'gratis',         featured: false, badge: null,            inheritsFrom: null },
+  { tier: 'negocio_activo', featured: true,  badge: 'Todo incluido', inheritsFrom: 'Todo lo de Gratis, más:' },
 ]
 
 function fmtMoney(n: number): string {
@@ -74,8 +73,8 @@ export default function PricingSection({ bcvRate, showHeader = true, showMoreLin
 
         <div className={styles.grid}>
           {PLANS.map(({ tier, featured, badge, inheritsFrom }) => {
-            const amounts    = BILLING_CYCLES[tier][cycle]
-            const hasSavings = amounts.savingsAmount > 0
+            const amounts    = tier === 'gratis' ? null : BILLING_CYCLES[tier][cycle]
+            const hasSavings = amounts ? amounts.savingsAmount > 0 : false
             const waMsg       = encodeURIComponent(`Hola, me interesa el plan ${PLAN_DISPLAY[tier]} de ActivoPOS`)
             const feats       = inheritsFrom ? exclusiveFeaturesForTier(tier) : featuresForTier(tier)
             return (
@@ -83,11 +82,15 @@ export default function PricingSection({ bcvRate, showHeader = true, showMoreLin
                 {badge && <span className={styles.badge}>{badge}</span>}
                 <h3 className={styles.planName}>{PLAN_DISPLAY[tier]}</h3>
                 <div className={styles.priceRow}>
-                  <span className={styles.priceUsd}>{fmtMoney(amounts.monthlyEquivalent)}</span>
-                  <span className={styles.pricePeriod}>/mes</span>
+                  <span className={styles.priceUsd}>{amounts ? fmtMoney(amounts.monthlyEquivalent) : 'Gratis'}</span>
+                  {amounts && <span className={styles.pricePeriod}>/mes</span>}
                 </div>
-                <span className={styles.priceBs}>Bs. {fmtBs(amounts.monthlyEquivalent, bcvRate)}</span>
-                {cycle !== 'mensual' && (
+                <span className={styles.priceBs}>
+                  {!amounts
+                    ? 'Para siempre, sin tarjeta'
+                    : bcvRate > 0 ? `Bs. ${fmtBs(amounts.monthlyEquivalent, bcvRate)}` : ''}
+                </span>
+                {amounts && cycle !== 'mensual' && (
                   <span className={styles.cycleNote}>
                     Total {fmtMoney(amounts.totalAmount)} · {CYCLE_LABEL[cycle].toLowerCase()}
                     {hasSavings && <> · ahorras {fmtMoney(amounts.savingsAmount)}</>}
@@ -105,15 +108,22 @@ export default function PricingSection({ bcvRate, showHeader = true, showMoreLin
                     </li>
                   ))}
                 </ul>
-                <a
-                  href={`${WA_BASE}?text=${waMsg}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={featured ? styles.ctaBtnFeatured : styles.ctaBtn}
-                >
-                  <MessageCircle size={16} aria-hidden="true" />
-                  Empezar con {PLAN_DISPLAY[tier]}
-                </a>
+                {tier === 'gratis' ? (
+                  <Link href="/registro" className={styles.ctaBtn}>
+                    <ArrowRight size={16} aria-hidden="true" />
+                    Crear cuenta gratis
+                  </Link>
+                ) : (
+                  <a
+                    href={`${WA_BASE}?text=${waMsg}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.ctaBtnFeatured}
+                  >
+                    <MessageCircle size={16} aria-hidden="true" />
+                    Empezar con {PLAN_DISPLAY[tier]}
+                  </a>
+                )}
               </div>
             )
           })}

@@ -1,37 +1,14 @@
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
+import { featuresForTier } from '@/lib/plan-features'
 import styles from './SegmentPricing.module.css'
 
 interface Props {
   bcvRate: number
 }
 
-const TIERS: Exclude<PlanTier, 'trial'>[] = ['inicio', 'pro', 'business']
-
-const PLAN_FEATS: Record<Exclude<PlanTier, 'trial'>, string[]> = {
-  inicio: [
-    'POS táctil en cualquier pantalla',
-    'BCV automático en cada venta',
-    'Hasta 3 usuarios',
-    'Hasta 100 productos',
-  ],
-  pro: [
-    'Todo lo de Mostrador',
-    'Catálogo digital con pedidos por WhatsApp',
-    'Cotizaciones en PDF',
-    'Cuentas por cobrar y finanzas completas',
-    'Hasta 10 usuarios',
-    'Hasta 500 productos',
-  ],
-  business: [
-    'Todo lo de Negocio',
-    'Analytics avanzado',
-    'Usuarios y productos ilimitados',
-    'Panel de cocina (KDS)',
-    'Soporte prioritario',
-  ],
-}
+const TIERS: PlanTier[] = ['gratis', 'negocio_activo']
 
 function fmtMoney(n: number): string {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -49,22 +26,27 @@ export default function SegmentPricing({ bcvRate }: Props) {
         <p className={styles.subtitle}>Todos los planes en dólares. Sin contratos anuales.</p>
         <div className={styles.grid}>
           {TIERS.map(tier => {
-            const popular = tier === 'pro'
-            const monthlyUsd = BILLING_CYCLES[tier].mensual.monthlyEquivalent
+            const popular = tier === 'negocio_activo'
+            const amounts = tier === 'gratis' ? null : BILLING_CYCLES[tier].mensual
+            const feats   = featuresForTier(tier)
             return (
               <article key={tier} className={`${styles.card} ${popular ? styles.cardPopular : ''}`}>
-                {popular && <span className={styles.popularBadge}>Más popular</span>}
+                {popular && <span className={styles.popularBadge}>Todo incluido</span>}
                 <h3 className={styles.planName}>{PLAN_DISPLAY[tier]}</h3>
                 <div className={styles.priceRow}>
-                  <span className={styles.price}>{fmtMoney(monthlyUsd)}</span>
-                  <span className={styles.per}>/ mes</span>
+                  <span className={styles.price}>{amounts ? fmtMoney(amounts.monthlyEquivalent) : 'Gratis'}</span>
+                  {amounts && <span className={styles.per}>/ mes</span>}
                 </div>
-                <p className={styles.planDesc}>Bs. {fmtBs(monthlyUsd, bcvRate)} al mes</p>
+                <p className={styles.planDesc}>
+                  {!amounts
+                    ? 'Para siempre, sin tarjeta'
+                    : bcvRate > 0 ? `Bs. ${fmtBs(amounts.monthlyEquivalent, bcvRate)} al mes` : 'Precio en USD'}
+                </p>
                 <ul className={styles.features}>
-                  {PLAN_FEATS[tier].map(f => (
-                    <li key={f} className={styles.feature}>
+                  {feats.map(f => (
+                    <li key={f.label} className={styles.feature}>
                       <Check size={16} strokeWidth={2.5} className={styles.check} aria-hidden="true" />
-                      <span>{f}</span>
+                      <span>{f.label}</span>
                     </li>
                   ))}
                 </ul>

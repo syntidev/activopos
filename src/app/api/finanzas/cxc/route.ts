@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 
 const DAYS_VENCER = 7
 const DAYS_LEGACY = 30  // fallback for sales without due_date
@@ -23,6 +24,8 @@ export async function GET(req: NextRequest) {
   try {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    const planGate = await checkPlanLimit('access_finanzas')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const params = Object.fromEntries(req.nextUrl.searchParams.entries())
     const query  = querySchema.parse(params)

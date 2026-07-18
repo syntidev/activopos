@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 import { parsePeriodFromParams, MONTH_NAMES } from '@/lib/finanzas'
 
 // Prevent CSV/XLSX formula injection — prefix dangerous leading chars with a literal apostrophe
@@ -12,6 +13,8 @@ export async function GET(req: NextRequest) {
   try {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    const planGate = await checkPlanLimit('access_export')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
     const from = new Date(year, month - 1, 1)

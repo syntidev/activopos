@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getBcvRate } from '@/lib/bcv'
+import { getBcvRate, getParallelRate } from '@/lib/bcv'
 import HeroSection from '@/components/marketing/sections/HeroSection'
 import PainSection from '@/components/marketing/sections/PainSection'
 import LivePulseSection from '@/components/marketing/sections/LivePulseSection'
@@ -61,6 +61,8 @@ const SOFTWARE_APPLICATION_JSON_LD = {
 
 export default async function LandingPage() {
   const bcvRate = await getBcvRate()
+  // Precio de suscripción en Bs = tasa paralela, nunca BCV. 0 => la card oculta el Bs.
+  const subscriptionRate = (await getParallelRate()) ?? 0
 
   return (
     <div className={styles.page}>
@@ -79,7 +81,7 @@ export default async function LandingPage() {
       <TickerSection />
       <FeatureListBentoSection />
       <SegmentsSection />
-      <PricingSection bcvRate={bcvRate} />
+      <PricingSection bcvRate={subscriptionRate} />
       <TestimonialsSection />
       <FinalCTASection />
     </div>

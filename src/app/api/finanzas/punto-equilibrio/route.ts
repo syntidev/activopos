@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
 
@@ -7,6 +8,8 @@ export async function GET(req: NextRequest) {
   try {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    const planGate = await checkPlanLimit('access_finanzas')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
   const from = new Date(year, month - 1, 1)

@@ -1,24 +1,20 @@
-// -1 = ilimitado
+// Modelo de 2 planes (rediseño 2026-07-17): gratis (imán de conversión,
+// permanente, nunca vence) + negocio_activo (único plan pago, $19/mes).
+// -1 = ilimitado. Los flags booleanos gatean módulos completos.
 export const PLAN_LIMITS = {
-  trial:    { products: 50,  users: 2,  catalog: false, ai: false, suppliers: false },
-  inicio:   { products: 100, users: 3,  catalog: false, ai: false, suppliers: true  },
-  pro:      { products: 500, users: 10, catalog: true,  ai: false, suppliers: true  },
-  business: { products: -1,  users: -1, catalog: true,  ai: true,  suppliers: true  },
+  gratis:         { products: 40, users: 1,  catalog: false, ai: false, suppliers: false, finanzas: false, exports: false, theme: false },
+  negocio_activo: { products: -1, users: 10, catalog: true,  ai: true,  suppliers: true,  finanzas: true,  exports: true,  theme: true  },
 } as const
 
 export type PlanTier = keyof typeof PLAN_LIMITS
 
-// Nombre visible al usuario — el código interno (trial/inicio/pro/business)
-// no coincide con el naming de la landing (Mostrador/Negocio/Pro). La DB
-// sigue guardando el tier interno; esto es solo para textos de UI.
+// Nombre visible al usuario.
 export const PLAN_DISPLAY: Record<PlanTier, string> = {
-  trial:    'Prueba gratuita',
-  inicio:   'Mostrador',
-  pro:      'Negocio',
-  business: 'Pro',
+  gratis:         'Gratis',
+  negocio_activo: 'Negocio Activo',
 }
 
-const PLAN_ORDER: PlanTier[] = ['trial', 'inicio', 'pro', 'business']
+const PLAN_ORDER: PlanTier[] = ['gratis', 'negocio_activo']
 
 export function nextPlanTier(plan: PlanTier): PlanTier | undefined {
   return PLAN_ORDER[PLAN_ORDER.indexOf(plan) + 1]
@@ -34,29 +30,24 @@ export interface BillingCycleAmounts {
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-function computeCycle(monthlyPrice: number, months: number, discountPct: number): BillingCycleAmounts {
-  const fullPrice   = monthlyPrice * months
-  const totalAmount = round2(fullPrice * (1 - discountPct / 100))
+// Precios definitivos del único plan pago ($19/mes), ciclos con descuento por
+// permanencia. Los totales son fijos (ya incluyen el descuento) — NO se derivan
+// de 19 × N. monthlyEquivalent y savingsAmount se calculan desde el total real.
+function cycle(totalAmount: number, months: number): BillingCycleAmounts {
+  const MONTHLY = 19
   return {
     totalAmount,
     monthlyEquivalent: round2(totalAmount / months),
-    savingsAmount:     round2(fullPrice - totalAmount),
+    savingsAmount:     round2(MONTHLY * months - totalAmount),
   }
 }
 
-function buildCycles(monthlyPrice: number): Record<BillingCycleKey, BillingCycleAmounts> {
-  return {
-    mensual:    computeCycle(monthlyPrice, 1,  0),
-    trimestral: computeCycle(monthlyPrice, 3,  10),
-    semestral:  computeCycle(monthlyPrice, 6,  15),
-    anual:      computeCycle(monthlyPrice, 12, 20),
-  }
-}
-
-// trial no tiene precio — solo los planes de pago tienen ciclo de facturación
-// Precios rectificados por el dueño del negocio 2026-07-11 (antes 9/19/29).
-export const BILLING_CYCLES: Record<Exclude<PlanTier, 'trial'>, Record<BillingCycleKey, BillingCycleAmounts>> = {
-  inicio:   buildCycles(15),
-  pro:      buildCycles(25),
-  business: buildCycles(40),
+// Solo negocio_activo tiene ciclo de facturación — gratis no vence ni cobra.
+export const BILLING_CYCLES: Record<Exclude<PlanTier, 'gratis'>, Record<BillingCycleKey, BillingCycleAmounts>> = {
+  negocio_activo: {
+    mensual:    cycle(19,  1),
+    trimestral: cycle(50,  3),
+    semestral:  cycle(90,  6),
+    anual:      cycle(156, 12),
+  },
 }

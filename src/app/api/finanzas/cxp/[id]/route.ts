@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 
 type RouteContext = { params: { id: string } }
 
@@ -9,6 +10,8 @@ export async function PATCH(_req: NextRequest, { params }: RouteContext) {
     if (session.role === 'cashier') {
       return NextResponse.json({ error: 'Solo administradores pueden marcar pagos' }, { status: 403 })
     }
+    const planGate = await checkPlanLimit('access_finanzas')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const id = parseInt(params.id, 10)
     if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest, { params }: Context) {
   try {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    const planGate = await checkPlanLimit('access_finanzas')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const body = abonoSchema.parse(await req.json())
 

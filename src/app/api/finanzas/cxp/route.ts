@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { checkPlanLimit } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -32,6 +33,8 @@ export async function GET(req: NextRequest) {
   try {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    const planGate = await checkPlanLimit('access_finanzas')
+    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
     const sp     = req.nextUrl.searchParams
     const cat    = sp.get('categoria')
@@ -97,6 +100,8 @@ export async function POST(req: NextRequest) {
   if (session.role === 'cashier') {
     return NextResponse.json({ error: 'Solo administradores pueden registrar CxP' }, { status: 403 })
   }
+  const planGate = await checkPlanLimit('access_finanzas')
+  if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
 
   try {
     const body = cxpSchema.parse(await req.json())

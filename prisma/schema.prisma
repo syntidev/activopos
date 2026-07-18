@@ -156,11 +156,12 @@ model Business {
   settings             Json?
   iva_enabled          Boolean  @default(false)
   iva_pct              Decimal  @default(16) @db.Decimal(5, 2)
-  catalog_plan         String?  @default("trial") @db.VarChar(30)
+  catalog_plan         String?  @default("gratis") @db.VarChar(30)
   catalog_slug         String?  @unique @db.VarChar(80)
   catalog_active       Boolean  @default(false)
   catalog_title        String?  @db.VarChar(150)
   catalog_desc         String?  @db.Text
+  catalog_desc_enabled Boolean  @default(true)
   catalog_hours        String?  @db.Text
   catalog_instagram    String?  @db.VarChar(80)
   catalog_cover_path   String?
@@ -209,6 +210,26 @@ model Business {
   social_style_presets SocialStylePreset[]
 
   @@map("businesses")
+}
+
+// Cuenta de cobro de la PLATAFORMA (ActivoPOS) para suscripciones — NO es el
+// PaymentMethod por-tenant. Fila única (singleton), sin business_id: aquí van los
+// datos con los que ActivoPOS cobra el plan Negocio Activo (Binance, Pago Móvil, USDT).
+model PlatformPaymentConfig {
+  id                Int      @id @default(autoincrement())
+  binance_pay_id    String?  @db.VarChar(120)
+  binance_qr_path   String?  @db.VarChar(500)
+  pago_movil_phone  String?  @db.VarChar(30)
+  pago_movil_ci     String?  @db.VarChar(30)
+  pago_movil_bank   String?  @db.VarChar(80)
+  usdt_wallet       String?  @db.VarChar(120)
+  usdt_network      String?  @db.VarChar(40)
+  instructions      String?  @db.Text
+  active            Boolean  @default(true)
+  updated_at        DateTime @updatedAt
+  created_at        DateTime @default(now())
+
+  @@map("platform_payment_config")
 }
 
 model User {

@@ -2751,15 +2751,14 @@
 .waFabText { letter-spacing: var(--tracking-wide); }
 
 /* ── Volver al inicio ────────────────────────────────────────── */
-/* Lado derecho en todos los tamaños, apilado por encima del FAB de WhatsApp.
-   Relleno con el color del catálogo (--biz-color). */
+/* Lado derecho en todos los tamaños, margen estándar (--space-5) igual en
+   bottom y right -- mismo margen que usa .waFab, para quedar equidistante
+   de ambos bordes como cualquier FAB. Relleno con el color del catálogo
+   (--biz-color). */
 .backTopBtn {
   position:        fixed;
-  right:           var(--space-4);
-  /* +64px levanta el botón por encima del FAB de WhatsApp — bajarlo a
-     bottom:var(--space-6) sin este offset los solaparía, ambos ocupan
-     la misma esquina cuando carrito tiene items y hay scroll */
-  bottom:          calc(var(--space-6) + 64px);
+  right:           var(--space-5);
+  bottom:          var(--space-5);
   z-index:         30;
   width:           44px;
   height:          44px;
@@ -2782,6 +2781,13 @@
   opacity:        1;
   transform:      translateY(0);
   pointer-events: auto;
+}
+
+/* +64px levanta el botón por encima del FAB de WhatsApp -- SOLO cuando ese
+   FAB está visible (carrito con items); si no, ambos ocuparían la misma
+   esquina y bottom vuelve al margen estándar de .backTopBtn. */
+.backTopBtnStacked {
+  bottom: calc(var(--space-5) + 64px);
 }
 
 .backTopBtn:hover  { filter: brightness(0.93); transform: translateY(-2px); }

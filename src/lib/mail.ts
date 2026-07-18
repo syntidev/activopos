@@ -46,23 +46,36 @@ function getFrom(): string {
 
 export async function sendRegistrationConfirmationEmail(to: string, ownerName: string, businessName: string): Promise<void> {
   const subjectName = sanitizeHeader(businessName)
-  await getTransporter().sendMail({
-    from: getFrom(),
-    to,
-    subject: `Bienvenido a ActivoPOS, ${subjectName}`,
-    text: `Hola ${ownerName},\n\nTu cuenta de ActivoPOS para "${businessName}" fue creada exitosamente.\n\nYa puedes iniciar sesión y comenzar a vender.\n\n— El equipo de ActivoPOS`,
-    html: `<p>Hola ${escapeHtml(ownerName)},</p><p>Tu cuenta de ActivoPOS para <strong>${escapeHtml(businessName)}</strong> fue creada exitosamente.</p><p>Ya puedes iniciar sesión y comenzar a vender.</p><p>— El equipo de ActivoPOS</p>`,
-  })
+  try {
+    const info = await getTransporter().sendMail({
+      from: getFrom(),
+      to,
+      subject: `Bienvenido a ActivoPOS, ${subjectName}`,
+      text: `Hola ${ownerName},\n\nTu cuenta de ActivoPOS para "${businessName}" fue creada exitosamente.\n\nYa puedes iniciar sesión y comenzar a vender.\n\n— El equipo de ActivoPOS`,
+      html: `<p>Hola ${escapeHtml(ownerName)},</p><p>Tu cuenta de ActivoPOS para <strong>${escapeHtml(businessName)}</strong> fue creada exitosamente.</p><p>Ya puedes iniciar sesión y comenzar a vender.</p><p>— El equipo de ActivoPOS</p>`,
+    })
+    console.log(`[mail] confirmación de registro enviada a ${to} — messageId=${info.messageId} response="${info.response}"`)
+  } catch (err) {
+    console.error(`[mail] FALLO confirmación de registro a ${to}:`, err instanceof Error ? err.message : err)
+    throw err
+  }
 }
 
 export async function sendNewBusinessAlertEmail(businessName: string, plan: string, createdAt: Date): Promise<void> {
   const fecha = createdAt.toLocaleString('es-VE', { dateStyle: 'medium', timeStyle: 'short' })
   const subjectName = sanitizeHeader(businessName)
-  await getTransporter().sendMail({
-    from: getFrom(),
-    to: 'hola@activopos.com',
-    subject: `Nuevo negocio registrado: ${subjectName}`,
-    text: `Nuevo negocio registrado.\n\nNombre: ${businessName}\nPlan: ${plan}\nFecha: ${fecha}`,
-    html: `<p>Nuevo negocio registrado.</p><ul><li><strong>Nombre:</strong> ${escapeHtml(businessName)}</li><li><strong>Plan:</strong> ${escapeHtml(plan)}</li><li><strong>Fecha:</strong> ${fecha}</li></ul>`,
-  })
+  const to = 'hola@activopos.com'
+  try {
+    const info = await getTransporter().sendMail({
+      from: getFrom(),
+      to,
+      subject: `Nuevo negocio registrado: ${subjectName}`,
+      text: `Nuevo negocio registrado.\n\nNombre: ${businessName}\nPlan: ${plan}\nFecha: ${fecha}`,
+      html: `<p>Nuevo negocio registrado.</p><ul><li><strong>Nombre:</strong> ${escapeHtml(businessName)}</li><li><strong>Plan:</strong> ${escapeHtml(plan)}</li><li><strong>Fecha:</strong> ${fecha}</li></ul>`,
+    })
+    console.log(`[mail] alerta de nuevo negocio enviada a ${to} — messageId=${info.messageId} response="${info.response}"`)
+  } catch (err) {
+    console.error(`[mail] FALLO alerta de nuevo negocio a ${to}:`, err instanceof Error ? err.message : err)
+    throw err
+  }
 }

@@ -86,11 +86,11 @@ const CATEGORIES = [
     items: [
       {
         q: '¿Cuánto cuesta ActivoPOS?',
-        a: 'Los planes se consultan por WhatsApp — sin precios publicados porque adaptamos la propuesta al tipo y tamaño de tu negocio. Escríbenos y en menos de 24 horas tienes tu cotización.',
+        a: 'Tenemos dos planes con precios públicos: Gratis para siempre (hasta 40 productos y 1 usuario, sin tarjeta) y Negocio Activo por $19/mes (productos ilimitados, hasta 10 usuarios, catálogo digital, finanzas y todo el sistema). Los ciclos trimestral, semestral y anual tienen descuento. Mira el detalle y elige en la página de Planes.',
       },
       {
         q: '¿Hay período de prueba?',
-        a: 'Sí. Puedes ver una demo completa del sistema antes de comprometerte. Sin instalar nada, sin tarjeta de crédito. Solo escríbenos.',
+        a: 'No hace falta: el plan Gratis es permanente y sin tarjeta. Empieza a vender hoy y sube a Negocio Activo cuando lo necesites. Si quieres una demo guiada, escríbenos por WhatsApp.',
       },
       {
         q: '¿Qué pasa si cancelo?',

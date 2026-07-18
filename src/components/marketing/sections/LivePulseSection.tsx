@@ -3,6 +3,7 @@ import {
   DollarSign, RefreshCw, ScanBarcode, UserPlus, Receipt, MessageCircle,
   FileText, RotateCcw, TrendingUp, Clock3, type LucideIcon,
 } from 'lucide-react'
+import { readCachedBcvRate } from '@/lib/bcv'
 import styles from './LivePulseSection.module.css'
 
 /* Sección fusionada (LivePulse + ProductBento + 2 tiles únicos de
@@ -41,30 +42,35 @@ interface FeedEvent {
   time:   string
 }
 
-/* Único caso donde el ícono varía de color por evento -- mismo criterio
-   ya sellado para métodos de pago (Colorimetria-Final): la CAJA sigue
-   blanca siempre, solo el ícono cambia. Venta=verde (positivo), CxP y
-   devolución=ámbar (dinero/stock en reversa), el resto Persian Blue. */
-const EVENTS: FeedEvent[] = [
-  { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Pago Móvil · $18.50',          time: 'ahora' },
-  { Icon: RefreshCw,     color: 'blue',  title: 'Tasa BCV actualizada', detail: 'Bs. 36.74 por $',              time: 'hace 1 min' },
-  { Icon: ScanBarcode,   color: 'blue',  title: 'Producto escaneado',   detail: 'Harina P.A.N. 1kg',            time: 'hace 2 min' },
-  { Icon: UserPlus,      color: 'blue',  title: 'Cliente nuevo',        detail: 'María G. · Boutique',          time: 'hace 4 min' },
-  { Icon: Receipt,       color: 'amber', title: 'Cuenta por pagar',     detail: 'Distribuidora Polar · $120.00', time: 'hace 6 min' },
-  { Icon: MessageCircle, color: 'blue',  title: 'Pedido de catálogo',   detail: 'WhatsApp · 3 productos',       time: 'hace 8 min' },
-  { Icon: FileText,      color: 'blue',  title: 'Cotización enviada',   detail: '$430.00',                      time: 'hace 12 min' },
-  { Icon: RotateCcw,     color: 'amber', title: 'Devolución procesada', detail: 'Camisa Talla M',               time: 'hace 15 min' },
-  { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Zelle · $42.00',               time: 'hace 18 min' },
-]
+export default async function LivePulseSection() {
+  // El VALOR de la tasa sale de la última BCV cacheada (real, creíble); el resto
+  // del feed es contenido de demostración. readCachedBcvRate cae a FALLBACK si no hay tasa.
+  const bcvRate = await readCachedBcvRate()
+  const bcvStr  = bcvRate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-/* 3 slots, 3 eventos cada uno (round-robin sobre el banco de 9) */
-const SLOTS: FeedEvent[][] = [
-  [EVENTS[0], EVENTS[3], EVENTS[6]],
-  [EVENTS[1], EVENTS[4], EVENTS[7]],
-  [EVENTS[2], EVENTS[5], EVENTS[8]],
-]
+  /* Único caso donde el ícono varía de color por evento -- mismo criterio
+     ya sellado para métodos de pago (Colorimetria-Final): la CAJA sigue
+     blanca siempre, solo el ícono cambia. Venta=verde (positivo), CxP y
+     devolución=ámbar (dinero/stock en reversa), el resto Persian Blue. */
+  const EVENTS: FeedEvent[] = [
+    { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Pago Móvil · $18.50',          time: 'ahora' },
+    { Icon: RefreshCw,     color: 'blue',  title: 'Tasa BCV actualizada', detail: `Bs. ${bcvStr} por $`,          time: 'hace 1 min' },
+    { Icon: ScanBarcode,   color: 'blue',  title: 'Producto escaneado',   detail: 'Harina P.A.N. 1kg',            time: 'hace 2 min' },
+    { Icon: UserPlus,      color: 'blue',  title: 'Cliente nuevo',        detail: 'María G. · Boutique',          time: 'hace 4 min' },
+    { Icon: Receipt,       color: 'amber', title: 'Cuenta por pagar',     detail: 'Distribuidora Polar · $120.00', time: 'hace 6 min' },
+    { Icon: MessageCircle, color: 'blue',  title: 'Pedido de catálogo',   detail: 'WhatsApp · 3 productos',       time: 'hace 8 min' },
+    { Icon: FileText,      color: 'blue',  title: 'Cotización enviada',   detail: '$430.00',                      time: 'hace 12 min' },
+    { Icon: RotateCcw,     color: 'amber', title: 'Devolución procesada', detail: 'Camisa Talla M',               time: 'hace 15 min' },
+    { Icon: DollarSign,    color: 'green', title: 'Venta cobrada',        detail: 'Zelle · $42.00',               time: 'hace 18 min' },
+  ]
 
-export default function LivePulseSection() {
+  /* 3 slots, 3 eventos cada uno (round-robin sobre el banco de 9) */
+  const SLOTS: FeedEvent[][] = [
+    [EVENTS[0], EVENTS[3], EVENTS[6]],
+    [EVENTS[1], EVENTS[4], EVENTS[7]],
+    [EVENTS[2], EVENTS[5], EVENTS[8]],
+  ]
+
   return (
     <section className={styles.section}>
       <div className={styles.container}>

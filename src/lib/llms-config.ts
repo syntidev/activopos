@@ -16,7 +16,7 @@ export interface Segment {
 export interface Plan {
   name: string
   priceUsd: number
-  /** "hasta 100 productos, hasta 3 usuarios." */
+  /** "productos ilimitados, hasta 10 usuarios." */
   shortDescription: string
   /** Oración completa con público objetivo, para llms-full.txt. */
   fullDescription: string

@@ -48,9 +48,8 @@ const SOFTWARE_APPLICATION_JSON_LD = {
   description: 'Sistema de control de ventas e inventario para PYMEs venezolanas. No reemplaza la facturación SENIAT, la complementa.',
   url: 'https://activopos.com',
   offers: [
-    { '@type': 'Offer', name: 'Mostrador', price: '15.00', priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
-    { '@type': 'Offer', name: 'Negocio',   price: '25.00', priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
-    { '@type': 'Offer', name: 'Pro',       price: '40.00', priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
+    { '@type': 'Offer', name: 'Gratis',         price: '0.00',  priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
+    { '@type': 'Offer', name: 'Negocio Activo',  price: '19.00', priceCurrency: 'USD', priceValidUntil: '2027-12-31' },
   ],
   provider: {
     '@type': 'Organization',

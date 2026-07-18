@@ -36,8 +36,8 @@ const FAQS = [
     a: 'Sí. Puedes crear usuarios con rol de Cajero. Tienen acceso al POS, caja y clientes, sin ver costos ni configuración del negocio.',
   },
   {
-    q: '¿Mi catálogo es público sin que pagues extra?',
-    a: 'El catálogo digital está incluido en todos los planes. Tu negocio tiene su propio URL público donde los clientes ven los productos y pueden hacer pedidos por WhatsApp.',
+    q: '¿El catálogo digital tiene costo aparte?',
+    a: 'No es un costo aparte: viene incluido en el plan Negocio Activo. Tu negocio tiene su propio URL público donde los clientes ven los productos y hacen pedidos por WhatsApp. El plan Gratis se enfoca en el POS y el inventario.',
   },
   {
     q: '¿Qué pasa si cancelo mi suscripción?',

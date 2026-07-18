@@ -122,12 +122,9 @@ export default function PricingSection({ bcvRate, showHeader = true, showMoreLin
             const amounts   = tier === 'gratis' ? null : BILLING_CYCLES[tier][cycle]
             const waMsg     = encodeURIComponent(`Hola, me interesa el plan ${PLAN_DISPLAY[tier]} de ActivoPOS`)
             const feats     = featuresForTier(tier)
-            // Moneda opuesta a la del hero — ambas siempre visibles (regla dual USD+Bs).
-            const secondary = amounts
-              ? (currency === 'usd'
-                  ? (hasBs ? `${fmtBs(amounts.monthlyEquivalent, bcvRate)} /mes` : '')
-                  : `${fmtUsd(amounts.monthlyEquivalent)} /mes`)
-              : 'Para siempre, sin tarjeta'
+            // El toggle es un switch real: el precio se muestra sólo en la moneda
+            // seleccionada. Gratis no tiene precio -> su subtexto es la nota.
+            const secondary = amounts ? '' : 'Para siempre, sin tarjeta'
             return (
               <div key={tier} className={`${styles.card} ${featured ? styles.cardFeatured : ''}`}>
                 {badge && <span className={styles.badge}>{badge}</span>}
@@ -144,7 +141,7 @@ export default function PricingSection({ bcvRate, showHeader = true, showMoreLin
                     <span className={styles.savingsBadge}>Ahorra {amounts.savingsPct}%</span>
                   </div>
                 )}
-                <span className={styles.priceBs}>{secondary}</span>
+                {secondary && <span className={styles.priceBs}>{secondary}</span>}
                 {amounts && cycle !== 'mensual' && (
                   <span className={styles.cycleNote}>
                     Total {money(amounts.totalAmount, currency, bcvRate)} facturado {CYCLE_LABEL[cycle].toLowerCase()}

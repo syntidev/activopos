@@ -373,7 +373,7 @@ export const helpContent = {
     faqs: [
       {
         q: '¿El catálogo tiene costo extra?',
-        a: 'No. Está incluido en el plan Negocio y Pro sin costo adicional.',
+        a: 'No. Está incluido en el plan Negocio Activo sin costo adicional. En el plan Gratis el catálogo digital no está disponible.',
       },
       {
         q: '¿Por qué no aparece mi producto en el catálogo?',
@@ -433,7 +433,7 @@ export const helpContent = {
       },
       {
         title: 'Usuarios y roles',
-        body:  'Agrega cajeros con acceso limitado al POS. Los administradores tienen acceso completo. Según tu plan: Mostrador 2, Negocio 5, Pro ilimitado.',
+        body:  'Agrega cajeros con acceso limitado al POS. Los administradores tienen acceso completo. Según tu plan: Gratis 1 usuario, Negocio Activo hasta 10.',
       },
     ],
     faqs: [
@@ -443,7 +443,7 @@ export const helpContent = {
       },
       {
         q: '¿Puedo tener varios usuarios?',
-        a: 'Sí. Mostrador: 2 usuarios, Negocio: 5, Pro: ilimitado.',
+        a: 'Sí. Gratis: 1 usuario. Negocio Activo: hasta 10.',
       },
       {
         q: '¿Cómo cambio el color del catálogo?',
@@ -571,7 +571,7 @@ export const helpContent = {
     faqs: [
       {
         q: '¿Cuántos usuarios puedo tener?',
-        a: 'Según tu plan: Mostrador 2, Negocio 5, Pro ilimitado.',
+        a: 'Según tu plan: Gratis 1 usuario, Negocio Activo hasta 10.',
       },
       {
         q: '¿Puedo desactivar un usuario sin borrarlo?',

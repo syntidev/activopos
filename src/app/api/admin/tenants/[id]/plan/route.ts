@@ -6,9 +6,9 @@ import { prisma } from '@/lib/prisma'
 type RouteContext = { params: { id: string } }
 
 const PatchSchema = z.object({
-  plan:       z.enum(['trial', 'inicio', 'pro', 'business']),
+  plan:       z.enum(['gratis', 'negocio_activo']),
   expires_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido').nullable().optional(),
-  status:     z.enum(['active', 'trial', 'expired', 'suspended']),
+  status:     z.enum(['active', 'expired', 'suspended']),
 })
 
 export async function PATCH(request: Request, { params }: RouteContext) {

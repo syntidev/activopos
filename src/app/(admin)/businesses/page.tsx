@@ -63,9 +63,7 @@ async function getBusinesses(q: string, plan: string, page: number) {
 type Tenant = Awaited<ReturnType<typeof getBusinesses>>['businesses'][number]
 
 function planBadge(plan: string) {
-  const cls = plan === 'pro' || plan === 'business' ? styles.badgeActive
-    : plan === 'inicio' ? styles.badgeTrial
-    : styles.badgeInactive
+  const cls = plan === 'negocio_activo' ? styles.badgeActive : styles.badgeTrial
   return <span className={`${styles.badge} ${cls}`}>{plan}</span>
 }
 

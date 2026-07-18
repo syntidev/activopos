@@ -38,7 +38,7 @@ export async function GET() {
     id:                    b.id,
     name:                  b.name,
     adminEmail:            b.users[0]?.email ?? null,
-    plan:                  b.catalog_plan ?? 'trial',
+    plan:                  b.catalog_plan ?? 'gratis',
     active:                b.active,
     subscriptionActive:    b.subscription_active,
     subscriptionExpiresAt: b.subscription_expires_at,

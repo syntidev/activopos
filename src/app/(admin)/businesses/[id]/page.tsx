@@ -62,7 +62,7 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
         </div>
         <div className={styles.detailActions}>
           <ImpersonateButton tenantId={business.id} tenantName={business.name} />
-          <PlanSelect tenantId={business.id} plan={business.catalog_plan ?? 'trial'} />
+          <PlanSelect tenantId={business.id} plan={business.catalog_plan ?? 'gratis'} />
           <SuspendToggle tenantId={business.id} active={business.active} />
         </div>
       </div>

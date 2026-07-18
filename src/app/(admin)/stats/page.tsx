@@ -13,7 +13,7 @@ async function getStats() {
     const [total, activeCount, trialCount, activeBusinessIds, salesAll, salesMonth, recentBusinesses] = await Promise.all([
       prisma.business.count(),
       prisma.business.count({ where: { active: true } }),
-      prisma.business.count({ where: { catalog_plan: null } }),
+      prisma.business.count({ where: { catalog_plan: 'gratis' } }),
       prisma.sale.findMany({
         where:    { status: 'paid', sold_at: { gte: windowStart } },
         select:   { business_id: true },
@@ -76,7 +76,7 @@ export default async function StatsPage() {
   const kpis = [
     { label: 'Negocios totales',      value: String(s.total) },
     { label: 'Activos (30 días)',     value: String(s.active30d), accent: true },
-    { label: 'En trial',              value: String(s.trial) },
+    { label: 'Plan gratis',           value: String(s.trial) },
     { label: 'Ventas este mes',       value: fmt(s.monthSalesUsd), sub: `${s.monthSalesCount} transacciones` },
     { label: 'Ventas históricas',     value: fmt(s.totalSalesUsd), sub: `${s.totalSalesCount} total` },
   ]

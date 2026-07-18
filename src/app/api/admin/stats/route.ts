@@ -15,7 +15,7 @@ export async function GET() {
 
   const [total, trialCount, activeBusinessIds, salesMonth, recentBusinesses] = await Promise.all([
     prisma.business.count(),
-    prisma.business.count({ where: { catalog_plan: null } }),
+    prisma.business.count({ where: { catalog_plan: 'gratis' } }),
     prisma.sale.findMany({
       where:    { status: 'paid', sold_at: { gte: windowStart } },
       select:   { business_id: true },

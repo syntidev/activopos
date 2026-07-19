@@ -36,7 +36,7 @@ export interface BlogPostPayload {
   read_time?:        string | null
 }
 
-export const BLOG_CATEGORIES = ['Inventario', 'Finanzas', 'Ventas', 'Operaciones', 'Tecnología POS'] as const
+export { BLOG_CATEGORIES } from '@/lib/blog/categories'
 
 export function slugify(text: string): string {
   return text

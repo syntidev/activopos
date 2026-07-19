@@ -2,6 +2,8 @@
 // No hay modelo Prisma ni endpoint todavía al momento de este commit — esta forma
 // se declara explícitamente para que CLI-A la confirme/ajuste al entregar el backend.
 
+export { BLOG_CATEGORIES, categoryColor } from '@/lib/blog/categories'
+
 export interface BlogPostSummary {
   slug:               string
   title:              string
@@ -27,27 +29,6 @@ export interface BlogListResponse {
   limit: number
 }
 
-// /api/blog no expone category_color por categoría — paleta fija de respaldo
-// para las categorías reales conocidas (sembradas en DB). Categorías nuevas que
-// no matcheen caen al azul de marca (categoryColor ya lo maneja por default).
-const CATEGORY_COLOR_MAP: Record<string, string> = {
-  'Ventas':          '#0038BD',
-  'Inventario':      '#16A34A',
-  'Finanzas':        '#D97706',
-  'Venezuela':       '#D97706',
-  'Tecnología':      '#7C3AED',
-  'Catálogo':        '#0891B2',
-  'Casos de éxito':  '#EC4899',
-}
-
-export function categoryColor(category: string | null): string {
-  if (!category) return '#0038BD'
-  return CATEGORY_COLOR_MAP[category] ?? '#0038BD'
-}
-
-// Categorías reales conocidas (sembradas en DB) — estático porque /api/blog
-// no expone un endpoint ni campo de categorías (ver comentario en CATEGORY_COLOR_MAP).
-export const BLOG_CATEGORIES: string[] = Object.keys(CATEGORY_COLOR_MAP)
 
 // Server Components no pueden usar fetch('/ruta-relativa') — arma la URL absoluta
 // desde NEXT_PUBLIC_APP_URL (ya usado en .env.example para la URL pública de la

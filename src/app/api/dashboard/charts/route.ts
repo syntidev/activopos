@@ -187,10 +187,15 @@ export async function GET(req: NextRequest) {
       bs:       parseFloat(String(r.total_bs))  || 0,
       tx_count: parseInt(String(r.tx_count ?? 0)) || 0,
     })),
-    utilidad_barras: salesRows.map(r => ({
-      date: formatLabel(r.date_label),
-      usd:  parseFloat(String(r.profit)) || 0,
-    })),
+    // Utilidad es dato financiero — cashier no tiene acceso (mismo criterio que
+    // /api/finanzas/* y api/sales/route.ts). Se omite el campo en vez de bloquear
+    // el endpoint: el cajero sigue necesitando ventas/metodos/top para escritorio.
+    ...(session.role === 'cashier' ? {} : {
+      utilidad_barras: salesRows.map(r => ({
+        date: formatLabel(r.date_label),
+        usd:  parseFloat(String(r.profit)) || 0,
+      })),
+    }),
     metodos_pie: methodRows.map(m => ({
       name:  m.name,
       value: parseFloat(String(m.total_usd)) || 0,

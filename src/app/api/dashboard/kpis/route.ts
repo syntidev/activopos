@@ -179,6 +179,11 @@ export async function GET(req: NextRequest) {
   const creditoHoy       = Number(creditAggToday._sum.total_usd ?? 0)
   const costoInvertidoHoy = Math.max(0, vHoy - uHoy)
 
+  // Utilidad y costo son datos financieros — cashier no tiene acceso (mismo
+  // criterio que /api/finanzas/* y api/sales/route.ts). Se omiten los campos en
+  // vez de bloquear el endpoint completo, para no romper el resto del payload.
+  const isCashier = session.role === 'cashier'
+
   return NextResponse.json({
     ok:       true,
     greeting: getGreeting(now.getHours()),
@@ -186,8 +191,10 @@ export async function GET(req: NextRequest) {
       cobrado_usd:        vHoy,
       credito_usd:        creditoHoy,
       total_usd:          r2(vHoy + creditoHoy),
-      utilidad_usd:       r2(uHoy),
-      costo_invertido_usd: r2(costoInvertidoHoy),
+      ...(isCashier ? {} : {
+        utilidad_usd:        r2(uHoy),
+        costo_invertido_usd: r2(costoInvertidoHoy),
+      }),
       tickets_count:      todayCount,
       ticket_promedio_usd: todayCount > 0 ? r2(vHoy / todayCount) : 0,
       ordenes_count:      ordenesCount,
@@ -197,21 +204,25 @@ export async function GET(req: NextRequest) {
       usd: vHoy, bs: vHoyBs, count: todayCount,
       trend_pct: calcTrend(vHoy, vAyer),
     },
-    utilidad_hoy: {
-      usd: uHoy, bs: r2(uHoy * rate),
-      trend_pct: calcTrend(uHoy, uAyer),
-    },
+    ...(isCashier ? {} : {
+      utilidad_hoy: {
+        usd: uHoy, bs: r2(uHoy * rate),
+        trend_pct: calcTrend(uHoy, uAyer),
+      },
+    }),
     ventas_mes: {
       usd: vMes, bs: vMesBs, count: monthCount,
       trend_pct: calcTrend(vMes, vMesA),
     },
-    utilidad_mes: {
-      usd: uMes, bs: r2(uMes * rate),
-      trend_pct: calcTrend(uMes, uMesA),
-    },
+    ...(isCashier ? {} : {
+      utilidad_mes: {
+        usd: uMes, bs: r2(uMes * rate),
+        trend_pct: calcTrend(uMes, uMesA),
+      },
+    }),
     period_stats: {
       ventas:        { usd: vPer, bs: vPerBs },
-      utilidad:      { usd: uPer, bs: r2(uPer * rate) },
+      ...(isCashier ? {} : { utilidad: { usd: uPer, bs: r2(uPer * rate) } }),
       transacciones: periodCount,
       ticket_promedio: {
         usd: periodCount > 0 ? r2(vPer  / periodCount) : 0,

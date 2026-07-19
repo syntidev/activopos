@@ -226,8 +226,9 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--badge-color, var(--brand));
-  background: color-mix(in srgb, var(--badge-color, var(--brand)) 88%, white 12%);
+  color: #fff;
+  background: var(--badge-color, var(--brand));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   border-radius: 6px;
   padding: 4px 10px;
 }

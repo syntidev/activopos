@@ -85,7 +85,9 @@ export function VariantSelector({
 
   // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
   // El primer segmento (antes del primer "-") es la dimensión 1.
-  const isCombined = variants.some(v => v.combination_key)
+  // every() y no some(): con una sola variante sin combination_key, el map de
+  // abajo hace .split() sobre null y tumba la vista. Mixto => se trata legacy.
+  const isCombined = variants.length > 0 && variants.every(v => v.combination_key)
   const dim1Labels = isCombined ? (variants[0]?.tipo ?? '').split('+') : []
   const dim1Label  = dim1Labels[0] ?? 'Talla'
   const dim2Label  = dim1Labels[1] ?? 'Color'

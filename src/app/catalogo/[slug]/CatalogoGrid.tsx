@@ -431,7 +431,9 @@ export function CatalogoGrid({
   }, [availableStock])
 
   // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
-  const isCombinedVariant = !!selP?.variants.some(v => v.combination_key)
+  // every() y no some(): con una sola variante sin combination_key, el map de
+  // abajo hace .split() sobre null y tumba el catalogo. Mixto => se trata legacy.
+  const isCombinedVariant = !!selP && selP.variants.length > 0 && selP.variants.every(v => v.combination_key)
   const combinedDimLabels = isCombinedVariant ? (selP!.variants[0]?.tipo ?? '').split('+') : []
   const combinedDim1Label = combinedDimLabels[0] ?? 'Talla'
   const combinedDim2Label = combinedDimLabels[1] ?? 'Color'

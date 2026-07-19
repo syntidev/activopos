@@ -77,7 +77,9 @@ export function ProductoDetalle({
   // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
   // Mismo patrón que CatalogoGrid — dim1 (talla) filtra las opciones de dim2 (color);
   // solo al elegir dim2 se fija selectedVariantId (la fila real con stock/precio).
-  const isCombinedVariant = variants.some(v => v.combination_key)
+  // every() y no some(): con una sola variante sin combination_key, el map de
+  // abajo hace .split() sobre null y tumba el catalogo. Mixto => se trata legacy.
+  const isCombinedVariant = variants.length > 0 && variants.every(v => v.combination_key)
   const combinedDimLabels = isCombinedVariant ? (variants[0]?.tipo ?? '').split('+') : []
   const combinedDim1Label = combinedDimLabels[0] ?? 'Talla'
   const combinedDim2Label = combinedDimLabels[1] ?? 'Color'

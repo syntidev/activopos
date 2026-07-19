@@ -6,6 +6,7 @@ import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import MarketingHero from '@/components/marketing/MarketingHero'
 import { SEGMENT_ACCENT } from '@/lib/segment-accent'
+import { internalBaseUrl } from '@/lib/server-fetch-url'
 import styles from './page.module.css'
 
 export const revalidate = 3600
@@ -28,16 +29,9 @@ interface SegmentListItem {
   tag_line: string
 }
 
-// Server Components no pueden usar fetch('/ruta-relativa') — arma la URL absoluta
-// desde NEXT_PUBLIC_APP_URL. Nunca se deriva del header Host de la request: es
-// spoofeable por el cliente y permitiría SSRF.
-function baseUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-}
-
 async function getSegments(): Promise<SegmentListItem[]> {
   try {
-    const res = await fetch(`${baseUrl()}/api/marketing/segments`, { next: { revalidate: 3600 } })
+    const res = await fetch(`${internalBaseUrl()}/api/marketing/segments`, { next: { revalidate: 3600 } })
     if (!res.ok) return []
     return await res.json() as SegmentListItem[]
   } catch {

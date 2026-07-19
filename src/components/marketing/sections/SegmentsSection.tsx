@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import { SEGMENT_ACCENT } from '@/lib/segment-accent'
+import { internalBaseUrl } from '@/lib/server-fetch-url'
 import styles from './SegmentsSection.module.css'
 
 interface ApiSegment {
@@ -20,7 +21,7 @@ const ROTATE_SEQUENCE = [-1.2, 1, -0.8, 1.4, -1, 0.7, -1.4, 1.1, -0.6, 1.3]
 // nav dropdown consumen, no duplicar la query).
 async function getSegments(): Promise<ApiSegment[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/marketing/segments`, {
+    const res = await fetch(`${internalBaseUrl()}/api/marketing/segments`, {
       next: { revalidate: 300 },
     })
     if (!res.ok) return []

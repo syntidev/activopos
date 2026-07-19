@@ -2,9 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { PartyPopper, Loader2, AlertTriangle, ArrowRight } from 'lucide-react'
+import { PartyPopper, Loader2, AlertTriangle, ArrowRight, Package, Share2, Calculator } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import styles from '../registro.module.css'
+
+// Mismos 3 próximos pasos que ofrece el checklist de bienvenida del dashboard
+// (escritorio/page.tsx) — íconos ya usados en el proyecto para el mismo concepto:
+// Package = producto (TabModulos 'inventory'), Calculator = caja (TabModulos 'caja').
+// Share2 no tiene precedente exacto para "compartir catálogo" — Globe ya identifica
+// el paso "URL" del wizard (STEP_META), así que Share2 evita ambigüedad visual.
+const NEXT_STEPS = [
+  { icon: Package,    label: 'Sube tu primer producto', tone: styles.checklistIconBrand },
+  { icon: Share2,     label: 'Comparte tu catálogo',    tone: styles.checklistIconSuccess },
+  { icon: Calculator, label: 'Configura tu caja',       tone: styles.checklistIconViolet },
+]
 
 export type SubmitStatus = 'submitting' | 'success' | 'error'
 
@@ -126,13 +137,25 @@ export default function Step7Bienvenida({
         )}
 
         <div className={styles.checklist}>
-          <div className={styles.checklistItem}>☐ Sube tu primer producto</div>
-          <div className={styles.checklistItem}>☐ Comparte tu catálogo</div>
-          <div className={styles.checklistItem}>☐ Configura tu caja</div>
+          {NEXT_STEPS.map((step, i) => (
+            <motion.div
+              key={step.label}
+              className={styles.checklistItem}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 + i * 0.06, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <span className={`${styles.checklistIcon} ${step.tone}`}>
+                <step.icon size={15} aria-hidden="true" />
+              </span>
+              {step.label}
+            </motion.div>
+          ))}
         </div>
 
         <div className={styles.celebrateActions}>
           <Button
+            variant="cta"
             fullWidth
             size="lg"
             rightIcon={<ArrowRight size={16} />}

@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { PAYMENT_METHOD_DEFS, BANCOS_VENEZUELA } from '../data'
+import { PAYMENT_METHOD_DEFS, BANCOS_VENEZUELA, OPTION_TONES } from '../data'
 import type { OnboardingState, PaymentMethodDetails } from '../types'
 import styles from '../registro.module.css'
 
@@ -33,8 +33,10 @@ export default function Step4Pagos({ data, update, onNext }: StepProps) {
       <h1 className={styles.stepTitle}>Métodos de Pago</h1>
       <p className={styles.stepSubtitle}>¿Cómo recibirás pagos?</p>
 
-      {PAYMENT_METHOD_DEFS.map(method => {
+      {PAYMENT_METHOD_DEFS.map((method, i) => {
         const active = data.paymentMethods.includes(method.id)
+        const Icon = method.icon
+        const tone = styles[OPTION_TONES[i % OPTION_TONES.length]]
         return (
           <div
             key={method.id}
@@ -47,7 +49,7 @@ export default function Step4Pagos({ data, update, onNext }: StepProps) {
               aria-pressed={active}
               style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
             >
-              <span className={styles.paymentEmoji}>{method.emoji}</span>
+              <span className={`${styles.paymentIconWrap} ${tone}`}><Icon size={16} aria-hidden="true" /></span>
               <span>
                 <div className={styles.paymentLabel}>{method.label}</div>
                 <div className={styles.paymentDesc}>{method.desc}</div>

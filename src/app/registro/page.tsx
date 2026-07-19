@@ -210,13 +210,20 @@ export default function RegistroPage() {
               const done    = stepNum < currentStep
               const active  = stepNum === currentStep
               return (
-                <span
-                  key={meta.key}
+                // key incluye `done` a propósito: al pasar a true, React remonta el
+                // nodo y Framer corre initial->animate una sola vez (el "pulso" de
+                // confirmación). Pasos activos/futuros usan initial={false} — sin
+                // animación, ya están en su estado final desde el primer render.
+                <motion.span
+                  key={`${meta.key}-${done}`}
                   className={`${styles.stepDot} ${done ? styles.stepDotDone : ''} ${active ? styles.stepDotActive : ''}`}
                   title={meta.label}
+                  initial={done ? { scale: 0.5, opacity: 0 } : false}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 >
                   {done ? <Check size={14} aria-hidden="true" /> : <Icon size={15} aria-hidden="true" />}
-                </span>
+                </motion.span>
               )
             })}
           </div>

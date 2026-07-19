@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { ArrowRight, Upload } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { BUSINESS_TYPES, SUB_SEGMENTS } from '../data'
+import { BUSINESS_TYPES, SUB_SEGMENTS, OPTION_TONES } from '../data'
 import type { OnboardingState } from '../types'
 import styles from '../registro.module.css'
 
@@ -85,9 +85,10 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
       <div className={styles.formField}>
         <label className={styles.fieldLabel}>¿Qué tipo de negocio tienes?</label>
         <div className={styles.typeGrid}>
-          {BUSINESS_TYPES.map(type => {
+          {BUSINESS_TYPES.map((type, i) => {
             const Icon = type.icon
             const active = data.segment === type.id
+            const tone = styles[OPTION_TONES[i % OPTION_TONES.length]]
             return (
               <button
                 key={type.id}
@@ -96,7 +97,7 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
                 onClick={() => update({ segment: type.id, subSegment: '', subSegmentOther: '' })}
                 aria-pressed={active}
               >
-                <span className={styles.typeCardIcon}><Icon size={20} aria-hidden="true" /></span>
+                <span className={`${styles.typeCardIcon} ${tone}`}><Icon size={20} aria-hidden="true" /></span>
                 <span className={styles.typeCardLabel}>{type.label}</span>
                 <span className={styles.typeCardDesc}>{type.desc}</span>
               </button>
@@ -106,8 +107,10 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
 
         {subSegments.length > 0 && (
           <div className={styles.subSegmentGrid}>
-            {subSegments.map(sub => {
+            {subSegments.map((sub, i) => {
               const active = data.subSegment === sub.id
+              const Icon = sub.icon
+              const tone = styles[OPTION_TONES[i % OPTION_TONES.length]]
               return (
                 <button
                   key={sub.id}
@@ -116,7 +119,7 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
                   onClick={() => update({ subSegment: sub.id })}
                   aria-pressed={active}
                 >
-                  <span className={styles.subSegmentEmoji}>{sub.emoji}</span>
+                  <span className={`${styles.subSegmentIcon} ${tone}`}><Icon size={18} aria-hidden="true" /></span>
                   <span className={styles.subSegmentLabel}>{sub.label}</span>
                   <span className={styles.subSegmentDesc}>{sub.desc}</span>
                 </button>

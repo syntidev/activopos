@@ -45,6 +45,19 @@
   --color-border-focus:   var(--brand);
   --color-border-strong:  var(--mkt-border-dashed);
 
+  /* Tercer tono para el checklist de Step7 (Configura tu caja) — /registro es
+     siempre claro (nunca hereda dark, ver comentario arriba), así que un par
+     nuevo local aquí no reintroduce el bug de tokens theme-aware. Mismo violeta
+     que ya usa CONFETTI_COLORS[4] en Step7Bienvenida.tsx. */
+  --color-violet-subtle:  #F3E8FF;
+  --color-violet-text:    #7C3AED;
+
+  /* Paleta KPI sellada (design-system-rules.md) aplicada a las opciones
+     seleccionables del wizard — falta el azul exacto (#DBEAFE/#2563EB),
+     --color-brand-subtle es #DCE6FF (derivado de --brand, no el KPI real). */
+  --color-blue-subtle:    #DBEAFE;
+  --color-blue-text:      #2563EB;
+
   min-height: 100dvh;
   background: var(--color-bg);
   font-family: var(--font-sans);
@@ -238,7 +251,12 @@
   border: 2px solid var(--color-border);
   color: var(--color-text-muted);
   background: var(--color-surface);
-  transition: all var(--transition-base);
+  /* Propiedades explícitas (no "all") — el scale/opacity de confirmación al
+     completar un paso lo anima Framer Motion vía transform inline; si "all"
+     incluyera transform, la transición CSS y el spring de Framer competirían
+     por la misma propiedad. */
+  transition: background-color var(--transition-base), border-color var(--transition-base),
+    box-shadow var(--transition-base), color var(--transition-base);
 }
 
 .stepDotActive {
@@ -370,12 +388,18 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--color-surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-brand);
 }
+
+/* Círculo de color por categoría — paleta KPI sellada (design-system-rules.md),
+   ciclada por posición. Compartida por typeCardIcon/subSegmentIcon/paymentIconWrap
+   (antes las 3 en el mismo azul plano, sin distinción real entre opciones). */
+.toneBlue    { background: var(--color-blue-subtle);    color: var(--color-blue-text); }
+.toneViolet  { background: var(--color-violet-subtle);  color: var(--color-violet-text); }
+.toneMostaza { background: var(--color-warning-subtle); color: var(--color-warning-text); }
+.toneVerde   { background: var(--color-success-subtle); color: var(--color-success-text); }
 
 .typeCardLabel {
   font-size: var(--text-sm);
@@ -417,8 +441,13 @@
   background: var(--color-teal-subtle);
 }
 
-.subSegmentEmoji {
-  font-size: 24px;
+.subSegmentIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .subSegmentLabel {
@@ -522,10 +551,14 @@
   gap: var(--space-3);
 }
 
-.paymentEmoji {
-  font-size: 20px;
+.paymentIconWrap {
   width: 28px;
-  text-align: center;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .paymentLabel {
@@ -780,8 +813,11 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: var(--color-success-subtle);
-  color: var(--color-success-text);
+  /* Sand (neutro/cálido) en vez de Carrot — Carrot queda exclusivo del CTA
+     de avance (consistente en los 7 pasos). Navy como color de ícono:
+     mismo par que .tipSand en login.module.css, WCAG AA sobre --sand. */
+  background: var(--sand);
+  color: var(--mkt-navy);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -847,6 +883,20 @@
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
 }
+
+.checklistIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checklistIconBrand   { background: var(--color-blue-subtle);    color: var(--color-blue-text); }
+.checklistIconSuccess { background: var(--color-success-subtle); color: var(--color-success-text); }
+.checklistIconViolet  { background: var(--color-violet-subtle);  color: var(--color-violet-text); }
 
 .celebrateActions {
   display: flex;

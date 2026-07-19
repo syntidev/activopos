@@ -48,18 +48,21 @@ const CHANNELS = [
 export default function ContactoPage() {
   return (
     <section className={styles.page}>
-      <div className={styles.inner}>
-        <RevealSection>
-          <header className={styles.header}>
+      <RevealSection>
+        <header className={styles.header}>
+          <Mail className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
+          <div className={styles.headerInner}>
             <p className={styles.eyebrow}>Contacto</p>
             <h1 className={styles.title}>Hablemos</h1>
             <p className={styles.subtitle}>
               ¿Quieres ver una demo, tienes dudas sobre planes o necesitas soporte?
               Elige el canal que prefieras.
             </p>
-          </header>
-        </RevealSection>
+          </div>
+        </header>
+      </RevealSection>
 
+      <div className={styles.inner}>
         <RevealSection>
           <div className={styles.grid}>
             {/* Channels */}

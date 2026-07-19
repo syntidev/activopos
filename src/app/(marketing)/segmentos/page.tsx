@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
-import { Store } from 'lucide-react'
+import { Store, LayoutGrid } from 'lucide-react'
 import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import { SEGMENT_ACCENT } from '@/lib/segment-accent'
@@ -50,9 +50,12 @@ export default async function SegmentosPage() {
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
+        <LayoutGrid className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
         <RevealSection>
-          <h1 className={styles.heroTitle}>ActivoPOS para cada negocio venezolano</h1>
-          <p className={styles.heroSub}>Desde bodegas hasta ferreterías — un solo sistema</p>
+          <div className={styles.heroInner}>
+            <h1 className={styles.heroTitle}>ActivoPOS para cada negocio venezolano</h1>
+            <p className={styles.heroSub}>Desde bodegas hasta ferreterías — un solo sistema</p>
+          </div>
         </RevealSection>
       </section>
 

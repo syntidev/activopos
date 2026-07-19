@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ChevronDown, MessageCircle } from 'lucide-react'
+import { ChevronDown, MessageCircle, HelpCircle } from 'lucide-react'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import { WA_BASE } from '@/lib/marketing-contact'
 import styles from './faq.module.css'
@@ -137,6 +137,7 @@ export default function FaqPage() {
 
       {/* Hero */}
       <section className={styles.hero}>
+        <HelpCircle className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
         <RevealSection>
           <div className={styles.heroInner}>
             <span className={styles.pill}>FAQ</span>

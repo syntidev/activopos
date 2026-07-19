@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import { Library } from 'lucide-react'
 import styles from './page.module.css'
 
 export const metadata: Metadata = {
@@ -33,9 +34,12 @@ export default async function RecursosPage() {
 
       {/* HERO */}
       <section className={styles.hero}>
+        <Library className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
         <RevealSection>
-          <h1 className={styles.heroTitle}>Todo lo que necesitás saber sobre ActivoPOS</h1>
-          <p className={styles.heroSub}>Segmentos, planes y recursos para tu negocio venezolano</p>
+          <div className={styles.heroInner}>
+            <h1 className={styles.heroTitle}>Todo lo que necesitás saber sobre ActivoPOS</h1>
+            <p className={styles.heroSub}>Segmentos, planes y recursos para tu negocio venezolano</p>
+          </div>
         </RevealSection>
       </section>
 

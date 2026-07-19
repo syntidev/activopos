@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import type { CSSProperties } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Clock, User } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clock, User, BookOpen } from 'lucide-react'
 import { fetchBlogList, BLOG_CATEGORIES, categoryColor, type BlogPostSummary } from './types'
 import styles from './blog.module.css'
 
@@ -73,6 +73,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
   return (
     <>
       <section className={styles.hero}>
+        <BookOpen className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
         <div className={styles.heroInner}>
           <h1 className={styles.heroTitle}>Blog ActivoPOS</h1>
           <p className={styles.heroSubtitle}>Guías y recursos para negocios venezolanos</p>

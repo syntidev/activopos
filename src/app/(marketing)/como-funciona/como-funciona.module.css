@@ -1,0 +1,37 @@
+.hero {
+  background: var(--mkt-bg);
+  padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(3rem, 6vw, 4rem);
+  border-bottom: 1px solid var(--mkt-border);
+}
+
+.eyebrow {
+  display: inline-flex;
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 100px;
+  padding: 5px 14px;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-family: var(--font-display, 'Fraunces', serif);
+  font-size: clamp(2.25rem, 5.5vw, 3.5rem);
+  font-weight: 700;
+  color: var(--mkt-navy);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  color: var(--lp-text-body);
+  line-height: 1.6;
+  max-width: 52ch;
+}

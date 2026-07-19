@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { Shield } from 'lucide-react'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import styles from './privacidad.module.css'
 
 export const metadata: Metadata = {
@@ -10,11 +12,13 @@ export const metadata: Metadata = {
 export default function PrivacidadPage() {
   return (
     <section className={styles.page}>
-      <div className={styles.inner}>
+      <MarketingHero icon={Shield} maxWidth={800} className={styles.heroTop}>
         <p className={styles.eyebrow}>Legal</p>
         <h1 className={styles.title}>Política de Privacidad</h1>
         <p className={styles.updated}>Última actualización: junio 2026</p>
+      </MarketingHero>
 
+      <div className={styles.inner}>
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>1. Quiénes somos</h2>
           <p className={styles.body}>

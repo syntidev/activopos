@@ -1,7 +1,16 @@
 .page {
   min-height: calc(100vh - 64px);
-  padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem);
+  padding-left: clamp(1.25rem, 5vw, 3rem);
+  padding-right: clamp(1.25rem, 5vw, 3rem);
+  padding-bottom: clamp(4rem, 10vw, 7rem);
   background: var(--mkt-bg);
+}
+
+/* Mismo padding-top que .page tenía antes -- reubicado al propio header
+   para que el ícono fantasma quede a la misma altura real que en el
+   resto de páginas. Cero cambio visual para el texto. */
+.heroTop {
+  padding-top: clamp(4rem, 10vw, 7rem);
 }
 
 .inner {

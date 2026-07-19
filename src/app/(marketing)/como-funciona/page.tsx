@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
+import { Workflow } from 'lucide-react'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import FeatureTabsSection from '@/components/marketing/sections/FeatureTabsSection'
 import CatalogShowcaseSection from '@/components/marketing/sections/CatalogShowcaseSection'
+import styles from './como-funciona.module.css'
 
 export const metadata: Metadata = {
   title: 'Cómo funciona',
@@ -19,6 +22,13 @@ export const metadata: Metadata = {
 export default function ComoFuncionaPage() {
   return (
     <>
+      <MarketingHero icon={Workflow} maxWidth={760} className={styles.hero}>
+        <p className={styles.eyebrow}>Cómo funciona</p>
+        <h1 className={styles.title}>Cobros, variantes y cocina — a tu manera</h1>
+        <p className={styles.subtitle}>
+          Un POS que se adapta a cómo trabaja tu negocio, no al revés.
+        </p>
+      </MarketingHero>
       <FeatureTabsSection />
       <CatalogShowcaseSection />
     </>

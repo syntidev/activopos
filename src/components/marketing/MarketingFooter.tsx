@@ -10,7 +10,7 @@ const PRODUCT_LINKS = [
   { label: 'Planes',         href: '/planes' },
   { label: 'Recursos',       href: '/recursos' },
   { label: 'Blog',           href: '/blog' },
-  { label: 'Demo',           href: `${WA_BASE}?text=Quiero+ver+una+demo+de+ActivoPOS` },
+  { label: 'Demo Catálogo',  href: '/catalogo/multi-demo', newTab: true },
 ]
 
 const COMPANY_LINKS = [
@@ -96,8 +96,13 @@ export default async function MarketingFooter() {
         <div className={styles.col}>
           <p className={styles.colTitle}>Producto</p>
           <nav className={styles.colLinks}>
-            {PRODUCT_LINKS.map(({ label, href }) => (
-              <Link key={href} href={href} className={styles.colLink}>
+            {PRODUCT_LINKS.map(({ label, href, newTab }) => (
+              <Link
+                key={href}
+                href={href}
+                className={styles.colLink}
+                {...(newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              >
                 {label}
               </Link>
             ))}

@@ -34,7 +34,7 @@ export default async function RecursosPage() {
     <div className={styles.page}>
 
       {/* HERO */}
-      <MarketingHero icon={FolderOpen} maxWidth={1100} iconSize="lg" className={styles.hero}>
+      <MarketingHero icon={FolderOpen} maxWidth={1100} className={styles.hero}>
         <h1 className={styles.heroTitle}>Todo lo que necesitás saber sobre ActivoPOS</h1>
         <p className={styles.heroSub}>Segmentos, planes y recursos para tu negocio venezolano</p>
       </MarketingHero>

@@ -49,7 +49,7 @@ const FAQS = [
 export default function AyudaPage() {
   return (
     <section className={styles.page}>
-      <MarketingHero icon={LifeBuoy} maxWidth={960}>
+      <MarketingHero icon={LifeBuoy} maxWidth={960} className={styles.heroTop}>
         <p className={styles.eyebrow}>Centro de ayuda</p>
         <h1 className={styles.title}>¿En qué te ayudamos?</h1>
         <p className={styles.subtitle}>

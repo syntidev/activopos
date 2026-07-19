@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { Scale } from 'lucide-react'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import styles from './terminos.module.css'
 
 export const metadata: Metadata = {
@@ -10,11 +12,13 @@ export const metadata: Metadata = {
 export default function TerminosPage() {
   return (
     <section className={styles.page}>
-      <div className={styles.inner}>
+      <MarketingHero icon={Scale} maxWidth={800} className={styles.heroTop}>
         <p className={styles.eyebrow}>Legal</p>
         <h1 className={styles.title}>Términos y Condiciones</h1>
         <p className={styles.updated}>Última actualización: julio 2026</p>
+      </MarketingHero>
 
+      <div className={styles.inner}>
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>1. Aceptación de términos</h2>
           <p className={styles.body}>

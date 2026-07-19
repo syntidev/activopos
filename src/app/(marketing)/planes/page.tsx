@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import { Check, MessageCircle } from 'lucide-react'
+import { Check, MessageCircle, Tag } from 'lucide-react'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import { getParallelRate } from '@/lib/bcv'
 import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import { featuresForTier, featuresByCategoryForTier } from '@/lib/plan-features'
@@ -74,14 +75,14 @@ export default async function PlanesPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
 
-      <section className={styles.hero}>
+      <MarketingHero icon={Tag} maxWidth={1100} className={styles.hero}>
         <div className={styles.container}>
           <h1 className={styles.title}>Planes claros. Precios reales.</h1>
           <p className={styles.subtitle}>
             Todos los planes en dólares, sin contrato anual. Compara cada detalle antes de decidir.
           </p>
         </div>
-      </section>
+      </MarketingHero>
 
       <PricingSection bcvRate={bcvRate} showHeader={false} showMoreLink={false} />
 

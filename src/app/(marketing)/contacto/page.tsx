@@ -49,7 +49,7 @@ const CHANNELS = [
 export default function ContactoPage() {
   return (
     <section className={styles.page}>
-      <MarketingHero icon={Mail} maxWidth={1100} className={styles.header}>
+      <MarketingHero icon={Mail} maxWidth={1100} className={`${styles.header} ${styles.heroTop}`}>
         <p className={styles.eyebrow}>Contacto</p>
         <h1 className={styles.title}>Hablemos</h1>
         <p className={styles.subtitle}>

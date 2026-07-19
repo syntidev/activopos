@@ -53,6 +53,32 @@ export function alertaNuevoNegocioEmail(businessName: string, plan: string, crea
   return { subject: `Nuevo negocio registrado: ${businessName}`, html, text }
 }
 
+// Alerta operativa (no va a un cliente, va a nosotros): NVIDIA dejo de aceptar
+// el modelo. `detail` es el cuerpo crudo del error, se trunca porque NIM a veces
+// devuelve un HTML completo.
+export function alertaModeloIaEmail(model: string, status: number, detail: string): EmailContent {
+  const fecha   = new Date().toLocaleString('es-VE', { dateStyle: 'medium', timeStyle: 'short' })
+  const recorte = detail.length > 500 ? `${detail.slice(0, 500)}…` : detail
+  const html = emailShell({
+    previewText: `El modelo ${model} dejo de responder (HTTP ${status}).`,
+    bodyHtml:
+      heading('Modelo de IA no disponible') +
+      paragraph('El modelo dejó de responder. Los módulos que dependen de IA — Tu Día, el bot de ayuda y la generación del blog — siguen operando con su fallback por reglas, así que nada se rompió para el usuario.') +
+      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-top:8px;">
+        <tr><td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${TEXT_MUTED}; width:90px;">Modelo</td>
+            <td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${BRAND_NAVY}; font-weight:600;">${escapeHtml(model)}</td></tr>
+        <tr><td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${TEXT_MUTED};">HTTP</td>
+            <td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${BRAND_NAVY}; font-weight:600;">${status}</td></tr>
+        <tr><td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${TEXT_MUTED};">Fecha</td>
+            <td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${BRAND_NAVY}; font-weight:600;">${escapeHtml(fecha)}</td></tr>
+      </table>` +
+      paragraph(`<span style="font-family:monospace; font-size:13px; color:${TEXT_MUTED};">${escapeHtml(recorte)}</span>`) +
+      paragraph('Revisa el catálogo de modelos en build.nvidia.com y actualiza el modelo en el VPS.'),
+  })
+  const text = `Modelo de IA no disponible.\n\nModelo: ${model}\nHTTP: ${status}\nFecha: ${fecha}\n\nDetalle:\n${recorte}\n\nLos módulos con IA siguen operando con su fallback por reglas.\nRevisa build.nvidia.com y actualiza el modelo en el VPS.`
+  return { subject: `Modelo NVIDIA no disponible: ${model}`, html, text }
+}
+
 export function recordatorioVencimientoEmail(businessName: string, daysLeft: number): EmailContent {
   const planesUrl = `${APP_URL}/planes`
   const dias = daysLeft === 1 ? '1 día' : `${daysLeft} días`

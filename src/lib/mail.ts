@@ -2,6 +2,7 @@ import nodemailer, { Transporter } from 'nodemailer'
 import {
   bienvenidaEmail,
   alertaNuevoNegocioEmail,
+  alertaModeloIaEmail,
   recordatorioVencimientoEmail,
   modulosBloqueadosEmail,
   resetPasswordEmail,
@@ -74,6 +75,22 @@ export async function sendNewBusinessAlertEmail(businessName: string, plan: stri
   } catch (err) {
     console.error(`[mail] FALLO alerta de nuevo negocio a ${to}:`, err instanceof Error ? err.message : err)
     throw err
+  }
+}
+
+/**
+ * Alerta operativa: NVIDIA rechazo el modelo (404/deprecado). A diferencia del
+ * resto, NO relanza el error — quien la dispara ya esta manejando una falla y
+ * no puede permitirse una segunda excepcion por SMTP caido.
+ */
+export async function sendAiModelAlertEmail(model: string, status: number, detail: string): Promise<void> {
+  const to = process.env.ALERT_EMAIL ?? 'hola@activopos.com'
+  const { subject, html, text } = alertaModeloIaEmail(model, status, detail)
+  try {
+    const info = await getTransporter().sendMail({ from: getFrom(), to, subject: sanitizeHeader(subject), text, html })
+    console.log(`[mail] alerta de modelo IA enviada a ${to} — messageId=${info.messageId} response="${info.response}"`)
+  } catch (err) {
+    console.error(`[mail] FALLO alerta de modelo IA a ${to}:`, err instanceof Error ? err.message : err)
   }
 }
 

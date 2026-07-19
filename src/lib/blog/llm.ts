@@ -31,6 +31,41 @@ interface CallOpts {
   model?: string
 }
 
+/**
+ * Aviso por correo cuando NVIDIA deja de aceptar el modelo (lo deprecan o lo
+ * sacan del catalogo). Va aca y no en un catch porque el detalle util —el
+ * status y el cuerpo del error— solo existe en este punto: el ProviderError que
+ * se lanza abajo lleva un mensaje generico donde ya no se puede distinguir un
+ * 404 de modelo de cualquier otro 5xx.
+ *
+ * Throttle en memoria del proceso: con el modelo caido, CADA request del bot de
+ * ayuda dispararia un correo. Un solo aviso por modelo cada 6 h alcanza para
+ * enterarse sin llenar la bandeja. Se pierde al reiniciar PM2, y esta bien —
+ * un deploy es justo cuando quieres que te vuelva a avisar.
+ */
+const MODEL_GONE_MARKERS = ['model_not_found', 'model_decommissioned', 'deprecated', 'no longer available', 'not found']
+const ALERT_THROTTLE_MS  = 6 * 60 * 60 * 1000
+const lastAlertAt = new Map<string, number>()
+
+function maybeAlertModelGone(model: string, status: number, errBody: string): void {
+  const body      = errBody.toLowerCase()
+  const isGone    = status === 404 || MODEL_GONE_MARKERS.some(m => body.includes(m))
+  if (!isGone) return
+
+  const now  = Date.now()
+  const last = lastAlertAt.get(model) ?? 0
+  if (now - last < ALERT_THROTTLE_MS) return
+  lastAlertAt.set(model, now)
+
+  // Import diferido: mail.ts arrastra nodemailer, y este modulo lo consumen
+  // Server Components que no deberian cargarlo salvo que de verdad falle.
+  // sendAiModelAlertEmail ya se traga sus propios errores; el catch cubre el
+  // fallo de import para que un aviso nunca tumbe al que lo dispara.
+  void import('@/lib/mail')
+    .then(m => m.sendAiModelAlertEmail(model, status, errBody))
+    .catch(err => console.error('[llm] no se pudo enviar la alerta de modelo:', err))
+}
+
 /** Devuelve el texto crudo del modelo — el parseo/validación queda en cada ruta. */
 export async function callBlogLlm(prompt: string, opts: CallOpts = {}): Promise<string> {
   const apiKey = process.env.NVIDIA_API_KEY
@@ -53,6 +88,7 @@ export async function callBlogLlm(prompt: string, opts: CallOpts = {}): Promise<
   if (!res.ok) {
     const errBody = await res.text().catch(() => '')
     console.error('NVIDIA NIM error:', res.status, errBody)
+    maybeAlertModelGone(opts.model || MODEL, res.status, errBody)
     throw new ProviderError('Falló el servicio de generación IA', 502)
   }
 

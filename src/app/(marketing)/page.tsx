@@ -48,7 +48,19 @@ const ORGANIZATION_JSON_LD = {
     availableLanguage: 'Spanish',
     url: 'https://wa.me/584222654827',
   },
-  sameAs: ['https://instagram.com/activopos', 'https://facebook.com/activopos', 'https://synti.dev'],
+  parentOrganization: {
+    '@type': 'Organization',
+    name: 'SYNTIdev',
+    url: 'https://synti.dev',
+  },
+  sameAs: [
+    'https://synti.dev',
+    'https://syntiweb.com',
+    'https://lleva.app',
+    'https://ordena.menu',
+    'https://instagram.com/activopos',
+    'https://facebook.com/activopos',
+  ],
 }
 
 const SOFTWARE_APPLICATION_JSON_LD = {

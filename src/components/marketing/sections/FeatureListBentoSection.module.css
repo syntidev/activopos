@@ -291,18 +291,24 @@
   border-radius: 3px;
   overflow: hidden;
 }
+/* scaleX y no width: animar width dispara layout en cada frame, y esta animacion
+   es infinite y se repite en ~24 elementos del bento, asi que el hilo principal
+   nunca descansa. Con transform la corre el compositor. transform-origin: left
+   reproduce el crecimiento desde el borde izquierdo que daba width: 0%. */
 .lineFill {
   display: block;
   height: 100%;
-  width: 0%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
   background: var(--brand);
   border-radius: 3px;
   animation: lineGrow 2.4s ease-in-out infinite;
 }
 @keyframes lineGrow {
-  0%        { width: 0%; }
-  30%, 70%  { width: 100%; }
-  100%      { width: 0%; }
+  0%        { transform: scaleX(0); }
+  30%, 70%  { transform: scaleX(1); }
+  100%      { transform: scaleX(0); }
 }
 
 /* 5. PULSO DE PUNTO -- punto "en vivo" parpadeando suave */

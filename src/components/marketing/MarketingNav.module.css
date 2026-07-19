@@ -197,8 +197,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  /* Minimo de touch target del design system. El icono sigue viendose igual
+     (lo dimensiona el <X size> en el tsx); lo que crece es el area tocable. */
+  width: var(--touch-min);
+  height: var(--touch-min);
   border-radius: 6px;
   transition: color 150ms ease, background 150ms ease;
 }

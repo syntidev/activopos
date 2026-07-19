@@ -17,10 +17,16 @@ function fmtRate(rate: number): string {
 
 const VENTA_HOY_USD = 284.5
 
-export default function HeroSection({ bcvRate }: Props) {
-  const rateDisplay = fmtRate(bcvRate)
-  const cardRef      = useRef<HTMLDivElement>(null)
-  const isInView      = useInView(cardRef, { once: true })
+interface DayCardTotalProps {
+  bcvRate: number
+}
+
+// El contador corre setState por frame (~72 renders en 1.2s). Vive aislado en su
+// propio componente para que esos renders no arrastren al h1/subhead: el subhead
+// es el elemento LCP y re-renderizarlo en cada frame retrasaba el LCP.
+function DayCardTotal({ bcvRate }: DayCardTotalProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true })
   const [ventaHoyUsd, setVentaHoyUsd] = useState(0)
 
   useEffect(() => {
@@ -34,6 +40,19 @@ export default function HeroSection({ bcvRate }: Props) {
   }, [isInView])
 
   const ventaHoyBs = ventaHoyUsd * bcvRate
+
+  return (
+    <div className={styles.dayCardTotal} ref={ref}>
+      <span className={styles.dayCardUsd}>${ventaHoyUsd.toFixed(2)}</span>
+      <span className={styles.dayCardBs}>
+        Bs.&nbsp;{ventaHoyBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </span>
+    </div>
+  )
+}
+
+export default function HeroSection({ bcvRate }: Props) {
+  const rateDisplay = fmtRate(bcvRate)
 
   return (
     <section className={styles.hero}>
@@ -57,7 +76,7 @@ export default function HeroSection({ bcvRate }: Props) {
         </div>
 
         {/* Tarjeta firma "Tu día" — fan de profundidad + único elemento animado al cargar (§7) */}
-        <div className={styles.cardWrap} ref={cardRef}>
+        <div className={styles.cardWrap}>
           <div className={styles.halo} aria-hidden="true" />
           <motion.div
             className={`${styles.dayCard} ${styles.dayCardBack}`}
@@ -85,12 +104,7 @@ export default function HeroSection({ bcvRate }: Props) {
               <span className={styles.dayCardDot} aria-hidden="true" />
               Tu día · Hoy
             </div>
-            <div className={styles.dayCardTotal}>
-              <span className={styles.dayCardUsd}>${ventaHoyUsd.toFixed(2)}</span>
-              <span className={styles.dayCardBs}>
-                Bs.&nbsp;{ventaHoyBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
+            <DayCardTotal bcvRate={bcvRate} />
             <p className={styles.dayCardLabel}>Vendido hasta ahora</p>
             <div className={styles.dayCardConfirm}>
               <TrendingUp size={14} aria-hidden="true" />

@@ -417,6 +417,18 @@ pm2 restart activopos --update-env
 pm2 save
 curl -s http://localhost:3003/api/rates/bcv   # Verificar que BCV responde
 
+# LECCION 2026-07-19: alerta de nuevo negocio (hola@activopos.com) fallaba
+# con SMTP 535 auth failed -- diagnostico probo puerto 465/587, SSL/STARTTLS,
+# authMethod PLAIN/LOGIN, todos fallaban igual: la causa real era password
+# vencida en Hostinger, no config/codigo (confirmado con script standalone
+# que reproduce nodemailer sin pasar por PM2). Resuelto generando password
+# nueva en Hostinger y actualizandola en .env.production del VPS + pm2
+# restart --update-env. Nota aparte (higiene, no causa raiz): .env.production
+# y .env NO se sincronizan solos -- verificar SIEMPRE ambos archivos en el
+# VPS al diagnosticar env vars de produccion, nunca asumir por .env local.
+# Aca .env.production carecia de SMTP_* pero Next igual las cargaba desde
+# .env (orden de precedencia real: .env.production > .env, no reemplazo).
+
 # Seed de datos de prueba
 npx prisma db seed
 

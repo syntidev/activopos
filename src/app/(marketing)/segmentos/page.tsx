@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Store, LayoutGrid } from 'lucide-react'
 import SegmentIcon from '@/components/marketing/shared/SegmentIcon'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import { SEGMENT_ACCENT } from '@/lib/segment-accent'
 import styles from './page.module.css'
 
@@ -49,15 +50,10 @@ export default async function SegmentosPage() {
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <LayoutGrid className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
-        <RevealSection>
-          <div className={styles.heroInner}>
-            <h1 className={styles.heroTitle}>ActivoPOS para cada negocio venezolano</h1>
-            <p className={styles.heroSub}>Desde bodegas hasta ferreterías — un solo sistema</p>
-          </div>
-        </RevealSection>
-      </section>
+      <MarketingHero icon={LayoutGrid} maxWidth={1100} className={styles.hero}>
+        <h1 className={styles.heroTitle}>ActivoPOS para cada negocio venezolano</h1>
+        <p className={styles.heroSub}>Desde bodegas hasta ferreterías — un solo sistema</p>
+      </MarketingHero>
 
       <section className={styles.section}>
         <RevealSection>

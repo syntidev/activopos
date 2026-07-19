@@ -14,12 +14,26 @@
   right: 0;
   transform: translateX(30%);
   z-index: 0;
-  width: clamp(28px, 8vw, 340px);
-  height: clamp(28px, 8vw, 340px);
   color: var(--mkt-navy);
   opacity: 0.07;
   pointer-events: none;
   user-select: none;
+}
+
+/* Tamaño default -- calibrado al presupuesto vertical más ajustado
+   (Ayuda, ~43px libres antes del título). */
+.iconSizeSm {
+  width: clamp(28px, 8vw, 340px);
+  height: clamp(28px, 8vw, 340px);
+}
+
+/* Variante grande -- para heroes con más espacio vertical libre antes
+   del título (Recursos ~96px, Segmentos ~118px): a 8vw el ícono queda
+   demasiado chico para leerse como forma reconocible (ej. Library se
+   ve como barras sueltas, no como estantería). */
+.iconSizeLg {
+  width: clamp(50px, 20vw, 380px);
+  height: clamp(50px, 20vw, 380px);
 }
 
 .heroInner {

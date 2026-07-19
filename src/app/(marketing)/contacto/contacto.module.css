@@ -6,11 +6,18 @@
   background: var(--mkt-bg);
 }
 
-/* Mismo padding-top que .page tenía antes -- reubicado al propio header
-   para que el ícono fantasma quede a la misma altura real que en el
-   resto de páginas. Cero cambio visual para el texto. */
+/* Mismo padding que .page tenía antes -- reubicado al propio header.
+   Margin negativo cancela el padding izq/der del ancestro (.page) para
+   que el header vuelva a ser full-width -- si no, el ícono (right:0
+   relativo al header) queda ~20px corrido hacia adentro respecto a
+   páginas sin ese ancestro. Padding propio re-aplica el mismo inset
+   visual para el texto -- cero cambio de posición. */
 .heroTop {
   padding-top: clamp(4rem, 10vw, 7rem);
+  padding-left: clamp(1.25rem, 5vw, 3rem);
+  padding-right: clamp(1.25rem, 5vw, 3rem);
+  margin-left: calc(-1 * clamp(1.25rem, 5vw, 3rem));
+  margin-right: calc(-1 * clamp(1.25rem, 5vw, 3rem));
 }
 
 .inner {

@@ -6,10 +6,16 @@
   background: var(--lp-bg-base);
 }
 
-/* Mismo padding-top que .page tenía antes -- reubicado al propio header
-   para homologar la altura del ícono fantasma con el resto de páginas. */
+/* Mismo padding que .page tenía antes -- reubicado al propio header.
+   Margin negativo cancela el padding izq/der del ancestro para que el
+   header vuelva a ser full-width (mismo containing block que el ícono
+   usa para right:0) -- cero cambio de posición para el texto. */
 .heroTop {
   padding-top: clamp(4rem, 10vw, 7rem);
+  padding-left: clamp(1.25rem, 5vw, 3rem);
+  padding-right: clamp(1.25rem, 5vw, 3rem);
+  margin-left: calc(-1 * clamp(1.25rem, 5vw, 3rem));
+  margin-right: calc(-1 * clamp(1.25rem, 5vw, 3rem));
 }
 
 .inner {

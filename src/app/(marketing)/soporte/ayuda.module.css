@@ -1,23 +1,25 @@
 .page {
   min-height: calc(100vh - 64px);
-  padding-left: clamp(1.25rem, 5vw, 3rem);
-  padding-right: clamp(1.25rem, 5vw, 3rem);
   padding-bottom: clamp(4rem, 8vw, 6rem);
   background: var(--mkt-bg);
 }
 
-/* Mismo padding-top que .page tenía antes -- reubicado al propio header
-   para que el ícono fantasma (top:0 relativo a SU padding box, no a la
-   de un ancestro) quede a la misma altura real que en FAQ/Blog/Recursos/
-   Segmentos (que ya lo tenían en su propio .hero). Cero cambio visual
-   para el texto: mismo valor, mismo inset total. */
+/* Padding horizontal de .page se movió a .heroTop (header) y a .inner
+   por separado -- así el header es full-width (mismo containing block
+   que usa FAQ/Blog para el ícono fantasma: right:0 sin angostar por un
+   ancestro), y .inner mantiene el mismo inset visual que antes para el
+   resto del contenido (Primeros pasos, tabs, etc). */
 .heroTop {
   padding-top: clamp(4rem, 10vw, 7rem);
+  padding-left: clamp(1.25rem, 5vw, 3rem);
+  padding-right: clamp(1.25rem, 5vw, 3rem);
 }
 
 .inner {
   max-width: 960px;
   margin: 0 auto;
+  padding-left: clamp(1.25rem, 5vw, 3rem);
+  padding-right: clamp(1.25rem, 5vw, 3rem);
 }
 
 .eyebrow {

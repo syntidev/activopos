@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Check, MessageCircle, Tag } from 'lucide-react'
 import MarketingHero from '@/components/marketing/MarketingHero'
 import { getParallelRate } from '@/lib/bcv'
-import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
+import { BILLING_CYCLES, PLAN_DISPLAY, type BillingCycleKey, type PlanTier } from '@/lib/plan-limits'
 import { featuresForTier, featuresByCategoryForTier } from '@/lib/plan-features'
 import { WA_BASE } from '@/lib/marketing-contact'
 import PricingSection from '@/components/marketing/sections/PricingSection'
@@ -43,6 +43,17 @@ const FAQS = [
   },
 ]
 
+// Un Offer por ciclo de facturacion. Antes solo se emitia `mensual`, asi que
+// trimestral/semestral/anual quedaban invisibles para Google y los buscadores
+// con IA aunque ya existian en BILLING_CYCLES. `price` es totalAmount (lo que
+// realmente se cobra), NO monthlyEquivalent, que es una derivacion de marketing.
+const CYCLE_LABEL: Record<BillingCycleKey, string> = {
+  mensual:    'Mensual',
+  trimestral: 'Trimestral',
+  semestral:  'Semestral',
+  anual:      'Anual',
+}
+
 function buildProductJsonLd() {
   return TIERS.map(tier => ({
     '@context': 'https://schema.org',
@@ -50,14 +61,25 @@ function buildProductJsonLd() {
     name: `ActivoPOS ${PLAN_DISPLAY[tier]}`,
     description: `Plan ${PLAN_DISPLAY[tier]} de ActivoPOS — sistema de punto de venta e inventario para Venezuela.`,
     brand: { '@type': 'Brand', name: 'ActivoPOS' },
-    offers: {
-      '@type': 'Offer',
-      price: tier === 'gratis' ? '0.00' : BILLING_CYCLES[tier].mensual.monthlyEquivalent.toFixed(2),
-      priceCurrency: 'USD',
-      priceValidUntil: '2027-01-01',
-      availability: 'https://schema.org/InStock',
-      url: 'https://activopos.com/planes',
-    },
+    offers: tier === 'gratis'
+      ? {
+          '@type': 'Offer',
+          name: PLAN_DISPLAY[tier],
+          price: '0.00',
+          priceCurrency: 'USD',
+          priceValidUntil: '2027-12-31',
+          availability: 'https://schema.org/InStock',
+          url: 'https://activopos.com/planes',
+        }
+      : (Object.keys(CYCLE_LABEL) as BillingCycleKey[]).map(cycle => ({
+          '@type': 'Offer',
+          name: `${PLAN_DISPLAY[tier]} — ${CYCLE_LABEL[cycle]}`,
+          price: BILLING_CYCLES[tier][cycle].totalAmount.toFixed(2),
+          priceCurrency: 'USD',
+          priceValidUntil: '2027-12-31',
+          availability: 'https://schema.org/InStock',
+          url: 'https://activopos.com/planes',
+        })),
   }))
 }
 

@@ -102,7 +102,12 @@ export default async function BlogPostPage({ params }: PageProps) {
     image:           post.cover_image ?? undefined,
     datePublished:   post.published_at,
     author:          { '@type': 'Person', name: post.author_name },
-    publisher:       { '@type': 'Organization', name: 'ActivoPOS' },
+    // publisher.logo es requisito de Google para el rich result de Article.
+    publisher:       {
+      '@type': 'Organization',
+      name:    'ActivoPOS',
+      logo:    { '@type': 'ImageObject', url: 'https://activopos.com/activopos-logo-flat-positive.png' },
+    },
     mainEntityOfPage: `https://activopos.com/blog/${post.slug}`,
   }
   const jsonLdSafe = JSON.stringify(jsonLd).replace(/</g, '\\u003c')

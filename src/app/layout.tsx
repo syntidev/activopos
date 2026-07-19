@@ -48,7 +48,20 @@ export const metadata: Metadata = {
     'meta-author': 'ActivoPOS — synti.dev',
     'geo.region':    'VE',
     'geo.placename': 'Venezuela',
-    'robots': 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+  },
+  // NO poner 'robots' dentro de other: — other es passthrough crudo, emite un
+  // <meta name="robots"> extra que NO participa del merge de Next y sobrevive a
+  // los override de cada page. Rompia el noindex de /privacidad y /terminos.
+  robots: {
+    index:  true,
+    follow: true,
+    googleBot: {
+      index:  true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet':       -1,
+      'max-video-preview': -1,
+    },
   },
   openGraph: {
     locale: 'es_VE',

@@ -117,7 +117,12 @@ export async function POST(req: NextRequest) {
     `\n\nDatos reales del negocio hoy:\n${context}`
 
   try {
-    const text = await callBlogLlm(body.message, { system: systemPrompt })
+    // Modelo propio del bot: 70b sigue mejor el tuteo venezolano y los nombres
+    // reales de los modulos que el 8b del blog. Sin la env var cae al default.
+    const text = await callBlogLlm(body.message, {
+      system: systemPrompt,
+      model:  process.env.NVIDIA_CHAT_MODEL,
+    })
     return NextResponse.json({ ok: true, response: text.trim() })
   } catch (err) {
     // El cliente cae a las reglas locales ante cualquier no-2xx — incluye

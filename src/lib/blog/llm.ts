@@ -11,6 +11,7 @@ import { ProviderError } from '@/lib/social/retry'
  */
 
 const ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions'
+/** Default del blog. Quien necesite otro modelo lo pasa por `opts.model`. */
 const MODEL    = 'meta/llama-3.1-8b-instruct'
 
 // ponytail: reusa ProviderError (message, status) del módulo social en vez de una
@@ -23,6 +24,11 @@ interface CallOpts {
   system?: string
   /** Aborta la petición — lo usa quien llama durante un render en caliente. */
   signal?: AbortSignal
+  /**
+   * Modelo NIM alternativo. Vacío o ausente => MODEL (el del blog), así una env
+   * var sin configurar en el VPS nunca deja el body con `model: undefined`.
+   */
+  model?: string
 }
 
 /** Devuelve el texto crudo del modelo — el parseo/validación queda en cada ruta. */
@@ -40,7 +46,7 @@ export async function callBlogLlm(prompt: string, opts: CallOpts = {}): Promise<
       'Content-Type': 'application/json',
       Authorization:  `Bearer ${apiKey}`,
     },
-    body:   JSON.stringify({ model: MODEL, messages }),
+    body:   JSON.stringify({ model: opts.model || MODEL, messages }),
     signal: opts.signal,
   })
 

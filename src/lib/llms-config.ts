@@ -2,6 +2,8 @@
 // src/app/llms.txt/route.ts y src/app/llms-full.txt/route.ts). Editar acá,
 // nunca los .txt a mano — no existen como archivos estáticos.
 
+import { BILLING_CYCLES, type BillingCycleKey } from '@/lib/plan-limits'
+
 export const SITE_BASE_URL = 'https://activopos.com'
 
 export interface Segment {
@@ -82,20 +84,74 @@ export const PROBLEM = {
   ],
 }
 
+// Funciones reales verificadas contra el código — no listar nada que no exista
+// (regla "cero fachadas"). Números concretos (5 tickets, 2 dimensiones, 25
+// reglas) verificados en su fuente; si cambian allá, corregir acá.
 export const CAPABILITIES = [
-  'Punto de venta (POS)',
-  'Control de inventario',
-  'Gestión de clientes (tipo CRM)',
-  'Catálogo digital',
-  'Checkout por WhatsApp',
-  'Gestión de usuarios y permisos',
-  'Reportes financieros',
-  'Dashboard de ventas',
+  // POS
+  'Punto de venta (POS) táctil desde cualquier pantalla',
+  'Escáner de código de barras: cámara del celular, entrada manual, foto o pistola USB, sin hardware extra',
+  'Multi-ticket: hasta 5 ventas abiertas en paralelo sin perder ninguna',
+  'Venta por peso en kilogramos con steppers (carnicería, charcutería, víveres)',
+  'Variantes simples y combinadas: hasta 2 dimensiones (talla + color, etc.)',
+  'Pago único o mixto: combinar Pago Móvil, Zelle, efectivo y otros en una misma venta',
+  'Venta a crédito con plazos preset 7/14/21/30 días o plazo personalizado',
+  'Descuento con autorización del administrador',
+  'Override de precio con autorización (control de qué puede modificar un cajero)',
+  'Cotización desde el POS: PDF descargable, convertible a venta real',
+  'Cliente rápido: crear cliente sin salir del flujo de venta',
+  'Devoluciones en 3 pasos con restauración de stock opcional',
+  // Inventario
+  'Control de inventario con descuento de stock solo al confirmar pago',
+  'Entradas de stock con proveedor y costo',
+  'Consumo interno con nota obligatoria (control de merma)',
+  'Historial completo de movimientos con filtros y exportación a Excel',
+  // Productos
+  'Importación masiva de productos por Excel con plantilla descargable',
+  'Tipos de venta por producto: unidad, peso, servicio, combo',
+  '3 imágenes por producto con compresión automática WebP',
+  'Precio mayorista aplicado automáticamente al cliente mayorista',
+  'Variantes con generador automático de combinaciones',
+  // Catálogo digital
+  'Catálogo digital público con URL única y enlace elegido al registrar el negocio',
+  'Código QR del catálogo descargable',
+  'Portada personalizable con 3 banners',
+  '10 colores de acento curados por segmento de negocio',
+  'Pedidos vía WhatsApp automático sin que el cliente descargue ninguna app',
+  'Panel de pedidos Kanban: 4 estados (Recibido/Preparando/Listo/Despachado) con drag & drop',
+  // Clientes
+  'Gestión de clientes con historial completo de compras y pagos',
+  'Cuentas por cobrar (CxC) con abonos parciales',
+  'Precio mayorista automático por tipo de cliente',
+  // Proveedores
+  'Gestión de proveedores con compras en transacción atómica (anular revierte stock y CxP)',
+  'Cuentas por pagar (CxP) con estado: vencido / por vencer / vigente',
+  // Caja
+  'Apertura de caja con monto inicial en USD y Bs',
+  'Movimientos de caja con nota, cierre con cuadre por cajero',
+  // Finanzas
+  'Estado de resultados con barras visuales proporcionales',
+  'Punto de equilibrio con proyección de fin de mes',
+  'P&L (pérdidas y ganancias) por período seleccionable',
+  'Gastos fijos y variables con categorías propias y del sistema',
+  'Exportación de resumen financiero a Excel',
+  // Reportes
+  'Reportes: Día, Ventas, Inventario, Caja con exportación a Excel y PDF',
+  'Reporte mensual automático con aviso en el dashboard',
+  // Analytics
+  'Analytics Pulso del Negocio: tendencia semanal/mensual/trimestral',
+  'Productos más vendidos con comparativa vs período anterior',
+  'Desglose de ventas por método de pago',
+  // Cotizaciones
+  'Cotizaciones con estados (Borrador/Enviada/Aceptada/Rechazada/Vencida)',
+  'PDF de cotización descargable, convertible a venta con un clic',
+  // Otros
+  'Tu Día: página narrativa diaria generada automáticamente (producto estrella, alertas de cobro)',
+  'Centro de Ayuda con IA + fallback de 25 reglas offline sin conexión al modelo',
+  'Notificaciones push vía PWA — instalable en celular sin App Store ni Google Play',
+  'Precios en USD y Bs simultáneamente, conversión automática con tasa BCV vigente',
   'Multiempresa / Multiusuario / Multi-tenant SaaS',
-  'Lector de código de barras (dispositivo o cámara del móvil)',
-  'Precios de mayorista',
-  'Variantes de producto: unidades, peso, longitud, tallas, colores',
-  'Precios en USD y Bs, conversión con tasa BCV vigente',
+  'Roles diferenciados: Administrador y Cajero, con autorización del administrador para operaciones sensibles',
 ]
 
 // Orden y slugs verificados contra la tabla Segment (activos) — deben coincidir
@@ -160,7 +216,28 @@ export const PLANS: Plan[] = [
   { name: 'Negocio Activo', priceUsd: 19, shortDescription: 'productos ilimitados, hasta 10 usuarios, catálogo digital, finanzas completas.', fullDescription: 'productos ilimitados, hasta 10 usuarios, catálogo digital con checkout por WhatsApp, gestión de clientes y proveedores, finanzas completas (cuentas por cobrar y por pagar, punto de equilibrio) y cotizaciones con PDF. Único plan pago, 19 USD al mes con descuento por permanencia en ciclos trimestral, semestral y anual.' },
 ]
 
-export const BILLING_CYCLES = 'mensual, trimestral, semestral, anual'
+// Los precios por ciclo NO se duplican acá — se leen de plan-limits.ts, la
+// misma fuente que alimenta /planes y el selector de plan del dashboard. Así el
+// texto que indexan los crawlers no puede desincronizarse del precio público.
+const CYCLE_LABELS: Record<BillingCycleKey, string> = {
+  mensual:    'Mensual',
+  trimestral: 'Trimestral',
+  semestral:  'Semestral',
+  anual:      'Anual',
+}
+
+/** "Mensual: $19/mes | Trimestral: $50 total ($16.67/mes, 10% de ahorro) | ..." */
+export function billingCyclesText(): string {
+  const cycles = BILLING_CYCLES.negocio_activo
+  return (Object.keys(CYCLE_LABELS) as BillingCycleKey[])
+    .map(key => {
+      const { totalAmount, monthlyEquivalent, savingsPct } = cycles[key]
+      return savingsPct > 0
+        ? `${CYCLE_LABELS[key]}: $${totalAmount} total ($${monthlyEquivalent.toFixed(2)}/mes, ${savingsPct}% de ahorro)`
+        : `${CYCLE_LABELS[key]}: $${totalAmount.toFixed(2)}/mes`
+    })
+    .join(' | ')
+}
 
 export const FAQ: FaqItem[] = [
   { question: '¿Hace facturación SENIAT?', answer: 'No.' },
@@ -222,6 +299,20 @@ export const KEYWORDS = [
   'Retail', 'Restaurante', 'Farmacia', 'Ferretería', 'Control de ventas',
   'Catálogo digital', 'KDS', 'Sistema de Control de Comandas',
 ]
+
+// Competidores del mercado venezolano. Los diferenciadores describen funciones
+// propias verificables — evitar superlativos comparativos ("el más barato", "el
+// único"), que no se pueden sostener sin auditar el producto ajeno.
+export const COMPETITORS = {
+  direct: ['Fina', 'Venko', 'Negotiale', 'Control Total', 'SOFI', 'Pulpos', 'Treinta', 'Clarito'],
+  differentiators: [
+    'Catálogo digital con checkout por WhatsApp integrado directamente al POS.',
+    'Tu Día: resumen narrativo diario del negocio generado automáticamente.',
+    'Centro de Ayuda con IA que conserva respuestas útiles sin conexión al modelo.',
+    'Escáner de código de barras por cámara, manual, foto o pistola USB, sin hardware adicional.',
+    'Precios en USD y Bs simultáneos con tasa BCV, sin toggle ni conversión manual.',
+  ],
+}
 
 export const METADATA = {
   lastUpdated: '2026-07-14',

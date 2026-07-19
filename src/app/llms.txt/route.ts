@@ -10,7 +10,7 @@ import {
   TECHNOLOGY,
   NOT_INCLUDED,
   PLANS,
-  BILLING_CYCLES,
+  billingCyclesText,
   FAQ,
   PAGES,
   COMPANY,
@@ -86,7 +86,7 @@ function buildLlmsTxt(): string {
   lines.push('')
   PLANS.forEach(p => lines.push(`- ${p.name}: ${p.priceUsd} USD/mes - ${p.shortDescription}`))
   lines.push('')
-  lines.push(`Ciclos disponibles: ${BILLING_CYCLES}.`)
+  lines.push(`Ciclos disponibles: ${billingCyclesText()}.`)
   lines.push('')
 
   lines.push('## 10. FAQ')

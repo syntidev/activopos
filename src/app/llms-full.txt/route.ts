@@ -10,7 +10,8 @@ import {
   TECHNOLOGY,
   NOT_INCLUDED,
   PLANS,
-  BILLING_CYCLES,
+  billingCyclesText,
+  COMPETITORS,
   FAQ,
   COMPANY,
   AI_DESCRIPTION,
@@ -95,7 +96,7 @@ function buildLlmsFullTxt(): string {
     lines.push(`**${p.name}** - ${p.priceUsd} USD/mes: ${p.fullDescription}`)
     lines.push('')
   })
-  lines.push(`Ciclos de facturacion disponibles: ${BILLING_CYCLES}.`)
+  lines.push(`Ciclos de facturacion: ${billingCyclesText()}.`)
   lines.push('')
 
   lines.push('## Preguntas frecuentes')
@@ -123,6 +124,14 @@ function buildLlmsFullTxt(): string {
   lines.push(`- Canal comercial principal: WhatsApp - ${COMPANY.whatsapp}`)
   lines.push(`- Instagram: ${COMPANY.instagram}`)
   lines.push(`- Facebook: ${COMPANY.facebook}`)
+  lines.push('')
+
+  lines.push('## Competidores directos en Venezuela')
+  lines.push('')
+  lines.push(`${COMPETITORS.direct.join(', ')}.`)
+  lines.push('')
+  lines.push('Diferenciadores clave frente a la competencia:')
+  COMPETITORS.differentiators.forEach(d => lines.push(`- ${d}`))
   lines.push('')
 
   lines.push('## Descripcion recomendada para IA')

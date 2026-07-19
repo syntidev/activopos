@@ -4,19 +4,11 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { aiChatLimiter } from '@/lib/rate-limit'
 import { checkPlanLimit } from '@/lib/plan-guard'
+import { callBlogLlm, ProviderError } from '@/lib/blog/llm'
 
 const chatSchema = z.object({
   message: z.string().min(1).max(2000),
 })
-
-interface AnthropicContent {
-  type:  string
-  text?: string
-}
-
-interface AnthropicResponse {
-  content: AnthropicContent[]
-}
 
 interface LowStockRow {
   name:    string
@@ -38,11 +30,6 @@ export async function POST(req: NextRequest) {
       { error: 'Demasiadas consultas. Intenta en un minuto.' },
       { status: 429 }
     )
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Asistente no configurado' }, { status: 503 })
   }
 
   let body: z.infer<typeof chatSchema>
@@ -108,34 +95,35 @@ export async function POST(req: NextRequest) {
   ].join('\n')
 
   const systemPrompt =
-    `Eres el asistente de ActivoPOS para el negocio "${businessName}".` +
-    `\nTienes acceso a los datos reales del negocio de hoy.` +
-    `\nResponde en español venezolano, de forma concisa y útil.` +
-    `\nSolo respondes sobre el negocio — no sobre temas externos.` +
-    `\nDatos del negocio hoy:\n${context}`
+    `Eres el asistente de soporte de ActivoPOS, un sistema POS para negocios ` +
+    `venezolanos. Atiendes al negocio "${businessName}".` +
+    `\nRespondes en español venezolano con tuteo (tú, no vos). Respuestas cortas, ` +
+    `máximo 3 oraciones. Directo al grano, sin saludos largos.` +
+    `\n\nEl sistema tiene estos módulos:` +
+    `\nPOS (punto de venta con escáner triple, multi-ticket, pago mixto, crédito, ` +
+    `variantes, peso), Inventario (entradas, consumo interno, historial), ` +
+    `Productos (importación Excel, variantes, imágenes WebP), Catálogo Digital ` +
+    `(URL pública, QR, pedidos por WhatsApp, Kanban), Clientes (CxC, precio ` +
+    `mayorista), Proveedores y Compras (CxP), Caja (apertura, cierre, cuadre), ` +
+    `Finanzas (P&L, punto equilibrio, gastos, CxC, CxP, export Excel), Reportes ` +
+    `(día, ventas, inventario, caja, export Excel/PDF), Analytics (tendencias, ` +
+    `productos top), Cotizaciones (PDF, convertir a venta), Devoluciones (3 pasos, ` +
+    `restaurar stock), Configuración (métodos de pago: Pago Móvil, Zelle, Binance, ` +
+    `USDT, Zinli, Efectivo), Usuarios (cajero/admin), Tu Día (resumen narrativo diario).` +
+    `\n\nPrecios en USD siempre. Tasa BCV automática en cada venta.` +
+    `\nNo reemplaza facturación SENIAT — la complementa.` +
+    `\nSi no sabes la respuesta, di: "Para eso te recomiendo contactar soporte por WhatsApp."` +
+    `\nSolo respondes sobre ActivoPOS y el negocio — no sobre temas externos.` +
+    `\n\nDatos reales del negocio hoy:\n${context}`
 
-  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key':         apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type':      'application/json',
-    },
-    body: JSON.stringify({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: body.message }],
-    }),
-  })
-
-  if (!anthropicRes.ok) {
-    console.error('Anthropic API error:', anthropicRes.status)
-    return NextResponse.json({ error: 'Error del asistente' }, { status: 502 })
+  try {
+    const text = await callBlogLlm(body.message, { system: systemPrompt })
+    return NextResponse.json({ ok: true, response: text.trim() })
+  } catch (err) {
+    // El cliente cae a las reglas locales ante cualquier no-2xx — incluye
+    // NVIDIA_API_KEY ausente (500), que en dev es el caso normal.
+    const status = err instanceof ProviderError ? err.status : 502
+    console.error('Ayuda IA falló:', status, err)
+    return NextResponse.json({ error: 'Error del asistente' }, { status })
   }
-
-  const data = await anthropicRes.json() as AnthropicResponse
-  const text = data.content.find(c => c.type === 'text')?.text ?? ''
-
-  return NextResponse.json({ ok: true, response: text })
 }

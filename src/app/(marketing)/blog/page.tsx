@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Clock, User, BookOpen } from 'lucide-react'
 import { fetchBlogList, BLOG_CATEGORIES, categoryColor, type BlogPostSummary } from './types'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import styles from './blog.module.css'
 
 interface PageProps {
@@ -72,13 +73,10 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <section className={styles.hero}>
-        <BookOpen className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
-        <div className={styles.heroInner}>
-          <h1 className={styles.heroTitle}>Blog ActivoPOS</h1>
-          <p className={styles.heroSubtitle}>Guías y recursos para negocios venezolanos</p>
-        </div>
-      </section>
+      <MarketingHero icon={BookOpen} maxWidth={1100} className={styles.hero}>
+        <h1 className={styles.heroTitle}>Blog ActivoPOS</h1>
+        <p className={styles.heroSubtitle}>Guías y recursos para negocios venezolanos</p>
+      </MarketingHero>
 
       <div className={styles.page}>
         <div className={styles.inner}>

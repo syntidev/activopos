@@ -7,36 +7,9 @@
 /* ── Hero — light, matches landing hero ─────────────────── */
 
 .hero {
-  position: relative;
-  overflow: hidden;
   background: var(--mkt-bg);
   padding: clamp(4rem, 10vw, 7rem) clamp(1.25rem, 5vw, 3rem) clamp(3rem, 6vw, 4rem);
   border-bottom: 1px solid var(--mkt-border);
-}
-
-/* Ícono fantasma -- forma fija (no depende de largo de palabra), anclado
-   esquina superior derecha, parcialmente fuera del hero a propósito
-   (overflow:hidden del padre lo recorta). Mismo cálculo en mobile y
-   desktop, sin breakpoints separados. */
-.heroIcon {
-  position: absolute;
-  top: -20px;
-  right: 0;
-  transform: translate(35%, -35%);
-  z-index: 0;
-  width: clamp(40px, 16vw, 380px);
-  height: clamp(40px, 16vw, 380px);
-  color: var(--mkt-navy);
-  opacity: 0.07;
-  pointer-events: none;
-  user-select: none;
-}
-
-.heroInner {
-  position: relative;
-  z-index: 1;
-  max-width: 760px;
-  margin: 0 auto;
 }
 
 .pill {

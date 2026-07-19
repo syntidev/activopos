@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { MessageCircle, Share2, Mail, Clock } from 'lucide-react'
 import ContactForm from './ContactForm'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import { WA_BASE, FACEBOOK_URL } from '@/lib/marketing-contact'
 import styles from './contacto.module.css'
 
@@ -48,19 +49,14 @@ const CHANNELS = [
 export default function ContactoPage() {
   return (
     <section className={styles.page}>
-      <RevealSection>
-        <header className={styles.header}>
-          <Mail className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
-          <div className={styles.headerInner}>
-            <p className={styles.eyebrow}>Contacto</p>
-            <h1 className={styles.title}>Hablemos</h1>
-            <p className={styles.subtitle}>
-              ¿Quieres ver una demo, tienes dudas sobre planes o necesitas soporte?
-              Elige el canal que prefieras.
-            </p>
-          </div>
-        </header>
-      </RevealSection>
+      <MarketingHero icon={Mail} maxWidth={1100} className={styles.header}>
+        <p className={styles.eyebrow}>Contacto</p>
+        <h1 className={styles.title}>Hablemos</h1>
+        <p className={styles.subtitle}>
+          ¿Quieres ver una demo, tienes dudas sobre planes o necesitas soporte?
+          Elige el canal que prefieras.
+        </p>
+      </MarketingHero>
 
       <div className={styles.inner}>
         <RevealSection>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ChevronDown, MessageCircle, HelpCircle } from 'lucide-react'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import { WA_BASE } from '@/lib/marketing-contact'
 import styles from './faq.module.css'
 
@@ -136,18 +137,13 @@ export default function FaqPage() {
       />
 
       {/* Hero */}
-      <section className={styles.hero}>
-        <HelpCircle className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
-        <RevealSection>
-          <div className={styles.heroInner}>
-            <span className={styles.pill}>FAQ</span>
-            <h1 className={styles.h1}>
-              Todo lo que necesitas saber antes de empezar.
-            </h1>
-            <p className={styles.sub}>Sin tecnicismos. Sin letra pequeña. En venezolano.</p>
-          </div>
-        </RevealSection>
-      </section>
+      <MarketingHero icon={HelpCircle} maxWidth={760} className={styles.hero}>
+        <span className={styles.pill}>FAQ</span>
+        <h1 className={styles.h1}>
+          Todo lo que necesitas saber antes de empezar.
+        </h1>
+        <p className={styles.sub}>Sin tecnicismos. Sin letra pequeña. En venezolano.</p>
+      </MarketingHero>
 
       {/* Categories + accordions */}
       <div className={styles.body}>

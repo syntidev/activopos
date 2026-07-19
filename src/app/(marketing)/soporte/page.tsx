@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ChevronDown, LifeBuoy } from 'lucide-react'
 import AyudaTabs from './AyudaTabs'
 import RevealSection from '@/components/marketing/shared/RevealSection'
+import MarketingHero from '@/components/marketing/MarketingHero'
 import styles from './ayuda.module.css'
 
 export const metadata: Metadata = {
@@ -48,19 +49,14 @@ const FAQS = [
 export default function AyudaPage() {
   return (
     <section className={styles.page}>
-      <div className={styles.heroBlock}>
-        <LifeBuoy className={styles.heroIcon} strokeWidth={1} aria-hidden="true" />
-        <RevealSection>
-          <div className={styles.heroInner}>
-            <p className={styles.eyebrow}>Centro de ayuda</p>
-            <h1 className={styles.title}>¿En qué te ayudamos?</h1>
-            <p className={styles.subtitle}>
-              Guías paso a paso, recursos por tipo de negocio y respuestas rápidas
-              a las preguntas más comunes.
-            </p>
-          </div>
-        </RevealSection>
-      </div>
+      <MarketingHero icon={LifeBuoy} maxWidth={960}>
+        <p className={styles.eyebrow}>Centro de ayuda</p>
+        <h1 className={styles.title}>¿En qué te ayudamos?</h1>
+        <p className={styles.subtitle}>
+          Guías paso a paso, recursos por tipo de negocio y respuestas rápidas
+          a las preguntas más comunes.
+        </p>
+      </MarketingHero>
 
       <div className={styles.inner}>
         {/* Primeros pasos */}

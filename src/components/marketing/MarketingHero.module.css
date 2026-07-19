@@ -1,0 +1,32 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ícono fantasma -- corte de UN solo eje (borde derecho), a propósito:
+   translateX(30%) dejas 30% fuera, siempre por debajo del 40% máximo.
+   Sin desplazamiento vertical -- el icono no se recorta también por
+   arriba (el problema del "garabato irreconocible" era el doble corte
+   de esquina). Mismo cálculo en mobile y desktop, sin breakpoints. */
+.heroIcon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translateX(30%);
+  z-index: 0;
+  width: clamp(28px, 8vw, 340px);
+  height: clamp(28px, 8vw, 340px);
+  color: var(--mkt-navy);
+  opacity: 0.07;
+  pointer-events: none;
+  user-select: none;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+}
+
+.mw760 { max-width: 760px; margin: 0 auto; }
+.mw960 { max-width: 960px; margin: 0 auto; }
+.mw1100 { max-width: 1100px; margin: 0 auto; }

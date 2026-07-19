@@ -417,6 +417,13 @@ pm2 restart activopos --update-env
 pm2 save
 curl -s http://localhost:3003/api/rates/bcv   # Verificar que BCV responde
 
+# PENDIENTE DE DEPLOY (2026-07-19, commit a1de809) — requiere autorizacion de Carlos
+# Los 26 presets de escena se modernizaron a vocabulario de producto actual (el
+# modelo de difusion generaba estetica 80-90: TVs de tubo, ferreteria rustica).
+# El codigo ya esta en main, pero las 52 filas VIEJAS siguen vivas en la DB del
+# VPS hasta correr el reseed. Es destructivo (deleteMany + create por `name`):
+# npx ts-node --compiler-options '{"module":"commonjs"}' scripts/seed-scene-presets.ts
+
 # LECCION 2026-07-19: alerta de nuevo negocio (hola@activopos.com) fallaba
 # con SMTP 535 auth failed -- diagnostico probo puerto 465/587, SSL/STARTTLS,
 # authMethod PLAIN/LOGIN, todos fallaban igual: la causa real era password

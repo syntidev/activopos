@@ -1,4 +1,21 @@
 /**
+ * ⚠️ PENDIENTE DE DEPLOY -- 2026-07-19, NO EJECUTADO EN VPS
+ *
+ * Los 26 presets fueron modernizados a vocabulario de producto actual (commit
+ * a1de809): el modelo de difusión, sin una época explícita en el prompt, caía a
+ * la mediana de su entrenamiento y generaba estética 80-90 (TVs de tubo, cajas
+ * beige, ferretería rústica). Verificado por Carlos con imágenes reales del
+ * segmento Electrónica, y corregido en dos frentes: vocabulario por preset aquí,
+ * más la línea "Present day, contemporary 2020s" en buildPrompt (lib/social/image.ts).
+ *
+ * En el VPS siguen vivos los 52 presets VIEJOS hasta que alguien corra:
+ *   npx ts-node --compiler-options '{"module":"commonjs"}' scripts/seed-scene-presets.ts
+ *
+ * Es un reseed destructivo por `name` (deleteMany + create, ver abajo). NO correr
+ * en producción sin autorización explícita de Carlos.
+ *
+ * ---
+ *
  * Seed de SocialScenePreset -- 2 variantes de Personaje por cada uno de los 26 Segment
  * reales (verificado contra la DB, no una lista adivinada), 52 filas en total. Antes había
  * 1 personaje fijo por segmento; Carlos pidió variación real de género/fenotipo dentro del

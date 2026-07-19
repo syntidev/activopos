@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { Sun, Moon } from 'lucide-react'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { generateTuDiaNarrative, type TuDiaData } from '@/lib/tudia-narrative'
 import styles from './tu-dia.module.css'
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -13,15 +14,11 @@ function formatDate(d: Date): string {
   return `${DAYS_ES[d.getDay()]}, ${d.getDate()} de ${MONTHS_ES[d.getMonth()]} · ${d.getFullYear()}`
 }
 
-function fmtUsd(n: number): string {
-  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
 // ── Data fetching ─────────────────────────────────────────────────
 
 type TopRow = { name: string; qty: string }
 
-async function getTuDiaData(businessId: number) {
+async function getTuDiaData(businessId: number): Promise<TuDiaData> {
   const now         = new Date()
   const todayStart  = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const tomorrow    = new Date(todayStart.getTime() + 86_400_000)
@@ -103,79 +100,6 @@ async function getTuDiaData(businessId: number) {
   }
 }
 
-// ── Narrativa ─────────────────────────────────────────────────────
-
-type ParaStyle = 'main' | 'secondary' | 'warning' | 'closing'
-
-interface Paragraph {
-  text:  string
-  style: ParaStyle
-}
-
-function buildNarrative(data: Awaited<ReturnType<typeof getTuDiaData>>): Paragraph[] {
-  const { salesCount, totalUsd, trend, topProduct, cxcUsd, cxcVenceUsd, productCount } = data
-
-  if (salesCount === 0) {
-    return [
-      { text: 'Hoy fue un día de preparación.', style: 'main' },
-      {
-        text:  `Tu inventario tiene ${productCount} producto${productCount !== 1 ? 's' : ''} listo${productCount !== 1 ? 's' : ''}.`,
-        style: 'secondary',
-      },
-      { text: 'Mañana es un nuevo día.', style: 'secondary' },
-    ]
-  }
-
-  const ps: Paragraph[] = []
-
-  // Cuántos clientes
-  ps.push({
-    text:  `Hoy atendiste ${salesCount} ${salesCount === 1 ? 'cliente' : 'clientes'}.`,
-    style: 'main',
-  })
-
-  // Monto + evaluación
-  const assessment =
-    trend > 25  ? 'mejor día de la semana'
-    : trend > 5  ? 'por encima del promedio'
-    : trend < -15 ? 'día más tranquilo que ayer'
-    : 'día normal'
-
-  ps.push({
-    text:  `Vendiste ${fmtUsd(totalUsd)} — ${assessment}.`,
-    style: 'main',
-  })
-
-  // Producto estrella
-  if (topProduct) {
-    ps.push({
-      text:  `Tu producto estrella fue ${topProduct}.`,
-      style: 'secondary',
-    })
-  }
-
-  // CxC pendiente total
-  if (cxcUsd > 0) {
-    ps.push({
-      text:  `Tienes ${fmtUsd(cxcUsd)} pendientes por cobrar.`,
-      style: 'secondary',
-    })
-  }
-
-  // Vencimiento próximo
-  if (cxcVenceUsd > 0) {
-    ps.push({
-      text:  `Mañana vence un compromiso por ${fmtUsd(cxcVenceUsd)}.`,
-      style: 'warning',
-    })
-  }
-
-  // Cierre
-  ps.push({ text: 'Cerraste bien.', style: 'closing' })
-
-  return ps
-}
-
 // ── Page ─────────────────────────────────────────────────────────
 
 export default async function TuDiaPage() {
@@ -183,7 +107,7 @@ export default async function TuDiaPage() {
   if (!session) redirect('/login')
 
   const data  = await getTuDiaData(session.businessId)
-  const paras = buildNarrative(data)
+  const paras = await generateTuDiaNarrative(data, session.businessId)
 
   const isNight       = data.now.getHours() >= 18
   const TimeIcon      = isNight ? Moon : Sun

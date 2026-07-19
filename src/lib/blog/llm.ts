@@ -18,10 +18,21 @@ const MODEL    = 'meta/llama-3.1-8b-instruct'
 // Se reexporta para que las rutas del blog no tengan que conocer lib/social.
 export { ProviderError }
 
+interface CallOpts {
+  /** Mensaje `system` opcional. Sin él el modelo recibe solo el turno de usuario. */
+  system?: string
+  /** Aborta la petición — lo usa quien llama durante un render en caliente. */
+  signal?: AbortSignal
+}
+
 /** Devuelve el texto crudo del modelo — el parseo/validación queda en cada ruta. */
-export async function callBlogLlm(prompt: string): Promise<string> {
+export async function callBlogLlm(prompt: string, opts: CallOpts = {}): Promise<string> {
   const apiKey = process.env.NVIDIA_API_KEY
   if (!apiKey) throw new ProviderError('NVIDIA_API_KEY no configurada en el servidor', 500)
+
+  const messages = opts.system
+    ? [{ role: 'system', content: opts.system }, { role: 'user', content: prompt }]
+    : [{ role: 'user', content: prompt }]
 
   const res = await fetch(ENDPOINT, {
     method:  'POST',
@@ -29,10 +40,8 @@ export async function callBlogLlm(prompt: string): Promise<string> {
       'Content-Type': 'application/json',
       Authorization:  `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model:    MODEL,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+    body:   JSON.stringify({ model: MODEL, messages }),
+    signal: opts.signal,
   })
 
   if (!res.ok) {

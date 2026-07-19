@@ -15,10 +15,11 @@ export async function GET(_req: NextRequest, { params }: Context) {
   })
   if (!post) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-  const updated = await prisma.blogPost.update({
-    where: { id: post.id },
-    data:  { views: { increment: 1 } },
-  })
+  // $executeRaw en vez de .update(): Prisma dispara @updatedAt en CUALQUIER
+  // update(), aunque el cambio sea solo `views` — eso corrompia el lastModified
+  // del sitemap cada vez que alguien leia el post. UPDATE crudo lo evita.
+  await prisma.$executeRaw`UPDATE blog_posts SET views = views + 1 WHERE id = ${post.id}`
+  const updated = await prisma.blogPost.findUniqueOrThrow({ where: { id: post.id } })
 
   // content_html/cover_image/author_name/read_time_minutes son alias —
   // contrato documentado por CLI-B en src/app/(marketing)/blog/types.ts (BlogPostFull).

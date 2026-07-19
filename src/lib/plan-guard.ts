@@ -44,11 +44,8 @@ export async function checkPlanLimit(action: PlanAction): Promise<{ allowed: boo
     }
   }
 
-  if (action === 'access_catalog') {
-    if (session.role === 'admin' || session.role === 'super_admin') return { allowed: true }
-    if (!limits.catalog) {
-      return { allowed: false, reason: `El catálogo digital requiere plan ${PAID}.` }
-    }
+  if (action === 'access_catalog' && !limits.catalog) {
+    return { allowed: false, reason: `El catálogo digital requiere plan ${PAID}.` }
   }
 
   if (action === 'access_ai' && !limits.ai) {

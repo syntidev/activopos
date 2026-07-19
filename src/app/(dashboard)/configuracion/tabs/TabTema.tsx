@@ -172,10 +172,14 @@ export function TabTema({ businessId: _b }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ theme: selected, theme_color: selectedColor }),
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        const data = await res.json().catch(() => null) as { error?: string } | null
+        toast(data?.error || 'Error al guardar.', 'error')
+        return
+      }
       toast('Tema guardado.', 'success')
     } catch {
-      toast('Error al guardar.', 'error')
+      toast('Error de conexión al guardar.', 'error')
     } finally {
       setSaving(false)
     }

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { randomUUID } from 'crypto'
 import sharp from 'sharp'
 import { uploadLimiter, getClientIp } from '@/lib/rate-limit'
+import { saveBlogImage } from '@/lib/blog/image-storage'
 
 const ALLOWED_FORMATS = new Set(['jpeg', 'png', 'webp'])
 const MAX_SIZE         = 5 * 1024 * 1024 // 5MB
@@ -44,19 +42,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Solo se aceptan JPG, PNG o WebP' }, { status: 400 })
     }
 
-    const filename   = `${randomUUID()}.webp`
-    const uploadDir  = join(process.cwd(), 'public', 'uploads', 'blog')
-    await mkdir(uploadDir, { recursive: true, mode: 0o755 })
+    const url = await saveBlogImage(buffer)
 
-    // 1200x630 — proporción estándar de imagen destacada/OG para posts de blog
-    const webpBuffer = await sharp(buffer)
-      .resize(1200, 630, { fit: 'cover' })
-      .webp({ quality: 85 })
-      .toBuffer()
-
-    await writeFile(join(uploadDir, filename), webpBuffer)
-
-    return NextResponse.json({ ok: true, url: `/uploads/blog/${filename}` }, { status: 201 })
+    return NextResponse.json({ ok: true, url }, { status: 201 })
   } catch (err) {
     console.error('Blog upload error:', err)
     return NextResponse.json({ error: 'Error al subir la imagen' }, { status: 500 })

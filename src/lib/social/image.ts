@@ -64,9 +64,16 @@ function buildPrompt(escena: string, nicho: string, direction?: SceneDirection):
     ? `Setting: ${direction.lugar.trim()}, a real Venezuelan small business (${nicho}).`
     : `Setting: a real Venezuelan small business (${nicho}).`
 
+  // Sin una época explícita el modelo elige la mediana de su entrenamiento, que
+  // para "televisor"/"computadora"/"herramienta" es de los 80-90 (CRT, cajas
+  // beige, madera rústica). Verificado por Carlos contra imágenes reales del
+  // segmento Electrónica. Se fuerza acá — una vez para social, blog y cualquier
+  // preset futuro — además del vocabulario de producto actual en cada preset.
   return `Photorealistic documentary photograph, shot on a 50mm lens at f/1.8. ${subjectLine}
 
 ${settingLine} Authentic and lived-in, never stock-photo generic.
+Present day, contemporary 2020s. Current-generation devices, modern retail fittings,
+LED lighting, present-day packaging and clothing.
 Natural window light, shallow depth of field, filmic grain, true-to-life colors.
 Bare clean walls. Plain unbranded packaging. Blank surfaces. Empty picture frames.
 The lower third of the frame stays calm, dark and uncluttered.`

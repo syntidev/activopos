@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { z } from 'zod'
+import { callBlogLlm, extractJson, ProviderError } from '@/lib/blog/llm'
+import { uploadLimiter, getClientIp } from '@/lib/rate-limit'
 
 const bodySchema = z.object({
   tema:      z.string().min(1).max(200),
@@ -67,51 +69,29 @@ Responde SOLO en JSON válido:
 }`
 }
 
-// El modelo a veces envuelve el JSON en fences de markdown pese a la instrucción — se despoja antes de parsear.
-function extractJson(raw: string): unknown {
-  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
-  return JSON.parse(cleaned)
-}
-
 export async function POST(req: NextRequest) {
+  // Llama a la API paga de NVIDIA — mismo throttle que las rutas hermanas.
+  try {
+    await uploadLimiter.consume(getClientIp(req))
+  } catch {
+    return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+  }
+
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (session.role !== 'super_admin') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-  const apiKey = process.env.NVIDIA_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: 'NVIDIA_API_KEY no configurada en el servidor' }, { status: 500 })
-  }
-
   try {
     const { tema, categoria } = bodySchema.parse(await req.json())
 
-    const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-      method:  'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        Authorization:   `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model:    'meta/llama-3.1-8b-instruct',
-        messages: [{ role: 'user', content: buildPrompt(tema, categoria) }],
-      }),
-    })
-
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '')
-      console.error('NVIDIA NIM error:', res.status, errBody)
-      return NextResponse.json({ error: 'Fallo el servicio de generación IA' }, { status: 502 })
-    }
-
-    const completion = await res.json() as { choices?: { message?: { content?: string } }[] }
-    const raw = completion.choices?.[0]?.message?.content
-    if (!raw) return NextResponse.json({ error: 'Respuesta vacía del modelo' }, { status: 502 })
-
+    const raw    = await callBlogLlm(buildPrompt(tema, categoria))
     const parsed = aiResultSchema.parse(extractJson(raw))
 
     return NextResponse.json({ ok: true, article: parsed })
   } catch (err) {
+    if (err instanceof ProviderError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }

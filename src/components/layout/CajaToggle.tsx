@@ -1,25 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Store, X } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { useScrollLock } from '@/hooks/useScrollLock'
+import { useCaja } from '@/context/CajaContext'
 import styles from './CajaToggle.module.css'
-
-interface RegisterInfo {
-  openedAt: string
-  cashierName: string
-}
-
-type CajaStatus =
-  | { isOpen: false }
-  | { isOpen: true; register: RegisterInfo }
-
-interface StatusResponse {
-  isOpen: boolean
-  register?: RegisterInfo
-}
 
 function getElapsed(openedAt: string): string {
   const ms = Date.now() - new Date(openedAt).getTime()
@@ -38,7 +25,9 @@ interface CajaToggleProps {
 export function CajaToggle({ collapsed = false }: CajaToggleProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const [status, setStatus] = useState<CajaStatus | null>(null)
+  // CajaContext es la única fuente — antes este componente tenía su propio
+  // fetch y el pill del header no se enteraba al abrir la caja desde aquí.
+  const { isOpen: cajaOpen, register, refreshCaja } = useCaja()
   const [modalOpen, setModalOpen] = useState(false)
   const [amount, setAmount] = useState('')
   const [opening, setOpening] = useState(false)
@@ -47,29 +36,13 @@ export function CajaToggle({ collapsed = false }: CajaToggleProps) {
 
   useScrollLock(modalOpen)
 
-  const fetchStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/cash/status')
-      if (!res.ok) return
-      const data = await res.json() as StatusResponse
-      if (data.isOpen && data.register) {
-        setStatus({ isOpen: true, register: data.register })
-        setElapsed(getElapsed(data.register.openedAt))
-      } else {
-        setStatus({ isOpen: false })
-      }
-    } catch { /* silently fail — caja toggle is non-critical */ }
-  }, [])
-
-  useEffect(() => { void fetchStatus() }, [fetchStatus])
-
-  // Update elapsed every 30s when open
+  // Update elapsed on mount and every 30s while open
   useEffect(() => {
-    if (!status?.isOpen) return
-    const reg = (status as { isOpen: true; register: RegisterInfo }).register
-    const id = setInterval(() => setElapsed(getElapsed(reg.openedAt)), 30_000)
+    if (!register) { setElapsed(''); return }
+    setElapsed(getElapsed(register.openedAt))
+    const id = setInterval(() => setElapsed(getElapsed(register.openedAt)), 30_000)
     return () => clearInterval(id)
-  }, [status])
+  }, [register])
 
   // Focus input when modal opens
   useEffect(() => {
@@ -80,8 +53,8 @@ export function CajaToggle({ collapsed = false }: CajaToggleProps) {
   }, [modalOpen])
 
   const handleToggleClick = () => {
-    if (!status) return
-    if (status.isOpen) {
+    if (cajaOpen === null) return
+    if (cajaOpen) {
       router.push('/caja')
     } else {
       setAmount('')
@@ -101,7 +74,7 @@ export function CajaToggle({ collapsed = false }: CajaToggleProps) {
       })
       if (res.ok) {
         setModalOpen(false)
-        await fetchStatus()
+        await refreshCaja()
       } else {
         const body = await res.json().catch(() => ({})) as { error?: string }
         toast(body.error ?? 'Error al abrir la caja', 'error')
@@ -114,9 +87,9 @@ export function CajaToggle({ collapsed = false }: CajaToggleProps) {
     if (e.target === e.currentTarget) setModalOpen(false)
   }
 
-  if (!status) return null
+  if (cajaOpen === null) return null
 
-  const isOpen = status.isOpen
+  const isOpen = cajaOpen
 
   return (
     <>
@@ -131,8 +104,8 @@ export function CajaToggle({ collapsed = false }: CajaToggleProps) {
           : 'Caja cerrada — abrir caja'}
         title={collapsed
           ? (isOpen ? `Abierta hace ${elapsed}` : 'Caja cerrada')
-          : (isOpen
-            ? `Abierta por ${(status as { isOpen: true; register: RegisterInfo }).register.cashierName}`
+          : (isOpen && register
+            ? `Abierta por ${register.cashierName}`
             : 'Abrir caja')}
       >
         <Store size={14} strokeWidth={2} aria-hidden="true" />

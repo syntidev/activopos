@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes'
 import { Menu, Sun, Moon, Bell, ShoppingBag, Package, CreditCard, CheckCheck, X, Store, ChevronDown, LogOut } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { useRate } from '@/context/RateContext'
+import { useCaja } from '@/context/CajaContext'
 import styles from './Header.module.css'
 
 interface BizInfo { name: string; logo_path: string | null }
@@ -281,14 +282,10 @@ export function Header({
   }, [])
 
   /* ── Caja pill (estado, solo lectura) — la acción "Abrir Caja" vive en
-     el sidebar; este pill solo refleja abierta/cerrada y navega a /caja ── */
-  const [cajaOpen, setCajaOpen] = useState<boolean | null>(null)
-  useEffect(() => {
-    fetch('/api/cash/status')
-      .then(r => r.ok ? r.json() : null)
-      .then((j: { isOpen?: boolean } | null) => { if (j) setCajaOpen(!!j.isOpen) })
-      .catch(() => {})
-  }, [])
+     el sidebar; este pill solo refleja abierta/cerrada y navega a /caja.
+     CajaContext es la única fuente: antes este fetch tenía deps [] y el pill
+     se quedaba en "Caja cerrada" hasta recargar la página. ── */
+  const { isOpen: cajaOpen } = useCaja()
 
   /* ── Notifications ── */
   const [notifOpen, setNotifOpen] = useState(false)

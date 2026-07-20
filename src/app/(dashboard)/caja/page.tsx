@@ -18,6 +18,7 @@ import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { MovimientoModal } from '@/components/cash/MovimientoModal'
 import { CierreConfirmModal } from '@/components/cash/CierreConfirmModal'
 import type { PaymentMethod } from '@/components/cash/MovimientoModal'
+import { useCaja } from '@/context/CajaContext'
 import styles from './caja.module.css'
 
 /* ── Types ── */
@@ -157,6 +158,7 @@ function CajaContent() {
   const [showMovModal, setShowMovModal]   = useState(false)
   const [showCierreModal, setShowCierreModal] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { refreshCaja } = useCaja()
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -238,7 +240,8 @@ function CajaContent() {
       })
       if (res.ok) {
         toast('Caja abierta correctamente', 'success')
-        await fetchAll()
+        // refreshCaja() sincroniza el pill del header y el toggle del sidebar
+        await Promise.all([fetchAll(), refreshCaja()])
       } else {
         const data = await res.json()
         toast(data.error ?? 'Error al abrir la caja', 'error')
@@ -265,7 +268,7 @@ function CajaContent() {
         setShowCierreModal(false)
         setClosingUsd('')
         setClosingBs('')
-        await fetchAll()
+        await Promise.all([fetchAll(), refreshCaja()])
       } else {
         const data = await res.json()
         toast(data.error ?? 'Error al cerrar la caja', 'error')

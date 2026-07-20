@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight, Check, Info } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PAYMENT_METHOD_DEFS, BANCOS_VENEZUELA, OPTION_TONES } from '../data'
 import type { OnboardingState, PaymentMethodDetails } from '../types'
@@ -79,10 +79,18 @@ export default function Step4Pagos({ data, update, onNext }: StepProps) {
                 />
                 <input
                   className={styles.fieldInput}
-                  placeholder="Cédula del titular (opcional)"
+                  placeholder="Cédula del titular (recomendado)"
                   value={data.paymentDetails.pagoMovilCedula ?? ''}
                   onChange={e => setDetail({ pagoMovilCedula: e.target.value })}
                 />
+                <p className={styles.tip}>
+                  <Info size={14} aria-hidden="true" />
+                  <span>
+                    Recuerda completar tus datos bancarios en Configuración → Datos
+                    para Cobrar para que aparezcan en el mensaje de WhatsApp a tus
+                    clientes.
+                  </span>
+                </p>
               </div>
             )}
 

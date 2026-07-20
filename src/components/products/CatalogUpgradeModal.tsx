@@ -23,7 +23,7 @@ export function CatalogUpgradeModal({ open, onClose }: CatalogUpgradeModalProps)
 
   const handleCTA = () => {
     const text = encodeURIComponent(
-      'Hola SYNTIdev, quiero activar el Catálogo Digital de ActivoPOS.'
+      'Hola, quiero activar el Catálogo Digital de ActivoPOS.'
     )
     window.open(
       `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`,
@@ -74,7 +74,7 @@ export function CatalogUpgradeModal({ open, onClose }: CatalogUpgradeModalProps)
             </ul>
 
             <button className={styles.ctaBtn} onClick={handleCTA} type="button">
-              Contactar a SYNTIdev
+              Contactar a Soporte
             </button>
             <button className={styles.cancelBtn} onClick={onClose} type="button">
               Quizás después

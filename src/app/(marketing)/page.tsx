@@ -46,7 +46,7 @@ const ORGANIZATION_JSON_LD = {
     '@type': 'ContactPoint',
     contactType: 'customer support',
     availableLanguage: 'Spanish',
-    url: 'https://wa.me/584222654827',
+    url: 'https://wa.me/584243244788',
   },
   parentOrganization: {
     '@type': 'Organization',

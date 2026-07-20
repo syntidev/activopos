@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive } from '@/lib/catalog'
+import { normalizePhone } from '@/lib/utils'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -373,7 +374,7 @@ export async function POST(
   )
 
   const whatsapp_url = bizPhone
-    ? `https://wa.me/${bizPhone}?text=${encodeURIComponent(waMessage)}`
+    ? `https://wa.me/${normalizePhone(bizPhone)}?text=${encodeURIComponent(waMessage)}`
     : null
 
   return NextResponse.json(

@@ -273,7 +273,7 @@ export const COMPANY = {
   country: 'Venezuela',
   currency: 'USD / Bolívar venezolano',
   exchangeReference: 'Banco Central de Venezuela (BCV)',
-  whatsapp: 'https://wa.me/584222654827',
+  whatsapp: 'https://wa.me/584243244788',
   instagram: 'https://instagram.com/activopos',
   facebook: 'https://facebook.com/activopos',
 }

@@ -12,6 +12,7 @@ import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { capitalize } from './catalogUtils'
+import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
 
 /* ── Public interfaces ───────────────────────────────────────── */
@@ -90,7 +91,7 @@ function getInitials(name: string): string {
 
 function getConsultarWaUrl(phone: string, productName: string): string {
   if (!phone) return '#'
-  return `https://wa.me/${phone}?text=${encodeURIComponent(`Hola, quiero consultar disponibilidad de: ${productName}`)}`
+  return `https://wa.me/${normalizePhone(phone)}?text=${encodeURIComponent(`Hola, quiero consultar disponibilidad de: ${productName}`)}`
 }
 
 function getBadgeClass(badge: string | null | undefined): string {
@@ -1481,7 +1482,7 @@ export function CatalogoGrid({
                 <div className={styles.infoContacts}>
                   {businessPhone && (
                     <a
-                      href={`https://wa.me/${businessPhone}`}
+                      href={`https://wa.me/${normalizePhone(businessPhone)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.infoContactBtn}
@@ -1544,7 +1545,7 @@ export function CatalogoGrid({
       {/* ── WhatsApp FAB — solo visible con items en carrito, oculto con overlays abiertos ── */}
       {cart.length > 0 && businessPhone && !selectedProduct && !cartOpen && !checkoutOpen && (
         <a
-          href={`https://wa.me/${businessPhone}?text=${encodeURIComponent('Hola, vi tu catálogo en ActivoPOS y me interesa pedir.')}`}
+          href={`https://wa.me/${normalizePhone(businessPhone)}?text=${encodeURIComponent('Hola, vi tu catálogo en ActivoPOS y me interesa pedir.')}`}
           target="_blank"
           rel="noopener noreferrer"
           className={styles.waFab}

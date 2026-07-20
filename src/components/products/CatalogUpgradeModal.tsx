@@ -3,6 +3,7 @@
 import { Globe, Check, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useScrollLock } from '@/hooks/useScrollLock'
+import { WHATSAPP_NUMBER } from '@/lib/marketing-contact'
 import styles from './CatalogUpgradeModal.module.css'
 
 interface CatalogUpgradeModalProps {
@@ -25,7 +26,7 @@ export function CatalogUpgradeModal({ open, onClose }: CatalogUpgradeModalProps)
       'Hola SYNTIdev, quiero activar el Catálogo Digital de ActivoPOS.'
     )
     window.open(
-      `https://wa.me/584120000000?text=${text}`,
+      `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`,
       '_blank',
       'noopener,noreferrer'
     )

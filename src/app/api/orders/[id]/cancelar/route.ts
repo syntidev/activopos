@@ -17,7 +17,7 @@ export async function POST(_req: NextRequest, { params }: Context) {
 
     const order = await db.order.findFirst({
       where:  { id: orderId }, // business_id inyectado por el tenant layer
-      select: { id: true, status: true },
+      select: { id: true, status: true, order_number: true },
     })
 
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
@@ -32,6 +32,17 @@ export async function POST(_req: NextRequest, { params }: Context) {
     await db.order.update({
       where: { id: orderId }, // business_id inyectado por el tenant layer
       data:  { status: 'cancelled' },
+    })
+
+    // Revertir la reserva de inventario creada al hacer el pedido de catálogo.
+    // Se vincula por notes igual que cobrar/route.ts:127 — InventoryEntry no tiene order_id.
+    // Va después del update: si esto falla, el pedido queda cancelado con la reserva
+    // viva (comportamiento previo), nunca stock devuelto sobre un pedido no cancelado.
+    await db.inventoryEntry.deleteMany({
+      where: {
+        entry_type: 'reservation', // business_id inyectado por el tenant layer
+        notes:      { endsWith: order.order_number },
+      },
     })
 
     return NextResponse.json({ ok: true })

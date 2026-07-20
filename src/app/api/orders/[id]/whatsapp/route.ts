@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getActiveRate, formatBs, formatUsd } from '@/lib/bcv'
+import { normalizePhone } from '@/lib/utils'
 
 interface CobroData {
   pago_movil_banco?:    string
@@ -106,7 +107,7 @@ export async function GET(
     lines.push('', 'Envíanos el comprobante y procesamos', 'tu pedido de inmediato. ¡Gracias! 🙌')
 
     const mensaje      = lines.join('\n')
-    const phone        = (order.client_phone ?? '').replace(/[^0-9]/g, '')
+    const phone        = normalizePhone(order.client_phone ?? '')
     const whatsapp_url = phone
       ? `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`
       : `https://wa.me/?text=${encodeURIComponent(mensaje)}`

@@ -99,12 +99,25 @@ export function buildNarrative(data: TuDiaData): Paragraph[] {
 
 // ── Camino con IA ─────────────────────────────────────────────────
 
-const SYSTEM_PROMPT =
-  'Eres el asistente de un negocio venezolano. Generas el resumen diario del ' +
-  'negocio en español venezolano (tuteo), tono cálido y directo. Máximo 3 ' +
-  'párrafos cortos. Sin listas, solo prosa natural. Menciona: ventas del día vs ' +
-  'ayer, producto estrella si hay, cobros pendientes si los hay. Si fue un día ' +
-  'flojo, di algo motivador pero honesto.'
+// El formato es explicito a proposito: toParagraphs() parte por linea en blanco
+// y asigna main / secondary / closing por posicion, asi que los 3 parrafos no
+// son estetica — son el contrato del que depende el render.
+const SYSTEM_PROMPT = [
+  'Eres el asistente de un negocio venezolano. Generas el resumen diario del',
+  'negocio en español venezolano (tuteo), tono cálido y directo. Sin listas,',
+  'solo prosa natural. Menciona: ventas del día vs ayer, producto estrella si',
+  'hay, cobros pendientes si los hay. Si fue un día flojo, di algo motivador',
+  'pero honesto.',
+  '',
+  'Genera exactamente 3 párrafos separados por línea en blanco.',
+  'Párrafo 1: UNA sola frase corta e impactante. Máximo 12 palabras.',
+  'Párrafo 2: 2-3 oraciones con los datos del día. Tono informativo.',
+  'Párrafo 3: UNA sola frase de cierre motivadora. Máximo 10 palabras.',
+  '',
+  'NUNCA uses más de 3 párrafos.',
+  'NUNCA hagas preguntas al usuario.',
+  "NUNCA uses 'nosotros' — usa 'tú' y 'tu negocio'.",
+].join('\n')
 
 /** Solo los datos del negocio — `now` queda fuera a propósito (ver dayKey). */
 function promptPayload(data: TuDiaData) {

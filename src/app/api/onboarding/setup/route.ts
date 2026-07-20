@@ -174,6 +174,9 @@ export async function POST(req: NextRequest) {
       const biz = await tx.business.create({
         data: {
           name:                 data.business_name,
+          // Mismo email normalizado que el usuario admin — antes quedaba NULL
+          // en businesses y el negocio no tenía contacto propio.
+          email,
           catalog_slug:         data.business_slug,
           catalog_active:       false,
           catalog_title:        data.business_name,

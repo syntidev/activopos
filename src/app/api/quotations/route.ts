@@ -5,11 +5,17 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 
 const ItemSchema = z.object({
-  product_id: z.number().int().positive().optional(),
-  name:       z.string().min(1).max(120),
-  qty:        z.number().positive(),
-  price_usd:  z.number().nonnegative(),
+  product_id:   z.number().int().positive().optional(),
+  name:         z.string().min(1).max(120),
+  qty:          z.number().positive(),
+  price_usd:    z.number().nonnegative(),
+  discount_pct: z.number().min(0).max(100).optional(),
 })
+
+// Total de línea con descuento aplicado. Mismo cálculo en PATCH ([id]/route.ts):
+// no se comparte porque un route.ts de App Router solo admite exports conocidos.
+const lineTotal = (qty: number, price: number, pct?: number): number =>
+  Math.round(qty * price * (1 - (pct ?? 0) / 100) * 100) / 100
 
 const PostSchema = z.object({
   client_id:   z.number().int().positive().optional(),
@@ -95,7 +101,7 @@ export async function POST(req: NextRequest) {
     const { rate } = await getActiveRate(bid)
     const year = new Date().getFullYear()
 
-    const subtotal = body.items.reduce((s, i) => s + i.qty * i.price_usd, 0)
+    const subtotal = body.items.reduce((s, i) => s + lineTotal(i.qty, i.price_usd, i.discount_pct), 0)
     const r2       = (x: number) => Math.round(x * 100) / 100
 
     // Verify client belongs to this business before writing (fuera del $transaction)
@@ -125,11 +131,12 @@ export async function POST(req: NextRequest) {
           total_bs:     r2(subtotal * rate),
           items: {
             create: body.items.map(i => ({
-              product_id: i.product_id,
-              name:       i.name,
-              qty:        i.qty,
-              price_usd:  i.price_usd,
-              total_usd:  r2(i.qty * i.price_usd),
+              product_id:   i.product_id,
+              name:         i.name,
+              qty:          i.qty,
+              price_usd:    i.price_usd,
+              discount_pct: i.discount_pct,
+              total_usd:    lineTotal(i.qty, i.price_usd, i.discount_pct),
             })),
           },
         },

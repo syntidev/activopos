@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Plus, FileText, X, Search, Calendar, Check,
   User, ChevronRight, Package, FileDown,
+  Send, Trash2, MessageCircle,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './cotizaciones.module.css'
@@ -35,18 +37,48 @@ interface Quotation {
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Borrador', sent: 'Enviada', accepted: 'Aceptada',
-  rejected: 'Rechazada', expired: 'Vencida',
+  rejected: 'Rechazada', expired: 'Vencida', converted: 'Cobrada',
 }
+
+// Orden del filtro superior. '' = todas.
+const STATUS_FILTERS: Array<{ value: string; label: string }> = [
+  { value: '',          label: 'Todas' },
+  { value: 'draft',     label: 'Borrador' },
+  { value: 'sent',      label: 'Enviada' },
+  { value: 'accepted',  label: 'Aceptada' },
+  { value: 'rejected',  label: 'Rechazada' },
+  { value: 'expired',   label: 'Vencida' },
+  { value: 'converted', label: 'Cobrada' },
+]
 
 function statusClass(status: string) {
   switch (status) {
-    case 'draft':    return styles.statusDraft
-    case 'sent':     return styles.statusSent
-    case 'accepted': return styles.statusAccepted
-    case 'rejected': return styles.statusRejected
-    case 'expired':  return styles.statusExpired
-    default:         return styles.statusDraft
+    case 'draft':     return styles.statusDraft
+    case 'sent':      return styles.statusSent
+    case 'accepted':  return styles.statusAccepted
+    case 'rejected':  return styles.statusRejected
+    case 'expired':   return styles.statusExpired
+    case 'converted': return styles.statusConverted
+    default:          return styles.statusDraft
   }
+}
+
+/* ── WhatsApp ──
+ * El PDF exige sesión (pdf/route.ts:9 → getAuthenticatedTenant), así que NO hay
+ * URL pública que mandarle al cliente: un enlace ahí le daría 401. El mensaje
+ * va sin enlace y el negocio adjunta el PDF a mano. Para incluir el enlace hace
+ * falta una ruta pública con token, que hoy no existe.
+ */
+function whatsappUrl(q: Quotation): string {
+  const phone = (q.client?.phone ?? '').replace(/\D/g, '')
+  const validez = q.valid_until
+    ? `\nVálida hasta: ${fmtDate(q.valid_until)}`
+    : ''
+  const msg =
+    `Hola ${q.client?.name ?? ''}, te comparto la cotización ${q.number}:\n` +
+    `Total: $${q.total_usd.toFixed(2)} USD${validez}\n` +
+    `Te envío el PDF adjunto.`
+  return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 }
 
 function fmtDate(iso: string) {
@@ -364,14 +396,18 @@ function CreateModal({ onClose, onCreated }: CreateModalProps) {
 
 function CotizacionesContent() {
   const { toast }   = useToast()
+  const router      = useRouter()
   const [quotations, setQuotations] = useState<Quotation[]>([])
   const [loading, setLoading]       = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [converting, setConverting] = useState<number | null>(null)
+  const [filter, setFilter]         = useState('')
+  const [busy, setBusy]             = useState<number | null>(null)
 
   const fetchAll = useCallback(async () => {
+    setLoading(true)
     try {
-      const r = await fetch('/api/quotations?limit=50')
+      const qs = filter ? `?status=${filter}&limit=50` : '?limit=50'
+      const r  = await fetch(`/api/quotations${qs}`)
       if (r.ok) {
         const d = await r.json() as { quotations?: Quotation[] }
         setQuotations(d.quotations ?? [])
@@ -381,26 +417,68 @@ function CotizacionesContent() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, filter])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
+  // Convertir NO cobra: crea un ticket abierto en el POS y manda al cajero allá.
+  // La cotización queda en 'accepted' hasta que el POS confirme el pago.
   async function handleConvert(q: Quotation) {
-    setConverting(q.id)
+    setBusy(q.id)
     try {
       const r = await fetch(`/api/quotations/${q.id}/convert`, { method: 'POST' })
-      if (r.ok) {
-        const d = await r.json() as { ok: boolean; ticket_number?: string }
-        setQuotations(prev => prev.map(x => x.id === q.id ? { ...x, status: 'converted' } : x))
-        toast(`Cotización ${q.number} convertida${d.ticket_number ? ` — Ticket #${d.ticket_number}` : ''}`, 'success')
+      const d = await r.json() as { ok?: boolean; draft_id?: number; ticket_number?: string; error?: string }
+      if (r.ok && d.draft_id) {
+        toast(`Ticket ${d.ticket_number ?? ''} abierto en el POS`, 'success')
+        router.push(`/pos?draft=${d.draft_id}`)
       } else {
-        const d = await r.json() as { error?: string }
         toast(d.error ?? 'Error al convertir', 'error')
       }
     } catch {
       toast('Error de conexión', 'error')
     } finally {
-      setConverting(null)
+      setBusy(null)
+    }
+  }
+
+  async function handleStatus(q: Quotation, status: string, label: string) {
+    setBusy(q.id)
+    try {
+      const r = await fetch(`/api/quotations/${q.id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ status }),
+      })
+      const d = await r.json() as { ok?: boolean; error?: string }
+      if (r.ok) {
+        setQuotations(prev => prev.map(x => x.id === q.id ? { ...x, status } : x))
+        toast(`Cotización ${q.number} marcada como ${label}`, 'success')
+      } else {
+        toast(d.error ?? 'Error al cambiar el estado', 'error')
+      }
+    } catch {
+      toast('Error de conexión', 'error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function handleDelete(q: Quotation) {
+    if (!confirm(`¿Eliminar la cotización ${q.number}? Esta acción no se puede deshacer.`)) return
+    setBusy(q.id)
+    try {
+      const r = await fetch(`/api/quotations/${q.id}`, { method: 'DELETE' })
+      const d = await r.json() as { ok?: boolean; error?: string }
+      if (r.ok) {
+        setQuotations(prev => prev.filter(x => x.id !== q.id))
+        toast(`Cotización ${q.number} eliminada`, 'success')
+      } else {
+        toast(d.error ?? 'Error al eliminar', 'error')
+      }
+    } catch {
+      toast('Error de conexión', 'error')
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -420,6 +498,20 @@ function CotizacionesContent() {
           <Plus size={14} aria-hidden="true" />
           Nueva cotización
         </button>
+      </div>
+
+      <div className={styles.filterBar} role="group" aria-label="Filtrar por estado">
+        {STATUS_FILTERS.map(f => (
+          <button
+            key={f.value || 'all'}
+            type="button"
+            className={`${styles.filterChip} ${filter === f.value ? styles.filterChipOn : ''}`}
+            onClick={() => setFilter(f.value)}
+            aria-pressed={filter === f.value}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -444,8 +536,10 @@ function CotizacionesContent() {
                   <th className={styles.th}>Número</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Cliente</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Ítems</th>
-                  <th className={`${styles.th} ${styles.thNum}`}>Total</th>
+                  <th className={`${styles.th} ${styles.thNum}`}>Total USD</th>
+                  <th className={`${styles.th} ${styles.thNum} ${styles.thHidden}`}>Total Bs</th>
                   <th className={styles.th}>Estado</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Válida hasta</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Fecha</th>
                   <th className={styles.th} />
                 </tr>
@@ -464,8 +558,10 @@ function CotizacionesContent() {
                     <td className={`${styles.td} ${styles.tdHidden}`} data-label="Ítems">
                       <span className={styles.muted}>{q.items.length} ítem{q.items.length !== 1 ? 's' : ''}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.tdNum}`} data-label="Total">
+                    <td className={`${styles.td} ${styles.tdNum}`} data-label="Total USD">
                       <span className={styles.usd}>${q.total_usd.toFixed(2)}</span>
+                    </td>
+                    <td className={`${styles.td} ${styles.tdNum} ${styles.tdHidden}`} data-label="Total Bs">
                       <span className={styles.bs}>
                         Bs.&nbsp;{q.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
@@ -475,34 +571,96 @@ function CotizacionesContent() {
                         {STATUS_LABELS[q.status] ?? q.status}
                       </span>
                     </td>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Válida hasta">
+                      <span className={styles.muted}>
+                        {q.valid_until ? fmtDate(q.valid_until) : '—'}
+                      </span>
+                    </td>
                     <td className={`${styles.td} ${styles.tdHidden}`} data-label="Fecha">
                       <span className={styles.muted}>{fmtDate(q.created_at)}</span>
                     </td>
                     <td className={`${styles.td} ${styles.tdAction}`} data-label="Acciones">
                       <div className={styles.actionsRow}>
-                        {q.status !== 'expired' && (
-                          <button
-                            className={styles.pdfBtn}
-                            onClick={() => window.open(`/api/quotations/${q.id}/pdf`, '_blank')}
-                            type="button"
-                            aria-label={`Descargar PDF de cotización ${q.number}`}
-                          >
-                            <FileDown size={14} aria-hidden="true" />
-                          </button>
-                        )}
+                        {/* PDF y WhatsApp: disponibles en todos los estados */}
+                        <button
+                          className={styles.pdfBtn}
+                          onClick={() => window.open(`/api/quotations/${q.id}/pdf`, '_blank')}
+                          type="button"
+                          aria-label={`Descargar PDF de cotización ${q.number}`}
+                        >
+                          <FileDown size={14} aria-hidden="true" />
+                        </button>
+                        <button
+                          className={styles.waBtn}
+                          onClick={() => window.open(whatsappUrl(q), '_blank', 'noopener')}
+                          type="button"
+                          aria-label={`Enviar cotización ${q.number} por WhatsApp`}
+                          title={q.client?.phone
+                            ? `Enviar a ${q.client.name}`
+                            : 'Sin teléfono — WhatsApp abre sin destinatario'}
+                        >
+                          <MessageCircle size={14} aria-hidden="true" />
+                        </button>
+
                         {q.status === 'draft' && (
+                          <>
+                            <button
+                              className={styles.miniBtn}
+                              onClick={() => handleStatus(q, 'sent', 'Enviada')}
+                              disabled={busy === q.id}
+                              type="button"
+                            >
+                              <Send size={12} aria-hidden="true" />
+                              Enviar
+                            </button>
+                            <button
+                              className={`${styles.miniBtn} ${styles.miniNo}`}
+                              onClick={() => handleDelete(q)}
+                              disabled={busy === q.id}
+                              type="button"
+                              aria-label={`Eliminar cotización ${q.number}`}
+                            >
+                              <Trash2 size={12} aria-hidden="true" />
+                            </button>
+                          </>
+                        )}
+
+                        {q.status === 'sent' && (
+                          <>
+                            <button
+                              className={`${styles.miniBtn} ${styles.miniOk}`}
+                              onClick={() => handleStatus(q, 'accepted', 'Aceptada')}
+                              disabled={busy === q.id}
+                              type="button"
+                            >
+                              <Check size={12} aria-hidden="true" />
+                              Aceptada
+                            </button>
+                            <button
+                              className={`${styles.miniBtn} ${styles.miniNo}`}
+                              onClick={() => handleStatus(q, 'rejected', 'Rechazada')}
+                              disabled={busy === q.id}
+                              type="button"
+                            >
+                              <X size={12} aria-hidden="true" />
+                              Rechazada
+                            </button>
+                          </>
+                        )}
+
+                        {q.status === 'accepted' && (
                           <button
                             className={styles.convertBtn}
                             onClick={() => handleConvert(q)}
-                            disabled={converting === q.id}
+                            disabled={busy === q.id}
                             type="button"
                             aria-label={`Convertir cotización ${q.number} a venta`}
                           >
-                            {converting === q.id
+                            {busy === q.id
                               ? <span className={styles.spinnerSm} aria-hidden="true" />
                               : <Check size={12} aria-hidden="true" />}
                             Convertir a venta
-                            {converting !== q.id && <ChevronRight size={12} aria-hidden="true" />}
+                            {busy !== q.id && <ChevronRight size={12} aria-hidden="true" />}
                           </button>
                         )}
                       </div>

@@ -729,13 +729,14 @@ model Quotation {
 }
 
 model QuotationItem {
-  id           Int     @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   quotation_id Int
   product_id   Int?
-  name         String  @db.VarChar(120)
-  qty          Decimal @db.Decimal(10, 3)
-  price_usd    Decimal @db.Decimal(10, 4)
-  total_usd    Decimal @db.Decimal(10, 2)
+  name         String   @db.VarChar(120)
+  qty          Decimal  @db.Decimal(10, 3)
+  price_usd    Decimal  @db.Decimal(10, 4)
+  discount_pct Decimal? @db.Decimal(5, 2)
+  total_usd    Decimal  @db.Decimal(10, 2)
 
   quotation Quotation @relation(fields: [quotation_id], references: [id], onDelete: Cascade)
 

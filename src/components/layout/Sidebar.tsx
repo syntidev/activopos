@@ -92,6 +92,9 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/pos',      icon: ShoppingCart, label: 'Punto de Venta', moduleKey: 'pos',     colorKey: 'ventas' },
       { href: '/pedidos',  icon: ShoppingBag,  label: 'Pedidos',        moduleKey: 'pedidos', colorKey: 'ventas', badgeKey: 'pending_orders' },
       { href: '/ventas',   icon: Receipt,       label: 'Historial',                            colorKey: 'ventas' },
+      // adminOnly explícito: venía del grupo FINANZAS, que lo es a nivel de
+      // grupo. VENTAS no lo es, y /api/quotations rechaza al cajero con 403.
+      { href: '/cotizaciones', icon: FileText,  label: 'Cotizaciones',                         colorKey: 'ventas', adminOnly: true },
       { href: '/clientes', icon: Users,         label: 'Clientes',                             colorKey: 'ventas' },
     ],
   },
@@ -117,7 +120,6 @@ const NAV_GROUPS: NavGroup[] = [
     collapsible: true,
     items: [
       { href: '/finanzas',     icon: TrendingUp, label: 'Finanzas',     moduleKey: 'finanzas', colorKey: 'caja', badgeKey: 'cxp_vencidas' },
-      { href: '/cotizaciones', icon: FileText,   label: 'Cotizaciones',                        colorKey: 'caja' },
     ],
   },
   {

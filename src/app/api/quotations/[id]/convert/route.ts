@@ -4,11 +4,24 @@ import type { SessionPayload } from '@/lib/auth'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
-import { generateTicketNumber } from '@/lib/ticket'
 
 type Context = { params: { id: string } }
 
-/* ── POST /api/quotations/[id]/convert — Quotation → Sale (pending) ── */
+// Mismo tope que /api/pos/drafts — el POS no muestra más de 5 tickets abiertos
+// por cajero. Duplicado a propósito: la constante de allá no está exportada y
+// exportarla implicaría tocar ese archivo.
+const MAX_DRAFTS = 5
+
+/* ── POST /api/quotations/[id]/convert — Quotation(accepted) → draft del POS ──
+ *
+ * NO crea la venta ni descuenta stock: deja un ticket abierto en el POS con los
+ * ítems ya cargados, para que el cajero cobre desde ahí. La cotización sigue en
+ * 'accepted' — pasa a 'converted' recién cuando el POS confirma el pago.
+ *
+ * El draft se escribe acá y no vía POST /api/pos/drafts porque ese endpoint
+ * re-deriva el precio del producto (drafts/route.ts:80) e ignora el precio
+ * cotizado. Cotizar a $8 y cobrar $10 sería peor que duplicar 20 líneas.
+ */
 
 export async function POST(_req: NextRequest, { params }: Context) {
   const id = parseInt(params.id, 10)
@@ -34,18 +47,34 @@ export async function POST(_req: NextRequest, { params }: Context) {
 
   if (!quotation) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
 
-  if (quotation.status === 'rejected' || quotation.status === 'expired') {
+  if (quotation.status !== 'accepted') {
     return NextResponse.json(
-      { error: 'No se puede convertir una cotización rechazada o vencida' },
+      { error: 'Solo se puede convertir una cotización aceptada' },
       { status: 409 }
     )
   }
 
+  if (quotation.items.length === 0) {
+    return NextResponse.json({ error: 'La cotización no tiene ítems' }, { status: 422 })
+  }
+
+  // SaleItem.product_id es NOT NULL con FK a Product (schema.prisma:432,449):
+  // un ítem sin producto no puede existir como línea de venta.
   const missingProduct = quotation.items.find(i => i.product_id == null)
   if (missingProduct) {
     return NextResponse.json(
       { error: `El ítem "${missingProduct.name}" no tiene producto asociado — todos los ítems deben tener producto para convertir a venta` },
       { status: 422 }
+    )
+  }
+
+  const openDrafts = await db.sale.count({
+    where: { cashier_id: session.userId, status: 'draft' }, // business_id inyectado
+  })
+  if (openDrafts >= MAX_DRAFTS) {
+    return NextResponse.json(
+      { error: `Tienes ${MAX_DRAFTS} tickets abiertos en el POS — cierra uno antes de convertir` },
+      { status: 409 }
     )
   }
 
@@ -55,79 +84,76 @@ export async function POST(_req: NextRequest, { params }: Context) {
 
   try {
     // $transaction en prisma base: business_id manual adentro
-    const sale = await prisma.$transaction(async tx => {
+    const draft = await prisma.$transaction(async tx => {
       const products = await tx.product.findMany({
         where:  { id: { in: productIds }, business_id: session.businessId },
         select: { id: true, sale_mode: true, base_unit_label: true, cost_per_unit_usd: true },
       })
       const productMap = new Map(products.map(p => [p.id, p]))
+      if (productMap.size !== new Set(productIds).size) {
+        throw new Error('PRODUCT_NOT_FOUND')
+      }
 
-      const ticket_number = await generateTicketNumber(session.businessId, tx)
+      const items = quotation.items.map(i => {
+        const p        = productMap.get(i.product_id as number)
+        const qty      = Number(i.qty)
+        const priceUsd = Number(i.price_usd)
+        // discount_pct de la cotización → discount_usd, que es lo que entiende
+        // SaleItem (schema.prisma:442). El POS ya sabe mostrarlo.
+        const discountUsd  = r2(qty * priceUsd * (Number(i.discount_pct ?? 0) / 100))
+        const subtotalUsd  = Math.max(0, r2(qty * priceUsd - discountUsd))
+        return {
+          product_id:         i.product_id as number,
+          product_name:       i.name,
+          sale_mode:          p?.sale_mode ?? 'unit',
+          unit_label:         p?.base_unit_label ?? 'und',
+          quantity:           qty,
+          price_per_unit_usd: priceUsd,
+          cost_per_unit_usd:  Number(p?.cost_per_unit_usd ?? 0),
+          subtotal_usd:       subtotalUsd,
+          subtotal_bs:        r2(subtotalUsd * rate),
+          rate_used:          rate,
+          discount_usd:       discountUsd,
+        }
+      })
 
-      const total_usd = r2(Number(quotation.total_usd))
-      const total_bs  = r2(total_usd * rate)
+      const total_usd = r2(items.reduce((acc, i) => acc + i.subtotal_usd, 0))
 
-      const newSale = await tx.sale.create({
+      // Mismo patrón que /api/pos/drafts: ticket placeholder y luego DRF-{id}.
+      const s = await tx.sale.create({
         data: {
-          business_id:  session.businessId,
-          cashier_id:   session.userId,
-          ticket_number,
-          status:       'credit',
-          origin:       'quote',
+          business_id:   session.businessId,
+          cashier_id:    session.userId,
+          ticket_number: 'DRAFT',
+          status:        'draft',
+          origin:        'quote',
           total_usd,
-          total_bs,
-          rate_used:    rate,
-          client_id:    quotation.client_id,
-          sold_at:      null,
-          items: {
-            create: quotation.items.map(i => {
-              const p           = productMap.get(i.product_id as number)
-              const priceUsd    = Number(i.price_usd)
-              const subtotalUsd = r2(Number(i.qty) * priceUsd)
-              return {
-                product_id:         i.product_id as number,
-                product_name:       i.name,
-                sale_mode:          p?.sale_mode ?? 'unit',
-                unit_label:         p?.base_unit_label ?? 'und',
-                quantity:           Number(i.qty),
-                price_per_unit_usd: priceUsd,
-                cost_per_unit_usd:  Number(p?.cost_per_unit_usd ?? 0),
-                subtotal_usd:       subtotalUsd,
-                subtotal_bs:        r2(subtotalUsd * rate),
-                rate_used:          rate,
-                discount_usd:       0,
-              }
-            }),
-          },
+          total_bs:      r2(total_usd * rate),
+          rate_used:     rate,
+          client_id:     quotation.client_id,
+          sold_at:       null,
+          notes:         `Cotización ${quotation.number}`,
+          items:         { create: items },
         },
+        select: { id: true },
+      })
+
+      return tx.sale.update({
+        where:  { id: s.id },
+        data:   { ticket_number: `DRF-${String(s.id).padStart(5, '0')}` },
         select: { id: true, ticket_number: true },
       })
-
-      // status='credit' descuenta stock — misma regla que sales/route.ts (paid|credit).
-      // Mismo patrón: entry_type='sale', notes con el ticket, sin reference_id
-      // (InventoryEntry no tiene esa columna).
-      await tx.inventoryEntry.createMany({
-        data: quotation.items.map(i => ({
-          business_id: session.businessId,
-          product_id:  i.product_id as number,
-          quantity:    -Number(i.qty),
-          waste:       0,
-          entry_type:  'sale',
-          notes:       `VENTA #${newSale.ticket_number}`,
-          created_by:  session.userId,
-        })),
-      })
-
-      await tx.quotation.update({
-        where: { id },
-        data:  { status: 'accepted' },
-      })
-
-      return newSale
     })
 
-    return NextResponse.json({ ok: true, sale_id: sale.id, ticket_number: sale.ticket_number })
+    // La cotización NO pasa a 'converted' acá — eso ocurre cuando el POS cobra.
+    return NextResponse.json({ ok: true, draft_id: draft.id, ticket_number: draft.ticket_number })
   } catch (err) {
+    if (err instanceof Error && err.message === 'PRODUCT_NOT_FOUND') {
+      return NextResponse.json(
+        { error: 'Un producto de la cotización ya no existe en el catálogo' },
+        { status: 422 }
+      )
+    }
     console.error('quotations convert POST:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }

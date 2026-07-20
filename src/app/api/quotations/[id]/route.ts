@@ -10,11 +10,17 @@ type Context = { params: { id: string } }
 const EDITABLE_STATUSES = ['draft', 'sent'] as const
 
 const ItemSchema = z.object({
-  product_id: z.number().int().positive().optional(),
-  name:       z.string().min(1).max(120),
-  qty:        z.number().positive(),
-  price_usd:  z.number().nonnegative(),
+  product_id:   z.number().int().positive().optional(),
+  name:         z.string().min(1).max(120),
+  qty:          z.number().positive(),
+  price_usd:    z.number().nonnegative(),
+  discount_pct: z.number().min(0).max(100).optional(),
 })
+
+// Total de línea con descuento aplicado. Mismo cálculo en POST (../route.ts):
+// no se comparte porque un route.ts de App Router solo admite exports conocidos.
+const lineTotal = (qty: number, price: number, pct?: number): number =>
+  Math.round(qty * price * (1 - (pct ?? 0) / 100) * 100) / 100
 
 const PatchSchema = z.object({
   status:      z.enum(['draft', 'sent', 'accepted', 'rejected', 'expired']).optional(),
@@ -113,7 +119,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       if (body.items) {
         await tx.quotationItem.deleteMany({ where: { quotation_id: id } })
         const { rate } = await getActiveRate(session.businessId)
-        const subtotal = body.items.reduce((s, i) => s + i.qty * i.price_usd, 0)
+        const subtotal = body.items.reduce((s, i) => s + lineTotal(i.qty, i.price_usd, i.discount_pct), 0)
         await tx.quotationItem.createMany({
           data: body.items.map(i => ({
             quotation_id: id,
@@ -121,7 +127,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
             name:         i.name,
             qty:          i.qty,
             price_usd:    i.price_usd,
-            total_usd:    r2(i.qty * i.price_usd),
+            discount_pct: i.discount_pct,
+            total_usd:    lineTotal(i.qty, i.price_usd, i.discount_pct),
           })),
         })
         return tx.quotation.update({

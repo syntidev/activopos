@@ -67,8 +67,16 @@ export async function GET(_req: NextRequest, { params }: Context) {
     y += 12
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
+    const STATUS_LABELS: Record<string, string> = {
+      sent:     'Enviada',
+      accepted: 'Aceptada',
+      rejected: 'Rechazada',
+      expired:  'Vencida',
+    }
+    const statusLabel = STATUS_LABELS[quotation.status]
+
     doc.text(`N° ${quotation.number}`, 15, y)
-    doc.text(`Estado: ${quotation.status.toUpperCase()}`, 140, y)
+    if (statusLabel) doc.text(`Estado: ${statusLabel}`, 140, y)
     y += 6
     doc.text(`Fecha: ${quotation.created_at.toISOString().slice(0, 10)}`, 15, y)
     if (quotation.valid_until) {
@@ -127,7 +135,9 @@ export async function GET(_req: NextRequest, { params }: Context) {
     y += 7
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    doc.text(`Tasa BCV: Bs. ${rate.toFixed(2)}/USD`, 195, y, { align: 'right' })
+    doc.text('* El monto en bolívares es referencial.', 195, y, { align: 'right' })
+    y += 4
+    doc.text('Verifique la tasa vigente al momento del pago.', 195, y, { align: 'right' })
 
     // Notes
     if (quotation.notes) {

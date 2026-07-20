@@ -100,8 +100,8 @@ export async function POST(req: NextRequest) {
     `\nRespondes en español venezolano con tuteo (tú, no vos). Respuestas cortas, ` +
     `máximo 3 oraciones. Directo al grano, sin saludos largos.` +
     `\n\nEl sistema tiene estos módulos:` +
-    `\nPOS (punto de venta con escáner triple, multi-ticket, pago mixto, crédito, ` +
-    `variantes, peso), Inventario (entradas, consumo interno, historial), ` +
+    `\nPOS (punto de venta con multi-ticket, pago mixto, crédito, variantes, peso), ` +
+    `Inventario (entradas, consumo interno, historial), ` +
     `Productos (importación Excel, variantes, imágenes WebP), Catálogo Digital ` +
     `(URL pública, QR, pedidos por WhatsApp, Kanban), Clientes (CxC, precio ` +
     `mayorista), Proveedores y Compras (CxP), Caja (apertura, cierre, cuadre), ` +
@@ -110,18 +110,33 @@ export async function POST(req: NextRequest) {
     `productos top), Cotizaciones (PDF, convertir a venta), Devoluciones (3 pasos, ` +
     `restaurar stock), Configuración (métodos de pago: Pago Móvil, Zelle, Binance, ` +
     `USDT, Zinli, Efectivo), Usuarios (cajero/admin), Tu Día (resumen narrativo diario).` +
+    `\n\nCódigo de barras — NO hace falta comprar nada para empezar. Hay dos vías, ` +
+    `ambas soportadas: (1) la cámara del celular, tocando el ícono de escáner en ` +
+    `el POS, que aparece solo desde el móvil; (2) una pistola o lector USB ` +
+    `conectado, que funciona sin configurar nada extra. También puedes escribir el ` +
+    `código a mano. Si te preguntan si se requiere pistola o lector, la respuesta ` +
+    `es NO: con la cámara del celular alcanza, el lector es opcional.` +
     `\n\nPrecios en USD siempre. Tasa BCV automática en cada venta.` +
     `\nNo reemplaza facturación SENIAT — la complementa.` +
-    `\nSi no sabes la respuesta, di: "Para eso te recomiendo contactar soporte por WhatsApp."` +
+    `\n\nNUNCA inventes nombres de botones, menús o pantallas que no estén en el ` +
+    `contexto de arriba. Si no sabes la respuesta exacta, di: "Para eso te ` +
+    `recomiendo contactar soporte por WhatsApp."` +
     `\nSolo respondes sobre ActivoPOS y el negocio — no sobre temas externos.` +
     `\n\nDatos reales del negocio hoy:\n${context}`
 
   try {
-    // Modelo propio del bot: 70b sigue mejor el tuteo venezolano y los nombres
-    // reales de los modulos que el 8b del blog. Sin la env var cae al default.
+    // Modelo propio del bot, elegido POR LATENCIA contra el corte de 12s que hace
+    // ayuda-bot.ts. Medido 2026-07-19 contra NIM:
+    //   meta/llama-3.3-70b-instruct          262.1s  -> el cliente aborta SIEMPRE
+    //   nvidia/llama-3.3-nemotron-super-49b   3.7-7.0s
+    //   meta/llama-3.1-8b-instruct             1.2s  (mas rapido, redaccion peor)
+    // El 70b da mejores respuestas pero nunca llega: el bot quedaba en fachada,
+    // cayendo siempre al fallback de reglas con el badge "IA" invisible.
+    // El fallback se fija aca y no se delega al default de callBlogLlm: si falta
+    // NVIDIA_CHAT_MODEL en el VPS, el bot NO debe caer al 8b del blog en silencio.
     const text = await callBlogLlm(body.message, {
       system: systemPrompt,
-      model:  process.env.NVIDIA_CHAT_MODEL,
+      model:  process.env.NVIDIA_CHAT_MODEL || 'nvidia/llama-3.3-nemotron-super-49b-v1',
     })
     return NextResponse.json({ ok: true, response: text.trim() })
   } catch (err) {

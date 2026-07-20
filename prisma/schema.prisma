@@ -121,6 +121,10 @@ enum QuotationStatus {
   accepted
   rejected
   expired
+  // Cobrada: la venta que nació de esta cotización se pagó. Lo escribe
+  // sales/[id]/pay dentro de la transacción del cobro. La UI ya mostraba el
+  // rótulo "Cobrada" desde antes, pero el valor no existía en la DB.
+  converted
 }
 
 enum ReturnStatus {
@@ -400,6 +404,10 @@ model Sale {
   client_id          Int?
   client_name        String?    @db.VarChar(120)
   client_phone       String?    @db.VarChar(20)
+  // Origen del ticket cuando nace de una cotización convertida. Es el único
+  // vínculo real Sale→Quotation: antes solo quedaba el texto en notes, que no
+  // sirve para marcar la cotización como Cobrada al confirmar el pago.
+  quotation_id       Int?
   notes              String?    @db.Text
   accounting_date    DateTime?  @db.Date
   sold_at            DateTime?
@@ -417,12 +425,14 @@ model Sale {
   cashier       User          @relation("SaleCashier", fields: [cashier_id], references: [id])
   client        Client?       @relation(fields: [client_id], references: [id])
   discount_auth User?         @relation("SaleDiscountAuth", fields: [discount_auth_by], references: [id])
+  quotation     Quotation?    @relation(fields: [quotation_id], references: [id])
   items         SaleItem[]
   payments      SalePayment[]
   abonos        SaleAbono[]
   returns       Return[]
   order         Order?
 
+  @@index([quotation_id])
   @@map("sales")
 }
 
@@ -723,6 +733,7 @@ model Quotation {
   business Business        @relation(fields: [business_id], references: [id])
   client   Client?         @relation(fields: [client_id], references: [id])
   items    QuotationItem[]
+  sales    Sale[]
 
   @@index([business_id])
   @@map("quotations")

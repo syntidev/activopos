@@ -191,6 +191,19 @@ export async function PATCH(
         await tx.inventoryEntry.createMany({ data: inventoryDeductions })
       }
 
+      // Cotización cobrada. Va adentro del $transaction: si el cobro se cae, la
+      // cotización no puede quedar marcada como Cobrada sin venta detrás. Se
+      // escribe acá y no vía PATCH /api/quotations/[id] porque ese endpoint no
+      // acepta 'converted' y un fetch a otra ruta quedaría fuera de la
+      // transacción. updateMany filtra por business_id y no explota si la
+      // cotización ya no existe.
+      if (sale.quotation_id) {
+        await tx.quotation.updateMany({
+          where: { id: sale.quotation_id, business_id: session.businessId },
+          data:  { status: 'converted' },
+        })
+      }
+
       await tx.activityLog.create({
         data: {
           business_id: session.businessId,

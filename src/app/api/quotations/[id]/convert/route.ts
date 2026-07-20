@@ -42,7 +42,7 @@ export async function POST(_req: NextRequest, { params }: Context) {
   // Validación (fuera del $transaction) → tenant layer
   const quotation = await db.quotation.findFirst({
     where:   { id }, // business_id inyectado por el tenant layer
-    include: { items: true },
+    include: { items: true, client: { select: { name: true, phone: true } } },
   })
 
   if (!quotation) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })
@@ -127,10 +127,17 @@ export async function POST(_req: NextRequest, { params }: Context) {
           ticket_number: 'DRAFT',
           status:        'draft',
           origin:        'quote',
+          // Vínculo real con la cotización: al confirmar el pago, el POS la
+          // marca como Cobrada leyendo este campo (sales/[id]/pay).
+          quotation_id:  quotation.id,
           total_usd,
           total_bs:      r2(total_usd * rate),
           rate_used:     rate,
           client_id:     quotation.client_id,
+          // Sin nombre y teléfono el POS muestra el ticket sin cliente aunque
+          // el id esté puesto: el ticket lee estos campos, no la relación.
+          client_name:   quotation.client?.name ?? null,
+          client_phone:  quotation.client?.phone ?? null,
           sold_at:       null,
           notes:         `Cotización ${quotation.number}`,
           items:         { create: items },

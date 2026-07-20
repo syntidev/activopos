@@ -36,6 +36,9 @@ interface ApiDraft {
   id:           number
   ticket_number:string
   notes:        string | null
+  client_id:    number | null
+  client_name:  string | null
+  client_phone: string | null
   items:        ApiDraftItem[]
 }
 
@@ -59,9 +62,12 @@ function draftToTicketState(draft: ApiDraft, rate: number, ivaPct: number): Tick
       variant_label:      '',
       precio_extra_usd:   0,
     })),
-    client_id:           null,
-    client_name:         '',
-    client_phone:        '',
+    // El draft guarda el cliente (una cotización convertida lo trae desde
+    // quotations/[id]/convert). Descartarlo obligaba al cajero a volver a
+    // elegirlo, y una venta a crédito sin cliente no se puede cobrar.
+    client_id:           draft.client_id,
+    client_name:         draft.client_name ?? '',
+    client_phone:        draft.client_phone ?? '',
     notes:               draft.notes ?? '',
     discount_global_pct: 0,
     cargo_global_pct:    0,

@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
@@ -89,7 +89,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CatalogoPage({ params }: PageProps) {
   const business = await getBusiness(params.slug)
-  if (!business) notFound()
+  if (!business) redirect('/catalogo/no-disponible')
 
   // SEC: bypass del plan-gate solo para el propio negocio — super_admin ve cualquiera
   // (acceso global, igual que el resto del sistema); admin solo el suyo.
@@ -98,7 +98,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     session?.role === 'super_admin' ||
     (session?.role === 'admin' && session.businessId === business.id)
 
-  if (!isOwnerPreview && !isCatalogLive(business)) notFound()
+  if (!isOwnerPreview && !isCatalogLive(business)) redirect('/catalogo/no-disponible')
 
   const [products, rate, stockEntries, paymentMethods, dbCategories] = await Promise.all([
     prisma.product.findMany({

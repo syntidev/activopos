@@ -28,7 +28,8 @@ export async function GET() {
     )
 
     const headers = [
-      'nombre', 'precio_usd', 'costo_usd', 'stock', 'categoria', 'product_type', 'unit_label',
+      'id', 'nombre', 'barcode', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
+      'product_type', 'sale_mode', 'unit_label',
       'wholesale_price_usd', 'wholesale_price_per_kg_usd', 'location', 'notes',
     ]
 
@@ -37,7 +38,11 @@ export async function GET() {
       // para que un producto por peso también pase la validación al reimportar.
       const precio = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
       return [
+        // El id hace que reimportar este archivo ACTUALICE en vez de duplicar.
+        p.id,
         p.name,
+        p.barcode ?? '',
+        p.sku ?? '',
         precio,
         p.cost_per_unit_usd != null ? Number(p.cost_per_unit_usd) : '',
         // Clamp a ≥0: el net puede ser negativo (producto sobrevendido), pero el
@@ -46,6 +51,7 @@ export async function GET() {
         Math.max(0, stockMap.get(p.id) ?? 0),
         p.category?.name ?? '',
         p.product_type,
+        p.sale_mode,
         p.base_unit_label,
         p.wholesale_price_usd != null ? Number(p.wholesale_price_usd) : '',
         p.wholesale_price_per_kg_usd != null ? Number(p.wholesale_price_per_kg_usd) : '',
@@ -56,8 +62,9 @@ export async function GET() {
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
     ws['!cols'] = [
-      { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 18 }, { wch: 14 },
-      { wch: 12 }, { wch: 20 }, { wch: 24 }, { wch: 22 }, { wch: 24 },
+      { wch:  6 }, { wch: 25 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
+      { wch:  8 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 20 },
+      { wch: 24 }, { wch: 22 }, { wch: 24 },
     ]
 
     const wb = XLSX.utils.book_new()

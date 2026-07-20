@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, FileText, X, Check, ChevronRight, FileDown,
-  Send, Trash2, MessageCircle, Pencil,
+  Send, Trash2, MessageCircle, Pencil, MoreHorizontal,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { normalizePhone } from '@/lib/utils'
@@ -30,6 +31,16 @@ interface Quotation {
     id?: number; product_id?: number | null;
     name: string; qty: number; price_usd: number; total_usd?: number;
   }>;
+}
+
+/* ── Menú de acciones secundarias ── */
+
+interface MenuAction {
+  key:     string
+  label:   string
+  icon:    ReactNode
+  run:     () => void
+  danger?: boolean
 }
 
 /* ── Status helpers ── */
@@ -93,6 +104,21 @@ function CotizacionesContent() {
   const [loading, setLoading]       = useState(true)
   const [filter, setFilter]         = useState('')
   const [busy, setBusy]             = useState<number | null>(null)
+  const [menuId, setMenuId]         = useState<number | null>(null)
+
+  // Un solo listener global mientras haya menú abierto: click afuera o Escape
+  // lo cierran. Sin esto el menú queda pegado al navegar por la tabla.
+  useEffect(() => {
+    if (menuId === null) return
+    const close = () => setMenuId(null)
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuId(null) }
+    document.addEventListener('click', close)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuId])
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -173,6 +199,40 @@ function CotizacionesContent() {
     }
   }
 
+  // Acciones que van al menú "···". Aceptada/Rechazada viven en draft y sent
+  // porque el flujo real no siempre pasa por "Enviada": el dueño acuerda de
+  // palabra y marca Aceptada desde el borrador.
+  function secondaryActions(q: Quotation): MenuAction[] {
+    const acts: MenuAction[] = []
+    if (q.status === 'draft') {
+      acts.push({
+        key: 'send', label: 'Enviar',
+        icon: <Send size={13} aria-hidden="true" />,
+        run: () => handleStatus(q, 'sent', 'Enviada'),
+      })
+    }
+    if (q.status === 'draft' || q.status === 'sent') {
+      acts.push({
+        key: 'accept', label: 'Aceptada',
+        icon: <Check size={13} aria-hidden="true" />,
+        run: () => handleStatus(q, 'accepted', 'Aceptada'),
+      })
+      acts.push({
+        key: 'reject', label: 'Rechazada',
+        icon: <X size={13} aria-hidden="true" />,
+        run: () => handleStatus(q, 'rejected', 'Rechazada'),
+      })
+    }
+    if (q.status === 'draft') {
+      acts.push({
+        key: 'delete', label: 'Eliminar', danger: true,
+        icon: <Trash2 size={13} aria-hidden="true" />,
+        run: () => handleDelete(q),
+      })
+    }
+    return acts
+  }
+
   return (
     <div className={`${styles.page} page-container`}>
       <div className={styles.pageHeader}>
@@ -221,8 +281,8 @@ function CotizacionesContent() {
             <table className={styles.table} aria-label="Cotizaciones">
               <thead className={styles.thead}>
                 <tr>
-                  <th className={styles.th}>Número</th>
-                  <th className={`${styles.th} ${styles.thHidden}`}>Cliente</th>
+                  <th className={`${styles.th} ${styles.colNumero}`}>Número</th>
+                  <th className={styles.th}>Cliente</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Ítems</th>
                   <th className={`${styles.th} ${styles.thNum}`}>Total USD</th>
                   <th className={`${styles.th} ${styles.thNum} ${styles.thHidden}`}>Total Bs</th>
@@ -235,10 +295,10 @@ function CotizacionesContent() {
               <tbody>
                 {quotations.map(q => (
                   <tr key={q.id} className={styles.tr}>
-                    <td className={styles.td} data-label="Número">
+                    <td className={`${styles.td} ${styles.colNumero}`} data-label="Número">
                       <span className={styles.quotNum}>{q.number}</span>
                     </td>
-                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Cliente">
+                    <td className={styles.td} data-label="Cliente">
                       {q.client
                         ? <span className={styles.clientName}>{q.client.name}</span>
                         : <span className={styles.muted}>—</span>}
@@ -269,67 +329,18 @@ function CotizacionesContent() {
                     </td>
                     <td className={`${styles.td} ${styles.tdAction}`} data-label="Acciones">
                       <div className={styles.actionsRow}>
-                        {/* Acciones por estado. El flujo real no siempre pasa por
-                            "Enviada": el dueño acuerda de palabra y marca Aceptada
-                            desde el borrador. Por eso Aceptada/Rechazada viven en
-                            draft y sent. PDF y WhatsApp NO aparecen en borrador:
-                            todavía no es un documento para mandarle al cliente. */}
-                        {q.status === 'draft' && (
-                          <>
-                            <button
-                              className={styles.miniBtn}
-                              onClick={() => router.push(`/cotizaciones/${q.id}/editar`)}
-                              disabled={busy === q.id}
-                              type="button"
-                              aria-label={`Editar cotización ${q.number}`}
-                            >
-                              <Pencil size={12} aria-hidden="true" />
-                              Editar
-                            </button>
-                            <button
-                              className={styles.miniBtn}
-                              onClick={() => handleStatus(q, 'sent', 'Enviada')}
-                              disabled={busy === q.id}
-                              type="button"
-                            >
-                              <Send size={12} aria-hidden="true" />
-                              Enviar
-                            </button>
-                          </>
-                        )}
-
-                        {(q.status === 'draft' || q.status === 'sent') && (
-                          <>
-                            <button
-                              className={`${styles.miniBtn} ${styles.miniOk}`}
-                              onClick={() => handleStatus(q, 'accepted', 'Aceptada')}
-                              disabled={busy === q.id}
-                              type="button"
-                            >
-                              <Check size={12} aria-hidden="true" />
-                              Aceptada
-                            </button>
-                            <button
-                              className={`${styles.miniBtn} ${styles.miniNo}`}
-                              onClick={() => handleStatus(q, 'rejected', 'Rechazada')}
-                              disabled={busy === q.id}
-                              type="button"
-                            >
-                              <X size={12} aria-hidden="true" />
-                              Rechazada
-                            </button>
-                          </>
-                        )}
-
+                        {/* Primarios: lo que el dueño hace todos los días. El resto
+                            vive en el menú "···" para que la fila no tenga 5 botones. */}
                         {q.status === 'draft' && (
                           <button
-                            className={`${styles.miniBtn} ${styles.miniNo}`}
-                            onClick={() => handleDelete(q)}
+                            className={styles.miniBtn}
+                            onClick={() => router.push(`/cotizaciones/${q.id}/editar`)}
                             disabled={busy === q.id}
                             type="button"
-                            aria-label={`Eliminar cotización ${q.number}`}
+                            aria-label={`Editar cotización ${q.number}`}
                           >
-                            <Trash2 size={12} aria-hidden="true" />
+                            <Pencil size={12} aria-hidden="true" />
+                            Editar
                           </button>
                         )}
 
@@ -339,16 +350,18 @@ function CotizacionesContent() {
                             onClick={() => handleConvert(q)}
                             disabled={busy === q.id}
                             type="button"
-                            aria-label={`Convertir cotización ${q.number} a venta`}
+                            aria-label={`Cobrar cotización ${q.number}`}
                           >
                             {busy === q.id
                               ? <span className={styles.spinnerSm} aria-hidden="true" />
                               : <Check size={12} aria-hidden="true" />}
-                            Convertir a venta
+                            Cobrar
                             {busy !== q.id && <ChevronRight size={12} aria-hidden="true" />}
                           </button>
                         )}
 
+                        {/* PDF y WhatsApp NO aparecen en borrador: todavía no es un
+                            documento para mandarle al cliente. */}
                         {q.status !== 'draft' && (
                           <>
                             <button
@@ -371,6 +384,39 @@ function CotizacionesContent() {
                               <MessageCircle size={14} aria-hidden="true" />
                             </button>
                           </>
+                        )}
+
+                        {secondaryActions(q).length > 0 && (
+                          <div className={styles.menuWrap} onClick={e => e.stopPropagation()}>
+                            <button
+                              className={styles.menuBtn}
+                              onClick={() => setMenuId(prev => prev === q.id ? null : q.id)}
+                              disabled={busy === q.id}
+                              type="button"
+                              aria-haspopup="menu"
+                              aria-expanded={menuId === q.id}
+                              aria-label={`Más acciones para ${q.number}`}
+                            >
+                              <MoreHorizontal size={14} aria-hidden="true" />
+                            </button>
+                            {menuId === q.id && (
+                              <ul className={styles.menu} role="menu">
+                                {secondaryActions(q).map(a => (
+                                  <li key={a.key} role="none">
+                                    <button
+                                      role="menuitem"
+                                      type="button"
+                                      className={`${styles.menuItem} ${a.danger ? styles.menuItemDanger : ''}`}
+                                      onClick={() => { setMenuId(null); a.run() }}
+                                    >
+                                      {a.icon}
+                                      {a.label}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>

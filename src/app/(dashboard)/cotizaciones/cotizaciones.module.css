@@ -57,7 +57,13 @@
   box-shadow: var(--shadow-elevation);
 }
 
-.tableWrap { overflow-x: auto; }
+/* overflow visible, no auto: el menú "···" es position:absolute y un contenedor
+   con overflow lo recortaría. La tabla ya no lo necesita — abajo de 768px pasa
+   a cards, y arriba de eso su min-width de 640px siempre entra. */
+.tableWrap { overflow: visible; }
+
+/* QUO-2026-0005 en una sola línea. */
+.colNumero { min-width: 120px; white-space: nowrap; }
 
 .table { width: 100%; table-layout: auto; min-width: 640px; border-collapse: collapse; }
 
@@ -647,6 +653,67 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Menú de acciones secundarias ── */
+
+.menuWrap { position: relative; display: inline-flex; }
+
+.menuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.menuBtn:hover:not(:disabled) { background: var(--color-surface-2); }
+.menuBtn:focus-visible { outline: var(--focus-ring); }
+.menuBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: var(--z-sticky);
+  min-width: 168px;
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevation);
+}
+
+.menuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.menuItem:hover { background: var(--color-surface-2); }
+.menuItem:focus-visible { outline: var(--focus-ring); }
+
+.menuItemDanger { color: var(--color-danger-text); }
+.menuItemDanger:hover { background: var(--color-danger-subtle); }
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .fieldRow2 { grid-template-columns: 1fr; }
@@ -658,8 +725,31 @@
 .tdHidden { display: table-cell; }
 .thHidden { }
 
-@media (max-width: 639px) {
+@media (max-width: 767px) {
   .tdHidden, .thHidden { display: none !important; }
+
+  /* La card muestra número, cliente, total USD, estado y acciones. El resto
+     (ítems, total Bs, válida hasta, fecha) va oculto con tdHidden. */
+  .colNumero { min-width: 0; }
+
+  /* Acciones apiladas: en una fila de 5 botones no entra nada legible. */
+  .actionsRow {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    width: 100%;
+    padding-top: var(--space-2);
+  }
+
+  .tdAction { width: auto; white-space: normal; }
+  .tdAction::before { display: none; }
+
+  .actionsRow > button,
+  .menuWrap,
+  .menuWrap > .menuBtn { width: 100%; }
+
+  .menu { left: 0; right: 0; }
 
   .table { display: block; min-width: unset; width: 100%; }
   .thead { display: none; }

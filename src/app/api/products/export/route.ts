@@ -27,10 +27,13 @@ export async function GET() {
       stockAgg.map(s => [s.product_id, Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0)])
     )
 
+    // Mismas cabeceras en español que emite import-excel/template. El import
+    // acepta además los nombres viejos en inglés, así que los archivos que el
+    // cliente ya tenga descargados siguen subiendo sin cambios.
     const headers = [
-      'id', 'nombre', 'barcode', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
-      'product_type', 'sale_mode', 'unit_label',
-      'wholesale_price_usd', 'wholesale_price_per_kg_usd', 'location', 'notes',
+      'id', 'nombre', 'codigo_barras', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
+      'tipo_producto', 'modo_venta', 'unidad',
+      'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
     ]
 
     const rows = products.map(p => {

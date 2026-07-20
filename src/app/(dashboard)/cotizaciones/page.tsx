@@ -76,7 +76,7 @@ function whatsappUrl(q: Quotation): string {
   const msg =
     `Hola ${q.client?.name ?? ''}, te comparto la cotización ${q.number}:\n` +
     `Total: $${q.total_usd.toFixed(2)} USD${validez}\n` +
-    `Escríbeme para recibir el PDF de tu cotización.`
+    `Te envío el PDF por este chat.`
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 }
 
@@ -269,27 +269,11 @@ function CotizacionesContent() {
                     </td>
                     <td className={`${styles.td} ${styles.tdAction}`} data-label="Acciones">
                       <div className={styles.actionsRow}>
-                        {/* PDF y WhatsApp: disponibles en todos los estados */}
-                        <button
-                          className={styles.pdfBtn}
-                          onClick={() => window.open(`/api/quotations/${q.id}/pdf`, '_blank')}
-                          type="button"
-                          aria-label={`Descargar PDF de cotización ${q.number}`}
-                        >
-                          <FileDown size={14} aria-hidden="true" />
-                        </button>
-                        <button
-                          className={styles.waBtn}
-                          onClick={() => window.open(whatsappUrl(q), '_blank', 'noopener')}
-                          type="button"
-                          aria-label={`Enviar cotización ${q.number} por WhatsApp`}
-                          title={q.client?.phone
-                            ? `Enviar a ${q.client.name}`
-                            : 'Sin teléfono — WhatsApp abre sin destinatario'}
-                        >
-                          <MessageCircle size={14} aria-hidden="true" />
-                        </button>
-
+                        {/* Acciones por estado. El flujo real no siempre pasa por
+                            "Enviada": el dueño acuerda de palabra y marca Aceptada
+                            desde el borrador. Por eso Aceptada/Rechazada viven en
+                            draft y sent. PDF y WhatsApp NO aparecen en borrador:
+                            todavía no es un documento para mandarle al cliente. */}
                         {q.status === 'draft' && (
                           <>
                             <button
@@ -311,19 +295,10 @@ function CotizacionesContent() {
                               <Send size={12} aria-hidden="true" />
                               Enviar
                             </button>
-                            <button
-                              className={`${styles.miniBtn} ${styles.miniNo}`}
-                              onClick={() => handleDelete(q)}
-                              disabled={busy === q.id}
-                              type="button"
-                              aria-label={`Eliminar cotización ${q.number}`}
-                            >
-                              <Trash2 size={12} aria-hidden="true" />
-                            </button>
                           </>
                         )}
 
-                        {q.status === 'sent' && (
+                        {(q.status === 'draft' || q.status === 'sent') && (
                           <>
                             <button
                               className={`${styles.miniBtn} ${styles.miniOk}`}
@@ -346,6 +321,18 @@ function CotizacionesContent() {
                           </>
                         )}
 
+                        {q.status === 'draft' && (
+                          <button
+                            className={`${styles.miniBtn} ${styles.miniNo}`}
+                            onClick={() => handleDelete(q)}
+                            disabled={busy === q.id}
+                            type="button"
+                            aria-label={`Eliminar cotización ${q.number}`}
+                          >
+                            <Trash2 size={12} aria-hidden="true" />
+                          </button>
+                        )}
+
                         {q.status === 'accepted' && (
                           <button
                             className={styles.convertBtn}
@@ -360,6 +347,30 @@ function CotizacionesContent() {
                             Convertir a venta
                             {busy !== q.id && <ChevronRight size={12} aria-hidden="true" />}
                           </button>
+                        )}
+
+                        {q.status !== 'draft' && (
+                          <>
+                            <button
+                              className={styles.pdfBtn}
+                              onClick={() => window.open(`/api/quotations/${q.id}/pdf`, '_blank')}
+                              type="button"
+                              aria-label={`Descargar PDF de cotización ${q.number}`}
+                            >
+                              <FileDown size={14} aria-hidden="true" />
+                            </button>
+                            <button
+                              className={styles.waBtn}
+                              onClick={() => window.open(whatsappUrl(q), '_blank', 'noopener')}
+                              type="button"
+                              aria-label={`Enviar cotización ${q.number} por WhatsApp`}
+                              title={q.client?.phone
+                                ? `Enviar a ${q.client.name}`
+                                : 'Sin teléfono — WhatsApp abre sin destinatario'}
+                            >
+                              <MessageCircle size={14} aria-hidden="true" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

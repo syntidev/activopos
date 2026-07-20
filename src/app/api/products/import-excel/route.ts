@@ -75,7 +75,9 @@ function validateRow(
   if (!name) return { error: { row: rowNum, message: 'Columna "nombre" es requerida' } }
   if (name.length > 120) return { error: { row: rowNum, message: '"nombre" supera 120 caracteres' } }
 
-  const barcode = toString(raw['barcode'] ?? raw['Código de barras'] ?? '') || null
+  // Cada campo acepta 3 nombres: el español de la plantilla actual, el inglés
+  // de las plantillas viejas y el rótulo con tildes que emitía el export.
+  const barcode = toString(raw['codigo_barras'] ?? raw['barcode'] ?? raw['Código de barras'] ?? '') || null
   if (barcode !== null && barcode.length > 50) {
     return { error: { row: rowNum, message: '"barcode" supera 50 caracteres' } }
   }
@@ -104,44 +106,50 @@ function validateRow(
   const catRaw = toString(raw['categoria'] ?? raw['Categoría'] ?? '')
   const category = catRaw || null
 
-  const ptRaw = toString(raw['product_type'] ?? raw['Tipo'] ?? 'simple').toLowerCase()
+  const ptRaw = toString(raw['tipo_producto'] ?? raw['product_type'] ?? raw['Tipo'] ?? 'simple').toLowerCase()
   const product_type: ProductTypeLiteral = VALID_PRODUCT_TYPES.includes(ptRaw as ProductTypeLiteral)
     ? (ptRaw as ProductTypeLiteral)
     : 'simple'
 
   // sale_mode inválido se rechaza en vez de degradarse a 'unit': un producto por
   // peso creado como unit no se puede cobrar fraccionado en el POS.
-  const smRaw = toString(raw['sale_mode'] ?? raw['Modo de venta'] ?? 'unit').toLowerCase() || 'unit'
+  // La plantilla en español escribe "unidad"/"peso"/"servicio"; la DB guarda los
+  // literales en inglés. Se aceptan ambos para no romper archivos viejos.
+  const SALE_MODE_ES: Record<string, SaleModeLiteral> = {
+    unidad: 'unit', peso: 'weight', servicio: 'service',
+  }
+  const smInput = toString(raw['modo_venta'] ?? raw['sale_mode'] ?? raw['Modo de venta'] ?? 'unit').toLowerCase() || 'unit'
+  const smRaw   = SALE_MODE_ES[smInput] ?? smInput
   if (!VALID_SALE_MODES.includes(smRaw as SaleModeLiteral)) {
-    return { error: { row: rowNum, message: `"sale_mode" inválido — usa: ${VALID_SALE_MODES.join(', ')}` } }
+    return { error: { row: rowNum, message: `"modo_venta" inválido — usa: unidad, peso, servicio` } }
   }
   const sale_mode = smRaw as SaleModeLiteral
 
-  const unit_label = toString(raw['unit_label'] ?? raw['Unidad'] ?? 'und') || 'und'
+  const unit_label = toString(raw['unidad'] ?? raw['unit_label'] ?? raw['Unidad'] ?? 'und') || 'und'
   if (unit_label.length > 20) {
     return { error: { row: rowNum, message: '"unit_label" supera 20 caracteres' } }
   }
 
   // Campos opcionales — solo se validan/incluyen si vienen con valor.
-  const whUnitRaw = raw['wholesale_price_usd'] ?? raw['Precio Mayorista USD']
+  const whUnitRaw = raw['precio_mayorista_usd'] ?? raw['wholesale_price_usd'] ?? raw['Precio Mayorista USD']
   const wholesale_price_usd = whUnitRaw !== undefined && toString(whUnitRaw) !== '' ? toNum(whUnitRaw) : null
   if (wholesale_price_usd !== null && wholesale_price_usd < 0) {
     return { error: { row: rowNum, message: '"wholesale_price_usd" debe ser ≥ 0' } }
   }
 
-  const whKgRaw = raw['wholesale_price_per_kg_usd'] ?? raw['Precio Mayorista Kg USD']
+  const whKgRaw = raw['precio_mayorista_kg_usd'] ?? raw['wholesale_price_per_kg_usd'] ?? raw['Precio Mayorista Kg USD']
   const wholesale_price_per_kg_usd = whKgRaw !== undefined && toString(whKgRaw) !== '' ? toNum(whKgRaw) : null
   if (wholesale_price_per_kg_usd !== null && wholesale_price_per_kg_usd < 0) {
     return { error: { row: rowNum, message: '"wholesale_price_per_kg_usd" debe ser ≥ 0' } }
   }
 
-  const locRaw = toString(raw['location'] ?? raw['Ubicación'] ?? '')
+  const locRaw = toString(raw['ubicacion'] ?? raw['location'] ?? raw['Ubicación'] ?? '')
   const location = locRaw || null
   if (location !== null && location.length > 120) {
     return { error: { row: rowNum, message: '"location" supera 120 caracteres' } }
   }
 
-  const notesRaw = toString(raw['notes'] ?? raw['Notas'] ?? '')
+  const notesRaw = toString(raw['notas'] ?? raw['notes'] ?? raw['Notas'] ?? '')
   const notes = notesRaw || null
 
   return {
@@ -186,7 +194,13 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer())
   const workbook = XLSX.read(buffer)
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const rows = XLSX.utils.sheet_to_json(sheet) as Record<string, unknown>[]
+  const allRows = XLSX.utils.sheet_to_json(sheet) as Record<string, unknown>[]
+
+  // La plantilla trae una fila de ejemplo marcada con id = EJEMPLO. Se descarta
+  // antes de validar: si el usuario no la borra no queremos crearle un producto
+  // fantasma, y tampoco reportársela como error (no es culpa suya).
+  const rows = allRows.filter(r =>
+    String(r['id'] ?? r['ID'] ?? '').trim().toUpperCase() !== 'EJEMPLO')
 
   if (rows.length === 0) {
     return NextResponse.json({ error: 'El archivo está vacío' }, { status: 400 })

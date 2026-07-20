@@ -12,15 +12,24 @@ export async function GET() {
     // Mantener sincronizado con validateRow (import-excel) y export/route.ts
     // para round-trip sin fricción.
     const headers = [
-      'id', 'nombre', 'barcode', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
-      'product_type', 'sale_mode', 'unit_label',
-      'wholesale_price_usd', 'wholesale_price_per_kg_usd', 'location', 'notes',
+      'id', 'nombre', 'codigo_barras', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
+      'tipo_producto', 'modo_venta', 'unidad',
+      'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
     ]
 
-    // Hoja "Productos" SIN filas de ejemplo: el import lee la primera hoja y
-    // cualquier fila de datos acá terminaría creada en el catálogo del cliente.
-    // Los ejemplos viven en la hoja "Instrucciones", que el import ignora.
-    const ws = XLSX.utils.aoa_to_sheet([headers])
+    // La fila de ejemplo va en la hoja "Productos" para que se vea al abrir el
+    // archivo, pero lleva id = EJEMPLO y el import la descarta antes de validar
+    // (import-excel/route.ts). Sin ese seguro, al usuario que no la borre se le
+    // crearía un producto fantasma en su catálogo.
+    const example = [
+      'EJEMPLO', 'Arepa con Pollo', '', 'AREPA-001', 3.50, 1.50, 50, 'Alimentos',
+      'simple', 'unidad', 'und', '', '', 'Mostrador', 'Producto estrella del negocio',
+    ]
+    const ws = XLSX.utils.aoa_to_sheet([headers, example])
+
+    // xlsx 0.18 (community) ignora los estilos al escribir: el resaltado amarillo
+    // no es posible sin cambiar de librería. El comentario sí viaja en el archivo.
+    ws['A2'] = { ...ws['A2'], c: [{ a: 'ActivoPOS', t: 'Borra esta fila antes de importar' }] }
 
     // Column widths
     ws['!cols'] = [
@@ -45,26 +54,27 @@ export async function GET() {
       ['Columna', 'Obligatoria', 'Valores válidos', 'Ejemplo'],
       ['id', 'No', 'Vacío = crear producto nuevo. Con ID = actualizar ese producto.', ''],
       ['nombre', 'Sí', 'Texto, máx 120 caracteres', 'Harina de maíz 1kg'],
-      ['barcode', 'No', 'Texto, máx 50. No puede repetirse entre productos.', '7591234567890'],
+      ['codigo_barras', 'No', 'Texto, máx 50. No puede repetirse entre productos.', '7591234567890'],
       ['sku', 'No', 'Texto, máx 50 — tu código interno', 'HAR-001'],
       ['precio_usd', 'Sí', 'Número ≥ 0. Punto o coma decimal.', '1.20'],
       ['costo_usd', 'No', 'Número ≥ 0. Vacío = sin costo registrado.', '0.85'],
       ['stock', 'No', 'Número ≥ 0. Vacío = 0. Al actualizar, es la existencia final deseada.', '40'],
       ['categoria', 'No', 'Texto. Si no existe, se crea sola.', 'Víveres'],
-      ['product_type', 'No', 'simple | combo | fabricable — por defecto: simple', 'simple'],
-      ['sale_mode', 'No', 'unit | weight | service — por defecto: unit', 'weight'],
-      ['unit_label', 'No', 'Texto, máx 20 — por defecto: und', 'kg'],
-      ['wholesale_price_usd', 'No', 'Número ≥ 0 — precio al mayor por unidad', '1.05'],
-      ['wholesale_price_per_kg_usd', 'No', 'Número ≥ 0 — precio al mayor por kilo', '0.95'],
-      ['location', 'No', 'Texto, máx 120', 'Pasillo 2, Estante A'],
-      ['notes', 'No', 'Texto libre', 'Producto de temporada'],
+      ['tipo_producto', 'No', 'simple | combo | fabricable — por defecto: simple', 'simple'],
+      ['modo_venta', 'No', 'unidad | peso | servicio — por defecto: unidad', 'peso'],
+      ['unidad', 'No', 'Texto, máx 20 — und, kg, lt, m… por defecto: und', 'kg'],
+      ['precio_mayorista_usd', 'No', 'Número ≥ 0 — precio al mayor por unidad', '1.05'],
+      ['precio_mayorista_kg_usd', 'No', 'Número ≥ 0 — precio al mayor por kilo', '0.95'],
+      ['ubicacion', 'No', 'Texto, máx 120', 'Pasillo 2, Estante A'],
+      ['notas', 'No', 'Texto libre', 'Producto de temporada'],
       [],
       ['Cómo llenar la plantilla'],
-      ['1. Escribe tus productos en la hoja "Productos", debajo de los encabezados.'],
-      ['2. Deja la columna "id" VACÍA — el sistema asigna el ID al crear el producto.'],
-      ['3. ¿Vendes por peso (kg, gramos)? Pon sale_mode = weight, si no no vas a poder'],
+      ['1. Borra la fila de ejemplo (la que dice EJEMPLO en la columna "id").'],
+      ['2. Escribe tus productos en la hoja "Productos", debajo de los encabezados.'],
+      ['3. Deja la columna "id" VACÍA — el sistema asigna el ID al crear el producto.'],
+      ['4. ¿Vendes por peso (kg, gramos)? Pon modo_venta = peso, si no no vas a poder'],
       ['   cobrar fracciones como 0,75 kg en el punto de venta.'],
-      ['4. Máximo 1000 filas y 5 MB por archivo.'],
+      ['5. Máximo 1000 filas y 5 MB por archivo.'],
       [],
       ['Cómo ACTUALIZAR productos que ya tienes'],
       ['1. Descarga tu catálogo con el botón "Exportar" — ya viene con los IDs.'],

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Search, Plus, Minus, Trash2, X, User, Calendar,
-  Package, Save, Send, Loader2, PackagePlus, UserPlus,
+  Package, Save, Send, Loader2, PackagePlus, UserPlus, Percent,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { useHardwareScanner } from '@/hooks/useHardwareScanner'
@@ -268,12 +268,15 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
 
   const [productSearch, setProductSearch] = useState('')
   const [products, setProducts]           = useState<Product[]>([])
+  const [recent, setRecent]               = useState<Product[]>([])
   const [searching, setSearching]         = useState(false)
 
   const [clientSearch, setClientSearch] = useState('')
   const [clientSugg, setClientSugg]     = useState<Client[]>([])
   const [showClientDD, setShowClientDD] = useState(false)
 
+  // Ítems con el campo de descuento desplegado a mano (clic en el botón).
+  const [discountOpen, setDiscountOpen]     = useState<string[]>([])
   const [showNewProduct, setShowNewProduct] = useState(false)
   const [showNewClient, setShowNewClient]   = useState(false)
 
@@ -339,6 +342,14 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
     return () => { alive = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quotationId])
+
+  /* ── Recientes: el panel izquierdo no arranca vacío ── */
+  useEffect(() => {
+    fetch('/api/products/search?q=&limit=8')
+      .then(r => r.ok ? r.json() as Promise<{ products?: Product[] }> : { products: [] })
+      .then(d => setRecent(d.products ?? []))
+      .catch(() => { /* sin recientes: queda la ayuda de búsqueda */ })
+  }, [])
 
   /* ── Búsqueda de productos ── */
   useEffect(() => {
@@ -616,10 +627,33 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
           </div>
         )}
 
+        {productSearch.trim().length < 2 && recent.length > 0 && (
+          <>
+            <h3 className={styles.panelTitle}>Recientes</h3>
+            <ul className={styles.results}>
+              {recent.map(p => (
+                <li key={p.id}>
+                  <button type="button" className={styles.resultCard} onClick={() => addProduct(p)}>
+                    <span className={styles.resultName}>{p.name}</span>
+                    <span className={styles.resultPrice}>
+                      ${(p.price_per_unit_usd ?? 0).toFixed(2)}
+                    </span>
+                    <span className={styles.resultUnit}>{p.base_unit_label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
         {productSearch.trim().length < 2 && (
           <div className={styles.hint}>
-            <Search size={20} strokeWidth={1.25} aria-hidden="true" />
-            <span>Busca un producto por nombre o escanea su código de barras</span>
+            {recent.length === 0 && (
+              <>
+                <Search size={20} strokeWidth={1.25} aria-hidden="true" />
+                <span>Busca un producto por nombre o escanea su código de barras</span>
+              </>
+            )}
             <button type="button" className={styles.ghostBtn} onClick={addFreeItem}>
               <Plus size={13} aria-hidden="true" />
               Agregar ítem libre
@@ -762,16 +796,33 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
                       />
                     </label>
 
-                    <label className={styles.field}>
-                      <span className={styles.label}>Desc. %</span>
-                      <input
-                        type="number"
-                        className={styles.numInput}
-                        value={it.discount_pct}
-                        onChange={e => updateItem(it.key, 'discount_pct', e.target.value)}
-                        min="0" max="100" step="0.01" placeholder="0"
-                      />
-                    </label>
+                    {/* Descuento colapsado: el 99% de los ítems va sin descuento y
+                        el campo solo ensuciaba la fila. Se revela con hover/focus
+                        (CSS) o con el botón, y queda fijo si el valor es > 0. */}
+                    <div className={`${styles.discountSlot} ${
+                      pct(it.discount_pct) > 0 || discountOpen.includes(it.key)
+                        ? styles.discountOpen : ''
+                    }`}>
+                      <button
+                        type="button"
+                        className={styles.discountToggle}
+                        onClick={() => setDiscountOpen(prev => [...prev, it.key])}
+                        aria-label={`Agregar descuento a ${it.name || 'ítem'}`}
+                        title="Descuento"
+                      >
+                        <Percent size={13} aria-hidden="true" />
+                      </button>
+                      <label className={styles.discountField}>
+                        <span className={styles.label}>Desc. %</span>
+                        <input
+                          type="number"
+                          className={styles.numInput}
+                          value={it.discount_pct}
+                          onChange={e => updateItem(it.key, 'discount_pct', e.target.value)}
+                          min="0" max="100" step="0.01" placeholder="0"
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   <div className={styles.itemFoot}>

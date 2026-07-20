@@ -53,19 +53,19 @@ export function buildNarrative(data: TuDiaData): Paragraph[] {
 
   if (salesCount === 0) {
     return [
-      { text: 'Hoy fue un día de preparación.', style: 'main' },
+      { text: 'El día va tranquilo.', style: 'main' },
       {
         text:  `Tu inventario tiene ${productCount} producto${productCount !== 1 ? 's' : ''} listo${productCount !== 1 ? 's' : ''}.`,
         style: 'secondary',
       },
-      { text: 'Mañana es un nuevo día.', style: 'secondary' },
+      { text: 'Lo importante es que tu sistema está listo.', style: 'secondary' },
     ]
   }
 
   const ps: Paragraph[] = []
 
   ps.push({
-    text:  `Hoy atendiste ${salesCount} ${salesCount === 1 ? 'cliente' : 'clientes'}.`,
+    text:  `Llevas ${salesCount} ${salesCount === 1 ? 'cliente atendido' : 'clientes atendidos'}.`,
     style: 'main',
   })
 
@@ -76,12 +76,12 @@ export function buildNarrative(data: TuDiaData): Paragraph[] {
     : 'día normal'
 
   ps.push({
-    text:  `Vendiste ${fmtUsd(totalUsd)} — ${assessment}.`,
+    text:  `Las ventas van en ${fmtUsd(totalUsd)} — ${assessment}.`,
     style: 'main',
   })
 
   if (topProduct) {
-    ps.push({ text: `Tu producto estrella fue ${topProduct}.`, style: 'secondary' })
+    ps.push({ text: `Tu producto estrella es ${topProduct}.`, style: 'secondary' })
   }
 
   if (cxcUsd > 0) {
@@ -92,7 +92,7 @@ export function buildNarrative(data: TuDiaData): Paragraph[] {
     ps.push({ text: `Mañana vence un compromiso por ${fmtUsd(cxcVenceUsd)}.`, style: 'warning' })
   }
 
-  ps.push({ text: 'Cerraste bien.', style: 'closing' })
+  ps.push({ text: 'Tu negocio sigue adelante.', style: 'closing' })
 
   return ps
 }
@@ -106,7 +106,7 @@ const SYSTEM_PROMPT = [
   'Eres el asistente de un negocio venezolano. Generas el resumen diario del',
   'negocio en español venezolano (tuteo), tono cálido y directo. Sin listas,',
   'solo prosa natural. Menciona: ventas del día vs ayer, producto estrella si',
-  'hay, cobros pendientes si los hay. Si fue un día flojo, di algo motivador',
+  'hay, cobros pendientes si los hay. Si el día va flojo, di algo motivador',
   'pero honesto.',
   '',
   'Genera exactamente 3 párrafos separados por línea en blanco.',

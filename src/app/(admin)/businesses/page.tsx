@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { SuspendToggle, ImpersonateButton, BusinessFilters } from '../TenantActions'
+import { SuspendToggle, ImpersonateButton, BusinessFilters, DeleteTenantButton } from '../TenantActions'
 import styles from '../admin.module.css'
 import pageStyles from './businesses.module.css'
 
@@ -149,6 +149,7 @@ export default async function BusinessesPage({ searchParams }: PageProps) {
                   </td>
                   <td>
                     <SuspendToggle tenantId={b.id} active={b.active} />
+                    <DeleteTenantButton tenantId={b.id} tenantName={b.name} />
                   </td>
                 </tr>
               ))}

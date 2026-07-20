@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Search, LogIn } from 'lucide-react'
+import { Search, LogIn, Trash2 } from 'lucide-react'
 import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
 import styles from './admin.module.css'
 
@@ -121,6 +121,54 @@ export function ImpersonateButton({ tenantId, tenantName }: ImpersonateButtonPro
     >
       <LogIn size={14} aria-hidden="true" />
       {loading ? 'Entrando...' : 'Entrar como cliente'}
+    </button>
+  )
+}
+
+interface DeleteTenantButtonProps {
+  tenantId:   number
+  tenantName: string
+}
+
+/* Baja definitiva. El endpoint hace hard delete de todo el tenant y de sus
+ * archivos, así que la confirmación nombra al negocio: en una tabla de 20 filas
+ * un "¿seguro?" genérico no dice cuál se está por borrar. */
+export function DeleteTenantButton({ tenantId, tenantName }: DeleteTenantButtonProps) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  async function handleClick() {
+    if (!confirm(`¿Eliminar "${tenantName}"? Esta acción no se puede deshacer.`)) return
+
+    setLoading(true)
+    try {
+      const res  = await fetch(`/api/admin/tenants/${tenantId}`, { method: 'DELETE' })
+      const data = await res.json() as { error?: string; orphanDirs?: string[] }
+      if (res.ok) {
+        if (data.orphanDirs?.length) {
+          alert(`Negocio eliminado, pero quedaron archivos sin borrar:\n${data.orphanDirs.join('\n')}`)
+        }
+        router.refresh()
+      } else {
+        alert(data.error ?? 'No se pudo eliminar el negocio')
+        setLoading(false)
+      }
+    } catch {
+      alert('Error de conexión')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={`${styles.actionLink} ${styles.actionBtn} ${styles.actionDanger}`}
+      onClick={handleClick}
+      disabled={loading}
+      aria-label={`Eliminar ${tenantName}`}
+    >
+      <Trash2 size={14} aria-hidden="true" />
+      {loading ? 'Eliminando...' : 'Eliminar'}
     </button>
   )
 }

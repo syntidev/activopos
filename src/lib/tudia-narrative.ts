@@ -129,6 +129,13 @@ const SYSTEM_PROMPT = [
   "'el día arrancó tranquilo' en vez de 'se generaron 0 ventas'.",
   '',
   'Si hay CxC pendiente, menciónalo como oportunidad de cobro, no como deuda.',
+  '',
+  'TIEMPO VERBAL — OBLIGATORIO:',
+  'Usa siempre tiempo presente, nunca pasado.',
+  "CORRECTO: 'El día va tranquilo', 'Las ventas van en $8.58',",
+  "'Tienes pendiente cobrar $555', 'El mes lleva...'",
+  "INCORRECTO: 'Hoy fue', 'atendimos', 'sumamos', 'tuvimos'",
+  'El dueño lee esto en medio de su jornada, no al cierre del día.',
 ].join('\n')
 
 /** Solo los datos del negocio — `now` queda fuera a propósito (ver dayKey). */

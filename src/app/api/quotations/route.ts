@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { readCachedBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 const ItemSchema = z.object({
   product_id: z.number().int().positive().optional(),
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     const body = PostSchema.parse(await req.json())
     const bid  = session.businessId
-    const rate = await readCachedBcvRate()
+    const { rate } = await getActiveRate(bid)
     const year = new Date().getFullYear()
 
     const subtotal = body.items.reduce((s, i) => s + i.qty * i.price_usd, 0)

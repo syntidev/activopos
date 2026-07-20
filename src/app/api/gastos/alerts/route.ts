@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { readCachedBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 export async function GET() {
   try {
@@ -10,7 +10,7 @@ export async function GET() {
     const now     = new Date()
     const in5days = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
 
-    const [gastos, rate] = await Promise.all([
+    const [gastos, { rate }] = await Promise.all([
       db.gasto.findMany({
         where: {
           // business_id inyectado por el tenant layer
@@ -20,7 +20,7 @@ export async function GET() {
         orderBy: { due_date: 'asc' },
         take:    50,
       }),
-      readCachedBcvRate(),
+      getActiveRate(session.businessId),
     ])
 
     const r2 = (x: number) => Math.round(x * 100) / 100

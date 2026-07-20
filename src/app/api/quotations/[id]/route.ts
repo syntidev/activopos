@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { prisma } from '@/lib/prisma'
-import { readCachedBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 
 type Context = { params: { id: string } }
 
@@ -112,7 +112,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     const quotation = await prisma.$transaction(async tx => {
       if (body.items) {
         await tx.quotationItem.deleteMany({ where: { quotation_id: id } })
-        const rate     = await readCachedBcvRate()
+        const { rate } = await getActiveRate(session.businessId)
         const subtotal = body.items.reduce((s, i) => s + i.qty * i.price_usd, 0)
         await tx.quotationItem.createMany({
           data: body.items.map(i => ({

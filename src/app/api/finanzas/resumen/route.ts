@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
-import { readCachedBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
 
 type InvRow = {
@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
 
   ])
 
-  const rate          = await readCachedBcvRate()
+  const { rate }      = await getActiveRate(bid)
   const r2            = (x: number) => Math.round(x * 100) / 100
 
   const ventasUsd     = Number(ingresosAgg._sum.total_usd ?? 0)

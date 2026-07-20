@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import { readCachedBcvRate } from './bcv'
+import { getActiveRate } from './bcv'
 import { mkdir, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
@@ -28,7 +28,7 @@ export async function generateMonthlyPDF(
   const monthStart    = new Date(year, month - 1, 1)
   const monthEnd      = new Date(year, month, 1)
 
-  const [business, salesAgg, dailyRaw, rate] = await Promise.all([
+  const [business, salesAgg, dailyRaw, { rate }] = await Promise.all([
     prisma.business.findUniqueOrThrow({
       where:  { id: businessId },
       select: { name: true, phone: true, city: true },
@@ -54,7 +54,7 @@ export async function generateMonthlyPDF(
       GROUP BY day
       ORDER BY day ASC
     `,
-    readCachedBcvRate(),
+    getActiveRate(businessId),
   ])
 
   const { jsPDF } = await import('jspdf') as typeof import('jspdf')

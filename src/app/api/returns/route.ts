@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { readCachedBcvRate } from '@/lib/bcv'
 
 const ItemSchema = z.object({
   product_id: z.number().int().positive(),
@@ -137,7 +136,7 @@ export async function POST(req: NextRequest) {
     }
     const newSaleStatus = isFullReturn ? 'returned' : 'partial_return'
 
-    const rate     = await readCachedBcvRate()
+    const rate     = Number(sale.rate_used)
     const r2       = (x: number) => Math.round(x * 100) / 100
     const totalUsd = r2(body.items.reduce((s, i) => s + i.qty * (priceMap.get(i.product_id) ?? 0), 0))
 

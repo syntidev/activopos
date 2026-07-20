@@ -3,7 +3,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import type { SessionPayload } from '@/lib/auth'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { prisma } from '@/lib/prisma'
-import { readCachedBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 
 type Context = { params: { id: string } }
@@ -50,7 +50,7 @@ export async function POST(_req: NextRequest, { params }: Context) {
   }
 
   const productIds = quotation.items.map(i => i.product_id as number)
-  const rate       = await readCachedBcvRate()
+  const { rate }   = await getActiveRate(session.businessId)
   const r2         = (x: number) => Math.round(x * 100) / 100
 
   try {

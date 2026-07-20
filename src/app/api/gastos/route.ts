@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { readCachedBcvRate } from '@/lib/bcv'
+import { getActiveRate } from '@/lib/bcv'
 import { parsePeriodFromParams } from '@/lib/finanzas'
 
 const CATEGORIAS = [
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     const to              = new Date(year, month, 1)
     const tipo            = sp.get('tipo') // 'fijo' | 'variable'
 
-    const [gastos, rate] = await Promise.all([
+    const [gastos, { rate }] = await Promise.all([
       db.gasto.findMany({
         where: {
           // business_id inyectado por el tenant layer
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         include: { supplier_ref: { select: { id: true, name: true } } },
         orderBy: { fecha: 'desc' },
       }),
-      readCachedBcvRate(),
+      getActiveRate(session.businessId),
     ])
 
     const r2 = (x: number) => Math.round(x * 100) / 100

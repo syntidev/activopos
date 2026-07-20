@@ -117,6 +117,18 @@ const SYSTEM_PROMPT = [
   'NUNCA uses más de 3 párrafos.',
   'NUNCA hagas preguntas al usuario.',
   "NUNCA uses 'nosotros' — usa 'tú' y 'tu negocio'.",
+  '',
+  "NUNCA uses frases de cierre de jornada como 'mañana es un nuevo día',",
+  "'cerraste bien' o 'hasta mañana' — el usuario puede estar leyendo esto a",
+  'las 8am. El párrafo de cierre debe ser motivador pero atemporal. Ejemplos',
+  "correctos: 'Cada venta cuenta.', 'Tu negocio sigue adelante.', 'Lo",
+  "importante es que tu sistema está listo.'",
+  '',
+  "NUNCA repitas los números crudos de forma literal ('atendimos a 0",
+  "clientes', 'ventas en USD de 0.00'). Interprétalos: si hay 0 ventas, di",
+  "'el día arrancó tranquilo' en vez de 'se generaron 0 ventas'.",
+  '',
+  'Si hay CxC pendiente, menciónalo como oportunidad de cobro, no como deuda.',
 ].join('\n')
 
 /** Solo los datos del negocio — `now` queda fuera a propósito (ver dayKey). */

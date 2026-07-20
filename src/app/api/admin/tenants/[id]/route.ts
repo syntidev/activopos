@@ -78,6 +78,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     data: {
       ...(data.active !== undefined ? { active: data.active } : {}),
       ...(data.plan !== undefined ? { catalog_plan: data.plan } : {}),
+      // Subir a negocio_activo enciende el catálogo. El downgrade a gratis NO
+      // lo apaga: el dueño puede haberlo activado por su cuenta.
+      ...(data.plan === 'negocio_activo' ? { catalog_active: true } : {}),
     },
     select: { id: true, active: true, catalog_plan: true },
   })

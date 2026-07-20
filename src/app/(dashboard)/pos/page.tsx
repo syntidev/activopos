@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ShoppingCart, X } from 'lucide-react'
 import { usePOS } from '@/hooks/usePOS'
 import { useDraftTabs } from '@/hooks/useDraftTabs'
@@ -24,7 +25,16 @@ import { useHardwareScanner } from '@/hooks/useHardwareScanner'
 import type { ProductForPOS } from '@/lib/pos'
 import styles from './pos.module.css'
 
+// useSearchParams exige un límite de Suspense para prerender (App Router).
 export default function POSPage() {
+  return (
+    <Suspense fallback={<div className={styles.loadingScreen}><div className={styles.spinner} /></div>}>
+      <POSView />
+    </Suspense>
+  )
+}
+
+function POSView() {
   const pos = usePOS()
   const { toast } = useToast()
   const [weightProduct, setWeightProduct] = useState<ProductForPOS | null>(null)
@@ -57,7 +67,19 @@ export default function POSPage() {
   const isEmpty = ticketVacio(pos.ticket)
   const itemCount = pos.ticket.items.length
 
-  const drafts = useDraftTabs(pos.rate, 0)
+  const drafts = useDraftTabs(pos.rate, 0, useSearchParams().get('draft'))
+
+  // El ticket vive en usePOS, las pestañas en useDraftTabs: sin esto el POS
+  // arranca vacío aunque haya drafts restaurados (incluido el de una cotización
+  // convertida). Corre una sola vez, cuando la restauración termina.
+  const hydratedRef = useRef(false)
+  useEffect(() => {
+    if (drafts.loading || hydratedRef.current) return
+    hydratedRef.current = true
+    const active = drafts.tabs.find(t => t.id === drafts.activeId)
+    if (active) pos.setTicketDirect(active.snapshot)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts.loading, drafts.activeId])
 
   useHardwareScanner({
     enabled: pos.cajaStatus === 'open',

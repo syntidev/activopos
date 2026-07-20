@@ -77,7 +77,7 @@ function whatsappUrl(q: Quotation): string {
   const msg =
     `Hola ${q.client?.name ?? ''}, te comparto la cotización ${q.number}:\n` +
     `Total: $${q.total_usd.toFixed(2)} USD${validez}\n` +
-    `Te envío el PDF adjunto.`
+    `Escríbeme para recibir el PDF de tu cotización.`
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 }
 

@@ -127,7 +127,9 @@ interface UseDraftTabsResult {
   paymentComplete: () => Promise<TicketState>
 }
 
-export function useDraftTabs(rate: number, ivaPct: number): UseDraftTabsResult {
+// preferredId: id de draft a activar al montar (viene de /pos?draft=N). Si no
+// existe entre los restaurados, se cae al primero.
+export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string | null): UseDraftTabsResult {
   const [tabs,     setTabs]     = useState<DraftTab[]>([])
   const [activeId, setActiveId] = useState('')
   const [loading,  setLoading]  = useState(true)
@@ -152,7 +154,10 @@ export function useDraftTabs(rate: number, ivaPct: number): UseDraftTabsResult {
             snapshot: draftToTicketState(d, rate, ivaPct),
           }))
           setTabs(restored)
-          setActiveId(restored[0].id)
+          const preferred = preferredId
+            ? restored.find(t => t.id === preferredId)
+            : undefined
+          setActiveId((preferred ?? restored[0]).id)
         } else {
           const fresh   = limpiarTicket(rate, ivaPct)
           const created = await postDraft()

@@ -69,8 +69,19 @@ function statusClass(status: string) {
  * va sin enlace y el negocio adjunta el PDF a mano. Para incluir el enlace hace
  * falta una ruta pública con token, que hoy no existe.
  */
+// wa.me exige código de país. Los teléfonos se guardan como los escribe el
+// negocio: 0414-1234567, +58 412 1234567, 4141234567. Sin 58 al frente el
+// enlace abre un chat con un número inexistente.
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  if (!digits) return ''            // sin teléfono: wa.me/ abre sin destinatario
+  if (digits.startsWith('0'))  return '58' + digits.slice(1)
+  if (digits.startsWith('58')) return digits
+  return '58' + digits
+}
+
 function whatsappUrl(q: Quotation): string {
-  const phone = (q.client?.phone ?? '').replace(/\D/g, '')
+  const phone = normalizePhone(q.client?.phone ?? '')
   const validez = q.valid_until
     ? `\nVálida hasta: ${fmtDate(q.valid_until)}`
     : ''

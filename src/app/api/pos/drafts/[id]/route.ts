@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
+import { redactSaleForRole } from '@/lib/redact'
 
 const patchItemSchema = draftItemSchema.extend({
   unit_price_override: z.number().positive().optional(),
@@ -133,7 +134,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       })
     })
 
-    return NextResponse.json({ ok: true, draft })
+    return NextResponse.json({ ok: true, draft: redactSaleForRole(draft, session.role) })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })

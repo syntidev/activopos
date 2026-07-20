@@ -5,6 +5,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
+import { redactSaleForRole } from '@/lib/redact'
 
 const MAX_DRAFTS = 5
 
@@ -26,7 +27,12 @@ export async function GET() {
       take:    MAX_DRAFTS,
     })
 
-    return NextResponse.json({ ok: true, drafts })
+    // El POS lo llama al montar con el usuario en sesion: sin redactar, el
+    // cajero recibiria el costo de cada item en cada carga de pantalla.
+    return NextResponse.json({
+      ok: true,
+      drafts: drafts.map(d => redactSaleForRole(d, session.role)),
+    })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
     throw e
@@ -120,7 +126,7 @@ export async function POST(req: NextRequest) {
       })
     })
 
-    return NextResponse.json({ ok: true, draft }, { status: 201 })
+    return NextResponse.json({ ok: true, draft: redactSaleForRole(draft, session.role) }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })

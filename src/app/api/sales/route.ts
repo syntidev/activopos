@@ -7,6 +7,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { createNotification } from '@/lib/notifications'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
+import { redactSaleForRole } from '@/lib/redact'
 
 const saleItemSchema = z.object({
   product_id:          z.number().int().positive(),
@@ -539,7 +540,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, sale }, { status: 201 })
+    // El cajero cierra ventas desde el POS: la respuesta no debe traerle el costo.
+    return NextResponse.json({ ok: true, sale: redactSaleForRole(sale, session.role) }, { status: 201 })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(

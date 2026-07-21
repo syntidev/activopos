@@ -103,6 +103,39 @@ const CATEGORIES = [
       },
     ],
   },
+  {
+    label: 'Funciones específicas',
+    items: [
+      {
+        q: '¿Puedo vender por kilo?',
+        a: 'Sí. ActivoPOS tiene modo de venta por peso con steppers en kg. Ideal para carnicerías, charcuterías y negocios de víveres.',
+      },
+      {
+        q: '¿Funciona con pistola lectora de código de barras?',
+        a: 'Sí. Conecta tu pistola USB y funciona automáticamente sin configurar nada. También puedes escanear con la cámara del celular — sin comprar hardware.',
+      },
+      {
+        q: '¿Puedo importar mis productos desde Excel?',
+        a: 'Sí. Descarga la plantilla, llena tus productos y súbela. Hasta 1000 productos en una sola importación.',
+      },
+      {
+        q: '¿El cajero puede ver mis ganancias?',
+        a: 'No. El rol de Cajero no tiene acceso a costos, utilidades ni finanzas. Solo ve lo que necesita para vender.',
+      },
+      {
+        q: '¿El catálogo funciona sin que el cliente descargue una app?',
+        a: 'Sí. El catálogo es una página web pública. Tu cliente entra desde el link o el QR, ve los productos y hace el pedido por WhatsApp. Sin apps, sin cuentas, sin complicaciones.',
+      },
+      {
+        q: '¿Puedo hacer cotizaciones?',
+        a: 'Sí. Creas la cotización, la envías por WhatsApp con un clic, y cuando el cliente acepta la conviertes en venta directamente. Todo queda registrado.',
+      },
+      {
+        q: '¿Qué métodos de pago acepta?',
+        a: 'Pago Móvil, Zelle, Binance, USDT, Zinli, Efectivo USD y Bs. Puedes cobrar con varios métodos en una misma venta.',
+      },
+    ],
+  },
 ]
 
 /* ─────────────────────────────────────────────────────────

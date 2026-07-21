@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Users, Pencil, History, Trash2, Search, UserPlus, ChevronUp, ChevronDown } from 'lucide-react'
+import { Users, Pencil, History, Trash2, Search, UserPlus, ChevronUp, ChevronDown, Wallet, BadgeDollarSign } from 'lucide-react'
+import { normalizePhone } from '@/lib/utils'
+import { buildPaymentMessage } from '@/lib/payments'
 import { Button }      from '@/components/ui/Button'
 import { Badge }       from '@/components/ui/Badge'
 import { EmptyState }  from '@/components/ui/EmptyState'
@@ -74,6 +76,29 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
     setClients((prev) => prev.map((x) => (x.id === c.id ? { ...x, ...c } : x)))
     setEditTarget(null)
     toast('Cliente actualizado.', 'success')
+  }
+
+  // Abre WhatsApp con datos de cobro (modo 'datos') o recordatorio de deuda
+  // (modo 'deuda'). Trae cobro_data del negocio bajo demanda: no hace falta
+  // cargarlo para toda la tabla si el dueño abre una sola conversación.
+  const handleCobroMessage = async (client: ClientRecord, mode: 'datos' | 'deuda') => {
+    try {
+      const res = await fetch('/api/payment-methods/cobro')
+      if (!res.ok) { toast('No se pudieron cargar tus datos de cobro.', 'error'); return }
+      const data = await res.json() as {
+        cobro_data: unknown; acceptsCash?: boolean
+      }
+      const msg = buildPaymentMessage(data.cobro_data as Record<string, unknown> | null, {
+        mode,
+        clientName:  client.name,
+        cxcUsd:      client.pending_balance_usd,
+        acceptsCash: data.acceptsCash,
+      })
+      const phone = normalizePhone(client.phone ?? '')
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer')
+    } catch {
+      toast('Error al generar el mensaje.', 'error')
+    }
   }
 
   const handleDelete = async (client: ClientRecord) => {
@@ -235,6 +260,24 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
                     </td>
                     <td className={`${styles.td} ${styles.tdRight} ${styles.tdHidden}`} data-label="Acciones">
                       <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className={styles.actionBtn}
+                          onClick={() => handleCobroMessage(client, 'datos')}
+                          title="Enviar datos de cobro"
+                          aria-label={`Enviar datos de cobro a ${client.name}`}
+                        >
+                          <Wallet size={15} strokeWidth={1.75} />
+                        </button>
+                        {client.pending_balance_usd > 0 && (
+                          <button
+                            className={styles.actionBtn}
+                            onClick={() => handleCobroMessage(client, 'deuda')}
+                            title="Cobrar deuda"
+                            aria-label={`Cobrar deuda a ${client.name}`}
+                          >
+                            <BadgeDollarSign size={15} strokeWidth={1.75} />
+                          </button>
+                        )}
                         <button
                           className={styles.actionBtn}
                           onClick={() => setHistorialId(client.id)}

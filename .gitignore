@@ -59,3 +59,4 @@ pos-*.png
 
 # Carpeta temporal de referencia (Socialia / OpenCarrusel) — contiene .env.local de terceros
 TempSocialia/
+scripts/_out/

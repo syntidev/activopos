@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateCopy } from '@/lib/social/gemini'
 import { generateBackground } from '@/lib/social/image'
+import { generateBackgroundGemini } from '@/lib/social/gemini-image'
 import { composeSlide } from '@/lib/social/compose'
 import { uploadImage } from '@/lib/social/cloudinary'
 import { generateHtmlContent } from '@/lib/social/html-generator'
@@ -134,8 +135,19 @@ export async function POST(req: NextRequest) {
       }
       assets = []
       for (let index = 0; index < slides.length; index++) {
-        const slide      = slides[index]
-        const background = await generateBackground(slide.escena, body.nicho, body.aspect, direction)
+        const slide = slides[index]
+        // Gemini (dirección de arte) como motor principal; NVIDIA FLUX como
+        // fallback automático si Gemini falla — sin perder lo que ya funcionaba.
+        // slideRole queda undefined en post/story (1 imagen) → preset aleatorio.
+        let background: Buffer
+        try {
+          background = await generateBackgroundGemini({
+            escena: slide.escena, nicho: body.nicho, aspect: body.aspect, direction, slideIndex: index,
+          })
+        } catch (err) {
+          console.error('Gemini imagen falló, fallback a NVIDIA:', err)
+          background = await generateBackground(slide.escena, body.nicho, body.aspect, direction)
+        }
         const composed   = await composeSlide({
           background, titulo: slide.titulo, subtitulo: slide.subtitulo,
           formato: body.tipo, aspect: body.aspect,

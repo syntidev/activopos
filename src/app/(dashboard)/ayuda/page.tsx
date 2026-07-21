@@ -24,6 +24,10 @@ import {
   RotateCw,
   ExternalLink,
   ChevronRight,
+  FileText,
+  ShoppingBag,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { HelpModal } from '@/components/help/HelpModal'
@@ -60,6 +64,12 @@ const HELP_CARDS: HelpCard[] = [
     keywords: ['venta', 'pos', 'cobrar', 'pago', 'descuento', 'crédito', 'ticket'],
   },
   {
+    icon: FileText,
+    title: 'Cotizaciones',
+    description: 'Presupuestos con PDF, envío por WhatsApp y conversión a venta.',
+    keywords: ['cotizacion', 'cotizaciones', 'presupuesto', 'pdf', 'item libre', 'convertir a venta'],
+  },
+  {
     icon: RotateCcw,
     title: 'Devoluciones',
     description: 'Procesamiento de reintegros e historial filtrable.',
@@ -84,6 +94,12 @@ const HELP_CARDS: HelpCard[] = [
     keywords: ['catalogo', 'catálogo', 'qr', 'enlace', 'tienda en linea', 'pedidos', 'digital'],
   },
   {
+    icon: ShoppingBag,
+    title: 'Pedidos',
+    description: 'Kanban de pedidos del catálogo: recibido, preparando, listo, despachado.',
+    keywords: ['pedido', 'pedidos', 'kanban', 'recibido', 'preparando', 'despachado', 'catalogo pedido'],
+  },
+  {
     icon: Wallet,
     title: 'Gestión de Caja',
     description: 'Control del efectivo en la tienda o negocio.',
@@ -94,6 +110,18 @@ const HELP_CARDS: HelpCard[] = [
     title: 'Finanzas',
     description: 'Cobranza, CxP, cobros parciales e ingresos/gastos.',
     keywords: ['finanzas', 'cobranza', 'gasto', 'ingreso', 'deuda', 'cobro'],
+  },
+  {
+    icon: TrendingUp,
+    title: 'Analytics',
+    description: 'Pulso del negocio: comparativas, tendencias y mejor día de venta.',
+    keywords: ['analytics', 'pulso', 'tendencia', 'comparativa', 'mejor dia', 'trimestre'],
+  },
+  {
+    icon: Sparkles,
+    title: 'Tu Día',
+    description: 'Resumen diario generado con IA: ventas, producto estrella y cobros.',
+    keywords: ['tu dia', 'resumen', 'ia', 'producto estrella', 'resumen diario'],
   },
   {
     icon: Truck,
@@ -122,8 +150,8 @@ const HELP_CARDS: HelpCard[] = [
 ]
 
 /* ── Help modal ──
-   Fuente única de contenido: los 13 títulos de HELP_CARDS mapean 1:1 a
-   los 13 módulos de helpContent (src/lib/help-content.ts) — un solo
+   Fuente única de contenido: los 17 títulos de HELP_CARDS mapean 1:1 a
+   los 17 módulos de helpContent (src/lib/help-content.ts) — un solo
    componente de modal (components/help/HelpModal.tsx) para toda la app,
    sin versión local duplicada. */
 
@@ -131,10 +159,14 @@ const TITLE_TO_MODULE: Record<string, HelpModule> = {
   'Productos':        'productos',
   'Inventario':       'inventario',
   'Ventas (POS)':     'pos',
+  'Cotizaciones':     'cotizaciones',
   'Devoluciones':     'devoluciones',
   'Clientes':         'clientes',
   'Reportes':         'reportes',
+  'Analytics':        'analytics',
+  'Tu Día':           'tu-dia',
   'Catálogo Digital': 'catalogo',
+  'Pedidos':          'pedidos',
   'Gestión de Caja':  'caja',
   'Finanzas':         'finanzas',
   'Proveedores':      'proveedores',

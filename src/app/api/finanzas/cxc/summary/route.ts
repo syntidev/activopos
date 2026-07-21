@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { checkPlanLimit } from '@/lib/plan-guard'
+import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 
 const DAYS_VENCER = 7
 const DAYS_LEGACY = 30
@@ -10,7 +10,7 @@ export async function GET() {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
     const planGate = await checkPlanLimit('access_finanzas')
-    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
+    if (!planGate.allowed) return planDenied(planGate.reason)
 
     const sales = await db.sale.findMany({
       where:   { status: 'credit' }, // business_id inyectado por el tenant layer

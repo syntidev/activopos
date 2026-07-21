@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-import { checkPlanLimit } from '@/lib/plan-guard'
+import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/
 
@@ -34,7 +34,7 @@ export async function PATCH(request: Request) {
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
   const planCheck = await checkPlanLimit('access_theme')
-  if (!planCheck.allowed) return NextResponse.json({ error: planCheck.reason }, { status: 403 })
+  if (!planCheck.allowed) return planDenied(planCheck.reason)
 
   const body: unknown = await request.json()
 

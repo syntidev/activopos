@@ -1,6 +1,20 @@
+import { NextResponse } from 'next/server'
 import { PLAN_LIMITS, PLAN_DISPLAY, type PlanTier } from './plan-limits'
 import { getAuthenticatedTenant } from './tenant'
 import { prisma } from './prisma'
+
+/**
+ * Respuesta 403 estándar de plan gate. El `code: 'PLAN_LIMIT'` es el
+ * discriminador que el frontend (usePlanGate) usa para distinguir un paywall
+ * real de un 403 de rol ({ error: 'Sin permiso' }) — sin él, un cajero sin
+ * permiso vería el modal de upgrade, que no le resuelve nada.
+ */
+export function planDenied(reason?: string): NextResponse {
+  return NextResponse.json(
+    { error: reason ?? 'Función no disponible en tu plan.', code: 'PLAN_LIMIT' },
+    { status: 403 },
+  )
+}
 
 export type PlanAction =
   | 'create_product' | 'create_user' | 'access_catalog' | 'access_ai'

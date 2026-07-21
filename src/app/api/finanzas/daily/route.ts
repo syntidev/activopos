@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
-import { checkPlanLimit } from '@/lib/plan-guard'
+import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 
 const monthSchema = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/)
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
   const planGate = await checkPlanLimit('access_finanzas')
-  if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
+  if (!planGate.allowed) return planDenied(planGate.reason)
 
   const monthStr = req.nextUrl.searchParams.get('month') ?? new Date().toISOString().slice(0, 7)
   if (!monthSchema.safeParse(monthStr).success) {

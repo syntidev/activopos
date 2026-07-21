@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { checkPlanLimit } from '@/lib/plan-guard'
+import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 
 const r2 = (n: number) => Math.round(n * 100) / 100
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
     const planGate = await checkPlanLimit('access_finanzas')
-    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
+    if (!planGate.allowed) return planDenied(planGate.reason)
 
     const fromParam   = req.nextUrl.searchParams.get('from')
     const toParam     = req.nextUrl.searchParams.get('to')

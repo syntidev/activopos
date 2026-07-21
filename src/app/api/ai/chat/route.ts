@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { aiChatLimiter } from '@/lib/rate-limit'
-import { checkPlanLimit } from '@/lib/plan-guard'
+import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { callBlogLlm, ProviderError } from '@/lib/blog/llm'
 
 const chatSchema = z.object({
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   if (session.role === 'cashier') return NextResponse.json({ error: 'Solo administradores pueden usar el asistente.' }, { status: 403 })
 
   const planCheck = await checkPlanLimit('access_ai')
-  if (!planCheck.allowed) return NextResponse.json({ error: planCheck.reason }, { status: 403 })
+  if (!planCheck.allowed) return planDenied(planCheck.reason)
 
   try {
     await aiChatLimiter.consume(`user:${session.userId}`)

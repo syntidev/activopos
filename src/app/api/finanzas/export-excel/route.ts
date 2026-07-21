@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { checkPlanLimit } from '@/lib/plan-guard'
+import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 
 const dateStr   = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido')
 const rangeSchema = z.object({ from: dateStr, to: dateStr }).superRefine((data, ctx) => {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
     const planGate = await checkPlanLimit('access_export')
-    if (!planGate.allowed) return NextResponse.json({ error: planGate.reason }, { status: 403 })
+    if (!planGate.allowed) return planDenied(planGate.reason)
 
     const sp     = req.nextUrl.searchParams
     const parsed = rangeSchema.safeParse({ from: sp.get('from'), to: sp.get('to') })

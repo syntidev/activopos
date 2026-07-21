@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { checkPlanLimit } from '@/lib/plan-guard'
+import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { getActiveRate } from '@/lib/bcv'
 import { z } from 'zod'
 
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
     }
 
     const planCheck = await checkPlanLimit('create_product')
-    if (!planCheck.allowed) return NextResponse.json({ error: planCheck.reason }, { status: 403 })
+    if (!planCheck.allowed) return planDenied(planCheck.reason)
 
     // Filas de variante a crear. variant_combinations (multi-dimensión) tiene
     // prioridad: tipo = tipos combinados ("talla+color"), valor = combination_key

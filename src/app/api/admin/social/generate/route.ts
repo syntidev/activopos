@@ -113,6 +113,8 @@ export async function POST(req: NextRequest) {
     let caption: string
     let hashtags: string[]
     let contentEngine: string
+    // Fondos crudos para el editor (post/story). Vacío en carrusel (HTML, no edita).
+    let backgroundUrls: string[] = []
 
     if (body.tipo === 'carrusel') {
       // Fase B+C: HTML renderizado a PNG.
@@ -137,6 +139,10 @@ export async function POST(req: NextRequest) {
         personaje: body.personaje, lugar: body.lugar, accion: body.accion,
       }
       assets = []
+      // Fondos crudos (sin overlay) por slide. NO se persisten — SocialAsset no
+      // tiene columna para esto; viajan en la respuesta para que el editor
+      // re-selle en la misma sesión. Recargar la página pierde la edición (Fase B v1).
+      const bgUrls: string[] = []
       for (let index = 0; index < slides.length; index++) {
         const slide = slides[index]
         // Gemini (dirección de arte) como motor principal; NVIDIA FLUX como
@@ -152,16 +158,24 @@ export async function POST(req: NextRequest) {
           console.error('Gemini imagen falló, fallback a NVIDIA:', err)
           background = await generateBackground(slide.escena, body.nicho, body.aspect, direction)
         }
-        const composed   = await composeSlide({
-          background, titulo: slide.titulo, subtitulo: slide.subtitulo,
-          formato: body.tipo, aspect: body.aspect,
-        })
+        // Opción A: se sella con posiciones default (comportamiento de siempre) Y
+        // se sube el fondo crudo aparte, para que el editor pueda re-sellar con
+        // override sin regenerar la imagen con IA. bgUrl viaja en la respuesta.
+        const [composed, bgUrl] = await Promise.all([
+          composeSlide({
+            background, titulo: slide.titulo, subtitulo: slide.subtitulo,
+            formato: body.tipo, aspect: body.aspect,
+          }).then(uploadImage),
+          uploadImage(background, 'image/png'),
+        ])
+        bgUrls.push(bgUrl)
         assets.push({
-          orden: index, imagen_url: await uploadImage(composed),
+          orden: index, imagen_url: composed,
           titulo: slide.titulo, subtitulo: slide.subtitulo,
         })
       }
       caption = copy.caption; hashtags = copy.hashtags; contentEngine = 'diffusion'
+      backgroundUrls = bgUrls
     }
 
     const updated = await prisma.socialPost.update({
@@ -178,7 +192,7 @@ export async function POST(req: NextRequest) {
       include: { assets: { orderBy: { orden: 'asc' } } },
     })
 
-    return NextResponse.json({ ok: true, post: updated }, { status: 201 })
+    return NextResponse.json({ ok: true, post: updated, background_urls: backgroundUrls }, { status: 201 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error desconocido'
     console.error('Social generate error:', err)

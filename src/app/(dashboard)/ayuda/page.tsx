@@ -208,6 +208,30 @@ const BOT_RULES: BotRule[] = [
   { keywords: ['kds','cocina','kitchen','pantalla cocina'], response: 'El KDS (Kitchen Display System) es una pantalla para cocina o despacho que muestra los pedidos en tiempo real. Se activa en Configuración → Módulos Opcionales. Ideal para restaurantes y cafeterías.' },
   { keywords: ['ticket','imprimir','impresora','termica','58mm'], response: 'ActivoPOS genera tickets térmicos para impresoras de 58mm. Después de cada cobro, toca "Imprimir ticket".' },
   { keywords: ['pwa','instalar','app','movil','celular'], response: 'ActivoPOS funciona como app en tu celular. En Chrome, toca el menú → "Instalar app" o "Agregar a pantalla de inicio". No necesitas descargarlo de ninguna tienda de apps.' },
+
+  // 14. Cotizaciones — sin cobertura previa
+  { keywords: ['cotizacion','cotizaciones','cotizar','presupuesto'], response: 'En Cotizaciones creas una propuesta con el mismo editor del POS, puedes agregar ítems libres que no están en tu catálogo, y descargar el PDF o enviarlo por WhatsApp. Cuando el cliente acepta, "Convertir a venta" abre el POS con todo precargado para cobrar.' },
+
+  // 15. Devoluciones — sin cobertura previa
+  { keywords: ['devolucion','devoluciones','devolver','reintegro'], response: 'En Devoluciones busca el ticket, selecciona los ítems que se devuelven (no tiene que ser la venta completa) y confirma con un motivo. Puedes elegir si el stock se restaura o no. Solo administradores pueden aprobar devoluciones.' },
+
+  // 16. Analytics / Pulso del negocio — sin cobertura previa
+  { keywords: ['analytics','pulso del negocio','tendencia','comparativa','mejor dia'], response: 'Analytics (Pulso del Negocio) compara tus ventas por Semana, Mes o Trimestre contra el período anterior, muestra qué productos están subiendo o bajando y cuál es tu mejor día de la semana.' },
+
+  // 17. Tu Día — sin cobertura previa
+  { keywords: ['tu dia','resumen del dia','resumen diario'], response: 'Tu Día te da un resumen narrativo generado con IA de cómo va tu negocio hoy: ventas vs ayer, tu producto estrella del mes y alertas de cobros pendientes. Se actualiza cada 2 horas.' },
+
+  // 18. Métodos de cobro — sin cobertura previa como tema propio
+  { keywords: ['datos de cobro','como me pagan','configurar pago movil','configurar zelle'], response: 'Configura tus datos de cobro en Configuración → Métodos de pago: banco, teléfono, cédula y titular para Pago Móvil; email y titular para Zelle; wallet o ID para Binance/USDT. Esos datos se reutilizan automáticamente en Pedidos, Cotizaciones y Clientes.' },
+
+  // 19. Importación Excel — sin cobertura previa
+  { keywords: ['importar excel','importacion masiva','plantilla excel','migracion'], response: 'En Productos usa el botón Migración para importar productos masivamente desde Excel — descarga la plantilla primero si es tu primera vez. También puedes exportar tu catálogo completo a Excel desde el mismo botón.' },
+
+  // 20. Variantes combinadas — sin cobertura previa
+  { keywords: ['combinacion de variantes','generador de variantes','talla y color','sabor y tamaño'], response: 'Cuando un producto tiene más de un tipo de variante (ej. talla + color, o sabor + tamaño), el generador automático crea todas las combinaciones posibles y les asigna stock individual — no tienes que crearlas una por una.' },
+
+  // 21. Venta por peso — sin cobertura previa como tema propio
+  { keywords: ['venta por peso','vender por kilo','producto por peso','kilogramos'], response: 'Para vender por peso, marca el producto como tipo "Peso" al crearlo. En el POS, en vez de cantidad entera, ingresas los kilos con decimales — útil para carnicería, víveres o charcutería.' },
 ]
 
 /* ── Chatbot panel ── */

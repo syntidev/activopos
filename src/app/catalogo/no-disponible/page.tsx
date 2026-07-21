@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { ShoppingBag } from 'lucide-react'
 import styles from './page.module.css'
 
@@ -12,11 +11,18 @@ export const metadata: Metadata = {
 export default function CatalogoNoDisponiblePage() {
   return (
     <main className={styles.root}>
-      <img
-        src="/activopos-logo-flat-negative.svg"
-        alt="ActivoPOS"
-        className={styles.logo}
-      />
+      <span className={styles.brand} aria-label="ActivoPOS">
+        <img
+          src="/activopos-logo-negative.svg"
+          alt=""
+          aria-hidden="true"
+          className={styles.logoMark}
+        />
+        <span className={styles.logoWord} aria-hidden="true">
+          <span className={styles.logoA}>Activo</span>
+          <span className={styles.logoB}>POS</span>
+        </span>
+      </span>
 
       <span className={styles.iconWrap} aria-hidden="true">
         <ShoppingBag size={48} strokeWidth={1.5} />
@@ -30,9 +36,9 @@ export default function CatalogoNoDisponiblePage() {
       <div className={styles.separator} aria-hidden="true" />
 
       <p className={styles.ctaQuestion}>¿Tienes un negocio en Venezuela?</p>
-      <Link href="/registro" className={styles.ctaButton}>
+      <a href="https://activopos.com" className={styles.ctaButton}>
         Crea tu catálogo gratis →
-      </Link>
+      </a>
 
       <p className={styles.legal}>
         ActivoPOS — El POS para negocios que andan activos.

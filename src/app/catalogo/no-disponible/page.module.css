@@ -11,11 +11,31 @@
   text-align: center;
 }
 
-.logo {
-  height: 32px;
-  width: auto;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-6);
 }
+
+.logoMark {
+  height: 32px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.logoWord {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-extrabold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.logoA { color: var(--color-white); }
+.logoB { color: var(--brand-l); }
 
 .iconWrap {
   width: 88px;

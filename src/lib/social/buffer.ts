@@ -59,7 +59,8 @@ async function callBuffer<T>(query: string, variables: Record<string, unknown> =
 export interface CreatePostInput {
   channelId: string
   text:      string
-  imageUrl:  string
+  /** Una o más imágenes (carrusel). En orden: la primera es la portada. */
+  imageUrls: string[]
   /** Instagram exige el tipo en metadata. Default 'post'. */
   igType?:   'post' | 'story' | 'reel'
   /** ISO 8601 UTC. Si viene, se programa (customScheduled); si no, addToQueue. */
@@ -94,7 +95,7 @@ export async function createPost(input: CreatePostInput): Promise<{ id: string; 
     channelId:      input.channelId,
     text:           input.text,
     schedulingType: 'automatic',
-    assets:         [{ image: { url: input.imageUrl } }],
+    assets:         input.imageUrls.map(url => ({ image: { url } })),
     metadata,
     ...(input.dueAt
       ? { mode: 'customScheduled', dueAt: input.dueAt }

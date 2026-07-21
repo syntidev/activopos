@@ -11,7 +11,7 @@ async function main() {
 
   const dueAt = '2027-12-31T12:00:00.000Z'  // programado lejos: NO sale publico
   const text  = 'Test API — borrar (verificacion Fase E ActivoPOS)'
-  const res = await createPost({ channelId: BUFFER_IG_CHANNEL, text, imageUrl, dueAt })
+  const res = await createPost({ channelId: BUFFER_IG_CHANNEL, text, imageUrls: [imageUrl], dueAt })
   console.log('createPost OK -> buffer id:', res.id, '| status:', res.status)
 
   const posts = await getPostsByChannel(BUFFER_IG_CHANNEL)

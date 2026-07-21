@@ -53,10 +53,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'La entrada no tiene un post generado con imagen' }, { status: 400 })
   }
 
-  const post = await prisma.socialPost.findUnique({ where: { id: postId } })
+  const post = await prisma.socialPost.findUnique({
+    where:   { id: postId },
+    include: { assets: { orderBy: { orden: 'asc' } } },
+  })
   if (!post) return NextResponse.json({ error: 'Post no encontrado' }, { status: 404 })
-  if (!post.imagen_url) {
-    return NextResponse.json({ error: 'El post no tiene imagen generada (Fase C pendiente)' }, { status: 400 })
+
+  // Carrusel: cada SocialAsset es una imagen, en orden. Si no hay assets, se cae
+  // a imagen_url (post simple de una sola imagen). Antes solo se enviaba
+  // imagen_url, así que un carrusel llegaba a Buffer con una sola imagen.
+  const mediaUrls = post.assets.length > 0
+    ? post.assets.map(a => a.imagen_url)
+    : post.imagen_url
+      ? [post.imagen_url]
+      : []
+
+  if (mediaUrls.length === 0) {
+    return NextResponse.json({ error: 'El post no tiene imágenes generadas' }, { status: 400 })
   }
 
   const text = buildText(post.caption, post.hashtags)
@@ -74,7 +87,7 @@ export async function POST(req: NextRequest) {
       const result = await createPost({
         channelId: BUFFER_CHANNELS[channel],
         text,
-        imageUrl:  post.imagen_url,
+        imageUrls: mediaUrls,
         dueAt:     body.due_at,
       })
       results.push({ channel, ok: true, buffer_post_id: result.id })

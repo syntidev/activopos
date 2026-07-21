@@ -59,7 +59,7 @@ const HELP_CARDS: HelpCard[] = [
   },
   {
     icon: ShoppingCart,
-    title: 'Ventas (POS)',
+    title: 'Punto de Venta',
     description: 'Contado, crédito, pausar ventas, descuentos y clientes.',
     keywords: ['venta', 'pos', 'cobrar', 'pago', 'descuento', 'crédito', 'ticket'],
   },
@@ -143,7 +143,7 @@ const HELP_CARDS: HelpCard[] = [
   },
   {
     icon: Settings,
-    title: 'Configuraciones',
+    title: 'Configuración',
     description: 'Personalizaciones, monedas y formato de ticket.',
     keywords: ['configuracion', 'tasa', 'bcv', 'ticket', 'tema', 'moneda'],
   },
@@ -158,7 +158,7 @@ const HELP_CARDS: HelpCard[] = [
 const TITLE_TO_MODULE: Record<string, HelpModule> = {
   'Productos':        'productos',
   'Inventario':       'inventario',
-  'Ventas (POS)':     'pos',
+  'Punto de Venta':     'pos',
   'Cotizaciones':     'cotizaciones',
   'Devoluciones':     'devoluciones',
   'Clientes':         'clientes',
@@ -172,7 +172,7 @@ const TITLE_TO_MODULE: Record<string, HelpModule> = {
   'Proveedores':      'proveedores',
   'Compras':          'compras',
   'Usuarios':         'usuarios',
-  'Configuraciones':  'configuracion',
+  'Configuración':  'configuracion',
 }
 
 /* ── Chatbot local fallback ── */

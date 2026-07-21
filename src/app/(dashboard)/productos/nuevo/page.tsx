@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { useProductForm } from '@/hooks/useProductForm'
+import { usePlanGate } from '@/hooks/usePlanGate'
+import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ProductFormLayout } from '@/components/products/ProductFormLayout'
 import { SaveFab } from '@/components/products/SaveFab'
@@ -19,6 +21,7 @@ export default function NuevoProductoPage() {
   const [categories, setCategories] = useState<ModalCategory[]>([])
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [hasCatalogPlan, setHasCatalogPlan] = useState(false)
+  const { guardedFetch, upgradeReason, clearUpgrade } = usePlanGate()
 
   useEffect(() => {
     fetch('/api/plan/check', {
@@ -45,7 +48,7 @@ export default function NuevoProductoPage() {
 
   /* ── Guardar producto — mismo endpoint POST que el modal ── */
   const handleSave = useCallback(async (data: ProductFormData) => {
-    const res = await fetch('/api/products', {
+    const res = await guardedFetch('/api/products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -93,7 +96,7 @@ export default function NuevoProductoPage() {
       throw new Error(err?.error ?? `Error ${res.status}`)
     }
     router.push('/productos')
-  }, [router])
+  }, [router, guardedFetch])
 
   const handleSaveCategory = useCallback(async (name: string, color: string, requiresPreparation: boolean) => {
     const res = await fetch('/api/products/categories', {
@@ -151,6 +154,8 @@ export default function NuevoProductoPage() {
       />
 
       <SaveFab formId={FORM_ID} isSaving={f.isSaving} />
+
+      <UpgradeModal reason={upgradeReason} onClose={clearUpgrade} />
     </div>
   )
 }

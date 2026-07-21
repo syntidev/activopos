@@ -91,6 +91,49 @@
 
 .step:hover { box-shadow: var(--lp-shadow-hover); }
 
+/* ── Guías por módulo — mismo lenguaje de card que .step ── */
+.guidesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.guideCard {
+  padding: 1.5rem;
+  background: var(--mkt-card);
+  border-radius: 20px;
+  box-shadow: var(--lp-shadow-card);
+  transition: box-shadow 200ms ease;
+}
+
+.guideCard:hover { box-shadow: var(--lp-shadow-hover); }
+
+.guideIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--brand-l, #4D7AFF);
+  background: rgba(77, 122, 255, 0.1);
+  margin-bottom: 0.75rem;
+}
+
+.guideTitle {
+  font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--lp-text-h);
+  margin-bottom: 0.35rem;
+}
+
+.guideDesc {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--lp-text-body);
+}
+
 .stepNum {
   font-family: var(--font-display, 'Fraunces', serif);
   font-size: 2rem;
@@ -292,6 +335,7 @@
 
 @media (max-width: 720px) {
   .stepsGrid   { grid-template-columns: 1fr; }
+  .guidesGrid  { grid-template-columns: 1fr; }
   .tabContent  { grid-template-columns: 1fr; }
   .ctaBlock    { flex-direction: column; align-items: flex-start; }
 }

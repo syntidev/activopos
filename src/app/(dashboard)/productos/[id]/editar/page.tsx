@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useProductForm } from '@/hooks/useProductForm'
+import { usePlanGate } from '@/hooks/usePlanGate'
+import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ProductFormLayout } from '@/components/products/ProductFormLayout'
 import { SaveFab } from '@/components/products/SaveFab'
@@ -95,6 +97,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
   const [categories, setCategories]   = useState<ModalCategory[]>([])
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [hasCatalogPlan, setHasCatalogPlan] = useState(false)
+  const { guardedFetch, upgradeReason, clearUpgrade } = usePlanGate()
 
   useEffect(() => {
     fetch('/api/plan/check', {
@@ -145,7 +148,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
 
   /* ── Guardar cambios — PATCH /api/products/[id] (único método update del route) ── */
   const handleSave = useCallback(async (data: ProductFormData) => {
-    const res = await fetch(`/api/products/${productId}`, {
+    const res = await guardedFetch(`/api/products/${productId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -181,7 +184,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
       throw new Error(err?.error ?? `Error ${res.status}`)
     }
     router.push('/productos')
-  }, [productId, router])
+  }, [productId, router, guardedFetch])
 
   const handleSaveCategory = useCallback(async (name: string, color: string, requiresPreparation: boolean) => {
     const res = await fetch('/api/products/categories', {
@@ -255,6 +258,8 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
       {!loading && !loadError && (
         <SaveFab formId={FORM_ID} isSaving={f.isSaving} disabled={!editProduct} />
       )}
+
+      <UpgradeModal reason={upgradeReason} onClose={clearUpgrade} />
     </div>
   )
 }

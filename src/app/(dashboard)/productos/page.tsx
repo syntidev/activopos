@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { HelpButton } from '@/components/help/HelpButton'
+import { usePlanGate } from '@/hooks/usePlanGate'
+import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import {
   Plus,
   Search,
@@ -166,6 +168,7 @@ export default function ProductosPage() {
   const [selectedCategory, setSelectedCategory] = useState('')
 
   /* ── Modal states ── */
+  const { guardedFetch, upgradeReason, clearUpgrade } = usePlanGate()
   const [showProductModal, setShowProductModal] = useState(false)
   const [hasCatalogPlan, setHasCatalogPlan] = useState(false)
 
@@ -293,7 +296,7 @@ export default function ProductosPage() {
     const url    = isEdit ? `/api/products/${editProduct!.id}` : '/api/products'
     const method = isEdit ? 'PATCH' : 'POST'
 
-    const res = await fetch(url, {
+    const res = await guardedFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -346,7 +349,7 @@ export default function ProductosPage() {
     setEditProduct(null)
     await fetchProducts()
     if (!isEdit) await fetchCategories()
-  }, [editProduct, fetchProducts, fetchCategories])
+  }, [editProduct, fetchProducts, fetchCategories, guardedFetch])
 
   /* ── Delete handlers (FIX 2) ── */
   const handleDeleteClick = useCallback((product: Product) => {
@@ -1189,6 +1192,8 @@ export default function ProductosPage() {
         </div>
       )}
       <HelpButton module="productos" />
+
+      <UpgradeModal reason={upgradeReason} onClose={clearUpgrade} />
     </div>
   )
 }

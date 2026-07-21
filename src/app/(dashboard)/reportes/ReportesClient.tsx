@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { UpgradeModal } from '@/components/ui/UpgradeModal'
+import { usePlanGate } from '@/hooks/usePlanGate'
 import { MonthlyReportBanner } from '@/components/reports/MonthlyReportBanner'
 import { VentasPage } from '../ventas/VentasPage'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -162,6 +164,7 @@ function PayBar({ name, totalUsd, maxUsd, totalAll }: PayBarProps) {
 
 function ReporteDiaContent() {
   const { toast } = useToast()
+  const { guardedFetch, upgradeReason, clearUpgrade } = usePlanGate()
   const [date,           setDate]           = useState<string>(todayStr)
   const [data,           setData]           = useState<DailyData | null>(null)
   const [loading,        setLoading]        = useState(false)
@@ -242,8 +245,8 @@ function ReporteDiaContent() {
     try {
       const query    = rangeMode && rangeData ? `from=${rangeData.from}&to=${rangeData.to}` : `date=${date}`
       const filename = rangeMode && rangeData ? `reporte-${rangeData.from}_a_${rangeData.to}.xlsx` : `reporte-${date}.xlsx`
-      const res = await fetch(`/api/reports/export-excel?${query}`)
-      if (!res.ok) { toast('Error al exportar', 'error'); return }
+      const res = await guardedFetch(`/api/reports/export-excel?${query}`)
+      if (!res.ok) { if (res.status !== 403) toast('Error al exportar', 'error'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -451,6 +454,8 @@ function ReporteDiaContent() {
           )}
         </>
       )}
+
+      <UpgradeModal reason={upgradeReason} onClose={clearUpgrade} />
     </div>
   )
 }

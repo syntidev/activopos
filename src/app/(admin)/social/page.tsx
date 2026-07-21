@@ -25,6 +25,17 @@ const POST_ASPECTS: { value: Aspect; label: string; hint: string }[] = [
 const STORY_ASPECT: Aspect = '9:16'
 const DEFAULT_POST_ASPECT: Aspect = '4:5'
 
+// Presets de color del motor de imagen (gemini-image.ts). '' = automático, deja
+// que el sistema elija por rol de slide. El swatch es solo indicativo del fondo.
+const PRESET_OPTIONS: { value: string; label: string; swatch: string; desc: string }[] = [
+  { value: '',              label: 'Automático',    swatch: 'linear-gradient(135deg, #0D1B2E, #0038BD, #EF8E01)', desc: 'El sistema elige' },
+  { value: 'NAVY_TECH',     label: 'Navy Tech',     swatch: '#0D1B2E', desc: 'Profesional, energía SaaS' },
+  { value: 'SKY_LIGHT',     label: 'Sky Light',     swatch: '#7AA2FF', desc: 'Fresco, luz de día' },
+  { value: 'WARM_SAND',     label: 'Warm Sand',     swatch: '#E8D3A8', desc: 'Cálido, sol venezolano' },
+  { value: 'VIBRANT_AMBER', label: 'Vibrant Amber', swatch: '#EF8E01', desc: 'Alta energía, impacto' },
+  { value: 'CLEAN_WHITE',   label: 'Clean White',   swatch: '#FFFFFF', desc: 'Minimal, editorial' },
+]
+
 // Estructural (no importado de CalendarTab.tsx): CalendarEntry ahí ya trae todos estos
 // campos, no hace falta acoplar los dos archivos por un tipo compartido.
 interface CalendarEntryBrief {
@@ -107,6 +118,7 @@ export default function SocialPage() {
   const [segmentSlug, setSegmentSlug]     = useState('')
   const [stylePresetId, setStylePresetId] = useState('')
   const [aspect, setAspect]     = useState<Aspect>(DEFAULT_POST_ASPECT)
+  const [preset, setPreset]       = useState('')
   const [personaje, setPersonaje] = useState('')
   const [lugar, setLugar]         = useState('')
   const [accion, setAccion]       = useState('')
@@ -211,6 +223,7 @@ export default function SocialPage() {
           ...(tipo === 'carrusel' && segmentSlug ? { segment_slug: segmentSlug } : {}),
           ...(stylePresetId ? { style_preset_id: Number(stylePresetId) } : {}),
           // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión.
+          ...(tipo !== 'carrusel' && preset ? { preset } : {}),
           ...(tipo !== 'carrusel' && personaje.trim() ? { personaje: personaje.trim() } : {}),
           ...(tipo !== 'carrusel' && lugar.trim()     ? { lugar: lugar.trim() }         : {}),
           ...(tipo !== 'carrusel' && accion.trim()    ? { accion: accion.trim() }       : {}),
@@ -481,6 +494,28 @@ export default function SocialPage() {
               </div>
             )}
           </div>
+
+          {tipo !== 'carrusel' && (
+            <div className={styles.field}>
+              <span className={styles.label}>Estilo visual</span>
+              <div className={styles.presetGroup} role="group" aria-label="Preset de color">
+                {PRESET_OPTIONS.map(({ value, label, swatch, desc }) => (
+                  <button
+                    key={value || 'auto'}
+                    type="button"
+                    className={`${styles.presetCard} ${preset === value ? styles.presetCardActive : ''}`}
+                    onClick={() => setPreset(value)}
+                    disabled={loading}
+                    aria-pressed={preset === value}
+                  >
+                    <span className={styles.presetSwatch} style={{ background: swatch }} aria-hidden="true" />
+                    <span className={styles.presetName}>{label}</span>
+                    <span className={styles.presetDesc}>{desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {tipo === 'carrusel' && (
             <div className={styles.field}>

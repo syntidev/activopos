@@ -50,6 +50,8 @@ const COLOR_PRESETS: Record<string, ColorPreset> = {
   },
 }
 
+export type PresetKey = 'NAVY_TECH' | 'SKY_LIGHT' | 'WARM_SAND' | 'VIBRANT_AMBER' | 'CLEAN_WHITE'
+
 export type SlideRole = 'portada' | 'problema' | 'beneficio' | 'comparacion' | 'cta'
 
 /**
@@ -99,6 +101,8 @@ export interface ArtDirectionInput {
   slideRole?:  SlideRole
   /** Posición en el carrusel/serie — decide la rotación de preset. */
   slideIndex?: number
+  /** Preset forzado desde el formulario. Si se da, ignora pickPreset. */
+  presetKey?:  PresetKey
   direction?:  SceneDirection
   aspect:      Aspect
 }
@@ -109,7 +113,10 @@ function hasDirection(d?: SceneDirection): boolean {
 
 function buildPrompt(input: ArtDirectionInput): string {
   const { width, height } = ASPECT_DIMENSIONS[input.aspect]
-  const preset = pickPreset(input.slideRole, input.slideIndex ?? 0)
+  // Preset forzado por el usuario, o automático por rol de slide.
+  const preset = input.presetKey
+    ? COLOR_PRESETS[input.presetKey]
+    : pickPreset(input.slideRole, input.slideIndex ?? 0)
 
   // Dirección de escena real (mismo criterio que buildPrompt de image.ts): si el
   // usuario llenó personaje/lugar/acción, se inyecta explícito.

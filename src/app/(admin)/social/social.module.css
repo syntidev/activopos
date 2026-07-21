@@ -127,6 +127,51 @@
   border-color: var(--brand);
 }
 
+/* ── Selector de preset de color ── */
+.presetGroup {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.presetCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  cursor: pointer;
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s ease, background 0.15s ease;
+  text-align: center;
+}
+
+.presetCard:hover:not(:disabled) { border-color: var(--brand-l); }
+.presetCard:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.presetCardActive { border-color: var(--brand); background: var(--bg-hover, var(--bg-input)); }
+
+.presetSwatch {
+  width: 100%;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-card);
+}
+
+.presetName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.presetDesc {
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
 .submitBtn {
   display: flex;
   align-items: center;

@@ -48,9 +48,18 @@ const COLOR_PRESETS: Record<string, ColorPreset> = {
     background: 'pure white with Persian Blue (#0038BD) geometric accents',
     mood:       'minimal, editorial, modern startup aesthetic',
   },
+  // Fríos/neutros para balancear el sesgo amarillo/sepia de WARM_SAND + VIBRANT_AMBER.
+  PURPLE_TECH: {
+    background: 'deep purple-violet gradient with subtle tech glow',
+    mood:       'modern, distinctive, premium innovation feel',
+  },
+  MINT_FRESH: {
+    background: 'soft mint/teal gradient with clean geometric accents',
+    mood:       'fresh, trustworthy, calm professionalism',
+  },
 }
 
-export type PresetKey = 'NAVY_TECH' | 'SKY_LIGHT' | 'WARM_SAND' | 'VIBRANT_AMBER' | 'CLEAN_WHITE'
+export type PresetKey = 'NAVY_TECH' | 'SKY_LIGHT' | 'WARM_SAND' | 'VIBRANT_AMBER' | 'CLEAN_WHITE' | 'PURPLE_TECH' | 'MINT_FRESH'
 
 export type SlideRole = 'portada' | 'problema' | 'beneficio' | 'comparacion' | 'cta'
 
@@ -65,7 +74,7 @@ export type SlideRole = 'portada' | 'problema' | 'beneficio' | 'comparacion' | '
  */
 export function pickPreset(slideRole: SlideRole | undefined, slideIndex: number): ColorPreset {
   const impact  = ['VIBRANT_AMBER', 'NAVY_TECH']
-  const benefit = ['SKY_LIGHT', 'WARM_SAND', 'CLEAN_WHITE']
+  const benefit = ['SKY_LIGHT', 'WARM_SAND', 'CLEAN_WHITE', 'PURPLE_TECH', 'MINT_FRESH']
 
   if (slideRole === 'portada' || slideRole === 'cta') return COLOR_PRESETS[impact[slideIndex % impact.length]]
   if (slideRole === 'problema')                       return COLOR_PRESETS.NAVY_TECH

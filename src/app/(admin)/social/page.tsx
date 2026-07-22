@@ -1,10 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays, Send, Trash2, BookmarkPlus } from 'lucide-react'
+import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check, CalendarDays, Send, Trash2, BookmarkPlus, Pencil } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { CalendarTab } from './CalendarTab'
 import { MobilePreview } from './MobilePreview'
+import { SocialEditor } from './SocialEditor'
 import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
 
@@ -119,6 +120,9 @@ export default function SocialPage() {
   const [stylePresetId, setStylePresetId] = useState('')
   const [aspect, setAspect]     = useState<Aspect>(DEFAULT_POST_ASPECT)
   const [preset, setPreset]       = useState('')
+  // Fondos crudos que devuelve generate, para el editor de capas (Fase B).
+  const [bgUrls, setBgUrls]       = useState<string[]>([])
+  const [editorOpen, setEditorOpen] = useState(false)
   const [personaje, setPersonaje] = useState('')
   const [lugar, setLugar]         = useState('')
   const [accion, setAccion]       = useState('')
@@ -230,10 +234,11 @@ export default function SocialPage() {
         }),
       })
 
-      const body = await res.json() as { ok?: boolean; post?: SocialPost; error?: string }
+      const body = await res.json() as { ok?: boolean; post?: SocialPost; error?: string; background_urls?: string[] }
       if (!res.ok || !body.post) throw new Error(body.error ?? 'Falló la generación')
 
       setPost(body.post)
+      setBgUrls(body.background_urls ?? [])
       loadHistory()
 
       // Puente Calendario -> Generador (PIEZA 1, punto 4): si esta generación vino de
@@ -781,6 +786,17 @@ export default function SocialPage() {
                       ? <><Check size={14} aria-hidden="true" /> Copiado</>
                       : <><Copy size={14} aria-hidden="true" /> Copiar caption</>}
                   </button>
+                  {/* Editor de capas: solo post/story (el carrusel es HTML, no
+                      pasa por compose) y solo si generate devolvió el fondo crudo. */}
+                  {tipo !== 'carrusel' && bgUrls[activeIdx] && (
+                    <button
+                      type="button"
+                      className={`${adminStyles.actionLink} ${adminStyles.actionBtn}`}
+                      onClick={() => setEditorOpen(true)}
+                    >
+                      <Pencil size={14} aria-hidden="true" /> Editar diseño
+                    </button>
+                  )}
                   {post.imagen_url && (
                     <button
                       type="button"
@@ -792,6 +808,19 @@ export default function SocialPage() {
                   )}
                 </div>
               </div>
+
+              {editorOpen && bgUrls[activeIdx] && (
+                <SocialEditor
+                  postId={post.id}
+                  titulo={post.assets[activeIdx]?.titulo ?? post.titulo}
+                  subtitulo={post.assets[activeIdx]?.subtitulo ?? ''}
+                  backgroundUrl={bgUrls[activeIdx]}
+                  aspect={aspect}
+                  formato={tipo === 'carrusel' ? 'post' : tipo}
+                  onClose={() => setEditorOpen(false)}
+                  onSealed={(url) => setPost(prev => prev ? { ...prev, imagen_url: url } : prev)}
+                />
+              )}
             </>
           )}
         </section>

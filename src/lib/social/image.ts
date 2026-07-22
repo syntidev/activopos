@@ -1,4 +1,7 @@
-import { type Aspect } from './brand'
+import {
+  type Aspect,
+  HUMAN_SCENE_VARIANTS, ILUMINACION_VARIANTS, ANGULO_VARIANTS, normalizeNicho,
+} from './brand'
 import { ProviderError, withRetry } from './retry'
 
 /**
@@ -44,39 +47,41 @@ function hasDirection(d?: SceneDirection): d is SceneDirection {
   return !!d && !!(d.personaje?.trim() || d.lugar?.trim() || d.accion?.trim())
 }
 
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
 /**
- * El endpoint no acepta negative_prompt (422 extra_forbidden), y los modelos de difusión
- * ignoran la negación de todos modos: pedir "no text" produce texto. Por eso las
- * restricciones van formuladas en POSITIVO — paredes lisas, envases sin etiqueta —
- * que es lo único que un difusor sabe seguir.
+ * Fallback NVIDIA FLUX. Misma dirección de arte humana venezolana que gemini-image.ts
+ * (motor primario), para que un fallback también salga con sujeto real del segmento,
+ * no una escena genérica. La dirección manual del formulario gana sobre la variante.
+ * El endpoint no acepta negative_prompt (422); las restricciones van en el propio prompt.
  */
 function buildPrompt(escena: string, nicho: string, direction?: SceneDirection): string {
-  // Mismo patrón de composición que Socialia (persona + escena + acción + contexto de
-  // marca) -- pero construido acá directo, no delegado a Gemini: son más específicos e
-  // intencionales que la "escena" genérica que el copy adivina por nicho.
-  const subjectLine = hasDirection(direction)
+  const subject = hasDirection(direction)
     ? [
-        direction.personaje?.trim() ? `Subject: ${direction.personaje.trim()}.` : '',
-        direction.accion?.trim()    ? `Action: ${direction.accion.trim()}.`     : '',
-      ].filter(Boolean).join(' ')
-    : escena
-  const settingLine = hasDirection(direction) && direction.lugar?.trim()
-    ? `Setting: ${direction.lugar.trim()}, a real Venezuelan small business (${nicho}).`
-    : `Setting: a real Venezuelan small business (${nicho}).`
+        direction?.personaje?.trim() ?? '',
+        direction?.accion?.trim() ? `, ${direction.accion.trim()}` : '',
+        direction?.lugar?.trim()  ? `, at ${direction.lugar.trim()}` : '',
+      ].filter(Boolean).join('')
+    : pickRandom(HUMAN_SCENE_VARIANTS[normalizeNicho(nicho)] ?? HUMAN_SCENE_VARIANTS.general)
+  const light = pickRandom(ILUMINACION_VARIANTS)
+  const angle = pickRandom(ANGULO_VARIANTS)
 
-  // Sin una época explícita el modelo elige la mediana de su entrenamiento, que
-  // para "televisor"/"computadora"/"herramienta" es de los 80-90 (CRT, cajas
-  // beige, madera rústica). Verificado por Carlos contra imágenes reales del
-  // segmento Electrónica. Se fuerza acá — una vez para social, blog y cualquier
-  // preset futuro — además del vocabulario de producto actual en cada preset.
-  return `Photorealistic documentary photograph, shot on a 50mm lens at f/1.8. ${subjectLine}
+  return `Photorealistic documentary advertising photograph, shot on a 50mm lens at f/1.8.
+Scene: ${subject}, ${angle}, ${light}, holding a modern smartphone with the GLASS SCREEN
+facing the camera, showing a glowing POS dashboard UI in Persian Blue (#0038BD).
+The camera bump is hidden behind the device; never show a camera module on the visible face.
 
-${settingLine} Authentic and lived-in, never stock-photo generic.
-Present day, contemporary 2020s. Current-generation devices, modern retail fittings,
-LED lighting, present-day packaging and clothing.
-Natural window light, shallow depth of field, filmic grain, true-to-life colors.
-Bare clean walls. Plain unbranded packaging. Blank surfaces. Empty picture frames.
-The lower third of the frame stays calm, dark and uncluttered.`
+Setting: a real Venezuelan small business (${nicho}). Authentic and lived-in, never stock-photo generic.
+Present day, contemporary 2020s. Current-generation devices, modern retail fittings, LED lighting.
+Natural light, shallow depth of field, filmic grain, true-to-life colors.
+Subtle Persian Blue ambient glow from the screen; a single small Carrot Amber (#EF8E01) accent.
+
+The TOP third of the frame stays calm and uncluttered (wall, ceiling, sky or soft bokeh)
+for a text overlay. Bare clean walls. Plain unbranded packaging. Blank surfaces.
+No text, letters, logos or watermarks anywhere. No bars or letterboxing.
+Context reference (do not render as text): "${escena}".`
 }
 
 export async function generateBackground(

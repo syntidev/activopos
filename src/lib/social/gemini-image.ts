@@ -1,4 +1,7 @@
-import { type Aspect, ASPECT_DIMENSIONS } from './brand'
+import {
+  type Aspect, ASPECT_DIMENSIONS,
+  HUMAN_SCENE_VARIANTS, ILUMINACION_VARIANTS, ANGULO_VARIANTS, normalizeNicho,
+} from './brand'
 import { type SceneDirection } from './image'
 import { ProviderError, withRetry } from './retry'
 
@@ -84,24 +87,6 @@ export function pickPreset(slideRole: SlideRole | undefined, slideIndex: number)
   return COLOR_PRESETS[all[Math.floor(Math.random() * all.length)]]
 }
 
-// ── Composición según rol de slide ───────────────────────────────────────────
-
-function compositionFor(slideRole: SlideRole | undefined, nicho: string, escena: string): string {
-  switch (slideRole) {
-    case 'portada':
-    case 'cta':
-      return `MAXIMUM IMPACT — a 3D glossy smartphone floating at an elegant angle, screen showing a modern POS dashboard UI in Persian Blue tones. Floating translucent icons around the device (charts, currency symbols). Subtle tech mesh pattern. Glassmorphism panels as decorative elements. Warm amber glow (#EF8E01) emanating softly from the screen. Depth layers: background gradient, floating icons, device hero, light effects.`
-    case 'problema':
-      return `TENSION — desaturated, dim lighting, cluttered paper receipts and a calculator on a counter, suggesting manual chaos before the solution. Muted colors, slight vignette. No people, just the scene.`
-    case 'comparacion':
-      return `SPLIT composition — left half dim and cluttered (paper receipts, disorder), right half bright and organized (clean digital screen, Persian Blue UI).`
-    case 'beneficio':
-      return `BALANCED — a tablet or phone showing the POS screen tilted naturally on a store counter, warm ambient light, Venezuelan small business setting (${nicho}). Product or inventory visible in soft focus background.`
-    default:
-      return `Photorealistic, cinematic lighting, shot as a premium advertising photograph, not a casual snapshot. Venezuelan ${nicho} business setting. ${escena}`
-  }
-}
-
 // ── Prompt ────────────────────────────────────────────────────────────────────
 
 export interface ArtDirectionInput {
@@ -120,40 +105,63 @@ function hasDirection(d?: SceneDirection): boolean {
   return !!d && !!(d.personaje?.trim() || d.lugar?.trim() || d.accion?.trim())
 }
 
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
 function buildPrompt(input: ArtDirectionInput): string {
   const { width, height } = ASPECT_DIMENSIONS[input.aspect]
-  // Preset forzado por el usuario, o automático por rol de slide.
+  // Preset forzado por el usuario, o automático por rol de slide. Se usa solo como
+  // ambiente/mood — la escena la manda el sujeto humano venezolano.
   const preset = input.presetKey
     ? COLOR_PRESETS[input.presetKey]
     : pickPreset(input.slideRole, input.slideIndex ?? 0)
 
-  // Dirección de escena real (mismo criterio que buildPrompt de image.ts): si el
-  // usuario llenó personaje/lugar/acción, se inyecta explícito.
-  const directionLine = hasDirection(input.direction)
+  // Sujeto: la dirección manual del formulario (personaje/acción/lugar) gana si
+  // viene; si no, una variante humana venezolana según el segmento normalizado.
+  const subject = hasDirection(input.direction)
     ? [
-        input.direction?.personaje?.trim() ? `Subject: ${input.direction.personaje.trim()}.` : '',
-        input.direction?.accion?.trim()    ? `Action: ${input.direction.accion.trim()}.`     : '',
-        input.direction?.lugar?.trim()     ? `Setting: ${input.direction.lugar.trim()}.`      : '',
-      ].filter(Boolean).join(' ')
-    : ''
+        input.direction?.personaje?.trim() ?? '',
+        input.direction?.accion?.trim() ? `, ${input.direction.accion.trim()}` : '',
+        input.direction?.lugar?.trim()  ? `, at ${input.direction.lugar.trim()}` : '',
+      ].filter(Boolean).join('')
+    : pickRandom(HUMAN_SCENE_VARIANTS[normalizeNicho(input.nicho)] ?? HUMAN_SCENE_VARIANTS.general)
+  const light = pickRandom(ILUMINACION_VARIANTS)
+  const angle = pickRandom(ANGULO_VARIANTS)
 
-  return `ROLE: Senior Art Director producing a premium Instagram advertising image for a Venezuelan small business point-of-sale software.
+  return `ROLE: Senior Art Director producing a premium, photorealistic Instagram advertising image for ActivoPOS, a Venezuelan small-business point-of-sale software.
 
 CRITICAL — ZERO TEXT IN IMAGE:
-Do NOT render any text, typography, words, labels or numbers. Text is composited afterward. Clean art only.
+Do NOT render any text, typography, words, labels, letters or numbers anywhere. Text is composited afterward. Clean art only.
 
 FORMAT: ${width}x${height} px. Fill the entire canvas. No bars, no letterboxing.
 
-BRAND COLORS:
-Primary: #0038BD (Persian Blue). Accent: #EF8E01 (Carrot Amber), use sparingly as a highlight only.
+SCENE: ${subject}, ${angle}, ${light}, holding a smartphone with the GLASS SCREEN facing the camera, showing a glowing POS dashboard UI in Persian Blue (#0038BD).
 
-COLOR SCHEME (this image): ${preset.background}. Mood: ${preset.mood}.
+PHONE GEOMETRY (CRITICAL):
+The GLASS SCREEN faces outward toward the camera — the viewer sees the lit display.
+The camera bump is on the side AWAY from the camera, hidden behind the device.
+NEVER show a camera module on the visible face of the phone.
 
-VISUAL STYLE: ${compositionFor(input.slideRole, input.nicho, input.escena)}
+COMPOSITION (CRITICAL):
+Leave the TOP 35% of the canvas calm and uncluttered for a text overlay — ceiling, wall, sky or soft bokeh, NOT a flat colored panel.
+Subject occupies the lower-center 60% of the frame. Bottom stays readable but not busy.
+Natural bokeh of the environment on the sides — never a flat colored block.
 
-CONTEXT: ${input.nicho} — real Venezuelan small business, present day 2020s. ${directionLine}
+BRAND INTEGRATION:
+Subtle Persian Blue (#0038BD) ambient glow from the phone screen. Carrot Amber (#EF8E01) as a single small accent (a notification dot or badge). Ambient mood: ${preset.mood}.
 
-Positive constraints (diffusion models ignore negation): clean unbranded surfaces, no visible text or logos on products, modern current-generation devices only.`
+HUMAN DIRECTION:
+Authentic Venezuelan features — diverse, real, warm expressions. Natural candid success, not a forced stock-photo smile. Modern casual clothing for a ${input.nicho} business owner in Venezuela. Background: a recognizable, warm Venezuelan small-business environment.
+
+FORBIDDEN:
+No flat color panels filling any zone — use natural bokeh for the text zone.
+No street stalls, no outdoor markets, no arepas, no fiscal/SENIAT machines.
+No text, words, letters, logos or watermarks anywhere.
+No camera bump on the front face of the phone. No bars or letterboxing.
+No generic stock-photo look — it must feel authentically Venezuelan.
+
+QUALITY: Photorealistic, 8K, cinematic professional lighting, shallow depth of field.`
 }
 
 // ── Generación ────────────────────────────────────────────────────────────────

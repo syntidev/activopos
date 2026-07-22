@@ -103,10 +103,14 @@ export interface LayerOverride {
   subtitleShadow?: boolean
 }
 
-// Sombra: Pango no tiene text-shadow, así que se compone un duplicado negro
-// semitransparente detrás del texto, desplazado unos px. Real, no simulado.
-const SHADOW_OFFSET  = 3
-const SHADOW_COLOR   = '#00000099'
+// Sombra: Pango no tiene text-shadow (ni feGaussianBlur sobre su render), así que se
+// compone un duplicado negro detrás del texto. Doble capa (Sprint 115): una exterior
+// difuminada con sharp .blur() y una interior nítida, para que el título sea legible
+// sobre CUALQUIER fondo — claro u oscuro — sin perder nunca el arte generado.
+const SHADOW_OFFSET_OUTER = 3
+const SHADOW_OFFSET_INNER = 1
+const SHADOW_BLUR         = 4
+const SHADOW_COLOR        = '#000000E6'   // negro ~0.9
 
 export async function composeSlide(input: ComposeInput): Promise<Buffer> {
   const { width, height } = ASPECT_DIMENSIONS[input.aspect]
@@ -116,8 +120,15 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
   const showSubtitle = ov.showSubtitle ?? true
   const showLogo     = ov.showLogo     ?? true
 
-  const titleSize    = ov.titleSize    ?? (input.formato === 'story' ? 76 : 68)
-  const subtitleSize = ov.subtitleSize ?? (input.formato === 'story' ? 36 : 32)
+  // Sombra siempre activa salvo que el editor la apague explícitamente (default: true).
+  const titleShadow    = ov.titleShadow    ?? true
+  const subtitleShadow = ov.subtitleShadow ?? true
+
+  // Tamaño por aspect (lienzo), no por formato: el ratio manda el espacio real disponible.
+  const TITLE_BY_ASPECT:    Record<Aspect, number> = { '9:16': 80, '4:5': 64, '3:4': 60, '1:1': 56 }
+  const SUBTITLE_BY_ASPECT: Record<Aspect, number> = { '9:16': 36, '4:5': 34, '3:4': 32, '1:1': 30 }
+  const titleSize    = ov.titleSize    ?? TITLE_BY_ASPECT[input.aspect]
+  const subtitleSize = ov.subtitleSize ?? SUBTITLE_BY_ASPECT[input.aspect]
 
   const [title, subtitle] = await Promise.all([
     renderText(input.titulo, {
@@ -132,25 +143,28 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
     }),
   ])
 
-  // Posiciones default: apilado desde abajo (subtítulo → título → acento). El
-  // override pisa la esquina superior-izquierda de cada capa cuando viene.
-  const subtitleTop  = ov.subtitlePos?.y ?? (height - MARGIN - subtitle.height)
-  const subtitleLeft = ov.subtitlePos?.x ?? MARGIN
-  const titleTop     = ov.titlePos?.y    ?? (subtitleTop - 28 - title.height)
+  // Posiciones default (Sprint 115): bloque de texto en el TERCIO SUPERIOR — acento,
+  // título, subtítulo apilados desde arriba. El fondo se genera con la zona superior
+  // despejada (ver gemini-image.ts/image.ts). El override pisa la esquina de cada capa.
+  const titleTop     = ov.titlePos?.y    ?? Math.floor(height * 0.15)
   const titleLeft    = ov.titlePos?.x    ?? MARGIN
+  const subtitleTop  = ov.subtitlePos?.y ?? (titleTop + title.height + 16)
+  const subtitleLeft = ov.subtitlePos?.x ?? MARGIN
   const accentTop    = titleTop - 32 - ACCENT_H
 
-  // Rampa larga y con paradas intermedias: un scrim corto produce una banda visible
-  // cuando el fondo es plano. Arranca a media imagen y sube despacio.
-  const scrimStart = Math.max(0, (accentTop - 60) / height)
+  // Scrim de protección para el bloque de texto, ahora en el tercio SUPERIOR: oscurece
+  // desde arriba y se desvanece antes de la mitad, dejando el fondo inferior limpio
+  // (criterio del brief). La sombra doble del texto cubre el resto sobre fondos claros.
+  const textBottom = subtitleTop + subtitle.height
+  const scrimEnd   = Math.min(0.55, (textBottom + 80) / height)
 
   const scrim = Buffer.from(`<svg width="${width}" height="${height}">
     <defs>
       <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0.30" stop-color="${BRAND.primaryDark}" stop-opacity="0"/>
-        <stop offset="${(scrimStart * 0.75).toFixed(3)}" stop-color="${BRAND.primaryDark}" stop-opacity="0.28"/>
-        <stop offset="${scrimStart.toFixed(3)}" stop-color="${BRAND.primaryDark}" stop-opacity="0.72"/>
-        <stop offset="1" stop-color="${BRAND.primaryDark}" stop-opacity="0.94"/>
+        <stop offset="0" stop-color="${BRAND.primaryDark}" stop-opacity="0.88"/>
+        <stop offset="${(scrimEnd * 0.5).toFixed(3)}" stop-color="${BRAND.primaryDark}" stop-opacity="0.55"/>
+        <stop offset="${scrimEnd.toFixed(3)}" stop-color="${BRAND.primaryDark}" stop-opacity="0"/>
+        <stop offset="1" stop-color="${BRAND.primaryDark}" stop-opacity="0"/>
       </linearGradient>
     </defs>
     <rect width="${width}" height="${height}" fill="url(#s)"/>
@@ -165,7 +179,9 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
   const logoSize = ov.logoSize ?? LOGO_SIZE
   const logoSrc  = (ov.logoType ?? 'negative') === 'positive' ? logoPositiveSvg : logoSvg
   const logo     = await sharp(logoSrc).resize({ width: logoSize }).png().toBuffer()
-  const logoTop  = ov.logoPos?.y ?? MARGIN
+  // Logo default en la esquina INFERIOR-izquierda (Sprint 115): el tercio superior
+  // queda libre para el texto. El editor lo reposiciona con logoPos si hace falta.
+  const logoTop  = ov.logoPos?.y ?? (height - MARGIN - logoSize)
   const logoLeft = ov.logoPos?.x ?? MARGIN
 
   // La marca no tiene asset de wordmark, solo el isotipo (brackets + círculo).
@@ -195,20 +211,18 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
   }
   if (showTitle) {
     layers.push({ input: accent, top: accentTop, left: titleLeft })
-    if (ov.titleShadow) {
-      layers.push({
-        input: await shadowOf(input.titulo, titleSize, ov.titleAlign ?? 'left', 'Fraunces', ASSETS.fontDisplay, 'bold'),
-        top: titleTop + SHADOW_OFFSET, left: titleLeft + SHADOW_OFFSET,
-      })
+    if (titleShadow) {
+      const sh = await shadowOf(input.titulo, titleSize, ov.titleAlign ?? 'left', 'Fraunces', ASSETS.fontDisplay, 'bold')
+      layers.push({ input: await sharp(sh).blur(SHADOW_BLUR).toBuffer(), top: titleTop + SHADOW_OFFSET_OUTER, left: titleLeft + SHADOW_OFFSET_OUTER })
+      layers.push({ input: sh, top: titleTop + SHADOW_OFFSET_INNER, left: titleLeft + SHADOW_OFFSET_INNER })
     }
     layers.push({ input: title.buffer, top: titleTop, left: titleLeft })
   }
   if (showSubtitle) {
-    if (ov.subtitleShadow) {
-      layers.push({
-        input: await shadowOf(input.subtitulo, subtitleSize, ov.subtitleAlign ?? 'left', 'Inter', ASSETS.fontBody, '600'),
-        top: subtitleTop + SHADOW_OFFSET, left: subtitleLeft + SHADOW_OFFSET,
-      })
+    if (subtitleShadow) {
+      const sh = await shadowOf(input.subtitulo, subtitleSize, ov.subtitleAlign ?? 'left', 'Inter', ASSETS.fontBody, '600')
+      layers.push({ input: await sharp(sh).blur(SHADOW_BLUR).toBuffer(), top: subtitleTop + SHADOW_OFFSET_OUTER, left: subtitleLeft + SHADOW_OFFSET_OUTER })
+      layers.push({ input: sh, top: subtitleTop + SHADOW_OFFSET_INNER, left: subtitleLeft + SHADOW_OFFSET_INNER })
     }
     layers.push({ input: subtitle.buffer, top: subtitleTop, left: subtitleLeft })
   }

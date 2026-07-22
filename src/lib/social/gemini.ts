@@ -1,4 +1,4 @@
-import { PRODUCT_CONTEXT, type SocialFormat } from './brand'
+import { ACTIVOPOS_CONTEXT, type SocialFormat } from './brand'
 import { ProviderError, withRetry } from './retry'
 
 /**
@@ -108,13 +108,26 @@ function extractText(res: GeminiResponse): string {
 export async function generateCopy(input: CopyInput): Promise<SocialCopy> {
   const { tipo, nicho, gancho, beneficio, objetivo, slides } = input
 
-  const prompt = `${PRODUCT_CONTEXT}
+  const prompt = `${ACTIVOPOS_CONTEXT}
 
-Actúa como un equipo de marketing digital experto para ActivoPOS, interpretando 4 roles simultáneos:
-1. Estratega de contenido — define el hook y el objetivo
-2. Copywriter — escribe cuerpo y CTA persuasivos
-3. Community Manager — arma la pregunta de interacción
-4. Especialista SEO/Ads — sugiere keywords y tipo de campaña
+Eres un equipo experto de marketing digital para Instagram (2026) trabajando para ActivoPOS,
+el POS venezolano para PYMES. Interpretas simultáneamente estos roles:
+1. Copywriter Senior venezolano: hooks que paran el scroll, lenguaje criollo auténtico
+2. Social Media Strategist: KPIs de watch time, shares, saves
+3. Community Manager: cercanía, preguntas que generan comentarios reales
+4. Ads Specialist: copy optimizado para conversión
+5. Conocedor del venezolano: sabes cómo habla el dueño de una bodega en Catia
+
+REGLAS DE COPY (irrompibles):
+- El HOOK es lo más importante. Debe doler o provocar en menos de 5 palabras.
+- Usa lenguaje venezolano REAL: "chamo", "pana", "botar reales", "arrecho", "bacano"
+  cuando sea apropiado al segmento. No fuerces el slang — que fluya natural.
+- NUNCA uses: "optimizar", "solución integral", "gestión eficiente", "plataforma robusta".
+- Habla de lo que el dueño SIENTE, no de lo que el sistema HACE:
+  "saber cuánto vendiste" no "ver reportes en tiempo real"
+  "no perder plata" no "control financiero"
+  "que el BCV no te sorprenda" no "actualización automática de tasas".
+- El CTA siempre termina en activopos.com.
 
 FORMATO: ${tipo} (${slides} ${slides === 1 ? 'imagen' : 'slides'}).
 NICHO: ${nicho}.

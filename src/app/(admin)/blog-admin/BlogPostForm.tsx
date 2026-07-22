@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import type { ChangeEvent } from 'react'
-import { X } from 'lucide-react'
+import { X, Sparkles, Loader2, Check } from 'lucide-react'
 import { RichTextEditor } from '@/components/admin/RichTextEditor'
 import { BLOG_CATEGORIES, slugify, type BlogPost, type BlogPostPayload } from './constants'
 import styles from './blog-admin.module.css'
@@ -77,6 +77,68 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
   const [uploading, setUploading]     = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Generar imagen con IA desde el título/contenido del post. Igual que
+  // GenerateAiModal: 2 pasos encadenados (dirigir escena → generar imagen).
+  const [aiLoading, setAiLoading]   = useState(false)
+  const [aiError, setAiError]       = useState<string | null>(null)
+  const [aiPreview, setAiPreview]   = useState<string | null>(null)
+  // El modal queda montado entre corridas: un fetch lento podría pisar estado
+  // ya reseteado. Cada corrida toma un id; al resolver, se descarta si venció.
+  const aiRun = useRef(0)
+
+  async function handleGenerateAi() {
+    if (!values.title.trim() || !values.content.trim()) {
+      setAiError('Escribe título y contenido antes de generar la imagen.')
+      return
+    }
+    const myRun = ++aiRun.current
+    setAiError(null)
+    setAiPreview(null)
+    setAiLoading(true)
+    try {
+      // Paso 1: derivar la dirección de escena del artículo.
+      const promptRes = await fetch('/api/admin/blog/generate-image-prompt', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          titulo: values.title, excerpt: values.excerpt,
+          content: values.content, categoria: values.category,
+        }),
+      })
+      const prompt = await promptRes.json() as { personaje?: string; lugar?: string; accion?: string; nicho?: string; error?: string }
+      if (myRun !== aiRun.current) return
+      if (!promptRes.ok || !prompt.personaje || !prompt.lugar || !prompt.accion) {
+        setAiError(prompt.error ?? 'No se pudo dirigir la escena desde el artículo.')
+        return
+      }
+      // Paso 2: generar la imagen con esa dirección.
+      const imgRes = await fetch('/api/admin/blog/generate-image', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          personaje: prompt.personaje, lugar: prompt.lugar,
+          accion: prompt.accion, nicho: prompt.nicho || 'pyme venezolana',
+        }),
+      })
+      const img = await imgRes.json() as { url?: string; error?: string }
+      if (myRun !== aiRun.current) return
+      if (!imgRes.ok || typeof img.url !== 'string') {
+        setAiError(img.error ?? 'No se pudo generar la imagen.')
+        return
+      }
+      setAiPreview(img.url)
+    } catch {
+      if (myRun === aiRun.current) setAiError('Error de red al generar la imagen.')
+    } finally {
+      if (myRun === aiRun.current) setAiLoading(false)
+    }
+  }
+
+  function acceptAiImage() {
+    if (aiPreview) set('featured_image', aiPreview)
+    setAiPreview(null)
+  }
 
   function set<K extends keyof BlogPostFormValues>(key: K, value: BlogPostFormValues[K]) {
     setValues(prev => ({ ...prev, [key]: value }))
@@ -195,6 +257,16 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
           >
             {uploading ? 'Subiendo...' : 'Subir imagen'}
           </button>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnSecondary}`}
+            onClick={() => void handleGenerateAi()}
+            disabled={aiLoading}
+          >
+            {aiLoading
+              ? <><Loader2 size={14} className={styles.spin} aria-hidden="true" /> Generando...</>
+              : <><Sparkles size={14} aria-hidden="true" /> Generar con IA</>}
+          </button>
           <input
             id="featured_image_upload"
             ref={fileInputRef}
@@ -205,6 +277,24 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
           />
         </div>
         {uploadError && <p className={styles.errorText}>{uploadError}</p>}
+        {aiError && <p className={styles.errorText}>{aiError}</p>}
+
+        {/* Preview de la imagen IA: se muestra aparte de la destacada actual
+            hasta que el editor la acepta explícitamente. */}
+        {aiPreview && (
+          <div className={styles.aiImagePreview}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={aiPreview} alt="Imagen generada con IA" className={styles.aiImageThumb} />
+            <div className={styles.imageUploadRow}>
+              <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={acceptAiImage}>
+                <Check size={14} aria-hidden="true" /> Usar esta imagen
+              </button>
+              <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => setAiPreview(null)}>
+                Descartar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={styles.formRow}>

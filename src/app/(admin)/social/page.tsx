@@ -35,6 +35,8 @@ const PRESET_OPTIONS: { value: string; label: string; swatch: string; desc: stri
   { value: 'WARM_SAND',     label: 'Warm Sand',     swatch: '#E8D3A8', desc: 'Cálido, sol venezolano' },
   { value: 'VIBRANT_AMBER', label: 'Vibrant Amber', swatch: '#EF8E01', desc: 'Alta energía, impacto' },
   { value: 'CLEAN_WHITE',   label: 'Clean White',   swatch: '#FFFFFF', desc: 'Minimal, editorial' },
+  { value: 'PURPLE_TECH',   label: 'Purple Tech',   swatch: '#7C3AED', desc: 'Moderno, innovación premium' },
+  { value: 'MINT_FRESH',    label: 'Mint Fresh',    swatch: '#2DD4BF', desc: 'Fresco, confiable, calma' },
 ]
 
 // Estructural (no importado de CalendarTab.tsx): CalendarEntry ahí ya trae todos estos

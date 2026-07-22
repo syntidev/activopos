@@ -62,7 +62,7 @@ const bodySchema = z.object({
   aspect:           z.enum(['1:1', '4:5', '3:4', '9:16']).default('4:5'),
   // Preset de color forzado desde el formulario. Si no viene, el motor elige
   // automático por rol de slide. Solo aplica a difusión (post/story).
-  preset:           z.enum(['NAVY_TECH', 'SKY_LIGHT', 'WARM_SAND', 'VIBRANT_AMBER', 'CLEAN_WHITE']).optional(),
+  preset:           z.enum(['NAVY_TECH', 'SKY_LIGHT', 'WARM_SAND', 'VIBRANT_AMBER', 'CLEAN_WHITE', 'PURPLE_TECH', 'MINT_FRESH']).optional(),
   // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión (post/story).
   personaje:        z.string().max(200).optional(),
   lugar:            z.string().max(200).optional(),

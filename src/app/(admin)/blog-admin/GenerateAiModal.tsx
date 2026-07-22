@@ -258,7 +258,12 @@ export function GenerateAiModal({ open, onClose, onSaved }: GenerateAiModalProps
                 maxLength={80}
               />
               <datalist id="blog-categories">
-                {categories.map(cat => <option key={cat} value={cat} />)}
+                {/* Siempre las categorías fijas + las que ya existan en la DB
+                    (custom manuales), sin duplicados. Antes solo mostraba las de
+                    la DB, así que con un solo post salía una sola opción. */}
+                {Array.from(new Set<string>([...BLOG_CATEGORIES, ...categories])).map(cat => (
+                  <option key={cat} value={cat} />
+                ))}
               </datalist>
             </div>
 

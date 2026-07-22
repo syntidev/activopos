@@ -11,11 +11,17 @@
  * no una paleta nueva inventada para el blog.
  */
 
-export const BLOG_CATEGORIES = ['Inventario', 'Finanzas', 'Ventas', 'Operaciones', 'Tecnología POS'] as const
+// 'Misceláneos' es el catch-all para temas que no encajan en las 5 técnicas. No
+// tiene color propio: solo hay 5 colores semánticos sellados y no se inventan
+// hex nuevos — categoryColor lo resuelve al azul por default como cualquier
+// categoría sin color asignado.
+export const BLOG_CATEGORIES = ['Inventario', 'Finanzas', 'Ventas', 'Operaciones', 'Tecnología POS', 'Misceláneos'] as const
 
 export type BlogCategory = typeof BLOG_CATEGORIES[number]
 
-export const CATEGORY_COLORS: Record<BlogCategory, string> = {
+// Solo las 5 técnicas tienen color sellado; 'Misceláneos' se excluye y cae al
+// default en categoryColor.
+export const CATEGORY_COLORS: Record<Exclude<BlogCategory, 'Misceláneos'>, string> = {
   Inventario:      '#16A34A', // verde  -- mismo verde de KPI "cobrado/ingresos"
   Finanzas:        '#D97706', // mostaza -- mismo naranja de KPI "crédito/pendiente"
   Ventas:          '#2563EB', // azul   -- mismo azul de KPI "tickets/órdenes"

@@ -127,6 +127,92 @@
   border-color: var(--brand);
 }
 
+/* ── Panel de estrategia (Fase C) ── */
+.strategy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stratBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stratBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.stratSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+}
+
+.stratHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stratLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stratCopy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-l);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.stratCopy:hover { color: var(--brand); }
+
+.stratText {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.stratSeo {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.stratNote {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary, var(--text-muted));
+  font-style: italic;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+}
+
 /* ── Selector de preset de color ── */
 .presetGroup {
   display: grid;

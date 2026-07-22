@@ -53,8 +53,43 @@ export interface SlideCopy {
 
 export interface SocialCopy {
   slides:   SlideCopy[]
-  caption:  string
+  hook:     string        // frase de apertura, máx 15 palabras
+  cuerpo:   string        // desarrollo del beneficio, máx 40 palabras
+  cta:      string        // llamado a la acción directo
+  pregunta: string        // pregunta para generar comentarios
   hashtags: string[]
+  caption:  string        // hook+cuerpo+cta+pregunta+hashtags, listo para copiar
+  metadata: {
+    horarioSugerido: string   // ej. "10:30 AM — antes del almuerzo"
+    objetivo:        string   // ej. "Conversión y captación de leads"
+    seoKeywords:     string[]
+    tipoAds:         string   // ej. "Ventas / Conversiones de catálogo"
+  }
+  notaCreador: string     // 1-2 oraciones: la intención de diseño de la pieza
+}
+
+// Estructura cruda que responde el modelo (snake_case). Se mapea a SocialCopy.
+interface RawCopy {
+  slides:               SlideCopy[]
+  hook:                 string
+  cuerpo:               string
+  cta:                  string
+  pregunta:             string
+  hashtags:             string[]
+  horario_sugerido:     string
+  objetivo_clasificado: string
+  seo_keywords:         string[]
+  tipo_ads:             string
+  nota_creador:         string
+}
+
+// Caption final: une las secciones en un solo texto listo para pegar en Instagram.
+export function buildCaption(c: {
+  hook: string; cuerpo: string; cta: string; pregunta: string; hashtags: string[]
+}): string {
+  return [c.hook, c.cuerpo, c.cta, c.pregunta, c.hashtags.map(h => `#${h}`).join(' ')]
+    .filter(Boolean)
+    .join('\n\n')
 }
 
 export interface CopyInput {
@@ -75,27 +110,41 @@ export async function generateCopy(input: CopyInput): Promise<SocialCopy> {
 
   const prompt = `${PRODUCT_CONTEXT}
 
-Actúa como copywriter senior de Instagram para ActivoPOS.
+Actúa como un equipo de marketing digital experto para ActivoPOS, interpretando 4 roles simultáneos:
+1. Estratega de contenido — define el hook y el objetivo
+2. Copywriter — escribe cuerpo y CTA persuasivos
+3. Community Manager — arma la pregunta de interacción
+4. Especialista SEO/Ads — sugiere keywords y tipo de campaña
+
 FORMATO: ${tipo} (${slides} ${slides === 1 ? 'imagen' : 'slides'}).
 NICHO: ${nicho}.
 OBJETIVO: ${objetivo}.
 GANCHO DE ENTRADA: "${gancho}".${beneficio ? `\nBENEFICIO A DESTACAR: "${beneficio}".` : ''}
 
 Para CADA slide genera:
-- titulo: frase de impacto, máximo 6 palabras, en español
-- subtitulo: beneficio concreto, máximo 12 palabras, en español
-- escena: descripción EN INGLÉS de la escena fotográfica de fondo. Debe ser un ambiente
-  venezolano real del nicho "${nicho}". Menciona iluminación, encuadre y objetos.
-  NUNCA menciones carteles, letreros, afiches, etiquetas, pantallas ni marcas: el modelo de
-  imagen los dibuja con texto ilegible. Describe superficies limpias y envases sin marca.
+- titulo: frase de impacto, máximo 6 palabras, en español venezolano
+- subtitulo: beneficio concreto, máximo 12 palabras, en español venezolano
+- escena: descripción EN INGLÉS de la escena fotográfica de fondo. Ambiente venezolano real
+  del nicho "${nicho}". Menciona iluminación, encuadre y objetos. NUNCA menciones carteles,
+  letreros, afiches, etiquetas, pantallas ni marcas: el modelo de imagen los dibuja con texto
+  ilegible. Describe superficies limpias y envases sin marca.
 ${slides > 1 ? 'Los slides deben contar una progresión: problema → tensión → solución → cierre con CTA.' : ''}
 
-Además genera:
-- caption: copy para Instagram con emojis, máximo 40 palabras, cierra invitando a activopos.com
-- hashtags: 8 hashtags sin el símbolo #
+Genera además, todo en español venezolano con tuteo (excepto seo_keywords que pueden ir en el término que busca la gente):
+- hook: frase de apertura de máximo 15 palabras
+- cuerpo: desarrollo del beneficio, máximo 40 palabras
+- cta: llamado a la acción directo
+- pregunta: pregunta que invite a comentar
+- hashtags: 8 hashtags relevantes al nicho, sin el símbolo #
+- horario_sugerido: mejor hora para publicar según objetivo y nicho (formato: 'HH:MM AM/PM — razón breve')
+- objetivo_clasificado: qué logra este post (ej. 'Conversión', 'Awareness', 'Captación de leads')
+- seo_keywords: 3-4 palabras clave relevantes al nicho
+- tipo_ads: qué tipo de campaña publicitaria complementaría este post
+- nota_creador: 1-2 oraciones explicando la intención de diseño de la pieza (qué se buscó
+  comunicar visualmente y por qué)
 
-Responde SOLO JSON válido:
-{"slides":[{"titulo":"","subtitulo":"","escena":""}],"caption":"","hashtags":[]}`
+Responde SOLO JSON válido con esta estructura exacta:
+{"slides":[{"titulo":"","subtitulo":"","escena":""}],"hook":"","cuerpo":"","cta":"","pregunta":"","hashtags":[],"horario_sugerido":"","objetivo_clasificado":"","seo_keywords":[],"tipo_ads":"","nota_creador":""}`
 
   const res = await withRetry(() => call(TEXT_MODEL, {
     contents:         [{ parts: [{ text: prompt }] }],
@@ -107,5 +156,24 @@ Responde SOLO JSON válido:
 
   // Pese a responseMimeType el modelo a veces envuelve el JSON en fences de markdown.
   const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
-  return JSON.parse(cleaned) as SocialCopy
+  const rc = JSON.parse(cleaned) as RawCopy
+
+  // El caption no lo escribe el modelo: se arma acá con las secciones, así siempre
+  // queda consistente con hook/cuerpo/cta/pregunta/hashtags aunque el modelo divague.
+  return {
+    slides:   rc.slides,
+    hook:     rc.hook,
+    cuerpo:   rc.cuerpo,
+    cta:      rc.cta,
+    pregunta: rc.pregunta,
+    hashtags: rc.hashtags,
+    caption:  buildCaption(rc),
+    metadata: {
+      horarioSugerido: rc.horario_sugerido,
+      objetivo:        rc.objetivo_clasificado,
+      seoKeywords:     rc.seo_keywords,
+      tipoAds:         rc.tipo_ads,
+    },
+    notaCreador: rc.nota_creador,
+  }
 }

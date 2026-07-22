@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { generateCopy } from '@/lib/social/gemini'
+import { generateCopy, type SocialCopy } from '@/lib/social/gemini'
 import { generateBackground } from '@/lib/social/image'
 import { generateBackgroundGemini } from '@/lib/social/gemini-image'
 import { composeSlide } from '@/lib/social/compose'
@@ -115,6 +115,10 @@ export async function POST(req: NextRequest) {
     let contentEngine: string
     // Fondos crudos para el editor (post/story). Vacío en carrusel (HTML, no edita).
     let backgroundUrls: string[] = []
+    // Copy estratégico (Fase C). Transitorio: SocialPost no tiene columnas para
+    // metadata/notaCreador, así que viaja en la respuesta y se muestra al momento.
+    // Se persiste solo el caption armado (como hoy). Recargar pierde el desglose.
+    let strategy: SocialCopy | null = null
 
     if (body.tipo === 'carrusel') {
       // Fase B+C: HTML renderizado a PNG.
@@ -176,6 +180,7 @@ export async function POST(req: NextRequest) {
       }
       caption = copy.caption; hashtags = copy.hashtags; contentEngine = 'diffusion'
       backgroundUrls = bgUrls
+      strategy = copy
     }
 
     const updated = await prisma.socialPost.update({
@@ -192,7 +197,7 @@ export async function POST(req: NextRequest) {
       include: { assets: { orderBy: { orden: 'asc' } } },
     })
 
-    return NextResponse.json({ ok: true, post: updated, background_urls: backgroundUrls }, { status: 201 })
+    return NextResponse.json({ ok: true, post: updated, background_urls: backgroundUrls, strategy }, { status: 201 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error desconocido'
     console.error('Social generate error:', err)

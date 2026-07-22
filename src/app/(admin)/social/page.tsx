@@ -89,6 +89,18 @@ interface SocialPost {
   assets:         SocialAsset[]
 }
 
+// Copy estratégico (Fase C) — transitorio, viene en la respuesta de generate.
+interface Strategy {
+  hook:     string
+  cuerpo:   string
+  cta:      string
+  pregunta: string
+  hashtags: string[]
+  caption:  string
+  metadata: { horarioSugerido: string; objetivo: string; seoKeywords: string[]; tipoAds: string }
+  notaCreador: string
+}
+
 const TIPOS: { value: Tipo; label: string; icon: typeof ImageIcon }[] = [
   { value: 'post',     label: 'Post',     icon: ImageIcon  },
   { value: 'story',    label: 'Story',    icon: Smartphone },
@@ -123,6 +135,9 @@ export default function SocialPage() {
   // Fondos crudos que devuelve generate, para el editor de capas (Fase B).
   const [bgUrls, setBgUrls]       = useState<string[]>([])
   const [editorOpen, setEditorOpen] = useState(false)
+  // Copy estratégico (Fase C) — desglose por secciones + metadata.
+  const [strategy, setStrategy]   = useState<Strategy | null>(null)
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [personaje, setPersonaje] = useState('')
   const [lugar, setLugar]         = useState('')
   const [accion, setAccion]       = useState('')
@@ -211,6 +226,8 @@ export default function SocialPage() {
     setLoading(true)
     setError(null)
     setPost(null)
+    setStrategy(null)
+    setBgUrls([])
 
     try {
       const res = await fetch('/api/admin/social/generate', {
@@ -234,11 +251,12 @@ export default function SocialPage() {
         }),
       })
 
-      const body = await res.json() as { ok?: boolean; post?: SocialPost; error?: string; background_urls?: string[] }
+      const body = await res.json() as { ok?: boolean; post?: SocialPost; error?: string; background_urls?: string[]; strategy?: Strategy | null }
       if (!res.ok || !body.post) throw new Error(body.error ?? 'Falló la generación')
 
       setPost(body.post)
       setBgUrls(body.background_urls ?? [])
+      setStrategy(body.strategy ?? null)
       loadHistory()
 
       // Puente Calendario -> Generador (PIEZA 1, punto 4): si esta generación vino de
@@ -276,6 +294,13 @@ export default function SocialPage() {
     await navigator.clipboard.writeText(`${post.caption ?? ''}\n\n${hashtags}`.trim())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Copia un texto y marca cuál sección se copió, para el feedback por botón.
+  async function copyText(text: string, key: string) {
+    await navigator.clipboard.writeText(text)
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(k => (k === key ? null : k)), 2000)
   }
 
   function openPublish() {
@@ -770,11 +795,69 @@ export default function SocialPage() {
               )}
 
               <div className={styles.captionBox}>
-                <p className={styles.caption}>{post.caption}</p>
-                {!!post.hashtags?.length && (
-                  <p className={styles.hashtags}>
-                    {post.hashtags.map(h => `#${h}`).join(' ')}
-                  </p>
+                {strategy ? (
+                  <div className={styles.strategy}>
+                    <div className={styles.stratBadges}>
+                      <span className={styles.stratBadge}>🕐 {strategy.metadata.horarioSugerido}</span>
+                      <span className={styles.stratBadge}>🎯 {strategy.metadata.objetivo}</span>
+                      {strategy.metadata.tipoAds && (
+                        <span className={styles.stratBadge}>📣 {strategy.metadata.tipoAds}</span>
+                      )}
+                    </div>
+
+                    {([
+                      { key: 'hook',     label: 'Hook',      text: strategy.hook },
+                      { key: 'cuerpo',   label: 'Cuerpo',    text: strategy.cuerpo },
+                      { key: 'cta',      label: 'CTA',       text: strategy.cta },
+                      { key: 'pregunta', label: 'Pregunta',  text: strategy.pregunta },
+                      { key: 'hashtags', label: 'Hashtags',  text: strategy.hashtags.map(h => `#${h}`).join(' ') },
+                    ] as const).map(({ key, label, text }) => (
+                      <div key={key} className={styles.stratSection}>
+                        <div className={styles.stratHead}>
+                          <span className={styles.stratLabel}>{label}</span>
+                          <button
+                            type="button"
+                            className={styles.stratCopy}
+                            onClick={() => void copyText(text, key)}
+                            aria-label={`Copiar ${label}`}
+                          >
+                            {copiedKey === key
+                              ? <><Check size={12} aria-hidden="true" /> Copiado</>
+                              : <><Copy size={12} aria-hidden="true" /> Copiar</>}
+                          </button>
+                        </div>
+                        <p className={styles.stratText}>{text}</p>
+                      </div>
+                    ))}
+
+                    {strategy.metadata.seoKeywords.length > 0 && (
+                      <p className={styles.stratSeo}>
+                        SEO: {strategy.metadata.seoKeywords.join(' · ')}
+                      </p>
+                    )}
+                    {strategy.notaCreador && (
+                      <p className={styles.stratNote}>💡 {strategy.notaCreador}</p>
+                    )}
+
+                    <button
+                      type="button"
+                      className={styles.submitBtn}
+                      onClick={() => void copyText(strategy.caption, 'all')}
+                    >
+                      {copiedKey === 'all'
+                        ? <><Check size={14} aria-hidden="true" /> Copiado Todo</>
+                        : <><Copy size={14} aria-hidden="true" /> Copiar Todo</>}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className={styles.caption}>{post.caption}</p>
+                    {!!post.hashtags?.length && (
+                      <p className={styles.hashtags}>
+                        {post.hashtags.map(h => `#${h}`).join(' ')}
+                      </p>
+                    )}
+                  </>
                 )}
                 <div className={styles.captionActions}>
                   <button
@@ -889,7 +972,7 @@ export default function SocialPage() {
                 <button
                   type="button"
                   className={`${styles.card} ${post?.id === item.id ? styles.cardActive : ''}`}
-                  onClick={() => { setPost(item); setCopied(false) }}
+                  onClick={() => { setPost(item); setStrategy(null); setBgUrls([]); setCopied(false) }}
                   aria-label={`Ver "${item.titulo}"`}
                 >
                   <span className={styles.thumb}>

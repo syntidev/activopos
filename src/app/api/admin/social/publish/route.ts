@@ -82,6 +82,12 @@ export async function POST(req: NextRequest) {
   const channels = body.channels as BufferChannelName[]
   const results: { channel: BufferChannelName; ok: boolean; buffer_post_id?: string; error?: string }[] = []
 
+  // Instagram exige el tipo en metadata (buffer.ts) -- carrusel no tiene igType
+  // propio en Buffer, se publica como post normal (múltiples imágenes = carrusel).
+  const igType = post.tipo === 'story' ? 'story'
+               : post.tipo === 'reel'  ? 'reel'
+               : 'post'
+
   for (const channel of channels) {
     try {
       const result = await createPost({
@@ -89,6 +95,7 @@ export async function POST(req: NextRequest) {
         text,
         imageUrls: mediaUrls,
         dueAt:     body.due_at,
+        igType,
       })
       results.push({ channel, ok: true, buffer_post_id: result.id })
     } catch (err) {

@@ -1053,6 +1053,7 @@ enum SocialPostType {
   post
   story
   carrusel
+  reel
 }
 
 enum SocialPostStatus {
@@ -1071,6 +1072,7 @@ model SocialPost {
   caption          String?          @db.Text
   hashtags         Json?
   estado           SocialPostStatus @default(pendiente)
+  aspect           String?          @default("4:5") @db.VarChar(10)
   imagen_url       String?          @db.VarChar(500)
   error_msg        String?          @db.VarChar(500)
   buffer_id        String?          @db.VarChar(80)

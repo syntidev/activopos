@@ -18,6 +18,9 @@ const patchSchema = z.object({
   is_featured:      z.boolean().optional(),
   meta_title:       z.string().max(255).nullable().optional(),
   meta_description: z.string().max(255).nullable().optional(),
+  // read_time es string ("5 min"), no número (columna VarChar(20)). El update usa
+  // ...data, así que con incluirlo en el schema ya se persiste.
+  read_time:        z.string().max(20).nullable().optional(),
 })
 
 type Context = { params: { id: string } }

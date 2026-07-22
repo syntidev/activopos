@@ -26,6 +26,9 @@ const postSchema = z.object({
   is_featured:      z.boolean().optional(),
   meta_title:       z.string().max(255).nullable().optional(),
   meta_description: z.string().max(255).nullable().optional(),
+  // read_time es string ("5 min"), no número: columna VarChar(20). Sin esto zod
+  // lo descartaba y el tiempo de lectura del form / generate-ai nunca se guardaba.
+  read_time:        z.string().max(20).nullable().optional(),
 })
 
 export async function GET() {
@@ -62,6 +65,7 @@ export async function POST(req: NextRequest) {
         is_featured:      data.is_featured ?? false,
         meta_title:       data.meta_title ?? null,
         meta_description: data.meta_description ?? null,
+        read_time:        data.read_time ?? null,
       },
     })
 

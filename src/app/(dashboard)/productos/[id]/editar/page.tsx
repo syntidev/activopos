@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useProductForm } from '@/hooks/useProductForm'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { usePlanGate } from '@/hooks/usePlanGate'
 import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
@@ -200,6 +201,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
   }, [fetchCategories])
 
   const f = useProductForm({ editProduct, hasCatalogPlan, onSave: handleSave })
+  useUnsavedChangesGuard(f.isDirty, 'Si sales ahora, perderás los cambios en este producto.')
 
   return (
     <div className={s.page}>

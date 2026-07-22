@@ -7,7 +7,8 @@ import { useSidebarNotifications, type SidebarCounts } from '@/hooks/useSidebarN
 import { NotificationsPanel } from './NotificationsPanel'
 import { CajaToggle } from './CajaToggle'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useUnsavedChanges } from '@/context/UnsavedChangesContext'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -217,6 +218,20 @@ function NavContent({
   collapsedGroups,
   onToggleGroup,
 }: NavContentProps) {
+  const router = useRouter()
+  const { guardNavigation } = useUnsavedChanges()
+
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    const proceed = () => {
+      router.push(href)
+      onCloseMobile?.()
+      onCloseNotifications?.()
+    }
+    if (guardNavigation(proceed)) { e.preventDefault(); return }
+    onCloseMobile?.()
+    onCloseNotifications?.()
+  }
+
   return (
     <div className={styles.inner}>
       {/* Logo */}
@@ -310,7 +325,7 @@ function NavContent({
                       className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                       title={collapsed ? item.label : undefined}
                       aria-current={isActive ? 'page' : undefined}
-                      onClick={() => { onCloseMobile?.(); onCloseNotifications?.() }}
+                      onClick={(e) => handleNavClick(e, item.href)}
                     >
                       <span className={`${styles.iconWrapper}${!isActive && item.colorKey ? ' ' + (ICON_COLOR_CLASSES[item.colorKey] ?? '') : ''}`}>
                         <Icon
@@ -365,7 +380,7 @@ function NavContent({
             href="/businesses"
             className={`${styles.navItem} ${styles.adminPanelLink}`}
             title={collapsed ? 'Panel Admin' : undefined}
-            onClick={() => { onCloseMobile?.(); onCloseNotifications?.() }}
+            onClick={(e) => handleNavClick(e, '/businesses')}
           >
             <span className={styles.iconWrapper}>
               <Shield size={18} strokeWidth={1.75} aria-hidden="true" />

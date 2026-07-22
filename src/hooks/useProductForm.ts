@@ -118,6 +118,10 @@ interface UseProductFormArgs {
  */
 export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: UseProductFormArgs) {
   const isEdit = !!editProduct
+  /** true justo después de que el efecto de abajo pobló los campos desde
+   *  editProduct — marca cuándo es seguro capturar el snapshot "limpio"
+   *  para el tracking de cambios sin guardar (ver isDirty más abajo). */
+  const populatedRef = useRef(false)
 
   /* ── Estado core ── */
   const [name, setName]               = useState('')
@@ -278,6 +282,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setShowWholesale((wUsd != null && wUsd > 0) || (wKg != null && wKg > 0))
     setLocation(editProduct.location ?? '')
     setProductNotes(editProduct.notes ?? '')
+    populatedRef.current = true
   }, [editProduct])
 
   /* ── Cargar variantes DB al editar un producto simple/peso existente ── */
@@ -540,9 +545,33 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     (n < 0 ? '-$' : '$') +
     Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+  /* ── Cambios sin guardar ──────────────────────────────────────────────
+     Snapshot de los campos de CONTENIDO (no UI transitoria: búsquedas,
+     drafts de variante, spinners) tomado en el primer render "limpio" —
+     en alta es el default real de los useState (isEdit=false captura de
+     inmediato); en edición espera a populatedRef (el efecto de arriba ya
+     corrió) para no marcar dirty por el simple hecho de cargar el producto.
+     dbVariants/varForm* quedan fuera: se guardan de inmediato contra la API
+     (handleSaveVar/handleDeleteVar), no son parte de este submit. */
+  const dirtySnapshot = JSON.stringify({
+    name, description, barcode, productKind, measuredBy, unitLabel, unitStep,
+    categoryId, costMode, bulkSize, cost, isFixedPrice, margin, price,
+    stockInitial, stockAlertThreshold, showWholesale, wholesalePriceUsd,
+    wholesalePricePerKgUsd, location, productNotes, images, isAvailable,
+    catalogVisibility, availability, hasVariants, variants, combineVariants,
+    dim1Values, dim2Values, combinations, badge, subcategory, isFeatured,
+    components,
+  })
+  const initialSnapshotRef = useRef<string | null>(null)
+  if (initialSnapshotRef.current === null && (!isEdit || populatedRef.current)) {
+    initialSnapshotRef.current = dirtySnapshot
+  }
+  const isDirty = initialSnapshotRef.current !== null && initialSnapshotRef.current !== dirtySnapshot
+
   return {
     // meta
     isEdit,
+    isDirty,
     // core state
     name, setName, description, setDescription, barcode, setBarcode,
     productKind, setProductKind, measuredBy, setMeasuredBy,

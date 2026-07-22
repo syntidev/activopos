@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { useHardwareScanner } from '@/hooks/useHardwareScanner'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import styles from './editor.module.css'
 
 /* ── Types ── */
@@ -532,6 +533,28 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
       setSaving(false)
     }
   }
+
+  /* ── Cambios sin guardar ──────────────────────────────────────────────
+     load() aplica todos sus setState (number/client/notes/validUntil/items)
+     y setLoading(false) en el mismo tick asíncrono — React 18 los agrupa en
+     un solo render, así que capturar el snapshot en el render donde
+     !loading ya ve los valores cargados, tanto en alta (loading arranca en
+     false) como en edición. */
+  const dirtySnapshot = JSON.stringify({
+    clientId: client?.id ?? null,
+    notes,
+    validUntil,
+    items: items.map(i => ({
+      product_id: i.product_id, name: i.name, qty: i.qty,
+      price: i.price, discount_pct: i.discount_pct,
+    })),
+  })
+  const initialSnapshotRef = useRef<string | null>(null)
+  if (initialSnapshotRef.current === null && !loading) {
+    initialSnapshotRef.current = dirtySnapshot
+  }
+  const isDirty = initialSnapshotRef.current !== null && initialSnapshotRef.current !== dirtySnapshot
+  useUnsavedChangesGuard(isDirty, 'Si sales ahora, perderás los cambios en esta cotización.')
 
   /* ── Render ── */
 

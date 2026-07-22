@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { ShoppingCart, X } from 'lucide-react'
 import { usePOS } from '@/hooks/usePOS'
 import { useDraftTabs } from '@/hooks/useDraftTabs'
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { calcularTotales, ticketVacio } from '@/lib/pos'
 import { LeftPanel } from './LeftPanel'
 import { TicketPanel } from './TicketPanel'
@@ -66,6 +67,7 @@ function POSView() {
   const totals = calcularTotales(pos.ticket)
   const isEmpty = ticketVacio(pos.ticket)
   const itemCount = pos.ticket.items.length
+  useUnsavedChangesGuard(!isEmpty, 'Si sales ahora, perderás la venta en curso en este ticket.')
 
   const drafts = useDraftTabs(pos.rate, 0, useSearchParams().get('draft'))
 

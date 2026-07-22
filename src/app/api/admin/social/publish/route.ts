@@ -22,7 +22,12 @@ function buildText(caption: string | null, hashtags: unknown): string {
   const tags = Array.isArray(hashtags)
     ? hashtags.map(h => `#${String(h).replace(/^#/, '')}`).join(' ')
     : typeof hashtags === 'string' ? hashtags : ''
-  return [caption ?? '', tags].filter(Boolean).join('\n\n').trim()
+  const cap = (caption ?? '').trim()
+  // El caption de difusión (buildCaption) ya trae el bloque de hashtags al final; el
+  // de carrusel no. Se añade solo si no está ya presente — así se evita el bloque
+  // duplicado en difusión sin dejar sin hashtags al carrusel.
+  if (tags && cap.includes(tags)) return cap
+  return [cap, tags].filter(Boolean).join('\n\n').trim()
 }
 
 export async function POST(req: NextRequest) {

@@ -206,7 +206,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       <section className={styles.detailCta}>
         <div className={styles.detailCtaCard}>
           <h2 className={styles.detailCtaTitle}>¿Listo para controlar tu negocio?</h2>
-          <p className={styles.detailCtaSubtitle}>14 días gratis. Sin tarjeta de crédito.</p>
+          <p className={styles.detailCtaSubtitle}>Empieza gratis, sin tarjeta de crédito.</p>
           <Link href="/registro" className={styles.detailCtaBtn}>Empezar gratis</Link>
         </div>
       </section>

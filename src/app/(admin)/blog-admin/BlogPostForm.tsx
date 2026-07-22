@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import type { ChangeEvent } from 'react'
-import { X, Sparkles, Loader2, Check } from 'lucide-react'
+import { X, Sparkles, Loader2 } from 'lucide-react'
 import { RichTextEditor } from '@/components/admin/RichTextEditor'
 import { BLOG_CATEGORIES, slugify, type BlogPost, type BlogPostPayload } from './constants'
 import styles from './blog-admin.module.css'
@@ -78,13 +78,13 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Generar imagen con IA desde el título/contenido del post. Igual que
-  // GenerateAiModal: 2 pasos encadenados (dirigir escena → generar imagen).
+  // Generar imagen con IA desde el título/contenido del post. 2 pasos
+  // encadenados (dirigir escena → generar imagen). La imagen pasa DIRECTO a
+  // featured_image, sin paso de aceptar; "Regenerar" la reemplaza si no gusta.
   const [aiLoading, setAiLoading]   = useState(false)
   const [aiError, setAiError]       = useState<string | null>(null)
-  const [aiPreview, setAiPreview]   = useState<string | null>(null)
-  // El modal queda montado entre corridas: un fetch lento podría pisar estado
-  // ya reseteado. Cada corrida toma un id; al resolver, se descarta si venció.
+  // Un fetch lento podría resolver tras otra corrida y pisar la imagen buena.
+  // Cada corrida toma un id; al resolver, se descarta si ya venció.
   const aiRun = useRef(0)
 
   async function handleGenerateAi() {
@@ -94,7 +94,6 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
     }
     const myRun = ++aiRun.current
     setAiError(null)
-    setAiPreview(null)
     setAiLoading(true)
     try {
       // Paso 1: derivar la dirección de escena del artículo.
@@ -127,17 +126,13 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
         setAiError(img.error ?? 'No se pudo generar la imagen.')
         return
       }
-      setAiPreview(img.url)
+      // Directo a featured_image: sin paso de aceptar. Regenerar la reemplaza.
+      set('featured_image', img.url)
     } catch {
       if (myRun === aiRun.current) setAiError('Error de red al generar la imagen.')
     } finally {
       if (myRun === aiRun.current) setAiLoading(false)
     }
-  }
-
-  function acceptAiImage() {
-    if (aiPreview) set('featured_image', aiPreview)
-    setAiPreview(null)
   }
 
   function set<K extends keyof BlogPostFormValues>(key: K, value: BlogPostFormValues[K]) {
@@ -265,7 +260,9 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
           >
             {aiLoading
               ? <><Loader2 size={14} className={styles.spin} aria-hidden="true" /> Generando...</>
-              : <><Sparkles size={14} aria-hidden="true" /> Generar con IA</>}
+              : values.featured_image
+                ? <><Sparkles size={14} aria-hidden="true" /> Regenerar con IA</>
+                : <><Sparkles size={14} aria-hidden="true" /> Generar con IA</>}
           </button>
           <input
             id="featured_image_upload"
@@ -278,23 +275,6 @@ export function BlogPostForm({ post, submitLabel, submitting, error, onSubmit }:
         </div>
         {uploadError && <p className={styles.errorText}>{uploadError}</p>}
         {aiError && <p className={styles.errorText}>{aiError}</p>}
-
-        {/* Preview de la imagen IA: se muestra aparte de la destacada actual
-            hasta que el editor la acepta explícitamente. */}
-        {aiPreview && (
-          <div className={styles.aiImagePreview}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={aiPreview} alt="Imagen generada con IA" className={styles.aiImageThumb} />
-            <div className={styles.imageUploadRow}>
-              <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={acceptAiImage}>
-                <Check size={14} aria-hidden="true" /> Usar esta imagen
-              </button>
-              <button type="button" className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => setAiPreview(null)}>
-                Descartar
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className={styles.formRow}>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { z } from 'zod'
 import { generateBackground } from '@/lib/social/image'
+import { generateBackgroundGemini } from '@/lib/social/gemini-image'
 import { ProviderError } from '@/lib/social/retry'
 import { saveBlogImage } from '@/lib/blog/image-storage'
 import { uploadLimiter, getClientIp } from '@/lib/rate-limit'
@@ -46,8 +47,17 @@ export async function POST(req: NextRequest) {
   try {
     const { personaje, lugar, accion, nicho } = bodySchema.parse(await req.json())
 
-    const background = await generateBackground(lugar, nicho, '1:1', { personaje, lugar, accion })
-    const url        = await saveBlogImage(background)
+    // Gemini (dirección de arte) como motor principal, mismo que Social; NVIDIA
+    // FLUX como fallback si Gemini falla — el blog nunca queda sin imagen. Sin
+    // preset forzado → automático (pickPreset), igual que Social.
+    let background: Buffer
+    try {
+      background = await generateBackgroundGemini({ escena: lugar, nicho, aspect: '1:1', direction: { personaje, lugar, accion } })
+    } catch (err) {
+      console.error('Gemini imagen falló, fallback a NVIDIA:', err)
+      background = await generateBackground(lugar, nicho, '1:1', { personaje, lugar, accion })
+    }
+    const url = await saveBlogImage(background)
 
     return NextResponse.json({ ok: true, url }, { status: 201 })
   } catch (err) {

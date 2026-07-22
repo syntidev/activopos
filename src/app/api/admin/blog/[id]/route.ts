@@ -64,14 +64,22 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     const existing = await prisma.blogPost.findUnique({ where: { id } })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-    const post = await prisma.blogPost.update({
-      where: { id },
-      data: {
-        ...data,
-        tags:         data.tags === undefined ? undefined : (data.tags === null ? Prisma.JsonNull : data.tags),
-        published_at: data.published_at === undefined ? undefined : (data.published_at ? new Date(data.published_at) : null),
-      },
-    })
+    const updateData = {
+      ...data,
+      tags:         data.tags === undefined ? undefined : (data.tags === null ? Prisma.JsonNull : data.tags),
+      published_at: data.published_at === undefined ? undefined : (data.published_at ? new Date(data.published_at) : null),
+    }
+
+    // Destacado exclusivo: solo un post puede estar is_featured a la vez. Si este
+    // se marca, se desmarcan los demás en la misma transacción. .find() en el
+    // front tomaba el primero de varios featured, así que el destacado nunca
+    // cambiaba aunque el usuario marcara otro.
+    const post = data.is_featured === true
+      ? await prisma.$transaction(async (tx) => {
+          await tx.blogPost.updateMany({ where: { id: { not: id }, is_featured: true }, data: { is_featured: false } })
+          return tx.blogPost.update({ where: { id }, data: updateData })
+        })
+      : await prisma.blogPost.update({ where: { id }, data: updateData })
 
     return NextResponse.json({ ok: true, post })
   } catch (err) {

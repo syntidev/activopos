@@ -128,13 +128,24 @@ export function SocialEditor({
               style={{ width: PREVIEW_W, height: previewH, backgroundImage: `url(${sealedUrl ?? backgroundUrl})` }}
             >
               {!sealedUrl && logo.show && (
-                <motion.img
-                  src={logo.type === 'negative' ? '/activopos-logo-negative.svg' : '/activopos-logo-positive.svg'}
+                // Isotipo + wordmark como un solo bloque arrastrable, igual que el lockup
+                // que compone compose.ts server-side (isotipo + "ActivoPOS" en Inter, gap 20px,
+                // wordmark blanco fijo a 34px — no proporcional al logo, para calcar el sellado).
+                <motion.div
                   className={styles.layer}
-                  style={{ left: logo.pos.x * scale, top: logo.pos.y * scale, width: logo.size * scale }}
-                  alt="logo" draggable={false}
+                  style={{ left: logo.pos.x * scale, top: logo.pos.y * scale, display: 'flex', alignItems: 'center', gap: 20 * scale }}
                   {...dragProps(setLogo as never)}
-                />
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={logo.type === 'negative' ? '/activopos-logo-negative.svg' : '/activopos-logo-positive.svg'}
+                    style={{ width: logo.size * scale }}
+                    alt="logo" draggable={false}
+                  />
+                  <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: '#FFFFFF', fontSize: 34 * scale, whiteSpace: 'nowrap' }}>
+                    ActivoPOS
+                  </span>
+                </motion.div>
               )}
               {!sealedUrl && title.show && (
                 <motion.div

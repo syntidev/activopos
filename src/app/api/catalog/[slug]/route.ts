@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
@@ -10,6 +11,69 @@ const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 function parseImages(raw: string | null): string[] {
   if (!raw) return []
   try { return JSON.parse(raw) as string[] } catch { return [] }
+}
+
+// Cachea business+products 60s por slug — son los 2 datos que solo cambian
+// cuando el dueño edita algo (revalidados on-demand vía revalidateTag desde
+// products/route.ts). rate e inventoryEntry quedan FUERA: rate ya tiene su
+// propio cache de 1h en DB (lib/bcv.ts), e inventoryEntry debe ser fresco
+// siempre — cachearlo arriesga overselling en catálogos con checkout.
+function getCachedCatalogData(slug: string) {
+  return unstable_cache(
+    async () => {
+      const business = await prisma.business.findFirst({
+        where: { catalog_slug: slug, catalog_active: true, active: true },
+        select: {
+          id:           true,
+          name:         true,
+          logo_path:    true,
+          phone:        true,
+          city:         true,
+          state:        true,
+          catalog_title: true,
+          catalog_desc:  true,
+          theme_color:   true,
+          catalog_plan:            true,
+          subscription_active:     true,
+          subscription_expires_at: true,
+        },
+      })
+      if (!business) return null
+
+      const products = await prisma.product.findMany({
+        where: {
+          business_id:        business.id,
+          active:             true,
+          show_in_catalog:    true,
+          available_in_pos:   true,
+          ...CATALOG_WHERE_FILTER,
+        },
+        select: {
+          id:                 true,
+          name:               true,
+          description:        true,
+          price_per_unit_usd: true,
+          price_per_kg_usd:   true,
+          sku:                true,
+          images:             true,
+          sale_mode:          true,
+          base_unit_label:    true,
+          min_stock:          true,
+          badge:              true,
+          subcategory:        true,
+          is_featured:        true,
+          availability:       true,
+          catalog_visibility: true,
+          category: { select: { name: true } },
+        },
+        orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
+      })
+
+      return { business, products }
+    },
+    ['catalog-data', slug],
+    { revalidate: 60, tags: [`catalog-${slug}`] },
+  )()
 }
 
 export async function GET(
@@ -32,60 +96,18 @@ export async function GET(
 
   const { data: slug } = parsed
 
-  const business = await prisma.business.findFirst({
-    where: { catalog_slug: slug, catalog_active: true, active: true },
-    select: {
-      id:           true,
-      name:         true,
-      logo_path:    true,
-      phone:        true,
-      city:         true,
-      state:        true,
-      catalog_title: true,
-      catalog_desc:  true,
-      theme_color:   true,
-      catalog_plan:            true,
-      subscription_active:     true,
-      subscription_expires_at: true,
-    },
-  })
+  const cached = await getCachedCatalogData(slug)
 
-  if (!business || !isCatalogLive(business)) {
+  if (!cached || !isCatalogLive(cached.business)) {
     return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
   }
+
+  const { business, products } = cached
 
   // No filtrar campos de suscripción al público
   const { catalog_plan, subscription_active, subscription_expires_at, ...publicBusiness } = business
 
-  const [products, rate, stockEntries] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        business_id:        business.id,
-        active:             true,
-        show_in_catalog:    true,
-        available_in_pos:   true,
-        ...CATALOG_WHERE_FILTER,
-      },
-      select: {
-        id:                 true,
-        name:               true,
-        description:        true,
-        price_per_unit_usd: true,
-        price_per_kg_usd:   true,
-        sku:                true,
-        images:             true,
-        sale_mode:          true,
-        base_unit_label:    true,
-        min_stock:          true,
-        badge:              true,
-        subcategory:        true,
-        is_featured:        true,
-        availability:       true,
-        catalog_visibility: true,
-        category: { select: { name: true } },
-      },
-      orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
-    }),
+  const [rate, stockEntries] = await Promise.all([
     getActiveRate(business.id).then(r => r.rate),
     prisma.inventoryEntry.groupBy({
       by:    ['product_id'],

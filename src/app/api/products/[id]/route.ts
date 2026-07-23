@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getActiveRate } from '@/lib/bcv'
+import { revalidateCatalogCache } from '@/lib/catalog'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -140,6 +141,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       include: { category: true },
     })
 
+    await revalidateCatalogCache(session.businessId)
+
     return NextResponse.json({ ok: true, product })
   } catch (err) {
     if (err instanceof TenantError) {
@@ -179,6 +182,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     }
 
     await db.product.delete({ where: { id } }) // business_id inyectado por el tenant layer
+    await revalidateCatalogCache(session.businessId)
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })

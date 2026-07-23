@@ -1,3 +1,5 @@
+import { revalidateTag } from 'next/cache'
+import { prisma } from './prisma'
 import { PLAN_LIMITS, type PlanTier } from './plan-limits'
 
 export type Availability = 'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued'
@@ -36,3 +38,13 @@ export function computeAvailability(product: {
 export const CATALOG_WHERE_FILTER = {
   catalog_visibility: { not: 'hidden' as const },
 } as const
+
+// Invalida el cache de 60s del catálogo público al editar/crear/borrar un
+// producto — sin esto, el dueño vería su cambio recién a los 60s.
+export async function revalidateCatalogCache(businessId: number): Promise<void> {
+  const business = await prisma.business.findUnique({
+    where:  { id: businessId },
+    select: { catalog_slug: true },
+  })
+  if (business?.catalog_slug) revalidateTag(`catalog-${business.catalog_slug}`)
+}

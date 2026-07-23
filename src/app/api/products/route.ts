@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { getActiveRate } from '@/lib/bcv'
+import { revalidateCatalogCache } from '@/lib/catalog'
 import { z } from 'zod'
 
 const productSchema = z.object({
@@ -322,6 +323,8 @@ export async function POST(req: NextRequest) {
         },
       })
     }
+
+    await revalidateCatalogCache(session.businessId)
 
     return NextResponse.json({
       ok:      true,

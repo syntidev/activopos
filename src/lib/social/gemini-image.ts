@@ -167,12 +167,21 @@ Do NOT render any text, typography, words, labels, letters or numbers anywhere. 
 
 FORMAT: ${width}x${height} px. Fill the entire canvas. No bars, no letterboxing.
 
-SCENE: ${subject}, ${angle}, ${light}, holding a smartphone with the GLASS SCREEN facing the camera, showing a glowing POS dashboard UI in Persian Blue (#0038BD).
+SCENE: ${subject}, ${angle}, ${light}, holding a smartphone with the GLASS SCREEN facing the camera (screen content described in PHONE SCREEN below).
 
 PHONE GEOMETRY (CRITICAL):
 The GLASS SCREEN faces outward toward the camera — the viewer sees the lit display.
 The camera bump is on the side AWAY from the camera, hidden behind the device.
-NEVER show a camera module on the visible face of the phone.${handsBlock}
+NEVER show a camera module on the visible face of the phone.
+
+PHONE SCREEN (CRITICAL — abstract, not literal):
+The phone screen faces the camera but shows NO readable text, NO fake UI components, NO invented charts or buttons.
+Instead: a clean abstract dark surface with:
+- Persian Blue (#0038BD) as the dominant screen color
+- Subtle Carrot Amber (#EF8E01) accent — a single glowing dot or thin horizontal bar at 20% opacity
+- Soft white geometric shapes suggesting data (rectangles, lines) but completely abstract — NOT readable, NOT literal
+- The overall impression is "premium dark app" without showing any specific UI element
+- Screen has a subtle blue glow emanating outward (ambient light)${handsBlock}
 
 COMPOSITION (CRITICAL):
 Leave the TOP 35% of the canvas calm and uncluttered for a text overlay — ceiling, wall, sky or soft bokeh, NOT a flat colored panel.

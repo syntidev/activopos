@@ -78,8 +78,11 @@ semi-transparent, glowing Persian Blue (#0038BD), showing abstract sales-data an
 motifs as icons/shapes only, NO rendered text or numbers.` : ''
 
   return `Photorealistic documentary advertising photograph, shot on a 50mm lens at f/1.8.
-Scene: ${subject}, ${angle}, ${light}, holding a modern smartphone with the GLASS SCREEN
-facing the camera, showing a glowing POS dashboard UI in Persian Blue (#0038BD).
+Scene: ${subject}, ${angle}, ${light}, holding a modern smartphone with the GLASS SCREEN facing the camera.
+Phone screen (abstract, not literal): NO readable text, NO fake UI, NO invented charts or buttons — a clean
+dark surface with Persian Blue (#0038BD) dominant, a subtle Carrot Amber (#EF8E01) glowing dot or thin bar at
+~20% opacity, and soft white abstract geometric shapes (rectangles, lines) suggesting data but not readable.
+Impression of a premium dark app with a subtle blue glow, without any specific UI element.
 The camera bump is hidden behind the device; never show a camera module on the visible face.${handsBlock}${floatingBlock}
 
 Setting: a real Venezuelan small business (${nicho}). Authentic and lived-in, never stock-photo generic.

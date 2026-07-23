@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import type { PlanTier } from '@/lib/plan-limits'
 import styles from '../configuracion.module.css'
 
 interface Module {
@@ -15,6 +16,10 @@ interface Module {
   desc: string
   Icon: React.ElementType
   alwaysOn: boolean
+  /** Si está definido, el switch requiere que el plan actual sea exactamente
+   *  este tier — con el modelo de 2 planes de PLAN_LIMITS, en la práctica
+   *  significa "requiere negocio_activo". */
+  requiresPlan?: PlanTier
 }
 
 const MODULES: Module[] = [
@@ -22,11 +27,11 @@ const MODULES: Module[] = [
   { key: 'inventory', label: 'Inventario',         desc: 'Gestión de productos y stock',         Icon: Package,      alwaysOn: true  },
   { key: 'caja',      label: 'Caja',               desc: 'Gestión de apertura y cierre de caja', Icon: Calculator,   alwaysOn: false },
   { key: 'pedidos',   label: 'Pedidos',            desc: 'Tablero kanban de pedidos',            Icon: ShoppingBag,  alwaysOn: false },
-  { key: 'catalog',   label: 'Catálogo WhatsApp',  desc: 'Catálogo digital para clientes',       Icon: Store,        alwaysOn: false },
-  { key: 'finanzas',  label: 'Finanzas',           desc: 'CxC, CxP y control financiero',        Icon: TrendingUp,   alwaysOn: false },
+  { key: 'catalog',   label: 'Catálogo WhatsApp',  desc: 'Catálogo digital para clientes',       Icon: Store,        alwaysOn: false, requiresPlan: 'negocio_activo' },
+  { key: 'finanzas',  label: 'Finanzas',           desc: 'CxC, CxP y control financiero',        Icon: TrendingUp,   alwaysOn: false, requiresPlan: 'negocio_activo' },
   { key: 'reportes',  label: 'Reportes',           desc: 'Informes y exportación de datos',      Icon: BarChart2,    alwaysOn: false },
-  { key: 'analytics', label: 'Pulso del Negocio',  desc: 'Métricas y tendencias avanzadas',      Icon: Activity,     alwaysOn: false },
-  { key: 'suppliers', label: 'Proveedores',        desc: 'Gestión de proveedores y compras',     Icon: Truck,        alwaysOn: false },
+  { key: 'analytics', label: 'Pulso del Negocio',  desc: 'Métricas y tendencias avanzadas',      Icon: Activity,     alwaysOn: false, requiresPlan: 'negocio_activo' },
+  { key: 'suppliers', label: 'Proveedores',        desc: 'Gestión de proveedores y compras',     Icon: Truck,        alwaysOn: false, requiresPlan: 'negocio_activo' },
 ]
 
 const DEFAULT_ENABLED = new Set(['pos', 'inventory', 'caja', 'pedidos', 'catalog', 'finanzas', 'reportes', 'analytics', 'suppliers'])
@@ -68,6 +73,20 @@ export function TabModulos({ businessId: _businessId }: Props) {
   const [enabled, setEnabled] = useState<Set<string>>(new Set(DEFAULT_ENABLED))
   const [saving, setSaving] = useState(false)
   const [optSaving, setOptSaving] = useState<Record<string, boolean>>({})
+  // Plan real del negocio — decide qué switches quedan bloqueados. modules_enabled
+  // (arriba) solo controla visibilidad de sidebar y no sabe nada de plan; este
+  // fetch es la única fuente de verdad de "qué puede usar este negocio hoy".
+  const [currentPlan, setCurrentPlan] = useState<PlanTier>('gratis')
+
+  useEffect(() => {
+    fetch('/api/plan')
+      .then(res => (res.ok ? res.json() : null))
+      .then((data: { plan?: PlanTier } | null) => { if (data?.plan) setCurrentPlan(data.plan) })
+      .catch(() => {
+        // Sin red: se asume 'gratis' (el default del estado) — más seguro
+        // mostrar el switch bloqueado de más que dejarlo pasar por error de red.
+      })
+  }, [])
 
   const fetchModules = useCallback(async () => {
     try {
@@ -148,8 +167,12 @@ export function TabModulos({ businessId: _businessId }: Props) {
       </p>
 
       <div className={styles.moduleList}>
-        {MODULES.map(({ key, label, desc, Icon, alwaysOn }) => {
+        {MODULES.map(({ key, label, desc, Icon, alwaysOn, requiresPlan }) => {
           const isOn = enabled.has(key)
+          // Con el modelo de 2 planes, "requiere negocio_activo" bloquea solo
+          // cuando el negocio está en gratis — no hay tiers intermedios que
+          // satisfacer con una comparación más laxa.
+          const isLocked = requiresPlan != null && currentPlan !== requiresPlan
           return (
             <div key={key} className={styles.moduleRow}>
               <div className={styles.moduleInfo}>
@@ -157,17 +180,23 @@ export function TabModulos({ businessId: _businessId }: Props) {
                   <Icon size={15} strokeWidth={1.75} />
                 </span>
                 <div>
-                  <span className={styles.moduleLabel}>{label}</span>
+                  <span className={styles.moduleLabel}>
+                    {label}
+                    {isLocked && <span className={styles.proBadge}>Pro</span>}
+                  </span>
                   {desc && <span className={styles.moduleDesc}>{desc}</span>}
+                  {isLocked && (
+                    <span className={styles.moduleLockedHint}>Disponible en Negocio Activo</span>
+                  )}
                 </div>
               </div>
               <button
                 type="button"
-                className={`${styles.toggleBtn} ${isOn ? styles.toggleBtnOn : ''} ${alwaysOn ? styles.toggleBtnDisabled : ''}`}
-                aria-label={`${isOn ? 'Desactivar' : 'Activar'} ${label}`}
+                className={`${styles.toggleBtn} ${isOn ? styles.toggleBtnOn : ''} ${(alwaysOn || isLocked) ? styles.toggleBtnDisabled : ''}`}
+                aria-label={isLocked ? `${label} requiere el plan Negocio Activo` : `${isOn ? 'Desactivar' : 'Activar'} ${label}`}
                 aria-pressed={isOn}
-                disabled={alwaysOn}
-                onClick={() => { if (!alwaysOn) toggle(key) }}
+                disabled={alwaysOn || isLocked}
+                onClick={() => { if (!alwaysOn && !isLocked) toggle(key) }}
               >
                 <span className={`${styles.toggleKnob} ${isOn ? styles.toggleKnobOn : ''}`} />
               </button>

@@ -5,6 +5,8 @@ import { FileSpreadsheet, Check, Tag } from 'lucide-react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { Button }          from '@/components/ui/Button'
 import { useToast }        from '@/components/ui'
+import { UpgradeModal }    from '@/components/ui/UpgradeModal'
+import { usePlanGate }     from '@/hooks/usePlanGate'
 import { CxCSection }      from './CxCSection'
 import { CxPSection }      from './CxPSection'
 import { GastosSection }   from './GastosSection'
@@ -36,10 +38,31 @@ export default function FinanzasPage() {
   const [exportSuccess,   setExportSuccess]  = useState(false)
   const { toast } = useToast()
 
+  // Gate de plan a nivel de página, mismo mecanismo que ReportesClient.tsx
+  // (guardedFetch + upgradeReason + UpgradeModal). El hook es reactivo — solo
+  // sabe que hay bloqueo DESPUÉS de un 403 real — así que se dispara una sola
+  // llamada proactiva contra un endpoint de Finanzas ya gateado en el backend
+  // (checkPlanLimit('access_finanzas')) para decidir qué renderizar. Las
+  // secciones (ResumenSection, etc.) no se tocan ni repiten esta lógica.
+  const { guardedFetch, upgradeReason, clearUpgrade } = usePlanGate()
+  const [checkingAccess, setCheckingAccess] = useState(true)
+  const [hasAccess,      setHasAccess]      = useState(false)
+
   useEffect(() => {
     fetch('/api/rates/bcv')
       .then(r => r.json())
       .then(j => { if (j.ok && j.rate) setRate(Number(j.rate)) })
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    guardedFetch(`/api/finanzas/resumen?month=${month}`)
+      .then(res => { if (alive) setHasAccess(res.ok) })
+      .finally(() => { if (alive) setCheckingAccess(false) })
+    return () => { alive = false }
+    // Chequeo único al montar con el mes inicial — cambiar de mes no cambia el
+    // plan, no hace falta repetir el check en cada cambio de `month`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleExportExcel = useCallback(async () => {
@@ -70,6 +93,28 @@ export default function FinanzasPage() {
       setExportingExcel(false)
     }
   }, [month, exportingExcel, toast])
+
+  if (checkingAccess) {
+    return (
+      <div className={`${styles.page} page-container`}>
+        <div className={styles.loading}>Cargando…</div>
+      </div>
+    )
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className={`${styles.page} page-container`}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Finanzas</h1>
+        </div>
+        <div className={styles.sectionError}>
+          {upgradeReason ?? 'El módulo de finanzas requiere plan Negocio Activo.'}
+        </div>
+        <UpgradeModal reason={upgradeReason} onClose={clearUpgrade} />
+      </div>
+    )
+  }
 
   return (
     <div className={`${styles.page} page-container`}>

@@ -184,6 +184,8 @@ model Business {
   // ticket = negocio de productos → genera ticket térmico 58mm
   // invoice = negocio de servicios → genera PDF carta A4
   pos_mode                    String    @default("ticket")
+  // valores: 'cash' | 'nocash' — nocash permite vender sin caja abierta
+  caja_mode                   String    @default("cash") @db.VarChar(10)
   created_at                  DateTime  @default(now())
   updated_at                  DateTime  @updatedAt
 

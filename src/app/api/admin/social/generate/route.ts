@@ -38,6 +38,8 @@ const bodySchema = z.object({
   carouselMode:     z.enum(['geometric', 'human', 'hybrid']).optional(),
   geometryType:     z.enum(['diagonal', 'circles', 'bars', 'grid', 'radial', 'split']).optional(),
   carouselPreset:   z.string().max(40).optional(),
+  // Paneles glassmorphism flotantes — aplica a posts/story; en carrusel lo decide el rol.
+  floatingElements: z.boolean().optional().default(false),
 }).refine(
   b => b.tipo === 'carrusel' ? (!!b.gancho?.trim() || !!b.segment_slug) : !!b.gancho?.trim(),
   { message: 'Debes dar un gancho (o, en carrusel, elegir un segmento)', path: ['gancho'] },
@@ -128,11 +130,11 @@ export async function POST(req: NextRequest) {
         try {
           background = await generateBackgroundGemini({
             escena: slide.escena, nicho: body.nicho, aspect: body.aspect, direction,
-            slideIndex: index, presetKey: body.preset,
+            slideIndex: index, presetKey: body.preset, floatingElements: body.floatingElements,
           })
         } catch (err) {
           console.error('Gemini imagen falló, fallback a NVIDIA:', err)
-          background = await generateBackground(slide.escena, body.nicho, body.aspect, direction)
+          background = await generateBackground(slide.escena, body.nicho, body.aspect, direction, body.floatingElements)
         }
         // Opción A: se sella con posiciones default (comportamiento de siempre) Y
         // se sube el fondo crudo aparte, para que el editor pueda re-sellar con

@@ -57,7 +57,7 @@ function pickRandom<T>(arr: T[]): T {
  * no una escena genérica. La dirección manual del formulario gana sobre la variante.
  * El endpoint no acepta negative_prompt (422); las restricciones van en el propio prompt.
  */
-function buildPrompt(escena: string, nicho: string, direction?: SceneDirection): string {
+function buildPrompt(escena: string, nicho: string, direction?: SceneDirection, floatingElements = false): string {
   const subject = hasDirection(direction)
     ? [
         direction?.personaje?.trim() ?? '',
@@ -68,10 +68,19 @@ function buildPrompt(escena: string, nicho: string, direction?: SceneDirection):
   const light = pickRandom(ILUMINACION_VARIANTS)
   const angle = pickRandom(ANGULO_VARIANTS)
 
+  const handsBlock = `
+Hands anatomically perfect: exactly 5 clearly separated fingers per hand, natural proportions,
+no fused/extra fingers, no melted skin, wrist at a natural angle. Phone grip: thumb on the left
+edge, four fingers wrapped behind the device. When less hand reads cleaner, show more object.`
+  const floatingBlock = floatingElements ? `
+Floating elements: 2-3 subtle holographic glassmorphism UI panels around the subject —
+semi-transparent, glowing Persian Blue (#0038BD), showing abstract sales-data and currency
+motifs as icons/shapes only, NO rendered text or numbers.` : ''
+
   return `Photorealistic documentary advertising photograph, shot on a 50mm lens at f/1.8.
 Scene: ${subject}, ${angle}, ${light}, holding a modern smartphone with the GLASS SCREEN
 facing the camera, showing a glowing POS dashboard UI in Persian Blue (#0038BD).
-The camera bump is hidden behind the device; never show a camera module on the visible face.
+The camera bump is hidden behind the device; never show a camera module on the visible face.${handsBlock}${floatingBlock}
 
 Setting: a real Venezuelan small business (${nicho}). Authentic and lived-in, never stock-photo generic.
 Present day, contemporary 2020s. Current-generation devices, modern retail fittings, LED lighting.
@@ -89,6 +98,7 @@ export async function generateBackground(
   nicho: string,
   aspect: Aspect,
   direction?: SceneDirection,
+  floatingElements = false,
 ): Promise<Buffer> {
   const key = process.env.NVIDIA_API_KEY
   if (!key) throw new ProviderError('NVIDIA_API_KEY no configurada en el servidor', 500)
@@ -104,7 +114,7 @@ export async function generateBackground(
         Accept:         'application/json',
       },
       body: JSON.stringify({
-        prompt: buildPrompt(escena, nicho, direction),
+        prompt: buildPrompt(escena, nicho, direction, floatingElements),
         width,
         height,
         steps: 40,

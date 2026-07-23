@@ -99,6 +99,8 @@ export interface ArtDirectionInput {
   presetKey?:  PresetKey
   direction?:  SceneDirection
   aspect:      Aspect
+  /** Paneles glassmorphism flotantes. Si no se da, default por rol: 'valor' → true, resto false. */
+  floatingElements?: boolean
 }
 
 function hasDirection(d?: SceneDirection): boolean {
@@ -129,6 +131,35 @@ function buildPrompt(input: ArtDirectionInput): string {
   const light = pickRandom(ILUMINACION_VARIANTS)
   const angle = pickRandom(ANGULO_VARIANTS)
 
+  // Paneles flotantes: el usuario los pide explícito (posts) o, en carrusel, se activan
+  // solos en el slide de valor. Nota: carrusel.ts mapea 'valor'→'beneficio' (toArtRole)
+  // antes de llegar acá, así que el rol que vemos es 'beneficio'. Iconográficos — sin
+  // texto/números, para no romper ZERO TEXT ni depender de cifras IA legibles.
+  const floating = input.floatingElements ?? (input.slideRole === 'beneficio')
+
+  const handsBlock = `
+
+HANDS AND FINGERS (HYPER-CRITICAL — rejection risk):
+Hands must be anatomically perfect:
+- Exactly 5 fingers per hand, no more, no less
+- Natural finger proportions, no elongated or fused joints
+- No extra knuckles, no melting skin, no horror-movie distortion
+- Phone grip: thumb on the LEFT edge, 4 fingers wrapped behind the device
+- Fingers clearly separated and individually defined
+- Wrist at a natural angle — no twisted or broken wrist
+- If holding cash/tablet/other object: same anatomical rules apply
+- When in doubt: show less of the hand, more of the object`
+
+  const floatingBlock = floating ? `
+
+FLOATING UI ELEMENTS (glassmorphism — iconographic, NO text or numbers):
+Around the person, floating in 3D at natural distances, add 3-4 semi-transparent glassmorphism panels (rgba(255,255,255,0.12) blurred fill, 1px rgba(255,255,255,0.25) border, soft drop shadow, slight 3D tilt), lit by Persian Blue (#0038BD) ambient light, looking like they project outward FROM the phone screen:
+- Upper right: a sales card with a small abstract bar-chart motif.
+- Left side: a pill with an upward green (#16A34A) arrow and a Carrot Amber (#EF8E01) accent dot.
+- Lower right: a row of payment-method chips as plain white icons (mobile payment, card, cash).
+- Optional upper left: a small badge with a package/box icon and a green status dot, only if it does not cover the face.
+Panels must NOT cover the person's face and stay iconographic — no letters, numbers, words or logos (all real text is composited later).` : ''
+
   return `ROLE: Senior Art Director producing a premium, photorealistic Instagram advertising image for ActivoPOS, a Venezuelan small-business point-of-sale software.
 
 CRITICAL — ZERO TEXT IN IMAGE:
@@ -141,7 +172,7 @@ SCENE: ${subject}, ${angle}, ${light}, holding a smartphone with the GLASS SCREE
 PHONE GEOMETRY (CRITICAL):
 The GLASS SCREEN faces outward toward the camera — the viewer sees the lit display.
 The camera bump is on the side AWAY from the camera, hidden behind the device.
-NEVER show a camera module on the visible face of the phone.
+NEVER show a camera module on the visible face of the phone.${handsBlock}
 
 COMPOSITION (CRITICAL):
 Leave the TOP 35% of the canvas calm and uncluttered for a text overlay — ceiling, wall, sky or soft bokeh, NOT a flat colored panel.
@@ -149,7 +180,7 @@ Subject occupies the lower-center 60% of the frame. Bottom stays readable but no
 Natural bokeh of the environment on the sides — never a flat colored block.
 
 BRAND INTEGRATION:
-Subtle Persian Blue (#0038BD) ambient glow from the phone screen. Carrot Amber (#EF8E01) as a single small accent (a notification dot or badge). Ambient mood: ${preset.mood}.
+Subtle Persian Blue (#0038BD) ambient glow from the phone screen. Carrot Amber (#EF8E01) as a single small accent (a notification dot or badge). Ambient mood: ${preset.mood}.${floatingBlock}
 
 HUMAN DIRECTION:
 Authentic Venezuelan features — diverse, real, warm expressions. Natural candid success, not a forced stock-photo smile. Modern casual clothing for a ${input.nicho} business owner in Venezuela. Background: a recognizable, warm Venezuelan small-business environment.

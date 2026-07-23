@@ -78,7 +78,24 @@ export function usePOS() {
       }
     }
 
-    if (cajaRes?.ok) {
+    // caja_mode viene de /api/config/business (configRes), no de /api/cash/status
+    // (cajaRes) — se resuelve primero para poder saltar el chequeo de isOpen.
+    let cajaMode: 'cash' | 'nocash' = 'cash'
+    if (configRes?.ok) {
+      const json = await configRes.json().catch(() => null)
+      if (json?.iva_enabled && json?.iva_pct) {
+        const pct = Number(json.iva_pct)
+        setIvaPct(pct)
+        setTicket(prev => ({ ...prev, iva_pct: pct }))
+      }
+      setAllowCashierPriceOverride(Boolean(json?.business?.allow_cashier_price_override))
+      cajaMode = json?.business?.caja_mode === 'nocash' ? 'nocash' : 'cash'
+    }
+
+    if (cajaMode === 'nocash') {
+      // Negocio sin manejo de efectivo/turnos — la caja nunca bloquea la venta.
+      setCajaStatus('open')
+    } else if (cajaRes?.ok) {
       const json = await cajaRes.json().catch(() => null)
       setCajaStatus(json?.isOpen ? 'open' : 'closed')
     } else {
@@ -88,16 +105,6 @@ export function usePOS() {
     if (methodsRes?.ok) {
       const json = await methodsRes.json().catch(() => null)
       setPaymentMethods(json?.methods ?? [])
-    }
-
-    if (configRes?.ok) {
-      const json = await configRes.json().catch(() => null)
-      if (json?.iva_enabled && json?.iva_pct) {
-        const pct = Number(json.iva_pct)
-        setIvaPct(pct)
-        setTicket(prev => ({ ...prev, iva_pct: pct }))
-      }
-      setAllowCashierPriceOverride(Boolean(json?.business?.allow_cashier_price_override))
     }
   }, [])
 

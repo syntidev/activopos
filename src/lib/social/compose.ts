@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import sharp from 'sharp'
 import { ASSETS, ASPECT_DIMENSIONS, BRAND, type Aspect, type SocialFormat } from './brand'
@@ -34,6 +34,23 @@ const logoPositiveSvg = Buffer.from(
   readFileSync(join(process.cwd(), 'public', 'activopos-logo-positive.svg'), 'utf8')
     .replace(/<rect[^>]*(fill="#0D1B2E"|fill="#FFFFFF")[^>]*\/>/i, ''),
 )
+
+// Dashboard real (4 KPIs) que se compone sobre la zona de pantalla del teléfono.
+// Se lee UNA vez al cargar el módulo; puede no existir en algunos envs → skip silencioso.
+const DASHBOARD_SCREEN_PATH = join(process.cwd(), 'public', 'assets', 'dashboard_screen.png')
+const dashboardScreenBuffer = existsSync(DASHBOARD_SCREEN_PATH)
+  ? readFileSync(DASHBOARD_SCREEN_PATH)
+  : null
+
+// Tamaño/posición de la pantalla por aspect. El teléfono en las imágenes de Gemini cae
+// en el tercio inferior-derecho — estos valores son la perilla de ajuste (aproximación,
+// no tracking real del teléfono). w en px del lienzo; topFactor multiplica la altura.
+const SCREEN_BY_ASPECT: Record<Aspect, { w: number; topFactor: number }> = {
+  '4:5':  { w: 220, topFactor: 0.48 },
+  '9:16': { w: 220, topFactor: 0.52 },
+  '1:1':  { w: 200, topFactor: 0.44 },
+  '3:4':  { w: 220, topFactor: 0.48 },
+}
 
 // Pango interpreta markup: un &, < o > del copy rompería el render.
 function escapeMarkup(text: string): string {
@@ -101,6 +118,7 @@ export interface LayerOverride {
   subtitleAlign?:  'left' | 'center' | 'right'
   titleShadow?:    boolean
   subtitleShadow?: boolean
+  showScreen?:     boolean   // dashboard sobre la pantalla del teléfono; default: true
 }
 
 // Sombra: Pango no tiene text-shadow (ni feGaussianBlur sobre su render), así que se
@@ -200,6 +218,27 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
     (await renderText(text, { fontfile, font, size, color: SHADOW_COLOR, weight, align })).buffer
 
   const layers: sharp.OverlayOptions[] = [{ input: scrim, top: 0, left: 0 }]
+
+  // Dashboard real sobre la zona de pantalla del teléfono — solo post/story (el carrusel
+  // geométrico no tiene teléfono) y solo si el asset existe y el editor no lo apagó.
+  // Va ANTES del logo y el texto para que estos queden por encima si se solapan.
+  const showScreen = ov.showScreen ?? true
+  if (dashboardScreenBuffer && input.formato !== 'carrusel' && showScreen) {
+    const cfg        = SCREEN_BY_ASPECT[input.aspect]
+    const screenW    = cfg.w
+    const screenH    = Math.floor(screenW * 249 / 280)   // proporción original del asset
+    const screenLeft = Math.floor(width * 0.38)
+    const screenTop  = Math.floor(height * cfg.topFactor)
+    const maskSvg    = Buffer.from(
+      `<svg width="${screenW}" height="${screenH}"><rect width="${screenW}" height="${screenH}" rx="16" ry="16" fill="white"/></svg>`,
+    )
+    const screenResized = await sharp(dashboardScreenBuffer)
+      .resize(screenW, screenH, { fit: 'fill' })
+      .composite([{ input: maskSvg, blend: 'dest-in' }])   // rounded corners 16px
+      .png()
+      .toBuffer()
+    layers.push({ input: screenResized, top: screenTop, left: screenLeft })
+  }
 
   if (showLogo) {
     layers.push({ input: logo, top: logoTop, left: logoLeft })

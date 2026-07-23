@@ -126,6 +126,17 @@ export function TabModulos({ businessId: _businessId }: Props) {
       if (!res.ok) throw new Error()
       const j = await res.json() as { modules_enabled?: string[] }
       window.dispatchEvent(new CustomEvent(MODULES_UPDATED_EVENT, { detail: j.modules_enabled ?? Array.from(next) }))
+
+      // Mismo camino de escritura a modules_enabled que handleSave — necesita
+      // la misma sincronización, o caja_mode queda desactualizado cuando el
+      // usuario toca KDS/Delivery sin pasar por "Guardar módulos".
+      await fetch('/api/config/caja-mode', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caja_mode: next.has('caja') ? 'cash' : 'nocash',
+        }),
+      })
     } catch {
       setEnabled(prev => {
         const reverted = new Set(prev)

@@ -149,6 +149,18 @@ export function TabModulos({ businessId: _businessId }: Props) {
       })
       const j = await res.json().catch(() => ({})) as { modules_enabled?: string[] }
       window.dispatchEvent(new CustomEvent(MODULES_UPDATED_EVENT, { detail: j.modules_enabled ?? Array.from(enabled) }))
+
+      if (res.ok) {
+        // Sincronizar caja_mode según si 'caja' está en los módulos
+        await fetch('/api/config/caja-mode', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            caja_mode: enabled.has('caja') ? 'cash' : 'nocash',
+          }),
+        })
+      }
+
       toast('Módulos actualizados', 'success')
     } catch {
       toast('Error al guardar módulos', 'error')

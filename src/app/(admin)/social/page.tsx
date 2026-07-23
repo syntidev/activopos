@@ -127,6 +127,7 @@ export default function SocialPage() {
   const [slides, setSlides]       = useState(4)
   const [segmentSlug, setSegmentSlug]     = useState('')
   const [carouselMode, setCarouselMode] = useState<CarouselMode>('geometric')
+  const [floatingElements, setFloatingElements] = useState(false)
   const [aspect, setAspect]     = useState<Aspect>(DEFAULT_POST_ASPECT)
   const [preset, setPreset]       = useState('')
   // Fondos crudos que devuelve generate, para el editor de capas (Fase B).
@@ -235,6 +236,7 @@ export default function SocialPage() {
           ...(tipo === 'carrusel' ? { slides, carouselMode } : {}),
           ...(tipo === 'carrusel' && segmentSlug ? { segment_slug: segmentSlug } : {}),
           // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión.
+          ...(tipo !== 'carrusel' ? { floatingElements } : {}),
           ...(tipo !== 'carrusel' && preset ? { preset } : {}),
           ...(tipo !== 'carrusel' && personaje.trim() ? { personaje: personaje.trim() } : {}),
           ...(tipo !== 'carrusel' && lugar.trim()     ? { lugar: lugar.trim() }         : {}),
@@ -535,6 +537,25 @@ export default function SocialPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {tipo !== 'carrusel' && (
+            <div className={styles.field}>
+              <label className={styles.toggleRow2}>
+                <span className={styles.toggleTexts}>
+                  <span className={styles.label}>Elementos flotantes UI</span>
+                  <span className={styles.toggleHint}>Paneles con datos del sistema alrededor de la escena</span>
+                </span>
+                <input
+                  type="checkbox"
+                  className={styles.toggleInput}
+                  checked={floatingElements}
+                  onChange={e => setFloatingElements(e.target.checked)}
+                  disabled={loading}
+                />
+                <span className={styles.toggleSwitch} aria-hidden="true" />
+              </label>
             </div>
           )}
 

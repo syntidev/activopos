@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
         const [composed, bgUrl] = await Promise.all([
           composeSlide({
             background, titulo: slide.titulo, subtitulo: slide.subtitulo,
-            formato: body.tipo, aspect: body.aspect,
+            formato: body.tipo, aspect: body.aspect, nicho: body.nicho,
           }).then(uploadImage),
           uploadImage(background, 'image/png'),
         ])

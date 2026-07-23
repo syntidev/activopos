@@ -144,16 +144,14 @@ Hands must be anatomically perfect:
 - Exactly 5 fingers per hand, no more, no less
 - Natural finger proportions, no elongated or fused joints
 - No extra knuckles, no melting skin, no horror-movie distortion
-- Phone grip: thumb on the LEFT edge, 4 fingers wrapped behind the device
 - Fingers clearly separated and individually defined
 - Wrist at a natural angle — no twisted or broken wrist
-- If holding cash/tablet/other object: same anatomical rules apply
-- When in doubt: show less of the hand, more of the object`
+- Hands rest naturally at the sides, gesture, or interact with the environment`
 
   const floatingBlock = floating ? `
 
 FLOATING UI ELEMENTS (glassmorphism — iconographic, NO text or numbers):
-Around the person, floating in 3D at natural distances, add 3-4 semi-transparent glassmorphism panels (rgba(255,255,255,0.12) blurred fill, 1px rgba(255,255,255,0.25) border, soft drop shadow, slight 3D tilt), lit by Persian Blue (#0038BD) ambient light, looking like they project outward FROM the phone screen:
+Around the person, floating in 3D at natural distances, add 3-4 semi-transparent glassmorphism panels (rgba(255,255,255,0.12) blurred fill, 1px rgba(255,255,255,0.25) border, soft drop shadow, slight 3D tilt), lit by Persian Blue (#0038BD) ambient light, floating in the space around the person:
 - Upper right: a sales card with a small abstract bar-chart motif.
 - Left side: a pill with an upward green (#16A34A) arrow and a Carrot Amber (#EF8E01) accent dot.
 - Lower right: a row of payment-method chips as plain white icons (mobile payment, card, cash).
@@ -167,21 +165,7 @@ Do NOT render any text, typography, words, labels, letters or numbers anywhere. 
 
 FORMAT: ${width}x${height} px. Fill the entire canvas. No bars, no letterboxing.
 
-SCENE: ${subject}, ${angle}, ${light}, holding a smartphone with the GLASS SCREEN facing the camera (screen content described in PHONE SCREEN below).
-
-PHONE GEOMETRY (CRITICAL):
-The GLASS SCREEN faces outward toward the camera — the viewer sees the lit display.
-The camera bump is on the side AWAY from the camera, hidden behind the device.
-NEVER show a camera module on the visible face of the phone.
-
-PHONE SCREEN (CRITICAL — abstract, not literal):
-The phone screen faces the camera but shows NO readable text, NO fake UI components, NO invented charts or buttons.
-Instead: a clean abstract dark surface with:
-- Persian Blue (#0038BD) as the dominant screen color
-- Subtle Carrot Amber (#EF8E01) accent — a single glowing dot or thin horizontal bar at 20% opacity
-- Soft white geometric shapes suggesting data (rectangles, lines) but completely abstract — NOT readable, NOT literal
-- The overall impression is "premium dark app" without showing any specific UI element
-- Screen has a subtle blue glow emanating outward (ambient light)${handsBlock}
+SCENE: ${subject}, ${angle}, ${light}. Hands rest naturally at the sides or gesture expressively — NO phone, tablet or device in the hands. The person interacts naturally with the environment (behind a counter, arranging products, or talking to the camera) in an authentic Venezuelan small-business setting. The product (ActivoPOS) is composited later as a digital overlay — do NOT draw any phone, tablet or screen.${handsBlock}
 
 COMPOSITION (CRITICAL):
 Leave the TOP 35% of the canvas calm and uncluttered for a text overlay — ceiling, wall, sky or soft bokeh, NOT a flat colored panel.
@@ -189,7 +173,7 @@ Subject occupies the lower-center 60% of the frame. Bottom stays readable but no
 Natural bokeh of the environment on the sides — never a flat colored block.
 
 BRAND INTEGRATION:
-Subtle Persian Blue (#0038BD) ambient glow from the phone screen. Carrot Amber (#EF8E01) as a single small accent (a notification dot or badge). Ambient mood: ${preset.mood}.${floatingBlock}
+Subtle Persian Blue (#0038BD) ambient glow in the scene. Carrot Amber (#EF8E01) as a single small accent (a notification dot or badge). Ambient mood: ${preset.mood}.${floatingBlock}
 
 HUMAN DIRECTION:
 Authentic Venezuelan features — diverse, real, warm expressions. Natural candid success, not a forced stock-photo smile. Modern casual clothing for a ${input.nicho} business owner in Venezuela. Background: a recognizable, warm Venezuelan small-business environment.
@@ -198,7 +182,7 @@ FORBIDDEN:
 No flat color panels filling any zone — use natural bokeh for the text zone.
 No street stalls, no outdoor markets, no arepas, no fiscal/SENIAT machines.
 No text, words, letters, logos or watermarks anywhere.
-No camera bump on the front face of the phone. No bars or letterboxing.
+No phone, tablet or screen in the hands or the scene. No bars or letterboxing.
 No generic stock-photo look — it must feel authentically Venezuelan.
 
 QUALITY: Photorealistic, 8K, cinematic professional lighting, shallow depth of field.`

@@ -35,21 +35,35 @@ const logoPositiveSvg = Buffer.from(
     .replace(/<rect[^>]*(fill="#0D1B2E"|fill="#FFFFFF")[^>]*\/>/i, ''),
 )
 
-// Dashboard real (4 KPIs) que se compone sobre la zona de pantalla del teléfono.
-// Se lee UNA vez al cargar el módulo; puede no existir en algunos envs → skip silencioso.
-const DASHBOARD_SCREEN_PATH = join(process.cwd(), 'public', 'assets', 'dashboard_screen.png')
-const dashboardScreenBuffer = existsSync(DASHBOARD_SCREEN_PATH)
-  ? readFileSync(DASHBOARD_SCREEN_PATH)
-  : null
+// Mockups de dispositivos (PNG transparentes) compuestos centrados como protagonista
+// de la escena (Sprint 134, reemplaza el overlay de pantalla del 133). Se leen UNA vez
+// al cargar el módulo; un asset ausente → skip silencioso.
+function loadAsset(filename: string): Buffer | null {
+  const p = join(process.cwd(), 'public', 'assets', filename)
+  return existsSync(p) ? readFileSync(p) : null
+}
 
-// Tamaño/posición de la pantalla por aspect. El teléfono en las imágenes de Gemini cae
-// en el tercio inferior-derecho — estos valores son la perilla de ajuste (aproximación,
-// no tracking real del teléfono). w en px del lienzo; topFactor multiplica la altura.
-const SCREEN_BY_ASPECT: Record<Aspect, { w: number; topFactor: number }> = {
-  '4:5':  { w: 220, topFactor: 0.48 },
-  '9:16': { w: 220, topFactor: 0.52 },
-  '1:1':  { w: 200, topFactor: 0.44 },
-  '3:4':  { w: 220, topFactor: 0.48 },
+type DeviceVariant = 'front' | 'left' | 'right' | 'pos_black' | 'pos_white' | 'none'
+
+const DEVICE_ASSETS: Record<Exclude<DeviceVariant, 'none'>, Buffer | null> = {
+  front:     loadAsset('front_movil_asset.png'),
+  left:      loadAsset('left_movil_asset.png'),
+  right:     loadAsset('right_movil_asset.png'),
+  pos_black: loadAsset('pos_black.png'),
+  pos_white: loadAsset('pos_white.png'),
+}
+
+// Nichos con terminal POS en mostrador; el resto usa teléfono.
+const POS_NICHOS = ['abastos', 'carniceria', 'farmacia', 'ferreteria', 'panaderia']
+
+// Si el caller/editor fija una variante (incluida 'none'), gana; si no, auto por nicho.
+function selectDevice(nicho: string, variant?: DeviceVariant): DeviceVariant {
+  if (variant) return variant
+  if (POS_NICHOS.includes(nicho.toLowerCase())) {
+    return Math.random() > 0.5 ? 'pos_black' : 'pos_white'
+  }
+  const phones: DeviceVariant[] = ['front', 'left', 'right']
+  return phones[Math.floor(Math.random() * phones.length)]
 }
 
 // Pango interpreta markup: un &, < o > del copy rompería el render.
@@ -90,6 +104,8 @@ export interface ComposeInput {
   subtitulo:  string
   formato:    SocialFormat   // solo determina tamaño de fuente (story = letras más grandes)
   aspect:     Aspect         // determina el lienzo final -- selector del formulario
+  nicho?:     string         // segmento — decide el dispositivo automático (POS vs teléfono)
+  deviceVariant?: DeviceVariant  // fuerza un dispositivo; ausente = auto por nicho
   override?:  LayerOverride  // ajustes del editor; ausente = posiciones/estilos fijos de siempre
 }
 
@@ -118,7 +134,7 @@ export interface LayerOverride {
   subtitleAlign?:  'left' | 'center' | 'right'
   titleShadow?:    boolean
   subtitleShadow?: boolean
-  showScreen?:     boolean   // dashboard sobre la pantalla del teléfono; default: true
+  deviceVariant?:  DeviceVariant   // override del dispositivo desde el editor; ausente = auto
 }
 
 // Sombra: Pango no tiene text-shadow (ni feGaussianBlur sobre su render), así que se
@@ -219,25 +235,26 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
 
   const layers: sharp.OverlayOptions[] = [{ input: scrim, top: 0, left: 0 }]
 
-  // Dashboard real sobre la zona de pantalla del teléfono — solo post/story (el carrusel
-  // geométrico no tiene teléfono) y solo si el asset existe y el editor no lo apagó.
-  // Va ANTES del logo y el texto para que estos queden por encima si se solapan.
-  const showScreen = ov.showScreen ?? true
-  if (dashboardScreenBuffer && input.formato !== 'carrusel' && showScreen) {
-    const cfg        = SCREEN_BY_ASPECT[input.aspect]
-    const screenW    = cfg.w
-    const screenH    = Math.floor(screenW * 249 / 280)   // proporción original del asset
-    const screenLeft = Math.floor(width * 0.38)
-    const screenTop  = Math.floor(height * cfg.topFactor)
-    const maskSvg    = Buffer.from(
-      `<svg width="${screenW}" height="${screenH}"><rect width="${screenW}" height="${screenH}" rx="16" ry="16" fill="white"/></svg>`,
-    )
-    const screenResized = await sharp(dashboardScreenBuffer)
-      .resize(screenW, screenH, { fit: 'fill' })
-      .composite([{ input: maskSvg, blend: 'dest-in' }])   // rounded corners 16px
-      .png()
-      .toBuffer()
-    layers.push({ input: screenResized, top: screenTop, left: screenLeft })
+  // Dispositivo protagonista (mockup PNG) centrado en el tercio inferior — solo post/story
+  // (el carrusel geométrico no lo lleva). Va ANTES del logo y el texto para que estos
+  // queden por encima si se solapan. Skip silencioso si el asset no existe.
+  if (input.formato !== 'carrusel') {
+    const variant      = selectDevice(input.nicho ?? 'general', ov.deviceVariant ?? input.deviceVariant)
+    const deviceBuffer = variant !== 'none' ? DEVICE_ASSETS[variant] : null
+    if (deviceBuffer) {
+      const deviceW = Math.floor(width * 0.55)   // ~55% del ancho, centrado horizontalmente
+      const meta    = await sharp(deviceBuffer).metadata()
+      const deviceH = Math.floor(deviceW * (meta.height ?? 800) / (meta.width ?? 400))
+      const deviceResized = await sharp(deviceBuffer)
+        .resize(deviceW, deviceH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer()
+      layers.push({
+        input: deviceResized,
+        top:   Math.floor(height * 0.38),
+        left:  Math.floor((width - deviceW) / 2),
+      })
+    }
   }
 
   if (showLogo) {

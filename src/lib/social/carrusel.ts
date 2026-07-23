@@ -120,7 +120,7 @@ export async function generateCarrusel(
     }
     const composed = await composeSlide({
       background, titulo: slides[i].titulo, subtitulo: slides[i].subtitulo,
-      formato: 'post', aspect: ASPECT,
+      formato: 'post', aspect: ASPECT, nicho: input.nicho,
     })
     return uploadImage(composed, 'image/webp')
   }

@@ -165,7 +165,7 @@ async function main() {
       where:  { slug: p.slug },
       update: {
         title: p.title, excerpt: p.excerpt, content: p.content, category: p.category,
-        tags: p.tags, read_time: p.read_time, is_featured: p.is_featured,
+        tags: p.tags, read_time: p.read_time,
         meta_title: p.meta_title, meta_description: p.meta_description,
         status: 'published', published_at: publishedAt,
       },

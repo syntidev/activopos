@@ -61,10 +61,8 @@ export function TabTema({ businessId: _b }: Props) {
     let active = true
     fetch('/api/config/theme')
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { theme?: 'dark' | 'light'; theme_color?: string } | null) => {
-        if (!active || !data) return
-        if (data.theme_color) setSelectedColor(data.theme_color)
-        if (data.theme) setTheme(data.theme)
+      .then((data: { theme_color?: string } | null) => {
+        if (active && data?.theme_color) setSelectedColor(data.theme_color)
       })
       .catch(() => {
         // Sin red: se conserva el color por defecto; el usuario puede reseleccionar y guardar.

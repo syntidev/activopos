@@ -110,10 +110,12 @@ export function buildSlideHTML(params: SlideHtmlParams): string {
   ).join('')
 
   return `<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+    /* Fuentes del sistema (Sprint 118b): el @import de Google Fonts fallaba en el
+       Chromium del VPS sin acceso externo — el texto salía en fallback igual. Con el
+       stack local el render no depende de red y es idéntico en cualquier entorno. */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     .slide { position: relative; width: ${W}px; height: ${H}px; overflow: hidden;
-             background: ${spec.bgColor}; font-family: 'Inter', -apple-system, sans-serif; }
+             background: ${spec.bgColor}; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; }
     .geometry { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .content { position: relative; z-index: 10; padding: 80px 72px; height: 100%;
                display: flex; flex-direction: column; justify-content: center; }

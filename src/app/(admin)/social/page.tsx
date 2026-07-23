@@ -14,6 +14,7 @@ type Channel = 'instagram' | 'facebook'
 type Tipo   = 'post' | 'story' | 'carrusel'
 type Estado = 'pendiente' | 'generado' | 'publicado' | 'error'
 type Aspect = '1:1' | '4:5' | '3:4' | '9:16'
+type CarouselMode = 'geometric' | 'human' | 'hybrid'
 
 // Solo post y carrusel dejan elegir dimensión -- story se fija a 9:16 automáticamente
 // (ver STORY_ASPECT más abajo), no tiene sentido mostrarla como opción aquí.
@@ -61,12 +62,6 @@ interface SocialAsset {
 interface SegmentOption {
   slug: string
   name: string
-}
-
-interface StylePresetOption {
-  id:       number
-  name:     string
-  business: { name: string }
 }
 
 interface ScenePresetOption {
@@ -131,7 +126,7 @@ export default function SocialPage() {
   const [objetivo, setObjetivo]   = useState('')
   const [slides, setSlides]       = useState(4)
   const [segmentSlug, setSegmentSlug]     = useState('')
-  const [stylePresetId, setStylePresetId] = useState('')
+  const [carouselMode, setCarouselMode] = useState<CarouselMode>('geometric')
   const [aspect, setAspect]     = useState<Aspect>(DEFAULT_POST_ASPECT)
   const [preset, setPreset]       = useState('')
   // Fondos crudos que devuelve generate, para el editor de capas (Fase B).
@@ -159,7 +154,6 @@ export default function SocialPage() {
   const [deletingId, setDeletingId]         = useState<number | null>(null)
   const [bulkDeleting, setBulkDeleting]     = useState(false)
   const [segments, setSegments]         = useState<SegmentOption[]>([])
-  const [stylePresets, setStylePresets] = useState<StylePresetOption[]>([])
 
   // Publicación (Fase E → Buffer)
   const [pubOpen, setPubOpen]         = useState(false)
@@ -198,10 +192,6 @@ export default function SocialPage() {
     fetch('/api/marketing/segments')
       .then(r => r.ok ? r.json() : Promise.reject(new Error()))
       .then((data: SegmentOption[]) => setSegments(data))
-      .catch(() => {})
-    fetch('/api/admin/social/style-presets')
-      .then(r => r.ok ? r.json() : Promise.reject(new Error()))
-      .then((body: { presets: StylePresetOption[] }) => setStylePresets(body.presets ?? []))
       .catch(() => {})
   }, [])
 
@@ -242,9 +232,8 @@ export default function SocialPage() {
           aspect,
           ...(gancho.trim() ? { gancho: gancho.trim() } : {}),
           ...(beneficio.trim() ? { beneficio: beneficio.trim() } : {}),
-          ...(tipo === 'carrusel' ? { slides } : {}),
+          ...(tipo === 'carrusel' ? { slides, carouselMode } : {}),
           ...(tipo === 'carrusel' && segmentSlug ? { segment_slug: segmentSlug } : {}),
-          ...(stylePresetId ? { style_preset_id: Number(stylePresetId) } : {}),
           // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión.
           ...(tipo !== 'carrusel' && preset ? { preset } : {}),
           ...(tipo !== 'carrusel' && personaje.trim() ? { personaje: personaje.trim() } : {}),
@@ -584,18 +573,17 @@ export default function SocialPage() {
 
           {tipo === 'carrusel' && (
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="preset">Estilo</label>
+              <label className={styles.label} htmlFor="carouselMode">Estilo</label>
               <select
-                id="preset"
+                id="carouselMode"
                 className={styles.select}
-                value={stylePresetId}
-                onChange={e => setStylePresetId(e.target.value)}
+                value={carouselMode}
+                onChange={e => setCarouselMode(e.target.value as CarouselMode)}
                 disabled={loading}
               >
-                <option value="">Diseño default</option>
-                {stylePresets.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.business.name})</option>
-                ))}
+                <option value="geometric">Geométrico</option>
+                <option value="human">Escena Humana</option>
+                <option value="hybrid">Híbrido</option>
               </select>
             </div>
           )}

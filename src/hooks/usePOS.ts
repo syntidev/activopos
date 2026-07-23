@@ -62,11 +62,12 @@ export function usePOS() {
   const pendingOverridePinRef  = useRef<string | undefined>(undefined)
 
   const fetchCajaStatus = useCallback(async () => {
-    const [rateRes, cajaRes, methodsRes, configRes] = await Promise.all([
+    const [rateRes, cajaRes, methodsRes, configRes, cajaModeRes] = await Promise.all([
       fetch('/api/rates/bcv').catch(() => null),
       fetch('/api/cash/status').catch(() => null),
       fetch('/api/payment-methods').catch(() => null),
       fetch('/api/config/business').catch(() => null),
+      fetch('/api/config/caja-mode').catch(() => null),
     ])
 
     if (rateRes?.ok) {
@@ -78,9 +79,6 @@ export function usePOS() {
       }
     }
 
-    // caja_mode viene de /api/config/business (configRes), no de /api/cash/status
-    // (cajaRes) — se resuelve primero para poder saltar el chequeo de isOpen.
-    let cajaMode: 'cash' | 'nocash' = 'cash'
     if (configRes?.ok) {
       const json = await configRes.json().catch(() => null)
       if (json?.iva_enabled && json?.iva_pct) {
@@ -89,8 +87,13 @@ export function usePOS() {
         setTicket(prev => ({ ...prev, iva_pct: pct }))
       }
       setAllowCashierPriceOverride(Boolean(json?.business?.allow_cashier_price_override))
-      cajaMode = json?.business?.caja_mode === 'nocash' ? 'nocash' : 'cash'
     }
+
+    // caja_mode vive en /api/config/caja-mode (endpoint dedicado) — ya no en
+    // /api/config/business, que dejó de exponerlo. Se resuelve antes de decidir
+    // cajaStatus para poder saltar el chequeo de isOpen cuando es 'nocash'.
+    const cajaModeData = cajaModeRes?.ok ? await cajaModeRes.json().catch(() => null) : null
+    const cajaMode: 'cash' | 'nocash' = cajaModeData?.caja_mode === 'nocash' ? 'nocash' : 'cash'
 
     if (cajaMode === 'nocash') {
       // Negocio sin manejo de efectivo/turnos — la caja nunca bloquea la venta.

@@ -31,10 +31,14 @@ export async function PATCH(req: NextRequest) {
     // Always include core modules — merge silently, never return error for missing core
     const modules = Array.from(new Set([...CORE_MODULES, ...body.modules]))
 
+    // caja_mode espeja el toggle "Caja" del mismo array — mismo write que
+    // modules_enabled, así no hay ventana entre las dos persistencias.
+    const caja_mode = modules.includes('caja') ? 'cash' : 'nocash'
+
     const business = await prisma.business.update({
       where: { id: session.businessId },
-      data:  { modules_enabled: modules.join(',') },
-      select: { id: true, modules_enabled: true },
+      data:  { modules_enabled: modules.join(','), caja_mode },
+      select: { id: true, modules_enabled: true, caja_mode: true },
     })
 
     return NextResponse.json({

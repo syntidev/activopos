@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, LogIn, Trash2 } from 'lucide-react'
-import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
+import { PLAN_LIMITS, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import styles from './admin.module.css'
 
 interface SuspendToggleProps {
@@ -83,6 +83,81 @@ export function PlanSelect({ tenantId, plan }: PlanSelectProps) {
     >
       {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
     </select>
+  )
+}
+
+interface PlanStatusFormProps {
+  tenantId:  number
+  plan:      string          // catalog_plan
+  active:    boolean         // subscription_active (distinto de Business.active del SuspendToggle)
+  expiresAt: string | null   // YYYY-MM-DD, null = indefinido
+}
+
+/* Sección "Plan y estado" del detalle de tenant. Conecta al endpoint existente
+ * tenants/[id]/plan, que escribe catalog_plan + subscription_active +
+ * subscription_expires_at. Estado 'active'|'suspended' (el endpoint también
+ * acepta 'expired', pero acá el admin solo activa o suspende). */
+export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt }: PlanStatusFormProps) {
+  const router = useRouter()
+  const [plan, setPlan]       = useState<PlanTier>(initialPlan === 'negocio_activo' ? 'negocio_activo' : 'gratis')
+  const [status, setStatus]   = useState<'active' | 'suspended'>(active ? 'active' : 'suspended')
+  const [expires, setExpires] = useState(expiresAt ?? '')
+  const [saving, setSaving]   = useState(false)
+  const [msg, setMsg]         = useState<string | null>(null)
+
+  async function handleSave() {
+    setSaving(true)
+    setMsg(null)
+    try {
+      const res = await fetch(`/api/admin/tenants/${tenantId}/plan`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ plan, status, expires_at: expires || null }),
+      })
+      if (res.ok) {
+        setMsg('Cambios guardados.')
+        router.refresh()
+      } else {
+        setMsg('No se pudo guardar.')
+      }
+    } catch {
+      setMsg('Error de conexión.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className={styles.planStatusForm}>
+      <div className={styles.planStatusField}>
+        <label className={styles.infoLabel} htmlFor="ps-plan">Plan actual</label>
+        <select id="ps-plan" className={styles.planSelect} value={plan}
+          onChange={e => setPlan(e.target.value as PlanTier)} disabled={saving}>
+          {PLANS.map(p => <option key={p} value={p}>{PLAN_DISPLAY[p]}</option>)}
+        </select>
+      </div>
+      <div className={styles.planStatusField}>
+        <label className={styles.infoLabel} htmlFor="ps-status">Estado</label>
+        <select id="ps-status" className={styles.planSelect} value={status}
+          onChange={e => setStatus(e.target.value as 'active' | 'suspended')} disabled={saving}>
+          <option value="active">Activo</option>
+          <option value="suspended">Suspendido</option>
+        </select>
+      </div>
+      <div className={styles.planStatusField}>
+        <label className={styles.infoLabel} htmlFor="ps-expires">Vence suscripción</label>
+        <input id="ps-expires" type="date" className={styles.planSelect} value={expires}
+          onChange={e => setExpires(e.target.value)} disabled={saving} />
+        <span className={styles.planStatusHint}>Vacío = plan indefinido (no vence).</span>
+      </div>
+      <div className={styles.planStatusActions}>
+        <button type="button" className={`${styles.actionLink} ${styles.actionBtn}`}
+          onClick={() => void handleSave()} disabled={saving}>
+          {saving ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+        {msg && <span className={styles.planStatusMsg}>{msg}</span>}
+      </div>
+    </div>
   )
 }
 

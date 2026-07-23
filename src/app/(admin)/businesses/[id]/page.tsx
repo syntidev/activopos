@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
-import { SuspendToggle, PlanSelect, ImpersonateButton } from '../../TenantActions'
+import { SuspendToggle, PlanSelect, ImpersonateButton, PlanStatusForm } from '../../TenantActions'
 import styles from '../../admin.module.css'
 
 async function getTenantDetail(id: number) {
@@ -19,6 +19,8 @@ async function getTenantDetail(id: number) {
       catalog_slug: true,
       catalog_plan: true,
       active:       true,
+      subscription_active:     true,
+      subscription_expires_at: true,
       created_at:   true,
       _count:       { select: { products: true, users: true, orders: true } },
     },
@@ -65,6 +67,16 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
           <PlanSelect tenantId={business.id} plan={business.catalog_plan ?? 'gratis'} />
           <SuspendToggle tenantId={business.id} active={business.active} />
         </div>
+      </div>
+
+      <div className={styles.detailSection}>
+        <h2 className={styles.sectionTitle}>Plan y estado</h2>
+        <PlanStatusForm
+          tenantId={business.id}
+          plan={business.catalog_plan ?? 'gratis'}
+          active={business.subscription_active}
+          expiresAt={business.subscription_expires_at ? business.subscription_expires_at.toISOString().slice(0, 10) : null}
+        />
       </div>
 
       <div className={styles.detailSection}>

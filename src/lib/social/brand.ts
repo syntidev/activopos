@@ -175,3 +175,73 @@ export function normalizeNicho(nicho: string): string {
   }
   return map[nicho.toLowerCase().trim()] ?? 'general'
 }
+
+/* ── Carrusel generativo (Sprint 118) ──────────────────────────────────────────
+   El carrusel deja de ser HTML plano del LLM: el LLM (generateCopy) solo escribe
+   copy (titulo/subtitulo por slide) y el diseño lo pone código determinista —
+   arco narrativo con geometría y paleta de marca por rol. Paleta SELLADA. */
+
+export type CarouselMode  = 'geometric' | 'human' | 'hybrid'
+export type SlideGeometry = 'diagonal' | 'circles' | 'bars' | 'grid' | 'radial' | 'split'
+export type SlideRole     = 'portada' | 'problema' | 'valor' | 'comparacion' | 'cta'
+
+export interface SlideSpec {
+  role:        SlideRole
+  bgColor:     string    // color de fondo dominante
+  accentColor: string    // color de acento geométrico
+  geometry:    SlideGeometry
+  label:       string
+}
+
+// Paleta sellada — literales a propósito (dato de diseño, no CSS de componente).
+const P = {
+  blue:    '#0038BD',
+  amber:   '#EF8E01',
+  navy:    '#0D1B2E',
+  white:   '#FFFFFF',
+  success: '#16A34A',
+  lblue:   '#4D7AFF',
+} as const
+
+// Override de paleta por nombre (carouselPreset). Reemplaza bg/accent de TODAS las
+// slides manteniendo la geometría del arco. Nombre desconocido → se ignora (cae al arco).
+export const CAROUSEL_PALETTES: Record<string, { bg: string; accent: string }> = {
+  navy:  { bg: P.navy, accent: P.lblue },
+  blue:  { bg: P.blue, accent: P.white },
+  amber: { bg: P.navy, accent: P.amber },
+}
+
+export function buildNarrativeArc(slideCount: number): SlideSpec[] {
+  const arcs: Record<number, SlideSpec[]> = {
+    3: [
+      { role: 'portada', bgColor: P.blue, accentColor: P.white, geometry: 'diagonal', label: 'Hook' },
+      { role: 'valor',   bgColor: P.navy, accentColor: P.lblue, geometry: 'circles',  label: 'Beneficio' },
+      { role: 'cta',     bgColor: P.blue, accentColor: P.amber, geometry: 'radial',   label: 'CTA' },
+    ],
+    4: [
+      { role: 'portada',  bgColor: P.blue, accentColor: P.white, geometry: 'diagonal', label: 'Hook' },
+      { role: 'problema', bgColor: P.navy, accentColor: P.lblue, geometry: 'grid',     label: 'Problema' },
+      { role: 'valor',    bgColor: P.blue, accentColor: P.white, geometry: 'bars',     label: 'Beneficio' },
+      { role: 'cta',      bgColor: P.navy, accentColor: P.amber, geometry: 'radial',   label: 'CTA' },
+    ],
+    5: [
+      { role: 'portada',     bgColor: P.blue, accentColor: P.white,   geometry: 'diagonal', label: 'Hook' },
+      { role: 'problema',    bgColor: P.navy, accentColor: P.lblue,   geometry: 'grid',     label: 'Problema' },
+      { role: 'valor',       bgColor: P.blue, accentColor: P.white,   geometry: 'circles',  label: 'Beneficio' },
+      { role: 'comparacion', bgColor: P.navy, accentColor: P.success, geometry: 'split',    label: 'Antes/Después' },
+      { role: 'cta',         bgColor: P.blue, accentColor: P.amber,   geometry: 'radial',   label: 'CTA' },
+    ],
+  }
+  if (slideCount > 5) {
+    const base = arcs[5]!
+    const extras: SlideSpec[] = Array.from({ length: slideCount - 5 }, (_, i) => ({
+      role:        'valor' as SlideRole,
+      bgColor:     i % 2 === 0 ? P.navy : P.blue,
+      accentColor: i % 2 === 0 ? P.lblue : P.white,
+      geometry:    (['bars', 'circles', 'grid'] as const)[i % 3],
+      label:       `Beneficio ${i + 2}`,
+    }))
+    return [base[0]!, base[1]!, ...extras, base[3]!, base[4]!]
+  }
+  return arcs[slideCount] ?? arcs[3]!
+}

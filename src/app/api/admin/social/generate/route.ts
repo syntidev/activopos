@@ -7,43 +7,10 @@ import { generateBackground } from '@/lib/social/image'
 import { generateBackgroundGemini } from '@/lib/social/gemini-image'
 import { composeSlide } from '@/lib/social/compose'
 import { uploadImage } from '@/lib/social/cloudinary'
-import { generateHtmlContent } from '@/lib/social/html-generator'
-import { renderSlideToPng, closeBrowser } from '@/lib/social/render-slide'
-import type { Aspect } from '@/lib/social/brand'
+import { generateCarrusel } from '@/lib/social/carrusel'
 import type { SceneDirection } from '@/lib/social/image'
 
 type Asset = { orden: number; imagen_url: string; titulo: string; subtitulo: string }
-
-// Carrusel (Fase B+C): copy+HTML por html-generator, cada slide renderizado a PNG por
-// Puppeteer y subido a Cloudinary. Reemplaza el pipeline de imagen única (difusión) solo
-// para carrusel; post/story siguen con difusión (imagen fotográfica de fondo).
-async function generateCarrusel(
-  nicho: string, gancho: string | undefined, objetivo: string, count: number,
-  segmentSlug: string | undefined, stylePresetId: number | undefined, aspect: Aspect,
-): Promise<{ assets: Asset[]; caption: string; hashtags: string[] }> {
-  const content = await generateHtmlContent({
-    topic: gancho, segment_slug: segmentSlug, segmento: nicho, objetivo,
-    formato: 'carrusel', style_preset_id: stylePresetId,
-  })
-  const slides = content.slides.slice(0, count)
-  if (slides.length === 0) throw new Error('El motor de contenido no devolvió slides')
-
-  const assets: Asset[] = []
-  try {
-    for (let i = 0; i < slides.length; i++) {
-      const png = await renderSlideToPng(slides[i].html, aspect)
-      assets.push({
-        orden:      i,
-        imagen_url: await uploadImage(png, 'image/png'),
-        titulo:     slides[i].notes || `Slide ${i + 1}`,
-        subtitulo:  '',
-      })
-    }
-  } finally {
-    await closeBrowser()
-  }
-  return { assets, caption: content.caption, hashtags: content.hashtags }
-}
 
 // El copy sale de Gemini; la imagen de NVIDIA NIM (~9s por slide). Un carrusel de 6
 // slides pasa de largo el default de Next.js.
@@ -67,6 +34,10 @@ const bodySchema = z.object({
   personaje:        z.string().max(200).optional(),
   lugar:            z.string().max(200).optional(),
   accion:           z.string().max(200).optional(),
+  // Carrusel generativo (Sprint 118): modo de render + overrides opcionales del usuario.
+  carouselMode:     z.enum(['geometric', 'human', 'hybrid']).optional(),
+  geometryType:     z.enum(['diagonal', 'circles', 'bars', 'grid', 'radial', 'split']).optional(),
+  carouselPreset:   z.string().max(40).optional(),
 }).refine(
   b => b.tipo === 'carrusel' ? (!!b.gancho?.trim() || !!b.segment_slug) : !!b.gancho?.trim(),
   { message: 'Debes dar un gancho (o, en carrusel, elegir un segmento)', path: ['gancho'] },
@@ -121,11 +92,12 @@ export async function POST(req: NextRequest) {
     let strategy: SocialCopy | null = null
 
     if (body.tipo === 'carrusel') {
-      // Fase B+C: HTML renderizado a PNG.
-      const r = await generateCarrusel(
-        body.nicho, body.gancho, body.objetivo, slideCount,
-        body.segment_slug, body.style_preset_id, body.aspect,
-      )
+      // Sprint 118: diseño generativo determinista (geometric/human/hybrid) — ya no HTML del LLM.
+      const r = await generateCarrusel({
+        nicho: body.nicho, gancho: body.gancho, objetivo: body.objetivo, count: slideCount,
+        segmentSlug: body.segment_slug, mode: body.carouselMode ?? 'geometric',
+        geometryType: body.geometryType, carouselPreset: body.carouselPreset,
+      })
       assets = r.assets; caption = r.caption; hashtags = r.hashtags; contentEngine = 'html_render'
     } else {
       // post/story: imagen fotográfica de fondo (difusión NVIDIA) + overlay sharp.

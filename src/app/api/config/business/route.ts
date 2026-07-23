@@ -88,6 +88,7 @@ export async function GET() {
       catalog_active: true,
       quotation_footer: true,
       pos_mode: true,
+      caja_mode: true,
       catalog_title: true,
       catalog_desc: true,
       catalog_desc_enabled: true,

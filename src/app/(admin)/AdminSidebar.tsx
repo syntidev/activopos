@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap, FileText, Menu, Sparkles } from 'lucide-react'
+import { Building2, BarChart3, Receipt, Headset, Settings, LogOut, Zap, FileText, Menu, Sparkles, LayoutDashboard, type LucideIcon } from 'lucide-react'
 import styles from './admin.module.css'
 
-const NAV = [
+type NavItem = { href: string; icon: LucideIcon; label: string; newTab?: boolean }
+
+const NAV: NavItem[] = [
+  { href: '/escritorio',     icon: LayoutDashboard, label: 'Mi Escritorio', newTab: true },
   { href: '/businesses',     icon: Building2, label: 'Negocios'         },
   { href: '/blog-admin',     icon: FileText,  label: 'Blog'             },
   { href: '/social',         icon: Sparkles,  label: 'Contenido Social' },
@@ -87,14 +90,16 @@ export function AdminSidebar() {
 
       <nav className={styles.nav} aria-label="Navegación admin">
         <ul role="list">
-          {NAV.map(({ href, icon: Icon, label }) => {
-            const isActive = pathname.startsWith(href)
+          {NAV.map(({ href, icon: Icon, label, newTab }) => {
+            const isActive = !newTab && pathname.startsWith(href)
             return (
               <li key={href}>
                 <Link
                   href={href}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
                   aria-current={isActive ? 'page' : undefined}
+                  target={newTab ? '_blank' : undefined}
+                  rel={newTab ? 'noopener noreferrer' : undefined}
                 >
                   <Icon size={16} strokeWidth={isActive ? 2.25 : 1.75} aria-hidden="true" />
                   <span>{label}</span>

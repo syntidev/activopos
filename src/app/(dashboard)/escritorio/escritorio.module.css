@@ -136,41 +136,32 @@ a.welcomeStep:hover,
   flex-wrap: wrap;
 }
 
-/* ── Brand watermark ── */
-.brandMark {
-  display: flex;
+/* ── Plan chip (free tier — CTA de upgrade, reemplaza el logo redundante) ── */
+.planChip {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-1-5);
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--brand-soft);
+  border-radius: var(--radius-full);
   margin-bottom: var(--space-1);
-  opacity: 0.55;
 }
 
-.brandMarkLogo {
-  height: 16px;
-  width: auto;
-  flex-shrink: 0;
-}
-
-.brandMarkName {
-  display: flex;
-  align-items: baseline;
-  gap: 0;
-}
-
-.brandMarkActivo {
-  font-family: var(--font-display);
+.planChipLabel {
   font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  color: var(--text-primary);
-  letter-spacing: var(--tracking-tight);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
 }
 
-.brandMarkPOS {
-  font-family: var(--font-display);
+.planChipCta {
   font-size: var(--text-xs);
   font-weight: var(--weight-bold);
   color: var(--brand);
-  letter-spacing: var(--tracking-tight);
+  text-decoration: none;
+}
+
+.planChipCta:hover {
+  text-decoration: underline;
 }
 
 .greeting {

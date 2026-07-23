@@ -25,6 +25,7 @@ import {
   Truck,
 } from 'lucide-react'
 import { DashboardReportAlert } from '@/components/reports/DashboardReportAlert'
+import type { PlanTier } from '@/lib/plan-limits'
 import styles from './escritorio.module.css'
 
 const NEW_TENANT_WINDOW_DAYS = 7
@@ -170,6 +171,7 @@ export default function EscritorioPage() {
   const [catalogActive,    setCatalogActive]     = useState(false)
   const [catalogSlug,      setCatalogSlug]       = useState<string | null>(null)
   const [catalogShared,    setCatalogShared]     = useState(false)
+  const [plan,             setPlan]              = useState<PlanTier | null>(null)
 
   const fetchOperativo = useCallback(async () => {
     try {
@@ -227,6 +229,14 @@ export default function EscritorioPage() {
 
   useEffect(() => { void fetchOperativo() }, [fetchOperativo])
   useEffect(() => { void fetchAnalytics(period) }, [fetchAnalytics, period])
+
+  /* Plan actual — decide si se muestra el chip "Versión Gratis" */
+  useEffect(() => {
+    fetch('/api/plan')
+      .then(r => r.ok ? r.json() : null)
+      .then((j: { plan?: PlanTier } | null) => { if (j?.plan) setPlan(j.plan) })
+      .catch(() => {})
+  }, [])
 
   /* Checklist de bienvenida — solo se resuelve si el usuario no lo ocultó antes */
   useEffect(() => {
@@ -371,13 +381,14 @@ export default function EscritorioPage() {
       {/* ── Header ── */}
       <div className={styles.header}>
         <div>
-          <div className={styles.brandMark} aria-hidden="true">
-            <img src="/activopos-logo-flat-positive.svg" alt="" className={styles.brandMarkLogo} />
-            <span className={styles.brandMarkName}>
-              <span className={styles.brandMarkActivo}>Activo</span>
-              <span className={styles.brandMarkPOS}>POS</span>
-            </span>
-          </div>
+          {plan === 'gratis' && (
+            <div className={styles.planChip}>
+              <span className={styles.planChipLabel}>Versión Gratis</span>
+              <Link href="/planes" className={styles.planChipCta}>
+                Mejorar →
+              </Link>
+            </div>
+          )}
           <h2 className={styles.greeting}>{getGreeting()}</h2>
           <p className={styles.subtitle}>{dateStr}</p>
         </div>

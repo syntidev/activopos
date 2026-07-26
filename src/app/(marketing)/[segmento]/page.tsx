@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getParallelRate } from '@/lib/bcv'
+import { BILLING_CYCLES, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import type { SegmentData, SegmentMode } from '@/types/marketing'
 import SegmentHero from '@/components/marketing/sections/segment/SegmentHero'
 import SegmentPains from '@/components/marketing/sections/segment/SegmentPains'
@@ -82,8 +83,51 @@ export default async function SegmentPage(
   const bcvRate = parallelRate ?? 0
   if (!segment) notFound()
 
+  // Escapa `<` para evitar breakout de </script>: faqs viene de DB, no es estático como /faq.
+  const ldJson = (obj: object): string => JSON.stringify(obj).replace(/</g, '\\u003c')
+
+  const paidTiers: Exclude<PlanTier, 'gratis'>[] = ['negocio_activo']
+
+  const softwareAppJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'ActivoPOS',
+    applicationCategory: 'BusinessApplication',
+    description: segment.meta_description,
+    url: `https://activopos.com/para-${segment.slug}`,
+    offers: paidTiers.map(t => ({
+      '@type': 'Offer',
+      name: PLAN_DISPLAY[t],
+      price: BILLING_CYCLES[t].mensual.monthlyEquivalent,
+      priceCurrency: 'USD',
+    })),
+  }
+
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: segment.faqs.map(f => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio',     item: 'https://activopos.com' },
+      { '@type': 'ListItem', position: 2, name: 'Segmentos',  item: 'https://activopos.com/segmentos' },
+      { '@type': 'ListItem', position: 3, name: segment.name, item: `https://activopos.com/para-${segment.slug}` },
+    ],
+  }
+
   return (
     <div className={styles.page}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(softwareAppJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(faqJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ldJson(breadcrumbJsonLd) }} />
       <SegmentHero segment={segment} />
       <SegmentPains segment={segment} />
       <SegmentFeatures mode={segment.mode} pain1={segment.pain_1} />

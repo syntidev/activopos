@@ -63,10 +63,15 @@ export async function GET(req: NextRequest) {
 
     const [ventasRow, opexAgg] = await Promise.all([
       // SaleItem no tiene business_id (tabla hija) — el tenant layer no lo aísla, se filtra a mano
-      prisma.$queryRaw<{ ingresos: string | null; cogs: string | null }[]>`
+      // ingresos_costeados/productos_sin_costo: productos con costo desconocido
+      // (cost_unknown) quedan fuera del % de margen bruto — no se mezclan como
+      // utilidad ficticia de costo $0.
+      prisma.$queryRaw<{ ingresos: string | null; cogs: string | null; ingresos_costeados: string | null; productos_sin_costo: string | number }[]>`
         SELECT
           SUM(si.subtotal_usd) AS ingresos,
-          SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS cogs
+          SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.quantity * si.cost_per_unit_usd ELSE 0 END) AS cogs,
+          SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd ELSE 0 END) AS ingresos_costeados,
+          COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS productos_sin_costo
         FROM sale_items si
         JOIN sales s ON s.id = si.sale_id
         WHERE s.business_id = ${bid}
@@ -83,13 +88,18 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    const ingresos = parseFloat(String(ventasRow[0]?.ingresos ?? '0')) || 0
-    const cogs     = parseFloat(String(ventasRow[0]?.cogs     ?? '0')) || 0
+    const ingresos          = parseFloat(String(ventasRow[0]?.ingresos          ?? '0')) || 0
+    const cogs              = parseFloat(String(ventasRow[0]?.cogs             ?? '0')) || 0
+    const ingresosCosteados = parseFloat(String(ventasRow[0]?.ingresos_costeados ?? '0')) || 0
+    const productosSinCosto = parseInt(String(ventasRow[0]?.productos_sin_costo ?? '0'), 10) || 0
     const opex     = Number(opexAgg._sum.monto_usd ?? 0)
 
     const utilidad_bruta = ingresos - cogs
     const utilidad_neta  = utilidad_bruta - opex
-    const margen_bruto   = ingresos > 0 ? (utilidad_bruta / ingresos) * 100 : 0
+    // margen_bruto calculado solo sobre ventas con costo conocido (ver nota arriba)
+    const margen_bruto   = ingresosCosteados > 0
+      ? ((ingresosCosteados - cogs) / ingresosCosteados) * 100
+      : 0
 
     return NextResponse.json({
       ok: true,
@@ -100,6 +110,7 @@ export async function GET(req: NextRequest) {
       utilidad_bruta: r2(utilidad_bruta),
       utilidad_neta:  r2(utilidad_neta),
       margen_bruto:   r2(margen_bruto),
+      productos_sin_costo: productosSinCosto,
     })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })

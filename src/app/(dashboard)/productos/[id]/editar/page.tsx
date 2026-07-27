@@ -40,6 +40,7 @@ interface ApiProductDetail {
   subcategory?: string | null
   is_featured?: boolean
   is_fixed_price?: boolean
+  cost_unknown?: boolean
   product_type?: EditableProduct['product_type']
   unit_type?: EditableProduct['unit_type']
   unit_label?: string
@@ -82,6 +83,7 @@ function toEditable(p: ApiProductDetail): EditableProduct {
     subcategory:        p.subcategory,
     is_featured:        p.is_featured,
     is_fixed_price:     p.is_fixed_price,
+    cost_unknown:       p.cost_unknown,
     product_type:       p.product_type,
     unit_type:          p.unit_type,
     unit_label:         p.unit_label,
@@ -180,6 +182,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         subcategory:        data.subcategory || null,
         is_featured:        data.isFeatured,
         is_fixed_price:     data.isFixedPrice,
+        cost_unknown:       data.costUnknown,
         stock_alert_threshold: data.stockAlertThreshold,
       }),
     })

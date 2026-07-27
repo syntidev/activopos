@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 type DailyRow = { date: string; total_usd: string | number }
 type HourRow  = { hour: string | number; avg_usd: string | number }
-type CostRow  = { costo: string | null }
+type CostRow  = { costo: string | null; productos_sin_costo: string | number }
 
 function parseDate(str: string | null, fallback: Date): Date {
   if (!str || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return fallback
@@ -85,7 +85,9 @@ export async function GET(req: NextRequest) {
       // Costo histórico desde si.cost_per_unit_usd (capturado al vender), no el
       // costo actual del producto — mismo patrón que finanzas/pyl (GAP-A1).
       prisma.$queryRaw<CostRow[]>`
-      SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo
+      SELECT
+        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.quantity * si.cost_per_unit_usd ELSE 0 END) AS costo,
+        COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS productos_sin_costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
       WHERE s.business_id = ${bid}
@@ -111,6 +113,7 @@ export async function GET(req: NextRequest) {
   const prevUsd       = Number(prevAgg._sum.total_usd ?? 0)
   const itemsSold     = Number(itemsAgg._sum.quantity  ?? 0)
   const costoVentas   = Number(costosRow[0]?.costo ?? 0)
+  const productosSinCosto = parseInt(String(costosRow[0]?.productos_sin_costo ?? '0'), 10) || 0
   const gastosOp      = Number(gastosOpAgg._sum.monto_usd ?? 0)
   const utilidadBruta = r2(totalUsd - costoVentas)
   const utilidadNeta  = r2(totalUsd - costoVentas - gastosOp)
@@ -184,6 +187,7 @@ export async function GET(req: NextRequest) {
       gastos_operativos_usd: r2(gastosOp),
       utilidad_bruta_usd:    utilidadBruta,
       utilidad_neta_usd:     utilidadNeta,
+      productos_sin_costo:   productosSinCosto,
     },
     por_metodo:     porMetodo,
     dias_activos:   dailyRaw.length,

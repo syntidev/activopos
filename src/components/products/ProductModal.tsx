@@ -29,6 +29,7 @@ export interface ProductFormData {
   saleMode: 'unit' | 'weight' | 'service'
   categoryId: number | null
   costPerUnitUsd: number
+  costUnknown: boolean
   pricePerUnitUsd: number
   wholesalePriceUsd?: number | null
   wholesalePricePerKgUsd?: number | null
@@ -69,6 +70,7 @@ export interface EditableProduct {
   sale_mode: 'unit' | 'weight' | 'service'
   category_id: number | null
   cost_per_unit_usd: number | null
+  cost_unknown?: boolean
   price_per_unit_usd: number
   wholesale_price_usd?: number | null
   wholesale_price_per_kg_usd?: number | null
@@ -266,6 +268,7 @@ export function ProductModal({
   const [costMode, setCostMode]   = useState<'unit' | 'bulk'>('unit')
   const [bulkSize, setBulkSize]   = useState('12')
   const [cost, setCost]           = useState('')
+  const [costUnknown, setCostUnknown] = useState(false)
   const [isFixedPrice, setIsFixedPrice] = useState(false)
   const [margin, setMargin]       = useState('30')
   const [price, setPrice]         = useState('')
@@ -361,7 +364,7 @@ export function ProductModal({
       setName(''); setDescription(''); setBarcode(''); setCategoryId(null)
       setProductKind('simple'); setMeasuredBy('weight'); setUnitLabel('kg'); setUnitStep(0.001)
       setComponents([]); setCompSearch(''); setCompResults([]); setCompQty('1'); setSelectedComp(null)
-      setCostMode('unit'); setBulkSize('12'); setCost(''); setIsFixedPrice(false)
+      setCostMode('unit'); setBulkSize('12'); setCost(''); setCostUnknown(false); setIsFixedPrice(false)
       setMargin('30'); setPrice(''); setStockInitial('0'); setStockAlertThreshold('5'); setErrors({})
       setShowWholesale(false); setWholesalePriceUsd(''); setWholesalePricePerKgUsd('')
       setLocation(''); setProductNotes('')
@@ -413,6 +416,7 @@ export function ProductModal({
       setSubcategory(editProduct.subcategory ?? '')
       setIsFeatured(editProduct.is_featured ?? false)
       setIsFixedPrice(editProduct.is_fixed_price ?? false)
+      setCostUnknown(editProduct.cost_unknown ?? false)
       setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
 
       const c = editProduct.cost_per_unit_usd ?? 0
@@ -621,6 +625,7 @@ export function ProductModal({
         components:      components.map(c => ({ component_id: c.component_id, quantity: c.quantity })),
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
+        costUnknown,
         pricePerUnitUsd: computed.displayPrice,
         wholesalePriceUsd:      wholesalePriceUsd.trim()      ? parseFloat(wholesalePriceUsd)      : null,
         wholesalePricePerKgUsd: wholesalePricePerKgUsd.trim() ? parseFloat(wholesalePricePerKgUsd) : null,

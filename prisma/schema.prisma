@@ -301,6 +301,7 @@ model Product {
   price_per_kg_usd   Decimal?          @db.Decimal(10, 2)
   price_per_unit_usd Decimal?          @db.Decimal(10, 2)
   cost_per_unit_usd  Decimal?          @db.Decimal(10, 4)
+  cost_unknown       Boolean           @default(false)
   wholesale_price_usd        Decimal?          @db.Decimal(10, 2)
   wholesale_price_per_kg_usd Decimal?          @db.Decimal(10, 2)
   location                   String?   @db.VarChar(120)

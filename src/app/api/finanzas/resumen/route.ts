@@ -9,6 +9,7 @@ type InvRow = {
   valor_costo: string | null
   valor_venta: string | null
   productos_count: string | number
+  productos_sin_costo: string | number
 }
 
 function generateInsight(
@@ -84,8 +85,14 @@ export async function GET(req: NextRequest) {
     // COGS: qty * costo capturado EN LA VENTA (si.cost_per_unit_usd), no el costo
     // actual del producto — el costo histórico de la venta no debe moverse si el
     // producto se recotiza después. Fuente única de COGS (GAP-2 / decisión Compra≠Gasto).
-    prisma.$queryRaw<{ costo: string | null }[]>`
-      SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo
+    // ingresos_costeados/productos_sin_costo: productos con costo desconocido
+    // (cost_unknown) quedan fuera del % de margen — su ingreso no entra al
+    // denominador para no inflar el margen con utilidad ficticia de costo $0.
+    prisma.$queryRaw<{ costo: string | null; ingresos_costeados: string | null; productos_sin_costo: string | number }[]>`
+      SELECT
+        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.quantity * si.cost_per_unit_usd ELSE 0 END) AS costo,
+        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd ELSE 0 END) AS ingresos_costeados,
+        COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS productos_sin_costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
       WHERE s.business_id = ${bid}
@@ -148,7 +155,8 @@ export async function GET(req: NextRequest) {
         SUM(COALESCE(COALESCE(p.price_per_unit_usd, p.price_per_kg_usd), 0) *
           GREATEST(0, COALESCE(ie_t.qty_in, 0) - COALESCE(si_t.qty_out, 0))
         ) AS valor_venta,
-        COUNT(*) AS productos_count
+        COUNT(*) AS productos_count,
+        COUNT(CASE WHEN p.cost_unknown = true THEN 1 END) AS productos_sin_costo
       FROM products p
       LEFT JOIN (
         SELECT product_id, SUM(quantity) AS qty_in
@@ -174,14 +182,23 @@ export async function GET(req: NextRequest) {
   const ventasUsd     = Number(ingresosAgg._sum.total_usd ?? 0)
   const ventasBs      = Number(ingresosAgg._sum.total_bs  ?? 0)
   const abonosUsd     = Number(abonosAgg._sum.amount_usd  ?? 0)
-  const costoVentas   = parseFloat(String(costosRow[0]?.costo ?? '0')) || 0
+  const costoVentas       = parseFloat(String(costosRow[0]?.costo ?? '0')) || 0
+  const ingresosCosteados = parseFloat(String(costosRow[0]?.ingresos_costeados ?? '0')) || 0
+  const productosSinCosto = parseInt(String(costosRow[0]?.productos_sin_costo ?? '0'), 10) || 0
   const gastosOpUsd   = Number(gastosOpAgg._sum.monto_usd        ?? 0)
   const cuentasPagUsd = Number(gastosPagadosAgg._sum.monto_usd   ?? 0)
 
   const utilidadBruta = r2(ventasUsd - costoVentas)
-  const margenBruto   = ventasUsd > 0 ? r2((utilidadBruta / ventasUsd) * 100) : 0
   const utilidadNeta  = r2(utilidadBruta - gastosOpUsd)
-  const margenNeto    = ventasUsd > 0 ? r2((utilidadNeta / ventasUsd) * 100) : 0
+  // margenBruto/margenNeto: % calculado SOLO sobre ventas con costo conocido —
+  // productos con cost_unknown quedan fuera del ratio (ver productosSinCosto),
+  // no mezclados como utilidad ficticia de costo $0.
+  const margenBruto = ingresosCosteados > 0
+    ? r2(((ingresosCosteados - costoVentas) / ingresosCosteados) * 100)
+    : 0
+  const margenNeto  = ingresosCosteados > 0
+    ? r2(((ingresosCosteados - costoVentas - gastosOpUsd) / ingresosCosteados) * 100)
+    : 0
 
   const cxcUsd        = Number(cxcAgg._sum.total_usd ?? 0)
   const cxpUsd        = Number(cxpAgg._sum.monto_usd  ?? 0)
@@ -189,6 +206,7 @@ export async function GET(req: NextRequest) {
   const invCosto      = parseFloat(String(inventarioRow[0]?.valor_costo ?? '0')) || 0
   const invVenta      = parseFloat(String(inventarioRow[0]?.valor_venta ?? '0')) || 0
   const invCount      = parseInt(String(inventarioRow[0]?.productos_count ?? '0'), 10)
+  const invSinCosto   = parseInt(String(inventarioRow[0]?.productos_sin_costo ?? '0'), 10)
 
   const periodLabel   = `${MONTH_NAMES[month - 1]} ${year}`
 
@@ -218,6 +236,7 @@ export async function GET(req: NextRequest) {
       margen_bruto_pct:   margenBruto,
       utilidad_neta_usd:  utilidadNeta,
       margen_neto_pct:    margenNeto,
+      productos_sin_costo: productosSinCosto,
     },
 
     cxc: {
@@ -238,6 +257,7 @@ export async function GET(req: NextRequest) {
       valor_venta_usd:       r2(invVenta),
       margen_potencial_usd:  r2(invVenta - invCosto),
       productos_count:       invCount,
+      productos_sin_costo:   invSinCosto,
     },
 
     // ── Backward-compat (shape anterior) ──

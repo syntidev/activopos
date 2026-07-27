@@ -135,6 +135,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [costMode, setCostMode]       = useState<'unit' | 'bulk'>('unit')
   const [bulkSize, setBulkSize]       = useState('12')
   const [cost, setCost]               = useState('')
+  const [costUnknown, setCostUnknownRaw] = useState(false)
   const [isFixedPrice, setIsFixedPrice] = useState(false)
   const [margin, setMargin]           = useState('30')
   const [price, setPrice]             = useState('')
@@ -265,6 +266,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setSubcategory(editProduct.subcategory ?? '')
     setIsFeatured(editProduct.is_featured ?? false)
     setIsFixedPrice(editProduct.is_fixed_price ?? false)
+    setCostUnknownRaw(editProduct.cost_unknown ?? false)
     setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
 
     const c = editProduct.cost_per_unit_usd ?? 0
@@ -310,11 +312,17 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     return { costPerUnit, displayPrice, displayMargin, utility: displayPrice - costPerUnit }
   }, [cost, costMode, bulkSize, margin, price, isFixedPrice])
 
+  /* ── Costo desconocido: fuerza precio fijo (sin costo no hay margen que calcular) ── */
+  const setCostUnknown = (v: boolean) => {
+    setCostUnknownRaw(v)
+    if (v) setIsFixedPrice(true)
+  }
+
   /* ── Validación ── */
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'El nombre es obligatorio'
-    if (!cost.trim() || parseFloat(cost) <= 0) errs.cost = 'Ingresa el costo'
+    if (!costUnknown && (!cost.trim() || parseFloat(cost) <= 0)) errs.cost = 'Ingresa el costo'
     if (!isFixedPrice) {
       const m = parseFloat(margin)
       if (isNaN(m) || m < 0 || m >= 100) errs.margin = 'Margen debe estar entre 0% y 99.9%'
@@ -509,6 +517,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         components:      components.map(c => ({ component_id: c.component_id, quantity: c.quantity })),
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
+        costUnknown,
         pricePerUnitUsd: computed.displayPrice,
         wholesalePriceUsd:      wholesalePriceUsd.trim()      ? parseFloat(wholesalePriceUsd)      : null,
         wholesalePricePerKgUsd: wholesalePricePerKgUsd.trim() ? parseFloat(wholesalePricePerKgUsd) : null,
@@ -557,7 +566,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
      (handleSaveVar/handleDeleteVar), no son parte de este submit. */
   const dirtySnapshot = JSON.stringify({
     name, description, barcode, productKind, measuredBy, unitLabel, unitStep,
-    categoryId, costMode, bulkSize, cost, isFixedPrice, margin, price,
+    categoryId, costMode, bulkSize, cost, costUnknown, isFixedPrice, margin, price,
     stockInitial, stockAlertThreshold, showWholesale, wholesalePriceUsd,
     wholesalePricePerKgUsd, location, productNotes, images, isAvailable,
     catalogVisibility, availability, hasVariants, variants, combineVariants,
@@ -580,6 +589,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     unitLabel, setUnitLabel, unitStep, setUnitStep,
     categoryId, setCategoryId,
     costMode, setCostMode, bulkSize, setBulkSize, cost, setCost,
+    costUnknown, setCostUnknown,
     isFixedPrice, setIsFixedPrice, margin, setMargin, price, setPrice,
     stockInitial, setStockInitial, stockAlertThreshold, setStockAlertThreshold,
     showWholesale, setShowWholesale,

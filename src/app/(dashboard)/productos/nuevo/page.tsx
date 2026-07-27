@@ -89,6 +89,7 @@ export default function NuevoProductoPage() {
         subcategory:        data.subcategory || null,
         is_featured:        data.isFeatured,
         is_fixed_price:     data.isFixedPrice,
+        cost_unknown:       data.costUnknown,
         stock_quantity:     data.stockInitial,
         stock_alert_threshold: data.stockAlertThreshold,
       }),

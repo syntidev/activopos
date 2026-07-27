@@ -366,7 +366,7 @@ export async function POST(req: NextRequest) {
           unit_label:          product.base_unit_label,
           quantity:            item.quantity,
           price_per_unit_usd:  priceUsd,
-          cost_per_unit_usd:   Number(product.cost_per_unit_usd ?? 0),
+          cost_per_unit_usd:   product.cost_per_unit_usd != null ? Number(product.cost_per_unit_usd) : null,
           subtotal_usd:        Math.round(subtotal_usd * 10000) / 10000,
           subtotal_bs:         Math.round(subtotal_bs * 100) / 100,
           rate_used:           rate,

@@ -34,6 +34,7 @@ const patchSchema = z.object({
   subcategory:        z.string().max(60).nullable().optional(),
   is_featured:        z.boolean().optional(),
   is_fixed_price:     z.boolean().optional(),
+  cost_unknown:       z.boolean().optional(),
   active:             z.boolean().optional(),
   is_active:          z.boolean().optional(),
   sort_order:             z.number().int().optional(),
@@ -131,6 +132,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (margin !== undefined && rest.price_per_unit_usd === undefined) {
       const cost = rest.cost_per_unit_usd ?? Number(existing.cost_per_unit_usd ?? 0)
       patchData.price_per_unit_usd = cost / (1 - margin / 100)
+    }
+    if (rest.cost_unknown === true) {
+      patchData.cost_per_unit_usd = null
     }
     if (images !== undefined) {
       patchData.images = images ? JSON.stringify(images) : null

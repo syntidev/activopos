@@ -480,67 +480,91 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           defaultOpen
           hasError={!!(f.errors.cost || f.errors.margin || f.errors.price)}
         >
-          {/* Modo de costo */}
-          <div className={m.formGroup}>
-            <p className={m.label}>Ingresar Costo Por</p>
-            <div className={c.pillGroup} role="radiogroup" aria-label="Modo de costo">
-              {(['unit', 'bulk'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  role="radio"
-                  aria-checked={f.costMode === mode}
-                  className={`${c.pill} ${f.costMode === mode ? c.pillActive : ''}`}
-                  onClick={() => f.setCostMode(mode)}
-                >
-                  {mode === 'unit' ? 'Unidad' : 'Bulto / Caja'}
-                </button>
-              ))}
+          {/* Toggle costo desconocido */}
+          <div className={c.fixedPriceRow}>
+            <div className={c.fixedPriceLabel}>
+              <span className={c.fixedPriceTitle}>No sé cuánto me cuesta</span>
+              <span className={c.fixedPriceSub}>
+                Oculta el costo y usa precio manual — sin costo no hay margen que calcular.
+              </span>
             </div>
-          </div>
-
-          {f.costMode === 'bulk' && (
-            <div className={m.formGroup}>
-              <label className={m.label} htmlFor="np-bulksize">Unidades por bulto / caja</label>
+            <label className={c.toggle} aria-label="Costo desconocido">
               <input
-                id="np-bulksize"
-                type="number"
-                className={m.input}
-                placeholder="12"
-                value={f.bulkSize}
-                onChange={(e) => f.setBulkSize(e.target.value)}
-                min="1"
-                step="1"
+                type="checkbox"
+                className={c.toggleInput}
+                checked={f.costUnknown}
+                onChange={(e) => f.setCostUnknown(e.target.checked)}
               />
-              {f.computed.costPerUnit > 0 && (
-                <p className={c.bulkHint}>
-                  Costo unitario equivalente: <strong>{f.fmtUsd(f.computed.costPerUnit)}</strong>
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-cost">
-              Costo {f.costMode === 'bulk' ? 'por Bulto / Caja' : 'Unitario'} ($)
-              <span className={m.required} aria-hidden="true">*</span>
+              <span className={c.toggleTrack} />
+              <span className={c.toggleThumb} />
             </label>
-            <div className={`${c.inputPrefix} ${f.errors.cost ? m.inputError : ''}`}>
-              <span className={c.prefixSymbol}>$</span>
-              <input
-                id="np-cost"
-                type="number"
-                inputMode="numeric"
-                className={c.prefixInput}
-                placeholder="0.00"
-                value={f.cost}
-                onChange={(e) => { f.setCost(e.target.value); if (f.errors.cost) f.setErrors(p => ({ ...p, cost: '' })) }}
-                min="0"
-                step="0.01"
-              />
-            </div>
-            {f.errors.cost && <p className={m.errorMsg}>{f.errors.cost}</p>}
           </div>
+
+          {!f.costUnknown && (
+            <>
+              {/* Modo de costo */}
+              <div className={m.formGroup}>
+                <p className={m.label}>Ingresar Costo Por</p>
+                <div className={c.pillGroup} role="radiogroup" aria-label="Modo de costo">
+                  {(['unit', 'bulk'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      role="radio"
+                      aria-checked={f.costMode === mode}
+                      className={`${c.pill} ${f.costMode === mode ? c.pillActive : ''}`}
+                      onClick={() => f.setCostMode(mode)}
+                    >
+                      {mode === 'unit' ? 'Unidad' : 'Bulto / Caja'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {f.costMode === 'bulk' && (
+                <div className={m.formGroup}>
+                  <label className={m.label} htmlFor="np-bulksize">Unidades por bulto / caja</label>
+                  <input
+                    id="np-bulksize"
+                    type="number"
+                    className={m.input}
+                    placeholder="12"
+                    value={f.bulkSize}
+                    onChange={(e) => f.setBulkSize(e.target.value)}
+                    min="1"
+                    step="1"
+                  />
+                  {f.computed.costPerUnit > 0 && (
+                    <p className={c.bulkHint}>
+                      Costo unitario equivalente: <strong>{f.fmtUsd(f.computed.costPerUnit)}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className={m.formGroup}>
+                <label className={m.label} htmlFor="np-cost">
+                  Costo {f.costMode === 'bulk' ? 'por Bulto / Caja' : 'Unitario'} ($)
+                  <span className={m.required} aria-hidden="true">*</span>
+                </label>
+                <div className={`${c.inputPrefix} ${f.errors.cost ? m.inputError : ''}`}>
+                  <span className={c.prefixSymbol}>$</span>
+                  <input
+                    id="np-cost"
+                    type="number"
+                    inputMode="numeric"
+                    className={c.prefixInput}
+                    placeholder="0.00"
+                    value={f.cost}
+                    onChange={(e) => { f.setCost(e.target.value); if (f.errors.cost) f.setErrors(p => ({ ...p, cost: '' })) }}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                {f.errors.cost && <p className={m.errorMsg}>{f.errors.cost}</p>}
+              </div>
+            </>
+          )}
 
           <div className={m.divider} />
 
@@ -549,7 +573,9 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             <div className={c.fixedPriceLabel}>
               <span className={c.fixedPriceTitle}>Usar Precios Fijos (Manuales)</span>
               <span className={c.fixedPriceSub}>
-                {f.isFixedPrice
+                {f.costUnknown
+                  ? 'Forzado — sin costo no hay margen que calcular.'
+                  : f.isFixedPrice
                   ? 'Precio editable — margen se calcula automáticamente.'
                   : 'Precio calculado según el margen ingresado.'}
               </span>
@@ -559,6 +585,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                 type="checkbox"
                 className={c.toggleInput}
                 checked={f.isFixedPrice}
+                disabled={f.costUnknown}
                 onChange={(e) => {
                   const on = e.target.checked
                   f.setIsFixedPrice(on)

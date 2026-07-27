@@ -26,8 +26,14 @@ export async function GET(req: NextRequest) {
 
     // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
     // COGS desde si.cost_per_unit_usd (costo capturado en la venta), fuente única (GAP-2).
-    prisma.$queryRaw<{ costo: string | null }[]>`
-      SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo
+    // ingresos_costeados/productos_sin_costo: productos con costo desconocido
+    // (cost_unknown) quedan fuera del margen de contribución — el break-even
+    // se calcula sobre costo real medido, no sobre utilidad ficticia de costo $0.
+    prisma.$queryRaw<{ costo: string | null; ingresos_costeados: string | null; productos_sin_costo: string | number }[]>`
+      SELECT
+        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.quantity * si.cost_per_unit_usd ELSE 0 END) AS costo,
+        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd ELSE 0 END) AS ingresos_costeados,
+        COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS productos_sin_costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
       WHERE s.business_id = ${bid}
@@ -43,14 +49,16 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  const ventasUsd     = Number(ventasAgg._sum.total_usd ?? 0)
-  const costoVariable = parseFloat(String(costoRow[0]?.costo ?? '0')) || 0
+  const ventasUsd         = Number(ventasAgg._sum.total_usd ?? 0)
+  const costoVariable     = parseFloat(String(costoRow[0]?.costo ?? '0')) || 0
+  const ingresosCosteados = parseFloat(String(costoRow[0]?.ingresos_costeados ?? '0')) || 0
+  const productosSinCosto = parseInt(String(costoRow[0]?.productos_sin_costo ?? '0'), 10) || 0
   const gastosFijos   = Number(gastosAgg._sum.monto_usd ?? 0)
   const r2            = (x: number) => Math.round(x * 100) / 100
   const periodLabel   = `${MONTH_NAMES[month - 1]} ${year}`
 
-  const margenContribPct = ventasUsd > 0
-    ? r2(((ventasUsd - costoVariable) / ventasUsd) * 100)
+  const margenContribPct = ingresosCosteados > 0
+    ? r2(((ingresosCosteados - costoVariable) / ingresosCosteados) * 100)
     : 0
 
   const diasTotalesMes = Math.floor((to.getTime() - from.getTime()) / 86_400_000)
@@ -77,6 +85,7 @@ export async function GET(req: NextRequest) {
       ventas_diarias_promedio:  0,
       proyeccion_fin_mes_usd:   0,
       alcanzara_pe:             false,
+      productos_sin_costo:      productosSinCosto,
     })
   }
 
@@ -101,6 +110,7 @@ export async function GET(req: NextRequest) {
       ventas_diarias_promedio:  0,
       proyeccion_fin_mes_usd:   0,
       alcanzara_pe:             false,
+      productos_sin_costo:      productosSinCosto,
     })
   }
 
@@ -139,6 +149,7 @@ export async function GET(req: NextRequest) {
     ventas_diarias_promedio:  ventasDiarias,
     proyeccion_fin_mes_usd:   proyeccion,
     alcanzara_pe:             puntoEquilibrio > 0 ? proyeccion >= puntoEquilibrio : true,
+    productos_sin_costo:      productosSinCosto,
   })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })

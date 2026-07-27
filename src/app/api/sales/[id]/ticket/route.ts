@@ -62,6 +62,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
             include: { payment_method: { select: { name: true } } },
           },
           cashier: { select: { name: true } },
+          // Una venta con cliente elegido del listado guarda client_id pero
+          // deja client_name/client_phone en null (solo se llenan cuando el
+          // nombre se tipea suelto en el POS). Sin esta relación el ticket
+          // no imprimiría cliente en el camino más común.
+          client: { select: { name: true, phone: true } },
         },
       }),
       // Business es la raíz del tenant (no tiene business_id) → no se filtra.
@@ -159,10 +164,13 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         ).join('')
       : ''
 
-    const customerHtml = business.ticket_show_customer_data && (sale.client_name || sale.client_phone)
+    const clientName  = sale.client_name  ?? sale.client?.name  ?? null
+    const clientPhone = sale.client_phone ?? sale.client?.phone ?? null
+
+    const customerHtml = business.ticket_show_customer_data && (clientName || clientPhone)
       ? [
-          sale.client_name  ? `<div>Cliente: ${esc(sale.client_name)}</div>`       : '',
-          sale.client_phone ? `<div>Tel. cliente: ${esc(sale.client_phone)}</div>` : '',
+          clientName  ? `<div>Cliente: ${esc(clientName)}</div>`       : '',
+          clientPhone ? `<div>Tel. cliente: ${esc(clientPhone)}</div>` : '',
           '<div class="hr"></div>',
         ].join('')
       : ''

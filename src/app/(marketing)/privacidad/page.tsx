@@ -6,7 +6,7 @@ import styles from './privacidad.module.css'
 export const metadata: Metadata = {
   title: 'Política de Privacidad',
   description: 'Cómo recopilamos, usamos y protegemos tus datos en ActivoPOS.',
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 }
 
 export default function PrivacidadPage() {

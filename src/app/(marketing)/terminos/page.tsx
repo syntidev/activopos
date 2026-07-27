@@ -6,7 +6,7 @@ import styles from './terminos.module.css'
 export const metadata: Metadata = {
   title: 'Términos y Condiciones',
   description: 'Condiciones de uso del servicio ActivoPOS.',
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 }
 
 export default function TerminosPage() {

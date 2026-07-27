@@ -33,6 +33,7 @@ const patchSchema = z.object({
   badge:              z.enum(['none', 'popular', 'nuevo', 'promo', 'recomendado']).nullable().optional(),
   subcategory:        z.string().max(60).nullable().optional(),
   is_featured:        z.boolean().optional(),
+  is_fixed_price:     z.boolean().optional(),
   active:             z.boolean().optional(),
   is_active:          z.boolean().optional(),
   sort_order:             z.number().int().optional(),

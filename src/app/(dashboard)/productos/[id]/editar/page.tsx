@@ -39,6 +39,7 @@ interface ApiProductDetail {
   badge?: string | null
   subcategory?: string | null
   is_featured?: boolean
+  is_fixed_price?: boolean
   product_type?: EditableProduct['product_type']
   unit_type?: EditableProduct['unit_type']
   unit_label?: string
@@ -80,6 +81,7 @@ function toEditable(p: ApiProductDetail): EditableProduct {
     badge:              p.badge,
     subcategory:        p.subcategory,
     is_featured:        p.is_featured,
+    is_fixed_price:     p.is_fixed_price,
     product_type:       p.product_type,
     unit_type:          p.unit_type,
     unit_label:         p.unit_label,
@@ -177,6 +179,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         badge:              data.badge || 'none',
         subcategory:        data.subcategory || null,
         is_featured:        data.isFeatured,
+        is_fixed_price:     data.isFixedPrice,
         stock_alert_threshold: data.stockAlertThreshold,
       }),
     })

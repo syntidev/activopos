@@ -264,6 +264,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setBadge(editProduct.badge ?? 'none')
     setSubcategory(editProduct.subcategory ?? '')
     setIsFeatured(editProduct.is_featured ?? false)
+    setIsFixedPrice(editProduct.is_fixed_price ?? false)
     setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
 
     const c = editProduct.cost_per_unit_usd ?? 0
@@ -534,6 +535,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         badge,
         subcategory: subcategory.trim(),
         isFeatured,
+        isFixedPrice,
       })
     } catch {
       setErrors({ submit: 'Error al guardar. Intenta de nuevo.' })

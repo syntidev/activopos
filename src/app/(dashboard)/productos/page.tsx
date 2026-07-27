@@ -73,6 +73,7 @@ interface Product {
   badge?: string | null
   subcategory?: string | null
   is_featured?: boolean
+  is_fixed_price?: boolean
   product_type?: 'simple' | 'combo' | 'fabricable'
   unit_type?: 'unit' | 'weight' | 'volume' | 'length'
   unit_label?: string
@@ -325,6 +326,7 @@ export default function ProductosPage() {
         badge:              data.badge || 'none',
         subcategory:        data.subcategory || null,
         is_featured:        data.isFeatured,
+        is_fixed_price:     data.isFixedPrice,
         ...(isEdit ? {} : {
           stock_quantity: data.stockInitial,
           variants: data.hasVariants
@@ -568,6 +570,7 @@ export default function ProductosPage() {
       badge:              product.badge,
       subcategory:        product.subcategory,
       is_featured:        product.is_featured,
+      is_fixed_price:     product.is_fixed_price,
       product_type:       product.product_type,
       unit_type:          product.unit_type,
       unit_label:         product.unit_label,

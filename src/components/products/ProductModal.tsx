@@ -47,6 +47,7 @@ export interface ProductFormData {
   badge: string
   subcategory: string
   isFeatured: boolean
+  isFixedPrice: boolean
   productType: 'simple' | 'combo' | 'fabricable'
   unitType: 'unit' | 'weight' | 'volume' | 'length'
   unitLabel: string
@@ -82,6 +83,7 @@ export interface EditableProduct {
   badge?: string | null
   subcategory?: string | null
   is_featured?: boolean
+  is_fixed_price?: boolean
   product_type?: 'simple' | 'combo' | 'fabricable'
   unit_type?: 'unit' | 'weight' | 'volume' | 'length'
   unit_label?: string
@@ -410,6 +412,7 @@ export function ProductModal({
       setBadge(editProduct.badge ?? 'none')
       setSubcategory(editProduct.subcategory ?? '')
       setIsFeatured(editProduct.is_featured ?? false)
+      setIsFixedPrice(editProduct.is_fixed_price ?? false)
       setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
 
       const c = editProduct.cost_per_unit_usd ?? 0
@@ -634,6 +637,7 @@ export function ProductModal({
         badge,
         subcategory:  subcategory.trim(),
         isFeatured,
+        isFixedPrice,
       })
     } catch {
       setErrors({ submit: 'Error al guardar. Intenta de nuevo.' })

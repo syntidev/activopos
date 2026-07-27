@@ -37,6 +37,7 @@ const productSchema = z.object({
   badge:              z.enum(['none', 'popular', 'nuevo', 'promo', 'recomendado']).default('none'),
   subcategory:        z.string().max(60).nullable().optional(),
   is_featured:        z.boolean().default(false),
+  is_fixed_price:     z.boolean().default(false),
   sort_order:         z.number().int().default(0),
   variants:           z.array(z.object({
     tipo:         z.enum(['talla', 'color', 'personalizado']),
@@ -275,6 +276,7 @@ export async function POST(req: NextRequest) {
         badge:              data.badge,
         subcategory:        data.subcategory        ?? null,
         is_featured:        data.is_featured,
+        is_fixed_price:     data.is_fixed_price,
         sort_order:         data.sort_order,
         variants: variantRows.length
           ? { create: variantRows.map(v => ({

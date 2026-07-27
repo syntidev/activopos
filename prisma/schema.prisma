@@ -319,6 +319,7 @@ model Product {
   badge              String?           @default("none")
   subcategory        String?
   is_featured        Boolean           @default(false)
+  is_fixed_price     Boolean           @default(false)
   sort_order         Int               @default(0)
   created_at         DateTime          @default(now())
   updated_at         DateTime          @updatedAt

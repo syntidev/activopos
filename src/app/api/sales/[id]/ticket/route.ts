@@ -109,9 +109,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
        ticket sin un solo monto. */
     const showForeign = business.ticket_show_foreign || !showBs
 
-    const fForeign = (n: number): string =>
-      business.ticket_foreign_format === 'ref' ? `REF ${fmt2(n)}` : `$${fmt2(n)}`
+    const isRef = business.ticket_foreign_format === 'ref'
+    const fForeign = (n: number): string => (isRef ? `REF ${fmt2(n)}` : `$${fmt2(n)}`)
     const fBs = (n: number): string => `Bs.${fmt2(n)}`
+    // El rótulo sigue al formato: "TOTAL USD: REF 22.00" se contradice solo.
+    const foreignLabel = isRef ? 'REF' : 'USD'
 
     const totalUsd  = Number(sale.total_usd)
     const totalBs   = Number(sale.total_bs)
@@ -227,7 +229,7 @@ ${itemsHtml}
 <div class="hr"></div>
 ${showForeign ? `<div class="row"><span>SUBTOTAL:</span><span>${fForeign(subtotalUsd)}</span></div>` : ''}
 ${ivaLineHtml}
-${showForeign ? `<div class="row b"><span>TOTAL:</span><span>${fForeign(totalUsd)}</span></div>` : ''}
+${showForeign ? `<div class="row b"><span>TOTAL ${foreignLabel}:</span><span>${fForeign(totalUsd)}</span></div>` : ''}
 ${showBs      ? `<div class="row b"><span>TOTAL Bs:</span><span>${fBs(totalBs)}</span></div>` : ''}
 ${business.ticket_show_bcv_rate ? `<div class="row"><span>Tasa BCV:</span><span>${rate.toFixed(4)}</span></div>` : ''}
 <div class="hr"></div>

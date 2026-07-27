@@ -5,31 +5,6 @@ import type { TicketState, TicketTotals } from '@/lib/pos'
 
 /* ── Types ── */
 
-export interface PrintTicketData {
-  ticketNumber: string
-  businessName: string
-  cashierName: string
-  soldAt: string
-  clientName?: string
-  items: Array<{
-    productName: string
-    variantLabel?: string
-    saleMode: string
-    quantity: number
-    pricePerUnitUsd: number
-    subtotalBs: number
-  }>
-  subtotalUsd: number
-  discountUsd: number
-  ivaPct?: number
-  ivaUsd?: number
-  totalUsd: number
-  totalBs: number
-  rateUsed: number
-  notes?: string
-  payments?: Array<{ methodName: string; amountBs: number }>
-}
-
 export interface QuotePDFOptions {
   showUsd: boolean
   showBs: boolean
@@ -91,69 +66,6 @@ function openPrintWindow(html: string, css: string): void {
     // Fallback cleanup if afterprint never fires (some browsers)
     setTimeout(cleanup, 30_000)
   }, 400)
-}
-
-/* ── Thermal ticket (80mm / 58mm) ── */
-
-export function generarTicketPDF(data: PrintTicketData, format: '58mm' | '80mm' = '80mm'): void {
-  const w = format === '58mm' ? '58mm' : '80mm'
-
-  const css = `
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Courier New',Courier,monospace;font-size:11px;width:${w};color:#000;background:#fff;padding:4mm}
-    .c{text-align:center}.r{text-align:right}
-    .biz{font-size:14px;font-weight:700}
-    .meta{font-size:9px;color:#444}
-    hr{border:none;border-top:1px dashed #000;margin:5px 0}
-    .row{display:flex;justify-content:space-between;align-items:baseline}
-    .iname{font-size:10px;margin-top:3px}
-    .iprice{font-size:11px}
-    .total-bs{font-size:16px;font-weight:700;text-align:center;margin:4px 0}
-    .footer{text-align:center;font-size:9px;margin-top:8px;color:#555}
-    @media print{@page{size:${w} auto;margin:0}body{padding:3mm}}
-  `
-
-  const items = data.items.map(i => [
-    `<div class="iname">${esc(i.productName)}${i.variantLabel ? ` · ${esc(i.variantLabel)}` : ''}</div>`,
-    `<div class="row iprice">`,
-    `  <span>${esc(fQty(i.quantity, i.saleMode))} &times; ${esc(fUSD(i.pricePerUnitUsd))}</span>`,
-    `  <span>${esc(fBs(i.subtotalBs))}</span>`,
-    `</div>`,
-  ].join('')).join('')
-
-  const payments = data.payments?.map(p =>
-    `<div class="row"><span>${esc(p.methodName)}</span><span>${esc(fBs(p.amountBs))}</span></div>`
-  ).join('') ?? ''
-
-  const html = [
-    `<div class="c">`,
-    `  <div class="biz">${esc(data.businessName)}</div>`,
-    `  <div class="meta">${esc(data.soldAt)}</div>`,
-    `  <div class="meta">Cajero: ${esc(data.cashierName)}</div>`,
-    data.clientName ? `  <div class="meta">Cliente: ${esc(data.clientName)}</div>` : '',
-    `</div>`,
-    `<hr/>`,
-    `<div class="meta">TICKET #${esc(data.ticketNumber)}</div>`,
-    `<hr/>`,
-    items,
-    `<hr/>`,
-    data.discountUsd > 0
-      ? `<div class="row"><span>Descuento</span><span>-${esc(fUSD(data.discountUsd))}</span></div>`
-      : '',
-    // IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo fiscal:
-    // se imprimía en el PDF sin cobrarse/persistirse realmente).
-    false && (data.ivaUsd ?? 0) > 0
-      ? `<div class="row"><span>IVA ${data.ivaPct ?? 0}%</span><span>+${esc(fUSD(data.ivaUsd ?? 0))}</span></div>`
-      : '',
-    `<div class="row"><span>Total USD</span><span>${esc(fUSD(data.totalUsd))}</span></div>`,
-    `<div class="total-bs">${esc(fBs(data.totalBs))}</div>`,
-    `<div class="meta c">Tasa: ${esc(fBs(data.rateUsed))} / USD</div>`,
-    payments ? `<hr/>${payments}` : '',
-    data.notes ? `<hr/><div class="meta">${esc(data.notes)}</div>` : '',
-    `<div class="footer">&mdash; Gracias por su compra &mdash;</div>`,
-  ].join('\n')
-
-  openPrintWindow(html, css)
 }
 
 /* ── Quote / Cotización (Letter) ── */

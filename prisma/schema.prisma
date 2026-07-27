@@ -150,6 +150,21 @@ model Business {
   theme_color          String   @default("#2563EB")
   ticket_prefix        String   @default("ACT") @db.VarChar(10)
   ticket_footer        String?  @db.Text
+  // Configuración de impresión del ticket térmico. Los defaults reproducen
+  // exactamente lo que el ticket imprime hoy, para que activar esta config
+  // no cambie por sí sola ningún ticket en producción.
+  ticket_format        String   @default("58mm") @db.VarChar(10) // 'carta' | '80mm' | '58mm'
+  ticket_show_description    Boolean @default(false)
+  ticket_show_bs             Boolean @default(true)
+  ticket_show_foreign        Boolean @default(true)
+  ticket_foreign_format      String  @default("usd") @db.VarChar(5) // 'usd' | 'ref'
+  ticket_show_address        Boolean @default(true)
+  ticket_show_phone          Boolean @default(true)
+  ticket_show_customer_data  Boolean @default(false)
+  ticket_show_rif            Boolean @default(false)
+  ticket_show_cashier_name   Boolean @default(true)
+  ticket_show_bcv_rate       Boolean @default(true)
+  ticket_show_payment_method Boolean @default(true)
   quotation_footer     String?  @db.Text
   currency_default     String   @default("USD")
   rate_source          String   @default("bcv") // 'bcv' | 'parallel' | 'manual'

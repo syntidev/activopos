@@ -22,6 +22,14 @@ function fmtDate(d: Date): string {
   })
 }
 
+/* Medidas por formato. El ancho en px es el que usa la vista previa en
+   pantalla; @page manda a la hora de imprimir. */
+const FORMATS = {
+  '58mm':  { page: '58mm auto', width: '220px', font: '10px', pad: '2px'  },
+  '80mm':  { page: '80mm auto', width: '300px', font: '11px', pad: '3px'  },
+  'carta': { page: 'letter',    width: '700px', font: '12px', pad: '12px' },
+} as const
+
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   try {
     const { session, db } = await getAuthenticatedTenant()
@@ -41,7 +49,12 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
               quantity:     true,
               price_per_unit_usd: true,
               subtotal_usd: true,
+              subtotal_bs:  true,
               discount_usd: true,
+              // Descripción viva del producto, no un snapshot de la venta:
+              // SaleItem no la persiste. Un ticket reimpreso muestra la
+              // descripción de hoy, no la del día de la venta.
+              product: { select: { description: true } },
             },
             orderBy: { id: 'asc' },
           },
@@ -58,17 +71,42 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
           name:          true,
           address:       true,
           phone:         true,
+          rif:           true,
           ticket_footer: true,
           catalog_slug:  true,
           catalog_active: true,
           iva_enabled:   true,
           iva_pct:       true,
+          ticket_format:              true,
+          ticket_show_description:    true,
+          ticket_show_bs:             true,
+          ticket_show_foreign:        true,
+          ticket_foreign_format:      true,
+          ticket_show_address:        true,
+          ticket_show_phone:          true,
+          ticket_show_customer_data:  true,
+          ticket_show_rif:            true,
+          ticket_show_cashier_name:   true,
+          ticket_show_bcv_rate:       true,
+          ticket_show_payment_method: true,
         },
       }),
     ])
 
     if (!sale)     return new Response('Venta no encontrada', { status: 404 })
     if (!business) return new Response('Negocio no encontrado', { status: 404 })
+
+    const fmt = FORMATS[business.ticket_format as keyof typeof FORMATS] ?? FORMATS['58mm']
+
+    const showBs = business.ticket_show_bs
+    /* La API impide guardar ambos en false, pero un UPDATE manual contra la DB
+       sí podría dejarlos así. Si pasa, cae a divisas antes que imprimir un
+       ticket sin un solo monto. */
+    const showForeign = business.ticket_show_foreign || !showBs
+
+    const fForeign = (n: number): string =>
+      business.ticket_foreign_format === 'ref' ? `REF ${fmt2(n)}` : `$${fmt2(n)}`
+    const fBs = (n: number): string => `Bs.${fmt2(n)}`
 
     const totalUsd  = Number(sale.total_usd)
     const totalBs   = Number(sale.total_bs)
@@ -100,17 +138,34 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     const itemsHtml = sale.items.map(item => {
       const qty  = Number(item.quantity)
       const name = esc(item.product_name).slice(0, 20)
-      const sub  = fmt2(Number(item.subtotal_usd))
       const disc = Number(item.discount_usd)
-      const discLine = disc > 0
-        ? `<div class="row" style="font-size:9px;color:#555"><span>  Desc.:</span><span>-$${fmt2(disc)}</span></div>`
+      // El monto por línea sigue al mismo interruptor que los totales: si el
+      // negocio apagó divisas, el ítem se imprime en Bs, no desaparece.
+      const amount = showForeign
+        ? fForeign(Number(item.subtotal_usd))
+        : fBs(Number(item.subtotal_bs))
+      const descLine = business.ticket_show_description && item.product.description
+        ? `<div style="font-size:8px;color:#555;margin-left:6px">${esc(item.product.description).slice(0, 60)}</div>`
         : ''
-      return `<div class="row"><span>${qty}&times; ${name}</span><span>$${sub}</span></div>${discLine}`
+      const discLine = disc > 0
+        ? `<div class="row" style="font-size:9px;color:#555"><span>  Desc.:</span><span>-${fForeign(disc)}</span></div>`
+        : ''
+      return `<div class="row"><span>${qty}&times; ${name}</span><span>${amount}</span></div>${descLine}${discLine}`
     }).join('')
 
-    const paymentsHtml = sale.payments.map(p =>
-      `<div class="row"><span>Método: ${esc(p.payment_method.name)}</span><span>$${fmt2(Number(p.amount_usd))}</span></div>`
-    ).join('')
+    const paymentsHtml = business.ticket_show_payment_method
+      ? sale.payments.map(p =>
+          `<div class="row"><span>Método: ${esc(p.payment_method.name)}</span><span>${fForeign(Number(p.amount_usd))}</span></div>`
+        ).join('')
+      : ''
+
+    const customerHtml = business.ticket_show_customer_data && (sale.client_name || sale.client_phone)
+      ? [
+          sale.client_name  ? `<div>Cliente: ${esc(sale.client_name)}</div>`       : '',
+          sale.client_phone ? `<div>Tel. cliente: ${esc(sale.client_phone)}</div>` : '',
+          '<div class="hr"></div>',
+        ].join('')
+      : ''
 
     const catalogUrl = business.catalog_active && business.catalog_slug
       ? `<div class="c" style="margin-top:4px;font-size:9px">activopos.com/c/${esc(business.catalog_slug)}</div>`
@@ -126,15 +181,16 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 <meta charset="UTF-8">
 <title>Ticket ${esc(sale.ticket_number)}</title>
 <style>
-@page { size: 58mm auto; margin: 2mm 1mm; }
+@page { size: ${fmt.page}; margin: 2mm 1mm; }
 *     { box-sizing: border-box; margin: 0; padding: 0; }
 body  {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 10px;
-  width: 220px;
+  font-size: ${fmt.font};
+  width: ${fmt.width};
   color: #000;
   background: #fff;
-  padding: 2px;
+  padding: ${fmt.pad};
+  margin: 0 auto;
 }
 .c   { text-align: center; }
 .b   { font-weight: bold; }
@@ -142,7 +198,7 @@ body  {
 .hr  { border: none; border-top: 1px dashed #000; margin: 3px 0; }
 .row { display: flex; justify-content: space-between; margin: 1px 0; }
 @media print {
-  @page { size: 58mm auto; margin: 0; }
+  @page { size: ${fmt.page}; margin: 0; }
 }
 </style>
 <script>window.onload = () => window.print()</script>
@@ -150,20 +206,22 @@ body  {
 <body>
 <div class="c" style="margin-bottom:2px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="20" height="20" style="vertical-align:middle"><defs><clipPath id="lc"><polygon points="235,270 600,-600 600,500 0,500"/></clipPath></defs><path d="M200,40 L360,340 L40,340 Z" fill="#0038BD"/><path d="M200,40 L360,340 L40,340 Z" fill="#EF8E01" clip-path="url(#lc)"/></svg></div>
 <div class="c biz">${esc(business.name)}</div>
-${business.address ? `<div class="c">${esc(business.address)}</div>` : ''}
-${business.phone   ? `<div class="c">Tel: ${esc(business.phone)}</div>` : ''}
+${business.ticket_show_rif     && business.rif     ? `<div class="c">RIF: ${esc(business.rif)}</div>` : ''}
+${business.ticket_show_address && business.address ? `<div class="c">${esc(business.address)}</div>` : ''}
+${business.ticket_show_phone   && business.phone   ? `<div class="c">Tel: ${esc(business.phone)}</div>` : ''}
 <div class="hr"></div>
 <div>Ticket: ${esc(sale.ticket_number)}</div>
 <div>Fecha:  ${sale.sold_at ? fmtDate(sale.sold_at) : '—'}</div>
-<div>Cajero: ${esc(sale.cashier.name)}</div>
+${business.ticket_show_cashier_name ? `<div>Cajero: ${esc(sale.cashier.name)}</div>` : ''}
 <div class="hr"></div>
+${customerHtml}
 ${itemsHtml}
 <div class="hr"></div>
-<div class="row"><span>SUBTOTAL:</span><span>$${fmt2(subtotalUsd)}</span></div>
+${showForeign ? `<div class="row"><span>SUBTOTAL:</span><span>${fForeign(subtotalUsd)}</span></div>` : ''}
 ${ivaLineHtml}
-<div class="row b"><span>TOTAL USD:</span><span>$${fmt2(totalUsd)}</span></div>
-<div class="row"><span>TOTAL Bs:</span><span>Bs.${totalBs.toFixed(2)}</span></div>
-<div class="row"><span>Tasa BCV:</span><span>${rate.toFixed(4)}</span></div>
+${showForeign ? `<div class="row b"><span>TOTAL:</span><span>${fForeign(totalUsd)}</span></div>` : ''}
+${showBs      ? `<div class="row b"><span>TOTAL Bs:</span><span>${fBs(totalBs)}</span></div>` : ''}
+${business.ticket_show_bcv_rate ? `<div class="row"><span>Tasa BCV:</span><span>${rate.toFixed(4)}</span></div>` : ''}
 <div class="hr"></div>
 ${paymentsHtml}
 <div class="hr"></div>

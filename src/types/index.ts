@@ -2,9 +2,6 @@ export type { SessionPayload as SessionUser } from '@/lib/auth'
 
 export interface BusinessSettings {
   pin?: string
-  ticket_format?: 'carta' | '80mm' | '58mm'
-  ticket_currency?: 'both' | 'usd' | 'bs'
-  hide_rate?: boolean
 }
 
 export type UserRole = 'super_admin' | 'admin' | 'cashier'
@@ -87,12 +84,26 @@ export interface BusinessConfig {
   catalog_cover_path?:         string | null
 }
 
+export type TicketFormat        = 'carta' | '80mm' | '58mm'
+export type TicketForeignFormat = 'usd' | 'ref'
+
 export interface TicketConfig {
   ticket_prefix:   string
   ticket_footer:   string | null
-  ticket_format:   'carta' | '80mm' | '58mm'
-  ticket_currency: 'both' | 'usd' | 'bs'
-  hide_rate:       boolean
+  ticket_format:   TicketFormat
+  // Columnas visibles
+  show_description:    boolean
+  show_bs:             boolean
+  show_foreign:        boolean
+  foreign_format:      TicketForeignFormat
+  // Datos del negocio en ticket
+  show_address:        boolean
+  show_phone:          boolean
+  show_customer_data:  boolean
+  show_rif:            boolean
+  show_cashier_name:   boolean
+  show_bcv_rate:       boolean
+  show_payment_method: boolean
 }
 
 export interface PaymentMethodRecord {

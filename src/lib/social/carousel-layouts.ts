@@ -545,10 +545,10 @@ export function buildBicolorStatDecor(): string {
   return bicolorCluster('#B56700', '#0038BD', 620, '-140px', '', '-150px', '', 12, 0.85)
 }
 export function buildBicolorChecklistDecor(): string {
-  return bicolorCluster('#4D7AFF', '#EF8E01', 620, '-140px', '-150px', '', '', -12, 0.55)
+  return bicolorCluster('#4D7AFF', '#EF8E01', 620, '-410px', '-410px', '', '', -12, 0.55)
 }
 export function buildBicolorCtaDecor(): string {
-  return bicolorCluster('#B56700', '#0038BD', 620, '', '', '-150px', '-140px', 10, 0.85, '#0038BD')
+  return bicolorCluster('#B56700', '#0038BD', 620, '', '', '-150px', '190px', 10, 0.85, '#0038BD')
 }
 
 // ── Contents ──

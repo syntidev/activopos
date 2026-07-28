@@ -143,6 +143,21 @@ export interface TitleSegment {
   highlight?: boolean
 }
 
+// Parte el titulo en [antes, resaltado, después] para el marcador de highlight-text.
+// Vive acá y no en carrusel.ts porque opera sobre TitleSegment, que se define en
+// este archivo. Si el highlight no aparece literal, devuelve el titulo sin resaltar.
+export function splitTituloEnSegmentos(titulo: string, highlight: string): TitleSegment[] {
+  const idx = titulo.indexOf(highlight)
+  if (idx === -1) return [{ text: titulo }]
+  const antes   = titulo.slice(0, idx)
+  const despues = titulo.slice(idx + highlight.length)
+  const segs: TitleSegment[] = []
+  if (antes) segs.push({ text: antes })
+  segs.push({ text: highlight, highlight: true })
+  if (despues) segs.push({ text: despues })
+  return segs
+}
+
 function renderTitleSegments(segments: TitleSegment[], accentColor: string, highlightTextColor: string): string {
   return segments.map(seg => {
     if (!seg.highlight) return esc(seg.text)

@@ -256,11 +256,11 @@ export function pickLayoutForRole(role: SlideRole): SlideLayout {
   switch (role) {
     case 'portada':     return 'ghost-hero'
     case 'problema':    return 'highlight-text'
-    // 'valor' y 'comparacion' vuelven a highlight-text: curva-corte pinta cifras
-    // monetarias y su statValor era un '$0.00' ilustrativo -- se publicó a
-    // Instagram como si fuera venta real. Sin fuente de dato real, no se asigna.
-    case 'valor':       return 'highlight-text'
-    case 'comparacion': return 'highlight-text'
+    // checklist y chat-bubble consumen items[] / clienteTexto, que generateCopy
+    // ahora pide al LLM según este mismo mapa. curva-corte sigue sin asignar:
+    // pinta cifras monetarias y no tiene fuente de dato real.
+    case 'valor':       return 'checklist'
+    case 'comparacion': return 'chat-bubble'
     case 'cta':         return 'cta-precio'
     default:            return 'ghost-hero'
   }

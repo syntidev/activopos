@@ -8,6 +8,8 @@ import {
 } from './brand'
 import {
   buildSlideFrame, buildTituloSubtituloContent, buildCtaPrecioContent,
+  buildChecklistContent, buildChatBubbleContent, splitTituloEnSegmentos,
+  type TitleSegment,
 } from './carousel-layouts'
 import { generateCopy } from './gemini'
 import { generateBackground } from './image'
@@ -102,10 +104,32 @@ export async function generateCarrusel(
     let contentHtml: string
     switch (layout) {
       case 'ghost-hero':
-      case 'highlight-text':
         contentHtml = buildTituloSubtituloContent(
           [{ text: copy.titulo }], copy.subtitulo, spec.accentColor,
         )
+        break
+      case 'highlight-text': {
+        // sanitizeSlide ya descarta el highlight que no es substring; el includes
+        // vuelve a chequear porque este switch no depende de esa garantía.
+        const segments: TitleSegment[] = copy.tituloHighlight && copy.titulo.includes(copy.tituloHighlight)
+          ? splitTituloEnSegmentos(copy.titulo, copy.tituloHighlight)
+          : [{ text: copy.titulo }]   // fallback sin resaltado
+        contentHtml = buildTituloSubtituloContent(segments, copy.subtitulo, spec.accentColor)
+        break
+      }
+      case 'checklist':
+        contentHtml = buildChecklistContent({
+          titulo: copy.titulo,
+          items: (copy.items && copy.items.length >= 3) ? copy.items : [copy.subtitulo],
+        })
+        break
+      case 'chat-bubble':
+        contentHtml = buildChatBubbleContent({
+          titulo: copy.titulo,
+          clienteTexto:   copy.clienteTexto ?? copy.subtitulo,
+          clienteHora:    copy.clienteHora ?? '6:42 p.m.',
+          respuestaTexto: copy.respuestaTexto ?? 'Listo, ya quedó registrada tu venta',
+        })
         break
       case 'curva-corte':
         throw new Error('curva-corte: statValor no tiene fuente de dato real -- no reasignar a ningún rol sin resolver esto primero')

@@ -8,13 +8,15 @@ import { MobilePreview } from './MobilePreview'
 import { SocialEditor } from './SocialEditor'
 import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
+// `import type`: brand.ts hace readFileSync al cargar. Como tipo se borra en
+// compilación y no arrastra fs al bundle del cliente; un import de valor sí.
+import type { CarouselMode } from '@/lib/social/brand'
 
 type Channel = 'instagram' | 'facebook'
 
 type Tipo   = 'post' | 'story' | 'carrusel'
 type Estado = 'pendiente' | 'generado' | 'publicado' | 'error'
 type Aspect = '1:1' | '4:5' | '3:4' | '9:16'
-type CarouselMode = 'geometric' | 'human' | 'hybrid'
 
 // Solo post y carrusel dejan elegir dimensión -- story se fija a 9:16 automáticamente
 // (ver STORY_ASPECT más abajo), no tiene sentido mostrarla como opción aquí.
@@ -605,6 +607,7 @@ export default function SocialPage() {
                 <option value="geometric">Geométrico</option>
                 <option value="human">Escena Humana</option>
                 <option value="hybrid">Híbrido</option>
+                <option value="bicolor">Bicolor</option>
               </select>
             </div>
           )}

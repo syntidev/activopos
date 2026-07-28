@@ -182,7 +182,7 @@ export function normalizeNicho(nicho: string): string {
    copy (titulo/subtitulo por slide) y el diseño lo pone código determinista —
    arco narrativo con geometría y paleta de marca por rol. Paleta SELLADA. */
 
-export type CarouselMode  = 'geometric' | 'human' | 'hybrid'
+export type CarouselMode  = 'geometric' | 'human' | 'hybrid' | 'bicolor'
 export type SlideGeometry = 'diagonal' | 'circles' | 'bars' | 'grid' | 'radial' | 'split'
 export type SlideRole     = 'portada' | 'problema' | 'valor' | 'comparacion' | 'cta'
 

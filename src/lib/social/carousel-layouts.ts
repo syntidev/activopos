@@ -343,7 +343,7 @@ export function buildCurvaCorteContent(c: CurvaCorteContent): string {
     <div style="font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#4D7AFF;">${esc(c.statLabel)}</div>
     <div style="margin-top:22px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:56px; color:#0038BD;">${esc(c.statValor)}</div>
     <div style="margin-top:16px; font-size:22px; color:#8A93A6;">${esc(c.statValorBs)} &middot; tasa BCV</div>
-    <div style="margin-top:20px; border-top:2px dashed #DCE6FF; padding-top:16px; display:flex; align-items:center; gap:10px;">
+    <div style="margin-top:24px; border-top:2px dashed #DCE6FF; padding-top:16px; display:flex; align-items:center; gap:10px;">
       ${checkIcon}<span style="font-size:22px; color:#0D1B2E; font-weight:600;">${esc(c.statNota)}</span>
     </div>
   </div>
@@ -362,8 +362,8 @@ export interface SplitDiagonalContent {
 export function buildSplitDiagonalContent(c: SplitDiagonalContent): string {
   return `
   <div style="position:absolute; left:0; top:0; width:1080px; height:1350px; background:#0D1B2E; clip-path:polygon(0 0, 62% 0, 38% 100%, 0 100%); z-index:0;"></div>
-  <div style="position:absolute; left:80px; top:280px; width:420px; z-index:2;">
-    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:64px; line-height:1.1; color:#FFFFFF; letter-spacing:-1px;">${esc(c.titulo)}</h1>
+  <div style="position:absolute; left:80px; top:280px; width:440px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:56px; line-height:1.1; color:#FFFFFF; letter-spacing:-1px;">${esc(c.titulo)}</h1>
   </div>
   <div style="position:absolute; right:70px; top:620px; width:460px; background:#FFFFFF; border-radius:20px; padding:36px 40px; transform:rotate(3deg); box-shadow:0 30px 70px rgba(0,10,40,0.4); z-index:2;">
     <div style="font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#4D7AFF;">${esc(c.planNombre)}</div>
@@ -415,7 +415,7 @@ export function buildSiluetaReciboContent(c: SiluetaReciboContent): string {
       ${checkIcon}
     </div>`).join('')
   return `
-  <svg width="900" height="1240" style="position:absolute; right:-260px; top:60px; opacity:0.14; z-index:0;">
+  <svg width="900" height="1240" style="position:absolute; right:-80px; top:60px; opacity:0.14; z-index:0;">
     <path d="M120 0 H620 V1140 L580 1180 L540 1140 L500 1180 L460 1140 L420 1180 L380 1140 L340 1180 L300 1140 L260 1180 L220 1140 L180 1180 L140 1140 L120 1180 Z" fill="none" stroke="#FFFFFF" stroke-width="4"/>
     <line x1="180" y1="140" x2="560" y2="140" stroke="#FFFFFF" stroke-width="4"/>
     <line x1="180" y1="220" x2="560" y2="220" stroke="#FFFFFF" stroke-width="4"/>

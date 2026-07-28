@@ -20,9 +20,14 @@ function localPhotoDataUri(): string {
 async function main(): Promise<void> {
   const L = await import('../src/lib/social/carousel-layouts')
   const { renderSlideToPng, closeBrowser } = await import('../src/lib/social/render-slide')
-  const { ASPECT_DIMENSIONS } = await import('../src/lib/social/brand')
+  const { ASPECT_DIMENSIONS, ASSETS } = await import('../src/lib/social/brand')
   const { BILLING_CYCLES } = await import('../src/lib/plan-limits')
   const sharp = (await import('sharp')).default
+
+  // Mismo isotipo y mismo strip del <rect> navy que carrusel.ts, para que el PNG
+  // de certificación muestre el logo real y no una aproximación.
+  const logoSvg = readFileSync(ASSETS.logoNegative, 'utf8')
+    .replace(/<rect[^>]*fill="#0D1B2E"[^>]*\/>/, '')
 
   // Precio del plan: fuente canónica, nunca escrito a mano.
   const precioUsd = BILLING_CYCLES.negocio_activo.mensual.totalAmount
@@ -37,7 +42,7 @@ async function main(): Promise<void> {
 
   // El frame 'light' solo lo usa testimonio, que no se renderiza a PNG todavía:
   // sin estos asserts la variante quedaría sin ejercitar (fachada).
-  const frameArgs = { ghostNumber: 9, eyebrowText: 'x', accentColor: '#EF8E01', slideNumber: 9, totalSlides: 10, contentHtml: '' }
+  const frameArgs = { ghostNumber: 9, eyebrowText: 'x', accentColor: '#EF8E01', slideNumber: 9, totalSlides: 10, contentHtml: '', logoSvg }
   assert.ok(L.buildSlideFrame({ ...frameArgs, variant: 'light' }).includes('background:#DCE6FF'), 'frame light: fondo no invertido')
   assert.ok(L.buildSlideFrame({ ...frameArgs }).includes('linear-gradient(160deg, #0038BD'), 'frame default: dejó de ser dark')
 
@@ -54,6 +59,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 1, eyebrowText: 'Control de tu negocio', accentColor: '#EF8E01',
         slideNumber: 1, totalSlides: 6,
+        logoSvg,
         contentHtml: L.buildTituloSubtituloContent(
           [{ text: 'Vendes todo el día y no sabes cuánto ganaste' }],
           'Si el cuaderno es tu sistema, tu utilidad es una corazonada.',
@@ -66,6 +72,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 2, eyebrowText: 'El problema real', accentColor: '#EF8E01',
         slideNumber: 2, totalSlides: 6,
+        logoSvg,
         contentHtml: L.buildTituloSubtituloContent(
           [
             { text: 'El problema no es vender.' },
@@ -82,6 +89,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 3, eyebrowText: 'Pedidos por WhatsApp', accentColor: '#EF8E01',
         slideNumber: 3, totalSlides: 6,
+        logoSvg,
         contentHtml: L.buildChatBubbleContent({
           titulo: 'Tu catálogo trabaja mientras tú atiendes',
           clienteTexto: 'Buenas, ¿tienes harina pan y aceite? ¿A cómo el combo?',
@@ -95,6 +103,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 4, eyebrowText: 'Lo que resuelve', accentColor: '#EF8E01',
         slideNumber: 4, totalSlides: 6,
+        logoSvg,
         contentHtml: L.buildChecklistContent({
           titulo: 'Lo que ActivoPOS hace por ti',
           items: [
@@ -112,6 +121,7 @@ async function main(): Promise<void> {
         ghostNumber: 5, eyebrowText: 'Negocios reales', accentColor: '#EF8E01',
         slideNumber: 5, totalSlides: 6,
         ghostStyle: L.FOTO_LATERAL_GHOST_STYLE,
+        logoSvg,
         contentHtml: L.buildFotoLateralContent({
           titulo: 'De la bodega de Catia a la ferretería de Maracay',
           subtitulo: 'El mismo sistema, adaptado a cómo vende cada negocio venezolano.',
@@ -126,6 +136,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 6, eyebrowText: 'Empieza hoy', accentColor: '#EF8E01', isCtaSlide: true,
         slideNumber: 6, totalSlides: 6,
+        logoSvg,
         contentHtml: L.buildCtaPrecioContent({
           tituloPre: 'Deja de adivinar ',
           tituloAccent: 'cuánto ganas',
@@ -142,6 +153,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 7, eyebrowText: 'Cierre de caja', accentColor: '#EF8E01',
         slideNumber: 7, totalSlides: 10,
+        logoSvg,
         contentHtml: L.buildCurvaCorteContent({
           titulo: 'Cierras el día sabiendo exactamente qué entró',
           subtitulo: 'Sin cuadrar el cuaderno a las 9 de la noche.',
@@ -157,6 +169,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 8, eyebrowText: 'Un solo plan', accentColor: '#EF8E01', isCtaSlide: true,
         slideNumber: 8, totalSlides: 10,
+        logoSvg,
         contentHtml: L.buildSplitDiagonalContent({
           titulo: 'Todo el sistema por menos de lo que gastas en un almuerzo',
           planNombre: 'Negocio Activo',
@@ -184,6 +197,7 @@ async function main(): Promise<void> {
       html: L.buildSlideFrame({
         ghostNumber: 10, eyebrowText: 'Lo que te llevas', accentColor: '#EF8E01',
         slideNumber: 10, totalSlides: 10,
+        logoSvg,
         contentHtml: L.buildSiluetaReciboContent({
           titulo: 'Tres cosas que cambian desde el primer día',
           items: [

@@ -83,6 +83,7 @@ interface SlideFrameParams {
   slideNumber:   number
   totalSlides:   number
   contentHtml:   string
+  logoSvg:       string          // isotipo negativo, viene de LOGO_SVG de carrusel.ts
   ghostStyle?:   GhostNumberStyle
   variant?:      FrameVariant   // default 'dark' -- preserva los 6 layouts originales
 }
@@ -108,7 +109,7 @@ function buildSlideFrame(p: SlideFrameParams): string {
     .eyebrow-text { font-size:22px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:${v.eyebrowText}; }
     .fr-bottom { position:absolute; left:80px; right:80px; bottom:76px; display:flex; align-items:center; justify-content:space-between; z-index:1; }
     .fr-logo { display:flex; align-items:center; gap:14px; }
-    .fr-logo-dot { width:14px; height:14px; border-radius:50%; background:${chromeAccent}; }
+    .fr-logo svg { width:32px; height:32px; flex:none; }
     .fr-logo-text { font-size:34px; font-weight:800; color:${v.logoText}; letter-spacing:-0.5px; }
     .fr-logo-text span { font-weight:400; color:#4D7AFF; }
     .fr-badge { display:flex; align-items:center; gap:10px; background:${v.badgeBg}; border:1px solid ${v.badgeBorder}; border-radius:999px; padding:14px 28px; }
@@ -124,7 +125,7 @@ function buildSlideFrame(p: SlideFrameParams): string {
     ${p.contentHtml}
     <div class="fr-bottom">
       <div class="fr-logo">
-        <div class="fr-logo-dot"></div>
+        ${p.logoSvg}
         <div class="fr-logo-text">Activo<span>POS</span></div>
       </div>
       <div class="fr-badge">

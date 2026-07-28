@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import type { SlideLayout } from './carousel-layouts'
 
 /**
  * Marca real de ActivoPOS para el generador de contenido social.
@@ -245,3 +246,23 @@ export function buildNarrativeArc(slideCount: number): SlideSpec[] {
   }
   return arcs[slideCount] ?? arcs[3]!
 }
+
+/* ── Mapa rol → layout (Sprint 139) ────────────────────────────────────────────
+   SlideLayout se re-exporta desde carousel-layouts.ts en vez de redeclararse acá:
+   dos definiciones del mismo union se desincronizan al agregar el layout 11. */
+export type { SlideLayout }
+
+export function pickLayoutForRole(role: SlideRole): SlideLayout {
+  switch (role) {
+    case 'portada':     return 'ghost-hero'
+    case 'problema':    return 'highlight-text'
+    case 'valor':       return 'checklist'
+    case 'comparacion': return 'curva-corte'
+    case 'cta':         return 'cta-precio'
+    default:            return 'ghost-hero'
+  }
+}
+// testimonio y split-diagonal quedan definidos pero SIN asignar a ningún rol
+// todavía -- testimonio por falta de atribución real, split-diagonal porque ya
+// hay un layout de CTA (cta-precio) y meter los dos duplica el rol sin criterio
+// de cuándo usar cada uno. Alternar entre ambos es decisión de Carlos, aparte.

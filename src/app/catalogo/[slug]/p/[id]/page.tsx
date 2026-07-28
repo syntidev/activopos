@@ -58,6 +58,7 @@ export default async function ProductoPage({ params }: PageProps) {
       catalog_plan: true, subscription_active: true, subscription_expires_at: true,
       city: true, state: true, catalog_desc: true, catalog_instagram: true,
       catalog_hours: true, legal_name: true, rif: true, address: true,
+      catalog_default_currency: true,
     },
   })
   if (!business || !isCatalogLive(business)) notFound()
@@ -149,6 +150,7 @@ export default async function ProductoPage({ params }: PageProps) {
         businessName={business.name}
         slug={params.slug}
         rate={rate}
+        currency={business.catalog_default_currency}
         paymentMethods={paymentMethods as PaymentMethod[]}
         catalogUrl={`/catalogo/${params.slug}`}
         relatedProducts={relatedProducts}

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, MessageCircle, ShoppingBag, Plus, Minus, CheckCircle, Loader2, MapPin } from 'lucide-react'
 import { useCart } from './CartContext'
-import { fmtUsd, fmtBs, isValidVePhone } from './catalogUtils'
+import { fmtUsd, fmtBs, isValidVePhone, currencyVisibility } from './catalogUtils'
 import type { PaymentMethod } from './CatalogoGrid'
 import styles from './catalogo.module.css'
 
@@ -22,6 +22,7 @@ interface DeliveryInfo {
 interface Props {
   slug:           string
   rate:           number
+  currency:       string
   paymentMethods: PaymentMethod[]
 }
 
@@ -45,7 +46,8 @@ const confettiParticles = Array.from({ length: 60 }, (_, i) => ({
 
 // Drawer del carrito + checkout multipaso — compartido por las 3 rutas del
 // catálogo (home, /productos, /p/[id]) vía CartContext.
-export function CartDrawer({ slug, rate, paymentMethods }: Props) {
+export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
+  const { showUsd, showBs } = currencyVisibility(currency)
   const {
     cart, totalItems, subtotalUsd,
     cartOpen, setCartOpen,
@@ -267,9 +269,17 @@ export function CartDrawer({ slug, rate, paymentMethods }: Props) {
                     {item.variant_label && (
                       <span className={styles.drawerItemVariant}>{item.variant_label}</span>
                     )}
-                    <span className={styles.drawerItemPrice}>{fmtUsd(item.price_usd)} c/u</span>
-                    <span className={styles.drawerItemPriceBs}>{fmtBs(item.price_usd * rate)} c/u</span>
-                    <span className={styles.drawerItemSubtotal}>{fmtUsd(item.qty * item.price_usd)}</span>
+                    {showUsd && (
+                      <span className={styles.drawerItemPrice}>{fmtUsd(item.price_usd)} c/u</span>
+                    )}
+                    {showBs && (
+                      <span className={styles.drawerItemPriceBs}>{fmtBs(item.price_usd * rate)} c/u</span>
+                    )}
+                    <span className={styles.drawerItemSubtotal}>
+                      {showUsd
+                        ? fmtUsd(item.qty * item.price_usd)
+                        : fmtBs(item.qty * item.price_usd * rate)}
+                    </span>
                   </div>
                   <div className={styles.drawerQtyCtrl}>
                     <button
@@ -300,12 +310,18 @@ export function CartDrawer({ slug, rate, paymentMethods }: Props) {
               <div className={styles.drawerTotals}>
                 <div className={styles.drawerTotalRow}>
                   <span className={styles.drawerTotalLabel}>Subtotal</span>
-                  <span className={styles.drawerTotalUsd}>{fmtUsd(subtotalUsd)}</span>
+                  <span className={showUsd ? styles.drawerTotalUsd : styles.drawerTotalBs}>
+                    {showUsd ? fmtUsd(subtotalUsd) : fmtBs(subtotalBs)}
+                  </span>
                 </div>
-                <div className={styles.drawerTotalRow}>
-                  <span className={styles.drawerTotalLabel}>Equivalente Bs.</span>
-                  <span className={styles.drawerTotalBs}>{fmtBs(subtotalBs)}</span>
-                </div>
+                {/* Fila entera bajo el condicional, no solo el monto: el label
+                    "Equivalente Bs." es texto fijo y quedaría vivo solo. */}
+                {showUsd && showBs && (
+                  <div className={styles.drawerTotalRow}>
+                    <span className={styles.drawerTotalLabel}>Equivalente Bs.</span>
+                    <span className={styles.drawerTotalBs}>{fmtBs(subtotalBs)}</span>
+                  </div>
+                )}
               </div>
               <button
                 type="button"
@@ -611,7 +627,10 @@ export function CartDrawer({ slug, rate, paymentMethods }: Props) {
                   <div className={styles.checkoutSummaryRow}>
                     <span className={styles.checkoutSummaryLabel}>Total</span>
                     <span className={styles.checkoutSummaryValue}>
-                      {fmtUsd(checkoutTotalUsd)} · {fmtBs(checkoutTotalUsd * rate)}
+                      {[
+                        showUsd ? fmtUsd(checkoutTotalUsd) : null,
+                        showBs  ? fmtBs(checkoutTotalUsd * rate) : null,
+                      ].filter(Boolean).join(' · ')}
                     </span>
                   </div>
                 </div>

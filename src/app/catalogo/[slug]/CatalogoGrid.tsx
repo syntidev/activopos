@@ -11,7 +11,7 @@ import {
 import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
-import { capitalize } from './catalogUtils'
+import { capitalize, currencyVisibility } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
 
@@ -61,6 +61,7 @@ interface Props {
   categoryImages: Record<string, string | null>
   slug:           string
   rate:           number
+  currency:       string
   paymentMethods: PaymentMethod[]
   businessPhone:  string
   businessName:   string
@@ -129,6 +130,7 @@ export function CatalogoGrid({
   categoryImages,
   slug,
   rate,
+  currency,
   paymentMethods,
   businessPhone,
   businessName,
@@ -142,6 +144,7 @@ export function CatalogoGrid({
   catalogMode = 'home',
   initialCategory = null,
 }: Props) {
+  const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
   const { cart, cartOpen, setCartOpen, checkoutOpen, addToCart: addItemToCart } = useCart()
 
@@ -530,10 +533,12 @@ export function CatalogoGrid({
               <span className={styles.priceDiscontinued}>No disponible</span>
             ) : p.priceUsd > 0 ? (
               <>
-                <span className={styles.priceUsd}>
-                  ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-                {p.priceBs && (
+                {showUsd && (
+                  <span className={styles.priceUsd}>
+                    ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                )}
+                {showBs && p.priceBs && (
                   <span className={styles.priceBs}>
                     Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
                   </span>
@@ -953,10 +958,12 @@ export function CatalogoGrid({
                   <span className={styles.featuredName}>{p.name}</span>
                   {p.priceUsd > 0 ? (
                     <div className={styles.featuredPriceBlock}>
-                      <span className={styles.featuredPrice}>
-                        ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </span>
-                      {p.priceBs && (
+                      {showUsd && (
+                        <span className={styles.featuredPrice}>
+                          ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
+                      )}
+                      {showBs && p.priceBs && (
                         <span className={styles.featuredPriceBs}>
                           Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
                         </span>
@@ -1122,7 +1129,7 @@ export function CatalogoGrid({
         </button>
       )}
 
-      <CartDrawer slug={slug} rate={rate} paymentMethods={paymentMethods} />
+      <CartDrawer slug={slug} rate={rate} currency={currency} paymentMethods={paymentMethods} />
 
       {/* ── Product detail modal (bottom sheet) ────────────────── */}
       {selP && (
@@ -1228,11 +1235,15 @@ export function CatalogoGrid({
                   <span className={styles.modalPriceConsultar}>Consultar precio</span>
                 ) : selP.priceUsd > 0 ? (
                   <>
-                    <span className={styles.modalPriceSymbol}>$</span>
-                    <span className={styles.modalPriceNumber}>
-                      {selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                    {selP.priceBs && (
+                    {showUsd && (
+                      <>
+                        <span className={styles.modalPriceSymbol}>$</span>
+                        <span className={styles.modalPriceNumber}>
+                          {selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
+                      </>
+                    )}
+                    {showBs && selP.priceBs && (
                       <span className={styles.modalPriceBs}>
                         Bs.&nbsp;{selP.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
                       </span>

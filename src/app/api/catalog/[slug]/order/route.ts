@@ -5,6 +5,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive } from '@/lib/catalog'
 import { normalizePhone } from '@/lib/utils'
+import { currencyVisibility, fmtBs } from '@/app/catalogo/[slug]/catalogUtils'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -73,9 +74,20 @@ function buildWaMessage(
   delivery_type:      'pickup' | 'delivery',
   recipient_name:     string | undefined,
   delivery_address:   string | undefined,
+  currency:           string,
+  rate:               number,
 ): string {
+  /* fmtBs viene de catalogUtils y acota a 2 decimales por arriba y por abajo.
+     Un helper local aquí ya se comió un bug: copiado del formato del total,
+     que solo fijaba minimumFractionDigits. El total server-side ya llega
+     redondeado, pero price_usd * rate por ítem no, y salían 3 decimales. */
+  const { showUsd, showBs } = currencyVisibility(currency)
+
   const itemLines = resolvedItems
-    .map(i => `- ${i.product_name} x${i.qty} — $${i.price_usd.toFixed(2)} c/u`)
+    .map(i => {
+      const unit = showUsd ? `$${i.price_usd.toFixed(2)}` : fmtBs(i.price_usd * rate)
+      return `- ${i.product_name} x${i.qty} — ${unit} c/u`
+    })
     .join('\n')
 
   const entregaLabel = delivery_type === 'delivery' ? '🚚 Envío a domicilio' : '🏪 Retiro en tienda'
@@ -95,8 +107,12 @@ function buildWaMessage(
   lines.push(`*Productos:*`)
   lines.push(itemLines)
   lines.push('')
-  lines.push(`💰 *Total: $${totalUsd.toFixed(2)}*`)
-  lines.push(`   Bs. ${totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })} al cambio BCV`)
+  // La línea "al cambio BCV" desaparece entera cuando no se muestran ambas:
+  // sin un monto en divisas al lado, no hay nada que estar "al cambio" de.
+  lines.push(`💰 *Total: ${showUsd ? `$${totalUsd.toFixed(2)}` : fmtBs(totalBs)}*`)
+  if (showUsd && showBs) {
+    lines.push(`   ${fmtBs(totalBs)} al cambio BCV`)
+  }
   lines.push('')
   lines.push(`💳 *Pago:* ${payment_method}`)
   lines.push(`📦 *Entrega:* ${entregaLabel}`)
@@ -147,6 +163,7 @@ export async function POST(
     where: { catalog_slug: parsedSlug.data, catalog_active: true, active: true },
     select: {
       id: true, name: true, phone: true, ticket_prefix: true,
+      catalog_default_currency: true,
       catalog_plan: true, subscription_active: true, subscription_expires_at: true,
     },
   })
@@ -371,6 +388,8 @@ export async function POST(
     body.delivery_type,
     body.recipient_name,
     body.delivery_address,
+    business.catalog_default_currency,
+    rate,
   )
 
   const whatsapp_url = bizPhone

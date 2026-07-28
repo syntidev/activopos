@@ -7,7 +7,7 @@ import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
 import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
-import { fmtUsd, fmtBs, capitalize } from './catalogUtils'
+import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
 import styles from './productoDetalle.module.css'
 
 interface RelatedProduct {
@@ -30,6 +30,7 @@ interface Props {
   businessName:  string
   slug:          string
   rate:          number
+  currency:      string
   paymentMethods: PaymentMethod[]
   catalogUrl:    string
   relatedProducts: RelatedProduct[]
@@ -39,8 +40,9 @@ interface Props {
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessName,
-  catalogUrl, rate, slug, paymentMethods, relatedProducts, businessLogo,
+  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo,
 }: Props) {
+  const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
   const [imageIndex,        setImageIndex]        = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
@@ -199,8 +201,10 @@ export function ProductoDetalle({
           <h1 className={styles.productName}>{name}</h1>
 
           <div className={styles.priceBlock}>
-            <span className={styles.priceUsd}>{fmtUsd(effectivePrice)}</span>
-            {effectivePriceBs !== null && (
+            {showUsd && (
+              <span className={styles.priceUsd}>{fmtUsd(effectivePrice)}</span>
+            )}
+            {showBs && effectivePriceBs !== null && (
               <span className={styles.priceBs}>{fmtBs(effectivePriceBs)}</span>
             )}
           </div>
@@ -335,7 +339,7 @@ export function ProductoDetalle({
               onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
             >
               <Zap size={18} aria-hidden="true" />
-              Pedir ahora · {fmtUsd(effectivePrice * qty)}
+              Pedir ahora · {showUsd ? fmtUsd(effectivePrice * qty) : fmtBs(effectivePrice * qty * rate)}
             </button>
             <button
               type="button"
@@ -382,14 +386,16 @@ export function ProductoDetalle({
                   )}
                 </div>
                 <p className={styles.relatedName}>{rp.name}</p>
-                <p className={styles.relatedPrice}>{fmtUsd(rp.priceUsd)}</p>
+                <p className={styles.relatedPrice}>
+                  {showUsd ? fmtUsd(rp.priceUsd) : fmtBs(rp.priceUsd * rate)}
+                </p>
               </Link>
             ))}
           </div>
         </section>
       )}
 
-      <CartDrawer slug={slug} rate={rate} paymentMethods={paymentMethods} />
+      <CartDrawer slug={slug} rate={rate} currency={currency} paymentMethods={paymentMethods} />
     </div>
   )
 }

@@ -45,6 +45,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       state:                   true,
       catalog_title:           true,
       catalog_desc:            true,
+      catalog_default_currency: true,
       catalog_hours:           true,
       catalog_instagram:       true,
       catalog_cover_path:      true,
@@ -190,6 +191,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         categoryImages={categoryImages}
         slug={params.slug}
         rate={rate}
+        currency={business.catalog_default_currency}
         paymentMethods={paymentMethods as PaymentMethod[]}
         businessPhone={waPhone}
         businessName={displayTitle}

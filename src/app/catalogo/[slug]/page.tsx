@@ -48,6 +48,7 @@ async function getBusiness(slug: string) {
       catalog_title: true,
       catalog_desc:  true,
       catalog_desc_enabled: true,
+      catalog_default_currency: true,
       segment:       true,
       catalog_hours:     true,
       catalog_instagram: true,
@@ -239,6 +240,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         categoryImages={categoryImages}
         slug={params.slug}
         rate={rate}
+        currency={business.catalog_default_currency}
         paymentMethods={paymentMethods as PaymentMethod[]}
         businessPhone={waPhone}
         businessName={displayTitle}

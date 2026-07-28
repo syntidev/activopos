@@ -256,7 +256,9 @@ export function pickLayoutForRole(role: SlideRole): SlideLayout {
   switch (role) {
     case 'portada':     return 'ghost-hero'
     case 'problema':    return 'highlight-text'
-    case 'valor':       return 'checklist'
+    // 'valor' y 'comparacion' comparten curva-corte: checklist necesita items[]
+    // y SlideCopy solo trae titulo/subtitulo/escena.
+    case 'valor':       return 'curva-corte'
     case 'comparacion': return 'curva-corte'
     case 'cta':         return 'cta-precio'
     default:            return 'ghost-hero'

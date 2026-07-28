@@ -1,17 +1,20 @@
 import { readFileSync } from 'fs'
 import sharp from 'sharp'
 import { prisma } from '@/lib/prisma'
+import { BILLING_CYCLES } from '@/lib/plan-limits'
 import {
-  ASSETS, buildNarrativeArc, CAROUSEL_PALETTES,
+  ASSETS, buildNarrativeArc, CAROUSEL_PALETTES, pickLayoutForRole,
   type CarouselMode, type SlideGeometry, type SlideRole, type SlideSpec,
 } from './brand'
+import {
+  buildSlideFrame, buildTituloSubtituloContent, buildCurvaCorteContent, buildCtaPrecioContent,
+} from './carousel-layouts'
 import { generateCopy } from './gemini'
 import { generateBackground } from './image'
 import { generateBackgroundGemini, type SlideRole as ArtSlideRole } from './gemini-image'
 import { composeSlide } from './compose'
 import { renderSlideToPng, closeBrowser } from './render-slide'
 import { uploadImage } from './cloudinary'
-import { buildSlideHTML } from './slide-template'
 
 /**
  * Generación del carrusel (Sprint 118) — extraído de generate/route.ts a su propio módulo.
@@ -20,7 +23,7 @@ import { buildSlideHTML } from './slide-template'
  * LLM (generateCopy) solo escribe copy por slide; el diseño lo pone código.
  *
  * Tres modos:
- *  - geometric: buildSlideHTML (geometría de marca) → Puppeteer (render-slide) → WebP.
+ *  - geometric: carousel-layouts (layout por rol) → Puppeteer (render-slide) → WebP.
  *  - human:     pipeline de posts (generateBackgroundGemini → composeSlide) por slide.
  *  - hybrid:    slide 0 (portada) humano; resto geométrico (el CTA ya es radial ámbar en el arco).
  *
@@ -93,15 +96,45 @@ export async function generateCarrusel(
     input.mode === 'human' ? true : input.mode === 'hybrid' ? i === 0 : false
 
   const renderGeometric = async (spec: SlideSpec, i: number): Promise<string> => {
-    const html = buildSlideHTML({
-      titulo:      slides[i].titulo,
-      subtitulo:   slides[i].subtitulo,
-      spec,
-      slideNumber: i + 1,
-      totalSlides: slides.length,
-      brandName:   'ActivoPOS',
-      logoSvg:     LOGO_SVG,
-      geometryType: input.geometryType,
+    const layout = pickLayoutForRole(spec.role)
+    const copy   = slides[i]
+
+    let contentHtml: string
+    switch (layout) {
+      case 'ghost-hero':
+      case 'highlight-text':
+        contentHtml = buildTituloSubtituloContent(
+          [{ text: copy.titulo }], copy.subtitulo, spec.accentColor,
+        )
+        break
+      case 'curva-corte':
+        contentHtml = buildCurvaCorteContent({
+          titulo: copy.titulo, subtitulo: copy.subtitulo,
+          statLabel: 'Tu día · hoy', statValor: '$0.00',
+          statValorBs: 'Bs. 0,00', statNota: 'ilustrativo',
+        })
+        break
+      case 'cta-precio': {
+        const plan = BILLING_CYCLES.negocio_activo.mensual
+        contentHtml = buildCtaPrecioContent({
+          tituloPre: '', tituloAccent: copy.titulo, tituloPost: '',
+          subtitulo: copy.subtitulo, planNombre: 'Plan Negocio Activo',
+          precioUsd: plan.totalAmount, ctaLabel: 'Empezar gratis',
+        })
+        break
+      }
+      default:
+        // pickLayoutForRole solo devuelve los 4 de arriba. Los otros 6 layouts
+        // necesitan campos que SlideCopy no tiene (items[], clienteTexto...) --
+        // si esta rama corre, cambió pickLayoutForRole sin cambiar SlideCopy.
+        throw new Error(`layout '${layout}' sin implementación en renderGeometric -- sin rol asignado aún`)
+    }
+
+    const html = buildSlideFrame({
+      ghostNumber: i + 1, eyebrowText: 'Serie Activo · Ventas del día',
+      accentColor: spec.accentColor, isCtaSlide: layout === 'cta-precio',
+      slideNumber: i + 1, totalSlides: slides.length,
+      contentHtml, logoSvg: LOGO_SVG,
     })
     const png  = await renderSlideToPng(html, ASPECT)
     const webp = await sharp(png).webp({ quality: 92 }).toBuffer()

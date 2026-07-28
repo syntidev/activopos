@@ -30,6 +30,12 @@ body {
      resolvería contra el fallback invariante de tokens.css (system-ui) porque la
      clase de next/font vive en <body>, no en <html>. */
   --font-body: var(--font-sans), system-ui, -apple-system, sans-serif;
+  /* Mismo motivo para display: next/font expone Fraunces como --font-fraunces
+     (layout.tsx) y el token de diseño se llama --font-display. Se conectan acá,
+     no en :root, por la misma razón de arriba. Los layouts de (auth) y
+     (marketing) declaran su propio --font-display en su wrapper y ganan sobre
+     este dentro de su subárbol. */
+  --font-display: var(--font-fraunces), 'Fraunces', Georgia, serif;
   font-family: var(--font-sans);
   font-size: var(--text-base);
   font-weight: var(--weight-normal);

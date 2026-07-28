@@ -9,9 +9,12 @@ const inter = Inter({
   display: 'swap',
 })
 
+// --font-fraunces, no --font-display: ese nombre ya lo usa tokens.css como token
+// de diseño, y la clase de next/font lo pisaba dentro de <body>. globals.css
+// conecta los dos. Mismo nombre que ya usa catalogo/layout.tsx.
 const fraunces = Fraunces({
   subsets: ['latin'],
-  variable: '--font-display',
+  variable: '--font-fraunces',
   weight: ['700', '800'],
   display: 'swap',
 })

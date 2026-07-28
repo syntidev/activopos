@@ -140,6 +140,9 @@
   --info-rgb:           56, 189, 248;
 
   /* ── Tipografía ── */
+  /* Fallback de :root. El valor efectivo lo pone globals.css en body, apuntando
+     a la Fraunces auto-hospedada (--font-fraunces de next/font). Acá no se puede:
+     esa variable vive en <body>, no en <html>. */
   --font-display:       'Fraunces', Georgia, serif;
   --font-body:          system-ui, -apple-system, sans-serif;
   --font-mono:          'JetBrains Mono', 'Fira Code', monospace;

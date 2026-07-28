@@ -24,6 +24,12 @@ html {
 }
 
 body {
+  /* --font-sans lo inyecta next/font en <body> (layout.tsx) con el nombre real
+     de Inter auto-hospedada, que es hasheado -- poner 'Inter' literal no serviría.
+     --font-body se redeclara ACÁ y no en :root a propósito: en :root, var(--font-sans)
+     resolvería contra el fallback invariante de tokens.css (system-ui) porque la
+     clase de next/font vive en <body>, no en <html>. */
+  --font-body: var(--font-sans), system-ui, -apple-system, sans-serif;
   font-family: var(--font-sans);
   font-size: var(--text-base);
   font-weight: var(--weight-normal);
@@ -32,6 +38,9 @@ body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Redundante con font-feature-settings de abajo en navegadores modernos, pero
+     explícito: fija kerning/ligaduras y evita que el peso aparente cambie. */
+  text-rendering: optimizeLegibility;
   font-feature-settings: "kern" 1, "liga" 1;
   min-height: 100dvh;
   overflow-x: hidden;

@@ -7,7 +7,7 @@ import {
   type CarouselMode, type SlideGeometry, type SlideRole, type SlideSpec,
 } from './brand'
 import {
-  buildSlideFrame, buildTituloSubtituloContent, buildCurvaCorteContent, buildCtaPrecioContent,
+  buildSlideFrame, buildTituloSubtituloContent, buildCtaPrecioContent,
 } from './carousel-layouts'
 import { generateCopy } from './gemini'
 import { generateBackground } from './image'
@@ -108,12 +108,7 @@ export async function generateCarrusel(
         )
         break
       case 'curva-corte':
-        contentHtml = buildCurvaCorteContent({
-          titulo: copy.titulo, subtitulo: copy.subtitulo,
-          statLabel: 'Tu día · hoy', statValor: '$0.00',
-          statValorBs: 'Bs. 0,00', statNota: 'ilustrativo',
-        })
-        break
+        throw new Error('curva-corte: statValor no tiene fuente de dato real -- no reasignar a ningún rol sin resolver esto primero')
       case 'cta-precio': {
         const plan = BILLING_CYCLES.negocio_activo.mensual
         contentHtml = buildCtaPrecioContent({

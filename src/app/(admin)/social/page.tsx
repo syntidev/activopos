@@ -10,7 +10,7 @@ import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
 // `import type`: brand.ts hace readFileSync al cargar. Como tipo se borra en
 // compilación y no arrastra fs al bundle del cliente; un import de valor sí.
-import type { CarouselMode, CarruselModoInput } from '@/lib/social/brand'
+import type { CarruselModoInput } from '@/lib/social/brand'
 
 // El <select> ofrece las 3 familias más el humano puro; la escena humana en la
 // portada es un checkbox aparte, no un valor más de esta lista.
@@ -27,15 +27,6 @@ function buildModoInput(estilo: EstiloCarrusel, incluirEscenaHumana: boolean): C
   return estilo === 'humano_puro'
     ? { tipo: 'humano_puro' }
     : { tipo: 'familia', familia: estilo, incluirEscenaHumana }
-}
-
-// Equivalente en el enum viejo, que route.ts sigue leyendo para `mode`.
-// 'hybrid' solo existe para geometric: el enum plano no sabe expresar
-// bicolor/pop + escena humana, y por eso se está migrando.
-function toCarouselMode(estilo: EstiloCarrusel, incluirEscenaHumana: boolean): CarouselMode {
-  if (estilo === 'humano_puro') return 'human'
-  if (incluirEscenaHumana && estilo === 'geometric') return 'hybrid'
-  return estilo
 }
 
 type Channel = 'instagram' | 'facebook'
@@ -155,8 +146,7 @@ export default function SocialPage() {
   const [slides, setSlides]       = useState(4)
   const [segmentSlug, setSegmentSlug]     = useState('')
   // Selector permutable: la familia de layouts y la escena humana son ejes
-  // ortogonales. carouselMode (enum plano) se sigue derivando y enviando hasta
-  // que se retire, porque route.ts todavía lo lee para el campo `mode`.
+  // ortogonales, no valores de un mismo enum.
   const [estilo, setEstilo] = useState<EstiloCarrusel>('geometric')
   const [incluirEscenaHumana, setIncluirEscenaHumana] = useState(false)
   const esHumanoPuro = estilo === 'humano_puro'
@@ -269,8 +259,6 @@ export default function SocialPage() {
           ...(tipo === 'carrusel' ? {
             slides,
             carouselModoInput: buildModoInput(estilo, incluirEscenaHumana),
-            // Se sigue enviando hasta retirarlo: route.ts lo lee para `mode`.
-            carouselMode: toCarouselMode(estilo, incluirEscenaHumana),
           } : {}),
           ...(tipo === 'carrusel' && segmentSlug ? { segment_slug: segmentSlug } : {}),
           // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión.

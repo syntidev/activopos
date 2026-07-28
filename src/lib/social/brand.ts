@@ -182,7 +182,21 @@ export function normalizeNicho(nicho: string): string {
    copy (titulo/subtitulo por slide) y el diseño lo pone código determinista —
    arco narrativo con geometría y paleta de marca por rol. Paleta SELLADA. */
 
-export type CarouselMode  = 'geometric' | 'human' | 'hybrid' | 'bicolor' | 'pop'
+
+/* Modo de render del carrusel. Reemplazó al enum plano CarouselMode, ya
+   retirado: 'human' puro no era un valor más del enum, es un modo
+   de render total y distinto (100% fotos, ninguna de las 3 familias de
+   layouts), no una familia -- por eso vive en `tipo`, no en `familia`.
+   'hybrid' (slide 0 humano + resto de una familia) se modela como
+   tipo:'familia' + incluirEscenaHumana:true -- dimensión ortogonal a la
+   familia elegida, en vez de un quinto/sexto valor hardcodeado por familia. */
+export type CarouselFamilia = 'geometric' | 'bicolor' | 'pop'
+
+export interface CarruselModoInput {
+  tipo: 'humano_puro' | 'familia'
+  familia?: CarouselFamilia       // requerido si tipo === 'familia'
+  incluirEscenaHumana?: boolean   // solo aplica si tipo === 'familia', default false
+}
 export type SlideGeometry = 'diagonal' | 'circles' | 'bars' | 'grid' | 'radial' | 'split'
 export type SlideRole     = 'portada' | 'problema' | 'valor' | 'comparacion' | 'cta'
 

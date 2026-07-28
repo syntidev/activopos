@@ -34,13 +34,10 @@ const bodySchema = z.object({
   personaje:        z.string().max(200).optional(),
   lugar:            z.string().max(200).optional(),
   accion:           z.string().max(200).optional(),
-  // Carrusel generativo (Sprint 118): modo de render + overrides opcionales del usuario.
-  carouselMode:     z.enum(['geometric', 'human', 'hybrid', 'bicolor', 'pop']).optional(),
-  // Rediseño del selector (diagnóstico): coexiste con carouselMode -- page.tsx
-  // todavía manda solo el campo viejo, así que este queda sin lectura hasta
-  // que el prompt siguiente migre el productor. NO reemplaza carouselMode acá:
-  // hacerlo sin migrar page.tsx primero tumbaría cada request en silencio al
-  // default (page.tsx sigue mandando { carouselMode }, route.ts dejaría de leerlo).
+  // Carrusel generativo: modo de render + overrides opcionales del usuario.
+  // CarouselMode (enum plano) se retiró: no sabía expresar bicolor/pop + escena
+  // humana. Queda opcional para no tumbar un cliente viejo mid-deploy; route.ts
+  // le pone el default equivalente al comportamiento anterior.
   carouselModoInput: z.object({
     tipo:                z.enum(['humano_puro', 'familia']),
     familia:             z.enum(['geometric', 'bicolor', 'pop']).optional(),
@@ -107,9 +104,10 @@ export async function POST(req: NextRequest) {
       // Sprint 118: diseño generativo determinista (geometric/human/hybrid) — ya no HTML del LLM.
       const r = await generateCarrusel({
         nicho: body.nicho, gancho: body.gancho, objetivo: body.objetivo, count: slideCount,
-        segmentSlug: body.segment_slug, mode: body.carouselMode ?? 'geometric',
-        // Selector permutable. Si viene, manda sobre `mode` dentro de generateCarrusel.
-        modoInput: body.carouselModoInput,
+        segmentSlug: body.segment_slug,
+        // Default = comportamiento anterior (geométrico sin escena humana) si un
+        // cliente viejo todavía no manda el campo.
+        modoInput: body.carouselModoInput ?? { tipo: 'familia', familia: 'geometric' },
         geometryType: body.geometryType, carouselPreset: body.carouselPreset,
       })
       assets = r.assets; caption = r.caption; hashtags = r.hashtags; contentEngine = 'html_render'

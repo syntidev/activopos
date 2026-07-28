@@ -2,7 +2,7 @@ import { z } from 'zod'
 import {
   ACTIVOPOS_CONTEXT, buildNarrativeArc,
   pickLayoutForRole, pickBicolorLayoutForRole, pickPopLayoutForRole,
-  type BicolorLayout, type CarouselMode, type PopLayout, type SlideLayout, type SocialFormat,
+  type BicolorLayout, type CarouselFamilia, type PopLayout, type SlideLayout, type SocialFormat,
 } from './brand'
 import { ProviderError, withRetry } from './retry'
 
@@ -165,24 +165,24 @@ const LAYOUT_EXTRA_FIELDS: Partial<Record<SlideLayout, string>> = {
 // bicolor deja al checklist bicolor sin items[] y con el fallback de 1 ítem.
 type ExtraFieldsResolver = (role: Parameters<typeof pickLayoutForRole>[0]) => string | undefined
 
-function extraFieldsResolverFor(mode: CarouselMode): ExtraFieldsResolver {
-  switch (mode) {
+function extraFieldsResolverFor(familia: CarouselFamilia): ExtraFieldsResolver {
+  switch (familia) {
     case 'bicolor':
       return role => { const l = pickBicolorLayoutForRole(role); return l ? BICOLOR_EXTRA_FIELDS[l] : undefined }
     case 'pop':
       return role => { const l = pickPopLayoutForRole(role); return l ? POP_EXTRA_FIELDS[l] : undefined }
     case 'geometric':
-    case 'human':
-    case 'hybrid':
       return role => LAYOUT_EXTRA_FIELDS[pickLayoutForRole(role)]
   }
 }
 
 // El arco narrativo depende solo de la cantidad de slides, así que se puede
 // calcular acá igual que en carrusel.ts y decirle al modelo qué necesita cada una.
-function buildLayoutBlock(tipo: SocialFormat, slides: number, mode: CarouselMode): string {
-  if (tipo !== 'carrusel') return ''
-  const resolver = extraFieldsResolverFor(mode)
+function buildLayoutBlock(tipo: SocialFormat, slides: number, familia?: CarouselFamilia): string {
+  // Sin familia no hay layouts que alimentar: es 'humano_puro', que solo usa
+  // titulo/subtitulo/escena. No se le piden campos extra al modelo.
+  if (tipo !== 'carrusel' || !familia) return ''
+  const resolver = extraFieldsResolverFor(familia)
   const arc = buildNarrativeArc(slides).slice(0, slides)
   const lines = arc
     .map((spec, i) => {
@@ -242,10 +242,10 @@ export interface CopyInput {
   beneficio?: string
   objetivo:   string
   slides:     number
-  // Solo aplica a tipo='carrusel': decide qué familia de layouts va a consumir el
-  // copy, y por lo tanto qué campos extra se le piden al modelo. Sin esto el
-  // carrusel bicolor/pop recibía los campos del mapa navy.
-  carouselMode?: CarouselMode
+  // Solo aplica a tipo='carrusel': qué familia de layouts va a consumir el copy,
+  // y por lo tanto qué campos extra se le piden al modelo. Ausente = 'humano_puro',
+  // que no consume ninguna familia.
+  familia?: CarouselFamilia
 }
 
 function extractText(res: GeminiResponse): string {
@@ -253,7 +253,7 @@ function extractText(res: GeminiResponse): string {
 }
 
 export async function generateCopy(input: CopyInput): Promise<SocialCopy> {
-  const { tipo, nicho, gancho, beneficio, objetivo, slides, carouselMode } = input
+  const { tipo, nicho, gancho, beneficio, objetivo, slides, familia } = input
 
   const prompt = `${ACTIVOPOS_CONTEXT}
 
@@ -289,7 +289,7 @@ Para CADA slide genera:
   letreros, afiches, etiquetas, pantallas ni marcas: el modelo de imagen los dibuja con texto
   ilegible. Describe superficies limpias y envases sin marca.
 ${slides > 1 ? 'Los slides deben contar una progresión: problema → tensión → solución → cierre con CTA.' : ''}
-${buildLayoutBlock(tipo, slides, carouselMode ?? 'geometric')}
+${buildLayoutBlock(tipo, slides, familia)}
 
 Genera además, todo en español venezolano con tuteo (excepto seo_keywords que pueden ir en el término que busca la gente):
 - hook: frase de apertura de máximo 15 palabras

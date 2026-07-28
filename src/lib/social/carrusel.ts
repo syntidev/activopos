@@ -5,7 +5,7 @@ import { BILLING_CYCLES } from '@/lib/plan-limits'
 import {
   ASSETS, buildNarrativeArc, CAROUSEL_PALETTES,
   pickLayoutForRole, pickBicolorLayoutForRole, pickPopLayoutForRole,
-  type CarouselMode, type CarruselModoInput, type SlideGeometry, type SlideRole, type SlideSpec,
+  type CarouselFamilia, type CarruselModoInput, type SlideGeometry, type SlideRole, type SlideSpec,
 } from './brand'
 import {
   buildSlideFrame, buildTituloSubtituloContent, buildCtaPrecioContent,
@@ -36,13 +36,13 @@ import { uploadImage } from './cloudinary'
  * Reemplaza el HTML plano que producía el LLM (html-generator) por diseño determinista: el
  * LLM (generateCopy) solo escribe copy por slide; el diseño lo pone código.
  *
- * Tres modos:
- *  - geometric: carousel-layouts (layout por rol) → Puppeteer (render-slide) → WebP.
- *  - human:     pipeline de posts (generateBackgroundGemini → composeSlide) por slide.
- *  - hybrid:    slide 0 (portada) humano; resto geométrico (el CTA ya es radial ámbar en el arco).
+ * El modo lo define CarruselModoInput: una familia de layouts (geometric/bicolor/
+ * pop) o humano puro, más un toggle ortogonal de escena humana en la portada.
+ *  - familias: carousel-layouts (layout por rol) → Puppeteer (render-slide) → WebP, a 4:5.
+ *  - humano:   pipeline de posts (generateBackgroundGemini → composeSlide), a ASPECT.
  *
- * Carrusel fijo a 1:1 (1080×1080): el template geométrico está diseñado cuadrado y así los
- * modos no mezclan proporciones. Ignora el aspect del formulario a propósito.
+ * ASPECT sigue en 1:1 para el pipeline humano; las familias pasan '4:5' explícito
+ * porque sus layouts miden 1080×1350 fijo.
  */
 
 const ASPECT = '1:1' as const
@@ -65,10 +65,9 @@ export interface CarruselInput {
   objetivo:        string
   count:           number
   segmentSlug?:    string
-  mode:            CarouselMode
-  // Selector permutable. Cuando viene, manda sobre `mode`; `mode` queda como
-  // compatibilidad para los productores que todavía no migraron.
-  modoInput?:      CarruselModoInput
+  // Única fuente de verdad del modo de render. El enum plano CarouselMode se
+  // retiró: no sabía expresar bicolor/pop + escena humana.
+  modoInput:       CarruselModoInput
   geometryType?:   SlideGeometry   // override: fuerza una geometría en todas las slides geométricas
   carouselPreset?: string          // override de paleta (CAROUSEL_PALETTES)
 }
@@ -94,19 +93,17 @@ export async function generateCarrusel(
 ): Promise<{ assets: CarruselAsset[]; caption: string; hashtags: string[] }> {
   const gancho = await resolveGancho(input)
 
-  // Familia de layouts que va a consumir el copy. Con modoInput sale de ahí;
-  // sin él, del enum viejo. 'humano_puro' no consume ninguna familia (renderHuman
-  // solo usa titulo/subtitulo/escena), así que mapea a 'human' igual que antes.
-  const familiaEfectiva: CarouselMode = input.modoInput
-    ? (input.modoInput.tipo === 'humano_puro' ? 'human' : (input.modoInput.familia ?? 'geometric'))
-    : input.mode
+  // Familia de layouts que va a consumir el copy. 'humano_puro' no consume
+  // ninguna: renderHuman solo usa titulo/subtitulo/escena, así que queda
+  // undefined y a generateCopy no se le piden campos extra de ningún layout.
+  const familiaEfectiva: CarouselFamilia | undefined =
+    input.modoInput.tipo === 'humano_puro' ? undefined : (input.modoInput.familia ?? 'geometric')
 
   const copy   = await generateCopy({
     tipo: 'carrusel', nicho: input.nicho, gancho, objetivo: input.objetivo, slides: input.count,
-    // generateCopy solo necesita saber QUÉ familia de layouts va a consumir el copy.
-    // Se le pasa la familia derivada por el param carouselMode que ya tiene, en vez
-    // de darle también el shape nuevo: no le hace falta el eje de escena humana.
-    carouselMode: familiaEfectiva,
+    // generateCopy solo necesita saber QUÉ familia de layouts va a consumir el
+    // copy; el eje de escena humana no le dice nada.
+    familia: familiaEfectiva,
   })
   const slides = copy.slides.slice(0, input.count)
   if (slides.length === 0) throw new Error('generateCopy no devolvió slides para el carrusel')
@@ -119,33 +116,17 @@ export async function generateCarrusel(
     return palette ? { ...base, bgColor: palette.bg, accentColor: palette.accent } : base
   }
 
-  // hybrid: solo la portada (slide 0) va por el pipeline humano; el resto geométrico.
-  // Sin default: si CarouselMode gana un 6to valor, assertNever rompe la compilación
-  // acá en vez de que el modo nuevo caiga en silencio a 'geometric'.
+  // La portada puede ir por el pipeline de fotos sea cual sea la familia: son
+  // ejes ortogonales. CarouselFamilia ('geometric'|'bicolor'|'pop') es
+  // subconjunto exacto de RenderPath, verificado contra los dos unions, así que
+  // se devuelve sin mapear. `familia` es opcional en el tipo aunque el shape la
+  // exija con tipo:'familia': el ?? cubre un body malformado sin tumbar todo.
   type RenderPath = 'human' | 'geometric' | 'bicolor' | 'pop'
-  const assertNever = (x: never): never => {
-    throw new Error(`CarouselMode sin rama en renderPathFor: ${String(x)}`)
-  }
   const renderPathFor = (i: number): RenderPath => {
-    // CarouselFamilia ('geometric'|'bicolor'|'pop') es subconjunto exacto de
-    // RenderPath, verificado contra los dos unions: se devuelve sin mapear.
-    // `familia` es opcional en el tipo aunque el shape la exija con tipo:'familia',
-    // así que el ?? cubre el body malformado sin tumbar la generación.
-    if (input.modoInput) {
-      const m = input.modoInput
-      if (m.tipo === 'humano_puro') return 'human'
-      if (i === 0 && m.incluirEscenaHumana) return 'human'
-      return m.familia ?? 'geometric'
-    }
-    // Sin modoInput se conserva el comportamiento viejo, tal cual.
-    switch (input.mode) {
-      case 'human':     return 'human'
-      case 'hybrid':    return i === 0 ? 'human' : 'geometric'
-      case 'bicolor':   return 'bicolor'
-      case 'pop':       return 'pop'
-      case 'geometric': return 'geometric'
-      default:          return assertNever(input.mode)
-    }
+    const m = input.modoInput
+    if (m.tipo === 'humano_puro') return 'human'
+    if (i === 0 && m.incluirEscenaHumana) return 'human'
+    return m.familia ?? 'geometric'
   }
 
   // Los 4 layouts bicolor en uso parten el título en [antes] + [resaltado]. Se

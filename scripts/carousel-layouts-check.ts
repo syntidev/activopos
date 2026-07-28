@@ -6,7 +6,10 @@
  */
 import { writeFileSync, mkdirSync, readFileSync } from 'fs'
 import assert from 'assert'
-import type { SlideLayout } from '../src/lib/social/carousel-layouts'
+import type { SlideLayout, BicolorLayout } from '../src/lib/social/carousel-layouts'
+
+// Los bicolor viven en su propio union, así que el nombre de archivo los prefija.
+type CheckLayout = SlideLayout | `bicolor-${BicolorLayout}`
 
 const OUT_DIR = '.tmp/carousel-layouts'
 
@@ -53,7 +56,7 @@ async function main(): Promise<void> {
     'buildTestimonioContent: no lanzó sin atribución',
   )
 
-  const slides: Array<{ layout: SlideLayout; html: string }> = [
+  const slides: Array<{ layout: CheckLayout; html: string }> = [
     {
       layout: 'ghost-hero',
       html: L.buildSlideFrame({
@@ -209,6 +212,105 @@ async function main(): Promise<void> {
       }),
     },
   ]
+
+  // ── Familia bicolor ──
+  // El bg no viene en las paletas (son solo colores de texto/chrome): cada layout
+  // usa el fondo sobre el que sus clusters fueron calibrados — azul marca para los
+  // que pintan cluster oscuro, ámbar para los que pintan cluster #B56700.
+  const NAVY_BG   = '#0038BD'
+  const ORANGE_BG = '#EF8E01'
+  const bicolor: Array<{ layout: BicolorLayout; html: string }> = [
+    {
+      layout: 'movimiento',
+      html: L.buildBicolorFrame({
+        ...L.BICOLOR_ON_NAVY, bgColor: NAVY_BG, categoryLabel: 'Control diario',
+        slideNumber: 1, totalSlides: 6, logoSvg,
+        decorSvg: L.buildBicolorMovimientoDecor(),
+        contentHtml: L.buildBicolorMovimientoContent({
+          lineas: ['Tu negocio', 'se mueve'], highlight: 'todo el día',
+          subtitulo: 'Y tú necesitas saber qué entró sin sacar cuentas a mano.',
+        }),
+      }),
+    },
+    {
+      layout: 'oferta',
+      html: L.buildBicolorFrame({
+        ...L.BICOLOR_ON_ORANGE, bgColor: ORANGE_BG, categoryLabel: 'Precio',
+        slideNumber: 2, totalSlides: 6, logoSvg,
+        decorSvg: L.buildBicolorOfertaDecor(),
+        contentHtml: L.buildBicolorOfertaContent({
+          statPrefix: 'Un solo plan,', highlight: 'todo incluido',
+          subtitulo: 'Sin comisión por venta y sin letra chiquita.',
+        }),
+      }),
+    },
+    {
+      layout: 'stat',
+      html: L.buildBicolorFrame({
+        ...L.BICOLOR_ON_ORANGE, bgColor: ORANGE_BG, categoryLabel: 'Cierre de caja',
+        slideNumber: 3, totalSlides: 6, logoSvg,
+        decorSvg: L.buildBicolorStatDecor(),
+        contentHtml: L.buildBicolorStatContent({
+          // Dato de producto real (ACTIVOPOS_CONTEXT: "Caja y cierre de día en 2
+          // minutos"), NO una cifra de ventas inventada -- ver incidente 3ae2e92.
+          statNumero: '2', statUnidad: 'min', statLabel: 'Cierre de caja',
+          subtitulo: 'Lo que antes te comía la noche entera.',
+        }),
+      }),
+    },
+    {
+      layout: 'checklist',
+      html: L.buildBicolorFrame({
+        ...L.BICOLOR_ON_NAVY, bgColor: NAVY_BG, categoryLabel: 'Lo que resuelve',
+        slideNumber: 4, totalSlides: 6, logoSvg,
+        decorSvg: L.buildBicolorChecklistDecor(),
+        contentHtml: L.buildBicolorChecklistContent({
+          titulo: 'Todo lo que necesitas', highlight: 'en un solo sitio',
+          items: [
+            'Tasa BCV automática',
+            'Pago Móvil, Zelle y USDT',
+            'Inventario que se descuenta solo',
+            'Catálogo digital 24/7',
+          ],
+        }),
+      }),
+    },
+    {
+      layout: 'cta',
+      html: L.buildBicolorFrame({
+        ...L.BICOLOR_ON_ORANGE, bgColor: ORANGE_BG, categoryLabel: 'Empieza hoy',
+        slideNumber: 5, totalSlides: 6, logoSvg,
+        decorSvg: L.buildBicolorCtaDecor(),
+        contentHtml: L.buildBicolorCtaContent({
+          tituloPre: 'Deja de', highlight: 'botar reales', tituloPost: 'cada mes',
+          subtitulo: 'Pruébalo gratis y mira cuánto ganas de verdad.',
+          ctaLabel: 'Empezar gratis',
+        }),
+      }),
+    },
+    // bicolor 'testimonio': mismo bloqueo que el testimonio navy. Sin cliente real
+    // que autorizó, buildBicolorTestimonioContent lanza y no se genera PNG.
+    // {
+    //   layout: 'testimonio',
+    //   html: L.buildBicolorFrame({
+    //     ...L.BICOLOR_ON_NAVY, bgColor: NAVY_BG, categoryLabel: 'Lo dice un cliente',
+    //     slideNumber: 6, totalSlides: 6, logoSvg,
+    //     decorSvg: L.buildBicolorTestimonioDecor(),
+    //     contentHtml: L.buildBicolorTestimonioContent({
+    //       citaSegments: [{ text: '...' }, { text: '...', highlight: true }],
+    //       autorNombre: '<nombre real>', autorNegocio: '<negocio real>',
+    //     }),
+    //   }),
+    // },
+  ]
+  bicolor.forEach(b => slides.push({ layout: `bicolor-${b.layout}`, html: b.html }))
+
+  // La guarda de atribución también aplica a la variante bicolor.
+  assert.throws(
+    () => L.buildBicolorTestimonioContent({ citaSegments: [{ text: 'x' }], autorNombre: '', autorNegocio: '' }),
+    /autorNombre\/autorNegocio obligatorios/,
+    'buildBicolorTestimonioContent: no lanzó sin atribución',
+  )
 
   mkdirSync(OUT_DIR, { recursive: true })
   const { width, height } = ASPECT_DIMENSIONS['4:5']

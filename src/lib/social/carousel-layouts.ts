@@ -444,6 +444,154 @@ export function buildSiluetaReciboContent(c: SiluetaReciboContent): string {
   </div>`
 }
 
+// ── Familia BICOLOR ──────────────────────────────────────────────────────────
+// Namespace propio: bicolor no se elige por rol de slide como SlideLayout, es un
+// modo completo del carrusel. Mezclarlos en el mismo union invitaría a que
+// pickLayoutForRole devolviera un layout bicolor por accidente.
+
+export type BicolorLayout = 'movimiento' | 'oferta' | 'testimonio' | 'stat' | 'checklist' | 'cta'
+
+interface BicolorFrameParams {
+  bgColor:        string
+  categoryLabel:  string
+  textColorMuted: string
+  logoTextColor:  string
+  logoAccent:     string
+  badgeBg:        string
+  badgeBorder:    string
+  badgeTextColor: string
+  badgeMutedColor: string
+  slideNumber:    number
+  totalSlides:    number
+  contentHtml:    string
+  decorSvg:       string
+  logoSvg:        string   // igual que buildSlideFrame: este módulo no lee del disco
+}
+
+export function buildBicolorFrame(p: BicolorFrameParams): string {
+  return `<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    .bc-frame { position:relative; width:1080px; height:1350px; background:${p.bgColor};
+      overflow:hidden; font-family:'DM Sans', -apple-system, Helvetica, Arial, sans-serif; }
+    .bc-top { position:absolute; top:80px; left:80px; right:80px; display:flex; align-items:center; justify-content:space-between; z-index:2; }
+    .bc-top-label { font-size:20px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:${p.textColorMuted}; }
+    .bc-bottom { position:absolute; left:80px; right:80px; bottom:76px; display:flex; align-items:center; justify-content:space-between; z-index:2; }
+    .bc-logo { display:flex; align-items:center; gap:16px; }
+    .bc-logo svg { width:56px; height:56px; }
+    .bc-logo-text { font-size:34px; font-weight:800; color:${p.logoTextColor}; letter-spacing:-0.5px; }
+    .bc-logo-text span { font-weight:400; color:${p.logoAccent}; }
+    .bc-badge { display:flex; align-items:center; gap:10px; background:${p.badgeBg}; border:1px solid ${p.badgeBorder}; border-radius:999px; padding:14px 28px; }
+    .bc-badge-current { font-size:26px; font-weight:700; color:${p.badgeTextColor}; }
+    .bc-badge-total { font-size:26px; font-weight:500; color:${p.badgeMutedColor}; }
+  </style>
+  <div class="bc-frame">
+    ${p.decorSvg}
+    <div class="bc-top">
+      <div class="bc-top-label">ActivoPOS.com</div>
+      <div class="bc-top-label">${esc(p.categoryLabel)}</div>
+    </div>
+    ${p.contentHtml}
+    <div class="bc-bottom">
+      <div class="bc-logo">${p.logoSvg}<div class="bc-logo-text">Activo<span>POS</span></div></div>
+      <div class="bc-badge"><span class="bc-badge-current">${p.slideNumber}</span><span class="bc-badge-total">/ ${p.totalSlides}</span></div>
+    </div>
+  </div>`
+}
+
+export const BICOLOR_ON_ORANGE = {
+  textColorMuted: '#0D1B2E', logoTextColor: '#0D1B2E', logoAccent: '#0038BD',
+  badgeBg: 'rgba(13,27,46,0.1)', badgeBorder: 'rgba(13,27,46,0.2)',
+  badgeTextColor: '#0D1B2E', badgeMutedColor: '#3B2200',
+}
+export const BICOLOR_ON_NAVY = {
+  textColorMuted: '#DCE6FF', logoTextColor: '#FFFFFF', logoAccent: '#4D7AFF',
+  badgeBg: 'rgba(255,255,255,0.12)', badgeBorder: 'rgba(255,255,255,0.25)',
+  badgeTextColor: '#FFFFFF', badgeMutedColor: '#DCE6FF',
+}
+
+function bicolorCluster(fillMain: string, fillCenter: string, size: number, top: string, left: string, right: string, bottom: string, rotate: number, opacity = 1, ringColor?: string): string {
+  const pos = `${top ? `top:${top};` : ''}${left ? `left:${left};` : ''}${right ? `right:${right};` : ''}${bottom ? `bottom:${bottom};` : ''}`
+  const ring = ringColor ? `<circle fill="none" stroke="${ringColor}" stroke-width="5" opacity="0.5" cx="250" cy="250" r="108"/>` : ''
+  return `<svg width="${size}" height="${size}" viewBox="0 0 500 500" style="position:absolute; ${pos} transform:rotate(${rotate}deg); opacity:${opacity}; z-index:0;">
+    <g><path fill="${fillMain}" d="M 26,82 Q 26,26 82,26 L 190,26 Q 220,26 220,56 Q 220,88 190,88 L 100,88 Q 88,88 88,100 L 88,190 Q 88,220 56,220 Q 26,220 26,190 Z"/>
+    <path fill="${fillMain}" d="M 474,82 Q 474,26 418,26 L 310,26 Q 280,26 280,56 Q 280,88 310,88 L 400,88 Q 412,88 412,100 L 412,190 Q 412,220 444,220 Q 474,220 474,190 Z"/>
+    <path fill="${fillMain}" d="M 26,418 Q 26,474 82,474 L 190,474 Q 220,474 220,444 Q 220,412 190,412 L 100,412 Q 88,412 88,400 L 88,310 Q 88,280 56,280 Q 26,280 26,310 Z"/>
+    <path fill="${fillMain}" d="M 474,418 Q 474,474 418,474 L 310,474 Q 280,474 280,444 Q 280,412 310,412 L 400,412 Q 412,412 412,400 L 412,310 Q 412,280 444,280 Q 474,280 474,310 Z"/></g>
+    ${ring}<circle fill="${fillCenter}" cx="250" cy="250" r="72"/></svg>`
+}
+
+// ── Decors, tamaño/posición consistente ──
+export function buildBicolorMovimientoDecor(): string {
+  return bicolorCluster('#0D1B2E', '#EF8E01', 620, '-140px', '', '-150px', '', -12, 0.9, '#EF8E01')
+}
+export function buildBicolorOfertaDecor(): string {
+  return bicolorCluster('#B56700', '#0038BD', 620, '-140px', '-150px', '', '', 10, 0.85, '#0038BD')
+}
+export function buildBicolorTestimonioDecor(): string {
+  return bicolorCluster('#001D7A', '#EF8E01', 620, '', '-150px', '', '-140px', -10, 0.85, '#EF8E01')
+}
+export function buildBicolorStatDecor(): string {
+  return bicolorCluster('#B56700', '#0038BD', 620, '-140px', '', '-150px', '', 12, 0.85)
+}
+export function buildBicolorChecklistDecor(): string {
+  return bicolorCluster('#4D7AFF', '#EF8E01', 620, '-140px', '-150px', '', '', -12, 0.55)
+}
+export function buildBicolorCtaDecor(): string {
+  return bicolorCluster('#B56700', '#0038BD', 620, '', '', '-150px', '-140px', 10, 0.85, '#0038BD')
+}
+
+// ── Contents ──
+export function buildBicolorMovimientoContent(c: { lineas: string[]; highlight: string; subtitulo: string }): string {
+  const lineasHtml = c.lineas.map(l => esc(l)).join('<br/>')
+  return `<div style="position:absolute; left:80px; right:100px; top:640px; z-index:2;">
+    <h1 style="margin:0; font-size:96px; font-weight:800; line-height:1.02; letter-spacing:-2px; text-transform:uppercase; color:#FFFFFF;">${lineasHtml}<br/><span style="position:relative; display:inline-block; margin-top:10px;"><span style="position:absolute; inset:6px -14px; background:#EF8E01; transform:rotate(-2deg); border-radius:8px; z-index:0;"></span><span style="position:relative; z-index:1; color:#0D1B2E; padding:0 10px;">${esc(c.highlight)}</span></span>.</h1>
+    <p style="margin:40px 0 0 0; font-size:32px; line-height:1.4; color:#DCE6FF; font-weight:500; max-width:640px;">${esc(c.subtitulo)}</p>
+  </div>`
+}
+export function buildBicolorOfertaContent(c: { statPrefix: string; highlight: string; subtitulo: string }): string {
+  return `<div style="position:absolute; left:80px; right:100px; top:640px; z-index:2;">
+    <h1 style="margin:0; font-size:92px; font-weight:800; line-height:1.03; letter-spacing:-2px; text-transform:uppercase; color:#0D1B2E;">${esc(c.statPrefix)} <span style="position:relative; display:inline-block;"><span style="position:absolute; inset:6px -14px; background:#0038BD; transform:rotate(-2deg); border-radius:8px; z-index:0;"></span><span style="position:relative; z-index:1; color:#FFFFFF; padding:0 10px;">${esc(c.highlight)}</span></span>.</h1>
+    <p style="margin:40px 0 0 0; font-size:32px; line-height:1.4; color:#0D1B2E; font-weight:600; max-width:660px;">${esc(c.subtitulo)}</p>
+  </div>`
+}
+export function buildBicolorTestimonioContent(c: TestimonioContent): string {
+  if (!c.autorNombre || !c.autorNegocio) {
+    throw new Error('buildBicolorTestimonioContent: autorNombre/autorNegocio obligatorios')
+  }
+  const citaHtml = renderTitleSegments(c.citaSegments, '#EF8E01', '#0D1B2E')
+  return `<div style="position:absolute; left:80px; right:80px; top:400px; z-index:2;">
+    <h1 style="margin:0; font-size:66px; font-weight:800; line-height:1.14; letter-spacing:-1px; color:#FFFFFF;">&ldquo;${citaHtml}&rdquo;</h1>
+    <p style="margin:40px 0 0 0; font-size:28px; font-weight:600; color:#DCE6FF;">${esc(c.autorNombre)} &middot; ${esc(c.autorNegocio)}</p>
+  </div>`
+}
+export function buildBicolorStatContent(c: { statNumero: string; statUnidad: string; statLabel: string; subtitulo: string }): string {
+  return `<div style="position:absolute; left:80px; right:80px; top:520px; z-index:2;">
+    <div style="font-size:280px; font-weight:800; letter-spacing:-8px; line-height:0.9; color:#0D1B2E;">${esc(c.statNumero)}<span style="font-size:120px; font-weight:800;">${esc(c.statUnidad)}</span></div>
+    <div style="margin-top:24px; font-size:50px; font-weight:800; text-transform:uppercase; letter-spacing:-1px; color:#0038BD;">${esc(c.statLabel)}</div>
+    <p style="margin-top:28px; font-size:30px; line-height:1.4; color:#0D1B2E; font-weight:600; max-width:660px;">${esc(c.subtitulo)}</p>
+  </div>`
+}
+export function buildBicolorChecklistContent(c: { titulo: string; highlight: string; items: string[] }): string {
+  const items = c.items.slice(0, 4)
+  const itemsHtml = items.map(text => `
+    <div style="display:flex; align-items:center; gap:24px; background:rgba(255,255,255,0.1); border-left:6px solid #EF8E01; border-radius:4px; padding:26px 30px;">
+      <div style="font-size:32px; font-weight:700; color:#FFFFFF;">${esc(text)}</div>
+    </div>`).join('')
+  return `<div style="position:absolute; left:80px; right:80px; top:260px; z-index:2;">
+    <h1 style="margin:0; font-size:70px; font-weight:800; line-height:1.08; letter-spacing:-1px; text-transform:uppercase; color:#FFFFFF; max-width:820px;">${esc(c.titulo)} <span style="position:relative; display:inline-block;"><span style="position:absolute; inset:4px -10px; background:#EF8E01; transform:rotate(-2deg); border-radius:6px; z-index:0;"></span><span style="position:relative; z-index:1; color:#0D1B2E; padding:0 8px;">${esc(c.highlight)}</span></span>.</h1>
+  </div>
+  <div style="position:absolute; left:80px; right:80px; top:520px; display:flex; flex-direction:column; gap:22px; z-index:2;">${itemsHtml}</div>`
+}
+export function buildBicolorCtaContent(c: { tituloPre: string; highlight: string; tituloPost: string; subtitulo: string; ctaLabel: string }): string {
+  return `<div style="position:absolute; left:80px; right:80px; top:380px; z-index:2;">
+    <h1 style="margin:0; font-size:96px; font-weight:800; line-height:1.02; letter-spacing:-2px; text-transform:uppercase; color:#0D1B2E;">${esc(c.tituloPre)} <span style="position:relative; display:inline-block;"><span style="position:absolute; inset:6px -14px; background:#0038BD; transform:rotate(-2deg); border-radius:8px; z-index:0;"></span><span style="position:relative; z-index:1; color:#FFFFFF; padding:0 10px;">${esc(c.highlight)}</span></span> ${esc(c.tituloPost)}</h1>
+    <p style="margin:36px 0 0 0; font-size:32px; line-height:1.4; color:#0D1B2E; font-weight:600; max-width:640px;">${esc(c.subtitulo)}</p>
+  </div>
+  <div style="position:absolute; left:80px; right:80px; top:900px; z-index:2;">
+    <div style="background:#0038BD; color:#FFFFFF; font-size:38px; font-weight:800; padding:28px 56px; border-radius:16px; display:inline-block;">${esc(c.ctaLabel)} &rarr;</div>
+  </div>`
+}
+
 // ── Orquestador público ──
 
 export type SlideLayout = 'ghost-hero' | 'highlight-text' | 'chat-bubble' |

@@ -66,6 +66,26 @@
   color: var(--text-muted);
 }
 
+/* Toggle de escena humana: eje ortogonal a la familia, va bajo el select de Estilo. */
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-brand);
+  cursor: pointer;
+}
+
 .input,
 .textarea,
 .select {

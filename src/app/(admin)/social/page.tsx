@@ -10,7 +10,33 @@ import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
 // `import type`: brand.ts hace readFileSync al cargar. Como tipo se borra en
 // compilación y no arrastra fs al bundle del cliente; un import de valor sí.
-import type { CarouselMode } from '@/lib/social/brand'
+import type { CarouselMode, CarruselModoInput } from '@/lib/social/brand'
+
+// El <select> ofrece las 3 familias más el humano puro; la escena humana en la
+// portada es un checkbox aparte, no un valor más de esta lista.
+type EstiloCarrusel = 'geometric' | 'bicolor' | 'pop' | 'humano_puro'
+
+const ESTILOS: { value: EstiloCarrusel; label: string }[] = [
+  { value: 'geometric',   label: 'Geométrico' },
+  { value: 'bicolor',     label: 'Bicolor' },
+  { value: 'pop',         label: 'Pop' },
+  { value: 'humano_puro', label: 'Escena Humana' },
+]
+
+function buildModoInput(estilo: EstiloCarrusel, incluirEscenaHumana: boolean): CarruselModoInput {
+  return estilo === 'humano_puro'
+    ? { tipo: 'humano_puro' }
+    : { tipo: 'familia', familia: estilo, incluirEscenaHumana }
+}
+
+// Equivalente en el enum viejo, que route.ts sigue leyendo para `mode`.
+// 'hybrid' solo existe para geometric: el enum plano no sabe expresar
+// bicolor/pop + escena humana, y por eso se está migrando.
+function toCarouselMode(estilo: EstiloCarrusel, incluirEscenaHumana: boolean): CarouselMode {
+  if (estilo === 'humano_puro') return 'human'
+  if (incluirEscenaHumana && estilo === 'geometric') return 'hybrid'
+  return estilo
+}
 
 type Channel = 'instagram' | 'facebook'
 
@@ -128,7 +154,12 @@ export default function SocialPage() {
   const [objetivo, setObjetivo]   = useState('')
   const [slides, setSlides]       = useState(4)
   const [segmentSlug, setSegmentSlug]     = useState('')
-  const [carouselMode, setCarouselMode] = useState<CarouselMode>('geometric')
+  // Selector permutable: la familia de layouts y la escena humana son ejes
+  // ortogonales. carouselMode (enum plano) se sigue derivando y enviando hasta
+  // que se retire, porque route.ts todavía lo lee para el campo `mode`.
+  const [estilo, setEstilo] = useState<EstiloCarrusel>('geometric')
+  const [incluirEscenaHumana, setIncluirEscenaHumana] = useState(false)
+  const esHumanoPuro = estilo === 'humano_puro'
   const [floatingElements, setFloatingElements] = useState(false)
   const [aspect, setAspect]     = useState<Aspect>(DEFAULT_POST_ASPECT)
   const [preset, setPreset]       = useState('')
@@ -235,7 +266,12 @@ export default function SocialPage() {
           aspect,
           ...(gancho.trim() ? { gancho: gancho.trim() } : {}),
           ...(beneficio.trim() ? { beneficio: beneficio.trim() } : {}),
-          ...(tipo === 'carrusel' ? { slides, carouselMode } : {}),
+          ...(tipo === 'carrusel' ? {
+            slides,
+            carouselModoInput: buildModoInput(estilo, incluirEscenaHumana),
+            // Se sigue enviando hasta retirarlo: route.ts lo lee para `mode`.
+            carouselMode: toCarouselMode(estilo, incluirEscenaHumana),
+          } : {}),
           ...(tipo === 'carrusel' && segmentSlug ? { segment_slug: segmentSlug } : {}),
           // Dirección de escena real (PIEZA 1) -- solo aplica al motor de difusión.
           ...(tipo !== 'carrusel' ? { floatingElements } : {}),
@@ -596,20 +632,32 @@ export default function SocialPage() {
 
           {tipo === 'carrusel' && (
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="carouselMode">Estilo</label>
+              <label className={styles.label} htmlFor="carouselEstilo">Estilo</label>
               <select
-                id="carouselMode"
+                id="carouselEstilo"
                 className={styles.select}
-                value={carouselMode}
-                onChange={e => setCarouselMode(e.target.value as CarouselMode)}
+                value={estilo}
+                onChange={e => setEstilo(e.target.value as EstiloCarrusel)}
                 disabled={loading}
               >
-                <option value="geometric">Geométrico</option>
-                <option value="human">Escena Humana</option>
-                <option value="hybrid">Híbrido</option>
-                <option value="bicolor">Bicolor</option>
-                <option value="pop">Pop</option>
+                {ESTILOS.map(e => (
+                  <option key={e.value} value={e.value}>{e.label}</option>
+                ))}
               </select>
+              {/* Escena humana en la portada es ortogonal a la familia. Con
+                  "Escena Humana" pura no aplica: todas las slides ya son fotos. */}
+              {!esHumanoPuro && (
+                <label className={styles.checkboxRow} htmlFor="incluirEscenaHumana">
+                  <input
+                    id="incluirEscenaHumana"
+                    type="checkbox"
+                    checked={incluirEscenaHumana}
+                    onChange={e => setIncluirEscenaHumana(e.target.checked)}
+                    disabled={loading}
+                  />
+                  Combinar con Escena Humana en la portada
+                </label>
+              )}
             </div>
           )}
 

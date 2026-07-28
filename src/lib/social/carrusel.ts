@@ -5,7 +5,7 @@ import { BILLING_CYCLES } from '@/lib/plan-limits'
 import {
   ASSETS, buildNarrativeArc, CAROUSEL_PALETTES,
   pickLayoutForRole, pickBicolorLayoutForRole, pickPopLayoutForRole,
-  type CarouselMode, type SlideGeometry, type SlideRole, type SlideSpec,
+  type CarouselMode, type CarruselModoInput, type SlideGeometry, type SlideRole, type SlideSpec,
 } from './brand'
 import {
   buildSlideFrame, buildTituloSubtituloContent, buildCtaPrecioContent,
@@ -66,6 +66,9 @@ export interface CarruselInput {
   count:           number
   segmentSlug?:    string
   mode:            CarouselMode
+  // Selector permutable. Cuando viene, manda sobre `mode`; `mode` queda como
+  // compatibilidad para los productores que todavía no migraron.
+  modoInput?:      CarruselModoInput
   geometryType?:   SlideGeometry   // override: fuerza una geometría en todas las slides geométricas
   carouselPreset?: string          // override de paleta (CAROUSEL_PALETTES)
 }
@@ -91,9 +94,19 @@ export async function generateCarrusel(
 ): Promise<{ assets: CarruselAsset[]; caption: string; hashtags: string[] }> {
   const gancho = await resolveGancho(input)
 
+  // Familia de layouts que va a consumir el copy. Con modoInput sale de ahí;
+  // sin él, del enum viejo. 'humano_puro' no consume ninguna familia (renderHuman
+  // solo usa titulo/subtitulo/escena), así que mapea a 'human' igual que antes.
+  const familiaEfectiva: CarouselMode = input.modoInput
+    ? (input.modoInput.tipo === 'humano_puro' ? 'human' : (input.modoInput.familia ?? 'geometric'))
+    : input.mode
+
   const copy   = await generateCopy({
     tipo: 'carrusel', nicho: input.nicho, gancho, objetivo: input.objetivo, slides: input.count,
-    carouselMode: input.mode,   // decide qué familia de layouts consume el copy
+    // generateCopy solo necesita saber QUÉ familia de layouts va a consumir el copy.
+    // Se le pasa la familia derivada por el param carouselMode que ya tiene, en vez
+    // de darle también el shape nuevo: no le hace falta el eje de escena humana.
+    carouselMode: familiaEfectiva,
   })
   const slides = copy.slides.slice(0, input.count)
   if (slides.length === 0) throw new Error('generateCopy no devolvió slides para el carrusel')
@@ -114,6 +127,17 @@ export async function generateCarrusel(
     throw new Error(`CarouselMode sin rama en renderPathFor: ${String(x)}`)
   }
   const renderPathFor = (i: number): RenderPath => {
+    // CarouselFamilia ('geometric'|'bicolor'|'pop') es subconjunto exacto de
+    // RenderPath, verificado contra los dos unions: se devuelve sin mapear.
+    // `familia` es opcional en el tipo aunque el shape la exija con tipo:'familia',
+    // así que el ?? cubre el body malformado sin tumbar la generación.
+    if (input.modoInput) {
+      const m = input.modoInput
+      if (m.tipo === 'humano_puro') return 'human'
+      if (i === 0 && m.incluirEscenaHumana) return 'human'
+      return m.familia ?? 'geometric'
+    }
+    // Sin modoInput se conserva el comportamiento viejo, tal cual.
     switch (input.mode) {
       case 'human':     return 'human'
       case 'hybrid':    return i === 0 ? 'human' : 'geometric'

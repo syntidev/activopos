@@ -35,7 +35,7 @@ const bodySchema = z.object({
   lugar:            z.string().max(200).optional(),
   accion:           z.string().max(200).optional(),
   // Carrusel generativo (Sprint 118): modo de render + overrides opcionales del usuario.
-  carouselMode:     z.enum(['geometric', 'human', 'hybrid', 'bicolor']).optional(),
+  carouselMode:     z.enum(['geometric', 'human', 'hybrid', 'bicolor', 'pop']).optional(),
   geometryType:     z.enum(['diagonal', 'circles', 'bars', 'grid', 'radial', 'split']).optional(),
   carouselPreset:   z.string().max(40).optional(),
   // Paneles glassmorphism flotantes — aplica a posts/story; en carrusel lo decide el rol.

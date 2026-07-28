@@ -608,6 +608,7 @@ export default function SocialPage() {
                 <option value="human">Escena Humana</option>
                 <option value="hybrid">Híbrido</option>
                 <option value="bicolor">Bicolor</option>
+                <option value="pop">Pop</option>
               </select>
             </div>
           )}

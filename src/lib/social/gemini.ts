@@ -1,4 +1,8 @@
-import { ACTIVOPOS_CONTEXT, type SocialFormat } from './brand'
+import { z } from 'zod'
+import {
+  ACTIVOPOS_CONTEXT, buildNarrativeArc, pickLayoutForRole,
+  type SlideLayout, type SocialFormat,
+} from './brand'
 import { ProviderError, withRetry } from './retry'
 
 /**
@@ -49,6 +53,83 @@ export interface SlideCopy {
   titulo:    string
   subtitulo: string
   escena:    string   // descripción visual del fondo — alimenta el prompt de imagen
+  // Campos por layout (Sprint 144). Opcionales: solo se piden al modelo cuando el
+  // rol de la slide cae en un layout que los consume, y se descartan si vienen mal.
+  tituloHighlight?: string    // subcadena LITERAL de titulo — highlight-text
+  items?:           string[]  // 3-6 ítems cortos — checklist
+  clienteTexto?:    string    // chat-bubble
+  clienteHora?:     string
+  respuestaTexto?:  string
+}
+
+const slideCopySchema = z.object({
+  titulo:    z.string(),
+  subtitulo: z.string(),
+  escena:    z.string(),
+  tituloHighlight: z.string().optional(),
+  items:           z.array(z.string()).optional(),
+  clienteTexto:    z.string().optional(),
+  clienteHora:     z.string().optional(),
+  respuestaTexto:  z.string().optional(),
+})
+
+const ITEMS_MIN = 3
+const ITEMS_MAX = 6
+
+/**
+ * Descarte silencioso de los campos nuevos cuando el modelo los devuelve mal.
+ * Son cosméticos: una slide sin tituloHighlight se ve como hasta hoy, así que
+ * NUNCA se lanza — tumbar una generación completa por esto sería peor.
+ *
+ * Los 3 campos base se dejan pasar aunque no validen: hoy se castean sin
+ * validación y endurecerlo acá cambiaría el comportamiento de generaciones que
+ * ya funcionan (el criterio de esta tarea es regresión cero).
+ */
+function sanitizeSlide(raw: SlideCopy): SlideCopy {
+  const parsed = slideCopySchema.safeParse(raw)
+  if (!parsed.success) return raw
+  const s = parsed.data
+
+  const out: SlideCopy = { titulo: s.titulo, subtitulo: s.subtitulo, escena: s.escena }
+  // highlight-text parte el titulo en [antes, resaltado, después]. Si el resaltado
+  // no aparece literal en el titulo el split no resalta nada, así que se descarta.
+  if (s.tituloHighlight && s.titulo.includes(s.tituloHighlight)) out.tituloHighlight = s.tituloHighlight
+  if (s.items && s.items.length >= ITEMS_MIN && s.items.length <= ITEMS_MAX) out.items = s.items
+  if (s.clienteTexto)   out.clienteTexto   = s.clienteTexto
+  if (s.clienteHora)    out.clienteHora    = s.clienteHora
+  if (s.respuestaTexto) out.respuestaTexto = s.respuestaTexto
+  return out
+}
+
+// Campos extra que pide cada layout. Un layout ausente acá no necesita nada más
+// que titulo/subtitulo/escena, y no se le pide nada al modelo (ahorra tokens).
+const LAYOUT_EXTRA_FIELDS: Partial<Record<SlideLayout, string>> = {
+  'highlight-text':
+    '  - tituloHighlight: subcadena LITERAL y EXACTA de tu propio "titulo", la parte que\n' +
+    '    debe ir resaltada. Copiala caracter por caracter del titulo, sin reformular ni\n' +
+    '    conjugar. Ej: titulo "El BCV te tiene loco" -> "loco" o "BCV te tiene loco" sirven;\n' +
+    '    "enloquecido" NO sirve porque no aparece tal cual en el titulo.',
+  'checklist':
+    `  - items: entre ${ITEMS_MIN} y ${ITEMS_MAX} ítems cortos (máximo 6 palabras cada uno), en español venezolano.`,
+  'chat-bubble':
+    '  - clienteTexto: mensaje simulado de un cliente por WhatsApp, natural, sin emojis.\n' +
+    '  - clienteHora: hora del mensaje, formato "H:MM a.m." o "H:MM p.m.".\n' +
+    '  - respuestaTexto: confirmación corta del sistema al recibir el pedido.',
+}
+
+// El arco narrativo depende solo de la cantidad de slides, así que se puede
+// calcular acá igual que en carrusel.ts y decirle al modelo qué necesita cada una.
+function buildLayoutBlock(tipo: SocialFormat, slides: number): string {
+  if (tipo !== 'carrusel') return ''
+  const arc = buildNarrativeArc(slides).slice(0, slides)
+  const lines = arc
+    .map((spec, i) => {
+      const extra = LAYOUT_EXTRA_FIELDS[pickLayoutForRole(spec.role)]
+      return extra ? `Slide ${i + 1} (${spec.role}) — además de titulo/subtitulo/escena:\n${extra}` : ''
+    })
+    .filter(Boolean)
+  if (lines.length === 0) return ''
+  return `\nCAMPOS ADICIONALES POR SLIDE (solo los listados; las demás slides no los llevan):\n${lines.join('\n')}\n`
 }
 
 export interface SocialCopy {
@@ -142,6 +223,7 @@ Para CADA slide genera:
   letreros, afiches, etiquetas, pantallas ni marcas: el modelo de imagen los dibuja con texto
   ilegible. Describe superficies limpias y envases sin marca.
 ${slides > 1 ? 'Los slides deben contar una progresión: problema → tensión → solución → cierre con CTA.' : ''}
+${buildLayoutBlock(tipo, slides)}
 
 Genera además, todo en español venezolano con tuteo (excepto seo_keywords que pueden ir en el término que busca la gente):
 - hook: frase de apertura de máximo 15 palabras
@@ -156,7 +238,8 @@ Genera además, todo en español venezolano con tuteo (excepto seo_keywords que 
 - nota_creador: 1-2 oraciones explicando la intención de diseño de la pieza (qué se buscó
   comunicar visualmente y por qué)
 
-Responde SOLO JSON válido con esta estructura exacta:
+Responde SOLO JSON válido con esta estructura exacta. Agrega a cada slide los campos
+adicionales que se le hayan pedido arriba, y SOLO a esa slide:
 {"slides":[{"titulo":"","subtitulo":"","escena":""}],"hook":"","cuerpo":"","cta":"","pregunta":"","hashtags":[],"horario_sugerido":"","objetivo_clasificado":"","seo_keywords":[],"tipo_ads":"","nota_creador":""}`
 
   const res = await withRetry(() => call(TEXT_MODEL, {
@@ -174,7 +257,7 @@ Responde SOLO JSON válido con esta estructura exacta:
   // El caption no lo escribe el modelo: se arma acá con las secciones, así siempre
   // queda consistente con hook/cuerpo/cta/pregunta/hashtags aunque el modelo divague.
   return {
-    slides:   rc.slides,
+    slides:   rc.slides.map(sanitizeSlide),
     hook:     rc.hook,
     cuerpo:   rc.cuerpo,
     cta:      rc.cta,

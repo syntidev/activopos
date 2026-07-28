@@ -136,7 +136,10 @@ export async function generateCarrusel(
       slideNumber: i + 1, totalSlides: slides.length,
       contentHtml, logoSvg: LOGO_SVG,
     })
-    const png  = await renderSlideToPng(html, ASPECT)
+    // Override local: los layouts de carousel-layouts miden 1080x1350 fijo. Con el
+    // ASPECT del módulo ('1:1') el screenshot recorta los 270px de abajo y se pierden
+    // el lockup y el badge 'N / total'. renderHuman sigue en ASPECT sin cambios.
+    const png  = await renderSlideToPng(html, '4:5')
     const webp = await sharp(png).webp({ quality: 92 }).toBuffer()
     return uploadImage(webp, 'image/webp')
   }

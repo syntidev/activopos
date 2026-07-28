@@ -6,10 +6,10 @@
  */
 import { writeFileSync, mkdirSync, readFileSync } from 'fs'
 import assert from 'assert'
-import type { SlideLayout, BicolorLayout } from '../src/lib/social/carousel-layouts'
+import type { SlideLayout, BicolorLayout, PopLayout } from '../src/lib/social/carousel-layouts'
 
-// Los bicolor viven en su propio union, así que el nombre de archivo los prefija.
-type CheckLayout = SlideLayout | `bicolor-${BicolorLayout}`
+// Cada familia vive en su propio union, así que el nombre de archivo las prefija.
+type CheckLayout = SlideLayout | `bicolor-${BicolorLayout}` | `pop-${PopLayout}`
 
 const OUT_DIR = '.tmp/carousel-layouts'
 
@@ -304,6 +304,97 @@ async function main(): Promise<void> {
     // },
   ]
   bicolor.forEach(b => slides.push({ layout: `bicolor-${b.layout}`, html: b.html }))
+
+  // ── Familia pop ──
+  // buildPopFrame no recibe logoSvg: su lockup es punto de color + texto.
+  const pop: Array<{ layout: PopLayout; html: string }> = [
+    {
+      layout: 'ghost-hero',
+      html: L.buildPopFrame({
+        slideNumber: 1, totalSlides: 6,
+        decorSvg: L.buildPopGhostHeroDecor(1),
+        contentHtml: L.buildPopGhostHeroContent({
+          titulo: 'No sabes cuánto ganaste hoy',
+          subtitulo: 'Vendes y vendes, pero al final del día la cuenta no cuadra.',
+        }),
+      }),
+    },
+    {
+      layout: 'highlight-text',
+      html: L.buildPopFrame({
+        slideNumber: 2, totalSlides: 6,
+        decorSvg: L.buildPopHighlightDecor(),
+        contentHtml: L.buildPopHighlightContent(
+          [
+            { text: 'El problema no es vender.' },
+            { text: 'Es no saber', highlight: true },
+            { text: 'qué te queda.' },
+          ],
+          'Cobras en Bs, compras en dólares y la tasa se mueve todos los días.',
+        ),
+      }),
+    },
+    {
+      layout: 'chat-bubble',
+      html: L.buildPopFrame({
+        slideNumber: 3, totalSlides: 6,
+        decorSvg: L.buildPopChatBubbleDecor(),
+        contentHtml: L.buildPopChatBubbleContent({
+          titulo: 'Tu catálogo trabaja mientras tú atiendes',
+          clienteTexto: 'Buenas, ¿tienes harina pan y aceite? ¿A cómo el combo?',
+          clienteHora: '10:42 a.m.',
+          respuestaTexto: 'Pedido recibido desde el catálogo',
+        }),
+      }),
+    },
+    {
+      layout: 'checklist',
+      html: L.buildPopFrame({
+        slideNumber: 4, totalSlides: 6,
+        decorSvg: L.buildPopChecklistDecor(),
+        contentHtml: L.buildPopChecklistContent({
+          titulo: 'Lo que ActivoPOS hace por ti',
+          items: [
+            'Tasa BCV automática, todos los días',
+            'Pago Móvil, Zelle, Binance y USDT',
+            'Inventario que se descuenta solo',
+            'Cierre de caja en 2 minutos',
+          ],
+        }),
+      }),
+    },
+    {
+      layout: 'foto-lateral',
+      html: L.buildPopFrame({
+        slideNumber: 5, totalSlides: 6,
+        decorSvg: L.buildPopFotoLateralDecor(),
+        contentHtml: L.buildPopFotoLateralContent({
+          titulo: 'De la bodega de Catia a la ferretería de Maracay',
+          subtitulo: 'El mismo sistema, adaptado a cómo vende cada negocio venezolano.',
+          statLabel: 'Cierre de caja',
+          statValor: '2 minutos',
+          fotoUrl: localPhotoDataUri(),
+        }),
+      }),
+    },
+    {
+      layout: 'cta-precio',
+      html: L.buildPopFrame({
+        slideNumber: 6, totalSlides: 6,
+        decorSvg: L.buildPopCtaPrecioDecor(),
+        contentHtml: L.buildPopCtaPrecioContent({
+          tituloPre: 'Deja de adivinar ',
+          tituloAccent: 'cuánto ganas',
+          tituloPost: ' cada mes.',
+          subtitulo: 'Un solo plan, todo incluido. Sin comisión por venta, sin letra chiquita.',
+          planNombre: 'Negocio Activo',
+          precioUsd,
+          ctaLabel: 'Pruébalo gratis',
+        }),
+      }),
+    },
+  ]
+  pop.forEach(p => slides.push({ layout: `pop-${p.layout}`, html: p.html }))
 
   // La guarda de atribución también aplica a la variante bicolor.
   assert.throws(

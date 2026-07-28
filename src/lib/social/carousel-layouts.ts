@@ -603,6 +603,179 @@ export function buildBicolorCtaContent(c: { tituloPre: string; highlight: string
   </div>`
 }
 
+// ── Familia POP ──────────────────────────────────────────────────────────────
+// Namespace propio, mismo criterio que BicolorLayout: pop es un modo completo
+// del carrusel, no un layout que pickLayoutForRole pueda devolver por rol.
+// A diferencia de bicolor, el frame pop NO recibe logoSvg: su lockup es un punto
+// de color + texto, no el isotipo, así que no necesita leer nada del disco.
+
+export type PopLayout = 'ghost-hero' | 'highlight-text' | 'chat-bubble' | 'checklist' | 'cta-precio' | 'foto-lateral'
+
+interface PopFrameParams {
+  slideNumber:  number
+  totalSlides:  number
+  contentHtml:  string
+  decorSvg:     string   // el blob/polígono/dots decorativo, distinto por layout -- no hay ghost number único compartido
+}
+
+export function buildPopFrame(p: PopFrameParams): string {
+  return `<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    .pop-frame { position:relative; width:1080px; height:1350px;
+      background:oklch(97% 0.018 75); overflow:hidden;
+      font-family:'DM Sans', -apple-system, Helvetica, Arial, sans-serif; }
+    .pop-logo { position:absolute; top:80px; left:80px; display:flex; align-items:center; gap:14px; z-index:2; }
+    .pop-logo-dot { width:14px; height:14px; border-radius:50%; background:#0038BD; }
+    .pop-logo-text { font-size:24px; font-weight:800; letter-spacing:1px; color:#0D1B2E; }
+    .pop-logo-text span { font-weight:400; color:#0038BD; }
+    .pop-badge { position:absolute; left:80px; bottom:80px; display:flex; align-items:center; gap:10px;
+      background:rgba(13,27,46,0.06); border:1px solid rgba(13,27,46,0.15); border-radius:999px; padding:14px 28px; z-index:2; }
+    .pop-badge-current { font-size:24px; font-weight:700; color:#0D1B2E; }
+    .pop-badge-total { font-size:24px; font-weight:500; color:#3B4A63; }
+  </style>
+  <div class="pop-frame">
+    ${p.decorSvg}
+    <div class="pop-logo">
+      <div class="pop-logo-dot"></div>
+      <div class="pop-logo-text">Activo<span>POS</span></div>
+    </div>
+    ${p.contentHtml}
+    <div class="pop-badge">
+      <span class="pop-badge-current">${p.slideNumber}</span>
+      <span class="pop-badge-total">/ ${p.totalSlides}</span>
+    </div>
+  </div>`
+}
+
+// ── 1. ghost-number-hero-pop ──
+export interface PopGhostHeroContent {
+  titulo: string
+  subtitulo: string
+}
+export function buildPopGhostHeroDecor(ghostNumber: number): string {
+  const n = String(ghostNumber).padStart(2, '0')
+  return `<svg width="620" height="600" style="position:absolute; bottom:-100px; right:-120px;">
+    <path d="M60,120 C160,20 380,-20 480,90 C580,200 560,340 460,420 C360,500 180,520 90,430 C0,340 -30,220 60,120 Z" fill="#EF8E01" opacity="0.85"/>
+  </svg>
+  <div style="position:absolute; top:640px; left:70px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:520px; line-height:1; color:transparent; -webkit-text-stroke:3px rgba(0,56,189,0.18); letter-spacing:-16px; z-index:1;">${esc(n)}</div>
+  <svg width="180" height="180" style="position:absolute; top:150px; left:80px;">
+    <circle cx="8" cy="8" r="6" fill="#0D1B2E"/><circle cx="44" cy="8" r="6" fill="#0D1B2E"/>
+    <circle cx="8" cy="44" r="6" fill="#0D1B2E"/><circle cx="44" cy="44" r="6" fill="#0D1B2E"/>
+  </svg>`
+}
+export function buildPopGhostHeroContent(c: PopGhostHeroContent): string {
+  return `<div style="position:absolute; left:80px; right:100px; top:300px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:96px; line-height:1.06; color:#0D1B2E; letter-spacing:-1px;">${esc(c.titulo)}</h1>
+    <p style="margin:34px 0 0 0; font-size:34px; line-height:1.4; color:#3B4A63; font-weight:500; max-width:700px;">${esc(c.subtitulo)}</p>
+  </div>`
+}
+
+// ── 2. highlight-text-pop (reusa TitleSegment/renderTitleSegments) ──
+export function buildPopHighlightDecor(): string {
+  return `<svg width="520" height="480" style="position:absolute; top:-40px; right:-60px;">
+    <polygon points="520,0 520,400 120,0" fill="#EF8E01" opacity="0.9"/>
+  </svg>
+  <div style="position:absolute; top:420px; right:120px; width:60px; height:60px; border-radius:50%; background:#0038BD;"></div>`
+}
+export function buildPopHighlightContent(tituloSegments: TitleSegment[], subtitulo: string): string {
+  const titleHtml = renderTitleSegments(tituloSegments, '#0038BD', '#FFFFFF')
+  return `<div style="position:absolute; left:80px; right:80px; top:540px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:88px; line-height:1.12; color:#0D1B2E; letter-spacing:-1px;">${titleHtml}</h1>
+    <p style="margin:34px 0 0 0; font-size:32px; line-height:1.4; color:#3B4A63; font-weight:500; max-width:680px;">${esc(subtitulo)}</p>
+  </div>`
+}
+
+// ── 3. chat-bubble-pop ──
+export function buildPopChatBubbleDecor(): string {
+  return `<svg width="480" height="440" style="position:absolute; top:-60px; left:-80px;">
+    <path d="M60,120 C160,20 340,-10 420,90 C500,190 480,300 400,360 C320,420 160,430 90,360 C20,290 -20,220 60,120 Z" fill="#EF8E01" opacity="0.14"/>
+  </svg>`
+}
+// check-icon en #16A34A sobre blanco -- Design lo trajo en ámbar/#0D1B2E, viola la
+// regla de verde-para-check del proyecto.
+export function buildPopChatBubbleContent(c: ChatBubbleContent): string {
+  const clienteTexto = stripEmoji(c.clienteTexto)
+  return `<div style="position:absolute; left:80px; right:80px; top:280px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:72px; line-height:1.1; color:#0D1B2E; letter-spacing:-1px; max-width:780px;">${esc(c.titulo)}</h1>
+  </div>
+  <div style="position:absolute; left:80px; top:560px; max-width:600px; background:#FFFFFF; border:2px solid rgba(0,56,189,0.15); border-radius:26px 26px 26px 6px; padding:34px 38px; box-shadow:0 20px 44px rgba(13,27,46,0.08); z-index:2;">
+    <p style="margin:0; font-size:32px; line-height:1.4; color:#0D1B2E; font-weight:500;">${esc(clienteTexto)}</p>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <span style="font-size:20px; color:#8A93A6;">${esc(c.clienteHora)}</span>
+    </div>
+  </div>
+  <div style="position:absolute; right:80px; top:790px; max-width:500px; background:#0038BD; border-radius:26px 26px 6px 26px; padding:30px 34px; z-index:2;">
+    <p style="margin:0; font-size:28px; line-height:1.4; color:#FFFFFF; font-weight:500;">${esc(c.respuestaTexto)} &#10003;</p>
+  </div>
+  <div style="position:absolute; right:80px; top:920px; width:56px; height:56px; border-radius:50%; background:#16A34A; display:flex; align-items:center; justify-content:center; z-index:2;">
+    <svg width="26" height="20" viewBox="0 0 26 20" fill="none"><path d="M2 10L9 17L24 2" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>`
+}
+
+// ── 4. checklist-iconos-pop ──
+export function buildPopChecklistDecor(): string {
+  return `<svg width="520" height="480" style="position:absolute; bottom:-60px; left:-80px;">
+    <polygon points="0,480 0,80 440,480" fill="#0038BD" opacity="0.9"/>
+  </svg>`
+}
+export function buildPopChecklistContent(c: ChecklistContent): string {
+  const items = c.items.slice(0, 4)
+  const checkIcon = `<svg width="26" height="20" viewBox="0 0 26 20" fill="none"><path d="M2 10L9 17L24 2" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  const itemsHtml = items.map(text => `
+    <div style="display:flex; align-items:center; gap:26px; background:#FFFFFF; border-radius:18px; padding:28px 34px; box-shadow:0 14px 30px rgba(13,27,46,0.06);">
+      <div style="flex:none; width:56px; height:56px; border-radius:50%; background:#16A34A; display:flex; align-items:center; justify-content:center;">${checkIcon}</div>
+      <div style="font-size:32px; font-weight:600; color:#0D1B2E;">${esc(text)}</div>
+    </div>`).join('')
+  return `<div style="position:absolute; left:80px; right:80px; top:230px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:72px; line-height:1.1; color:#0D1B2E; letter-spacing:-1px; max-width:820px;">${esc(c.titulo)}</h1>
+  </div>
+  <div style="position:absolute; left:80px; right:80px; top:540px; display:flex; flex-direction:column; gap:24px; z-index:2;">
+    ${itemsHtml}
+  </div>`
+}
+
+// ── 5. cta-precio-pop ──
+export function buildPopCtaPrecioDecor(): string {
+  return `<svg width="640" height="600" style="position:absolute; top:-120px; right:-140px;">
+    <path d="M60,120 C160,20 380,-20 480,90 C580,200 560,340 460,420 C360,500 180,520 90,430 C0,340 -30,220 60,120 Z" fill="#EF8E01" opacity="0.85"/>
+  </svg>`
+}
+export function buildPopCtaPrecioContent(c: CtaPrecioContent): string {
+  return `<div style="position:absolute; left:80px; right:80px; top:280px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:80px; line-height:1.1; color:#0D1B2E; letter-spacing:-1px; max-width:800px;">${esc(c.tituloPre)}<span style="font-style:italic; font-weight:600; color:#EF8E01;">${esc(c.tituloAccent)}</span>${esc(c.tituloPost)}</h1>
+    <p style="margin:30px 0 0 0; font-size:32px; line-height:1.4; color:#3B4A63; font-weight:500; max-width:700px;">${esc(c.subtitulo)}</p>
+  </div>
+  <div style="position:absolute; left:80px; right:80px; top:700px; background:#0038BD; border-radius:24px; padding:44px 48px; z-index:2;">
+    <div style="font-size:22px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#DCE6FF;">${esc(c.planNombre)}</div>
+    <div style="margin-top:14px; display:flex; align-items:baseline; gap:10px;">
+      <span style="font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:84px; color:#FFFFFF;">$${c.precioUsd}</span>
+      <span style="font-size:28px; font-weight:600; color:#DCE6FF;">/ mes</span>
+    </div>
+  </div>
+  <div style="position:absolute; left:80px; right:80px; top:960px; z-index:2;">
+    <div style="background:#EF8E01; color:#0D1B2E; font-size:36px; font-weight:800; padding:26px 52px; border-radius:16px; display:inline-block;">${esc(c.ctaLabel)} &rarr;</div>
+  </div>`
+}
+
+// ── 6. foto-lateral-pop ──
+export function buildPopFotoLateralDecor(): string {
+  return ''  // el blob va pegado a la foto, se resuelve dentro del content, no como decor separado
+}
+export function buildPopFotoLateralContent(c: FotoLateralContent): string {
+  return `<div style="position:absolute; left:80px; top:220px; width:420px; height:420px; z-index:1;">
+    <div style="position:absolute; inset:-14px; background:#EF8E01; opacity:0.85; border-radius:50% 50% 45% 55% / 55% 45% 55% 45%;"></div>
+    <img src="${esc(c.fotoUrl)}" style="position:relative; width:100%; height:100%; object-fit:cover; clip-path:ellipse(48% 48% at 50% 50%);">
+  </div>
+  <div style="position:absolute; left:80px; right:80px; top:700px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:62px; line-height:1.1; color:#0D1B2E; letter-spacing:-1px;">${esc(c.titulo)}</h1>
+    <p style="margin:26px 0 0 0; font-size:28px; line-height:1.45; color:#3B4A63; font-weight:500;">${esc(c.subtitulo)}</p>
+    <div style="margin-top:40px; background:#FFFFFF; border-radius:18px; padding:26px 30px; box-shadow:0 14px 30px rgba(13,27,46,0.06); display:inline-block;">
+      <div style="font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#0038BD;">${esc(c.statLabel)}</div>
+      <div style="margin-top:8px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:48px; color:#0D1B2E;">${esc(c.statValor)}</div>
+    </div>
+  </div>`
+}
+
 // ── Orquestador público ──
 
 export type SlideLayout = 'ghost-hero' | 'highlight-text' | 'chat-bubble' |

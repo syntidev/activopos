@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import type { SlideLayout } from './carousel-layouts'
+import type { SlideLayout, BicolorLayout, PopLayout } from './carousel-layouts'
 
 /**
  * Marca real de ActivoPOS para el generador de contenido social.
@@ -250,7 +250,7 @@ export function buildNarrativeArc(slideCount: number): SlideSpec[] {
 /* ── Mapa rol → layout (Sprint 139) ────────────────────────────────────────────
    SlideLayout se re-exporta desde carousel-layouts.ts en vez de redeclararse acá:
    dos definiciones del mismo union se desincronizan al agregar el layout 11. */
-export type { SlideLayout }
+export type { SlideLayout, BicolorLayout, PopLayout }
 
 export function pickLayoutForRole(role: SlideRole): SlideLayout {
   switch (role) {
@@ -265,6 +265,31 @@ export function pickLayoutForRole(role: SlideRole): SlideLayout {
     default:            return 'ghost-hero'
   }
 }
+// testimonio y stat NUNCA se devuelven: testimonio no tiene atribución real y
+// stat pinta una cifra sin fuente de dato -- misma razón que curva-corte.
+export function pickBicolorLayoutForRole(role: SlideRole): BicolorLayout | null {
+  switch (role) {
+    case 'portada':     return 'movimiento'
+    case 'problema':    return 'oferta'
+    case 'valor':       return 'checklist'
+    case 'comparacion': return 'checklist'
+    case 'cta':         return 'cta'
+    default:            return null
+  }
+}
+
+// foto-lateral NUNCA se devuelve -- no hay fuente de foto real por slide.
+export function pickPopLayoutForRole(role: SlideRole): PopLayout | null {
+  switch (role) {
+    case 'portada':     return 'ghost-hero'
+    case 'problema':    return 'highlight-text'
+    case 'valor':       return 'checklist'
+    case 'comparacion': return 'chat-bubble'
+    case 'cta':         return 'cta-precio'
+    default:            return null
+  }
+}
+
 // testimonio y split-diagonal quedan definidos pero SIN asignar a ningún rol
 // todavía -- testimonio por falta de atribución real, split-diagonal porque ya
 // hay un layout de CTA (cta-precio) y meter los dos duplica el rol sin criterio

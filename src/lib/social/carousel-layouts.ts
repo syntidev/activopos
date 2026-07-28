@@ -37,6 +37,44 @@ const FOTO_LATERAL_GHOST_STYLE: GhostNumberStyle = {
 
 const CHROME_ACCENT_DEFAULT = '#4D7AFF' // ámbar retirado del chrome decorativo -- solo queda en cta-precio
 
+export type FrameVariant = 'dark' | 'light'
+
+// 'dark' reproduce exactamente el chrome de los 6 layouts originales.
+// 'light' existe para constelacion-puntos (testimonio), que pinta texto oscuro:
+// además de los 3 selectores de texto hay que invertir el fondo del .frame y el
+// trazo del ghost number, si no el layout queda ilegible (blanco sobre azul).
+const FRAME_VARIANTS: Record<FrameVariant, {
+  background:   string
+  ghostStroke:  string
+  eyebrowText:  string
+  logoText:     string
+  badgeBg:      string
+  badgeBorder:  string
+  badgeCurrent: string
+  badgeTotal:   string
+}> = {
+  dark: {
+    background:   'linear-gradient(160deg, #0038BD 0%, #002FA0 55%, #001D7A 100%)',
+    ghostStroke:  'rgba(255,255,255,0.16)',
+    eyebrowText:  '#DCE6FF',
+    logoText:     '#FFFFFF',
+    badgeBg:      'rgba(255,255,255,0.12)',
+    badgeBorder:  'rgba(255,255,255,0.25)',
+    badgeCurrent: '#FFFFFF',
+    badgeTotal:   '#DCE6FF',
+  },
+  light: {
+    background:   '#DCE6FF',
+    ghostStroke:  'rgba(0,56,189,0.14)',
+    eyebrowText:  '#0038BD',
+    logoText:     '#0D1B2E',
+    badgeBg:      'rgba(0,56,189,0.08)',
+    badgeBorder:  'rgba(0,56,189,0.22)',
+    badgeCurrent: '#0038BD',
+    badgeTotal:   '#3B4A63',
+  },
+}
+
 interface SlideFrameParams {
   ghostNumber:   number
   eyebrowText:   string
@@ -46,34 +84,36 @@ interface SlideFrameParams {
   totalSlides:   number
   contentHtml:   string
   ghostStyle?:   GhostNumberStyle
+  variant?:      FrameVariant   // default 'dark' -- preserva los 6 layouts originales
 }
 
 function buildSlideFrame(p: SlideFrameParams): string {
   const ghostNum = String(p.ghostNumber).padStart(2, '0')
   const gs = p.ghostStyle ?? DEFAULT_GHOST_STYLE
   const chromeAccent = p.isCtaSlide ? p.accentColor : CHROME_ACCENT_DEFAULT
+  const v = FRAME_VARIANTS[p.variant ?? 'dark']
 
   return `<style>
     * { margin:0; padding:0; box-sizing:border-box; }
     .frame { position:relative; width:1080px; height:1350px;
-      background:linear-gradient(160deg, #0038BD 0%, #002FA0 55%, #001D7A 100%);
+      background:${v.background};
       overflow:hidden; font-family:'DM Sans', -apple-system, Helvetica, Arial, sans-serif; }
     .ghost-number { position:absolute; top:${gs.top}; left:${gs.left};
       ${gs.transform ? `transform:${gs.transform};` : ''}
       font-family:'Fraunces', Georgia, serif; font-weight:700; font-size:${gs.fontSize}; line-height:1;
-      color:transparent; -webkit-text-stroke:3px rgba(255,255,255,0.16); letter-spacing:${gs.letterSpacing};
+      color:transparent; -webkit-text-stroke:3px ${v.ghostStroke}; letter-spacing:${gs.letterSpacing};
       user-select:none; pointer-events:none; z-index:0; }
     .eyebrow { position:absolute; top:96px; left:80px; right:80px; display:flex; align-items:center; gap:14px; z-index:1; }
     .eyebrow-bar { width:34px; height:3px; background:${chromeAccent}; }
-    .eyebrow-text { font-size:22px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:#DCE6FF; }
+    .eyebrow-text { font-size:22px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:${v.eyebrowText}; }
     .fr-bottom { position:absolute; left:80px; right:80px; bottom:76px; display:flex; align-items:center; justify-content:space-between; z-index:1; }
     .fr-logo { display:flex; align-items:center; gap:14px; }
     .fr-logo-dot { width:14px; height:14px; border-radius:50%; background:${chromeAccent}; }
-    .fr-logo-text { font-size:34px; font-weight:800; color:#FFFFFF; letter-spacing:-0.5px; }
+    .fr-logo-text { font-size:34px; font-weight:800; color:${v.logoText}; letter-spacing:-0.5px; }
     .fr-logo-text span { font-weight:400; color:#4D7AFF; }
-    .fr-badge { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); border-radius:999px; padding:14px 28px; }
-    .fr-badge-current { font-size:26px; font-weight:700; color:#FFFFFF; }
-    .fr-badge-total { font-size:26px; font-weight:500; color:#DCE6FF; }
+    .fr-badge { display:flex; align-items:center; gap:10px; background:${v.badgeBg}; border:1px solid ${v.badgeBorder}; border-radius:999px; padding:14px 28px; }
+    .fr-badge-current { font-size:26px; font-weight:700; color:${v.badgeCurrent}; }
+    .fr-badge-total { font-size:26px; font-weight:500; color:${v.badgeTotal}; }
   </style>
   <div class="frame">
     <div class="ghost-number">${esc(ghostNum)}</div>
@@ -277,8 +317,121 @@ export function buildFotoLateralContent(c: FotoLateralContent): string {
   </div>`
 }
 
+// ── Layout 7: curva-corte ──
+
+export interface CurvaCorteContent {
+  titulo:      string
+  subtitulo:   string
+  statLabel:   string   // ej. "Tu día · hoy"
+  statValor:   string   // ilustrativo por defecto -- MISMA duda pendiente que foto-lateral
+  statValorBs: string
+  statNota:    string   // ej. "32 ventas registradas"
+}
+
+export function buildCurvaCorteContent(c: CurvaCorteContent): string {
+  const checkIcon = `<svg width="26" height="20" viewBox="0 0 26 20" fill="none"><path d="M2 10L9 17L24 2" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  return `
+  <svg width="1080" height="1350" viewBox="0 0 1080 1350" style="position:absolute; top:0; left:0; z-index:0;">
+    <path d="M0,0 H1080 V820 C 760,960 320,700 0,880 Z" fill="#0038BD"/>
+    <path d="M0,0 H1080 V760 C 780,880 340,640 0,800 Z" fill="#4D7AFF" opacity="0.35"/>
+  </svg>
+  <div style="position:absolute; left:80px; right:80px; top:230px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:82px; line-height:1.08; color:#FFFFFF; letter-spacing:-1px; max-width:820px;">${esc(c.titulo)}</h1>
+    <p style="margin:28px 0 0 0; font-size:32px; line-height:1.4; color:#DCE6FF; font-weight:500; max-width:700px;">${esc(c.subtitulo)}</p>
+  </div>
+  <div style="position:absolute; left:120px; top:780px; width:520px; background:#FFFFFF; border-radius:20px; padding:36px 40px; transform:rotate(-4deg); box-shadow:0 30px 70px rgba(0,10,40,0.4); z-index:2;">
+    <div style="font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#4D7AFF;">${esc(c.statLabel)}</div>
+    <div style="margin-top:22px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:56px; color:#0038BD;">${esc(c.statValor)}</div>
+    <div style="margin-top:16px; font-size:22px; color:#8A93A6;">${esc(c.statValorBs)} &middot; tasa BCV</div>
+    <div style="margin-top:20px; border-top:2px dashed #DCE6FF; padding-top:16px; display:flex; align-items:center; gap:10px;">
+      ${checkIcon}<span style="font-size:22px; color:#0D1B2E; font-weight:600;">${esc(c.statNota)}</span>
+    </div>
+  </div>
+  <div style="position:absolute; right:130px; top:1030px; width:22px; height:22px; border-radius:50%; background:#EF8E01; z-index:2;"></div>`
+}
+
+// ── Layout 8: split-diagonal (variante de cta-precio) ──
+
+export interface SplitDiagonalContent {
+  titulo:      string
+  planNombre:  string
+  precioUsd:   number   // BILLING_CYCLES, igual que cta-precio -- NUNCA hardcodear
+  ctaLabel:    string
+}
+
+export function buildSplitDiagonalContent(c: SplitDiagonalContent): string {
+  return `
+  <div style="position:absolute; left:0; top:0; width:1080px; height:1350px; background:#0D1B2E; clip-path:polygon(0 0, 62% 0, 38% 100%, 0 100%); z-index:0;"></div>
+  <div style="position:absolute; left:80px; top:280px; width:420px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:64px; line-height:1.1; color:#FFFFFF; letter-spacing:-1px;">${esc(c.titulo)}</h1>
+  </div>
+  <div style="position:absolute; right:70px; top:620px; width:460px; background:#FFFFFF; border-radius:20px; padding:36px 40px; transform:rotate(3deg); box-shadow:0 30px 70px rgba(0,10,40,0.4); z-index:2;">
+    <div style="font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#4D7AFF;">${esc(c.planNombre)}</div>
+    <div style="margin-top:20px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:72px; color:#0038BD;">$${c.precioUsd}<span style="font-size:28px; color:#8A93A6; font-family:'DM Sans',sans-serif; font-weight:600;">/mes</span></div>
+    <div style="margin-top:22px; background:#EF8E01; color:#0D1B2E; font-size:24px; font-weight:800; padding:16px 0; border-radius:12px; text-align:center;">${esc(c.ctaLabel)}</div>
+  </div>`
+}
+
+// ── Layout 9: constelacion-puntos (testimonio, fondo claro) ──
+// Requiere buildSlideFrame({ variant: 'light' }) -- con el frame 'dark' el texto
+// oscuro de la cita queda ilegible sobre el degradado azul.
+
+export interface TestimonioContent {
+  citaSegments:   TitleSegment[]  // reusa renderTitleSegments -- resalta la frase clave de la cita
+  autorNombre:    string          // OBLIGATORIO, sin default -- debe ser cliente real que autorizó
+  autorNegocio:   string          // OBLIGATORIO, sin default
+}
+
+export function buildTestimonioContent(c: TestimonioContent): string {
+  if (!c.autorNombre || !c.autorNegocio) {
+    throw new Error('buildTestimonioContent: autorNombre/autorNegocio obligatorios -- no se publica testimonio sin atribución real')
+  }
+  const citaHtml = renderTitleSegments(c.citaSegments, '#EF8E01', '#0D1B2E')
+  return `
+  <svg width="1080" height="1350" style="position:absolute; top:0; left:0; z-index:0;">
+    <circle cx="150" cy="180" r="7" fill="#4D7AFF" opacity="0.5"/>
+    <circle cx="900" cy="220" r="9" fill="#4D7AFF" opacity="0.45"/>
+    <circle cx="1000" cy="1230" r="16" fill="#EF8E01"/>
+  </svg>
+  <div style="position:absolute; left:80px; right:80px; top:520px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:76px; line-height:1.15; color:#0D1B2E; letter-spacing:-1px;">&ldquo;${citaHtml}&rdquo;</h1>
+    <p style="margin:32px 0 0 0; font-size:30px; color:#3B4A63; font-weight:600;">${esc(c.autorNombre)} &middot; ${esc(c.autorNegocio)}</p>
+  </div>`
+}
+
+// ── Layout 10: silueta-recibo ──
+
+export interface SiluetaReciboContent {
+  titulo: string
+  items:  string[]   // reusa la misma lógica de escalado que checklist si quieres, aquí fijo a 3
+}
+
+export function buildSiluetaReciboContent(c: SiluetaReciboContent): string {
+  const checkIcon = `<svg width="26" height="20" viewBox="0 0 26 20" fill="none"><path d="M2 10L9 17L24 2" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  const items = c.items.slice(0, 3)
+  const itemsHtml = items.map((text, i) => `
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:26px 40px; ${i < items.length - 1 ? 'border-bottom:1px dashed rgba(255,255,255,0.25);' : ''}">
+      <div style="font-size:32px; font-weight:600; color:#FFFFFF;">${esc(text)}</div>
+      ${checkIcon}
+    </div>`).join('')
+  return `
+  <svg width="900" height="1240" style="position:absolute; right:-260px; top:60px; opacity:0.14; z-index:0;">
+    <path d="M120 0 H620 V1140 L580 1180 L540 1140 L500 1180 L460 1140 L420 1180 L380 1140 L340 1180 L300 1140 L260 1180 L220 1140 L180 1180 L140 1140 L120 1180 Z" fill="none" stroke="#FFFFFF" stroke-width="4"/>
+    <line x1="180" y1="140" x2="560" y2="140" stroke="#FFFFFF" stroke-width="4"/>
+    <line x1="180" y1="220" x2="560" y2="220" stroke="#FFFFFF" stroke-width="4"/>
+  </svg>
+  <div style="position:absolute; left:80px; right:80px; top:250px; z-index:2;">
+    <h1 style="margin:0; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:72px; line-height:1.1; color:#FFFFFF; letter-spacing:-1px; max-width:800px;">${esc(c.titulo)}</h1>
+  </div>
+  <div style="position:absolute; left:80px; right:80px; top:560px; z-index:2; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14); border-radius:16px; padding:12px 0;">
+    ${itemsHtml}
+  </div>`
+}
+
 // ── Orquestador público ──
 
-export type SlideLayout = 'ghost-hero' | 'highlight-text' | 'chat-bubble' | 'checklist' | 'cta-precio' | 'foto-lateral'
+export type SlideLayout = 'ghost-hero' | 'highlight-text' | 'chat-bubble' |
+  'checklist' | 'cta-precio' | 'foto-lateral' | 'curva-corte' | 'split-diagonal' |
+  'testimonio' | 'silueta-recibo'
 
 export { buildSlideFrame, FOTO_LATERAL_GHOST_STYLE, DEFAULT_GHOST_STYLE }

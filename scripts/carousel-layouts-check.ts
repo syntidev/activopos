@@ -35,6 +35,19 @@ async function main(): Promise<void> {
   assert.ok(!/[\uD800-\uDBFF]/.test(conEmoji), 'stripEmoji: quedaron emojis de plano suplementario')
   assert.ok(!conEmoji.includes('✅'), 'stripEmoji: quedó un emoji del plano básico')
 
+  // El frame 'light' solo lo usa testimonio, que no se renderiza a PNG todavía:
+  // sin estos asserts la variante quedaría sin ejercitar (fachada).
+  const frameArgs = { ghostNumber: 9, eyebrowText: 'x', accentColor: '#EF8E01', slideNumber: 9, totalSlides: 10, contentHtml: '' }
+  assert.ok(L.buildSlideFrame({ ...frameArgs, variant: 'light' }).includes('background:#DCE6FF'), 'frame light: fondo no invertido')
+  assert.ok(L.buildSlideFrame({ ...frameArgs }).includes('linear-gradient(160deg, #0038BD'), 'frame default: dejó de ser dark')
+
+  // Guarda de atribución: no se publica testimonio sin cliente real.
+  assert.throws(
+    () => L.buildTestimonioContent({ citaSegments: [{ text: 'x' }], autorNombre: '', autorNegocio: '' }),
+    /autorNombre\/autorNegocio obligatorios/,
+    'buildTestimonioContent: no lanzó sin atribución',
+  )
+
   const slides: Array<{ layout: SlideLayout; html: string }> = [
     {
       layout: 'ghost-hero',
@@ -124,6 +137,63 @@ async function main(): Promise<void> {
         }),
       }),
     },
+    {
+      layout: 'curva-corte',
+      html: L.buildSlideFrame({
+        ghostNumber: 7, eyebrowText: 'Cierre de caja', accentColor: '#EF8E01',
+        slideNumber: 7, totalSlides: 10,
+        contentHtml: L.buildCurvaCorteContent({
+          titulo: 'Cierras el día sabiendo exactamente qué entró',
+          subtitulo: 'Sin cuadrar el cuaderno a las 9 de la noche.',
+          statLabel: 'Tu día · hoy',
+          statValor: '$0.00',   // ilustrativo -- pendiente decisión sobre dato real
+          statValorBs: 'Bs. 0,00',
+          statNota: '32 ventas registradas',
+        }),
+      }),
+    },
+    {
+      layout: 'split-diagonal',
+      html: L.buildSlideFrame({
+        ghostNumber: 8, eyebrowText: 'Un solo plan', accentColor: '#EF8E01', isCtaSlide: true,
+        slideNumber: 8, totalSlides: 10,
+        contentHtml: L.buildSplitDiagonalContent({
+          titulo: 'Todo el sistema por menos de lo que gastas en un almuerzo',
+          planNombre: 'Negocio Activo',
+          precioUsd,
+          ctaLabel: 'Empezar ahora',
+        }),
+      }),
+    },
+    // testimonio (constelacion-puntos): pendiente testimonio real autorizado por Carlos.
+    // buildTestimonioContent lanza si falta autorNombre/autorNegocio y no los tenemos.
+    // Usa buildSlideFrame({ variant: 'light' }) -- fondo #DCE6FF, chrome oscuro.
+    // {
+    //   layout: 'testimonio',
+    //   html: L.buildSlideFrame({
+    //     ghostNumber: 9, eyebrowText: 'Lo dice un cliente', accentColor: '#EF8E01',
+    //     slideNumber: 9, totalSlides: 10, variant: 'light',
+    //     contentHtml: L.buildTestimonioContent({
+    //       citaSegments: [{ text: '...' }, { text: '...', highlight: true }],
+    //       autorNombre: '<nombre real>', autorNegocio: '<negocio real>',
+    //     }),
+    //   }),
+    // },
+    {
+      layout: 'silueta-recibo',
+      html: L.buildSlideFrame({
+        ghostNumber: 10, eyebrowText: 'Lo que te llevas', accentColor: '#EF8E01',
+        slideNumber: 10, totalSlides: 10,
+        contentHtml: L.buildSiluetaReciboContent({
+          titulo: 'Tres cosas que cambian desde el primer día',
+          items: [
+            'POS táctil sin tarjeta',
+            'BCV automático en cada venta',
+            'Catálogo digital 24/7',
+          ],
+        }),
+      }),
+    },
   ]
 
   mkdirSync(OUT_DIR, { recursive: true })
@@ -145,7 +215,7 @@ async function main(): Promise<void> {
   }
 
   await closeBrowser()
-  console.log(`\n6/6 layouts renderizados. Revisar en ${OUT_DIR}/`)
+  console.log(`\n${slides.length} layouts renderizados. Revisar en ${OUT_DIR}/`)
 }
 
 main().catch(err => { console.error('FALLO:', err.message); process.exit(1) })

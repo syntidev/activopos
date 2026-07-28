@@ -76,6 +76,18 @@ const slideCopySchema = z.object({
 const ITEMS_MIN = 3
 const ITEMS_MAX = 6
 
+// El prompt prohíbe montos en el chat simulado, pero el modelo improvisa: en una
+// generación real devolvió "Pedido recibido. Total al cambio: 185,50 Bs." y salió
+// publicado como si fuera una venta de verdad. La guarda es la red, el prompt no basta.
+const MONEDA = String.raw`(?:\$|\bUSD\b|\bBs\b\.?|\bbol[ií]var(?:es)?\b|\bd[oó]lar(?:es)?\b)`
+const MONTO_MONETARIO = new RegExp(
+  String.raw`${MONEDA}\s*\d|\d(?:[.,]\d+)?\s*${MONEDA}`, 'i',
+)
+
+export function tieneMontoMonetario(texto: string): boolean {
+  return MONTO_MONETARIO.test(texto)
+}
+
 /**
  * Descarte silencioso de los campos nuevos cuando el modelo los devuelve mal.
  * Son cosméticos: una slide sin tituloHighlight se ve como hasta hoy, así que
@@ -95,9 +107,11 @@ function sanitizeSlide(raw: SlideCopy): SlideCopy {
   // no aparece literal en el titulo el split no resalta nada, así que se descarta.
   if (s.tituloHighlight && s.titulo.includes(s.tituloHighlight)) out.tituloHighlight = s.tituloHighlight
   if (s.items && s.items.length >= ITEMS_MIN && s.items.length <= ITEMS_MAX) out.items = s.items
-  if (s.clienteTexto)   out.clienteTexto   = s.clienteTexto
+  // Un monto en el chat simulado se lee como una venta real. Se descarta el campo
+  // entero: renderGeometric/renderPop caen a su fallback genérico, sin cifras.
+  if (s.clienteTexto   && !tieneMontoMonetario(s.clienteTexto))   out.clienteTexto   = s.clienteTexto
   if (s.clienteHora)    out.clienteHora    = s.clienteHora
-  if (s.respuestaTexto) out.respuestaTexto = s.respuestaTexto
+  if (s.respuestaTexto && !tieneMontoMonetario(s.respuestaTexto)) out.respuestaTexto = s.respuestaTexto
   return out
 }
 
@@ -114,7 +128,11 @@ const LAYOUT_EXTRA_FIELDS: Partial<Record<SlideLayout, string>> = {
   'chat-bubble':
     '  - clienteTexto: mensaje simulado de un cliente por WhatsApp, natural, sin emojis.\n' +
     '  - clienteHora: hora del mensaje, formato "H:MM a.m." o "H:MM p.m.".\n' +
-    '  - respuestaTexto: confirmación corta del sistema al recibir el pedido.',
+    '  - respuestaTexto: confirmación corta del sistema al recibir el pedido.\n' +
+    '  PROHIBIDO incluir montos, totales, precios o cifras monetarias específicas en\n' +
+    '  clienteTexto o respuestaTexto: son mensajes simulados de conversación, no facturas.\n' +
+    '  Usa lenguaje genérico ("ya quedó registrada tu venta"), NUNCA un monto, ni en Bs\n' +
+    '  ni en dólares. Un monto inventado se publica como si fuera una venta real.',
 }
 
 // El arco narrativo depende solo de la cantidad de slides, así que se puede

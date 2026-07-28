@@ -82,6 +82,7 @@ export interface BusinessConfig {
   catalog_instagram?:          string | null
   catalog_hours?:              string | null
   catalog_cover_path?:         string | null
+  catalog_default_currency?:   'usd' | 'bs' | 'both'
 }
 
 export type TicketFormat        = 'carta' | '80mm' | '58mm'

@@ -26,6 +26,7 @@ interface EmpresaForm {
   catalog_title:    string
   catalog_desc:     string
   catalog_desc_enabled: boolean
+  catalog_default_currency: 'usd' | 'bs' | 'both'
   catalog_instagram: string
   catalog_hours:     string
 }
@@ -34,6 +35,7 @@ const EMPTY_FORM: EmpresaForm = {
   name: '', legal_name: '', rif: '', address: '', city: '', state: '', phone: '', email: '', quotation_footer: '',
   pos_mode: 'ticket',
   catalog_title: '', catalog_desc: '', catalog_desc_enabled: true,
+  catalog_default_currency: 'usd',
   catalog_instagram: '', catalog_hours: '',
 }
 
@@ -71,6 +73,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         catalog_title:        b.catalog_title ?? '',
         catalog_desc:         b.catalog_desc ?? '',
         catalog_desc_enabled: b.catalog_desc_enabled ?? true,
+        catalog_default_currency: b.catalog_default_currency ?? 'usd',
         catalog_instagram: b.catalog_instagram ?? '',
         catalog_hours:     b.catalog_hours ?? '',
       })
@@ -110,6 +113,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
           catalog_title:        form.catalog_title.trim() || null,
           catalog_desc:         form.catalog_desc.trim() || null,
           catalog_desc_enabled: form.catalog_desc_enabled,
+          catalog_default_currency: form.catalog_default_currency,
           catalog_instagram: form.catalog_instagram.trim().replace(/^@+/, '') || null,
           catalog_hours:     form.catalog_hours.trim() || null,
         }),
@@ -354,6 +358,28 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
             >
               <span className={`${styles.toggleKnob} ${form.catalog_desc_enabled ? styles.toggleKnobOn : ''}`} />
             </button>
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor="catalog-currency">
+              Moneda visible en el catálogo
+            </label>
+            <select
+              id="catalog-currency"
+              className={styles.select}
+              value={form.catalog_default_currency}
+              onChange={(e) => setForm(prev => ({
+                ...prev,
+                catalog_default_currency: e.target.value as EmpresaForm['catalog_default_currency'],
+              }))}
+            >
+              <option value="usd">Solo divisas ($)</option>
+              <option value="bs">Solo Bolívares (Bs.)</option>
+              <option value="both">Ambas ($ y Bs.)</option>
+            </select>
+            <p className={styles.toggleHint}>
+              Aplica al catálogo público y al mensaje de WhatsApp. No afecta el POS ni tus tickets.
+            </p>
           </div>
         </div>
 

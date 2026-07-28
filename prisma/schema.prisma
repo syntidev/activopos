@@ -178,6 +178,10 @@ model Business {
   catalog_plan         String?  @default("gratis") @db.VarChar(30)
   catalog_slug         String?  @unique @db.VarChar(80)
   catalog_active       Boolean  @default(false)
+  // Moneda visible en el catálogo público y en el mensaje de WhatsApp.
+  // 'usd' | 'bs' | 'both'. Excepción autorizada a la regla dual-currency:
+  // aplica solo a superficies cara-al-cliente, nunca a POS ni dashboard.
+  catalog_default_currency String @default("usd") @db.VarChar(5)
   catalog_title        String?  @db.VarChar(150)
   catalog_desc         String?  @db.Text
   catalog_desc_enabled Boolean  @default(true)

@@ -705,16 +705,18 @@ export function buildPopChatBubbleContent(c: ChatBubbleContent): string {
     </div>
   </div>
   <div style="position:absolute; right:80px; top:790px; max-width:500px; background:#0038BD; border-radius:26px 26px 6px 26px; padding:30px 34px; z-index:2;">
-    <p style="margin:0; font-size:28px; line-height:1.4; color:#FFFFFF; font-weight:500;">${esc(c.respuestaTexto)} &#10003;</p>
+    <p style="margin:0; font-size:28px; line-height:1.4; color:#FFFFFF; font-weight:500;">${esc(c.respuestaTexto)}</p>
   </div>
-  <div style="position:absolute; right:80px; top:920px; width:56px; height:56px; border-radius:50%; background:#16A34A; display:flex; align-items:center; justify-content:center; z-index:2;">
+  <div style="position:absolute; right:80px; top:960px; width:56px; height:56px; border-radius:50%; background:#16A34A; display:flex; align-items:center; justify-content:center; z-index:2;">
     <svg width="26" height="20" viewBox="0 0 26 20" fill="none"><path d="M2 10L9 17L24 2" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>`
 }
 
 // ── 4. checklist-iconos-pop ──
 export function buildPopChecklistDecor(): string {
-  return `<svg width="520" height="480" style="position:absolute; bottom:-60px; left:-80px;">
+  // bottom -200 y no -60: el badge pop vive abajo-IZQUIERDA (left:80, bottom:80),
+  // justo donde ancla este triángulo. Bajarlo lo saca de la banda del chrome.
+  return `<svg width="520" height="480" style="position:absolute; bottom:-200px; left:-80px;">
     <polygon points="0,480 0,80 440,480" fill="#0038BD" opacity="0.9"/>
   </svg>`
 }

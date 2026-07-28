@@ -466,16 +466,26 @@ interface BicolorFrameParams {
   contentHtml:    string
   decorSvg:       string
   logoSvg:        string   // igual que buildSlideFrame: este módulo no lee del disco
+  logoDotOverride?: string // color del punto central del isotipo, para fondos ámbar
+}
+
+// El isotipo negativo trae el punto central en #EF8E01, que desaparece sobre el
+// fondo ámbar. Se compone un <circle> encima en las mismas coordenadas del SVG
+// fuente (cx/cy 250, r 72 en viewBox 0 0 500 500) en vez de editar el asset.
+function applyLogoDotOverride(logoSvg: string, color?: string): string {
+  if (!color) return logoSvg
+  return logoSvg.replace(/<\/svg>\s*$/, `<circle fill="${color}" cx="250" cy="250" r="72"/></svg>`)
 }
 
 export function buildBicolorFrame(p: BicolorFrameParams): string {
+  const logoHtml = applyLogoDotOverride(p.logoSvg, p.logoDotOverride)
   return `<style>
     * { margin:0; padding:0; box-sizing:border-box; }
     .bc-frame { position:relative; width:1080px; height:1350px; background:${p.bgColor};
       overflow:hidden; font-family:'DM Sans', -apple-system, Helvetica, Arial, sans-serif; }
-    .bc-top { position:absolute; top:80px; left:80px; right:80px; display:flex; align-items:center; justify-content:space-between; z-index:2; }
+    .bc-top { position:absolute; top:80px; left:80px; right:80px; display:flex; align-items:center; justify-content:space-between; z-index:10; }
     .bc-top-label { font-size:20px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:${p.textColorMuted}; }
-    .bc-bottom { position:absolute; left:80px; right:80px; bottom:76px; display:flex; align-items:center; justify-content:space-between; z-index:2; }
+    .bc-bottom { position:absolute; left:80px; right:80px; bottom:76px; display:flex; align-items:center; justify-content:space-between; z-index:10; }
     .bc-logo { display:flex; align-items:center; gap:16px; }
     .bc-logo svg { width:56px; height:56px; }
     .bc-logo-text { font-size:34px; font-weight:800; color:${p.logoTextColor}; letter-spacing:-0.5px; }
@@ -492,7 +502,7 @@ export function buildBicolorFrame(p: BicolorFrameParams): string {
     </div>
     ${p.contentHtml}
     <div class="bc-bottom">
-      <div class="bc-logo">${p.logoSvg}<div class="bc-logo-text">Activo<span>POS</span></div></div>
+      <div class="bc-logo">${logoHtml}<div class="bc-logo-text">Activo<span>POS</span></div></div>
       <div class="bc-badge"><span class="bc-badge-current">${p.slideNumber}</span><span class="bc-badge-total">/ ${p.totalSlides}</span></div>
     </div>
   </div>`
@@ -502,6 +512,7 @@ export const BICOLOR_ON_ORANGE = {
   textColorMuted: '#0D1B2E', logoTextColor: '#0D1B2E', logoAccent: '#0038BD',
   badgeBg: 'rgba(13,27,46,0.1)', badgeBorder: 'rgba(13,27,46,0.2)',
   badgeTextColor: '#0D1B2E', badgeMutedColor: '#3B2200',
+  logoDotOverride: '#0D1B2E',   // el punto ámbar del isotipo se pierde sobre ámbar
 }
 export const BICOLOR_ON_NAVY = {
   textColorMuted: '#DCE6FF', logoTextColor: '#FFFFFF', logoAccent: '#4D7AFF',

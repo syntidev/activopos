@@ -256,10 +256,11 @@ export function pickLayoutForRole(role: SlideRole): SlideLayout {
   switch (role) {
     case 'portada':     return 'ghost-hero'
     case 'problema':    return 'highlight-text'
-    // 'valor' y 'comparacion' comparten curva-corte: checklist necesita items[]
-    // y SlideCopy solo trae titulo/subtitulo/escena.
-    case 'valor':       return 'curva-corte'
-    case 'comparacion': return 'curva-corte'
+    // 'valor' y 'comparacion' vuelven a highlight-text: curva-corte pinta cifras
+    // monetarias y su statValor era un '$0.00' ilustrativo -- se publicó a
+    // Instagram como si fuera venta real. Sin fuente de dato real, no se asigna.
+    case 'valor':       return 'highlight-text'
+    case 'comparacion': return 'highlight-text'
     case 'cta':         return 'cta-precio'
     default:            return 'ghost-hero'
   }

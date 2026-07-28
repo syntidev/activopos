@@ -93,6 +93,7 @@ export async function generateCarrusel(
 
   const copy   = await generateCopy({
     tipo: 'carrusel', nicho: input.nicho, gancho, objetivo: input.objetivo, slides: input.count,
+    carouselMode: input.mode,   // decide qué familia de layouts consume el copy
   })
   const slides = copy.slides.slice(0, input.count)
   if (slides.length === 0) throw new Error('generateCopy no devolvió slides para el carrusel')

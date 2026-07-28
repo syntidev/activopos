@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import {
-  ACTIVOPOS_CONTEXT, buildNarrativeArc, pickLayoutForRole,
-  type SlideLayout, type SocialFormat,
+  ACTIVOPOS_CONTEXT, buildNarrativeArc,
+  pickLayoutForRole, pickBicolorLayoutForRole, pickPopLayoutForRole,
+  type BicolorLayout, type CarouselMode, type PopLayout, type SlideLayout, type SocialFormat,
 } from './brand'
 import { ProviderError, withRetry } from './retry'
 
@@ -117,32 +118,75 @@ function sanitizeSlide(raw: SlideCopy): SlideCopy {
 
 // Campos extra que pide cada layout. Un layout ausente acá no necesita nada más
 // que titulo/subtitulo/escena, y no se le pide nada al modelo (ahorra tokens).
+// Hay un mapa por familia porque los layouts NO se llaman igual entre ellas:
+// bicolor tiene 'movimiento'/'oferta'/'cta', navy y pop tienen otros nombres.
+const CAMPO_HIGHLIGHT =
+  '  - tituloHighlight: subcadena LITERAL y EXACTA de tu propio "titulo", la parte que\n' +
+  '    debe ir resaltada. Copiala caracter por caracter del titulo, sin reformular ni\n' +
+  '    conjugar. Ej: titulo "El BCV te tiene loco" -> "loco" o "BCV te tiene loco" sirven;\n' +
+  '    "enloquecido" NO sirve porque no aparece tal cual en el titulo.'
+
+const CAMPO_HIGHLIGHT_CORTO =
+  CAMPO_HIGHLIGHT + '\n    Maximo 3 palabras: el resaltado se pinta como marcador y con mas texto se desborda.'
+
+const CAMPO_ITEMS =
+  `  - items: entre ${ITEMS_MIN} y ${ITEMS_MAX} ítems cortos (máximo 6 palabras cada uno), en español venezolano.`
+
+const CAMPOS_CHAT =
+  '  - clienteTexto: mensaje simulado de un cliente por WhatsApp, natural, sin emojis.\n' +
+  '  - clienteHora: hora del mensaje, formato "H:MM a.m." o "H:MM p.m.".\n' +
+  '  - respuestaTexto: confirmación corta del sistema al recibir el pedido.\n' +
+  '  PROHIBIDO incluir montos, totales, precios o cifras monetarias específicas en\n' +
+  '  clienteTexto o respuestaTexto: son mensajes simulados de conversación, no facturas.\n' +
+  '  Usa lenguaje genérico ("ya quedó registrada tu venta"), NUNCA un monto, ni en Bs\n' +
+  '  ni en dólares. Un monto inventado se publica como si fuera una venta real.'
+
+const BICOLOR_EXTRA_FIELDS: Partial<Record<BicolorLayout, string>> = {
+  movimiento: CAMPO_HIGHLIGHT_CORTO,
+  oferta:     CAMPO_HIGHLIGHT_CORTO,
+  cta:        CAMPO_HIGHLIGHT_CORTO,
+  checklist:  `${CAMPO_HIGHLIGHT_CORTO}\n${CAMPO_ITEMS}`,
+}
+
+const POP_EXTRA_FIELDS: Partial<Record<PopLayout, string>> = {
+  'highlight-text': CAMPO_HIGHLIGHT,
+  'checklist':      CAMPO_ITEMS,
+  'chat-bubble':    CAMPOS_CHAT,
+}
+
 const LAYOUT_EXTRA_FIELDS: Partial<Record<SlideLayout, string>> = {
-  'highlight-text':
-    '  - tituloHighlight: subcadena LITERAL y EXACTA de tu propio "titulo", la parte que\n' +
-    '    debe ir resaltada. Copiala caracter por caracter del titulo, sin reformular ni\n' +
-    '    conjugar. Ej: titulo "El BCV te tiene loco" -> "loco" o "BCV te tiene loco" sirven;\n' +
-    '    "enloquecido" NO sirve porque no aparece tal cual en el titulo.',
-  'checklist':
-    `  - items: entre ${ITEMS_MIN} y ${ITEMS_MAX} ítems cortos (máximo 6 palabras cada uno), en español venezolano.`,
-  'chat-bubble':
-    '  - clienteTexto: mensaje simulado de un cliente por WhatsApp, natural, sin emojis.\n' +
-    '  - clienteHora: hora del mensaje, formato "H:MM a.m." o "H:MM p.m.".\n' +
-    '  - respuestaTexto: confirmación corta del sistema al recibir el pedido.\n' +
-    '  PROHIBIDO incluir montos, totales, precios o cifras monetarias específicas en\n' +
-    '  clienteTexto o respuestaTexto: son mensajes simulados de conversación, no facturas.\n' +
-    '  Usa lenguaje genérico ("ya quedó registrada tu venta"), NUNCA un monto, ni en Bs\n' +
-    '  ni en dólares. Un monto inventado se publica como si fuera una venta real.',
+  'highlight-text': CAMPO_HIGHLIGHT,
+  'checklist':      CAMPO_ITEMS,
+  'chat-bubble':    CAMPOS_CHAT,
+}
+
+// Qué campos consume una slide depende del rol Y del modo: el mismo rol cae en
+// layouts distintos según la familia. Pedir por el mapa navy cuando el carrusel es
+// bicolor deja al checklist bicolor sin items[] y con el fallback de 1 ítem.
+type ExtraFieldsResolver = (role: Parameters<typeof pickLayoutForRole>[0]) => string | undefined
+
+function extraFieldsResolverFor(mode: CarouselMode): ExtraFieldsResolver {
+  switch (mode) {
+    case 'bicolor':
+      return role => { const l = pickBicolorLayoutForRole(role); return l ? BICOLOR_EXTRA_FIELDS[l] : undefined }
+    case 'pop':
+      return role => { const l = pickPopLayoutForRole(role); return l ? POP_EXTRA_FIELDS[l] : undefined }
+    case 'geometric':
+    case 'human':
+    case 'hybrid':
+      return role => LAYOUT_EXTRA_FIELDS[pickLayoutForRole(role)]
+  }
 }
 
 // El arco narrativo depende solo de la cantidad de slides, así que se puede
 // calcular acá igual que en carrusel.ts y decirle al modelo qué necesita cada una.
-function buildLayoutBlock(tipo: SocialFormat, slides: number): string {
+function buildLayoutBlock(tipo: SocialFormat, slides: number, mode: CarouselMode): string {
   if (tipo !== 'carrusel') return ''
+  const resolver = extraFieldsResolverFor(mode)
   const arc = buildNarrativeArc(slides).slice(0, slides)
   const lines = arc
     .map((spec, i) => {
-      const extra = LAYOUT_EXTRA_FIELDS[pickLayoutForRole(spec.role)]
+      const extra = resolver(spec.role)
       return extra ? `Slide ${i + 1} (${spec.role}) — además de titulo/subtitulo/escena:\n${extra}` : ''
     })
     .filter(Boolean)
@@ -198,6 +242,10 @@ export interface CopyInput {
   beneficio?: string
   objetivo:   string
   slides:     number
+  // Solo aplica a tipo='carrusel': decide qué familia de layouts va a consumir el
+  // copy, y por lo tanto qué campos extra se le piden al modelo. Sin esto el
+  // carrusel bicolor/pop recibía los campos del mapa navy.
+  carouselMode?: CarouselMode
 }
 
 function extractText(res: GeminiResponse): string {
@@ -205,7 +253,7 @@ function extractText(res: GeminiResponse): string {
 }
 
 export async function generateCopy(input: CopyInput): Promise<SocialCopy> {
-  const { tipo, nicho, gancho, beneficio, objetivo, slides } = input
+  const { tipo, nicho, gancho, beneficio, objetivo, slides, carouselMode } = input
 
   const prompt = `${ACTIVOPOS_CONTEXT}
 
@@ -241,7 +289,7 @@ Para CADA slide genera:
   letreros, afiches, etiquetas, pantallas ni marcas: el modelo de imagen los dibuja con texto
   ilegible. Describe superficies limpias y envases sin marca.
 ${slides > 1 ? 'Los slides deben contar una progresión: problema → tensión → solución → cierre con CTA.' : ''}
-${buildLayoutBlock(tipo, slides)}
+${buildLayoutBlock(tipo, slides, carouselMode ?? 'geometric')}
 
 Genera además, todo en español venezolano con tuteo (excepto seo_keywords que pueden ir en el término que busca la gente):
 - hook: frase de apertura de máximo 15 palabras

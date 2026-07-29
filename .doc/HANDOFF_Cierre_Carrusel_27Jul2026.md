@@ -36,6 +36,15 @@ aquí en vez de escribirse como hecho consumado:
    `src/app/(marketing)/layout.tsx`, `src/app/catalogo/layout.tsx` — cada uno
    con su propio `Fraunces({...})` de `next/font/google` independiente (ver §4).
 
+4. **"Retirar de deuda técnica los 3 puntos ya resueltos"** (retry Gemini,
+   badge rama humana, limpieza Cloudinary) — este documento nunca los tuvo
+   listados en §4: los 3 se descubrieron y el primero y segundo se
+   resolvieron en `baae417`, commiteado DESPUÉS de la versión anterior de
+   este handoff (`16e2a17`). No había nada que retirar — se documentan en
+   §3 (bugs cerrados) por primera vez acá. La limpieza de Cloudinary
+   (tercero) no es deuda de código: queda en §6 como acción manual
+   pendiente de Carlos.
+
 Todo lo demás en este documento sí está verificado contra código/git real.
 
 ---
@@ -172,12 +181,33 @@ de sanitizado de slide, no citada aquí por espacio): si `clienteTexto` o
 `respuestaTexto` contienen un monto detectado, el campo entero se descarta y
 los renderers caen a su fallback genérico sin cifra.
 
+### 2.5 Dos pipelines de render que no comparten código
+
+`renderHuman` (`composeSlide`, Sharp+Pango, `compose.ts`) y las 3 familias
+(`buildSlideFrame`/`buildBicolorFrame`/`buildPopFrame`, HTML+Puppeteer,
+`carousel-layouts.ts` + `render-slide.ts`) son **pipelines de render
+completamente distintos, sin código en común**. Uno pinta con Sharp
+componiendo buffers PNG/SVG capa por capa; el otro arma HTML/CSS real y lo
+screenshotea con Puppeteer. Consecuencia directa, confirmada por el bug de
+badge cerrado en `baae417`: el badge "N / total" existía en `buildSlideFrame`
+(`carousel-layouts.ts`) desde que se introdujo el logo (`2d0b5ab`), pero
+`composeSlide` nunca lo tuvo — un carrusel con escena humana mostraba "1/5"
+en 4 de 5 slides y nada en la portada humana, porque nadie replicó el
+elemento en el segundo pipeline hasta que se detectó y se corrigió aparte
+(`compose.ts`, nuevo bloque de píldora bottom-right, pixel-matched contra
+`.fr-badge` variante `'dark'`). **Cualquier elemento visual nuevo (badge,
+logo, marca de agua, etc.) debe implementarse por separado en ambos
+pipelines si necesita aparecer en toda combinación** — no hay un punto único
+de composición compartido entre `renderHuman` y las 3 familias.
+
 ---
 
 ## 3. Bugs reales cerrados esta sesión — con hash de commit
 
 | Bug | Commit | Evidencia |
 |---|---|---|
+| JSON malformado de Gemini sin reintento (`generateCopy`) | `baae417` | `gemini.ts`: secuencia call+extract+parse envuelta en loop externo de 3 intentos, mismo patrón que `tryProvider` en `html-generator.ts:241-265`. Confirmado con 2 corridas reales previas: 3 de 7 combinaciones fallaban en el primer intento con este error exacto |
+| Badge "N / total" ausente en rama humana (`renderHuman`) | `baae417` | `compose.ts`: `ComposeInput` gana `slideNumber?`/`totalSlides?` opcionales, píldora bottom-right solo si `formato==='carrusel' && slideNumber && totalSlides`. Verificado con `POST /api/admin/social/generate` real → HTTP 201, 5 slides descargadas de Cloudinary, slide 0 (humana) confirmada visualmente con badge "1 / 5" — ver §2.5 |
 | `$0.00` publicado como dato real (curva-corte) | `3ae2e92` (sacado de `pickLayoutForRole`) + `9560490` (revienta explícito si se reasigna) | `carrusel.ts:179-180`: `case 'curva-corte': throw new Error('curva-corte: statValor no tiene fuente de dato real...')` |
 | Dimensión 1:1 vs 4:5 mal cableada — familias geométricas | `76f86f1` | `renderGeometric`/`renderBicolor`/`renderPop` pasan `'4:5'` explícito a `renderSlideToPng` (`carrusel.ts:206,266,325`) |
 | Dimensión 1:1 vs 4:5 mal cableada — `renderHuman`/`compose.ts` | `91b0984` | "dimensiones de composite alineadas, resuelve fallo en renderHuman" — ver auditoría previa de esta sesión (`compose.ts:227-229`, `renderText()` sin límite de alto) |
@@ -188,6 +218,15 @@ los renderers caen a su fallback genérico sin cifra.
 ---
 
 ## 4. Deuda técnica — explícita, con ubicación exacta
+
+**`highlight-text` — título resaltado cortado en el borde derecho del lienzo, sin fix:**
+Hallazgo de `baae417`, fuera de scope de esa tarea (detectado al verificar el
+fix de badge, no corregido): en la corrida real Geométrico+Humana, el slide 2
+(layout `highlight-text`, pipeline HTML/Puppeteer) mostró el título resaltado
+recortado contra el borde derecho del lienzo de 1080px. Funciones
+involucradas: `splitTituloEnSegmentos` (`carousel-layouts.ts:149`) y
+`buildTituloSubtituloContent` (`carousel-layouts.ts:171`). Preexistente, sin
+relación con los 2 fixes de `baae417` — no se investigó la causa raíz.
 
 **`pop-cta-precio` — el blob tapa el título, sin fix:**
 ```typescript
@@ -272,11 +311,25 @@ Rango: rediseño de carrusel (bicolor/pop + selector permutable), `2026-07-27
 | `76a1039` | 07-28 19:57 | Fraunces separado de `--font-display` (fuera del dominio carrusel) |
 | `91b0984` | 07-28 20:07 | `compose.ts` — dimensiones de composite alineadas, resuelve fallo en `renderHuman` |
 | `9fa2cf8` | 07-28 20:21 | `renderHuman` declara `formato: 'carrusel'` — sin mockup de teléfono |
+| `baae417` | 07-28 21:04 | retry en parseo de Gemini (`generateCopy`) + badge "N/total" en rama humana (`compose.ts`) |
 
 ---
 
 ## 6. Próximos pasos sugeridos (sin ejecutar)
 
+- **Acción manual pendiente de Carlos, no es deuda de código:** limpieza de 48
+  WebP de prueba subidos a Cloudinary durante la sesión (`compose.ts`=1,
+  formato carrusel=7, corrida final de 7 combinaciones=35, verificación de
+  badge=5). `CLOUDINARY_API_SECRET` no vive en ningún `.env` local (solo
+  `CLOUD_NAME` + preset unsigned) y el delete de Cloudinary exige request
+  firmado. Script listo en `/tmp/cloudinary_cleanup.sh` (toma el secret por
+  variable de entorno, nunca hardcodeado; `Admin API delete_resources`
+  acotado a los 48 `public_id` exactos en `/tmp/all_test_public_ids.txt`,
+  cero riesgo de tocar producción). Falta que Carlos provea el secret y lo
+  corra — no requiere ningún cambio de código.
+- Investigar causa raíz de `highlight-text` (título resaltado cortado en el
+  borde derecho, ver §4) — no se tocó en `baae417`, detectado solo al
+  verificar el fix de badge.
 - Resolver fuente de dato real para `foto-lateral` (¿Cloudinary de fotos reales
   del negocio del cliente?), `testimonio` (¿atribución real autorizada por
   cliente, o se descarta el layout?), `stat` (¿copy fijo aprobado o variable

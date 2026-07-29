@@ -242,16 +242,33 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
     const variant      = selectDevice(input.nicho ?? 'general', ov.deviceVariant ?? input.deviceVariant)
     const deviceBuffer = variant !== 'none' ? DEVICE_ASSETS[variant] : null
     if (deviceBuffer) {
-      const deviceW = Math.floor(width * 0.55)   // ~55% del ancho, centrado horizontalmente
-      const meta    = await sharp(deviceBuffer).metadata()
-      const deviceH = Math.floor(deviceW * (meta.height ?? 800) / (meta.width ?? 400))
+      const meta = await sharp(deviceBuffer).metadata()
+      const srcW = meta.width  ?? 400
+      const srcH = meta.height ?? 800
+      // Escalar solo por ancho (~55%) asumía canvas alto (post/story: 4:5, 3:4, 9:16),
+      // donde nunca ata. En 1:1 un mockup retrato (416x830) escalado a 55% de ancho da
+      // 594x1185 -- 105px más alto que el lienzo (1080), y sharp .composite() revienta
+      // con "Image to composite must have same dimensions or smaller". Escalar por el
+      // menor de los dos factores acota ambos ejes al lienzo real, cualquiera sea el
+      // aspect o el asset. Para 4:5/3:4/9:16 el ancho sigue siendo el factor que ata
+      // (mismos px que antes, cero regresión); solo 1:1 cambia, que es donde reventaba.
+      const scaleW  = (width * 0.55) / srcW
+      const scaleH  = (height - MARGIN) / srcH
+      const scale   = Math.min(scaleW, scaleH)
+      const deviceW = Math.floor(srcW * scale)
+      const deviceH = Math.floor(srcH * scale)
       const deviceResized = await sharp(deviceBuffer)
         .resize(deviceW, deviceH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
         .png()
         .toBuffer()
+      // Mismo clamp en el eje vertical: el 0.38 fijo asumía deviceH chico y sobraba
+      // espacio abajo. Si deviceH creció hasta pegar con el borde (caso 1:1), empujar
+      // el top hacia arriba lo justo para no salirse del lienzo por abajo.
+      const idealTop = Math.floor(height * 0.38)
+      const deviceTop = Math.min(idealTop, Math.max(MARGIN, height - MARGIN - deviceH))
       layers.push({
         input: deviceResized,
-        top:   Math.floor(height * 0.38),
+        top:   deviceTop,
         left:  Math.floor((width - deviceW) / 2),
       })
     }

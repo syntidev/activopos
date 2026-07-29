@@ -148,7 +148,15 @@ export interface LayerOverride {
 const SHADOW_OFFSET_OUTER = 3
 const SHADOW_OFFSET_INNER = 1
 const SHADOW_BLUR         = 4
-const SHADOW_COLOR        = '#000000E6'   // negro ~0.9
+const SHADOW_COLOR        = '#000000E6'   // negro ~0.9 -- detrás de texto blanco
+const SHADOW_COLOR_LIGHT  = '#FFFFFFE6'   // blanco ~0.9 -- detrás de texto oscuro (halo, no sombra)
+
+// Umbral de luminancia (0-255, luma perceptual) del área bajo el bloque de
+// título+subtítulo. Por encima, el fondo se lee "claro" (cielo, pared blanca,
+// ventana) y el texto blanco de siempre pierde contraste -- se cambia a tinta
+// oscura. Conservador a propósito: mejor blanco-sobre-medio (ya cubierto por
+// el scrim degradado de abajo) que oscuro-sobre-oscuro, que no tiene red.
+const LUMINANCE_THRESHOLD = 165
 
 export async function composeSlide(input: ComposeInput): Promise<Buffer> {
   const { width, height } = ASPECT_DIMENSIONS[input.aspect]
@@ -168,7 +176,12 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
   const titleSize    = ov.titleSize    ?? TITLE_BY_ASPECT[input.aspect]
   const subtitleSize = ov.subtitleSize ?? SUBTITLE_BY_ASPECT[input.aspect]
 
-  const [title, subtitle] = await Promise.all([
+  // let, no const: si nadie fijó color a mano, se re-renderiza más abajo con
+  // tinta oscura cuando el fondo bajo el texto sale claro (ver muestreo de
+  // luminancia tras calcular `base`). El ancho/alto no cambia entre pasadas
+  // -- Pango no los deriva del color -- así que titleTop/subtitleTop/scrimEnd
+  // calculados con este primer render siguen siendo válidos después.
+  let [title, subtitle] = await Promise.all([
     renderText(input.titulo, {
       fontfile: ASSETS.fontDisplay, font: 'Fraunces',
       size: titleSize, color: ov.titleColor ?? BRAND.onBrand, weight: 'bold',
@@ -232,16 +245,60 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
     .resize(width, height, { fit: 'cover', position: 'centre' })
     .toBuffer()
 
+  // Contraste dinámico: solo cuando nadie fijó el color a mano (el editor
+  // manda si lo hizo). Muestrea el área real del bloque título+subtítulo
+  // sobre el fondo ya redimensionado al lienzo final -- no el fondo crudo,
+  // que puede tener otro tamaño/recorte que el .resize(fit:'cover') de arriba
+  // ya corrigió.
+  let useDarkText = false
+  if (!ov.titleColor && !ov.subtitleColor) {
+    const sampleLeft   = Math.max(0, Math.min(titleLeft, subtitleLeft))
+    const sampleTop    = Math.max(0, titleTop)
+    const sampleWidth  = Math.max(1, Math.min(width - sampleLeft, Math.max(title.width, subtitle.width)))
+    const sampleHeight = Math.max(1, Math.min(height - sampleTop, (subtitleTop + subtitle.height) - titleTop))
+
+    const { channels } = await sharp(base)
+      .extract({ left: sampleLeft, top: sampleTop, width: sampleWidth, height: sampleHeight })
+      .stats()
+    // Luma perceptual (BT.601) -- verde pesa más que rojo/azul, como el ojo.
+    const luminance = 0.299 * channels[0]!.mean + 0.587 * channels[1]!.mean + 0.114 * channels[2]!.mean
+    useDarkText = luminance > LUMINANCE_THRESHOLD
+
+    if (useDarkText) {
+      [title, subtitle] = await Promise.all([
+        renderText(input.titulo, {
+          fontfile: ASSETS.fontDisplay, font: 'Fraunces', size: titleSize,
+          color: BRAND.onBrandDark, weight: 'bold', align: ov.titleAlign ?? 'left',
+        }),
+        renderText(input.subtitulo, {
+          fontfile: ASSETS.fontBody, font: 'Inter', size: subtitleSize,
+          color: BRAND.onBrandDark, weight: '600', align: ov.subtitleAlign ?? 'left',
+        }),
+      ])
+    }
+  }
+  const shadowColor = useDarkText ? SHADOW_COLOR_LIGHT : SHADOW_COLOR
+
   // Sombra opcional por capa: duplicado negro renderizado aparte, compuesto
   // detrás y desplazado. Solo se genera cuando la capa la pide.
   const shadowOf = async (text: string, size: number, align: 'left' | 'center' | 'right', font: string, fontfile: string, weight: string) =>
-    (await renderText(text, { fontfile, font, size, color: SHADOW_COLOR, weight, align })).buffer
+    (await renderText(text, { fontfile, font, size, color: shadowColor, weight, align })).buffer
 
-  const layers: sharp.OverlayOptions[] = [{ input: scrim, top: 0, left: 0 }]
+  // El muestreo de luminancia lee `base` CRUDO (antes del scrim). Componer el
+  // scrim igual en el caso de texto oscuro oscurecería el fondo que se acaba
+  // de juzgar "bastante claro para tinta oscura" -- el mismo problema en otra
+  // forma. El scrim solo tiene sentido como red para texto BLANCO.
+  const layers: sharp.OverlayOptions[] = useDarkText ? [] : [{ input: scrim, top: 0, left: 0 }]
 
-  // Dispositivo protagonista (mockup PNG) centrado en el tercio inferior — solo post/story
-  // (el carrusel geométrico no lo lleva). Va ANTES del logo y el texto para que estos
-  // queden por encima si se solapan. Skip silencioso si el asset no existe.
+  // Dispositivo protagonista (mockup PNG), esquina inferior-derecha — solo post/story
+  // (el carrusel geométrico no lo lleva; renderHuman del carrusel pasa formato:'carrusel'
+  // y este bloque entero se salta). El único fondo que llega acá es el de post/story,
+  // que SIEMPRE es escena humana (generateBackgroundGemini/generateBackground arman el
+  // prompt con una persona real -- verificado en image.ts/gemini-image.ts, no hay
+  // variante abstracta/geométrica en ese flujo), así que no hace falta un flag aparte
+  // para distinguir "hay persona" -- ya lo garantiza formato !== 'carrusel'.
+  // Va ANTES del logo y el texto para que estos queden por encima si se solapan.
+  // Skip silencioso si el asset no existe.
   if (input.formato !== 'carrusel') {
     const variant      = selectDevice(input.nicho ?? 'general', ov.deviceVariant ?? input.deviceVariant)
     const deviceBuffer = variant !== 'none' ? DEVICE_ASSETS[variant] : null
@@ -249,15 +306,21 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
       const meta = await sharp(deviceBuffer).metadata()
       const srcW = meta.width  ?? 400
       const srcH = meta.height ?? 800
-      // Escalar solo por ancho (~55%) asumía canvas alto (post/story: 4:5, 3:4, 9:16),
-      // donde nunca ata. En 1:1 un mockup retrato (416x830) escalado a 55% de ancho da
-      // 594x1185 -- 105px más alto que el lienzo (1080), y sharp .composite() revienta
-      // con "Image to composite must have same dimensions or smaller". Escalar por el
-      // menor de los dos factores acota ambos ejes al lienzo real, cualquiera sea el
-      // aspect o el asset. Para 4:5/3:4/9:16 el ancho sigue siendo el factor que ata
-      // (mismos px que antes, cero regresión); solo 1:1 cambia, que es donde reventaba.
-      const scaleW  = (width * 0.55) / srcW
-      const scaleH  = (height - MARGIN) / srcH
+      // Antes: 55% del ancho, centrado horizontal, anclado a 38% de la altura --
+      // tapaba a la persona en vez de convivir con ella. Ahora: ~35% de cada eje
+      // (bajado del rango 0.32-0.38 pedido), esquina fija inferior-derecha con
+      // MARGIN desde los bordes. Deja el centro y el tercio superior (donde cae
+      // el título) completamente libres.
+      //
+      // scaleH también a 0.35 (no "lo que sobre de margen"): los mockups de
+      // teléfono (front/left/right, ~416x830, retrato 2:1) certificados en
+      // vivo mostraron que acotar solo por ancho seguía dando un dispositivo
+      // dominante -- 35% del ancho en un canvas 4:5 (1080x1350) da 754px de
+      // alto, más de la mitad del lienzo. Los mockups POS (pos_black/white,
+      // más anchos que altos) no cambian: para esos ya ataba el ancho, no el
+      // alto, así que min(scaleW, scaleH) sigue dando el mismo resultado.
+      const scaleW  = (width  * 0.35) / srcW
+      const scaleH  = (height * 0.35) / srcH
       const scale   = Math.min(scaleW, scaleH)
       const deviceW = Math.floor(srcW * scale)
       const deviceH = Math.floor(srcH * scale)
@@ -265,15 +328,10 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
         .resize(deviceW, deviceH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
         .png()
         .toBuffer()
-      // Mismo clamp en el eje vertical: el 0.38 fijo asumía deviceH chico y sobraba
-      // espacio abajo. Si deviceH creció hasta pegar con el borde (caso 1:1), empujar
-      // el top hacia arriba lo justo para no salirse del lienzo por abajo.
-      const idealTop = Math.floor(height * 0.38)
-      const deviceTop = Math.min(idealTop, Math.max(MARGIN, height - MARGIN - deviceH))
       layers.push({
         input: deviceResized,
-        top:   deviceTop,
-        left:  Math.floor((width - deviceW) / 2),
+        top:   height - MARGIN - deviceH,
+        left:  width  - MARGIN - deviceW,
       })
     }
   }

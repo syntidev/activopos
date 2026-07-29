@@ -28,6 +28,7 @@ export const BRAND = {
   primaryLight: readToken(css, 'brand-l'),      // #4D7AFF
   soft:         readToken(css, 'brand-soft'),   // #DCE6FF
   onBrand:      readToken(css, 'brand-on'),     // #FFFFFF
+  onBrandDark:  readToken(css, 'mkt-navy'),     // #0D1B2E -- texto sobre fondo claro
 } as const
 
 export const ASSETS = {

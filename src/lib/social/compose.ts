@@ -107,6 +107,10 @@ export interface ComposeInput {
   nicho?:     string         // segmento — decide el dispositivo automático (POS vs teléfono)
   deviceVariant?: DeviceVariant  // fuerza un dispositivo; ausente = auto por nicho
   override?:  LayerOverride  // ajustes del editor; ausente = posiciones/estilos fijos de siempre
+  // Badge "N / total" -- solo lo pide el carrusel (renderHuman en carrusel.ts).
+  // post/story no tienen noción de posición dentro de una serie.
+  slideNumber?: number
+  totalSlides?: number
 }
 
 /**
@@ -280,6 +284,53 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
       input: wordmark.buffer,
       top:  logoTop + Math.round((logoSize - wordmark.height) / 2),
       left: logoLeft + logoSize + 20,
+    })
+  }
+
+  // Badge "N / total" -- mismo renglón que el logo, esquina inferior derecha.
+  // Réplica visual del .fr-badge de carousel-layouts.ts (buildSlideFrame,
+  // variante 'dark'): mismo fondo/borde/colores, pero pintado con sharp+Pango
+  // en vez de HTML+Puppeteer, porque renderHuman no pasa por ese pipeline.
+  // Sin esto, un carrusel con escena humana mostraba "1/5" en las slides de
+  // familia pero nada en la slide humana -- inconsistencia entre slides del
+  // mismo carrusel.
+  if (input.formato === 'carrusel' && input.slideNumber && input.totalSlides) {
+    const BADGE_PAD_X = 28
+    const BADGE_PAD_Y = 14
+    const BADGE_GAP   = 10
+    const BADGE_SIZE  = 26
+
+    const [current, total] = await Promise.all([
+      renderText(String(input.slideNumber), {
+        fontfile: ASSETS.fontBody, font: 'Inter', size: BADGE_SIZE, color: BRAND.onBrand, weight: 'bold',
+      }),
+      renderText(`/ ${input.totalSlides}`, {
+        fontfile: ASSETS.fontBody, font: 'Inter', size: BADGE_SIZE, color: '#DCE6FF', weight: '600',
+      }),
+    ])
+
+    const badgeH = Math.max(current.height, total.height) + BADGE_PAD_Y * 2
+    const badgeW = BADGE_PAD_X * 2 + current.width + BADGE_GAP + total.width
+    const badgeLeft = width - MARGIN - badgeW
+    // Centrado verticalmente contra el logo, no contra el margen -- así queda
+    // en el mismo renglón que el logo (izquierda) igual que en .fr-bottom.
+    const badgeTop = logoTop + Math.round((logoSize - badgeH) / 2)
+
+    const badgePill = Buffer.from(`<svg width="${badgeW}" height="${badgeH}">
+      <rect width="${badgeW}" height="${badgeH}" rx="${badgeH / 2}"
+        fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+    </svg>`)
+
+    layers.push({ input: badgePill, top: badgeTop, left: badgeLeft })
+    layers.push({
+      input: current.buffer,
+      top:  badgeTop + Math.round((badgeH - current.height) / 2),
+      left: badgeLeft + BADGE_PAD_X,
+    })
+    layers.push({
+      input: total.buffer,
+      top:  badgeTop + Math.round((badgeH - total.height) / 2),
+      left: badgeLeft + BADGE_PAD_X + current.width + BADGE_GAP,
     })
   }
   if (showTitle) {

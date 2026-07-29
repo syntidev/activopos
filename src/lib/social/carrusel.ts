@@ -343,6 +343,7 @@ export async function generateCarrusel(
       // sobre la foto de la persona -- el propio comentario ahí dice que el
       // carrusel no lo lleva. renderHuman SÍ es carrusel; ahora se lo declara.
       formato: 'carrusel', aspect: ASPECT, nicho: input.nicho,
+      slideNumber: i + 1, totalSlides: slides.length,
     })
     return uploadImage(composed, 'image/webp')
   }

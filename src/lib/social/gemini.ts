@@ -308,34 +308,50 @@ Responde SOLO JSON válido con esta estructura exacta. Agrega a cada slide los c
 adicionales que se le hayan pedido arriba, y SOLO a esa slide:
 {"slides":[{"titulo":"","subtitulo":"","escena":""}],"hook":"","cuerpo":"","cta":"","pregunta":"","hashtags":[],"horario_sugerido":"","objetivo_clasificado":"","seo_keywords":[],"tipo_ads":"","nota_creador":""}`
 
-  const res = await withRetry(() => call(TEXT_MODEL, {
-    contents:         [{ parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: 'application/json' },
-  }))
+  // withRetry (adentro del loop) solo reintenta fallos transitorios de red
+  // (429/503) -- su clasificador no reconoce SyntaxError, así que un JSON
+  // malformado que la llamada HTTP ya trajo con 200 OK se le escapa: revienta
+  // sin reintentar. Este loop cubre esa otra clase de fallo (contenido, no
+  // red), mismo patrón que tryProvider en html-generator.ts:241-265.
+  const maxAttempts = 3
+  let lastError: unknown
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await withRetry(() => call(TEXT_MODEL, {
+        contents:         [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json' },
+      }))
 
-  const raw = extractText(res)
-  if (!raw) throw new ProviderError('Gemini devolvió copy vacío', 502)
+      const raw = extractText(res)
+      if (!raw) throw new ProviderError('Gemini devolvió copy vacío', 502)
 
-  // Pese a responseMimeType el modelo a veces envuelve el JSON en fences de markdown.
-  const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
-  const rc = JSON.parse(cleaned) as RawCopy
+      // Pese a responseMimeType el modelo a veces envuelve el JSON en fences de markdown.
+      const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '')
+      const rc = JSON.parse(cleaned) as RawCopy
 
-  // El caption no lo escribe el modelo: se arma acá con las secciones, así siempre
-  // queda consistente con hook/cuerpo/cta/pregunta/hashtags aunque el modelo divague.
-  return {
-    slides:   rc.slides.map(sanitizeSlide),
-    hook:     rc.hook,
-    cuerpo:   rc.cuerpo,
-    cta:      rc.cta,
-    pregunta: rc.pregunta,
-    hashtags: rc.hashtags,
-    caption:  buildCaption(rc),
-    metadata: {
-      horarioSugerido: rc.horario_sugerido,
-      objetivo:        rc.objetivo_clasificado,
-      seoKeywords:     rc.seo_keywords,
-      tipoAds:         rc.tipo_ads,
-    },
-    notaCreador: rc.nota_creador,
+      // El caption no lo escribe el modelo: se arma acá con las secciones, así siempre
+      // queda consistente con hook/cuerpo/cta/pregunta/hashtags aunque el modelo divague.
+      return {
+        slides:   rc.slides.map(sanitizeSlide),
+        hook:     rc.hook,
+        cuerpo:   rc.cuerpo,
+        cta:      rc.cta,
+        pregunta: rc.pregunta,
+        hashtags: rc.hashtags,
+        caption:  buildCaption(rc),
+        metadata: {
+          horarioSugerido: rc.horario_sugerido,
+          objetivo:        rc.objetivo_clasificado,
+          seoKeywords:     rc.seo_keywords,
+          tipoAds:         rc.tipo_ads,
+        },
+        notaCreador: rc.nota_creador,
+      }
+    } catch (err) {
+      lastError = err
+    }
   }
+  throw lastError instanceof Error
+    ? lastError
+    : new ProviderError('Gemini no devolvió copy válido tras reintentar', 502)
 }

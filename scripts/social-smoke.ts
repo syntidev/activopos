@@ -19,7 +19,7 @@ async function main(): Promise<void> {
     create: { width, height, channels: 3, background: { r: 30, g: 41, b: 59 } },
   }).png().toBuffer()
 
-  const out = await composeSlide({
+  const { buffer: out } = await composeSlide({
     background,
     titulo:    'Cobra en Bs sin calculadora',
     subtitulo: 'La tasa BCV entra sola y el vuelto sale exacto — & sin cuentas a mano.',

@@ -1117,13 +1117,20 @@ model SocialPost {
 }
 
 model SocialAsset {
-  id         Int      @id @default(autoincrement())
-  post_id    Int
-  orden      Int      @default(0)
-  imagen_url String   @db.VarChar(500)
-  titulo     String?  @db.VarChar(200)
-  subtitulo  String?  @db.VarChar(200)
-  created_at DateTime @default(now())
+  id             Int       @id @default(autoincrement())
+  post_id        Int
+  orden          Int       @default(0)
+  imagen_url     String    @db.VarChar(500)
+  titulo         String?   @db.VarChar(200)
+  subtitulo      String?   @db.VarChar(200)
+  // Persistencia real del editor de capas (antes efímero -- vivía solo en
+  // memoria del cliente, recargar la página lo rompía). Mismo patrón que
+  // SocialPost.hashtags: Json sin tipado fuerte en Prisma, casteado en TS.
+  background_url String?   @db.VarChar(500) // fondo crudo antes de componer texto
+  device_variant String?   @db.VarChar(40)  // mockup exacto usado (selectDevice era aleatorio)
+  layer_override Json?                      // mismo shape que arma buildOverride() en el frontend
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
 
   post SocialPost @relation(fields: [post_id], references: [id], onDelete: Cascade)
 

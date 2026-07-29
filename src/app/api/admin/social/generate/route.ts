@@ -10,7 +10,13 @@ import { uploadImage } from '@/lib/social/cloudinary'
 import { generateCarrusel } from '@/lib/social/carrusel'
 import type { SceneDirection } from '@/lib/social/image'
 
-type Asset = { orden: number; imagen_url: string; titulo: string; subtitulo: string }
+type Asset = {
+  orden: number; imagen_url: string; titulo: string; subtitulo: string
+  // Solo post/story los llena (composeSlide + mockup). El carrusel geométrico
+  // no pasa por ese pipeline -- quedan undefined, Prisma los omite del create.
+  background_url?: string
+  device_variant?: string | null
+}
 
 // El copy sale de Gemini; la imagen de NVIDIA NIM (~9s por slide). Un carrusel de 6
 // slides pasa de largo el default de Next.js.
@@ -148,18 +154,22 @@ export async function POST(req: NextRequest) {
         }
         // Opción A: se sella con posiciones default (comportamiento de siempre) Y
         // se sube el fondo crudo aparte, para que el editor pueda re-sellar con
-        // override sin regenerar la imagen con IA. bgUrl viaja en la respuesta.
-        const [composed, bgUrl] = await Promise.all([
+        // override sin regenerar la imagen con IA. bgUrl viaja en la respuesta
+        // Y se persiste en el asset (antes solo viajaba -- ver migración
+        // 20260729000001, el editor era efímero sin esto).
+        const [composeResult, bgUrl] = await Promise.all([
           composeSlide({
             background, titulo: slide.titulo, subtitulo: slide.subtitulo,
             formato: body.tipo, aspect: body.aspect, nicho: body.nicho,
-          }).then(uploadImage),
+          }),
           uploadImage(background, 'image/png'),
         ])
+        const composed = await uploadImage(composeResult.buffer)
         bgUrls.push(bgUrl)
         assets.push({
           orden: index, imagen_url: composed,
           titulo: slide.titulo, subtitulo: slide.subtitulo,
+          background_url: bgUrl, device_variant: composeResult.deviceVariant,
         })
       }
       caption = copy.caption; hashtags = copy.hashtags; contentEngine = 'diffusion'

@@ -43,7 +43,7 @@ function loadAsset(filename: string): Buffer | null {
   return existsSync(p) ? readFileSync(p) : null
 }
 
-type DeviceVariant = 'front' | 'left' | 'right' | 'pos_black' | 'pos_white' | 'none'
+export type DeviceVariant = 'front' | 'left' | 'right' | 'pos_black' | 'pos_white' | 'none'
 
 const DEVICE_ASSETS: Record<Exclude<DeviceVariant, 'none'>, Buffer | null> = {
   front:     loadAsset('front_movil_asset.png'),
@@ -158,7 +158,16 @@ const SHADOW_COLOR_LIGHT  = '#FFFFFFE6'   // blanco ~0.9 -- detrás de texto osc
 // el scrim degradado de abajo) que oscuro-sobre-oscuro, que no tiene red.
 const LUMINANCE_THRESHOLD = 165
 
-export async function composeSlide(input: ComposeInput): Promise<Buffer> {
+export interface ComposeResult {
+  buffer:        Buffer
+  // Mockup real que quedó compuesto -- null si no aplicaba (formato:'carrusel',
+  // que se salta el bloque entero) o si el asset no existía en disco. El
+  // caller lo persiste para reproducir el MISMO mockup en un re-sellado, en
+  // vez de que selectDevice() vuelva a tirar el dado.
+  deviceVariant: DeviceVariant | null
+}
+
+export async function composeSlide(input: ComposeInput): Promise<ComposeResult> {
   const { width, height } = ASPECT_DIMENSIONS[input.aspect]
   const ov = input.override ?? {}
 
@@ -299,10 +308,12 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
   // para distinguir "hay persona" -- ya lo garantiza formato !== 'carrusel'.
   // Va ANTES del logo y el texto para que estos queden por encima si se solapan.
   // Skip silencioso si el asset no existe.
+  let chosenDeviceVariant: DeviceVariant | null = null
   if (input.formato !== 'carrusel') {
     const variant      = selectDevice(input.nicho ?? 'general', ov.deviceVariant ?? input.deviceVariant)
     const deviceBuffer = variant !== 'none' ? DEVICE_ASSETS[variant] : null
     if (deviceBuffer) {
+      chosenDeviceVariant = variant
       const meta = await sharp(deviceBuffer).metadata()
       const srcW = meta.width  ?? 400
       const srcH = meta.height ?? 800
@@ -409,5 +420,6 @@ export async function composeSlide(input: ComposeInput): Promise<Buffer> {
     layers.push({ input: subtitle.buffer, top: subtitleTop, left: subtitleLeft })
   }
 
-  return sharp(base).composite(layers).webp({ quality: 92 }).toBuffer()
+  const buffer = await sharp(base).composite(layers).webp({ quality: 92 }).toBuffer()
+  return { buffer, deviceVariant: chosenDeviceVariant }
 }

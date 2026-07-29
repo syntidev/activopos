@@ -337,7 +337,7 @@ export async function generateCarrusel(
     } catch {
       background = await generateBackground(slides[i].escena, input.nicho, ASPECT)
     }
-    const composed = await composeSlide({
+    const { buffer } = await composeSlide({
       background, titulo: slides[i].titulo, subtitulo: slides[i].subtitulo,
       // 'post', no 'carrusel', encendía el mockup de teléfono (compose.ts:241)
       // sobre la foto de la persona -- el propio comentario ahí dice que el
@@ -345,7 +345,7 @@ export async function generateCarrusel(
       formato: 'carrusel', aspect: ASPECT, nicho: input.nicho,
       slideNumber: i + 1, totalSlides: slides.length,
     })
-    return uploadImage(composed, 'image/webp')
+    return uploadImage(buffer, 'image/webp')
   }
 
   // Secuencial a propósito: renderSlideToPng comparte un pool de Puppeteer no concurrente y

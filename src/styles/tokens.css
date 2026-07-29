@@ -360,6 +360,7 @@
   --bg-base:        #F0F0F7;
   --bg-card:        #FFFFFF;
   --bg-card-hover:  #F8FAFC;
+  --bg-hover:       var(--bg-card-hover);   /* consumida sin definir, igual que --text-muted */
   --bg-input:       #FFFFFF;
   --bg-overlay:     rgba(0, 0, 0, 0.40);
   --bg-banner:      #FFFFFF;
@@ -384,6 +385,11 @@
   /* Texto */
   --text-primary:   #1E293B;
   --text-secondary: #64748B;
+  /* Alias de --text-secondary. Existía como var() consumida (18 usos en 3
+     archivos, entre ellos el .label de todo el formulario social) pero NUNCA
+     estuvo definida: var(--text-muted) caía a invalid-at-computed-value-time y
+     el color terminaba heredado del contenedor. */
+  --text-muted:     var(--text-secondary);
   --text-tertiary:  #94A3B8;
   --text-disabled:  #CBD5E1;
   --text-inverse:   #FFFFFF;
@@ -579,6 +585,7 @@
   --bg-base:        #0D1B2E;
   --bg-card:        #132035;
   --bg-card-hover:  #1A2D47;
+  --bg-hover:       var(--bg-card-hover);
   --bg-input:       #1A2D47;
   --bg-overlay:     rgba(0, 0, 0, 0.60);
   --bg-banner:      #132035;
@@ -603,6 +610,7 @@
   /* Texto */
   --text-primary:   #F1F5F9;
   --text-secondary: #94A3B8;
+  --text-muted:     var(--text-secondary);   /* ver nota en el bloque light */
   --text-tertiary:  #64748B;
   --text-disabled:  #475569;
   --text-inverse:   #0F172A;

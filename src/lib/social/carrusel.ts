@@ -339,7 +339,10 @@ export async function generateCarrusel(
     }
     const composed = await composeSlide({
       background, titulo: slides[i].titulo, subtitulo: slides[i].subtitulo,
-      formato: 'post', aspect: ASPECT, nicho: input.nicho,
+      // 'post', no 'carrusel', encendía el mockup de teléfono (compose.ts:241)
+      // sobre la foto de la persona -- el propio comentario ahí dice que el
+      // carrusel no lo lleva. renderHuman SÍ es carrusel; ahora se lo declara.
+      formato: 'carrusel', aspect: ASPECT, nicho: input.nicho,
     })
     return uploadImage(composed, 'image/webp')
   }

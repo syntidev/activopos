@@ -5,7 +5,7 @@ import { Sparkles, Loader2, Image as ImageIcon, Layers, Smartphone, Copy, Check,
 import { Modal } from '@/components/ui/Modal'
 import { CalendarTab } from './CalendarTab'
 import { MobilePreview } from './MobilePreview'
-import { SocialEditor } from './SocialEditor'
+import { SocialEditor, type LayerOverride } from './SocialEditor'
 import adminStyles from '../admin.module.css'
 import styles from './social.module.css'
 // `import type`: brand.ts hace readFileSync al cargar. Como tipo se borra en
@@ -76,6 +76,11 @@ interface SocialAsset {
   imagen_url: string
   titulo:     string | null
   subtitulo:  string | null
+  // Persistencia del editor. El GET de listado usa include sin select, asi que
+  // ya venian en la respuesta; faltaba declararlos para poder leerlos.
+  background_url: string | null
+  device_variant: string | null
+  layer_override: LayerOverride | null
 }
 
 interface SegmentOption {
@@ -173,6 +178,11 @@ export default function SocialPage() {
   const [copied, setCopied]   = useState(false)
   const [history, setHistory] = useState<SocialPost[]>([])
   const [activeIdx, setActiveIdx] = useState(0)
+
+  // El fondo crudo para reabrir el editor sale primero de la DB (background_url,
+  // persistido al sellar) y solo despues del estado transitorio de la generacion.
+  // Antes dependia solo de bgUrls, que se vacia al recargar: el editor no abria.
+  const editorBg = post?.assets[activeIdx]?.background_url ?? bgUrls[activeIdx] ?? null
   const [historyEstado, setHistoryEstado]   = useState<Estado | ''>('')
   const [selectedIds, setSelectedIds]       = useState<Set<number>>(new Set())
   const [deletingId, setDeletingId]         = useState<number | null>(null)
@@ -943,12 +953,13 @@ export default function SocialPage() {
                 </div>
               </div>
 
-              {editorOpen && bgUrls[activeIdx] && (
+              {editorOpen && editorBg && (
                 <SocialEditor
                   postId={post.id}
                   titulo={post.assets[activeIdx]?.titulo ?? post.titulo}
                   subtitulo={post.assets[activeIdx]?.subtitulo ?? ''}
-                  backgroundUrl={bgUrls[activeIdx]}
+                  backgroundUrl={editorBg}
+                  layerOverride={post.assets[activeIdx]?.layer_override ?? null}
                   aspect={aspect}
                   formato={tipo === 'carrusel' ? 'post' : tipo}
                   onClose={() => setEditorOpen(false)}

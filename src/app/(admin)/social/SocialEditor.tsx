@@ -33,6 +33,27 @@ interface LayerState {
   show:   boolean
 }
 
+// Mismo shape que arma buildOverride() y que valida overrideSchema en
+// compose/route.ts. Es lo que queda guardado en SocialAsset.layer_override.
+export interface LayerOverride {
+  titlePos?:       Pos
+  subtitlePos?:    Pos
+  logoPos?:        Pos
+  titleSize?:      number
+  subtitleSize?:   number
+  logoSize?:       number
+  titleColor?:     string
+  subtitleColor?:  string
+  logoType?:       'negative' | 'positive'
+  showTitle?:      boolean
+  showSubtitle?:   boolean
+  showLogo?:       boolean
+  titleAlign?:     LayerState['align']
+  subtitleAlign?:  LayerState['align']
+  titleShadow?:    boolean
+  subtitleShadow?: boolean
+}
+
 interface SocialEditorProps {
   postId:        number
   titulo:        string
@@ -40,27 +61,55 @@ interface SocialEditorProps {
   backgroundUrl: string
   aspect:        Aspect
   formato:       'post' | 'story' | 'carrusel'
+  // Edición previa, leída de SocialAsset.layer_override. null = nunca se editó.
+  layerOverride?: LayerOverride | null
   onClose:       () => void
   onSealed:      (imagenUrl: string) => void
 }
 
 // Defaults alineados con compose.ts (posiciones aproximadas del layout fijo).
+// Campo por campo en vez de spread: con `...partial` una clave presente pero
+// undefined (lo normal al venir de un layer_override parcial) pisaba el default
+// con undefined en vez de conservarlo.
 function initLayer(partial: Partial<LayerState>): LayerState {
-  return { pos: { x: 72, y: 72 }, size: 68, color: '#FFFFFF', align: 'left', shadow: false, show: true, ...partial }
+  return {
+    pos:    partial.pos    ?? { x: 72, y: 72 },
+    size:   partial.size   ?? 68,
+    color:  partial.color  ?? '#FFFFFF',
+    align:  partial.align  ?? 'left',
+    shadow: partial.shadow ?? false,
+    show:   partial.show   ?? true,
+  }
 }
 
 export function SocialEditor({
-  postId, titulo, subtitulo, backgroundUrl, aspect, formato, onClose, onSealed,
+  postId, titulo, subtitulo, backgroundUrl, aspect, formato, layerOverride, onClose, onSealed,
 }: SocialEditorProps) {
   const canvas = CANVAS[aspect]
   const scale  = PREVIEW_W / canvas.w
   const previewH = canvas.h * scale
 
   const isStory = formato === 'story'
-  const [title, setTitle]       = useState<LayerState>(initLayer({ pos: { x: 72, y: canvas.h - 320 }, size: isStory ? 76 : 68 }))
-  const [subtitle, setSubtitle] = useState<LayerState>(initLayer({ pos: { x: 72, y: canvas.h - 180 }, size: isStory ? 36 : 32 }))
+  // Semilla: lo que quedó guardado de la última edición; si el post nunca se
+  // editó (ov vacío) cada campo cae a su default de siempre.
+  const ov = layerOverride ?? {}
+  const [title, setTitle]       = useState<LayerState>(initLayer({
+    pos:    ov.titlePos   ?? { x: 72, y: canvas.h - 320 },
+    size:   ov.titleSize  ?? (isStory ? 76 : 68),
+    color:  ov.titleColor, align: ov.titleAlign, shadow: ov.titleShadow, show: ov.showTitle,
+  }))
+  const [subtitle, setSubtitle] = useState<LayerState>(initLayer({
+    pos:    ov.subtitlePos  ?? { x: 72, y: canvas.h - 180 },
+    size:   ov.subtitleSize ?? (isStory ? 36 : 32),
+    color:  ov.subtitleColor, align: ov.subtitleAlign, shadow: ov.subtitleShadow, show: ov.showSubtitle,
+  }))
   const [logo, setLogo]         = useState<LayerState & { type: 'negative' | 'positive' }>({
-    ...initLayer({ pos: { x: 72, y: 72 }, size: 84 }), type: 'negative',
+    ...initLayer({
+      pos:  ov.logoPos  ?? { x: 72, y: 72 },
+      size: ov.logoSize ?? 84,
+      show: ov.showLogo,
+    }),
+    type: ov.logoType ?? 'negative',
   })
 
   const [sealing, setSealing] = useState(false)

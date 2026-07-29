@@ -133,9 +133,10 @@ export async function POST(req: NextRequest) {
         personaje: body.personaje, lugar: body.lugar, accion: body.accion,
       }
       assets = []
-      // Fondos crudos (sin overlay) por slide. NO se persisten — SocialAsset no
-      // tiene columna para esto; viajan en la respuesta para que el editor
-      // re-selle en la misma sesión. Recargar la página pierde la edición (Fase B v1).
+      // Fondos crudos (sin overlay) por slide, para que el editor pueda re-sellar
+      // sin regenerar. Viajan en la respuesta y además quedan en
+      // SocialAsset.background_url al sellar (compose/route.ts), junto con
+      // layer_override: por eso reabrir el editor ya sobrevive a una recarga.
       const bgUrls: string[] = []
       for (let index = 0; index < slides.length; index++) {
         const slide = slides[index]

@@ -944,49 +944,10 @@ export function CatalogoGrid({
               Ver todos →
             </button>
           </div>
+          {/* Misma card que el resto del main — antes tenía markup propio
+              (featuredCard) y quedaba con el formato viejo tras el rediseño. */}
           <div className={styles.featuredGrid}>
-            {products.filter(p => p.isFeatured).map(p => (
-              <article
-                key={p.id}
-                className={styles.featuredCard}
-                onClick={() => router.push(`/catalogo/${slug}/p/${p.id}`)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/catalogo/${slug}/p/${p.id}`) }
-                }}
-                tabIndex={0}
-                role="button"
-                aria-label={`Ver detalle: ${p.name}`}
-              >
-                <div className={styles.featuredImageWrap}>
-                  {p.image ? (
-                    <img src={p.image} alt={p.name} className={styles.featuredImg} loading="lazy" />
-                  ) : (
-                    <div className={`${styles.featuredPlaceholder} ${styles.gradDefault}`} aria-hidden="true">
-                      <span className={styles.productInitial}>{p.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                  )}
-                </div>
-                <div className={styles.featuredInfo}>
-                  <span className={styles.featuredName}>{p.name}</span>
-                  {p.priceUsd > 0 ? (
-                    <div className={styles.featuredPriceBlock}>
-                      {showUsd && (
-                        <span className={styles.featuredPrice}>
-                          ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </span>
-                      )}
-                      {showBs && p.priceBs && (
-                        <span className={styles.featuredPriceBs}>
-                          Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className={styles.priceConsultar}>Consultar precio</span>
-                  )}
-                </div>
-              </article>
-            ))}
+            {products.filter(p => p.isFeatured).map((p, i) => renderProductCard(p, i))}
           </div>
         </section>
       )}

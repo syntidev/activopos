@@ -213,6 +213,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         initialCategory={searchParams.categoria ?? null}
       />
       <CatalogFooter
+        slug={params.slug}
         displayTitle={displayTitle}
         logoPath={business.logo_path}
         catalogDesc={business.catalog_desc ?? null}

@@ -261,6 +261,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       />
 
       <CatalogFooter
+        slug={params.slug}
         displayTitle={displayTitle}
         logoPath={business.logo_path}
         catalogDesc={businessDesc}

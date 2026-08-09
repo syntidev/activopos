@@ -157,6 +157,7 @@ export default async function ProductoPage({ params }: PageProps) {
         businessLogo={business.logo_path}
       />
       <CatalogFooter
+        slug={params.slug}
         displayTitle={business.name}
         logoPath={business.logo_path}
         catalogDesc={business.catalog_desc ?? null}

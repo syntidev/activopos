@@ -25,6 +25,16 @@ export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+/* Links de navegación del catálogo — fuente única para el nav superior
+   (CatalogoGrid) y la barra de cierre del footer, que si no los repetiría
+   hardcodeados y podrían quedar desincronizados. */
+export function catalogNav(slug: string): { href: string; label: string }[] {
+  return [
+    { href: `/catalogo/${slug}`,           label: 'Inicio' },
+    { href: `/catalogo/${slug}/productos`, label: 'Catálogo' },
+  ]
+}
+
 // Validación simple de celular venezolano: acepta 0412…, 412…, 58412…
 export function isValidVePhone(raw: string): boolean {
   const digits = raw.replace(/\D/g, '')

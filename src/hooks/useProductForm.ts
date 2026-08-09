@@ -64,8 +64,15 @@ const COMPRESS_THRESHOLD_KB = 800
 const COMPRESS_MAX_DIM      = 1600
 const COMPRESS_QUALITY      = 0.85
 
+// iOS entrega HEIC, a veces con type vacío. El servidor no tiene códec HEVC y lo
+// rechaza. El canvas de abajo ya reexporta a WebP: basta con que un HEIC pequeño
+// no se salte la compresión por el umbral de tamaño.
+function isHeic(file: File): boolean {
+  return /hei[cf]/i.test(file.type) || file.type === '' || /\.hei[cf]$/i.test(file.name)
+}
+
 async function compressImage(file: File): Promise<File> {
-  if (file.size <= COMPRESS_THRESHOLD_KB * 1024) return file
+  if (file.size <= COMPRESS_THRESHOLD_KB * 1024 && !isHeic(file)) return file
 
   return new Promise<File>((resolve) => {
     const img = new Image()

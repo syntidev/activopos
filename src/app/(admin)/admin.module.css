@@ -439,6 +439,10 @@
   font-size: var(--text-xs);
   padding: var(--space-1) var(--space-2);
   cursor: pointer;
+  /* Sin esto, input[type=date] dibuja sus widgets nativos (dd/mm/aaaa, el ícono
+     del calendario) con paleta clara sobre este fondo casi negro: el campo se ve
+     vacío y sin picker aunque sí acepte la entrada. */
+  color-scheme: dark;
 }
 
 /* ── Sección "Plan y estado" (detalle de tenant) ── */

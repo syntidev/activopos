@@ -25,6 +25,7 @@ async function getBusinesses(q: string, plan: string, page: number) {
           name:         true,
           catalog_plan: true,
           active:       true,
+          subscription_active: true,
           created_at:   true,
           users:        { where: { role: 'admin' }, select: { email: true }, take: 1 },
           _count:       { select: { products: true } },
@@ -50,6 +51,7 @@ async function getBusinesses(q: string, plan: string, page: number) {
         adminEmail:     b.users[0]?.email ?? null,
         plan:           b.catalog_plan ?? 'gratis',
         active:         b.active,
+        subscriptionActive: b.subscription_active,
         createdAt:      b.created_at,
         productCount:   b._count.products,
         salesThisMonth: salesMap.get(b.id) ?? 0,
@@ -71,11 +73,17 @@ function planBadge(plan: string) {
   return <span className={`${styles.badge} ${cls}`}>{PLAN_DISPLAY[tier]}</span>
 }
 
+// El estado sale de subscription_active + catalog_plan, no de la antigüedad del
+// registro: la heurística vieja marcaba "Trial" a todo negocio con menos de 14
+// días aunque tuviera plan pago activo. "Trial" no es un estado del sistema.
 function statusBadge(t: Tenant) {
-  if (!t.active) return <span className={`${styles.badge} ${styles.badgeInactive}`}>Suspendido</span>
-  const daysSince = (Date.now() - new Date(t.createdAt).getTime()) / 86_400_000
-  if (daysSince <= 14) return <span className={`${styles.badge} ${styles.badgeTrial}`}>Trial</span>
-  return <span className={`${styles.badge} ${styles.badgeActive}`}>Activo</span>
+  if (!t.active || !t.subscriptionActive) {
+    return <span className={`${styles.badge} ${styles.badgeInactive}`}>Suspendido</span>
+  }
+  if (t.plan === 'negocio_activo') {
+    return <span className={`${styles.badge} ${styles.badgeActive}`}>Activo</span>
+  }
+  return <span className={`${styles.badge} ${styles.badgeTrial}`}>Gratis</span>
 }
 
 interface PageProps {

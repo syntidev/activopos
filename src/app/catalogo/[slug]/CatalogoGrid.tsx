@@ -467,8 +467,10 @@ export function CatalogoGrid({
         role="button"
         aria-label={`Ver detalle: ${p.name}`}
       >
+        {/* Hija directa de la card: con el inset de la imagen, dentro del wrap
+            la barra dejaría de ir al ancho completo del borde superior. */}
+        <span className={styles.productCardAccent} aria-hidden="true" />
         <div className={styles.productImageWrap}>
-          <span className={styles.productCardAccent} aria-hidden="true" />
           {p.image ? (
             <img
               src={p.image}
@@ -502,6 +504,13 @@ export function CatalogoGrid({
             </span>
           ) : null}
 
+          {p.isFeatured && p.catalogVisibility !== 'on_request' && !isOut && (
+            <span className={styles.badgeEspecial}>
+              <Star size={9} fill="currentColor" aria-hidden="true" />
+              Especial
+            </span>
+          )}
+
           {p.catalogVisibility !== 'on_request' &&
             !p.outOfStock &&
             !p.isService &&
@@ -525,7 +534,8 @@ export function CatalogoGrid({
             <span className={styles.productStarsLabel}>Sin reseñas</span>
           </span>
 
-          {/* Precios — sin botón circular */}
+          {/* Precio + CTA circular, alineados al pie de la info */}
+          <div className={styles.priceRow}>
           <div className={styles.productPriceBlock}>
             {p.catalogVisibility === 'on_request' ? (
               <span className={styles.priceConsultar}>Consultar precio</span>
@@ -535,7 +545,8 @@ export function CatalogoGrid({
               <>
                 {showUsd && (
                   <span className={styles.priceUsd}>
-                    ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <span className={styles.priceSymbol}>$</span>
+                    {p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 )}
                 {showBs && p.priceBs && (
@@ -548,33 +559,34 @@ export function CatalogoGrid({
               <span className={styles.priceConsultar}>Consultar precio</span>
             )}
           </div>
-        </div>
 
-        {/* Botón Agregar full-width — fuera del productInfo, al pie del article */}
-        {p.catalogVisibility !== 'on_request' &&
-          p.availability !== 'discontinued' &&
-          !isOut &&
-          p.availability !== 'out_of_stock' &&
-          p.priceUsd > 0 && (
-          <button
-            type="button"
-            className={styles.addBtnFull}
-            onClick={e => {
-              e.stopPropagation()
-              p.variants.length > 0
-                ? router.push(`/catalogo/${slug}/p/${p.id}`)
-                : addToCart(p, 1)
-            }}
-            aria-label={
-              p.variants.length > 0
-                ? `Ver opciones de ${p.name}`
-                : `Agregar ${p.name} al carrito`
-            }
-          >
-            <ShoppingBag size={15} aria-hidden="true" />
-            {p.variants.length > 0 ? 'Ver opciones' : 'Agregar'}
-          </button>
-        )}
+          {/* CTA circular — mismo handler que el botón full-width anterior:
+              con variantes abre el detalle, sin variantes agrega al carrito. */}
+          {p.catalogVisibility !== 'on_request' &&
+            p.availability !== 'discontinued' &&
+            !isOut &&
+            p.availability !== 'out_of_stock' &&
+            p.priceUsd > 0 && (
+            <button
+              type="button"
+              className={styles.addBtnCircle}
+              onClick={e => {
+                e.stopPropagation()
+                p.variants.length > 0
+                  ? router.push(`/catalogo/${slug}/p/${p.id}`)
+                  : addToCart(p, 1)
+              }}
+              aria-label={
+                p.variants.length > 0
+                  ? `Ver opciones de ${p.name}`
+                  : `Agregar ${p.name} al carrito`
+              }
+            >
+              <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
+            </button>
+          )}
+          </div>
+        </div>
       </article>
     )
   }

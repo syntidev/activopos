@@ -44,47 +44,7 @@ export function SuspendToggle({ tenantId, active }: SuspendToggleProps) {
   )
 }
 
-interface PlanSelectProps {
-  tenantId: number
-  plan:     string
-}
-
 const PLANS = Object.keys(PLAN_LIMITS) as PlanTier[]
-
-export function PlanSelect({ tenantId, plan }: PlanSelectProps) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-
-  async function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const newPlan = e.target.value
-    if (newPlan === plan) return
-    if (!confirm(`¿Cambiar el plan a "${newPlan}"?`)) return
-
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/admin/tenants/${tenantId}`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ plan: newPlan }),
-      })
-      if (res.ok) router.refresh()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <select
-      className={styles.planSelect}
-      value={plan}
-      onChange={e => void handleChange(e)}
-      disabled={loading}
-      aria-label="Cambiar plan"
-    >
-      {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
-    </select>
-  )
-}
 
 interface PlanStatusFormProps {
   tenantId:  number

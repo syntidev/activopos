@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
+import { PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import { SuspendToggle, ImpersonateButton, BusinessFilters, DeleteTenantButton } from '../TenantActions'
 import styles from '../admin.module.css'
 import pageStyles from './businesses.module.css'
@@ -47,7 +48,7 @@ async function getBusinesses(q: string, plan: string, page: number) {
         id:             b.id,
         name:           b.name,
         adminEmail:     b.users[0]?.email ?? null,
-        plan:           b.catalog_plan ?? 'trial',
+        plan:           b.catalog_plan ?? 'gratis',
         active:         b.active,
         createdAt:      b.created_at,
         productCount:   b._count.products,
@@ -62,9 +63,12 @@ async function getBusinesses(q: string, plan: string, page: number) {
 
 type Tenant = Awaited<ReturnType<typeof getBusinesses>>['businesses'][number]
 
+// catalog_plan es String? en DB y arrastra valores de modelos viejos ('trial').
+// Todo lo que no sea negocio_activo se muestra como Gratis.
 function planBadge(plan: string) {
-  const cls = plan === 'negocio_activo' ? styles.badgeActive : styles.badgeTrial
-  return <span className={`${styles.badge} ${cls}`}>{plan}</span>
+  const tier: PlanTier = plan === 'negocio_activo' ? 'negocio_activo' : 'gratis'
+  const cls = tier === 'negocio_activo' ? styles.badgeActive : styles.badgeTrial
+  return <span className={`${styles.badge} ${cls}`}>{PLAN_DISPLAY[tier]}</span>
 }
 
 function statusBadge(t: Tenant) {

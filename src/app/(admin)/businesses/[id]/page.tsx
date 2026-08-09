@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
-import { SuspendToggle, PlanSelect, ImpersonateButton, PlanStatusForm } from '../../TenantActions'
+import { SuspendToggle, ImpersonateButton, PlanStatusForm } from '../../TenantActions'
 import styles from '../../admin.module.css'
 
 async function getTenantDetail(id: number) {
@@ -64,7 +64,6 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
         </div>
         <div className={styles.detailActions}>
           <ImpersonateButton tenantId={business.id} tenantName={business.name} />
-          <PlanSelect tenantId={business.id} plan={business.catalog_plan ?? 'gratis'} />
           <SuspendToggle tenantId={business.id} active={business.active} />
         </div>
       </div>

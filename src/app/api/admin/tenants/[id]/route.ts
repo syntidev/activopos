@@ -80,7 +80,12 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       ...(data.plan !== undefined ? { catalog_plan: data.plan } : {}),
       // Subir a negocio_activo enciende el catálogo. El downgrade a gratis NO
       // lo apaga: el dueño puede haberlo activado por su cuenta.
-      ...(data.plan === 'negocio_activo' ? { catalog_active: true } : {}),
+      // subscription_expires_at NO se toca acá: si ya hay fecha pagada, este
+      // endpoint no la pisa (eso es trabajo de tenants/[id]/plan).
+      ...(data.plan === 'negocio_activo' ? { catalog_active: true, subscription_active: true } : {}),
+      // gratis no vence: se limpia la fecha para que plan-guard no lo expire.
+      // subscription_active queda true — es bandera de suspensión, no de plan pago.
+      ...(data.plan === 'gratis' ? { subscription_active: true, subscription_expires_at: null } : {}),
     },
     select: { id: true, active: true, catalog_plan: true },
   })

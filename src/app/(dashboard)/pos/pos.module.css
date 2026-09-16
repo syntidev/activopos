@@ -8,6 +8,7 @@
 .posContainer {
   display: grid;
   grid-template-columns: 1fr var(--pos-ticket-width);
+  grid-template-rows: minmax(0, 1fr);
   height: calc(100dvh - var(--header-height));
   overflow: hidden;
   background: var(--pos-grid-bg);

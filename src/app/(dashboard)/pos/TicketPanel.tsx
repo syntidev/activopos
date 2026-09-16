@@ -88,6 +88,7 @@ export function TicketPanel({
               <TicketItemRow
                 key={`${item.product_id}-${item.variant_id ?? 'base'}`}
                 item={item}
+                rate={ticket.rate}
                 onUpdateQty={onUpdateQty}
                 onRemove={onRemove}
                 userRole={userRole}
@@ -178,6 +179,7 @@ export function TicketPanel({
 
 interface RowProps {
   item: TicketItem
+  rate: number
   onUpdateQty: (id: number, qty: number) => void
   onRemove: (id: number) => void
   userRole: 'admin' | 'super_admin' | 'cashier'
@@ -186,7 +188,7 @@ interface RowProps {
   pendingSaleActive?: boolean
 }
 
-function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive }: RowProps) {
+function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive }: RowProps) {
   const qtyStep = item.sale_mode === 'weight' ? 0.1 : 1
   const net     = item.subtotal_usd - item.discount_usd
 
@@ -459,7 +461,7 @@ function TicketItemRow({ item, onUpdateQty, onRemove, userRole, onPriceOverride,
           <div className={styles.itemSubtotal}>
             <span className={styles.itemSubUsd}>${net.toFixed(2)}</span>
             <span className={styles.itemSubBs}>
-              Bs.&nbsp;{(net * item.rate_used).toFixed(2)}
+              Bs.&nbsp;{(net * rate).toFixed(2)}
             </span>
           </div>
           <button

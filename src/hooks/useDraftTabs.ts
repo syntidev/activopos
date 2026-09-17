@@ -36,6 +36,7 @@ interface ApiDraft {
   id:           number
   ticket_number:string
   notes:        string | null
+  draft_label:  string | null
   client_id:    number | null
   client_name:  string | null
   client_phone: string | null
@@ -107,12 +108,16 @@ async function postDraft(items: ReturnType<typeof ticketToApiItems> = [], notes?
   }
 }
 
-function patchDraft(draftId: string, ticket: TicketState): void {
+function patchDraft(draftId: string, ticket: TicketState, label?: string): void {
   if (isLocalId(draftId)) return
   fetch(`/api/pos/drafts/${draftId}`, {
     method:  'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ items: ticketToApiItems(ticket), notes: ticket.notes || undefined }),
+    body:    JSON.stringify({
+      items: ticketToApiItems(ticket),
+      notes: ticket.notes || undefined,
+      ...(label !== undefined ? { label } : {}),
+    }),
   }).catch(() => {})
 }
 
@@ -130,6 +135,7 @@ interface UseDraftTabsResult {
   switchTo:        (targetId: string, current: TicketState) => TicketState
   addTab:          (current: TicketState) => Promise<TicketState | null>
   closeTab:        (id: string, current: TicketState) => CloseTabResult | null
+  renameTab:       (id: string, label: string) => void
   paymentComplete: () => Promise<TicketState>
 }
 
@@ -156,7 +162,7 @@ export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string 
         if (drafts.length > 0) {
           const restored = drafts.map((d, i) => ({
             id:       String(d.id),
-            label:    `Ticket ${i + 1}`,
+            label:    d.draft_label || `Ticket ${i + 1}`,
             snapshot: draftToTicketState(d, rate, ivaPct),
           }))
           setTabs(restored)
@@ -252,6 +258,19 @@ export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string 
     }
   }, [tabs, activeId])
 
+  // ── renameTab — edit the tab label, persisted to DB ─────────────────────
+  // Vacío o solo espacios -> vuelve al default "Ticket N" (posición actual
+  // en `tabs`, no el índice de creación — igual que la restauración inicial).
+
+  const renameTab = useCallback((id: string, rawLabel: string) => {
+    const idx = tabs.findIndex(t => t.id === id)
+    if (idx === -1) return
+    const trimmedLabel = rawLabel.trim().slice(0, 20)
+    const nextLabel    = trimmedLabel || `Ticket ${idx + 1}`
+    setTabs(prev => prev.map(t => t.id === id ? { ...t, label: nextLabel } : t))
+    patchDraft(id, tabs[idx].snapshot, trimmedLabel)
+  }, [tabs])
+
   // ── paymentComplete — called after successful payment ──────────────────
   // procesarPago already cleared pos.ticket; this cleans up the draft tab.
 
@@ -278,5 +297,5 @@ export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string 
     return newActive.snapshot
   }, [tabs, activeId, rate, ivaPct])
 
-  return { tabs, activeId, loading, switchTo, addTab, closeTab, paymentComplete }
+  return { tabs, activeId, loading, switchTo, addTab, closeTab, renameTab, paymentComplete }
 }

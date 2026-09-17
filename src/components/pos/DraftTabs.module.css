@@ -53,6 +53,18 @@
   text-overflow: ellipsis;
 }
 
+.tabLabelInput {
+  width:       84px;
+  max-width:   84px;
+  padding:     0;
+  border:      none;
+  border-bottom: 1px solid currentColor;
+  background:  none;
+  color:       inherit;
+  font:        inherit;
+  outline:     none;
+}
+
 .closeBtn {
   display: flex;
   align-items: center;

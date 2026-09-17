@@ -160,6 +160,7 @@ function POSView() {
           onSwitch={handleSwitchTab}
           onNew={handleNewTab}
           onClose={handleCloseTab}
+          onRename={drafts.renameTab}
         />
         <LeftPanel
           search={pos.search}

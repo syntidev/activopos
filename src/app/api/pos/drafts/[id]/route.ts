@@ -15,6 +15,7 @@ const patchItemSchema = draftItemSchema.extend({
 const patchSchema = z.object({
   items:             z.array(patchItemSchema).min(0),
   notes:             z.string().max(500).optional(),
+  label:             z.string().trim().max(20).optional(),
   override_auth_pin: z.string().min(1).max(20).optional(),
 })
 
@@ -124,8 +125,9 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         data:  {
           total_usd,
           total_bs,
-          rate_used: rate,
-          notes:     body.notes ?? existing.notes,
+          rate_used:   rate,
+          notes:       body.notes ?? existing.notes,
+          draft_label: body.label !== undefined ? (body.label || null) : existing.draft_label,
           ...(saleItemsData.length > 0 && {
             items: { create: saleItemsData },
           }),

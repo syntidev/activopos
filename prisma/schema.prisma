@@ -454,6 +454,10 @@ model Sale {
   // sirve para marcar la cotización como Cobrada al confirmar el pago.
   quotation_id       Int?
   notes              String?    @db.Text
+  // Label editable de la pestaña en el POS (solo aplica a status='draft').
+  // Null = usa el default "Ticket N" client-side. No confundir con `notes`
+  // (nota del ticket, separada, se imprime en el recibo).
+  draft_label        String?    @db.VarChar(20)
   accounting_date    DateTime?  @db.Date
   sold_at            DateTime?
   discount_pct       Float      @default(0)

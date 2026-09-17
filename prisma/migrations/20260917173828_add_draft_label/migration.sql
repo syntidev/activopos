@@ -1,0 +1,1 @@
+ALTER TABLE `sales` ADD COLUMN `draft_label` VARCHAR(20) NULL;

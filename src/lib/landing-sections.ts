@@ -73,3 +73,18 @@ export const CONFIG_SCHEMAS = {
 export function isSectionType(value: string): value is SectionType {
   return (SECTION_TYPES as readonly string[]).includes(value)
 }
+
+// Tipos derivados de los schemas — una sola fuente de verdad para el
+// renderer (catálogo público) y el formulario de admin, cero forma duplicada.
+export type HeroConfig          = z.infer<typeof CONFIG_SCHEMAS.hero>
+export type EventSliderConfig   = z.infer<typeof CONFIG_SCHEMAS.event_slider>
+export type CommunityConfig     = z.infer<typeof CONFIG_SCHEMAS.community>
+export type StoryConfig         = z.infer<typeof CONFIG_SCHEMAS.story>
+export type SlideConfig         = EventSliderConfig['slides'][number]
+export type CommunityItemConfig = CommunityConfig['items'][number]
+
+export type RenderableLandingSection =
+  | { id: number; order: number; type: 'hero';         config: HeroConfig }
+  | { id: number; order: number; type: 'event_slider'; config: EventSliderConfig }
+  | { id: number; order: number; type: 'community';    config: CommunityConfig }
+  | { id: number; order: number; type: 'story';        config: StoryConfig }

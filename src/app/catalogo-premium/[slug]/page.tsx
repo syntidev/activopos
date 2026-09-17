@@ -6,6 +6,8 @@ import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import { CatalogFooter } from './CatalogFooter'
+import { CONFIG_SCHEMAS, isSectionType } from '@/lib/landing-sections'
+import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
 import styles from './catalogo.module.css'
 
@@ -101,7 +103,7 @@ export default async function CatalogoPage({ params }: PageProps) {
 
   if (!isOwnerPreview && !isCatalogLive(business)) redirect('/catalogo/no-disponible')
 
-  const [products, rate, stockEntries, paymentMethods, dbCategories] = await Promise.all([
+  const [products, rate, stockEntries, paymentMethods, dbCategories, landingSectionRows] = await Promise.all([
     prisma.product.findMany({
       where: {
         business_id:        business.id,
@@ -135,7 +137,26 @@ export default async function CatalogoPage({ params }: PageProps) {
       select:  { name: true, color: true, sort_order: true, image_url: true },
       orderBy: { sort_order: 'asc' },
     }),
+    // Landing Sections (Fase 1) — directo por Prisma, igual que products/categories:
+    // esta página es un server component sin sesión de usuario (visitante anónimo),
+    // así que /api/landing-sections (autenticado, getAuthenticatedTenant) no aplica
+    // acá. Try/catch propio: un fallo acá nunca debe tumbar el resto del catálogo.
+    prisma.landingSection.findMany({
+      where:   { business_id: business.id, visible: true },
+      select:  { id: true, type: true, order: true, config: true },
+      orderBy: { order: 'asc' },
+    }).catch(() => []),
   ])
+
+  // Config es JSON crudo en DB — se revalida contra el mismo schema Zod que la
+  // API de admin usa para escribir (fuente única de verdad). Una fila con tipo
+  // desconocido o config corrupta se descarta en vez de romper el render.
+  const landingSections: RenderableLandingSection[] = landingSectionRows.flatMap(row => {
+    if (!isSectionType(row.type)) return []
+    const parsed = CONFIG_SCHEMAS[row.type].safeParse(row.config)
+    if (!parsed.success) return []
+    return [{ id: row.id, order: row.order, type: row.type, config: parsed.data } as RenderableLandingSection]
+  })
 
   const stockMap = new Map<number, number>()
   for (const e of stockEntries) {
@@ -238,6 +259,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         categories={categories}
         categoryColors={categoryColors}
         categoryImages={categoryImages}
+        landingSections={landingSections}
         slug={params.slug}
         rate={rate}
         currency={business.catalog_default_currency}

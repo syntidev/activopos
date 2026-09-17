@@ -11,6 +11,7 @@ import {
   Puzzle,
   Bell,
   Crown,
+  LayoutTemplate,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -24,8 +25,9 @@ import { TabModulos }         from './tabs/TabModulos'
 import { TabNotificaciones }  from './tabs/TabNotificaciones'
 import { TabCobros }          from './tabs/TabCobros'
 import { TabPlan }            from './tabs/TabPlan'
+import { TabLanding }         from './tabs/TabLanding'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -33,7 +35,7 @@ interface Tab {
   Icon: React.ElementType
 }
 
-const MAIN_TABS: Tab[] = [
+const BASE_MAIN_TABS: Tab[] = [
   { key: 'general',        label: 'General',             Icon: Settings   },
   { key: 'empresa',        label: 'Empresa',             Icon: Building2  },
   { key: 'impresion',      label: 'Impresión',           Icon: Printer    },
@@ -43,6 +45,8 @@ const MAIN_TABS: Tab[] = [
   { key: 'notificaciones', label: 'Notificaciones',      Icon: Bell       },
 ]
 
+const LANDING_TAB: Tab = { key: 'landing', label: 'Landing', Icon: LayoutTemplate }
+
 const BOTTOM_TABS: Tab[] = [
   { key: 'plan',     label: 'Tu Plan',  Icon: Crown },
   { key: 'usuarios', label: 'Usuarios', Icon: Users },
@@ -50,10 +54,15 @@ const BOTTOM_TABS: Tab[] = [
 
 interface ConfiguracionViewProps {
   session: SessionUser
+  landingSectionsEnabled: boolean
 }
 
-export function ConfiguracionView({ session }: ConfiguracionViewProps) {
+export function ConfiguracionView({ session, landingSectionsEnabled }: ConfiguracionViewProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('general')
+
+  // Gate de plan resuelto server-side (page.tsx) — sin el flag, la pestaña ni
+  // aparece en el sidebar (no solo se bloquea al guardar).
+  const MAIN_TABS = landingSectionsEnabled ? [...BASE_MAIN_TABS, LANDING_TAB] : BASE_MAIN_TABS
 
   return (
     <div className={styles.configLayout}>
@@ -93,6 +102,7 @@ export function ConfiguracionView({ session }: ConfiguracionViewProps) {
         {activeTab === 'impresion'      && <TabImpresion      businessId={session.businessId} />}
         {activeTab === 'cobros'         && <TabCobros         businessId={session.businessId} />}
         {activeTab === 'tema'           && <TabTema           businessId={session.businessId} />}
+        {activeTab === 'landing' && landingSectionsEnabled && <TabLanding businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
         {activeTab === 'plan'           && <TabPlan     businessId={session.businessId} />}

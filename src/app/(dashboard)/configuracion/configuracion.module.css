@@ -1550,3 +1550,76 @@
 @media (min-width: 1024px) {
   .configLayout { overflow-x: visible; }
 }
+
+/* ── Tab Landing (Fase 1) ────────────────────────────────────────────── */
+
+.landingCardHeader {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--space-3);
+  margin-bottom:   var(--space-3);
+}
+
+.landingCardHeader .formCardTitle { margin-bottom: 0; }
+
+.landingCardControls {
+  display:      flex;
+  gap:          var(--space-1);
+  flex-shrink:  0;
+}
+
+.landingIconBtn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           30px;
+  height:          30px;
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius-md);
+  background:      var(--color-surface);
+  color:           var(--color-text-secondary);
+  cursor:          pointer;
+  transition:      background var(--transition-fast), border-color var(--transition-fast);
+}
+.landingIconBtn:hover:not(:disabled) {
+  background:   var(--color-surface-2);
+  border-color: var(--color-border-strong);
+}
+.landingIconBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.landingIconBtnDanger:hover:not(:disabled) {
+  background:   var(--color-danger-subtle);
+  border-color: var(--color-danger-border);
+  color:        var(--color-danger-text);
+}
+
+.landingHiddenBadge {
+  font-size:      var(--text-2xs);
+  font-weight:    var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color:          var(--color-text-muted);
+  background:     var(--color-surface-3);
+  padding:        2px var(--space-2);
+  border-radius:  var(--radius-full);
+}
+
+.landingAddRow {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       var(--space-2);
+}
+
+.landingSubCard {
+  border:        1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding:       var(--space-3);
+  background:    var(--color-surface-2);
+}
+
+.landingSubCardTitle {
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+}

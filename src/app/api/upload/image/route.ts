@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     const rawType  = formData.get('type')
     const type     = rawType === 'logo' ? 'logo'
                    : rawType === 'catalog_cover' ? 'catalog_cover'
+                   : rawType === 'landing' ? 'landing'
                    : 'products'
 
     if (!(file instanceof Blob)) {

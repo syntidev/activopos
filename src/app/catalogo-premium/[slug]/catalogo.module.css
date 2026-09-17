@@ -3601,3 +3601,345 @@
   .productCardOutOfStock { filter: none; }
   .categoryTrack { scroll-behavior: auto; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   LANDING SECTIONS — Fase 1 (hero, event_slider, community, story)
+   Layout tomado del mockup de referencia (OnBike Margarita wireframe,
+   bloques 1/4/8a/8b) — solo el contenido es editable desde admin, la
+   estructura de cada tipo es fija. #0B4FCC del mockup == --onbike-blue.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── HERO (bloque 1) ─────────────────────────────────────────────────── */
+
+.lsHero {
+  position:    relative;
+  width:       100%;
+  height:      520px;
+  background:  #141414;
+  overflow:    hidden;
+}
+
+@media (min-width: 1024px) {
+  .lsHero { height: 720px; }
+}
+
+.lsHeroMedia {
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+}
+
+.lsHeroScrim {
+  position:   absolute;
+  inset:      0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.7) 100%);
+}
+
+@media (min-width: 1024px) {
+  .lsHeroScrim { background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.55) 100%); }
+}
+
+.lsHeroContent {
+  position:  absolute;
+  left:      var(--space-5);
+  right:     var(--space-5);
+  bottom:    var(--space-7);
+  max-width: 640px;
+}
+
+@media (min-width: 1024px) {
+  .lsHeroContent { left: 64px; right: auto; bottom: 64px; }
+}
+
+.lsHeroTitle {
+  font-family: var(--font-display);
+  font-size:   var(--text-3xl);
+  font-weight: 700;
+  color:       #FFFFFF;
+  line-height: 1.05;
+  margin:      0 0 var(--space-3);
+}
+
+@media (min-width: 1024px) {
+  .lsHeroTitle { font-size: 64px; }
+}
+
+.lsHeroSubtitle {
+  font-size:   var(--text-sm);
+  color:       #EDEDED;
+  margin:      0 0 var(--space-5);
+}
+
+@media (min-width: 1024px) {
+  .lsHeroSubtitle { font-size: var(--text-lg); }
+}
+
+.lsHeroCta {
+  display:       block;
+  text-align:    center;
+  background:    var(--biz-color, var(--onbike-blue));
+  color:         #FFFFFF;
+  padding:       var(--space-4);
+  border-radius: 4px;
+  font-size:     var(--text-sm);
+  font-weight:   600;
+}
+
+@media (min-width: 1024px) {
+  .lsHeroCta { display: inline-block; padding: 16px 32px; }
+}
+
+/* ── EVENT SLIDER (bloque 4) — carrusel real ────────────────────────── */
+
+.lsSlider {
+  position:      relative;
+  margin:        var(--space-6) var(--space-4);
+  height:        200px;
+  border-radius: 10px;
+  overflow:      hidden;
+  background:    #141414;
+}
+
+@media (min-width: 1024px) {
+  .lsSlider { margin: var(--space-8) auto; max-width: 1280px; height: 280px; border-radius: 12px; }
+}
+
+.lsSliderImg {
+  position:   absolute;
+  inset:      0;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+}
+
+.lsSliderScrim {
+  position:   absolute;
+  inset:      0;
+  background: linear-gradient(100deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0.05) 100%);
+}
+
+.lsSliderContent {
+  position:        relative;
+  height:          100%;
+  display:         flex;
+  flex-direction:  column;
+  justify-content: center;
+  padding:         var(--space-5);
+  color:           #FFFFFF;
+  max-width:       520px;
+}
+
+@media (min-width: 1024px) {
+  .lsSliderContent { padding: 0 56px; }
+}
+
+.lsSliderTitle {
+  font-family: var(--font-display);
+  font-size:   var(--text-xl);
+  font-weight: 700;
+  margin:      0 0 var(--space-2);
+}
+
+@media (min-width: 1024px) {
+  .lsSliderTitle { font-size: var(--text-2xl); }
+}
+
+.lsSliderSubtitle {
+  font-size: var(--text-xs);
+  margin:    0 0 var(--space-4);
+  opacity:   0.9;
+}
+
+@media (min-width: 1024px) {
+  .lsSliderSubtitle { font-size: var(--text-sm); }
+}
+
+.lsSliderCta {
+  display:       inline-block;
+  width:         fit-content;
+  background:    #FFFFFF;
+  color:         var(--biz-color, var(--onbike-blue));
+  padding:       10px var(--space-5);
+  border-radius: 4px;
+  font-size:     var(--text-xs);
+  font-weight:   700;
+}
+
+@media (min-width: 1024px) {
+  .lsSliderCta { padding: 14px 28px; font-size: var(--text-sm); }
+}
+
+.lsSliderArrow {
+  position:        absolute;
+  top:             50%;
+  transform:       translateY(-50%);
+  width:           36px;
+  height:          36px;
+  border-radius:   50%;
+  border:          none;
+  background:      rgba(255,255,255,0.25);
+  color:           #FFFFFF;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          pointer;
+  transition:      background 150ms ease;
+}
+.lsSliderArrow:hover { background: rgba(255,255,255,0.4); }
+.lsSliderArrowPrev { left: var(--space-3); }
+.lsSliderArrowNext { right: var(--space-3); }
+
+.lsSliderDots {
+  position:  absolute;
+  bottom:    var(--space-3);
+  left:      50%;
+  transform: translateX(-50%);
+  display:   flex;
+  gap:       6px;
+}
+
+.lsSliderDot {
+  width:         20px;
+  height:        3px;
+  border-radius: 2px;
+  background:    rgba(255,255,255,0.4);
+  transition:    background 200ms ease;
+}
+.lsSliderDotActive { background: #FFFFFF; }
+
+/* ── COMMUNITY (bloque 8a) ───────────────────────────────────────────── */
+
+.lsCommunity {
+  padding: var(--space-8) var(--space-4);
+}
+
+@media (min-width: 1024px) {
+  .lsCommunity { padding: 96px 64px; }
+}
+
+.lsCommunityHeading {
+  font-family: var(--font-display);
+  font-size:   var(--text-2xl);
+  font-weight: 700;
+  margin:      0 0 4px;
+  color:       var(--color-text-primary);
+}
+
+@media (min-width: 1024px) {
+  .lsCommunityHeading { font-size: var(--text-4xl); }
+}
+
+.lsCommunitySubheading {
+  font-size: var(--text-sm);
+  color:     var(--color-text-secondary);
+  margin:    0 0 var(--space-6);
+}
+
+.lsCommunityGrid {
+  display:               grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:                   var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .lsCommunityGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+}
+
+.lsCommunityItem {
+  position:      relative;
+  aspect-ratio:  4 / 5;
+  border-radius: 8px;
+  overflow:      hidden;
+  background:    var(--color-surface-2);
+}
+
+.lsCommunityImg {
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  display:    block;
+}
+
+.lsCommunityTag {
+  position:      absolute;
+  left:          var(--space-3);
+  bottom:        var(--space-3);
+  background:    #141414;
+  color:         #FFFFFF;
+  font-size:     var(--text-xs);
+  padding:       var(--space-2) var(--space-3);
+  border-radius: 6px;
+}
+
+/* ── STORY (bloque 8b) — bloque bicolor texto/imagen ────────────────── */
+
+.lsStory {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .lsStory { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+.lsStoryText {
+  background: #141414;
+  color:      #FFFFFF;
+  padding:    var(--space-8) var(--space-4);
+  display:    flex;
+  flex-direction: column;
+  justify-content: center;
+  order: 2;
+}
+
+@media (min-width: 768px) {
+  .lsStoryText { padding: 96px 64px; order: 0; }
+}
+
+.lsStoryEyebrow {
+  font-size:      var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          #8FB2FF;
+  margin-bottom:  var(--space-3);
+}
+
+.lsStoryTitle {
+  font-family: var(--font-display);
+  font-size:   var(--text-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  margin:      0 0 var(--space-4);
+}
+
+@media (min-width: 1024px) {
+  .lsStoryTitle { font-size: var(--text-2xl); }
+}
+
+.lsStoryBody {
+  font-size:   var(--text-sm);
+  color:       #CFCFCF;
+  line-height: var(--leading-relaxed);
+  margin:      0;
+  white-space: pre-wrap;
+}
+
+.lsStoryMedia {
+  position:   relative;
+  height:     220px;
+  background: var(--color-surface-2);
+  order: 1;
+}
+
+@media (min-width: 768px) {
+  .lsStoryMedia { height: auto; order: 0; }
+}
+
+.lsStoryImg {
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  display:    block;
+}

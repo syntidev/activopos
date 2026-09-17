@@ -11,6 +11,8 @@ import {
 import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
+import { LandingSections } from './LandingSections'
+import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
@@ -78,6 +80,7 @@ interface Props {
   businessAddress?:   string | null | undefined
   catalogMode?:       'home' | 'productos'
   initialCategory?:   string | null
+  landingSections?:   RenderableLandingSection[]
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -156,6 +159,7 @@ export function CatalogoGrid({
   businessInstagram,
   catalogMode = 'home',
   initialCategory = null,
+  landingSections = [],
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
@@ -873,8 +877,17 @@ export function CatalogoGrid({
         </div>
       )}
 
-      {/* ── Hero banner — solo en vista inicial (sin filtro ni búsqueda) ── */}
-      {catalogMode === 'home' && browseMode && (() => {
+      {/* ── Landing Sections (Fase 1) — hero/event_slider/community/story
+          configurados por admin, en su `order`. Si el tenant no tiene
+          ninguna, landingSections=[] y esto no renderiza nada: fallback
+          automático al hero genérico de abajo, cero cambio de comportamiento. ── */}
+      {catalogMode === 'home' && browseMode && landingSections.length > 0 && (
+        <LandingSections sections={landingSections} />
+      )}
+
+      {/* ── Hero banner genérico — solo si el tenant NO configuró un hero
+          de Landing Sections (evita hero duplicado) ── */}
+      {catalogMode === 'home' && browseMode && !landingSections.some(s => s.type === 'hero') && (() => {
         const covers = heroCovers?.length ? heroCovers : heroCover ? [heroCover] : []
         if (!covers.length) return (
           <section className={styles.heroBanner}>

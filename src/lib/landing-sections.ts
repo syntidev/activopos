@@ -19,9 +19,14 @@ const imagePath = () =>
 
 // cta_link: ruta interna del catálogo o URL externa http(s) (WhatsApp,
 // Instagram, etc.) — nunca javascript:/data:/otro esquema ejecutable.
+// '//host' explícitamente excluido de la rama "ruta interna": el navegador
+// lo resuelve como protocol-relative (sale del sitio), no es lo que
+// "ruta interna" promete — hallazgo de revisión automática, cierre real
+// aunque no era el vector de XSS que reportó (ese ya estaba bloqueado por
+// el whitelist de protocol de abajo).
 const linkUrl = (max: number) =>
   trimmed(max).refine(v => {
-    if (v.startsWith('/')) return true
+    if (v.startsWith('/') && !v.startsWith('//')) return true
     try { return ['http:', 'https:'].includes(new URL(v).protocol) } catch { return false }
   }, 'Link inválido: debe ser una ruta interna o una URL http(s)')
 

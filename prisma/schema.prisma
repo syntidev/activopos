@@ -136,123 +136,145 @@ enum ReturnStatus {
 // ── Modelos ────────────────────────────────────────────
 
 model Business {
-  id                   Int      @id @default(autoincrement())
-  name                 String   @db.VarChar(255)
-  legal_name           String?  @db.VarChar(255)
-  rif                  String?  @db.VarChar(20)
-  logo_path            String?
-  address              String?
-  city                 String?
-  state                String?
-  phone                String?
-  email                String?
-  theme                String   @default("dark")
-  theme_color          String   @default("#2563EB")
-  ticket_prefix        String   @default("ACT") @db.VarChar(10)
-  ticket_footer        String?  @db.Text
+  id                           Int       @id @default(autoincrement())
+  name                         String    @db.VarChar(255)
+  legal_name                   String?   @db.VarChar(255)
+  rif                          String?   @db.VarChar(20)
+  logo_path                    String?
+  address                      String?
+  city                         String?
+  state                        String?
+  phone                        String?
+  email                        String?
+  theme                        String    @default("dark")
+  theme_color                  String    @default("#2563EB")
+  ticket_prefix                String    @default("ACT") @db.VarChar(10)
+  ticket_footer                String?   @db.Text
   // Configuración de impresión del ticket térmico. Los defaults reproducen
   // exactamente lo que el ticket imprime hoy, para que activar esta config
   // no cambie por sí sola ningún ticket en producción.
-  ticket_format        String   @default("58mm") @db.VarChar(10) // 'carta' | '80mm' | '58mm'
-  ticket_show_description    Boolean @default(false)
-  ticket_show_bs             Boolean @default(true)
-  ticket_show_foreign        Boolean @default(true)
-  ticket_foreign_format      String  @default("usd") @db.VarChar(5) // 'usd' | 'ref'
-  ticket_show_address        Boolean @default(true)
-  ticket_show_phone          Boolean @default(true)
-  ticket_show_customer_data  Boolean @default(false)
-  ticket_show_rif            Boolean @default(false)
-  ticket_show_cashier_name   Boolean @default(true)
-  ticket_show_bcv_rate       Boolean @default(true)
-  ticket_show_payment_method Boolean @default(true)
-  quotation_footer     String?  @db.Text
-  currency_default     String   @default("USD")
-  rate_source          String   @default("bcv") // 'bcv' | 'parallel' | 'manual'
-  subscription_active      Boolean   @default(true)
-  subscription_expires_at  DateTime?
-  onboarding_completed Boolean  @default(false)
-  active               Boolean  @default(true)
-  settings             Json?
-  iva_enabled          Boolean  @default(false)
-  iva_pct              Decimal  @default(16) @db.Decimal(5, 2)
-  catalog_plan         String?  @default("gratis") @db.VarChar(30)
-  catalog_slug         String?  @unique @db.VarChar(80)
-  catalog_active       Boolean  @default(false)
+  ticket_format                String    @default("58mm") @db.VarChar(10) // 'carta' | '80mm' | '58mm'
+  ticket_show_description      Boolean   @default(false)
+  ticket_show_bs               Boolean   @default(true)
+  ticket_show_foreign          Boolean   @default(true)
+  ticket_foreign_format        String    @default("usd") @db.VarChar(5) // 'usd' | 'ref'
+  ticket_show_address          Boolean   @default(true)
+  ticket_show_phone            Boolean   @default(true)
+  ticket_show_customer_data    Boolean   @default(false)
+  ticket_show_rif              Boolean   @default(false)
+  ticket_show_cashier_name     Boolean   @default(true)
+  ticket_show_bcv_rate         Boolean   @default(true)
+  ticket_show_payment_method   Boolean   @default(true)
+  quotation_footer             String?   @db.Text
+  currency_default             String    @default("USD")
+  rate_source                  String    @default("bcv") // 'bcv' | 'parallel' | 'manual'
+  subscription_active          Boolean   @default(true)
+  subscription_expires_at      DateTime?
+  onboarding_completed         Boolean   @default(false)
+  active                       Boolean   @default(true)
+  settings                     Json?
+  iva_enabled                  Boolean   @default(false)
+  iva_pct                      Decimal   @default(16) @db.Decimal(5, 2)
+  catalog_plan                 String?   @default("gratis") @db.VarChar(30)
+  catalog_slug                 String?   @unique @db.VarChar(80)
+  catalog_active               Boolean   @default(false)
   // Moneda visible en el catálogo público y en el mensaje de WhatsApp.
   // 'usd' | 'bs' | 'both'. Excepción autorizada a la regla dual-currency:
   // aplica solo a superficies cara-al-cliente, nunca a POS ni dashboard.
-  catalog_default_currency String @default("usd") @db.VarChar(5)
-  catalog_title        String?  @db.VarChar(150)
-  catalog_desc         String?  @db.Text
-  catalog_desc_enabled Boolean  @default(true)
-  catalog_hours        String?  @db.Text
-  catalog_instagram    String?  @db.VarChar(80)
-  catalog_cover_path   String?
-  catalog_cover_path_2 String?  @db.VarChar(500)
-  catalog_cover_path_3 String?  @db.VarChar(500)
-  segment              String?  @default("retail") @db.VarChar(40)
-  cobro_data           Json?
-  whatsapp             String?  @db.VarChar(30)
-  max_discount_pct              Float    @default(0)
-  allow_cashier_price_override  Boolean  @default(false)
-  modules_enabled             String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,suppliers") @db.VarChar(500)
-  notifications_last_read     DateTime?
-  ai_tokens_used_month        Int       @default(0)
-  ai_tokens_limit_month       Int       @default(100)
+  catalog_default_currency     String    @default("usd") @db.VarChar(5)
+  catalog_title                String?   @db.VarChar(150)
+  catalog_desc                 String?   @db.Text
+  catalog_desc_enabled         Boolean   @default(true)
+  catalog_hours                String?   @db.Text
+  catalog_instagram            String?   @db.VarChar(80)
+  catalog_cover_path           String?
+  catalog_cover_path_2         String?   @db.VarChar(500)
+  catalog_cover_path_3         String?   @db.VarChar(500)
+  segment                      String?   @default("retail") @db.VarChar(40)
+  cobro_data                   Json?
+  whatsapp                     String?   @db.VarChar(30)
+  max_discount_pct             Float     @default(0)
+  allow_cashier_price_override Boolean   @default(false)
+  modules_enabled              String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,suppliers") @db.VarChar(500)
+  notifications_last_read      DateTime?
+  ai_tokens_used_month         Int       @default(0)
+  ai_tokens_limit_month        Int       @default(100)
   // valores: "ticket" | "invoice"
   // ticket = negocio de productos → genera ticket térmico 58mm
   // invoice = negocio de servicios → genera PDF carta A4
-  pos_mode                    String    @default("ticket")
+  pos_mode                     String    @default("ticket")
   // valores: 'cash' | 'nocash' — nocash permite vender sin caja abierta
-  caja_mode                   String    @default("cash") @db.VarChar(10)
-  created_at                  DateTime  @default(now())
-  updated_at                  DateTime  @updatedAt
+  caja_mode                    String    @default("cash") @db.VarChar(10)
+  created_at                   DateTime  @default(now())
+  updated_at                   DateTime  @updatedAt
 
-  users              User[]
-  products           Product[]
-  categories         Category[]
-  sales              Sale[]
-  cash_registers     CashRegister[]
-  clients            Client[]
-  payment_methods    PaymentMethod[]
-  activity_logs      ActivityLog[]
-  inventory_entries  InventoryEntry[]
-  gastos             Gasto[]
-  orders             Order[]
-  dollar_rates       DollarRate[]
-  monthly_reports    MonthlyReport[]
-  quotations         Quotation[]
-  returns            Return[]
-  invoices           Invoice[]
-  support_tickets    SupportTicket[]
-  expense_categories ExpenseCategory[]
-  product_components ProductComponent[]
-  notifications      Notification[]
-  push_subscriptions PushSubscription[]
-  business_devices   BusinessDevice[]
-  suppliers          Supplier[]
-  purchases          Purchase[]
+  users                User[]
+  products             Product[]
+  categories           Category[]
+  sales                Sale[]
+  cash_registers       CashRegister[]
+  clients              Client[]
+  payment_methods      PaymentMethod[]
+  activity_logs        ActivityLog[]
+  inventory_entries    InventoryEntry[]
+  gastos               Gasto[]
+  orders               Order[]
+  dollar_rates         DollarRate[]
+  monthly_reports      MonthlyReport[]
+  quotations           Quotation[]
+  returns              Return[]
+  invoices             Invoice[]
+  support_tickets      SupportTicket[]
+  expense_categories   ExpenseCategory[]
+  product_components   ProductComponent[]
+  notifications        Notification[]
+  push_subscriptions   PushSubscription[]
+  business_devices     BusinessDevice[]
+  suppliers            Supplier[]
+  purchases            Purchase[]
   social_style_presets SocialStylePreset[]
+  landing_sections     LandingSection[]
 
   @@map("businesses")
+}
+
+// Secciones configurables del catálogo público (landing). Fase 1: hero,
+// event_slider, community, story — Disciplinas/Arma-tu-equipo/Barra-de-marcas
+// quedan para Fase 2. `config` es JSON validado por Zod según `type` en la API
+// (mismo patrón de whitelisting que catalog/[slug]/order) — el schema no puede
+// tipar la forma condicional, la API es la única fuente de verdad de validación.
+model LandingSection {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  type        String   @db.VarChar(30) // 'hero' | 'event_slider' | 'community' | 'story'
+  order       Int      @default(0)
+  visible     Boolean  @default(true)
+  config      Json
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id, order])
+  @@map("landing_sections")
 }
 
 // Cuenta de cobro de la PLATAFORMA (ActivoPOS) para suscripciones — NO es el
 // PaymentMethod por-tenant. Fila única (singleton), sin business_id: aquí van los
 // datos con los que ActivoPOS cobra el plan Negocio Activo (Binance, Pago Móvil, USDT).
 model PlatformPaymentConfig {
-  id                Int      @id @default(autoincrement())
-  binance_pay_id    String?  @db.VarChar(120)
-  binance_qr_path   String?  @db.VarChar(500)
-  pago_movil_phone  String?  @db.VarChar(30)
-  pago_movil_ci     String?  @db.VarChar(30)
-  pago_movil_bank   String?  @db.VarChar(80)
-  usdt_wallet       String?  @db.VarChar(120)
-  usdt_network      String?  @db.VarChar(40)
-  instructions      String?  @db.Text
-  active            Boolean  @default(true)
-  updated_at        DateTime @updatedAt
-  created_at        DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  binance_pay_id   String?  @db.VarChar(120)
+  binance_qr_path  String?  @db.VarChar(500)
+  pago_movil_phone String?  @db.VarChar(30)
+  pago_movil_ci    String?  @db.VarChar(30)
+  pago_movil_bank  String?  @db.VarChar(80)
+  usdt_wallet      String?  @db.VarChar(120)
+  usdt_network     String?  @db.VarChar(40)
+  instructions     String?  @db.Text
+  active           Boolean  @default(true)
+  updated_at       DateTime @updatedAt
+  created_at       DateTime @default(now())
 
   @@map("platform_payment_config")
 }
@@ -271,9 +293,9 @@ model User {
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
-  business           Business          @relation(fields: [business_id], references: [id])
-  sales              Sale[]            @relation("SaleCashier")
-  discount_auths     Sale[]            @relation("SaleDiscountAuth")
+  business           Business           @relation(fields: [business_id], references: [id])
+  sales              Sale[]             @relation("SaleCashier")
+  discount_auths     Sale[]             @relation("SaleDiscountAuth")
   cash_registers     CashRegister[]
   activity_logs      ActivityLog[]
   cash_movements     CashMovement[]
@@ -287,14 +309,14 @@ model User {
 }
 
 model Category {
-  id          Int     @id @default(autoincrement())
-  business_id Int
-  name        String  @db.VarChar(80)
-  color       String? @db.VarChar(20)
-  image_url   String? @db.VarChar(500)
-  sort_order            Int     @default(0)
-  active                Boolean @default(true)
-  requires_preparation  Boolean @default(false)
+  id                   Int     @id @default(autoincrement())
+  business_id          Int
+  name                 String  @db.VarChar(80)
+  color                String? @db.VarChar(20)
+  image_url            String? @db.VarChar(500)
+  sort_order           Int     @default(0)
+  active               Boolean @default(true)
+  requires_preparation Boolean @default(false)
 
   business Business  @relation(fields: [business_id], references: [id])
   products Product[]
@@ -304,45 +326,45 @@ model Category {
 }
 
 model Product {
-  id                 Int               @id @default(autoincrement())
-  business_id        Int
-  category_id        Int?
-  name               String            @db.VarChar(120)
-  barcode            String?           @db.VarChar(50)
-  sku                String?           @db.VarChar(50)
-  description        String?           @db.Text
-  sale_mode          SaleMode          @default(unit)
-  product_type       ProductType       @default(simple)
-  unit_type          UnitType          @default(unit)
-  unit_label         String            @default("und") @db.VarChar(20)
-  unit_step          Float             @default(1)
-  base_unit_label    String            @default("und") @db.VarChar(20)
-  price_per_kg_usd   Decimal?          @db.Decimal(10, 2)
-  price_per_unit_usd Decimal?          @db.Decimal(10, 2)
-  cost_per_unit_usd  Decimal?          @db.Decimal(10, 4)
-  cost_unknown       Boolean           @default(false)
+  id                         Int               @id @default(autoincrement())
+  business_id                Int
+  category_id                Int?
+  name                       String            @db.VarChar(120)
+  barcode                    String?           @db.VarChar(50)
+  sku                        String?           @db.VarChar(50)
+  description                String?           @db.Text
+  sale_mode                  SaleMode          @default(unit)
+  product_type               ProductType       @default(simple)
+  unit_type                  UnitType          @default(unit)
+  unit_label                 String            @default("und") @db.VarChar(20)
+  unit_step                  Float             @default(1)
+  base_unit_label            String            @default("und") @db.VarChar(20)
+  price_per_kg_usd           Decimal?          @db.Decimal(10, 2)
+  price_per_unit_usd         Decimal?          @db.Decimal(10, 2)
+  cost_per_unit_usd          Decimal?          @db.Decimal(10, 4)
+  cost_unknown               Boolean           @default(false)
   wholesale_price_usd        Decimal?          @db.Decimal(10, 2)
   wholesale_price_per_kg_usd Decimal?          @db.Decimal(10, 2)
-  location                   String?   @db.VarChar(120)
-  notes                      String?   @db.Text
-  min_stock              Decimal           @default(0) @db.Decimal(8, 3)
-  stock_alert_threshold  Int               @default(5)
-  images             String?           @db.Text
-  has_variants       Boolean           @default(false)
-  show_in_catalog    Boolean           @default(false)
-  available_in_pos   Boolean           @default(true)
-  is_favorite        Boolean           @default(false)
-  is_available       Boolean           @default(true)
-  availability       Availability      @default(in_stock)
-  catalog_visibility CatalogVisibility @default(visible)
-  active             Boolean           @default(true)
-  badge              String?           @default("none")
-  subcategory        String?
-  is_featured        Boolean           @default(false)
-  is_fixed_price     Boolean           @default(false)
-  sort_order         Int               @default(0)
-  created_at         DateTime          @default(now())
-  updated_at         DateTime          @updatedAt
+  location                   String?           @db.VarChar(120)
+  notes                      String?           @db.Text
+  min_stock                  Decimal           @default(0) @db.Decimal(8, 3)
+  stock_alert_threshold      Int               @default(5)
+  images                     String?           @db.Text
+  has_variants               Boolean           @default(false)
+  show_in_catalog            Boolean           @default(false)
+  available_in_pos           Boolean           @default(true)
+  is_favorite                Boolean           @default(false)
+  is_available               Boolean           @default(true)
+  availability               Availability      @default(in_stock)
+  catalog_visibility         CatalogVisibility @default(visible)
+  active                     Boolean           @default(true)
+  badge                      String?           @default("none")
+  subcategory                String?
+  is_featured                Boolean           @default(false)
+  is_fixed_price             Boolean           @default(false)
+  sort_order                 Int               @default(0)
+  created_at                 DateTime          @default(now())
+  updated_at                 DateTime          @updatedAt
 
   business          Business           @relation(fields: [business_id], references: [id])
   category          Category?          @relation(fields: [category_id], references: [id])
@@ -378,17 +400,17 @@ model InventoryEntry {
 }
 
 model Client {
-  id          Int      @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   business_id Int
-  name        String   @db.VarChar(120)
-  phone       String?  @db.VarChar(20)
-  email       String?  @db.VarChar(120)
-  cedula      String?  @db.VarChar(15)
-  notes       String?  @db.Text
+  name        String          @db.VarChar(120)
+  phone       String?         @db.VarChar(20)
+  email       String?         @db.VarChar(120)
+  cedula      String?         @db.VarChar(15)
+  notes       String?         @db.Text
   price_tier  ClientPriceTier @default(detal)
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  is_active   Boolean         @default(true)
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @updatedAt
 
   business   Business    @relation(fields: [business_id], references: [id])
   sales      Sale[]
@@ -460,18 +482,18 @@ model Sale {
 }
 
 model SaleItem {
-  id                 Int     @id @default(autoincrement())
-  sale_id            Int
-  product_id         Int
-  product_name       String  @db.VarChar(120)
-  sale_mode          String  @db.VarChar(10)
-  unit_label         String  @db.VarChar(20)
-  quantity           Decimal @db.Decimal(10, 3)
-  price_per_unit_usd Decimal @db.Decimal(10, 4)
-  cost_per_unit_usd  Decimal? @db.Decimal(10, 4)
-  subtotal_usd       Decimal @db.Decimal(10, 2)
-  subtotal_bs        Decimal @db.Decimal(12, 2)
-  rate_used          Decimal @db.Decimal(10, 4)
+  id                  Int      @id @default(autoincrement())
+  sale_id             Int
+  product_id          Int
+  product_name        String   @db.VarChar(120)
+  sale_mode           String   @db.VarChar(10)
+  unit_label          String   @db.VarChar(20)
+  quantity            Decimal  @db.Decimal(10, 3)
+  price_per_unit_usd  Decimal  @db.Decimal(10, 4)
+  cost_per_unit_usd   Decimal? @db.Decimal(10, 4)
+  subtotal_usd        Decimal  @db.Decimal(10, 2)
+  subtotal_bs         Decimal  @db.Decimal(12, 2)
+  rate_used           Decimal  @db.Decimal(10, 4)
   discount_usd        Decimal  @default(0) @db.Decimal(10, 2)
   recipe_snapshot     String?  @db.Text
   variant_id          Int?
@@ -612,26 +634,26 @@ model ExpenseCategory {
 }
 
 model Gasto {
-  id          Int       @id @default(autoincrement())
-  business_id Int
-  concepto    String    @db.VarChar(150)
-  monto_usd   Decimal   @db.Decimal(10, 2)
-  categoria   String    @default("otro") @db.VarChar(50)
-  category_id Int?
-  fecha       DateTime  @db.Date
-  notas       String?   @db.Text
-  is_paid     Boolean   @default(true)
-  paid_at     DateTime?
-  due_date    DateTime?
-  supplier    String?   @db.VarChar(150) // legacy texto libre — preservar hasta migrar UI
-  supplier_id Int?      // FK a Supplier — reemplaza el texto libre para CxP trazables
-  purchase_id Int?      // FK a Purchase — CxP generada por una compra (para cerrarla al anular)
+  id               Int       @id @default(autoincrement())
+  business_id      Int
+  concepto         String    @db.VarChar(150)
+  monto_usd        Decimal   @db.Decimal(10, 2)
+  categoria        String    @default("otro") @db.VarChar(50)
+  category_id      Int?
+  fecha            DateTime  @db.Date
+  notas            String?   @db.Text
+  is_paid          Boolean   @default(true)
+  paid_at          DateTime?
+  due_date         DateTime?
+  supplier         String?   @db.VarChar(150) // legacy texto libre — preservar hasta migrar UI
+  supplier_id      Int? // FK a Supplier — reemplaza el texto libre para CxP trazables
+  purchase_id      Int? // FK a Purchase — CxP generada por una compra (para cerrarla al anular)
   status           String    @default("pending") @db.VarChar(20) // pending | paid | cancelled
   cancelled_reason String?   @db.VarChar(150)
   cancelled_at     DateTime?
-  cancelled_by     Int?      // user que anuló — soft delete con trazabilidad
-  created_by  Int
-  created_at  DateTime  @default(now())
+  cancelled_by     Int? // user que anuló — soft delete con trazabilidad
+  created_by       Int
+  created_at       DateTime  @default(now())
 
   business         Business         @relation(fields: [business_id], references: [id])
   creator          User             @relation(fields: [created_by], references: [id])
@@ -645,20 +667,20 @@ model Gasto {
 }
 
 model ProductVariant {
-  id           Int      @id @default(autoincrement())
-  product_id   Int
-  tipo         String   @db.VarChar(30)
-  valor        String   @db.VarChar(50)
-  sku          String?  @db.VarChar(50)
-  precio_extra Decimal  @default(0) @db.Decimal(10, 2)
-  price_usd    Float?
-  cost_usd     Float?
-  stock        Int      @default(0)
-  color_hex    String?  @db.VarChar(7)
-  combination_key String? @map("combination_key") @db.VarChar(255)
-  is_active    Boolean  @default(true)
-  sort_order   Int      @default(0)
-  created_at   DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  product_id      Int
+  tipo            String   @db.VarChar(30)
+  valor           String   @db.VarChar(50)
+  sku             String?  @db.VarChar(50)
+  precio_extra    Decimal  @default(0) @db.Decimal(10, 2)
+  price_usd       Float?
+  cost_usd        Float?
+  stock           Int      @default(0)
+  color_hex       String?  @db.VarChar(7)
+  combination_key String?  @map("combination_key") @db.VarChar(255)
+  is_active       Boolean  @default(true)
+  sort_order      Int      @default(0)
+  created_at      DateTime @default(now())
 
   product    Product    @relation(fields: [product_id], references: [id])
   sale_items SaleItem[]
@@ -667,28 +689,28 @@ model ProductVariant {
 }
 
 model Order {
-  id             Int         @id @default(autoincrement())
-  business_id    Int
-  order_number   String      @db.VarChar(20)
-  status         OrderStatus @default(received)
-  origin         OrderOrigin @default(whatsapp)
-  client_id      Int?
-  client_name    String?     @db.VarChar(120)
-  client_phone   String?     @db.VarChar(20)
-  client_address String?     @db.Text
-  delivery_type    String?   @default("pickup") @db.VarChar(20)
-  recipient_name   String?   @db.VarChar(120)
-  delivery_address String?   @db.Text
-  notes          String?     @db.Text
-  delivery_fee   Decimal     @default(0) @db.Decimal(10, 2)
-  total_usd      Decimal     @db.Decimal(10, 2)
-  total_bs       Decimal     @db.Decimal(12, 2)
-  rate_used      Decimal     @db.Decimal(10, 4)
-  estimated_time Int?
-  sale_id        Int?        @unique
-  send_to_kds    Boolean     @default(false)
-  created_at     DateTime    @default(now())
-  updated_at     DateTime    @updatedAt
+  id               Int         @id @default(autoincrement())
+  business_id      Int
+  order_number     String      @db.VarChar(20)
+  status           OrderStatus @default(received)
+  origin           OrderOrigin @default(whatsapp)
+  client_id        Int?
+  client_name      String?     @db.VarChar(120)
+  client_phone     String?     @db.VarChar(20)
+  client_address   String?     @db.Text
+  delivery_type    String?     @default("pickup") @db.VarChar(20)
+  recipient_name   String?     @db.VarChar(120)
+  delivery_address String?     @db.Text
+  notes            String?     @db.Text
+  delivery_fee     Decimal     @default(0) @db.Decimal(10, 2)
+  total_usd        Decimal     @db.Decimal(10, 2)
+  total_bs         Decimal     @db.Decimal(12, 2)
+  rate_used        Decimal     @db.Decimal(10, 4)
+  estimated_time   Int?
+  sale_id          Int?        @unique
+  send_to_kds      Boolean     @default(false)
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
 
   business Business    @relation(fields: [business_id], references: [id])
   client   Client?     @relation(fields: [client_id], references: [id])
@@ -906,15 +928,15 @@ model PinRateLimit {
 }
 
 model BusinessDevice {
-  id                 Int      @id @default(autoincrement())
-  business_id        Int
-  type               String   @db.VarChar(40)
-  bank_name          String   @db.VarChar(80)
-  serial             String?  @db.VarChar(60)
-  commercial_number  String?  @db.VarChar(40)
-  is_active          Boolean  @default(true)
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  business_id       Int
+  type              String   @db.VarChar(40)
+  bank_name         String   @db.VarChar(80)
+  serial            String?  @db.VarChar(60)
+  commercial_number String?  @db.VarChar(40)
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
   business Business @relation(fields: [business_id], references: [id])
 
@@ -1036,12 +1058,12 @@ model Segment {
 }
 
 model SegmentFaq {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   segment_id String
-  segment    Segment  @relation(fields: [segment_id], references: [id], onDelete: Cascade)
+  segment    Segment @relation(fields: [segment_id], references: [id], onDelete: Cascade)
   question   String
-  answer     String   @db.Text
-  sort_order Int      @default(0)
+  answer     String  @db.Text
+  sort_order Int     @default(0)
 
   @@index([segment_id])
   @@map("segment_faqs")
@@ -1127,8 +1149,8 @@ model SocialAsset {
   // memoria del cliente, recargar la página lo rompía). Mismo patrón que
   // SocialPost.hashtags: Json sin tipado fuerte en Prisma, casteado en TS.
   background_url String?   @db.VarChar(500) // fondo crudo antes de componer texto
-  device_variant String?   @db.VarChar(40)  // mockup exacto usado (selectDevice era aleatorio)
-  layer_override Json?                      // mismo shape que arma buildOverride() en el frontend
+  device_variant String?   @db.VarChar(40) // mockup exacto usado (selectDevice era aleatorio)
+  layer_override Json? // mismo shape que arma buildOverride() en el frontend
   created_at     DateTime  @default(now())
   updated_at     DateTime? @updatedAt
 
@@ -1139,34 +1161,35 @@ model SocialAsset {
 }
 
 model SocialCalendarEntry {
-  id              Int      @id @default(autoincrement())
-  dia             DateTime @db.Date
-  tipo            String
-  segmento        String
-  objetivo        String
-  titulo          String
-  subtitulo       String?  @db.Text
-  caption         String?  @db.Text
-  hashtags        String?  @db.Text
-  estado          String   @default("pendiente")
-  content_engine  String
-  buffer_post_id  String?
-  notas           String?  @db.Text
-  social_post_id  Int?
-  social_post     SocialPost? @relation(fields: [social_post_id], references: [id])
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id             Int         @id @default(autoincrement())
+  dia            DateTime    @db.Date
+  tipo           String
+  segmento       String
+  objetivo       String
+  titulo         String
+  subtitulo      String?     @db.Text
+  caption        String?     @db.Text
+  hashtags       String?     @db.Text
+  estado         String      @default("pendiente")
+  content_engine String
+  buffer_post_id String?
+  notas          String?     @db.Text
+  social_post_id Int?
+  social_post    SocialPost? @relation(fields: [social_post_id], references: [id])
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+
   @@index([dia])
   @@map("social_calendar_entries")
 }
 
 model SocialStylePreset {
-  id            Int      @id @default(autoincrement())
-  business_id   Int
-  name          String   @db.VarChar(120)
-  design_rules  String   @db.Text
-  example_html  String?  @db.Text
-  created_at    DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  business_id  Int
+  name         String   @db.VarChar(120)
+  design_rules String   @db.Text
+  example_html String?  @db.Text
+  created_at   DateTime @default(now())
 
   business Business @relation(fields: [business_id], references: [id])
 

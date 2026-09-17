@@ -19,6 +19,7 @@ export function planDenied(reason?: string): NextResponse {
 export type PlanAction =
   | 'create_product' | 'create_user' | 'access_catalog' | 'access_ai'
   | 'create_supplier' | 'access_finanzas' | 'access_export' | 'access_theme'
+  | 'access_landing_sections'
 
 const PAID = PLAN_DISPLAY.negocio_activo
 
@@ -80,6 +81,10 @@ export async function checkPlanLimit(action: PlanAction): Promise<{ allowed: boo
 
   if (action === 'access_theme' && !limits.theme) {
     return { allowed: false, reason: `El tema visual del catálogo requiere plan ${PAID}.` }
+  }
+
+  if (action === 'access_landing_sections' && !limits.landing_sections) {
+    return { allowed: false, reason: `Las secciones del catálogo requieren plan ${PAID}.` }
   }
 
   return { allowed: true }

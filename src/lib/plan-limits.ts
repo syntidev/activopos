@@ -2,8 +2,8 @@
 // permanente, nunca vence) + negocio_activo (único plan pago, $19/mes).
 // -1 = ilimitado. Los flags booleanos gatean módulos completos.
 export const PLAN_LIMITS = {
-  gratis:         { products: 40, users: 1,  catalog: false, ai: false, suppliers: false, finanzas: false, exports: false, theme: false },
-  negocio_activo: { products: -1, users: 10, catalog: true,  ai: true,  suppliers: true,  finanzas: true,  exports: true,  theme: true  },
+  gratis:         { products: 40, users: 1,  catalog: false, ai: false, suppliers: false, finanzas: false, exports: false, theme: false, landing_sections: false },
+  negocio_activo: { products: -1, users: 10, catalog: true,  ai: true,  suppliers: true,  finanzas: true,  exports: true,  theme: true,  landing_sections: true  },
 } as const
 
 export type PlanTier = keyof typeof PLAN_LIMITS

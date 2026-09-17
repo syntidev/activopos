@@ -184,6 +184,15 @@ export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ── Tasa reactiva ────────────────────────────────────────────────────────
+  // init() captura `rate` en su primer render (aún FALLBACK_RATE, la tasa BCV
+  // llega async) y ese valor queda fijo en cada draft restaurado. Mantener
+  // snapshot.rate sincronizado con la tasa activa evita pestañas congeladas
+  // en 36.50 al cambiar de tab — la tasa nunca es un valor propio del draft.
+  useEffect(() => {
+    setTabs(prev => prev.map(t => ({ ...t, snapshot: { ...t.snapshot, rate } })))
+  }, [rate])
+
   // ── switchTo — save current to DB before switching ─────────────────────
 
   const switchTo = useCallback((targetId: string, current: TicketState): TicketState => {

@@ -40,7 +40,7 @@
   width:           32px;
   height:          32px;
   border-radius:   6px;
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           #FFFFFF;
   display:         flex;
   align-items:     center;
@@ -68,7 +68,7 @@
   display:         flex;
   align-items:     center;
   gap:             var(--space-1);
-  color:           var(--biz-color, var(--color-brand));
+  color:           var(--biz-color, var(--onbike-blue));
   text-decoration: none;
   font-weight:     var(--weight-medium);
 }
@@ -194,7 +194,7 @@
   display:    block;
 }
 .galleryThumbActive {
-  border-color: var(--biz-color, var(--color-brand));
+  border-color: var(--biz-color, var(--onbike-blue));
 }
 
 /* Info */
@@ -219,7 +219,7 @@
   font-weight:    var(--weight-semibold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color:          var(--biz-color, var(--color-brand));
+  color:          var(--biz-color, var(--onbike-blue));
 }
 
 .productName {
@@ -308,8 +308,8 @@
   transition:    border-color 150ms ease, background 150ms ease;
 }
 .variantChipActive {
-  border-color: var(--biz-color, var(--color-brand));
-  background:   var(--biz-color, var(--color-brand));
+  border-color: var(--biz-color, var(--onbike-blue));
+  background:   var(--biz-color, var(--onbike-blue));
   color:        var(--color-white);
   font-weight:  var(--weight-semibold);
 }
@@ -404,7 +404,7 @@
   justify-content: center;
   gap:             var(--space-2);
   border-radius:   var(--radius-lg);
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           #FFFFFF;
   font-size:       var(--text-base);
   font-weight:     var(--weight-semibold);
@@ -412,7 +412,7 @@
   transition:      background 150ms ease;
 }
 .btnPedir:hover {
-  background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 85%, black);
+  background: color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 85%, black);
 }
 
 .btnAddCart {
@@ -423,9 +423,9 @@
   justify-content: center;
   gap:             var(--space-2);
   border-radius:   var(--radius-lg);
-  border:          1.5px solid var(--biz-color, var(--color-brand));
+  border:          1.5px solid var(--biz-color, var(--onbike-blue));
   background:      var(--color-white);
-  color:           var(--biz-color, var(--color-brand));
+  color:           var(--biz-color, var(--onbike-blue));
   font-size:       var(--text-base);
   font-weight:     var(--weight-semibold);
   cursor:          pointer;
@@ -473,7 +473,7 @@
 
 .relatedVerTodos {
   font-size:       var(--text-sm);
-  color:           var(--biz-color, var(--color-brand));
+  color:           var(--biz-color, var(--onbike-blue));
   text-decoration: none;
   font-weight:     var(--weight-medium);
 }

@@ -22,6 +22,19 @@
      --bg-card-hover (oscuro) si no se pinea aquí. */
   --color-bg:       var(--color-white);
   --color-surface-2: #F1F5F9;
+
+  /* ── PALETA ONBIKE — PROPUESTA, PENDIENTE VALIDACIÓN DE DANIEL ──
+     Azul extraído a ojo de la franja superior del logo OnBike (sin archivo
+     de logo real disponible en el repo todavía — Sprint 79, ver .doc/
+     PLAN_TRABAJO_OnBike_ActivoPOS.md). Único punto de edición: cambiar
+     este valor actualiza todo el acento funcional (CTA, precios, botón
+     circular, tabs activos) sin tocar el resto del archivo. Las otras 3
+     franjas del logo (rojo/negro/amarillo/verde) NO se usan como paleta de
+     UI — quedan reservadas a header/footer/detalles de marca si Daniel las
+     pide más adelante. Si el tenant real define `theme_color` en Business,
+     ese valor gana siempre (--biz-color tiene prioridad sobre este). */
+  --onbike-blue: #0B4FCC;
+
   color-scheme:     light;
   background:     var(--color-bg);
   color:          var(--color-text-primary);
@@ -71,7 +84,7 @@
   width:           32px;
   height:          32px;
   border-radius:   var(--radius-md);
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-text-on-brand);
   display:         flex;
   align-items:     center;
@@ -223,7 +236,7 @@
   width:           56px;
   height:          56px;
   border-radius:   12px;
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-white);
   display:         flex;
   align-items:     center;
@@ -334,7 +347,7 @@
   position:        absolute;
   top:             2px;
   right:           2px;
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-text-on-brand);
   font-size:       11px;
   font-weight:     var(--weight-bold);
@@ -422,7 +435,7 @@
   cursor:          pointer;
   transition:      background var(--transition-fast), color var(--transition-fast);
 }
-.navIconBtn:hover { background: var(--color-brand-subtle); color: var(--biz-color, var(--color-brand)); }
+.navIconBtn:hover { background: var(--color-brand-subtle); color: var(--biz-color, var(--onbike-blue)); }
 
 .desktopNav {
   display: none;
@@ -446,7 +459,7 @@
   white-space:     nowrap;
   transition:      color 150ms ease;
 }
-.desktopNavLink:hover { color: var(--biz-color, var(--color-brand)); }
+.desktopNavLink:hover { color: var(--biz-color, var(--onbike-blue)); }
 
 /* Búsqueda expandible (reemplaza chips al tocar la lupa) */
 .searchExpanded {
@@ -481,7 +494,7 @@
 .searchExpandedInput::placeholder { color: var(--color-text-muted); }
 .searchExpandedInput:focus {
   background:  var(--color-white);
-  box-shadow:  0 0 0 2px var(--biz-color, var(--color-brand));
+  box-shadow:  0 0 0 2px var(--biz-color, var(--onbike-blue));
 }
 
 .searchExpandedClose {
@@ -540,18 +553,18 @@
 }
 
 .categoryTabActive {
-  background:   var(--biz-color, var(--color-brand));
+  background:   var(--biz-color, var(--onbike-blue));
   border-color: transparent;
   color:        var(--color-white);
-  box-shadow:   0 0 0 3px color-mix(in srgb, var(--biz-color, var(--color-brand)) 15%, transparent);
+  box-shadow:   0 0 0 3px color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 15%, transparent);
   font-weight:  var(--weight-semibold);
 }
 .categoryTab:focus-visible {
-  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline:        2px solid var(--biz-color, var(--onbike-blue));
   outline-offset: 2px;
 }
 .categoryTabActive:hover {
-  background:   var(--biz-color, var(--color-brand));
+  background:   var(--biz-color, var(--onbike-blue));
   border-color: transparent;
   color:        var(--color-white);
   filter:       brightness(0.95);
@@ -615,8 +628,8 @@
   transition:      background var(--transition-fast), color var(--transition-fast);
 }
 .catMenuItem:hover {
-  background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 8%, transparent);
-  color:      var(--biz-color, var(--color-brand));
+  background: color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 8%, transparent);
+  color:      var(--biz-color, var(--onbike-blue));
 }
 
 /* Subcategory pills */
@@ -656,7 +669,7 @@
 .subcatPillActive {
   background:   var(--color-brand-subtle);
   border-color: var(--color-brand-border);
-  color:        var(--biz-color, var(--color-brand));
+  color:        var(--biz-color, var(--onbike-blue));
 }
 
 /* ── PRODUCT GRID ────────────────────────────────────────────── */
@@ -988,7 +1001,7 @@
   width:         3px;
   height:        16px;
   border-radius: 2px;
-  background:    var(--section-accent, var(--biz-color, var(--color-brand)));
+  background:    var(--section-accent, var(--biz-color, var(--onbike-blue)));
   flex-shrink:   0;
 }
 
@@ -1002,7 +1015,7 @@
 .shelfVerTodos {
   font-size:      var(--text-xs);
   font-weight:    var(--weight-medium);
-  color:          var(--biz-color, var(--color-brand));
+  color:          var(--biz-color, var(--onbike-blue));
   text-decoration: none;
   background:     none;
   border:         none;
@@ -1030,22 +1043,22 @@
   height:        40px;
   padding:       0 var(--space-5);
   border-radius: var(--radius-2xl);
-  border:        var(--border-width-normal) solid var(--biz-color, var(--color-brand));
+  border:        var(--border-width-normal) solid var(--biz-color, var(--onbike-blue));
   background:    var(--color-white);
   font-size:     13px;
   font-weight:   var(--weight-semibold);
-  color:         var(--biz-color, var(--color-brand));
+  color:         var(--biz-color, var(--onbike-blue));
   cursor:        pointer;
   transition:    var(--transition-fast);
 }
 
 .loadMoreBtn:hover {
-  background: var(--biz-color, var(--color-brand));
+  background: var(--biz-color, var(--onbike-blue));
   color:      var(--color-white);
 }
 
 .loadMoreCount {
-  background:    var(--biz-color, var(--color-brand));
+  background:    var(--biz-color, var(--onbike-blue));
   color:         var(--color-white);
   font-size:     11px;
   font-weight:   var(--weight-bold);
@@ -1055,7 +1068,7 @@
 
 .loadMoreBtn:hover .loadMoreCount {
   background: var(--color-white);
-  color:      var(--biz-color, var(--color-brand));
+  color:      var(--biz-color, var(--onbike-blue));
 }
 
 /* ── PRODUCT CARD ────────────────────────────────────────────── */
@@ -1081,11 +1094,11 @@
 .productCard:hover {
   transform:  translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12),
-              0 0 8px color-mix(in srgb, var(--biz-color, var(--color-brand)) 20%, transparent);
+              0 0 8px color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 20%, transparent);
 }
 .productCard:active { transform: scale(0.97); transition-duration: 100ms; }
 .productCard:focus-visible {
-  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline:        2px solid var(--biz-color, var(--onbike-blue));
   outline-offset: 2px;
 }
 
@@ -1110,7 +1123,7 @@
   right:            0;
   height:           2.5px;
   z-index:          2;
-  background:       var(--accent-cat, var(--biz-color, var(--color-brand)));
+  background:       var(--accent-cat, var(--biz-color, var(--onbike-blue)));
   transform:        scaleX(0);
   transform-origin: left;
   transition:       transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -1338,7 +1351,7 @@
   font-weight:    var(--weight-semibold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color:          var(--biz-color, var(--color-brand));
+  color:          var(--biz-color, var(--onbike-blue));
   margin:         0;
 }
 
@@ -1350,8 +1363,8 @@
   font-weight:    var(--weight-semibold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color:          var(--badge-color, var(--biz-color, var(--color-brand)));
-  background:     color-mix(in srgb, var(--badge-color, var(--biz-color, var(--color-brand))) 15%, transparent);
+  color:          var(--badge-color, var(--biz-color, var(--onbike-blue)));
+  background:     color-mix(in srgb, var(--badge-color, var(--biz-color, var(--onbike-blue))) 15%, transparent);
   padding:        3px var(--space-2);
   border-radius:  var(--radius-full);
   margin:         0 0 var(--space-1);
@@ -1422,7 +1435,7 @@
   flex-shrink:     0;
   border:          none;
   border-radius:   50%;
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-white);
   cursor:          pointer;
   transition:      transform 200ms ease, background 200ms ease;
@@ -1439,11 +1452,11 @@
 }
 .addBtnCircle:hover {
   transform:  scale(1.1);
-  background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 85%, black);
+  background: color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 85%, black);
 }
 .addBtnCircle:active { transform: scale(0.96); transition-duration: 100ms; }
 .addBtnCircle:focus-visible {
-  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline:        2px solid var(--biz-color, var(--onbike-blue));
   outline-offset: 2px;
 }
 
@@ -1708,7 +1721,7 @@
 .qtyControlBtn:hover:not(:disabled) { background: var(--color-surface-2); }
 .qtyControlBtn:disabled { color: var(--color-text-muted); cursor: not-allowed; opacity: 0.4; }
 .qtyControlBtn:focus-visible {
-  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline:        2px solid var(--biz-color, var(--onbike-blue));
   outline-offset: -2px;
 }
 
@@ -1768,12 +1781,12 @@
   transition:     all var(--transition-fast);
 }
 
-.variantChip:hover { border-color: var(--biz-color, var(--color-brand)); }
+.variantChip:hover { border-color: var(--biz-color, var(--onbike-blue)); }
 
 .variantChipActive {
   background:   var(--color-brand-subtle);
-  border-color: var(--biz-color, var(--color-brand));
-  color:        var(--biz-color, var(--color-brand));
+  border-color: var(--biz-color, var(--onbike-blue));
+  color:        var(--biz-color, var(--onbike-blue));
 }
 
 .variantChipDisabled {
@@ -1830,7 +1843,7 @@
 .modalShareBtn:hover  { background: var(--color-surface-3); color: var(--color-text-primary); }
 .modalShareBtn:active { transform: scale(0.96); }
 .modalShareBtn:focus-visible {
-  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline:        2px solid var(--biz-color, var(--onbike-blue));
   outline-offset: 2px;
 }
 
@@ -1861,10 +1874,10 @@
 .modalThumb:hover { opacity: 0.85; }
 .modalThumbActive {
   opacity:      1;
-  border-color: var(--biz-color, var(--color-brand));
+  border-color: var(--biz-color, var(--onbike-blue));
 }
 .modalThumb:focus-visible {
-  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline:        2px solid var(--biz-color, var(--onbike-blue));
   outline-offset: 2px;
 }
 
@@ -1877,7 +1890,7 @@
 .btnAddCart {
   flex:            1;
   height:          var(--touch-large);
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-text-on-brand);
   border:          none;
   border-radius:   var(--radius-md);
@@ -2113,7 +2126,7 @@
 .drawerItemSubtotal {
   font-size:   var(--text-xs);
   font-weight: var(--weight-semibold);
-  color:       var(--biz-color, var(--color-brand));
+  color:       var(--biz-color, var(--onbike-blue));
 }
 
 .drawerQtyCtrl {
@@ -2319,7 +2332,7 @@
   margin-top:      var(--space-1);
   padding:         var(--space-1-5) var(--space-3);
   background:      var(--color-brand-subtle, var(--color-surface-2));
-  color:           var(--biz-color, var(--color-brand));
+  color:           var(--biz-color, var(--onbike-blue));
   border:          1px solid var(--color-brand-border, var(--color-border));
   border-radius:   var(--radius-full);
   font-size:       var(--text-xs);
@@ -2415,12 +2428,12 @@
 }
 
 .stepperDotActive {
-  background: var(--biz-color, var(--color-brand));
+  background: var(--biz-color, var(--onbike-blue));
   color:      var(--color-white);
 }
 
 .stepperDotDone {
-  background: var(--biz-color, var(--color-brand));
+  background: var(--biz-color, var(--onbike-blue));
   color:      var(--color-white);
   opacity:    0.5;
 }
@@ -2438,7 +2451,7 @@
 }
 
 .stepperLabelActive {
-  color:       var(--biz-color, var(--color-brand));
+  color:       var(--biz-color, var(--onbike-blue));
   font-weight: var(--weight-semibold);
 }
 
@@ -2450,7 +2463,7 @@
 }
 
 .stepperLine.done {
-  background: var(--biz-color, var(--color-brand));
+  background: var(--biz-color, var(--onbike-blue));
   opacity:    0.4;
 }
 
@@ -2458,7 +2471,7 @@
 .checkoutStepLabel {
   font-size:      var(--text-2xs);
   font-weight:    var(--weight-semibold);
-  color:          var(--biz-color, var(--color-brand));
+  color:          var(--biz-color, var(--onbike-blue));
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   margin-bottom:  var(--space-1);
@@ -2492,14 +2505,14 @@
 }
 
 .paymentCard:hover {
-  border-color: var(--biz-color, var(--color-brand));
-  background:   color-mix(in srgb, var(--biz-color, var(--color-brand)) 4%, white);
+  border-color: var(--biz-color, var(--onbike-blue));
+  background:   color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 4%, white);
 }
 
 .paymentCardActive {
-  border-color: var(--biz-color, var(--color-brand));
-  background:   color-mix(in srgb, var(--biz-color, var(--color-brand)) 8%, white);
-  box-shadow:   0 0 0 3px color-mix(in srgb, var(--biz-color, var(--color-brand)) 20%, transparent);
+  border-color: var(--biz-color, var(--onbike-blue));
+  background:   color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 8%, white);
+  box-shadow:   0 0 0 3px color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 20%, transparent);
 }
 
 .paymentCardName {
@@ -2532,7 +2545,7 @@
 .checkoutSummaryLabel {
   font-size:   var(--text-2xs);
   font-weight: var(--weight-semibold);
-  color:       var(--biz-color, var(--color-brand));
+  color:       var(--biz-color, var(--onbike-blue));
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
 }
@@ -2587,7 +2600,7 @@
   height:          44px;
   border:          none;
   border-radius:   var(--radius-md);
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-white);
   font-size:       var(--text-sm);
   font-weight:     var(--weight-semibold);
@@ -2597,7 +2610,7 @@
   cursor:          pointer;
   transition:      background 150ms ease;
 }
-.btnNext:hover    { background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 85%, black); }
+.btnNext:hover    { background: color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 85%, black); }
 .btnNext:disabled { opacity: 0.5; pointer-events: none; }
 
 /* Opciones de entrega */
@@ -2620,12 +2633,12 @@
 }
 
 .deliveryOption:hover {
-  border-color: var(--biz-color, var(--color-brand));
+  border-color: var(--biz-color, var(--onbike-blue));
 }
 
 .deliveryOptionActive {
-  border-color: var(--biz-color, var(--color-brand));
-  background:   color-mix(in srgb, var(--biz-color, var(--color-brand)) 8%, white);
+  border-color: var(--biz-color, var(--onbike-blue));
+  background:   color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 8%, white);
 }
 
 .deliveryOptionTitle {
@@ -2714,7 +2727,7 @@
   display:         flex;
   align-items:     center;
   justify-content: center;
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-white);
   border:          none;
   border-radius:   var(--radius-full);
@@ -2742,7 +2755,7 @@
 .backTopBtn:hover  { filter: brightness(0.93); transform: translateY(-2px); }
 .backTopBtn:active { transform: scale(0.94); }
 .backTopBtn:focus-visible {
-  outline:        2px solid var(--biz-color, var(--color-brand));
+  outline:        2px solid var(--biz-color, var(--onbike-blue));
   outline-offset: 2px;
 }
 
@@ -2815,7 +2828,7 @@
   width:           64px;
   height:          64px;
   border-radius:   12px;
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           #FFFFFF;
   display:         flex;
   align-items:     center;
@@ -2855,7 +2868,7 @@
   padding:         var(--space-1) 0;
   background:      none;
   border:          none;
-  color:           var(--biz-color, var(--color-brand));
+  color:           var(--biz-color, var(--onbike-blue));
   font-size:       var(--text-xs);
   font-weight:     var(--weight-semibold);
   cursor:          pointer;
@@ -2915,8 +2928,8 @@
   width:           36px;
   height:          36px;
   border-radius:   50%;
-  background:      color-mix(in srgb, var(--biz-color, var(--color-brand)) 12%, transparent);
-  color:           var(--biz-color, var(--color-brand));
+  background:      color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 12%, transparent);
+  color:           var(--biz-color, var(--onbike-blue));
   transition:      background 200ms ease, transform 200ms ease;
 }
 .footerSocialBtn::after {
@@ -2929,7 +2942,7 @@
   transform: translate(-50%, -50%);
 }
 .footerSocialBtn:hover {
-  background: var(--biz-color, var(--color-brand));
+  background: var(--biz-color, var(--onbike-blue));
   color:      #FFFFFF;
   transform:  scale(1.08);
 }
@@ -2944,13 +2957,13 @@
 }
 
 .footerIcon {
-  color:       var(--biz-color, var(--color-brand));
+  color:       var(--biz-color, var(--onbike-blue));
   flex-shrink: 0;
   margin-top:  2px;
 }
 
 .footerLink {
-  color:           var(--biz-color, var(--color-brand));
+  color:           var(--biz-color, var(--onbike-blue));
   text-decoration: none;
   font-weight:     var(--weight-medium);
 }
@@ -2989,10 +3002,10 @@
   text-decoration: none;
   font-weight:     var(--weight-medium);
 }
-.footerNavLink:hover { color: var(--biz-color, var(--color-brand)); }
+.footerNavLink:hover { color: var(--biz-color, var(--onbike-blue)); }
 
 .footerActivoLink {
-  color:           var(--biz-color, var(--color-brand));
+  color:           var(--biz-color, var(--onbike-blue));
   text-decoration: none;
   font-weight:     var(--weight-medium);
 }
@@ -3079,7 +3092,7 @@
   margin-top:      var(--space-2);
   height:          var(--touch-large);
   padding:         0 var(--space-6);
-  background:      var(--biz-color, var(--color-brand));
+  background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-text-on-brand);
   border:          none;
   border-radius:   var(--radius-md);
@@ -3144,8 +3157,8 @@
     color:      var(--color-text-primary);
   }
   .catalogSidebarItemActive {
-    background: color-mix(in srgb, var(--biz-color, var(--color-brand)) 10%, white);
-    color:      var(--biz-color, var(--color-brand));
+    background: color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 10%, white);
+    color:      var(--biz-color, var(--onbike-blue));
     font-weight: var(--weight-semibold);
   }
 
@@ -3191,7 +3204,7 @@
   width:         8px;
   height:        8px;
   border-radius: 50%;
-  background:    var(--biz-color, var(--color-brand));
+  background:    var(--biz-color, var(--onbike-blue));
   flex-shrink:   0;
 }
 
@@ -3231,7 +3244,7 @@
   transition:    border-color 150ms ease;
 }
 .catalogSearchInput:focus {
-  border-color: var(--biz-color, var(--color-brand));
+  border-color: var(--biz-color, var(--onbike-blue));
 }
 
 .catalogMeta {
@@ -3286,11 +3299,11 @@
   font-weight:    700;
   color:          var(--color-text-primary);
 }
-.editorialCatTitle svg { color: var(--biz-color, var(--color-brand)); }
+.editorialCatTitle svg { color: var(--biz-color, var(--onbike-blue)); }
 
 .editorialCatVerTodos {
   font-size:   var(--text-xs);
-  color:       var(--biz-color, var(--color-brand));
+  color:       var(--biz-color, var(--onbike-blue));
   background:  none;
   border:      none;
   cursor:      pointer;
@@ -3353,18 +3366,68 @@
   transform: scale(1.05);
 }
 
-.editorialCatFallback {
-  position:        absolute;
-  inset:           0;
+/* Sin foto real (categoría OnBike sin asset todavía) — tarjeta blanca
+   intencional con nombre en tipografía del sistema, nunca placeholder gris
+   tipo "imagen rota". Textura de constelación de fondo (ver .constellationDark). */
+.editorialCatCardBlank { border: 1px solid var(--color-border-subtle); border-radius: 14px; }
+
+.editorialCatBlankMedia {
+  position:        relative;
   display:         flex;
+  flex-direction:  column;
   align-items:     center;
   justify-content: center;
-  background:      linear-gradient(145deg, var(--color-surface-3) 0%, var(--color-surface-2) 100%);
-  font-family:     var(--font-display);
-  font-size:       var(--text-4xl);
-  font-weight:     700;
-  color:           var(--color-text-secondary);
-  opacity:         0.45;
+  gap:             var(--space-1);
+  width:           100%;
+  aspect-ratio:    3 / 4;
+  overflow:        hidden;
+  border-radius:   14px;
+  background:      var(--color-white);
+  padding:         var(--space-4);
+  text-align:      center;
+}
+
+.editorialCatBlankName {
+  position:    relative;
+  z-index:     1;
+  font-family: var(--font-display);
+  font-size:   var(--text-xl);
+  font-weight: 700;
+  color:       var(--color-text-primary);
+  line-height: 1.15;
+}
+
+.editorialCatBlankCount {
+  position:  relative;
+  z-index:   1;
+  font-size: var(--text-2xs);
+  color:     var(--color-text-secondary);
+}
+
+/* ── TEXTURA CONSTELACIÓN — patrón de líneas/puntos livianos (SVG inline,
+   sin peso de imagen), inspirado en la pared de la tienda física OnBike.
+   Dos variantes según el fondo: clara (hero oscuro) y oscura (tarjeta blanca). ── */
+.constellationLight,
+.constellationDark {
+  position:       absolute;
+  inset:          0;
+  z-index:        0;
+  pointer-events: none;
+  background-repeat: repeat;
+  background-size:   140px 140px;
+}
+
+.constellationLight {
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='1'%3E%3Cline x1='12' y1='14' x2='70' y2='46'/%3E%3Cline x1='70' y1='46' x2='128' y2='18'/%3E%3Cline x1='70' y1='46' x2='48' y2='104'/%3E%3Cline x1='48' y1='104' x2='118' y2='120'/%3E%3Cline x1='12' y1='14' x2='48' y2='104'/%3E%3C/g%3E%3Cg fill='%23FFFFFF'%3E%3Ccircle cx='12' cy='14' r='2.4'/%3E%3Ccircle cx='70' cy='46' r='2.4'/%3E%3Ccircle cx='128' cy='18' r='2.4'/%3E%3Ccircle cx='48' cy='104' r='2.4'/%3E%3Ccircle cx='118' cy='120' r='2.4'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* #0B4FCC hardcodeado a propósito: un data-URI de SVG no puede leer var()
+   de CSS. Es el mismo valor que --onbike-blue -- si esa variable cambia tras
+   la validación de Daniel, actualizar también este hex. */
+.constellationDark {
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%230B4FCC' stroke-width='1'%3E%3Cline x1='12' y1='14' x2='70' y2='46'/%3E%3Cline x1='70' y1='46' x2='128' y2='18'/%3E%3Cline x1='70' y1='46' x2='48' y2='104'/%3E%3Cline x1='48' y1='104' x2='118' y2='120'/%3E%3Cline x1='12' y1='14' x2='48' y2='104'/%3E%3C/g%3E%3Cg fill='%230B4FCC'%3E%3Ccircle cx='12' cy='14' r='2.4'/%3E%3Ccircle cx='70' cy='46' r='2.4'/%3E%3Ccircle cx='128' cy='18' r='2.4'/%3E%3Ccircle cx='48' cy='104' r='2.4'/%3E%3Ccircle cx='118' cy='120' r='2.4'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .editorialCatScrim {
@@ -3435,14 +3498,14 @@
   padding:        var(--space-5) var(--space-4);
   border-radius:  12px;
   border:         1px solid var(--color-border-subtle);
-  background:     color-mix(in srgb, var(--biz-color, var(--color-brand)) 6%, var(--color-white));
+  background:     color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 6%, var(--color-white));
   cursor:         pointer;
   text-align:     left;
   transition:     border-color 150ms ease, background 150ms ease;
 }
 .priceExploreCard:hover {
-  border-color: var(--biz-color, var(--color-brand));
-  background:   color-mix(in srgb, var(--biz-color, var(--color-brand)) 10%, var(--color-white));
+  border-color: var(--biz-color, var(--onbike-blue));
+  background:   color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 10%, var(--color-white));
 }
 
 .priceExploreRange {
@@ -3468,8 +3531,8 @@
   padding:        var(--space-6) var(--space-5);
   border-radius:  14px;
   background:     linear-gradient(120deg,
-    color-mix(in srgb, var(--biz-color, var(--color-brand)) 92%, black) 0%,
-    var(--biz-color, var(--color-brand)) 100%
+    color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 92%, black) 0%,
+    var(--biz-color, var(--onbike-blue)) 100%
   );
   text-decoration: none;
   color:          var(--color-white);

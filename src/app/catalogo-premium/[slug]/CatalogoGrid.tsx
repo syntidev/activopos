@@ -121,6 +121,11 @@ const BADGE_ICON: Record<string, ReactNode> = {
 
 const FEATURED_KEY = '__destacados__'
 
+// TODO(Carlos/Daniel): copy SIN CONFIRMAR. Tomado tal cual de las "ideas de
+// diseño" en .doc/PLAN_TRABAJO_OnBike_ActivoPOS.md (Gran Fondo 200K, Zafeti,
+// líneas de marca) -- son hechos reales del negocio según ese documento, pero
+// nadie validó todavía el TEXTO exacto (títulos/subtítulos) como copy final
+// de producción. No dar por aprobado hasta que Carlos confirme con Daniel.
 // Mini-banners temáticos intercalados entre secciones (patrón Walmart de
 // bloques, sin urgencia ni descuentos) — contenido fijo del tenant OnBike.
 const MINI_BANNERS: { title: string; subtitle: string }[] = [
@@ -873,6 +878,7 @@ export function CatalogoGrid({
         const covers = heroCovers?.length ? heroCovers : heroCover ? [heroCover] : []
         if (!covers.length) return (
           <section className={styles.heroBanner}>
+            <span className={styles.constellationLight} aria-hidden="true" />
             <div className={styles.heroOverlay} />
             <div className={styles.heroContent}>
               <h1 className={styles.heroTitle}>{businessName}</h1>
@@ -896,6 +902,7 @@ export function CatalogoGrid({
                 aria-hidden={idx !== heroIdx}
               />
             ))}
+            <span className={styles.constellationLight} aria-hidden="true" />
             <div className={styles.heroOverlay} />
             {covers.length > 1 && (
               <div className={styles.heroDots} aria-hidden="true">
@@ -932,6 +939,27 @@ export function CatalogoGrid({
             {categories.map(cat => {
               const catImage = categoryImages[cat] ?? null
               const count = categoryCounts.get(cat) ?? 0
+              // Sin foto real subida todavía (categorías OnBike sin asset) — en vez
+              // de un placeholder gris tipo "imagen rota", tarjeta blanca intencional
+              // con el nombre en tipografía del sistema + textura de constelación.
+              if (!catImage) {
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`${styles.editorialCatCard} ${styles.editorialCatCardBlank}`}
+                    onClick={() => scrollToSection(cat)}
+                  >
+                    <span className={styles.editorialCatBlankMedia}>
+                      <span className={styles.constellationDark} aria-hidden="true" />
+                      <span className={styles.editorialCatBlankName}>{cat}</span>
+                      <span className={styles.editorialCatBlankCount}>
+                        {count} producto{count !== 1 ? 's' : ''}
+                      </span>
+                    </span>
+                  </button>
+                )
+              }
               return (
                 <button
                   key={cat}
@@ -940,19 +968,13 @@ export function CatalogoGrid({
                   onClick={() => scrollToSection(cat)}
                 >
                   <span className={styles.editorialCatMedia}>
-                    {catImage ? (
-                      <img
-                        src={catImage}
-                        alt=""
-                        className={styles.editorialCatImg}
-                        loading="lazy"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <span className={styles.editorialCatFallback} aria-hidden="true">
-                        {cat.charAt(0).toUpperCase()}
-                      </span>
-                    )}
+                    <img
+                      src={catImage}
+                      alt=""
+                      className={styles.editorialCatImg}
+                      loading="lazy"
+                      aria-hidden="true"
+                    />
                     <span className={styles.editorialCatScrim} aria-hidden="true" />
                   </span>
                   <span className={styles.editorialCatLabel}>

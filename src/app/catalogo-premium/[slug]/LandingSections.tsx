@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
 import type {
   RenderableLandingSection, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig,
   CollectionGridRenderConfig,
@@ -177,6 +177,18 @@ function CommunitySection({ config }: { config: CommunityConfig }) {
 /* ── COLLECTION GRID — carrusel horizontal, productos de la colección ──── */
 
 function CollectionGridSection({ config, slug }: { config: CollectionGridRenderConfig; slug: string }) {
+  if (config.products.length === 0) {
+    return (
+      <section className={styles.lsCollection}>
+        <h2 className={styles.lsCollectionHeading}>{config.collection_name}</h2>
+        <div className={styles.lsCollectionEmpty}>
+          <PackageSearch size={28} strokeWidth={1.5} aria-hidden="true" />
+          <p>Muy pronto los productos de esta colección.</p>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className={styles.lsCollection}>
       <h2 className={styles.lsCollectionHeading}>{config.collection_name}</h2>

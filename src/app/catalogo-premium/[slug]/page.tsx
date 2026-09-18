@@ -88,7 +88,12 @@ async function resolveCollectionGridSections(
   return sections.flatMap((s): RenderableLandingSection[] => {
     if (s.type !== 'collection_grid') return [s]
     const resolved = byId.get(s.config.collection_id)
-    if (!resolved || resolved.products.length === 0) return []
+    // Colección inexistente/de otro tenant -> se descarta (config corrupta,
+    // mismo criterio que el resto de landing sections). Colección real con
+    // products:[] SÍ se mantiene -- el componente muestra un placeholder en
+    // vez de desaparecer, para que la sección quede lista desde ya y solo
+    // falte cargar productos reales de la línea 200K.
+    if (!resolved) return []
     return [{
       id: s.id, order: s.order, type: 'collection_grid',
       config: { ...s.config, collection_name: resolved.name, products: resolved.products },

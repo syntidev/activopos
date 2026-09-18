@@ -12,6 +12,7 @@ import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { LandingSections } from './LandingSections'
+import { ImgWithFallback } from './ImgWithFallback'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
@@ -532,13 +533,17 @@ export function CatalogoGrid({
         <span className={styles.productCardAccent} aria-hidden="true" />
         <div className={`${styles.productImageWrap} ${i % 3 === 1 ? styles.productImageWrapTall : ''}`}>
           {p.image ? (
-            <img
+            <ImgWithFallback
               src={p.image}
-              alt={p.name}
               className={styles.productImage}
               loading="lazy"
-              ref={img => { if (img?.complete) img.classList.add(styles.productImageLoaded) }}
-              onLoad={e => e.currentTarget.classList.add(styles.productImageLoaded)}
+              imgRef={img => { if (img?.complete) img.classList.add(styles.productImageLoaded) }}
+              onLoad={img => img.classList.add(styles.productImageLoaded)}
+              fallback={
+                <div className={`${styles.productImagePlaceholder} ${styles.gradDefault}`} aria-hidden="true">
+                  <span className={styles.productInitial}>{p.name.charAt(0).toUpperCase()}</span>
+                </div>
+              }
             />
           ) : (
             <div className={`${styles.productImagePlaceholder} ${styles.gradDefault}`} aria-hidden="true">
@@ -1305,10 +1310,19 @@ export function CatalogoGrid({
             {/* Image */}
             <div className={styles.modalImageWrap}>
               {selP.image ? (
-                <img
+                <ImgWithFallback
                   src={selP.images[modalImageIndex] ?? selP.image}
-                  alt={selP.name}
                   className={styles.modalImage}
+                  fallback={
+                    <div
+                      className={`${styles.modalImagePlaceholder} ${styles.gradDefault}`}
+                      aria-hidden="true"
+                    >
+                      <span className={styles.modalInitial}>
+                        {selP.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  }
                 />
               ) : (
                 <div

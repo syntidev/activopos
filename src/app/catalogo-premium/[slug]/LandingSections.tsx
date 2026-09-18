@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type {
   RenderableLandingSection, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig,
   CollectionGridRenderConfig,
 } from '@/lib/landing-sections'
+import { ImgWithFallback } from './ImgWithFallback'
 import styles from './catalogo.module.css'
 
 interface Props {
@@ -41,7 +43,15 @@ function HeroSection({ config }: { config: HeroConfig }) {
       {config.video_url ? (
         <video className={styles.lsHeroMedia} src={config.video_url} autoPlay muted loop playsInline />
       ) : (
-        <img src={config.image_url} alt="" className={styles.lsHeroMedia} aria-hidden="true" />
+        <ImgWithFallback
+          src={config.image_url}
+          className={styles.lsHeroMedia}
+          fallback={
+            <div className={styles.lsHeroMediaPlaceholder} aria-hidden="true">
+              <span>{(config.title || 'H').charAt(0).toUpperCase()}</span>
+            </div>
+          }
+        />
       )}
       <div className={styles.lsHeroScrim} aria-hidden="true" />
       <div className={styles.lsHeroContent}>
@@ -59,6 +69,8 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
   const [idx, setIdx]       = useState(0)
   const [paused, setPaused] = useState(false)
   const total                = config.slides.length
+  const reducedMotion        = useReducedMotion()
+  const fadeDuration          = reducedMotion ? 0 : 0.7
 
   useEffect(() => {
     if (paused || total <= 1) return
@@ -75,13 +87,35 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carrusel"
     >
-      <img src={slide.image_url} alt="" className={styles.lsSliderImg} aria-hidden="true" />
-      <div className={styles.lsSliderScrim} aria-hidden="true" />
-      <div className={styles.lsSliderContent}>
-        <h2 className={styles.lsSliderTitle}>{slide.title}</h2>
-        <p className={styles.lsSliderSubtitle}>{slide.subtitle}</p>
-        <a href={slide.cta_link} className={styles.lsSliderCta}>{slide.cta_text}</a>
-      </div>
+      {/* mode="sync" -> entrada y salida corren a la vez (crossfade real, no
+          secuencial). Imagen y contenido viven en la misma capa: se
+          desvanecen juntos con un solo transition. */}
+      <AnimatePresence mode="sync">
+        <motion.div
+          key={idx}
+          className={styles.lsSlideLayer}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: fadeDuration, ease: 'easeInOut' }}
+        >
+          <ImgWithFallback
+            src={slide.image_url}
+            className={styles.lsSliderImg}
+            fallback={
+              <div className={styles.lsSliderImgPlaceholder} aria-hidden="true">
+                <span>{(slide.title || 'E').charAt(0).toUpperCase()}</span>
+              </div>
+            }
+          />
+          <div className={styles.lsSliderScrim} aria-hidden="true" />
+          <div className={styles.lsSliderContent}>
+            <h2 className={styles.lsSliderTitle}>{slide.title}</h2>
+            <p className={styles.lsSliderSubtitle}>{slide.subtitle}</p>
+            <a href={slide.cta_link} className={styles.lsSliderCta}>{slide.cta_text}</a>
+          </div>
+        </motion.div>
+      </AnimatePresence>
 
       {total > 1 && (
         <>
@@ -122,7 +156,16 @@ function CommunitySection({ config }: { config: CommunityConfig }) {
       <div className={styles.lsCommunityGrid}>
         {config.items.map((item, i) => (
           <div key={i} className={styles.lsCommunityItem}>
-            <img src={item.image_url} alt="" className={styles.lsCommunityImg} loading="lazy" aria-hidden="true" />
+            <ImgWithFallback
+              src={item.image_url}
+              className={styles.lsCommunityImg}
+              loading="lazy"
+              fallback={
+                <div className={styles.lsCommunityImgPlaceholder} aria-hidden="true">
+                  <span>{(item.product_tag || 'C').charAt(0).toUpperCase()}</span>
+                </div>
+              }
+            />
             <span className={styles.lsCommunityTag}>{item.product_tag}</span>
           </div>
         ))}
@@ -176,7 +219,16 @@ function StorySection({ config }: { config: StoryConfig }) {
         <p className={styles.lsStoryBody}>{config.body}</p>
       </div>
       <div className={styles.lsStoryMedia}>
-        <img src={config.image_url} alt="" className={styles.lsStoryImg} loading="lazy" aria-hidden="true" />
+        <ImgWithFallback
+          src={config.image_url}
+          className={styles.lsStoryImg}
+          loading="lazy"
+          fallback={
+            <div className={styles.lsStoryImgPlaceholder} aria-hidden="true">
+              <span>{(config.title || 'S').charAt(0).toUpperCase()}</span>
+            </div>
+          }
+        />
       </div>
     </section>
   )

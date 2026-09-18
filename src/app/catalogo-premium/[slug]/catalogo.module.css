@@ -155,8 +155,9 @@
 
 .stickyCartBtn:hover { background: var(--color-surface-2); }
 
-/* Botón ⓘ — mismas dimensiones que el carrito. margin-left:auto agrupa
-   ⓘ + carrito en el extremo derecho sin envolverlos en un wrapper. */
+/* Botón ⓘ — mismas dimensiones que el carrito. Vive dentro de .iconCluster
+   (buscar+info+carrito); .stickyHeader empuja ese cluster al extremo derecho
+   vía justify-content:space-between del header, no margin-left acá. */
 .infoBtn {
   background:      none;
   border:          none;
@@ -166,7 +167,6 @@
   color:           var(--color-text-primary);
   transition:      background var(--transition-fast);
   flex-shrink:     0;
-  margin-left:     auto;
   display:         flex;
   align-items:     center;
   justify-content: center;
@@ -174,6 +174,94 @@
   min-height:      var(--touch-min);
 }
 .infoBtn:hover { background: var(--color-surface-2); }
+
+/* ── ICON CLUSTER + NAV DESKTOP (header "estilo app") ───────────
+   iconCluster: envuelve buscar+info+carrito, visible en TODOS los anchos
+   (info+carrito ya existían en mobile, solo se agrupan distinto). desktopNav
+   y desktopSearchBtn son display:none bajo 1024px -- mobile queda exactamente
+   como estaba (header compacto, sin nav, sin buscar en el header). */
+.iconCluster {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-1);
+  flex-shrink: 0;
+}
+
+.desktopNav {
+  display: none;
+}
+
+.desktopSearchBtn {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .stickyHeader {
+    height:          72px;
+    padding:         0 var(--space-6);
+    /* logo + nav quedan pegados a la izquierda; .iconCluster (margin-left:
+       auto) es lo único que empuja a la derecha -- space-between del mobile
+       ya no aplica con 3 hijos (nav quedaría centrado, no pegado al logo). */
+    justify-content: flex-start;
+    /* Transparente por defecto -- se "activa" (blur + fondo) recién al
+       scrollear, para no competir con el hero justo debajo. */
+    background:      transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom:   1px solid transparent;
+    box-shadow:      none;
+    transition:      background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .stickyHeaderScrolled {
+    background:      color-mix(in srgb, var(--color-white) 82%, transparent);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border-bottom:   1px solid var(--color-border-subtle);
+    box-shadow:      0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .desktopNav {
+    display:     flex;
+    align-items: center;
+    gap:         var(--space-6);
+    margin-left: var(--space-8);
+  }
+
+  .desktopNavLink {
+    font-size:       var(--text-sm);
+    font-weight:     var(--weight-medium);
+    color:           var(--color-text-secondary);
+    text-decoration: none;
+    background:      none;
+    border:          none;
+    cursor:          pointer;
+    padding:         var(--space-2) 0;
+    transition:      color var(--transition-fast);
+  }
+  .desktopNavLink:hover { color: var(--color-text-primary); }
+
+  .iconCluster {
+    gap:         var(--space-1-5);
+    margin-left: auto;
+  }
+
+  .desktopSearchBtn {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    background:      none;
+    border:          none;
+    cursor:          pointer;
+    padding:         var(--space-2);
+    border-radius:   var(--radius-md);
+    color:           var(--color-text-primary);
+    transition:      background var(--transition-fast);
+    min-width:       40px;
+    min-height:      40px;
+  }
+  .desktopSearchBtn:hover { background: var(--color-surface-2); }
+}
 
 /* ── PANEL DE INFORMACIÓN DEL NEGOCIO ────────────────────────── */
 
@@ -3404,9 +3492,11 @@
   color:     var(--color-text-secondary);
 }
 
-/* ── TEXTURA CONSTELACIÓN — patrón de líneas/puntos livianos (SVG inline,
-   sin peso de imagen), inspirado en la pared de la tienda física OnBike.
-   Dos variantes según el fondo: clara (hero oscuro) y oscura (tarjeta blanca). ── */
+/* ── TEXTURA "COMUNIDAD" — puntos de tamaño variado unidos por curvas
+   orgánicas (SVG inline, sin peso de imagen), distribución dispersa/irregular
+   a propósito (no cuadrícula triangulada) -- busca "conexión humana", no red
+   técnica ni vía láctea. Dos variantes según el fondo: clara (hero oscuro) y
+   oscura (tarjeta blanca), mismo trazo, mismo color de marca en ambas. ── */
 .constellationLight,
 .constellationDark {
   position:       absolute;
@@ -3414,20 +3504,20 @@
   z-index:        0;
   pointer-events: none;
   background-repeat: repeat;
-  background-size:   140px 140px;
+  background-size:   200px 200px;
 }
 
 .constellationLight {
-  opacity: 0.16;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='1'%3E%3Cline x1='12' y1='14' x2='70' y2='46'/%3E%3Cline x1='70' y1='46' x2='128' y2='18'/%3E%3Cline x1='70' y1='46' x2='48' y2='104'/%3E%3Cline x1='48' y1='104' x2='118' y2='120'/%3E%3Cline x1='12' y1='14' x2='48' y2='104'/%3E%3C/g%3E%3Cg fill='%23FFFFFF'%3E%3Ccircle cx='12' cy='14' r='2.4'/%3E%3Ccircle cx='70' cy='46' r='2.4'/%3E%3Ccircle cx='128' cy='18' r='2.4'/%3E%3Ccircle cx='48' cy='104' r='2.4'/%3E%3Ccircle cx='118' cy='120' r='2.4'/%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M18,30 Q56,57 95,55'/%3E%3Cpath d='M95,55 Q135,50 175,70'/%3E%3Cpath d='M95,55 Q105,97 80,140'/%3E%3Cpath d='M30,110 Q55,115 80,140'/%3E%3Cpath d='M80,140 Q115,149 150,130'/%3E%3Cpath d='M150,130 Q157,152 185,175'/%3E%3C/g%3E%3Cg fill='%23FFFFFF'%3E%3Ccircle cx='18' cy='30' r='2.2'/%3E%3Ccircle cx='52' cy='12' r='1.6'/%3E%3Ccircle cx='95' cy='55' r='3'/%3E%3Ccircle cx='140' cy='20' r='1.8'/%3E%3Ccircle cx='175' cy='70' r='2.4'/%3E%3Ccircle cx='30' cy='110' r='2'/%3E%3Ccircle cx='80' cy='140' r='2.8'/%3E%3Ccircle cx='150' cy='130' r='1.6'/%3E%3Ccircle cx='185' cy='175' r='2.2'/%3E%3Ccircle cx='60' cy='185' r='1.8'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* #0B4FCC hardcodeado a propósito: un data-URI de SVG no puede leer var()
    de CSS. Es el mismo valor que --onbike-blue -- si esa variable cambia tras
    la validación de Daniel, actualizar también este hex. */
 .constellationDark {
-  opacity: 0.09;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%230B4FCC' stroke-width='1'%3E%3Cline x1='12' y1='14' x2='70' y2='46'/%3E%3Cline x1='70' y1='46' x2='128' y2='18'/%3E%3Cline x1='70' y1='46' x2='48' y2='104'/%3E%3Cline x1='48' y1='104' x2='118' y2='120'/%3E%3Cline x1='12' y1='14' x2='48' y2='104'/%3E%3C/g%3E%3Cg fill='%230B4FCC'%3E%3Ccircle cx='12' cy='14' r='2.4'/%3E%3Ccircle cx='70' cy='46' r='2.4'/%3E%3Ccircle cx='128' cy='18' r='2.4'/%3E%3Ccircle cx='48' cy='104' r='2.4'/%3E%3Ccircle cx='118' cy='120' r='2.4'/%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%230B4FCC' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M18,30 Q56,57 95,55'/%3E%3Cpath d='M95,55 Q135,50 175,70'/%3E%3Cpath d='M95,55 Q105,97 80,140'/%3E%3Cpath d='M30,110 Q55,115 80,140'/%3E%3Cpath d='M80,140 Q115,149 150,130'/%3E%3Cpath d='M150,130 Q157,152 185,175'/%3E%3C/g%3E%3Cg fill='%230B4FCC'%3E%3Ccircle cx='18' cy='30' r='2.2'/%3E%3Ccircle cx='52' cy='12' r='1.6'/%3E%3Ccircle cx='95' cy='55' r='3'/%3E%3Ccircle cx='140' cy='20' r='1.8'/%3E%3Ccircle cx='175' cy='70' r='2.4'/%3E%3Ccircle cx='30' cy='110' r='2'/%3E%3Ccircle cx='80' cy='140' r='2.8'/%3E%3Ccircle cx='150' cy='130' r='1.6'/%3E%3Ccircle cx='185' cy='175' r='2.2'/%3E%3Ccircle cx='60' cy='185' r='1.8'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 .editorialCatScrim {
@@ -3706,12 +3796,45 @@
   .lsSlider { margin: var(--space-8) auto; max-width: 1280px; height: 280px; border-radius: 12px; }
 }
 
+/* Capa apilada del crossfade — img + scrim + contenido se desvanecen juntos
+   (una sola transición de opacity en el contenedor, no por separado). */
+.lsSlideLayer {
+  position: absolute;
+  inset:    0;
+}
+
 .lsSliderImg {
   position:   absolute;
   inset:      0;
   width:      100%;
   height:     100%;
   object-fit: cover;
+}
+
+.lsHeroMediaPlaceholder,
+.lsSliderImgPlaceholder {
+  position:        absolute;
+  inset:           0;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--color-surface-2);
+  font-size:       var(--text-3xl, 2rem);
+  font-weight:     700;
+  color:           var(--color-text-secondary);
+}
+
+.lsCommunityImgPlaceholder,
+.lsStoryImgPlaceholder {
+  width:           100%;
+  height:          100%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--color-surface-2);
+  font-size:       var(--text-2xl);
+  font-weight:     700;
+  color:           var(--color-text-secondary);
 }
 
 .lsSliderScrim {

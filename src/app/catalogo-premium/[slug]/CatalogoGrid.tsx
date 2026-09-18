@@ -183,12 +183,16 @@ export function CatalogoGrid({
   const [selectedDim1,    setSelectedDim1]    = useState<string | null>(null)
   const [showBackTop,    setShowBackTop]    = useState(false)
   const [heroIdx,        setHeroIdx]        = useState(0)
+  // Path de categoría con 404 confirmado (onError) -> misma tarjeta "blank"
+  // que la categoría sin foto, nunca el ícono nativo de imagen rota.
+  const [brokenCatImages, setBrokenCatImages] = useState<Set<string>>(new Set())
   const [activePriceRange, setActivePriceRange] = useState<{ min: number; max: number } | null>(null)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const categoryTrackRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   // El scroll vive en `.root` (page.tsx), no en window. El header es hijo directo
   // de `.root`, así que su parentElement es el contenedor scrolleable.
@@ -198,11 +202,15 @@ export function CatalogoGrid({
     getScroller()?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // Muestra "volver al inicio" tras bajar una pantalla
+  // Muestra "volver al inicio" tras bajar una pantalla + header desktop pasa
+  // a glass (blur) recién al scrollear -- mismo listener, un solo scroll.
   useEffect(() => {
     const scroller = getScroller()
     if (!scroller) return
-    const onScroll = () => setShowBackTop(scroller.scrollTop > 600)
+    const onScroll = () => {
+      setShowBackTop(scroller.scrollTop > 600)
+      setIsScrolled(scroller.scrollTop > 8)
+    }
     scroller.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
     return () => scroller.removeEventListener('scroll', onScroll)
@@ -639,7 +647,7 @@ export function CatalogoGrid({
   return (
     <>
       {/* ── Sticky header ──────────────────────────────────────── */}
-      <header ref={headerRef} className={styles.stickyHeader}>
+      <header ref={headerRef} className={`${styles.stickyHeader} ${isScrolled ? styles.stickyHeaderScrolled : ''}`}>
         <Link
           href={`/catalogo-premium/${slug}`}
           className={styles.headerLogo}
@@ -667,16 +675,45 @@ export function CatalogoGrid({
           </span>
         </Link>
 
-        <button
-          type="button"
-          className={styles.infoBtn}
-          onClick={() => setInfoOpen(true)}
-          aria-label="Información del negocio"
-        >
-          <Info size={20} aria-hidden="true" />
-        </button>
+        {/* Nav desktop -- oculta en mobile (styles.desktopNav: display:none
+            bajo 1024px). Mobile sigue con el header compacto de siempre,
+            sin tocar.
+            "Marcas" y "200K" apuntan a /productos por ahora (sin destino
+            propio distinto) -- Barra-de-marcas es Fase 2 explícita en
+            landing-sections.ts, y /productos no lee ningún query param de
+            colección todavía. Cero Fachadas: mejor un link real y compartido
+            que uno que aparente filtrar y no haga nada. Cuando exista shop-
+            by-brand o filtro por colección, apuntar cada uno a su propia URL. */}
+        <nav className={styles.desktopNav} aria-label="Navegación principal">
+          <Link href={`/catalogo-premium/${slug}`} className={styles.desktopNavLink}>Inicio</Link>
+          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.desktopNavLink}>Tienda</Link>
+          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.desktopNavLink}>Marcas</Link>
+          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.desktopNavLink}>200K</Link>
+        </nav>
 
-        <CartHeaderButton />
+        {/* iconCluster envuelve los 3 -- visible en TODOS los anchos (info+
+            carrito ya existían en mobile). Solo el botón de buscar es
+            desktop-only (styles.desktopSearchBtn: display:none bajo 1024px);
+            info+carrito no cambian de comportamiento en mobile. */}
+        <div className={styles.iconCluster}>
+          <button
+            type="button"
+            className={styles.desktopSearchBtn}
+            onClick={() => setSearchExpanded(true)}
+            aria-label="Buscar productos"
+          >
+            <Search size={18} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={styles.infoBtn}
+            onClick={() => setInfoOpen(true)}
+            aria-label="Información del negocio"
+          >
+            <Info size={20} aria-hidden="true" />
+          </button>
+          <CartHeaderButton />
+        </div>
       </header>
 
       {/* ── H2: Navegación + búsqueda expandible (sticky) ──────── */}
@@ -954,10 +991,11 @@ export function CatalogoGrid({
             {categories.map(cat => {
               const catImage = categoryImages[cat] ?? null
               const count = categoryCounts.get(cat) ?? 0
-              // Sin foto real subida todavía (categorías OnBike sin asset) — en vez
-              // de un placeholder gris tipo "imagen rota", tarjeta blanca intencional
+              // Sin foto real subida todavía (categorías OnBike sin asset), o con
+              // foto pero el path da 404 (brokenCatImages, onError) — en vez de un
+              // placeholder gris tipo "imagen rota", tarjeta blanca intencional
               // con el nombre en tipografía del sistema + textura de constelación.
-              if (!catImage) {
+              if (!catImage || brokenCatImages.has(cat)) {
                 return (
                   <button
                     key={cat}
@@ -989,6 +1027,7 @@ export function CatalogoGrid({
                       className={styles.editorialCatImg}
                       loading="lazy"
                       aria-hidden="true"
+                      onError={() => setBrokenCatImages(prev => new Set(prev).add(cat))}
                     />
                     <span className={styles.editorialCatScrim} aria-hidden="true" />
                   </span>

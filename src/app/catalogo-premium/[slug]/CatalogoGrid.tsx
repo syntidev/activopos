@@ -675,20 +675,23 @@ export function CatalogoGrid({
           </span>
         </Link>
 
-        {/* Nav desktop -- oculta en mobile (styles.desktopNav: display:none
-            bajo 1024px). Mobile sigue con el header compacto de siempre,
-            sin tocar.
+        {/* Nav del header -- oculta en mobile (styles.headerNav: display:none
+            bajo 1024px). Mobile sigue con el header compacto de siempre, sin
+            tocar. Reemplaza al <nav className={styles.desktopNav}> que vivía
+            en la navBar secundaria (Inicio/Catálogo, 2 links) -- ese quedaba
+            duplicado visualmente con este (misma función, mejor ubicación),
+            se eliminó de ahí.
             "Marcas" y "200K" apuntan a /productos por ahora (sin destino
             propio distinto) -- Barra-de-marcas es Fase 2 explícita en
             landing-sections.ts, y /productos no lee ningún query param de
             colección todavía. Cero Fachadas: mejor un link real y compartido
             que uno que aparente filtrar y no haga nada. Cuando exista shop-
             by-brand o filtro por colección, apuntar cada uno a su propia URL. */}
-        <nav className={styles.desktopNav} aria-label="Navegación principal">
-          <Link href={`/catalogo-premium/${slug}`} className={styles.desktopNavLink}>Inicio</Link>
-          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.desktopNavLink}>Tienda</Link>
-          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.desktopNavLink}>Marcas</Link>
-          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.desktopNavLink}>200K</Link>
+        <nav className={styles.headerNav} aria-label="Navegación principal">
+          <Link href={`/catalogo-premium/${slug}`} className={styles.headerNavLink}>Inicio</Link>
+          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Tienda</Link>
+          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Marcas</Link>
+          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>200K</Link>
         </nav>
 
         {/* iconCluster envuelve los 3 -- visible en TODOS los anchos (info+
@@ -750,19 +753,17 @@ export function CatalogoGrid({
             >
               <Menu size={18} aria-hidden="true" />
             </button>
+            {/* navSearchBtnDesktopHidden: en desktop el buscar ya vive en el
+                cluster del header (styles.desktopSearchBtn) -- mostrar los
+                dos sería redundante. */}
             <button
               type="button"
-              className={styles.navIconBtn}
+              className={`${styles.navIconBtn} ${styles.navSearchBtnDesktopHidden}`}
               onClick={() => setSearchExpanded(true)}
               aria-label="Buscar productos"
             >
               <Search size={18} aria-hidden="true" />
             </button>
-
-            <nav className={styles.desktopNav} aria-label="Navegación principal">
-              <Link href={`/catalogo-premium/${slug}`} className={styles.desktopNavLink}>Inicio</Link>
-              <Link href={`/catalogo-premium/${slug}/productos`} className={styles.desktopNavLink}>Catálogo</Link>
-            </nav>
 
             {(catalogMode === 'productos' || !browseMode) && (
               <div

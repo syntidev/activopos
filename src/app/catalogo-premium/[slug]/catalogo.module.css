@@ -175,9 +175,9 @@
 }
 .infoBtn:hover { background: var(--color-surface-2); }
 
-/* ── ICON CLUSTER + NAV DESKTOP (header "estilo app") ───────────
+/* ── ICON CLUSTER + NAV DEL HEADER (header "estilo app") ─────────
    iconCluster: envuelve buscar+info+carrito, visible en TODOS los anchos
-   (info+carrito ya existían en mobile, solo se agrupan distinto). desktopNav
+   (info+carrito ya existían en mobile, solo se agrupan distinto). headerNav
    y desktopSearchBtn son display:none bajo 1024px -- mobile queda exactamente
    como estaba (header compacto, sin nav, sin buscar en el header). */
 .iconCluster {
@@ -187,7 +187,7 @@
   flex-shrink: 0;
 }
 
-.desktopNav {
+.headerNav {
   display: none;
 }
 
@@ -221,14 +221,14 @@
     box-shadow:      0 1px 3px rgba(0, 0, 0, 0.06);
   }
 
-  .desktopNav {
+  .headerNav {
     display:     flex;
     align-items: center;
     gap:         var(--space-6);
     margin-left: var(--space-8);
   }
 
-  .desktopNavLink {
+  .headerNavLink {
     font-size:       var(--text-sm);
     font-weight:     var(--weight-medium);
     color:           var(--color-text-secondary);
@@ -239,7 +239,7 @@
     padding:         var(--space-2) 0;
     transition:      color var(--transition-fast);
   }
-  .desktopNavLink:hover { color: var(--color-text-primary); }
+  .headerNavLink:hover { color: var(--color-text-primary); }
 
   .iconCluster {
     gap:         var(--space-1-5);
@@ -525,29 +525,14 @@
 }
 .navIconBtn:hover { background: var(--color-brand-subtle); color: var(--biz-color, var(--onbike-blue)); }
 
-.desktopNav {
-  display: none;
-}
 @media (min-width: 1024px) {
-  .desktopNav {
-    display:     flex;
-    align-items: center;
-    gap:         var(--space-6);
-    margin-left: var(--space-4);
+  .navIconBtn:first-child { /* hamburguesa -- reemplazada por .headerNav */
+    display: none;
   }
-  .navIconBtn:first-child { /* hamburguesa */
+  .navSearchBtnDesktopHidden { /* buscar ya vive en el header (.desktopSearchBtn) */
     display: none;
   }
 }
-.desktopNavLink {
-  font-size:       var(--text-sm);
-  font-weight:     var(--weight-medium);
-  color:           var(--color-text-secondary);
-  text-decoration: none;
-  white-space:     nowrap;
-  transition:      color 150ms ease;
-}
-.desktopNavLink:hover { color: var(--biz-color, var(--onbike-blue)); }
 
 /* Búsqueda expandible (reemplaza chips al tocar la lupa) */
 .searchExpanded {

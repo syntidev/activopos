@@ -417,7 +417,7 @@ function EventSliderForm({ config, onChange }: { config: EventSliderConfig; onCh
     onChange({ ...config, slides })
   }
   const addSlide = () => {
-    if (config.slides.length >= 5) return
+    if (config.slides.length >= 8) return
     onChange({ ...config, slides: [...config.slides, { ...EMPTY_SLIDE }] })
   }
   const removeSlide = (i: number) => {
@@ -450,8 +450,8 @@ function EventSliderForm({ config, onChange }: { config: EventSliderConfig; onCh
           </div>
         </div>
       ))}
-      <Button variant="secondary" onClick={addSlide} disabled={config.slides.length >= 5}>
-        <Plus size={14} aria-hidden="true" /> Agregar slide ({config.slides.length}/5)
+      <Button variant="secondary" onClick={addSlide} disabled={config.slides.length >= 8}>
+        <Plus size={14} aria-hidden="true" /> Agregar slide ({config.slides.length}/8)
       </Button>
     </div>
   )

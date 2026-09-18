@@ -10,6 +10,27 @@ type RouteContext = { params: { id: string } }
 
 const parseId = (raw: string) => { const n = parseInt(raw); return isNaN(n) ? null : n }
 
+// Usado por el form de edición de producto para pre-marcar los checkboxes de
+// colecciones ya asociadas -- GET /api/products/[id] no las incluye.
+export async function GET(_req: NextRequest, { params }: RouteContext) {
+  try {
+    const { db } = await getAuthenticatedTenant()
+
+    const productId = parseId(params.id)
+    if (!productId) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+    const links = await db.productCollection.findMany({
+      where:  { product_id: productId }, // business_id del producto ya inyectado por el tenant layer
+      select: { collection_id: true },
+    })
+
+    return NextResponse.json({ ok: true, collection_ids: links.map(l => l.collection_id) })
+  } catch (e) {
+    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
+    throw e
+  }
+}
+
 // Reemplazo completo: el body es el set final de colecciones del producto,
 // no un delta — más simple para un selector multi-choice en el form (manda
 // el estado completo cada vez, igual que category_id/tags en otros forms).

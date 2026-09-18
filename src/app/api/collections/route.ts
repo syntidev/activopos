@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
+const currentYear = new Date().getFullYear()
+
 const collectionSchema = z.object({
-  slug: z.string().trim().min(1).max(60).regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
-  name: z.string().trim().min(1).max(120),
+  slug:       z.string().trim().min(1).max(60).regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
+  name:       z.string().trim().min(1).max(120),
+  year:       z.number().int().min(2000).max(currentYear + 5).nullable().optional(),
+  cover_path: z.string().trim().max(500).refine(
+    v => v === '' || v.startsWith('/uploads/') || v.startsWith('/storage/tenants/'),
+    'cover_path debe ser una ruta interna (/uploads/... o /storage/tenants/...)',
+  ).nullable().optional(),
 }).strict()
 
 export async function GET() {
@@ -44,8 +51,10 @@ export async function POST(req: NextRequest) {
     const collection = await db.collection.create({
       data: {
         business_id: session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
-        slug: data.slug,
-        name: data.name,
+        slug:        data.slug,
+        name:        data.name,
+        year:        data.year ?? null,
+        cover_path:  data.cover_path || null,
       },
     })
 

@@ -92,6 +92,8 @@ function toEditable(p: ApiProductDetail): EditableProduct {
   }
 }
 
+interface CollectionOption { id: number; name: string }
+
 export default function EditarProductoPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const productId = params.id
@@ -103,6 +105,15 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [hasCatalogPlan, setHasCatalogPlan] = useState(false)
   const { guardedFetch, upgradeReason, clearUpgrade } = usePlanGate()
+
+  // Colecciones — desacoplado del resto del form: POST /api/products/[id]/collections
+  // es un endpoint de reemplazo completo aparte (no viaja en el PATCH principal del
+  // producto), así que se guarda con su propio botón, igual de simple que category_id
+  // pero sin mezclar su estado con useProductForm.
+  const [allCollections, setAllCollections]         = useState<CollectionOption[]>([])
+  const [selectedCollections, setSelectedCollections] = useState<Set<number>>(new Set())
+  const [collectionsBusy, setCollectionsBusy]       = useState(false)
+  const [collectionsDirty, setCollectionsDirty]     = useState(false)
 
   useEffect(() => {
     fetch('/api/plan/check', {
@@ -126,6 +137,45 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
   }, [])
 
   useEffect(() => { void fetchCategories() }, [fetchCategories])
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      fetch('/api/collections').then(r => r.ok ? r.json() : { collections: [] }),
+      fetch(`/api/products/${productId}/collections`).then(r => r.ok ? r.json() : { collection_ids: [] }),
+    ]).then(([colData, linkData]: [{ collections: CollectionOption[] }, { collection_ids: number[] }]) => {
+      if (cancelled) return
+      setAllCollections(colData.collections ?? [])
+      setSelectedCollections(new Set(linkData.collection_ids ?? []))
+    }).catch(() => { /* no-critical: el producto se puede editar igual sin esto */ })
+    return () => { cancelled = true }
+  }, [productId])
+
+  function toggleCollection(id: number) {
+    setSelectedCollections(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+    setCollectionsDirty(true)
+  }
+
+  async function saveCollections() {
+    setCollectionsBusy(true)
+    try {
+      const res = await fetch(`/api/products/${productId}/collections`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ collection_ids: Array.from(selectedCollections) }),
+      })
+      if (!res.ok) { throw new Error() }
+      setCollectionsDirty(false)
+    } catch {
+      alert('Error al guardar las colecciones.')
+    } finally {
+      setCollectionsBusy(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -248,13 +298,49 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
           </button>
         </div>
       ) : (
-        <form id={FORM_ID} onSubmit={f.handleSubmit} noValidate className={s.grid}>
-          <ProductFormLayout
-            f={f}
-            categories={categories}
-            onNewCategory={() => setShowCategoryModal(true)}
-          />
-        </form>
+        <>
+          <form id={FORM_ID} onSubmit={f.handleSubmit} noValidate className={s.grid}>
+            <ProductFormLayout
+              f={f}
+              categories={categories}
+              onNewCategory={() => setShowCategoryModal(true)}
+            />
+          </form>
+
+          {/* Colecciones: fuera del <form> principal a propósito -- guarda con
+              su propio POST /api/products/[id]/collections (reemplazo completo),
+              no viaja en el PATCH de arriba. Tenant sin colecciones configuradas
+              -> allCollections=[] y esto no renderiza nada, cero cambio visual. */}
+          {allCollections.length > 0 && (
+            <div className={s.card}>
+              <h2 className={m.modalTitle}>Colecciones</h2>
+              <p className={m.modalSubtitle}>
+                Agrupa este producto en una edición/temporada para mostrarlo en su propio
+                carrusel del catálogo, además de su categoría normal.
+              </p>
+              <div className={m.formGroup}>
+                {allCollections.map(c => (
+                  <label key={c.id} className={s.combineToggleRow}>
+                    <input
+                      type="checkbox"
+                      checked={selectedCollections.has(c.id)}
+                      onChange={() => toggleCollection(c.id)}
+                    />
+                    <span>{c.name}</span>
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                className={m.btnSecondary}
+                onClick={saveCollections}
+                disabled={collectionsBusy || !collectionsDirty}
+              >
+                {collectionsBusy ? 'Guardando...' : 'Guardar colecciones'}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <CategoryModal

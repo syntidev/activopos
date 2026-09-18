@@ -4,26 +4,29 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type {
   RenderableLandingSection, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig,
+  CollectionGridRenderConfig,
 } from '@/lib/landing-sections'
 import styles from './catalogo.module.css'
 
 interface Props {
   sections: RenderableLandingSection[]
+  slug:     string
 }
 
 const SLIDER_INTERVAL_MS = 6000
 
-export function LandingSections({ sections }: Props) {
+export function LandingSections({ sections, slug }: Props) {
   if (sections.length === 0) return null
   return (
     <>
       {sections.map(s => {
         switch (s.type) {
-          case 'hero':         return <HeroSection      key={s.id} config={s.config} />
-          case 'event_slider': return <EventSlider      key={s.id} config={s.config} />
-          case 'community':    return <CommunitySection key={s.id} config={s.config} />
-          case 'story':        return <StorySection     key={s.id} config={s.config} />
-          default:              return null
+          case 'hero':            return <HeroSection          key={s.id} config={s.config} />
+          case 'event_slider':    return <EventSlider          key={s.id} config={s.config} />
+          case 'community':       return <CommunitySection     key={s.id} config={s.config} />
+          case 'story':           return <StorySection         key={s.id} config={s.config} />
+          case 'collection_grid': return <CollectionGridSection key={s.id} config={s.config} slug={slug} />
+          default:                 return null
         }
       })}
     </>
@@ -122,6 +125,40 @@ function CommunitySection({ config }: { config: CommunityConfig }) {
             <img src={item.image_url} alt="" className={styles.lsCommunityImg} loading="lazy" aria-hidden="true" />
             <span className={styles.lsCommunityTag}>{item.product_tag}</span>
           </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ── COLLECTION GRID — carrusel horizontal, productos de la colección ──── */
+
+function CollectionGridSection({ config, slug }: { config: CollectionGridRenderConfig; slug: string }) {
+  return (
+    <section className={styles.lsCollection}>
+      <h2 className={styles.lsCollectionHeading}>{config.collection_name}</h2>
+      <div className={styles.lsCollectionScroll}>
+        {config.products.map(p => (
+          <a key={p.id} href={`/catalogo-premium/${slug}/p/${p.id}`} className={styles.lsCollectionCard}>
+            {p.image ? (
+              <img src={p.image} alt="" className={styles.lsCollectionImg} loading="lazy" aria-hidden="true" />
+            ) : (
+              <div className={styles.lsCollectionImgPlaceholder} aria-hidden="true">
+                <span>{p.name.charAt(0).toUpperCase()}</span>
+              </div>
+            )}
+            <span className={styles.lsCollectionName}>{p.name}</span>
+            {p.priceUsd > 0 && (
+              <span className={styles.lsCollectionPrice}>
+                <span>${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                {p.priceBs && (
+                  <span className={styles.lsCollectionPriceBs}>
+                    Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                  </span>
+                )}
+              </span>
+            )}
+          </a>
         ))}
       </div>
     </section>

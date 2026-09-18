@@ -12,6 +12,7 @@ import {
   Bell,
   Crown,
   LayoutTemplate,
+  Layers,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -26,8 +27,9 @@ import { TabNotificaciones }  from './tabs/TabNotificaciones'
 import { TabCobros }          from './tabs/TabCobros'
 import { TabPlan }            from './tabs/TabPlan'
 import { TabLanding }         from './tabs/TabLanding'
+import { TabColecciones }     from './tabs/TabColecciones'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -45,7 +47,8 @@ const BASE_MAIN_TABS: Tab[] = [
   { key: 'notificaciones', label: 'Notificaciones',      Icon: Bell       },
 ]
 
-const LANDING_TAB: Tab = { key: 'landing', label: 'Landing', Icon: LayoutTemplate }
+const LANDING_TAB:      Tab = { key: 'landing',     label: 'Landing',     Icon: LayoutTemplate }
+const COLECCIONES_TAB:  Tab = { key: 'colecciones', label: 'Colecciones', Icon: Layers }
 
 const BOTTOM_TABS: Tab[] = [
   { key: 'plan',     label: 'Tu Plan',  Icon: Crown },
@@ -62,7 +65,7 @@ export function ConfiguracionView({ session, landingSectionsEnabled }: Configura
 
   // Gate de plan resuelto server-side (page.tsx) — sin el flag, la pestaña ni
   // aparece en el sidebar (no solo se bloquea al guardar).
-  const MAIN_TABS = landingSectionsEnabled ? [...BASE_MAIN_TABS, LANDING_TAB] : BASE_MAIN_TABS
+  const MAIN_TABS = landingSectionsEnabled ? [...BASE_MAIN_TABS, LANDING_TAB, COLECCIONES_TAB] : BASE_MAIN_TABS
 
   return (
     <div className={styles.configLayout}>
@@ -102,7 +105,8 @@ export function ConfiguracionView({ session, landingSectionsEnabled }: Configura
         {activeTab === 'impresion'      && <TabImpresion      businessId={session.businessId} />}
         {activeTab === 'cobros'         && <TabCobros         businessId={session.businessId} />}
         {activeTab === 'tema'           && <TabTema           businessId={session.businessId} />}
-        {activeTab === 'landing' && landingSectionsEnabled && <TabLanding businessId={session.businessId} />}
+        {activeTab === 'landing'     && landingSectionsEnabled && <TabLanding     businessId={session.businessId} />}
+        {activeTab === 'colecciones' && landingSectionsEnabled && <TabColecciones businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
         {activeTab === 'plan'           && <TabPlan     businessId={session.businessId} />}

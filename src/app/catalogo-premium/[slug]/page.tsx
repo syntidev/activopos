@@ -7,7 +7,7 @@ import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import { CatalogFooter } from './CatalogFooter'
 import { CONFIG_SCHEMAS, isSectionType } from '@/lib/landing-sections'
-import type { RenderableLandingSection } from '@/lib/landing-sections'
+import type { RenderableLandingSection, CollectionGridProduct } from '@/lib/landing-sections'
 import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
 import styles from './catalogo.module.css'
 
@@ -32,6 +32,68 @@ async function getSegmentFallbackDesc(segment: string | null): Promise<string | 
   if (!segment) return null
   const seg = await prisma.segment.findFirst({ where: { slug: segment }, select: { headline: true } })
   return seg?.headline ?? null
+}
+
+// Resuelve las secciones collection_grid: {collection_id} guardado en DB ->
+// nombre + productos activos de esa colección, mismo tenant. Batched (1 query
+// para todas las secciones) en vez de N+1. Colecciones sin productos activos
+// o inexistentes se descartan silenciosamente (mismo criterio que config corrupta).
+async function resolveCollectionGridSections(
+  sections: RenderableLandingSection[],
+  businessId: number,
+  rate: number,
+): Promise<RenderableLandingSection[]> {
+  const collectionIds = Array.from(new Set(
+    sections
+      .filter((s): s is Extract<RenderableLandingSection, { type: 'collection_grid' }> => s.type === 'collection_grid')
+      .map(s => s.config.collection_id),
+  ))
+  if (collectionIds.length === 0) return sections
+
+  const collections = await prisma.collection.findMany({
+    where:   { id: { in: collectionIds }, business_id: businessId, active: true },
+    select: {
+      id: true, name: true,
+      products: {
+        select: {
+          product: {
+            select: {
+              id: true, name: true, images: true,
+              price_per_unit_usd: true, price_per_kg_usd: true,
+              active: true, show_in_catalog: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  const byId = new Map(collections.map(c => {
+    const products: CollectionGridProduct[] = c.products
+      .map(pc => pc.product)
+      .filter(p => p.active && p.show_in_catalog)
+      .map(p => {
+        const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+        return {
+          id:       p.id,
+          name:     p.name,
+          image:    parseImages(p.images)[0] ?? null,
+          priceUsd,
+          priceBs:  priceUsd > 0 ? priceUsd * rate : null,
+        }
+      })
+    return [c.id, { name: c.name, products }]
+  }))
+
+  return sections.flatMap((s): RenderableLandingSection[] => {
+    if (s.type !== 'collection_grid') return [s]
+    const resolved = byId.get(s.config.collection_id)
+    if (!resolved || resolved.products.length === 0) return []
+    return [{
+      id: s.id, order: s.order, type: 'collection_grid',
+      config: { ...s.config, collection_name: resolved.name, products: resolved.products },
+    }]
+  })
 }
 
 async function getBusiness(slug: string) {
@@ -151,12 +213,20 @@ export default async function CatalogoPage({ params }: PageProps) {
   // Config es JSON crudo en DB — se revalida contra el mismo schema Zod que la
   // API de admin usa para escribir (fuente única de verdad). Una fila con tipo
   // desconocido o config corrupta se descarta en vez de romper el render.
-  const landingSections: RenderableLandingSection[] = landingSectionRows.flatMap(row => {
+  const parsedSections = landingSectionRows.flatMap(row => {
     if (!isSectionType(row.type)) return []
     const parsed = CONFIG_SCHEMAS[row.type].safeParse(row.config)
     if (!parsed.success) return []
     return [{ id: row.id, order: row.order, type: row.type, config: parsed.data } as RenderableLandingSection]
   })
+
+  // collection_grid solo guarda collection_id en DB -- acá se resuelve nombre +
+  // productos vía Prisma directo (mismo motivo que Landing Sections: page.tsx es
+  // server component sin sesión, GET /api/collections/[slug]/products es
+  // autenticado y no aplica a un visitante anónimo). Una query batched (in:) en
+  // vez de N+1 por sección. Colección sin productos activos o inexistente -> la
+  // sección se descarta, no rompe el resto del catálogo.
+  const landingSections = await resolveCollectionGridSections(parsedSections, business.id, rate)
 
   const stockMap = new Map<number, number>()
   for (const e of stockEntries) {

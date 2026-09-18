@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Fase 1 de Landing Sections — Disciplinas/Arma-tu-equipo/Barra-de-marcas
 // quedan para Fase 2. El layout de cada tipo NO es editable por el usuario,
 // solo el contenido de `config` — validado aquí, nunca confiado del cliente.
-export const SECTION_TYPES = ['hero', 'event_slider', 'community', 'story'] as const
+export const SECTION_TYPES = ['hero', 'event_slider', 'community', 'story', 'collection_grid'] as const
 export type SectionType = typeof SECTION_TYPES[number]
 
 const trimmed = (max: number) => z.string().trim().min(1).max(max)
@@ -73,6 +73,12 @@ export const CONFIG_SCHEMAS = {
     body:      trimmed(2000),
     image_url: imagePath(),
   }).strict(),
+  // Solo guarda la referencia a la colección — el renderer resuelve nombre y
+  // productos server-side vía Prisma directo (ver catalogo-premium/[slug]/page.tsx),
+  // igual que el resto del catálogo. Nada de eso se valida ni se guarda acá.
+  collection_grid: z.object({
+    collection_id: z.number().int().positive(),
+  }).strict(),
 } satisfies Record<SectionType, z.ZodTypeAny>
 
 export function isSectionType(value: string): value is SectionType {
@@ -81,15 +87,33 @@ export function isSectionType(value: string): value is SectionType {
 
 // Tipos derivados de los schemas — una sola fuente de verdad para el
 // renderer (catálogo público) y el formulario de admin, cero forma duplicada.
-export type HeroConfig          = z.infer<typeof CONFIG_SCHEMAS.hero>
-export type EventSliderConfig   = z.infer<typeof CONFIG_SCHEMAS.event_slider>
-export type CommunityConfig     = z.infer<typeof CONFIG_SCHEMAS.community>
-export type StoryConfig         = z.infer<typeof CONFIG_SCHEMAS.story>
-export type SlideConfig         = EventSliderConfig['slides'][number]
-export type CommunityItemConfig = CommunityConfig['items'][number]
+export type HeroConfig           = z.infer<typeof CONFIG_SCHEMAS.hero>
+export type EventSliderConfig    = z.infer<typeof CONFIG_SCHEMAS.event_slider>
+export type CommunityConfig      = z.infer<typeof CONFIG_SCHEMAS.community>
+export type StoryConfig          = z.infer<typeof CONFIG_SCHEMAS.story>
+export type CollectionGridConfig = z.infer<typeof CONFIG_SCHEMAS.collection_grid>
+export type SlideConfig          = EventSliderConfig['slides'][number]
+export type CommunityItemConfig  = CommunityConfig['items'][number]
+
+export interface CollectionGridProduct {
+  id:        number
+  name:      string
+  image:     string | null
+  priceUsd:  number
+  priceBs:   number | null
+}
+
+// Config enriquecida solo para el renderer (nunca se guarda así en DB): a
+// {collection_id} validado arriba, page.tsx le suma nombre + productos
+// resueltos por Prisma server-side antes de pasarlo al client component.
+export type CollectionGridRenderConfig = CollectionGridConfig & {
+  collection_name: string
+  products:        CollectionGridProduct[]
+}
 
 export type RenderableLandingSection =
-  | { id: number; order: number; type: 'hero';         config: HeroConfig }
-  | { id: number; order: number; type: 'event_slider'; config: EventSliderConfig }
-  | { id: number; order: number; type: 'community';    config: CommunityConfig }
-  | { id: number; order: number; type: 'story';        config: StoryConfig }
+  | { id: number; order: number; type: 'hero';            config: HeroConfig }
+  | { id: number; order: number; type: 'event_slider';    config: EventSliderConfig }
+  | { id: number; order: number; type: 'community';       config: CommunityConfig }
+  | { id: number; order: number; type: 'story';           config: StoryConfig }
+  | { id: number; order: number; type: 'collection_grid'; config: CollectionGridRenderConfig }

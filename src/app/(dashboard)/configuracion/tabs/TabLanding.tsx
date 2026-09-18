@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { SECTION_TYPES } from '@/lib/landing-sections'
 import type {
-  SectionType, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig,
+  SectionType, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig, CollectionGridConfig,
   SlideConfig, CommunityItemConfig,
 } from '@/lib/landing-sections'
 import styles from '../configuracion.module.css'
@@ -26,20 +26,25 @@ interface SectionRow {
 }
 
 const TYPE_LABELS: Record<SectionType, string> = {
-  hero:         'Hero',
-  event_slider: 'Banner de evento',
-  community:    'Comunidad',
-  story:        'Historia de marca',
+  hero:            'Hero',
+  event_slider:    'Banner de evento',
+  community:       'Comunidad',
+  story:           'Historia de marca',
+  collection_grid: 'Colección',
 }
 
 const EMPTY_SLIDE: SlideConfig = { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' }
 const EMPTY_ITEM: CommunityItemConfig = { image_url: '', product_tag: '' }
 
 const DEFAULT_CONFIG: Record<SectionType, Record<string, unknown>> = {
-  hero:         { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' } satisfies HeroConfig,
-  event_slider: { slides: [EMPTY_SLIDE, { ...EMPTY_SLIDE }] } satisfies EventSliderConfig,
-  community:    { heading: '', subheading: '', items: [EMPTY_ITEM, { ...EMPTY_ITEM }] } satisfies CommunityConfig,
-  story:        { eyebrow: '', title: '', body: '', image_url: '' } satisfies StoryConfig,
+  hero:            { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' } satisfies HeroConfig,
+  event_slider:    { slides: [EMPTY_SLIDE, { ...EMPTY_SLIDE }] } satisfies EventSliderConfig,
+  community:       { heading: '', subheading: '', items: [EMPTY_ITEM, { ...EMPTY_ITEM }] } satisfies CommunityConfig,
+  story:           { eyebrow: '', title: '', body: '', image_url: '' } satisfies StoryConfig,
+  // collection_id=0 no pasa el schema (.positive()) hasta que el admin elija una
+  // colección real -- mismo patrón que hero/story arrancando con strings vacíos
+  // que tampoco pasan min(1): "Se persiste recién cuando el admin llena el form".
+  collection_grid: { collection_id: 0 } satisfies CollectionGridConfig,
 }
 
 /* Compresión client-side (Canvas -> WebP) — mismo patrón que ProductModal.tsx,
@@ -322,10 +327,11 @@ function SectionCard({
         </div>
       </div>
 
-      {section.type === 'hero'         && <HeroForm         config={section.config as unknown as HeroConfig} onChange={onConfigChange} />}
-      {section.type === 'event_slider' && <EventSliderForm  config={section.config as unknown as EventSliderConfig} onChange={onConfigChange} />}
-      {section.type === 'community'    && <CommunityForm    config={section.config as unknown as CommunityConfig} onChange={onConfigChange} />}
-      {section.type === 'story'        && <StoryForm        config={section.config as unknown as StoryConfig} onChange={onConfigChange} />}
+      {section.type === 'hero'            && <HeroForm           config={section.config as unknown as HeroConfig} onChange={onConfigChange} />}
+      {section.type === 'event_slider'    && <EventSliderForm    config={section.config as unknown as EventSliderConfig} onChange={onConfigChange} />}
+      {section.type === 'community'       && <CommunityForm      config={section.config as unknown as CommunityConfig} onChange={onConfigChange} />}
+      {section.type === 'story'           && <StoryForm          config={section.config as unknown as StoryConfig} onChange={onConfigChange} />}
+      {section.type === 'collection_grid' && <CollectionGridForm config={section.config as unknown as CollectionGridConfig} onChange={onConfigChange} />}
 
       <div className={styles.saveRow}>
         <Button variant="primary" onClick={onSave} loading={busy}>Guardar</Button>
@@ -336,7 +342,7 @@ function SectionCard({
 
 /* ── Campo de imagen reutilizable — mismo patrón de TabTema (dropzone + upload) ── */
 
-function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
+export function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
   const [uploading, setUploading] = useState(false)
   const [dragging, setDragging]   = useState(false)
   const inputId = `ls-file-${label.replace(/\s+/g, '-')}`
@@ -492,6 +498,39 @@ function CommunityForm({ config, onChange }: { config: CommunityConfig; onChange
       <Button variant="secondary" onClick={addItem} disabled={config.items.length >= 4}>
         <Plus size={14} aria-hidden="true" /> Agregar foto ({config.items.length}/4)
       </Button>
+    </div>
+  )
+}
+
+function CollectionGridForm({ config, onChange }: { config: CollectionGridConfig; onChange: (c: CollectionGridConfig) => void }) {
+  const [options, setOptions] = useState<{ id: number; name: string }[]>([])
+
+  useEffect(() => {
+    fetch('/api/collections')
+      .then(r => r.ok ? r.json() : { collections: [] })
+      .then((data: { collections: { id: number; name: string }[] }) => setOptions(data.collections ?? []))
+      .catch(() => {})
+  }, [])
+
+  return (
+    <div className={styles.formFields}>
+      <div className={styles.fieldGroup}>
+        <label className={styles.label} htmlFor="ls-collection-select">Colección</label>
+        <select
+          id="ls-collection-select"
+          className={styles.select}
+          value={config.collection_id || ''}
+          onChange={e => onChange({ ...config, collection_id: Number(e.target.value) })}
+        >
+          <option value="" disabled>Elige una colección…</option>
+          {options.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+      </div>
+      {options.length === 0 && (
+        <p className={styles.pageSubtitle}>
+          No hay colecciones creadas todavía — creá una en la pestaña "Colecciones" primero.
+        </p>
+      )}
     </div>
   )
 }

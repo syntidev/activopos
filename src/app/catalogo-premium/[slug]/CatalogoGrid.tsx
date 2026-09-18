@@ -884,7 +884,7 @@ export function CatalogoGrid({
           ninguna, landingSections=[] y esto no renderiza nada: fallback
           automático al hero genérico de abajo, cero cambio de comportamiento. ── */}
       {catalogMode === 'home' && browseMode && landingSections.length > 0 && (
-        <LandingSections sections={landingSections} />
+        <LandingSections sections={landingSections} slug={slug} />
       )}
 
       {/* ── Hero banner genérico — solo si el tenant NO configuró un hero

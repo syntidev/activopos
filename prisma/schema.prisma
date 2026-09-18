@@ -389,6 +389,10 @@ model Collection {
   business_id Int
   slug        String   @db.VarChar(60)
   name        String   @db.VarChar(120)
+  // Edición/año de la colección (ej. "200k-2027" -> 2027). Opcional: no toda
+  // colección es anual (puede ser temática, sin año).
+  year        Int?
+  cover_path  String?  @db.VarChar(500)
   active      Boolean  @default(true)
   created_at  DateTime @default(now())
 

@@ -3537,6 +3537,80 @@
   text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
+/* ── COMPRÁ POR MARCA — sin campo `marca` estructurado todavía, cada tile
+   linkea al buscador de texto existente (?buscar=). Placeholder por marca
+   (misma textura constelación) hasta tener logos reales subidos. ──── */
+
+.brandSection {
+  padding: var(--space-6) var(--space-4);
+}
+
+@media (min-width: 1024px) {
+  .brandSection { padding: var(--space-8) var(--space-6); }
+}
+
+.brandHeader { margin-bottom: var(--space-3); }
+
+.brandTitle {
+  display:      inline-flex;
+  align-items:  center;
+  gap:          var(--space-2);
+  font-family:  var(--font-display);
+  font-size:    var(--text-xl);
+  font-weight:  700;
+  color:        var(--color-text-primary);
+}
+
+.brandScroll {
+  display:            flex;
+  gap:                var(--space-3);
+  overflow-x:         auto;
+  scroll-snap-type:   x proximity;
+  padding-bottom:     var(--space-2);
+  -webkit-overflow-scrolling: touch;
+}
+
+.brandCard {
+  flex:            0 0 auto;
+  width:           92px;
+  scroll-snap-align: start;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  gap:             var(--space-2);
+  color:           inherit;
+  text-decoration: none;
+}
+
+.brandCardMedia {
+  position:        relative;
+  width:           72px;
+  height:          72px;
+  border-radius:   50%;
+  overflow:        hidden;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--color-white);
+  border:          1px solid var(--color-border-subtle);
+}
+
+.brandCardInitial {
+  position:    relative;
+  z-index:     1;
+  font-family: var(--font-display);
+  font-size:   var(--text-lg);
+  font-weight: 700;
+  color:       var(--biz-color, var(--onbike-blue));
+}
+
+.brandCardName {
+  font-size:   var(--text-xs);
+  font-weight: var(--weight-medium);
+  color:       var(--color-text-primary);
+  text-align:  center;
+}
+
 /* ── EXPLORA POR PRECIO — patrón Amazon, sin badges de descuento ──── */
 
 .priceExploreSection {
@@ -4003,6 +4077,20 @@
   .lsCollectionHeading { font-size: var(--text-3xl); }
 }
 
+.lsCollectionEmpty {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            var(--space-3);
+  padding:        var(--space-8) var(--space-4);
+  color:          var(--color-text-muted);
+  text-align:     center;
+}
+.lsCollectionEmpty p {
+  margin:    0;
+  font-size: var(--text-sm);
+}
+
 .lsCollectionScroll {
   display:            flex;
   gap:                var(--space-3);
@@ -4137,4 +4225,102 @@
   height:     100%;
   object-fit: cover;
   display:    block;
+}
+
+/* ── Tab bar móvil (fijo abajo) — 5 ítems, Minimal Clean ─────────────
+   Solo mobile: oculto desde 1024px (mismo breakpoint que .navIconBtn
+   desktop-hidden más arriba). Reserva de espacio para no tapar el último
+   contenido va en .root (padding-bottom) y en los FABs existentes
+   (.waFab/.backTopBtn), que se recorren hacia arriba en mobile para no
+   quedar debajo de la barra. */
+.mobileTabBar {
+  position:        fixed;
+  left:            0;
+  right:           0;
+  bottom:          0;
+  z-index:         var(--z-sticky);
+  display:         flex;
+  align-items:     stretch;
+  height:          calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom:  env(safe-area-inset-bottom, 0px);
+  background:      color-mix(in srgb, var(--color-white) 95%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top:      1px solid var(--color-border-subtle);
+}
+
+.mobileTabItem {
+  flex:            1;
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             2px;
+  border:          none;
+  background:      none;
+  color:           var(--color-text-secondary);
+  cursor:          pointer;
+  min-height:      var(--touch-min);
+  transition:      color 200ms ease-out;
+}
+
+.mobileTabItemActive { color: var(--biz-color, var(--onbike-blue)); }
+
+.mobileTabIconWrap {
+  position: relative;
+  display:  flex;
+  transition: transform 200ms ease-out;
+}
+.mobileTabItemActive .mobileTabIconWrap { transform: translateY(-1px); }
+
+.mobileTabLabel {
+  font-size:   10px;
+  line-height: 1;
+  font-weight: var(--weight-medium, 500);
+  transition:  font-weight 200ms ease-out;
+}
+.mobileTabItemActive .mobileTabLabel { font-weight: var(--weight-semibold); }
+
+.mobileTabBadge {
+  position:        absolute;
+  top:             -4px;
+  right:           -8px;
+  min-width:       15px;
+  height:          15px;
+  padding:         0 3px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--color-danger, #EF4444);
+  color:           var(--color-white);
+  font-size:       9px;
+  font-weight:     var(--weight-semibold);
+  line-height:     1;
+  border-radius:   var(--radius-full);
+}
+
+@media (min-width: 1024px) {
+  .mobileTabBar { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobileTabItem,
+  .mobileTabIconWrap,
+  .mobileTabLabel {
+    transition: none;
+  }
+}
+
+/* Espacio para que el último contenido del scroll no quede tapado detrás
+   de la tab bar fija — solo bajo 1024px, mismo breakpoint que arriba. */
+@media (max-width: 1023px) {
+  .root { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+
+  .waFab {
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-3));
+  }
+
+  .backTopBtn { bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-3)); }
+
+  .backTopBtnStacked { bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-3) + 64px); }
 }

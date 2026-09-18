@@ -13,6 +13,7 @@ import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { LandingSections } from './LandingSections'
 import { ImgWithFallback } from './ImgWithFallback'
+import { MobileTabBar } from './MobileTabBar'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
@@ -83,8 +84,14 @@ interface Props {
   businessAddress?:   string | null | undefined
   catalogMode?:       'home' | 'productos'
   initialCategory?:   string | null
+  initialQuery?:      string | null
   landingSections?:   RenderableLandingSection[]
 }
+
+// Marcas reales que OnBike vende — sin campo `marca` estructurado en
+// Product todavía (decisión del sprint: texto plano vía el buscador
+// existente, no un filtro nuevo). Lista fija hasta que exista ese campo.
+const BRANDS = ['Safetti', 'Garmin', 'On', 'KOM', 'Rudy'] as const
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
@@ -162,6 +169,7 @@ export function CatalogoGrid({
   businessInstagram,
   catalogMode = 'home',
   initialCategory = null,
+  initialQuery = null,
   landingSections = [],
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
@@ -170,7 +178,7 @@ export function CatalogoGrid({
 
   const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory)
   const [activeSub,      setActiveSub]      = useState<string | null>(null)
-  const [query,          setQuery]          = useState('')
+  const [query,          setQuery]          = useState(initialQuery ?? '')
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
   const [modalQty,       setModalQty]       = useState(1)
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
@@ -1050,6 +1058,37 @@ export function CatalogoGrid({
         </section>
       )}
 
+      {/* ── Comprá por marca — marcas reales de OnBike, sin campo `marca`
+          estructurado en Product todavía: cada tile linkea al buscador
+          existente vía ?buscar=, mismo mecanismo que ya usa la barra de
+          búsqueda (query -> initialQuery -> useState). Placeholder de imagen
+          por marca (textura constelación) hasta tener fotos reales. ── */}
+      {catalogMode === 'home' && browseMode && BRANDS.length > 0 && (
+        <section className={styles.brandSection} aria-label="Marcas">
+          <div className={styles.brandHeader}>
+            <span className={styles.brandTitle}>
+              <Tag size={16} aria-hidden="true" />
+              Comprá por marca
+            </span>
+          </div>
+          <div className={styles.brandScroll}>
+            {BRANDS.map(brand => (
+              <Link
+                key={brand}
+                href={`/catalogo-premium/${slug}/productos?buscar=${encodeURIComponent(brand)}`}
+                className={styles.brandCard}
+              >
+                <span className={styles.brandCardMedia}>
+                  <span className={styles.constellationDark} aria-hidden="true" />
+                  <span className={styles.brandCardInitial}>{brand.charAt(0)}</span>
+                </span>
+                <span className={styles.brandCardName}>{brand}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Explora por precio — patrón "explorar por precio" tipo Amazon,
           sin badges de descuento. Filtro real sobre `products`, no decorativo ── */}
       {catalogMode === 'home' && browseMode && priceRanges.length > 0 && (
@@ -1733,6 +1772,12 @@ export function CatalogoGrid({
           <span className={styles.waFabText}>Pedir por WhatsApp</span>
         </a>
       )}
+
+      <MobileTabBar
+        slug={slug}
+        onSearchClick={() => setSearchExpanded(true)}
+        onAccountClick={() => setInfoOpen(true)}
+      />
     </>
   )
 }

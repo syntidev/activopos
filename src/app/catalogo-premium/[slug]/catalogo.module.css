@@ -4227,26 +4227,35 @@
   display:    block;
 }
 
-/* ── Tab bar móvil (fijo abajo) — 5 ítems, Minimal Clean ─────────────
-   Solo mobile: oculto desde 1024px (mismo breakpoint que .navIconBtn
-   desktop-hidden más arriba). Reserva de espacio para no tapar el último
-   contenido va en .root (padding-bottom) y en los FABs existentes
-   (.waFab/.backTopBtn), que se recorren hacia arriba en mobile para no
-   quedar debajo de la barra. */
+/* ── Tab bar móvil (flotante, glass, elevada) — 5 ítems ──────────────
+   Rediseño 2026-09-18 a partir de referencia pixel-exacta (Carlos rechazó
+   la v1: plana, sin sombra, pegada al borde). Solo mobile: oculto desde
+   1024px (mismo breakpoint que .navIconBtn desktop-hidden más arriba).
+   Reserva de espacio para no tapar el último contenido va en .root
+   (padding-bottom) y en los FABs existentes (.waFab/.backTopBtn), que se
+   recorren hacia arriba en mobile para no quedar debajo de la barra. */
 .mobileTabBar {
   position:        fixed;
-  left:            0;
-  right:           0;
-  bottom:          0;
+  left:            12px;
+  right:           12px;
+  bottom:          calc(14px + env(safe-area-inset-bottom, 0px));
   z-index:         var(--z-sticky);
+  height:          62px;
+  border-radius:   20px;
   display:         flex;
-  align-items:     stretch;
-  height:          calc(56px + env(safe-area-inset-bottom, 0px));
-  padding-bottom:  env(safe-area-inset-bottom, 0px);
-  background:      color-mix(in srgb, var(--color-white) 95%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top:      1px solid var(--color-border-subtle);
+  align-items:     center;
+  justify-content: space-around;
+  padding:         0 4px;
+  background:      rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border:          1px solid rgba(255, 255, 255, 0.5);
+  /* Sombra con tinte del color de marca (no gris plano) — esto es lo que la
+     hace sentir "premium". #0B4FCC hardcodeado a propósito, igual que
+     .constellationDark más arriba: un box-shadow no puede leer var() para
+     mezclar con --biz-color dinámico sin color-mix(), y esta sombra es
+     decorativa/sutil — no crítica si el tenant tiene otro azul de marca. */
+  box-shadow: 0 8px 24px rgba(11, 79, 204, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .mobileTabItem {
@@ -4256,19 +4265,33 @@
   align-items:     center;
   justify-content: center;
   gap:             2px;
-  border:          none;
-  background:      none;
-  color:           var(--color-text-secondary);
-  cursor:          pointer;
+  min-width:       52px;
   min-height:      var(--touch-min);
-  transition:      color 200ms ease-out;
+  padding:         6px 10px;
+  border:          none;
+  border-radius:   14px;
+  background:      none;
+  color:           #9AA0A8;
+  cursor:          pointer;
+  transition:      background 200ms ease-out, transform 100ms ease-out, color 200ms ease-out;
+}
+/* :active nativo = feedback de "esto respondió al toque" en CUALQUIER ítem,
+   activo o no — mismo mecanismo que el pressed del mockup, sin JS/estado
+   propio: se asienta solo al soltar (100ms), no hace falta re-simularlo. */
+.mobileTabItem:active {
+  transform: scale(0.93);
+  background: rgba(11, 79, 204, 0.16);
 }
 
-.mobileTabItemActive { color: var(--biz-color, var(--onbike-blue)); }
+.mobileTabItemActive {
+  background: rgba(11, 79, 204, 0.10);
+  color:      var(--biz-color, var(--onbike-blue));
+}
+.mobileTabItemActive:active { background: rgba(11, 79, 204, 0.16); }
 
 .mobileTabIconWrap {
-  position: relative;
-  display:  flex;
+  position:   relative;
+  display:    flex;
   transition: transform 200ms ease-out;
 }
 .mobileTabItemActive .mobileTabIconWrap { transform: translateY(-1px); }
@@ -4277,26 +4300,27 @@
   font-size:   10px;
   line-height: 1;
   font-weight: var(--weight-medium, 500);
+  color:       inherit;
   transition:  font-weight 200ms ease-out;
 }
-.mobileTabItemActive .mobileTabLabel { font-weight: var(--weight-semibold); }
+.mobileTabItemActive .mobileTabLabel { font-weight: var(--weight-bold, 700); }
 
 .mobileTabBadge {
   position:        absolute;
-  top:             -4px;
-  right:           -8px;
-  min-width:       15px;
-  height:          15px;
-  padding:         0 3px;
+  top:             0;
+  right:           -6px;
+  width:           16px;
+  height:          16px;
   display:         flex;
   align-items:     center;
   justify-content: center;
-  background:      var(--color-danger, #EF4444);
-  color:           var(--color-white);
+  background:      #FF4D4D;
+  color:           #fff;
   font-size:       9px;
-  font-weight:     var(--weight-semibold);
+  font-weight:     var(--weight-bold, 700);
   line-height:     1;
-  border-radius:   var(--radius-full);
+  border-radius:   50%;
+  border:          2px solid #fff;
 }
 
 @media (min-width: 1024px) {
@@ -4309,18 +4333,21 @@
   .mobileTabLabel {
     transition: none;
   }
+  .mobileTabItem:active { transform: none; }
+  .mobileTabItemActive .mobileTabIconWrap { transform: none; }
 }
 
 /* Espacio para que el último contenido del scroll no quede tapado detrás
-   de la tab bar fija — solo bajo 1024px, mismo breakpoint que arriba. */
+   de la tab bar fija — solo bajo 1024px, mismo breakpoint que arriba.
+   76px = 14px (separación del borde) + 62px (alto de la barra). */
 @media (max-width: 1023px) {
-  .root { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+  .root { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
 
   .waFab {
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-3));
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--space-3));
   }
 
-  .backTopBtn { bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-3)); }
+  .backTopBtn { bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--space-3)); }
 
-  .backTopBtnStacked { bottom: calc(56px + env(safe-area-inset-bottom, 0px) + var(--space-3) + 64px); }
+  .backTopBtnStacked { bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--space-3) + 64px); }
 }

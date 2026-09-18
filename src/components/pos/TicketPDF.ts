@@ -25,7 +25,7 @@ const fQty = (n: number, mode: string) =>
       : n.toFixed(2) + ' und'
 
 /* ── XSS protection: escape all user-controlled strings ── */
-function esc(s: string): string {
+export function esc(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -35,7 +35,7 @@ function esc(s: string): string {
 }
 
 /* ── Safe print helper via Blob URL (avoids document.write) ── */
-function openPrintWindow(html: string, css: string): void {
+export function openPrintWindow(html: string, css: string): void {
   const fullDoc = [
     '<!DOCTYPE html>',
     '<html lang="es">',

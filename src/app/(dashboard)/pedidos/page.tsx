@@ -19,6 +19,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
 import { CobrarPedidoModal } from './CobrarPedidoModal'
+import { OrderDetalleModal, type OrderDetail } from './OrderDetalleModal'
 import styles from './pedidos.module.css'
 
 /* ── Types ── */
@@ -90,6 +91,7 @@ function OrderCard({
   onWhatsApp,
   onCobrar,
   onCancelar,
+  onOpenDetail,
 }: {
   order: Order
   onDragStart: (e: React.DragEvent, order: Order) => void
@@ -97,6 +99,7 @@ function OrderCard({
   onWhatsApp: (order: Order) => void
   onCobrar: (order: Order) => void
   onCancelar: (order: Order) => void
+  onOpenDetail: (order: Order) => void
 }) {
   const nextStatus = STATUS_NEXT[order.status]
   const urgency = timeUrgency(order.created_at)
@@ -111,6 +114,7 @@ function OrderCard({
       className={styles.orderCard}
       draggable
       onDragStart={(e) => onDragStart(e, order)}
+      onClick={() => onOpenDetail(order)}
       role="listitem"
       aria-label={`Pedido ${order.order_number}`}
     >
@@ -148,7 +152,7 @@ function OrderCard({
         {nextStatus && (
           <button
             className={styles.advanceBtn}
-            onClick={() => onAdvance(order)}
+            onClick={(e) => { e.stopPropagation(); onAdvance(order) }}
             aria-label={`Avanzar pedido ${order.order_number}`}
           >
             {nextStatus === 'preparing'  && '→ Preparar'}
@@ -158,7 +162,7 @@ function OrderCard({
         )}
         <button
           className={styles.waBtn}
-          onClick={() => onWhatsApp(order)}
+          onClick={(e) => { e.stopPropagation(); onWhatsApp(order) }}
           aria-label="Enviar por WhatsApp"
           title="WhatsApp"
         >
@@ -169,14 +173,14 @@ function OrderCard({
       <div className={styles.orderActionsCobro}>
         <button
           className={styles.cancelarBtn}
-          onClick={() => onCancelar(order)}
+          onClick={(e) => { e.stopPropagation(); onCancelar(order) }}
           aria-label={`Cancelar pedido ${order.order_number}`}
         >
           Cancelar
         </button>
         <button
           className={styles.cobrarBtn}
-          onClick={() => onCobrar(order)}
+          onClick={(e) => { e.stopPropagation(); onCobrar(order) }}
           aria-label={`Cobrar pedido ${order.order_number}`}
         >
           Cobrar
@@ -202,6 +206,7 @@ function KanbanColumn({
   onWhatsApp,
   onCobrar,
   onCancelar,
+  onOpenDetail,
 }: {
   status: OrderStatus
   label: string
@@ -216,6 +221,7 @@ function KanbanColumn({
   onWhatsApp: (order: Order) => void
   onCobrar: (order: Order) => void
   onCancelar: (order: Order) => void
+  onOpenDetail: (order: Order) => void
 }) {
   return (
     <div
@@ -259,6 +265,7 @@ function KanbanColumn({
                 onWhatsApp={onWhatsApp}
                 onCobrar={onCobrar}
                 onCancelar={onCancelar}
+                onOpenDetail={onOpenDetail}
               />
             </motion.div>
           ))}
@@ -294,6 +301,7 @@ function PedidosContent() {
   const [dragOverCol, setDragOverCol] = useState<OrderStatus | null>(null)
   const [modalOpen, setModalOpen]   = useState(false)
   const [cobrarOrder, setCobrarOrder] = useState<Order | null>(null)
+  const [detailOrderId, setDetailOrderId] = useState<number | null>(null)
   const [search, setSearch]         = useState('')
   const draggingRef = useRef<Order | null>(null)
 
@@ -436,6 +444,20 @@ function PedidosContent() {
     }
   }
 
+  /* ── Detalle de pedido ── */
+
+  const handleOpenDetail = (order: Order) => setDetailOrderId(order.id)
+
+  const handleOrderUpdated = (updated: OrderDetail) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === updated.id
+          ? { ...o, total_usd: updated.total_usd, total_bs: updated.total_bs, items: updated.items }
+          : o
+      )
+    )
+  }
+
   /* ── Search + orders by column ── */
 
   const filteredOrders = search
@@ -531,6 +553,7 @@ function PedidosContent() {
                 onWhatsApp={handleWhatsApp}
                 onCobrar={handleCobrarOrder}
                 onCancelar={handleCancelarOrder}
+                onOpenDetail={handleOpenDetail}
               />
             ))}
           </div>
@@ -555,6 +578,14 @@ function PedidosContent() {
         totalBs={Number(cobrarOrder?.total_bs ?? 0)}
         onClose={() => setCobrarOrder(null)}
         onConfirm={handleCobrarConfirm}
+      />
+
+      {/* Modal: Detalle de pedido */}
+      <OrderDetalleModal
+        open={detailOrderId !== null}
+        orderId={detailOrderId ?? 0}
+        onClose={() => setDetailOrderId(null)}
+        onUpdated={handleOrderUpdated}
       />
     </div>
   )

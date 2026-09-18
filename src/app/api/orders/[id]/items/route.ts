@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { prisma } from '@/lib/prisma'
+
+type Context = { params: { id: string } }
+
+// Estados en los que el pedido admite editar ítems — deja de ser editable en
+// 'dispatched'/'delivered'/'cancelled' o si ya generó una Sale (cobrado).
+const EDITABLE_STATUSES = ['received', 'preparing', 'ready']
+
+// PERMISOS — INTENCIONAL: sin guard de rol, igual que el resto de /api/orders.
+// Sellado en MATRIZ_ROLES_PERMISOS_SELLADA.md (#2).
+
+const itemSchema = z.object({
+  product_id:    z.number().int().positive(),
+  product_name:  z.string().min(1).max(120),
+  variant_label: z.string().max(100).optional(),
+  quantity:      z.number().positive(),
+  // price_per_unit_usd NO se acepta del cliente — siempre se recalcula desde la DB
+})
+
+const patchSchema = z.object({
+  items: z.array(itemSchema).min(1),
+})
+
+/* ── PATCH /api/orders/[id]/items — reemplaza los ítems de un pedido activo ── */
+
+export async function PATCH(req: NextRequest, { params }: Context) {
+  const orderId = Number(params.id)
+  if (!Number.isFinite(orderId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+
+  let data: z.infer<typeof patchSchema>
+  try {
+    data = patchSchema.parse(await req.json())
+  } catch {
+    return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
+  }
+
+  try {
+    const { session } = await getAuthenticatedTenant()
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { id: orderId, business_id: session.businessId },
+      })
+      if (!order) throw new Error('ORDER_NOT_FOUND')
+      if (!EDITABLE_STATUSES.includes(order.status)) throw new Error('ORDER_NOT_EDITABLE')
+
+      // A5-1: precios desde DB — nunca confiar en el cliente (anti price-tampering)
+      const productIds = Array.from(new Set(data.items.map((i) => i.product_id)))
+      const products = await tx.product.findMany({
+        where:  { id: { in: productIds }, business_id: session.businessId, active: true },
+        select: { id: true, price_per_unit_usd: true, price_per_kg_usd: true },
+      })
+      if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
+      const productMap = new Map(products.map((p) => [p.id, p]))
+
+      const itemsWithPrices = data.items.map((item) => {
+        const product  = productMap.get(item.product_id)!
+        const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        if (priceUsd <= 0) throw new Error('PRICE_NOT_SET')
+        const subtotal_usd = Number((item.quantity * priceUsd).toFixed(2))
+        return { ...item, price_per_unit_usd: priceUsd, subtotal_usd }
+      })
+
+      const itemsTotal = itemsWithPrices.reduce((acc, i) => acc + i.subtotal_usd, 0)
+      const total_usd   = Number((itemsTotal + Number(order.delivery_fee)).toFixed(2))
+      const total_bs    = Number((total_usd * Number(order.rate_used)).toFixed(2))
+
+      await tx.orderItem.deleteMany({ where: { order_id: orderId } })
+
+      return tx.order.update({
+        where: { id: orderId },
+        data: {
+          total_usd,
+          total_bs,
+          items: {
+            create: itemsWithPrices.map((item) => ({
+              product_id:         item.product_id,
+              product_name:       item.product_name,
+              variant_label:      item.variant_label,
+              quantity:           item.quantity,
+              price_per_unit_usd: item.price_per_unit_usd,
+              subtotal_usd:       item.subtotal_usd,
+            })),
+          },
+        },
+        include: { items: true },
+      })
+    })
+
+    return NextResponse.json({ ok: true, order: updated })
+  } catch (err) {
+    if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    if (err instanceof Error) {
+      if (err.message === 'ORDER_NOT_FOUND')    return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
+      if (err.message === 'ORDER_NOT_EDITABLE')  return NextResponse.json({ error: 'El pedido ya no admite edición de ítems' }, { status: 409 })
+      if (err.message === 'PRODUCT_NOT_FOUND')   return NextResponse.json({ error: 'Uno o más productos no existen o están inactivos' }, { status: 400 })
+      if (err.message === 'PRICE_NOT_SET')       return NextResponse.json({ error: 'Uno o más productos no tienen precio configurado' }, { status: 400 })
+    }
+    console.error('order items PATCH error:', err)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
+}

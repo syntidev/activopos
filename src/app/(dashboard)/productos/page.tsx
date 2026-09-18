@@ -333,10 +333,12 @@ export default function ProductosPage() {
           stock_quantity: data.stockInitial,
           variants: data.hasVariants
             ? data.variants.map(v => ({
-                tipo:         'personalizado' as const,
-                valor:        v.name,
-                precio_extra: v.price_extra_usd,
-                stock:        v.stock,
+                tipo:          v.tipo ?? 'personalizado' as const,
+                valor:         v.name,
+                precio_extra:  v.price_extra_usd,
+                stock:         v.stock,
+                variant_group: v.variant_group ?? null,
+                sku:           v.sku ?? null,
               }))
             : undefined,
         }),

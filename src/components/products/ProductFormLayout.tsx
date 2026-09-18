@@ -7,6 +7,7 @@ import {
   Warehouse, MapPin,
 } from 'lucide-react'
 import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProductForm'
+import { PRESET_GROUPS, SHOE_GROUP_IDS } from '@/lib/variantPresets'
 import { AccordionCard } from './AccordionCard'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import type { ModalCategory } from './ProductModal'
@@ -32,20 +33,8 @@ function getHint(kind: ProductKind): { title: string; examples: string } {
   }
 }
 
-const PRESET_GROUPS = [
-  { id: 'zap-dama',       label: 'Zapato Dama',      values: ['35','36','37','38','39','40','41','42'] },
-  { id: 'zap-caballero',  label: 'Zapato Caballero', values: ['39','40','41','42','43','44','45','46','47','48','49','50','51'] },
-  { id: 'zap-nino',       label: 'Zapato Niño',      values: ['28','29','30','31','32','33','34','35','36','37','38'] },
-  { id: 'zap-nina',       label: 'Zapato Niña',      values: ['28','29','30','31','32','33','34','35','36','37','38'] },
-  { id: 'ropa-dama',      label: 'Ropa Dama',        values: ['XS','S','M','L','XL','2XL'] },
-  { id: 'ropa-caballero', label: 'Ropa Caballero',   values: ['XS','S','M','L','XL','2XL','3XL','4XL'] },
-  { id: 'ropa-nino',      label: 'Ropa Niño',        values: ['2','4','6','8','10','12','14'] },
-  { id: 'ropa-nina',      label: 'Ropa Niña',        values: ['2','4','6','8','10','12','14'] },
-  { id: 'colores',        label: 'Colores',          values: ['Negro','Blanco','Rojo','Azul','Verde','Amarillo','Naranja','Rosado','Gris','Morado'] },
-] as const
-
-// Presets de calzado -> muestran el input de equivalencia opcional junto al chip.
-const SHOE_GROUP_IDS = ['zap-dama', 'zap-caballero', 'zap-nino', 'zap-nina'] as const
+// PRESET_GROUPS/SHOE_GROUP_IDS: ver src/lib/variantPresets.ts (fuente única,
+// también consumida por ProductModal.tsx).
 
 interface ProductFormLayoutProps {
   f: ReturnType<typeof useProductForm>

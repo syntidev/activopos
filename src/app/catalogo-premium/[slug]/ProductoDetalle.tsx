@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState, useMemo, type CSSProperties } from 'react'
-import { ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag, Ruler } from 'lucide-react'
 import Link from 'next/link'
 import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
 import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
+import { SizeGuideModal } from './SizeGuideModal'
+import { hasSizeGuide } from '@/lib/size-guide'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
 import styles from './productoDetalle.module.css'
 
@@ -49,6 +51,7 @@ export function ProductoDetalle({
   const [selectedDim1,      setSelectedDim1]      = useState<string | null>(null)
   const [qty,               setQty]               = useState(1)
   const [variantError,      setVariantError]      = useState(false)
+  const [sizeGuideOpen,     setSizeGuideOpen]      = useState(false)
 
   // Scroll lock — el drawer/checkout del carrito puede abrirse desde esta página también
   useEffect(() => {
@@ -82,6 +85,12 @@ export function ProductoDetalle({
   // every() y no some(): con una sola variante sin combination_key, el map de
   // abajo hace .split() sobre null y tumba el catalogo. Mixto => se trata legacy.
   const isCombinedVariant = variants.length > 0 && variants.every(v => v.combination_key)
+  // Guía de tallas: solo para el preset de una dimensión (talla/color simple)
+  // y solo si la categoría tiene tabla de referencia — colores/ropa infantil
+  // no tienen, se oculta el link en vez de abrir un modal vacío.
+  const sizeGuideCategory = !isCombinedVariant
+    ? variants.find(v => v.variant_group && hasSizeGuide(v.variant_group))?.variant_group ?? null
+    : null
   const combinedDimLabels = isCombinedVariant ? (variants[0]?.tipo ?? '').split('+') : []
   const combinedDim1Label = combinedDimLabels[0] ?? 'Talla'
   const combinedDim2Label = combinedDimLabels[1] ?? 'Color'
@@ -288,6 +297,16 @@ export function ProductoDetalle({
               {variantError && (
                 <p className={styles.variantError}>Selecciona una opción para continuar</p>
               )}
+              {sizeGuideCategory && (
+                <button
+                  type="button"
+                  className={styles.sizeGuideLink}
+                  onClick={() => setSizeGuideOpen(true)}
+                >
+                  <Ruler size={14} aria-hidden="true" />
+                  Ver guía de tallas
+                </button>
+              )}
             </div>
           )}
 
@@ -396,6 +415,13 @@ export function ProductoDetalle({
       )}
 
       <CartDrawer slug={slug} rate={rate} currency={currency} paymentMethods={paymentMethods} />
+      {sizeGuideCategory && (
+        <SizeGuideModal
+          open={sizeGuideOpen}
+          category={sizeGuideCategory}
+          onClose={() => setSizeGuideOpen(false)}
+        />
+      )}
     </div>
   )
 }

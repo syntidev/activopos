@@ -5,6 +5,8 @@ import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search, Pencil, Trash2, ScanBarcode, Warehouse, MapPin } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
+import { PRESET_GROUPS } from '@/lib/variantPresets'
+import { suggestEquivalence } from '@/lib/size-guide'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
 import styles from './ProductModal.module.css'
@@ -185,13 +187,9 @@ const AVAIL_LABEL: Record<string, string> = {
   discontinued: 'Descontinuado',
 }
 
-const PRESET_GROUPS = [
-  { id: 'ropa-adulto', label: 'Ropa adulto', values: ['XS','S','M','L','XL','XXL','XXXL'] },
-  { id: 'ropa-nino',   label: 'Ropa niño',   values: ['2','4','6','8','10','12','14','16'] },
-  { id: 'zap-adulto',  label: 'Zapato ad.',  values: ['35','36','37','38','39','40','41','42','43','44'] },
-  { id: 'zap-nino',    label: 'Zapato niño', values: ['18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34'] },
-  { id: 'colores',     label: 'Colores',     values: ['Negro','Blanco','Rojo','Azul','Verde','Amarillo','Naranja','Rosado','Gris','Morado'] },
-] as const
+// PRESET_GROUPS: ver src/lib/variantPresets.ts (fuente única, también
+// consumida por ProductFormLayout.tsx). Antes duplicado y desactualizado
+// aquí — ver commit c5532e2.
 
 /* ── Client-side image compression (Canvas API, sin librerías) ── */
 const COMPRESS_THRESHOLD_KB = 800
@@ -525,7 +523,13 @@ export function ProductModal({
 
   const addPreset = (name: string) => {
     if (variants.some(v => v.name === name)) return
-    setVariants(prev => [...prev, { name, price_extra_usd: 0, stock: 0 }])
+    const tipo = selectedPresetGroup === 'colores' ? 'color' : 'talla'
+    const suggestedSku = selectedPresetGroup ? suggestEquivalence(selectedPresetGroup, name) : null
+    setVariants(prev => [...prev, {
+      name, price_extra_usd: 0, stock: 0, tipo,
+      variant_group: selectedPresetGroup,
+      sku: suggestedSku,
+    }])
   }
 
   /* ── DB variant CRUD ── */

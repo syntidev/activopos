@@ -276,7 +276,7 @@ export function ProductoDetalle({
                             aria-pressed={active}
                             aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
                           >
-                            {v.valor}
+                            {v.valor}{v.sku ? ` (${v.sku})` : ''}
                             {soldOut && <span className={styles.soldOutLabel}>Agotado</span>}
                           </button>
                         )

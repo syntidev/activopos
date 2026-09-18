@@ -27,6 +27,7 @@ export interface CatalogProductVariant {
   precio_extra:    number
   combination_key: string | null
   variant_group:   string | null
+  sku:             string | null
 }
 
 export interface CatalogProduct {
@@ -1445,7 +1446,7 @@ export function CatalogoGrid({
                                 aria-pressed={active}
                                 aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
                               >
-                                {v.valor}
+                                {v.valor}{v.sku ? ` (${v.sku})` : ''}
                                 {soldOut && <span className={styles.variantSoldOutLabel}>Agotado</span>}
                               </button>
                             )

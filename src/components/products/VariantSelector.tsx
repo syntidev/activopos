@@ -15,6 +15,7 @@ export interface ProductVariant {
   tipo?: string
   combination_key?: string | null
   variant_group?: string | null
+  sku?: string | null
 }
 
 interface VariantSelectorProps {
@@ -33,6 +34,7 @@ interface ApiVariant {
   tipo: string
   combination_key: string | null
   variant_group: string | null
+  sku: string | null
 }
 
 function VariantSkeleton() {
@@ -74,6 +76,7 @@ export function VariantSelector({
           tipo:            v.tipo,
           combination_key: v.combination_key,
           variant_group:   v.variant_group,
+          sku:             v.sku,
         }))
         setVariants(mapped)
       })
@@ -210,7 +213,7 @@ export function VariantSelector({
                         aria-disabled={outOfStock}
                         type="button"
                       >
-                        <span className={styles.variantName}>{v.name}</span>
+                        <span className={styles.variantName}>{v.name}{v.sku ? ` (${v.sku})` : ''}</span>
                         <span className={styles.variantPrice}>${price.toFixed(2)}</span>
                         <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
                           {outOfStock ? 'Agotado' : `${v.stock} und`}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useScanner } from '@/hooks/useScanner'
+import { suggestEquivalence } from '@/lib/size-guide'
 import type {
   ProductFormData,
   ProductVariantInput,
@@ -383,10 +384,18 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const addPreset = (n: string) => {
     if (variants.some(v => v.name === n)) return
     const tipo = selectedPresetGroup === 'colores' ? 'color' : 'talla'
-    // selectedPresetGroup guarda el id del preset (ej. 'zap-adulto', 'ropa-nino')
+    // selectedPresetGroup guarda el id del preset (ej. 'zap-caballero', 'ropa-nino')
     // — sin persistirlo en variant_group, `tipo` colapsa todo a 'talla'/'color'
     // genérico y se pierde qué preset generó la variante (bug diagnosticado 17/09).
-    setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0, tipo, variant_group: selectedPresetGroup }])
+    // sku: auto-sugerencia de equivalencia (EU↔US, talla↔P/M/G) desde la tabla
+    // de referencia — solo pre-rellena el campo, sigue editable (updateVariantSku),
+    // nunca forzada. null cuando el grupo no tiene tabla (colores, ropa-nino/nina).
+    const suggestedSku = selectedPresetGroup ? suggestEquivalence(selectedPresetGroup, n) : null
+    setVariants(prev => [...prev, {
+      name: n, price_extra_usd: 0, stock: 0, tipo,
+      variant_group: selectedPresetGroup,
+      sku: suggestedSku,
+    }])
   }
   const updateVariantStock = (idx: number, stock: number) =>
     setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock: Math.max(stock || 0, 0) } : v))

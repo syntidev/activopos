@@ -94,10 +94,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Activos estáticos y tasa pública
+  // Activos estáticos y datos públicos genéricos (no de tenant)
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/rates') ||
+    pathname.startsWith('/api/size-guide') ||
     pathname.startsWith('/icons/') ||
     pathname.startsWith('/uploads/')
   ) {

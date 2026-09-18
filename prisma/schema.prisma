@@ -234,6 +234,7 @@ model Business {
   purchases            Purchase[]
   social_style_presets SocialStylePreset[]
   landing_sections     LandingSection[]
+  collections          Collection[]
 
   @@map("businesses")
 }
@@ -374,8 +375,42 @@ model Product {
   components        ProductComponent[] @relation("ComboComponents")
   usedIn            ProductComponent[] @relation("ComponentUsedIn")
   purchase_items    PurchaseItem[]
+  collections       ProductCollection[]
 
   @@map("products")
+}
+
+// Agrupación de marketing transversal (ej. "200K", "Nuevo", "Oferta") — M:N
+// con Product vía ProductCollection. Separado de Category (Product.category_id,
+// singular, estructura permanente del catálogo): un producto conserva su
+// categoría normal y puede además pertenecer a 0+ colecciones a la vez.
+model Collection {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  slug        String   @db.VarChar(60)
+  name        String   @db.VarChar(120)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  business Business            @relation(fields: [business_id], references: [id])
+  products ProductCollection[]
+
+  @@unique([business_id, slug])
+  @@map("collections")
+}
+
+// Sin business_id propio — mismo patrón que ProductVariant: se aísla vía la
+// pertenencia ya verificada de product_id (y de collection_id, ambas al mismo
+// tenant se valida en la API, no en el schema).
+model ProductCollection {
+  product_id    Int
+  collection_id Int
+
+  product    Product    @relation(fields: [product_id], references: [id])
+  collection Collection @relation(fields: [collection_id], references: [id])
+
+  @@id([product_id, collection_id])
+  @@map("product_collections")
 }
 
 model InventoryEntry {

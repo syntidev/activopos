@@ -383,7 +383,10 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const addPreset = (n: string) => {
     if (variants.some(v => v.name === n)) return
     const tipo = selectedPresetGroup === 'colores' ? 'color' : 'talla'
-    setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0, tipo }])
+    // selectedPresetGroup guarda el id del preset (ej. 'zap-adulto', 'ropa-nino')
+    // — sin persistirlo en variant_group, `tipo` colapsa todo a 'talla'/'color'
+    // genérico y se pierde qué preset generó la variante (bug diagnosticado 17/09).
+    setVariants(prev => [...prev, { name: n, price_extra_usd: 0, stock: 0, tipo, variant_group: selectedPresetGroup }])
   }
   const updateVariantStock = (idx: number, stock: number) =>
     setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock: Math.max(stock || 0, 0) } : v))

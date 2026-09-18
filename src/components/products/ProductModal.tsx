@@ -17,6 +17,7 @@ export interface ProductVariantInput {
   price_extra_usd: number
   stock: number
   tipo?: 'talla' | 'color' | 'personalizado'
+  variant_group?: string | null
 }
 
 type CatalogVisibility = 'visible' | 'on_request' | 'hidden'

@@ -4,15 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const variantSchema = z.object({
-  tipo:         z.enum(['talla', 'color', 'personalizado']),
-  valor:        z.string().min(1).max(50),
-  sku:          z.string().max(50).nullable().optional(),
-  precio_extra: z.number().min(0).default(0),
-  stock:        z.number().int().min(0).default(0),
-  color_hex:    z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
-  sort_order:   z.number().int().default(0),
-  price_usd:    z.number().min(0).nullable().optional(),
-  cost_usd:     z.number().min(0).nullable().optional(),
+  tipo:          z.enum(['talla', 'color', 'personalizado']),
+  valor:         z.string().min(1).max(50),
+  sku:           z.string().max(50).nullable().optional(),
+  precio_extra:  z.number().min(0).default(0),
+  stock:         z.number().int().min(0).default(0),
+  color_hex:     z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
+  sort_order:    z.number().int().default(0),
+  price_usd:     z.number().min(0).nullable().optional(),
+  cost_usd:      z.number().min(0).nullable().optional(),
+  variant_group: z.string().max(30).nullable().optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           sort_order:   body.sort_order,
           price_usd:    body.price_usd    ?? null,
           cost_usd:     body.cost_usd     ?? null,
+          variant_group: body.variant_group ?? null,
         },
       })
       // Sincroniza net_inventory con el stock inicial de la variante.

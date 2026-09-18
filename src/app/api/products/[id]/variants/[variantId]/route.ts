@@ -4,15 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const patchSchema = z.object({
-  valor:        z.string().min(1).max(50).optional(),
-  sku:          z.string().max(50).nullable().optional(),
-  precio_extra: z.number().min(0).optional(),
-  stock:        z.number().int().min(0).optional(),
-  color_hex:    z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
-  is_active:    z.boolean().optional(),
-  sort_order:   z.number().int().optional(),
-  price_usd:    z.number().min(0).nullable().optional(),
-  cost_usd:     z.number().min(0).nullable().optional(),
+  valor:         z.string().min(1).max(50).optional(),
+  sku:           z.string().max(50).nullable().optional(),
+  precio_extra:  z.number().min(0).optional(),
+  stock:         z.number().int().min(0).optional(),
+  color_hex:     z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
+  is_active:     z.boolean().optional(),
+  sort_order:    z.number().int().optional(),
+  price_usd:     z.number().min(0).nullable().optional(),
+  cost_usd:      z.number().min(0).nullable().optional(),
+  variant_group: z.string().max(30).nullable().optional(),
 })
 
 type RouteContext = { params: { id: string; variantId: string } }

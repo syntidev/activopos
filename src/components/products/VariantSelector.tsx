@@ -14,6 +14,7 @@ export interface ProductVariant {
   stock: number
   tipo?: string
   combination_key?: string | null
+  variant_group?: string | null
 }
 
 interface VariantSelectorProps {
@@ -31,6 +32,7 @@ interface ApiVariant {
   stock: number
   tipo: string
   combination_key: string | null
+  variant_group: string | null
 }
 
 function VariantSkeleton() {
@@ -71,6 +73,7 @@ export function VariantSelector({
           stock:           Number(v.stock ?? 0),
           tipo:            v.tipo,
           combination_key: v.combination_key,
+          variant_group:   v.variant_group,
         }))
         setVariants(mapped)
       })

@@ -81,7 +81,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         category: { select: { name: true, color: true, sort_order: true } },
         variants: {
           where:  { is_active: true },
-          select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true },
+          select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true, variant_group: true },
         },
       },
       orderBy: [{ is_featured: 'desc' }, { category_id: 'asc' }, { name: 'asc' }],
@@ -150,6 +150,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         stock:           v.stock,
         precio_extra:    Number(v.precio_extra),
         combination_key: v.combination_key,
+        variant_group:   v.variant_group,
       })),
     }
   })

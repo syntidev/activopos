@@ -77,7 +77,7 @@ export default async function ProductoPage({ params }: PageProps) {
         category: { select: { name: true, color: true } },
         variants: {
           where:  { is_active: true },
-          select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true },
+          select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true, variant_group: true },
         },
       },
     }),
@@ -146,6 +146,7 @@ export default async function ProductoPage({ params }: PageProps) {
           stock:           v.stock,
           precio_extra:    Number(v.precio_extra),
           combination_key: v.combination_key,
+          variant_group:   v.variant_group,
         }))}
         businessName={business.name}
         slug={params.slug}

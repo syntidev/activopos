@@ -76,10 +76,11 @@ export default function NuevoProductoPage() {
         has_variants:       data.hasVariants,
         variants:           data.hasVariants && data.variants.length
           ? data.variants.map(v => ({
-              tipo:         v.tipo ?? 'personalizado',
-              valor:        v.name,
-              precio_extra: v.price_extra_usd,
-              stock:        v.stock,
+              tipo:          v.tipo ?? 'personalizado',
+              valor:         v.name,
+              precio_extra:  v.price_extra_usd,
+              stock:         v.stock,
+              variant_group: v.variant_group ?? null,
             }))
           : undefined,
         variant_dimensions:   data.variantDimensions,

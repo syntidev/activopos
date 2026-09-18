@@ -91,7 +91,7 @@ interface Props {
 // Marcas reales que OnBike vende — sin campo `marca` estructurado en
 // Product todavía (decisión del sprint: texto plano vía el buscador
 // existente, no un filtro nuevo). Lista fija hasta que exista ese campo.
-const BRANDS = ['Safetti', 'Garmin', 'On', 'KOM', 'Rudy'] as const
+const BRANDS = ['Safetti', 'Garmin', 'On', 'KOM', 'Rudy', 'Oakley', 'KOO'] as const
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 

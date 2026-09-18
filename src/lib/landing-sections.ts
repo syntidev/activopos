@@ -60,7 +60,9 @@ export const CONFIG_SCHEMAS = {
     video_url: httpUrl(500).optional(),
   }).strict(),
   event_slider: z.object({
-    slides: z.array(SlideSchema).min(2).max(5),
+    // Techo subido 5→8 (sprint 2026-09-18): rotar ediciones históricas del
+    // Gran Fondo sin saturar. Número no confirmado por Carlos — ajustable.
+    slides: z.array(SlideSchema).min(2).max(8),
   }).strict(),
   community: z.object({
     heading:    trimmed(120),

@@ -81,6 +81,7 @@ export default function NuevoProductoPage() {
               precio_extra:  v.price_extra_usd,
               stock:         v.stock,
               variant_group: v.variant_group ?? null,
+              sku:           v.sku ?? null,
             }))
           : undefined,
         variant_dimensions:   data.variantDimensions,

@@ -33,12 +33,19 @@ function getHint(kind: ProductKind): { title: string; examples: string } {
 }
 
 const PRESET_GROUPS = [
-  { id: 'ropa-adulto', label: 'Ropa adulto', values: ['XS','S','M','L','XL','XXL','XXXL'] },
-  { id: 'ropa-nino',   label: 'Ropa niño',   values: ['2','4','6','8','10','12','14','16'] },
-  { id: 'zap-adulto',  label: 'Zapato ad.',  values: ['35','36','37','38','39','40','41','42','43','44'] },
-  { id: 'zap-nino',    label: 'Zapato niño', values: ['18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34'] },
-  { id: 'colores',     label: 'Colores',     values: ['Negro','Blanco','Rojo','Azul','Verde','Amarillo','Naranja','Rosado','Gris','Morado'] },
+  { id: 'zap-dama',       label: 'Zapato Dama',      values: ['35','36','37','38','39','40','41','42'] },
+  { id: 'zap-caballero',  label: 'Zapato Caballero', values: ['39','40','41','42','43','44','45','46','47','48','49','50','51'] },
+  { id: 'zap-nino',       label: 'Zapato Niño',      values: ['28','29','30','31','32','33','34','35','36','37','38'] },
+  { id: 'zap-nina',       label: 'Zapato Niña',      values: ['28','29','30','31','32','33','34','35','36','37','38'] },
+  { id: 'ropa-dama',      label: 'Ropa Dama',        values: ['XS','S','M','L','XL','2XL'] },
+  { id: 'ropa-caballero', label: 'Ropa Caballero',   values: ['XS','S','M','L','XL','2XL','3XL','4XL'] },
+  { id: 'ropa-nino',      label: 'Ropa Niño',        values: ['2','4','6','8','10','12','14'] },
+  { id: 'ropa-nina',      label: 'Ropa Niña',        values: ['2','4','6','8','10','12','14'] },
+  { id: 'colores',        label: 'Colores',          values: ['Negro','Blanco','Rojo','Azul','Verde','Amarillo','Naranja','Rosado','Gris','Morado'] },
 ] as const
+
+// Presets de calzado -> muestran el input de equivalencia opcional junto al chip.
+const SHOE_GROUP_IDS = ['zap-dama', 'zap-caballero', 'zap-nino', 'zap-nina'] as const
 
 interface ProductFormLayoutProps {
   f: ReturnType<typeof useProductForm>
@@ -1229,6 +1236,17 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                               onChange={(e) => f.updateVariantStock(i, Number(e.target.value))}
                               aria-label={`Stock de ${v.name}`}
                             />
+                            {v.variant_group && (SHOE_GROUP_IDS as readonly string[]).includes(v.variant_group) && (
+                              <input
+                                type="text"
+                                className={`${m.input} ${c.variantExtraInput}`}
+                                placeholder="Equiv. (opcional)"
+                                value={v.sku ?? ''}
+                                onChange={(e) => f.updateVariantSku(i, e.target.value)}
+                                maxLength={20}
+                                aria-label={`Equivalencia de talla para ${v.name}`}
+                              />
+                            )}
                             <button
                               type="button"
                               className={c.variantRemoveBtn}

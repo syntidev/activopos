@@ -46,6 +46,7 @@ const productSchema = z.object({
     precio_extra:  z.number().min(0).default(0),
     stock:         z.number().int().min(0).default(0),
     variant_group: z.string().max(30).nullable().optional(),
+    sku:           z.string().max(50).nullable().optional(),
   })).optional(),
   // Variantes combinadas (multi-dimensión). variant_dimensions define los ejes
   // (talla, color…); variant_combinations trae el producto cartesiano ya resuelto
@@ -229,7 +230,7 @@ export async function POST(req: NextRequest) {
     const combinedTipo = data.variant_dimensions?.map(d => d.tipo).join('+') ?? ''
     const variantRows: {
       tipo: string; valor: string; precio_extra: number; stock: number
-      combination_key: string | null; variant_group: string | null
+      combination_key: string | null; variant_group: string | null; sku: string | null
     }[] =
       data.variant_combinations?.length
         ? data.variant_combinations.map(c => ({
@@ -239,6 +240,7 @@ export async function POST(req: NextRequest) {
             stock:           c.stock,
             combination_key: c.combination_key,
             variant_group:   null,
+            sku:             null,
           }))
         : (data.variants?.map(v => ({
             tipo:            v.tipo,
@@ -247,6 +249,7 @@ export async function POST(req: NextRequest) {
             stock:           v.stock,
             combination_key: null,
             variant_group:   v.variant_group ?? null,
+            sku:             v.sku ?? null,
           })) ?? [])
 
     const product = await db.product.create({
@@ -292,6 +295,7 @@ export async function POST(req: NextRequest) {
               stock:           v.stock,
               combination_key: v.combination_key,
               variant_group:   v.variant_group,
+              sku:             v.sku,
             })) }
           : undefined,
       },

@@ -18,6 +18,9 @@ export interface ProductVariantInput {
   stock: number
   tipo?: 'talla' | 'color' | 'personalizado'
   variant_group?: string | null
+  // Equivalencia de talla escrita a mano (ej. "US 8.5") — reutiliza el campo
+  // sku de ProductVariant, solo se muestra junto a chips de preset de calzado.
+  sku?: string | null
 }
 
 type CatalogVisibility = 'visible' | 'on_request' | 'hidden'

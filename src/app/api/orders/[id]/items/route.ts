@@ -64,13 +64,61 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         return { ...item, price_per_unit_usd: priceUsd, subtotal_usd }
       })
 
+      // GAP-CATALOGO-1: los pedidos de catálogo bloquean stock disponible con
+      // una reserva (InventoryEntry entry_type='reservation') creada al crear
+      // el pedido (ver catalog/[slug]/order/route.ts). Si se editan ítems sin
+      // recalcular esa reserva, queda desincronizada del contenido real: un
+      // ítem agregado nunca se descuenta al cobrar, y uno con cantidad
+      // aumentada solo bloquea la cantidad vieja. Se recalcula acá — nunca se
+      // deja una reserva vieja huérfana ni una cantidad nueva sin bloquear.
+      if (order.origin === 'catalog') {
+        const [stockAgg, ownReservations] = await Promise.all([
+          tx.inventoryEntry.groupBy({
+            by:    ['product_id'],
+            where: { business_id: session.businessId, product_id: { in: productIds } },
+            _sum:  { quantity: true, waste: true },
+          }),
+          tx.inventoryEntry.findMany({
+            where: {
+              business_id: session.businessId,
+              entry_type:  'reservation',
+              notes:       { endsWith: order.order_number },
+            },
+            select: { product_id: true, quantity: true },
+          }),
+        ])
+
+        const stockMap = new Map(
+          stockAgg.map(s => [s.product_id, Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0)]),
+        )
+        // La reserva propia de este pedido ya está restada dentro de stockMap
+        // (es un InventoryEntry más) — sumarla de vuelta libera lo que este
+        // pedido ya tenía apartado antes de chequear si la cantidad NUEVA
+        // entra. Sin esto, conservar la misma cantidad de un ítem ya en el
+        // pedido se auto-rechazaría por "falta de stock".
+        const ownReservedByProduct = new Map<number, number>()
+        for (const r of ownReservations) {
+          const qty = Math.abs(Number(r.quantity))
+          ownReservedByProduct.set(r.product_id, (ownReservedByProduct.get(r.product_id) ?? 0) + qty)
+        }
+
+        for (const item of itemsWithPrices) {
+          const netStock    = stockMap.get(item.product_id) ?? 0
+          const ownReserved = ownReservedByProduct.get(item.product_id) ?? 0
+          const availableForThisOrder = netStock + ownReserved
+          if (availableForThisOrder < item.quantity) {
+            throw new Error(`STOCK_INSUFICIENTE:${item.product_name}`)
+          }
+        }
+      }
+
+      await tx.orderItem.deleteMany({ where: { order_id: orderId } })
+
       const itemsTotal = itemsWithPrices.reduce((acc, i) => acc + i.subtotal_usd, 0)
       const total_usd   = Number((itemsTotal + Number(order.delivery_fee)).toFixed(2))
       const total_bs    = Number((total_usd * Number(order.rate_used)).toFixed(2))
 
-      await tx.orderItem.deleteMany({ where: { order_id: orderId } })
-
-      return tx.order.update({
+      const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
           total_usd,
@@ -88,6 +136,32 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         },
         include: { items: true },
       })
+
+      if (order.origin === 'catalog') {
+        // Reemplazo completo de la reserva — no un ajuste incremental. Libera
+        // también la de cualquier ítem que se haya quitado en esta edición
+        // (si no, queda huérfana bloqueando stock para siempre).
+        await tx.inventoryEntry.deleteMany({
+          where: {
+            business_id: session.businessId,
+            entry_type:  'reservation',
+            notes:       { endsWith: order.order_number },
+          },
+        })
+        await tx.inventoryEntry.createMany({
+          data: itemsWithPrices.map((item) => ({
+            business_id: session.businessId,
+            product_id:  item.product_id,
+            quantity:    -item.quantity,
+            waste:       0,
+            entry_type:  'reservation',
+            notes:       `Reserva pedido catálogo #${order.order_number}`,
+            created_by:  session.userId,
+          })),
+        })
+      }
+
+      return updatedOrder
     })
 
     return NextResponse.json({ ok: true, order: updated })
@@ -100,6 +174,12 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       if (err.message === 'ORDER_NOT_EDITABLE')  return NextResponse.json({ error: 'El pedido ya no admite edición de ítems' }, { status: 409 })
       if (err.message === 'PRODUCT_NOT_FOUND')   return NextResponse.json({ error: 'Uno o más productos no existen o están inactivos' }, { status: 400 })
       if (err.message === 'PRICE_NOT_SET')       return NextResponse.json({ error: 'Uno o más productos no tienen precio configurado' }, { status: 400 })
+      if (err.message.startsWith('STOCK_INSUFICIENTE:')) {
+        return NextResponse.json(
+          { error: `Stock insuficiente: ${err.message.split(':')[1]}` },
+          { status: 409 },
+        )
+      }
     }
     console.error('order items PATCH error:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

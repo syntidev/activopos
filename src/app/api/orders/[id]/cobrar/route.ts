@@ -119,24 +119,26 @@ export async function POST(req: NextRequest, { params }: Context) {
         select: { id: true },
       })
 
-      // Stock ya fue descontado como 'reservation' al crear el pedido en catálogo —
-      // reclasificar esas entries a 'sale' en vez de volver a descontar (GAP-CATALOGO-1).
-      const reservationUpdate = await tx.inventoryEntry.updateMany({
+      // Stock: SIEMPRE se descuenta desde los OrderItem reales de este pedido,
+      // nunca desde una reserva congelada de la creación (GAP-CATALOGO-1 — la
+      // versión anterior reclasificaba reservas por product_id y solo caía al
+      // fallback de descuento si NINGUNA reserva matcheaba para todo el
+      // pedido; un ítem agregado en una edición posterior, o uno con cantidad
+      // cambiada, se colaba sin descontar porque los DEMÁS ítems sí tenían
+      // reserva y el count nunca llegaba a 0). Se libera cualquier reserva de
+      // este pedido —incluida la de un ítem que se haya quitado en una
+      // edición, que si no queda huérfana bloqueando stock para siempre— y se
+      // crean las deducciones 'sale' directo desde order.items, sin depender
+      // de que la reserva haya quedado sincronizada.
+      await tx.inventoryEntry.deleteMany({
         where: {
           business_id: session.businessId,
           entry_type:  'reservation',
-          product_id:  { in: productIds },
           notes:       { endsWith: order.order_number },
         },
-        data: {
-          entry_type: 'sale',
-          notes:      `VENTA #${ticket_number} (pedido ${order.order_number})`,
-        },
       })
-
-      if (reservationUpdate.count === 0) {
-        // Pedido legacy sin reserva previa — descuenta ahora (comportamiento anterior)
-        const deductions = order.items.map(item => ({
+      await tx.inventoryEntry.createMany({
+        data: order.items.map(item => ({
           business_id: session.businessId,
           product_id:  item.product_id,
           quantity:    -Number(item.quantity),
@@ -144,11 +146,8 @@ export async function POST(req: NextRequest, { params }: Context) {
           entry_type:  'sale',
           notes:       `VENTA #${ticket_number} (pedido ${order.order_number})`,
           created_by:  session.userId,
-        }))
-        if (deductions.length > 0) {
-          await tx.inventoryEntry.createMany({ data: deductions })
-        }
-      }
+        })),
+      })
 
       await tx.order.update({
         where: { id: orderId },

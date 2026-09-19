@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast'
 import { SECTION_TYPES } from '@/lib/landing-sections'
 import type {
   SectionType, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig, CollectionGridConfig,
-  SlideConfig, CommunityItemConfig,
+  AnnouncementPopupConfig, SlideConfig, CommunityItemConfig,
 } from '@/lib/landing-sections'
 import styles from '../configuracion.module.css'
 
@@ -26,11 +26,15 @@ interface SectionRow {
 }
 
 const TYPE_LABELS: Record<SectionType, string> = {
-  hero:            'Hero',
-  event_slider:    'Banner de evento',
-  community:       'Comunidad',
-  story:           'Historia de marca',
-  collection_grid: 'Colección',
+  hero:                'Hero',
+  event_slider:        'Banner de evento',
+  community:           'Comunidad',
+  story:               'Historia de marca',
+  collection_grid:     'Colección',
+  // Fase 2 (schema, 2026-09-18) — sin formulario propio todavía en este tab
+  // (fuera de scope: solo se agregó el tipo/label para que el mapa exhaustivo
+  // siga compilando). Editar su config hoy requiere ir directo a la API.
+  announcement_popup:  'Popup de anuncio',
 }
 
 const EMPTY_SLIDE: SlideConfig = { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' }
@@ -45,6 +49,7 @@ const DEFAULT_CONFIG: Record<SectionType, Record<string, unknown>> = {
   // colección real -- mismo patrón que hero/story arrancando con strings vacíos
   // que tampoco pasan min(1): "Se persiste recién cuando el admin llena el form".
   collection_grid: { collection_id: 0 } satisfies CollectionGridConfig,
+  announcement_popup: { image_url: '', heading: '', delay_ms: 2500 } satisfies AnnouncementPopupConfig,
 }
 
 /* Compresión client-side (Canvas -> WebP) — mismo patrón que ProductModal.tsx,

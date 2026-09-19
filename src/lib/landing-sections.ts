@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Fase 1 de Landing Sections — Disciplinas/Arma-tu-equipo/Barra-de-marcas
 // quedan para Fase 2. El layout de cada tipo NO es editable por el usuario,
 // solo el contenido de `config` — validado aquí, nunca confiado del cliente.
-export const SECTION_TYPES = ['hero', 'event_slider', 'community', 'story', 'collection_grid'] as const
+export const SECTION_TYPES = ['hero', 'event_slider', 'community', 'story', 'collection_grid', 'announcement_popup'] as const
 export type SectionType = typeof SECTION_TYPES[number]
 
 const trimmed = (max: number) => z.string().trim().min(1).max(max)
@@ -81,6 +81,15 @@ export const CONFIG_SCHEMAS = {
   collection_grid: z.object({
     collection_id: z.number().int().positive(),
   }).strict(),
+  // image_url SIN .optional() a propósito — un popup sin foto no se puede
+  // guardar desde el admin (nota de diseño del sprint).
+  announcement_popup: z.object({
+    image_url: imagePath(),
+    heading:   trimmed(80),
+    cta_text:  trimmed(40).optional(),
+    cta_link:  linkUrl(500).optional(),
+    delay_ms:  z.number().int().min(0).max(15000).default(2500),
+  }).strict(),
 } satisfies Record<SectionType, z.ZodTypeAny>
 
 export function isSectionType(value: string): value is SectionType {
@@ -89,13 +98,14 @@ export function isSectionType(value: string): value is SectionType {
 
 // Tipos derivados de los schemas — una sola fuente de verdad para el
 // renderer (catálogo público) y el formulario de admin, cero forma duplicada.
-export type HeroConfig           = z.infer<typeof CONFIG_SCHEMAS.hero>
-export type EventSliderConfig    = z.infer<typeof CONFIG_SCHEMAS.event_slider>
-export type CommunityConfig      = z.infer<typeof CONFIG_SCHEMAS.community>
-export type StoryConfig          = z.infer<typeof CONFIG_SCHEMAS.story>
-export type CollectionGridConfig = z.infer<typeof CONFIG_SCHEMAS.collection_grid>
-export type SlideConfig          = EventSliderConfig['slides'][number]
-export type CommunityItemConfig  = CommunityConfig['items'][number]
+export type HeroConfig               = z.infer<typeof CONFIG_SCHEMAS.hero>
+export type EventSliderConfig        = z.infer<typeof CONFIG_SCHEMAS.event_slider>
+export type CommunityConfig          = z.infer<typeof CONFIG_SCHEMAS.community>
+export type StoryConfig              = z.infer<typeof CONFIG_SCHEMAS.story>
+export type CollectionGridConfig     = z.infer<typeof CONFIG_SCHEMAS.collection_grid>
+export type AnnouncementPopupConfig  = z.infer<typeof CONFIG_SCHEMAS.announcement_popup>
+export type SlideConfig              = EventSliderConfig['slides'][number]
+export type CommunityItemConfig      = CommunityConfig['items'][number]
 
 export interface CollectionGridProduct {
   id:        number

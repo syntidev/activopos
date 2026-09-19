@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { MessageCircle, Share2, Mail, Clock } from 'lucide-react'
 import ContactForm from './ContactForm'

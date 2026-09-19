@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { Scale } from 'lucide-react'
 import MarketingHero from '@/components/marketing/MarketingHero'

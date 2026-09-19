@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { Check, MessageCircle, Tag } from 'lucide-react'
 import MarketingHero from '@/components/marketing/MarketingHero'

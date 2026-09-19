@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { getBcvRate, getParallelRate } from '@/lib/bcv'
 import HeroSection from '@/components/marketing/sections/HeroSection'

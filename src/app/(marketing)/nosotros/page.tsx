@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { Target, Eye, ExternalLink } from 'lucide-react'
 import RevealSection from '@/components/marketing/shared/RevealSection'

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import {
   ChevronDown, LifeBuoy, ShoppingCart, Globe, Package, FileText,

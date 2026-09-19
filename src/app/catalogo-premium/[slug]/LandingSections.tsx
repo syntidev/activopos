@@ -17,6 +17,13 @@ interface Props {
 
 const SLIDER_INTERVAL_MS = 6000
 
+// Placeholder de imagen faltante: primera letra real del texto, no el primer
+// carácter -- textos de marketing arrancan seguido con dígitos o comillas
+// ("15 años...", "\"Organización..."), y charAt(0) mostraba eso suelto.
+function initialLetter(text: string | null | undefined, fallback: string): string {
+  return (text?.match(/[A-Za-zÀ-ÿ]/)?.[0] ?? fallback).toUpperCase()
+}
+
 export function LandingSections({ sections, slug }: Props) {
   if (sections.length === 0) return null
   return (
@@ -48,7 +55,7 @@ function HeroSection({ config }: { config: HeroConfig }) {
           className={styles.lsHeroMedia}
           fallback={
             <div className={styles.lsHeroMediaPlaceholder} aria-hidden="true">
-              <span>{(config.title || 'H').charAt(0).toUpperCase()}</span>
+              <span>{initialLetter(config.title, 'H')}</span>
             </div>
           }
         />
@@ -104,7 +111,7 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
             className={styles.lsSliderImg}
             fallback={
               <div className={styles.lsSliderImgPlaceholder} aria-hidden="true">
-                <span>{(slide.title || 'E').charAt(0).toUpperCase()}</span>
+                <span>{initialLetter(slide.title, 'E')}</span>
               </div>
             }
           />
@@ -162,7 +169,7 @@ function CommunitySection({ config }: { config: CommunityConfig }) {
               loading="lazy"
               fallback={
                 <div className={styles.lsCommunityImgPlaceholder} aria-hidden="true">
-                  <span>{(item.product_tag || 'C').charAt(0).toUpperCase()}</span>
+                  <span>{initialLetter(item.product_tag, 'C')}</span>
                 </div>
               }
             />
@@ -199,7 +206,7 @@ function CollectionGridSection({ config, slug }: { config: CollectionGridRenderC
               <img src={p.image} alt="" className={styles.lsCollectionImg} loading="lazy" aria-hidden="true" />
             ) : (
               <div className={styles.lsCollectionImgPlaceholder} aria-hidden="true">
-                <span>{p.name.charAt(0).toUpperCase()}</span>
+                <span>{initialLetter(p.name, 'P')}</span>
               </div>
             )}
             <span className={styles.lsCollectionName}>{p.name}</span>
@@ -237,7 +244,7 @@ function StorySection({ config }: { config: StoryConfig }) {
           loading="lazy"
           fallback={
             <div className={styles.lsStoryImgPlaceholder} aria-hidden="true">
-              <span>{(config.title || 'S').charAt(0).toUpperCase()}</span>
+              <span>{initialLetter(config.title, 'S')}</span>
             </div>
           }
         />

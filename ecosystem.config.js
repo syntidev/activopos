@@ -11,15 +11,10 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 3003,
-      DATABASE_URL: 'mysql://root@127.0.0.1:3306/activopos',
-      DB_HOST: '127.0.0.1',
-      DB_USER: 'root',
-      DB_PASSWORD: '',
-      DB_NAME: 'activopos',
-      DB_POOL: '5',
-      // JWT_SECRET NO va aquí — es secreto, vive solo en /var/www/activopos/.env
-      // (gitignored). Next.js lo carga de .env en runtime; auth.ts lo lee fail-closed.
-      // Ponerlo en este bloque lo inyecta vía pm2 y ADEMÁS lo trackea en git.
+      // DATABASE_URL / DB_HOST / DB_USER / DB_PASSWORD / DB_NAME / DB_POOL / JWT_SECRET
+      // NO van aquí — son secretos, viven solo en /var/www/activopos/.env (gitignored).
+      // Next.js los carga de .env en runtime; prisma.ts y auth.ts los leen fail-closed.
+      // Ponerlos en este bloque los inyecta vía pm2 (pisando .env) y ADEMÁS los trackea en git.
       NEXT_PUBLIC_APP_URL: 'https://activopos.com',
       BCV_API_URL: 'https://ve.dolarapi.com/v1/dolares/oficial',
       BCV_FALLBACK_RATE: '36.50'

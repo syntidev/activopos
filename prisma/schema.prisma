@@ -235,6 +235,7 @@ model Business {
   social_style_presets SocialStylePreset[]
   landing_sections     LandingSection[]
   collections          Collection[]
+  brands               Brand[]
 
   @@map("businesses")
 }
@@ -415,6 +416,25 @@ model ProductCollection {
 
   @@id([product_id, collection_id])
   @@map("product_collections")
+}
+
+// "Comprá por marca" del catálogo público (catalogo-premium) — reemplaza el
+// arreglo BRANDS hardcodeado en CatalogoGrid.tsx. search_term es el término
+// que va a ?buscar=, separado de name por si algún día difieren.
+model Brand {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  name        String   @db.VarChar(60)
+  image_url   String?  @db.VarChar(500)
+  search_term String   @db.VarChar(60)
+  order       Int      @default(0)
+  visible     Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id, order])
+  @@map("brands")
 }
 
 model InventoryEntry {

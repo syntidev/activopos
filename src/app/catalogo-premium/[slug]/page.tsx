@@ -170,7 +170,7 @@ export default async function CatalogoPage({ params }: PageProps) {
 
   if (!isOwnerPreview && !isCatalogLive(business)) redirect('/catalogo/no-disponible')
 
-  const [products, rate, stockEntries, paymentMethods, dbCategories, landingSectionRows] = await Promise.all([
+  const [products, rate, stockEntries, paymentMethods, dbCategories, landingSectionRows, brandRows] = await Promise.all([
     prisma.product.findMany({
       where: {
         business_id:        business.id,
@@ -211,6 +211,13 @@ export default async function CatalogoPage({ params }: PageProps) {
     prisma.landingSection.findMany({
       where:   { business_id: business.id, visible: true },
       select:  { id: true, type: true, order: true, config: true },
+      orderBy: { order: 'asc' },
+    }).catch(() => []),
+    // "Comprá por marca" (Configuración > Marcas) — mismo motivo que Landing
+    // Sections: server component sin sesión, /api/brands no aplica acá.
+    prisma.brand.findMany({
+      where:   { business_id: business.id, visible: true },
+      select:  { name: true, image_url: true, search_term: true },
       orderBy: { order: 'asc' },
     }).catch(() => []),
   ])
@@ -338,6 +345,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         categoryColors={categoryColors}
         categoryImages={categoryImages}
         landingSections={landingSections}
+        brands={brandRows}
         slug={params.slug}
         rate={rate}
         currency={business.catalog_default_currency}

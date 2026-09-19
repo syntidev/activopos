@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     const type     = rawType === 'logo' ? 'logo'
                    : rawType === 'catalog_cover' ? 'catalog_cover'
                    : rawType === 'landing' ? 'landing'
+                   : rawType === 'brand' ? 'brand'
                    : 'products'
 
     if (!(file instanceof Blob)) {

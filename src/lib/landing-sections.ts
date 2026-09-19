@@ -11,7 +11,7 @@ const trimmed = (max: number) => z.string().trim().min(1).max(max)
 // image_url: solo assets propios (mismo patrón que logo_path en
 // config/business/route.ts) — nunca una URL externa, cierra el vector de
 // stored-XSS/hotlinking que un string sin validar de esquema dejaba abierto.
-const imagePath = () =>
+export const imagePath = () =>
   trimmed(500).refine(
     v => v.startsWith('/uploads/') || v.startsWith('/storage/tenants/'),
     'image_url debe ser una ruta interna (/uploads/... o /storage/tenants/...)',

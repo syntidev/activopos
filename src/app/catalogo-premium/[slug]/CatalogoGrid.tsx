@@ -87,12 +87,14 @@ interface Props {
   initialCategory?:   string | null
   initialQuery?:      string | null
   landingSections?:   RenderableLandingSection[]
+  brands?:            CatalogBrand[]
 }
 
-// Marcas reales que OnBike vende — sin campo `marca` estructurado en
-// Product todavía (decisión del sprint: texto plano vía el buscador
-// existente, no un filtro nuevo). Lista fija hasta que exista ese campo.
-const BRANDS = ['Safetti', 'Garmin', 'On', 'KOM', 'Rudy', 'Oakley', 'KOO'] as const
+export interface CatalogBrand {
+  name:        string
+  image_url:   string | null
+  search_term: string
+}
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
@@ -173,6 +175,7 @@ export function CatalogoGrid({
   initialCategory = null,
   initialQuery = null,
   landingSections = [],
+  brands = [],
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
@@ -1060,12 +1063,13 @@ export function CatalogoGrid({
         </section>
       )}
 
-      {/* ── Comprá por marca — marcas reales de OnBike, sin campo `marca`
-          estructurado en Product todavía: cada tile linkea al buscador
-          existente vía ?buscar=, mismo mecanismo que ya usa la barra de
-          búsqueda (query -> initialQuery -> useState). Placeholder de imagen
-          por marca (textura constelación) hasta tener fotos reales. ── */}
-      {catalogMode === 'home' && browseMode && BRANDS.length > 0 && (
+      {/* ── Comprá por marca — modelo real Brand (Configuración > Marcas),
+          sin campo `marca` estructurado en Product todavía: cada tile
+          linkea al buscador existente vía ?buscar=search_term, mismo
+          mecanismo que ya usa la barra de búsqueda (query -> initialQuery ->
+          useState). Placeholder de imagen (textura constelación) cuando la
+          marca no tiene image_url propio. ── */}
+      {catalogMode === 'home' && browseMode && brands.length > 0 && (
         <section className={styles.brandSection} aria-label="Marcas">
           <div className={styles.brandHeader}>
             <span className={styles.brandTitle}>
@@ -1074,17 +1078,23 @@ export function CatalogoGrid({
             </span>
           </div>
           <div className={styles.brandScroll}>
-            {BRANDS.map(brand => (
+            {brands.map(brand => (
               <Link
-                key={brand}
-                href={`/catalogo-premium/${slug}/productos?buscar=${encodeURIComponent(brand)}`}
+                key={brand.name}
+                href={`/catalogo-premium/${slug}/productos?buscar=${encodeURIComponent(brand.search_term)}`}
                 className={styles.brandCard}
               >
                 <span className={styles.brandCardMedia}>
-                  <span className={styles.constellationDark} aria-hidden="true" />
-                  <span className={styles.brandCardInitial}>{brand.charAt(0)}</span>
+                  {brand.image_url ? (
+                    <img src={brand.image_url} alt="" className={styles.brandCardImg} />
+                  ) : (
+                    <>
+                      <span className={styles.constellationDark} aria-hidden="true" />
+                      <span className={styles.brandCardInitial}>{brand.name.charAt(0)}</span>
+                    </>
+                  )}
                 </span>
-                <span className={styles.brandCardName}>{brand}</span>
+                <span className={styles.brandCardName}>{brand.name}</span>
               </Link>
             ))}
           </div>

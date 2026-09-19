@@ -53,6 +53,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       catalog_cover_path_3:    true,
       theme_color:             true,
       catalog_plan:            true,
+      catalog_template:        true,
       subscription_active:     true,
       subscription_expires_at: true,
       legal_name:              true,
@@ -61,6 +62,8 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
     },
   })
   if (!business) notFound()
+  // Aislamiento de plantilla — ver nota en ../page.tsx.
+  if (business.catalog_template !== 'premium') notFound()
 
   const session = await getSession()
   const isOwnerPreview =

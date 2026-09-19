@@ -176,6 +176,10 @@ model Business {
   iva_enabled                  Boolean   @default(false)
   iva_pct                      Decimal   @default(16) @db.Decimal(5, 2)
   catalog_plan                 String?   @default("gratis") @db.VarChar(30)
+  // Plantilla de render del catálogo público -- independiente de catalog_plan
+  // (features) y catalog_active (visibilidad). 'generic' | 'premium'. Ver
+  // guard en catalogo-premium/[slug]/page.tsx y catalogo/[slug]/page.tsx.
+  catalog_template              String?   @default("generic") @db.VarChar(20)
   catalog_slug                 String?   @unique @db.VarChar(80)
   catalog_active               Boolean   @default(false)
   // Moneda visible en el catálogo público y en el mensaje de WhatsApp.

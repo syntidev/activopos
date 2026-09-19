@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
@@ -126,6 +126,7 @@ async function getBusiness(slug: string) {
       catalog_cover_path_3: true,
       theme_color:   true,
       catalog_plan:            true,
+      catalog_template:        true,
       subscription_active:     true,
       subscription_expires_at: true,
     },
@@ -160,6 +161,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function CatalogoPage({ params }: PageProps) {
   const business = await getBusiness(params.slug)
   if (!business) redirect('/catalogo/no-disponible')
+
+  // Aislamiento de plantilla: este fork es exclusivo de tenants con
+  // catalog_template='premium'. Sin bypass de owner/super_admin -- a
+  // diferencia del plan-gate de abajo, esto no es un preview, es la
+  // plantilla que el negocio tiene asignada.
+  if (business.catalog_template !== 'premium') notFound()
 
   // SEC: bypass del plan-gate solo para el propio negocio — super_admin ve cualquiera
   // (acceso global, igual que el resto del sistema); admin solo el suyo.

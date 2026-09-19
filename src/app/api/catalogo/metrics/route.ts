@@ -27,7 +27,7 @@ export async function GET() {
         // Business es la raíz del tenant (no tiene business_id) → no se filtra.
         db.business.findUniqueOrThrow({
           where:  { id: bid },
-          select: { catalog_slug: true },
+          select: { catalog_slug: true, catalog_template: true },
         }),
 
         db.order.count({
@@ -67,7 +67,7 @@ export async function GET() {
     const monthLabel = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
     const baseUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://activopos.com'
     const catalogUrl = business.catalog_slug
-      ? `${baseUrl}/catalogo/${business.catalog_slug}`
+      ? `${baseUrl}/${business.catalog_template === 'premium' ? 'catalogo-premium' : 'catalogo'}/${business.catalog_slug}`
       : null
 
     const visibilityCounts = { total: 0, visible: 0, hidden: 0, on_request: 0 }

@@ -55,13 +55,15 @@ export default async function ProductoPage({ params }: PageProps) {
     where:  { catalog_slug: params.slug, catalog_active: true, active: true },
     select: {
       id: true, name: true, phone: true, theme_color: true, logo_path: true,
-      catalog_plan: true, subscription_active: true, subscription_expires_at: true,
+      catalog_plan: true, catalog_template: true, subscription_active: true, subscription_expires_at: true,
       city: true, state: true, catalog_desc: true, catalog_instagram: true,
       catalog_hours: true, legal_name: true, rif: true, address: true,
       catalog_default_currency: true,
     },
   })
   if (!business || !isCatalogLive(business)) notFound()
+  // Aislamiento de plantilla — ver nota en ../../page.tsx.
+  if (business.catalog_template !== 'premium') notFound()
 
   const [product, rate, paymentMethods] = await Promise.all([
     prisma.product.findFirst({

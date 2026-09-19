@@ -187,6 +187,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         : undefined}
     >
       <CatalogoGrid
+        businessId={business.id}
         products={catalogProducts}
         categories={categories}
         categoryColors={categoryColors}

@@ -196,9 +196,11 @@
 }
 
 @media (min-width: 1024px) {
+  /* Escala proporcional del header desktop (72->80px): logo, tipografía del
+     nombre e íconos crecen con la altura -- no solo el contenedor. */
   .stickyHeader {
-    height:          72px;
-    padding:         0 var(--space-6);
+    height:          80px;
+    padding:         0 var(--space-7);
     /* logo + nav quedan pegados a la izquierda; .iconCluster (margin-left:
        auto) es lo único que empuja a la derecha -- space-between del mobile
        ya no aplica con 3 hijos (nav quedaría centrado, no pegado al logo). */
@@ -224,8 +226,8 @@
   .headerNav {
     display:     flex;
     align-items: center;
-    gap:         var(--space-6);
-    margin-left: var(--space-8);
+    gap:         var(--space-7);
+    margin-left: var(--space-9);
   }
 
   .headerNavLink {
@@ -241,11 +243,37 @@
   }
   .headerNavLink:hover { color: var(--color-text-primary); }
 
+  /* Logo/avatar proporcional a los 80px del header -- 32px se veía
+     minúsculo contra un header pensado para una tienda como OnBike. */
+  .headerLogo {
+    gap: var(--space-3);
+  }
+
+  .headerLogoImg,
+  .headerLogoInitials {
+    width:  44px;
+    height: 44px;
+  }
+
+  .headerLogoInitials {
+    font-size: var(--text-sm);
+  }
+
+  .headerName {
+    font-size: var(--text-base);
+  }
+
+  .headerCity {
+    font-size: var(--text-xs);
+  }
+
   .iconCluster {
-    gap:         var(--space-1-5);
+    gap:         var(--space-2);
     margin-left: auto;
   }
 
+  /* Búsqueda/info/carrito crecen levemente (mismo grado que el header:
+     ~10%) -- nunca al punto de competir en peso visual con el logo nuevo. */
   .desktopSearchBtn {
     display:         flex;
     align-items:     center;
@@ -257,11 +285,113 @@
     border-radius:   var(--radius-md);
     color:           var(--color-text-primary);
     transition:      background var(--transition-fast);
-    min-width:       40px;
-    min-height:      40px;
+    min-width:       44px;
+    min-height:      44px;
   }
   .desktopSearchBtn:hover { background: var(--color-surface-2); }
+
+  .desktopSearchBtn svg {
+    width:  20px;
+    height: 20px;
+  }
+
+  .infoBtn svg,
+  .stickyCartBtn svg {
+    width:  22px;
+    height: 22px;
+  }
 }
+
+/* ── ANNOUNCEMENT POPUP — mismo radius/sombra de elevación que
+   .mobileTabBar (línea 4298), lenguaje visual compartido. ── */
+
+.popupBackdrop {
+  position:        fixed;
+  inset:           0;
+  z-index:         300;
+  background:      rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  padding:         var(--space-4);
+}
+
+.popupModal {
+  position:      relative;
+  width:         100%;
+  max-width:     380px;
+  max-height:    85vh;
+  overflow-y:    auto;
+  background:    var(--color-white);
+  border-radius: 20px;
+  box-shadow:    0 8px 24px rgba(11, 79, 204, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.popupClose {
+  position:        absolute;
+  top:             var(--space-2);
+  right:           var(--space-2);
+  z-index:         1;
+  width:           32px;
+  height:          32px;
+  border:          none;
+  border-radius:   50%;
+  background:      rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  color:           var(--color-text-primary);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          pointer;
+  transition:      background var(--transition-fast);
+}
+.popupClose:hover { background: var(--color-white); }
+
+.popupImg {
+  width:      100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display:    block;
+}
+
+.popupImgPlaceholder {
+  width:      100%;
+  aspect-ratio: 4 / 3;
+  background: var(--color-surface-2);
+}
+
+.popupBody {
+  padding:       var(--space-5);
+  display:       flex;
+  flex-direction: column;
+  align-items:   center;
+  gap:           var(--space-4);
+  text-align:    center;
+}
+
+.popupHeading {
+  font-size:   var(--text-lg);
+  font-weight: var(--weight-bold);
+  color:       var(--color-text-primary);
+  margin:      0;
+}
+
+.popupCta {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  height:          var(--touch-min);
+  padding:         0 var(--space-6);
+  border-radius:   var(--radius-full);
+  background:      var(--biz-color, var(--onbike-blue));
+  color:           var(--color-white);
+  font-size:       var(--text-sm);
+  font-weight:     var(--weight-semibold);
+  text-decoration: none;
+  transition:      opacity var(--transition-fast);
+}
+.popupCta:hover { opacity: 0.9; }
 
 /* ── PANEL DE INFORMACIÓN DEL NEGOCIO ────────────────────────── */
 

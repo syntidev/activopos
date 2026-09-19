@@ -31,9 +31,6 @@ const TYPE_LABELS: Record<SectionType, string> = {
   community:           'Comunidad',
   story:               'Historia de marca',
   collection_grid:     'Colección',
-  // Fase 2 (schema, 2026-09-18) — sin formulario propio todavía en este tab
-  // (fuera de scope: solo se agregó el tipo/label para que el mapa exhaustivo
-  // siga compilando). Editar su config hoy requiere ir directo a la API.
   announcement_popup:  'Popup de anuncio',
 }
 
@@ -332,14 +329,26 @@ function SectionCard({
         </div>
       </div>
 
-      {section.type === 'hero'            && <HeroForm           config={section.config as unknown as HeroConfig} onChange={onConfigChange} />}
-      {section.type === 'event_slider'    && <EventSliderForm    config={section.config as unknown as EventSliderConfig} onChange={onConfigChange} />}
-      {section.type === 'community'       && <CommunityForm      config={section.config as unknown as CommunityConfig} onChange={onConfigChange} />}
-      {section.type === 'story'           && <StoryForm          config={section.config as unknown as StoryConfig} onChange={onConfigChange} />}
-      {section.type === 'collection_grid' && <CollectionGridForm config={section.config as unknown as CollectionGridConfig} onChange={onConfigChange} />}
+      {section.type === 'hero'               && <HeroForm               config={section.config as unknown as HeroConfig} onChange={onConfigChange} />}
+      {section.type === 'event_slider'       && <EventSliderForm        config={section.config as unknown as EventSliderConfig} onChange={onConfigChange} />}
+      {section.type === 'community'          && <CommunityForm          config={section.config as unknown as CommunityConfig} onChange={onConfigChange} />}
+      {section.type === 'story'              && <StoryForm              config={section.config as unknown as StoryConfig} onChange={onConfigChange} />}
+      {section.type === 'collection_grid'    && <CollectionGridForm     config={section.config as unknown as CollectionGridConfig} onChange={onConfigChange} />}
+      {section.type === 'announcement_popup' && <AnnouncementPopupForm  config={section.config as unknown as AnnouncementPopupConfig} onChange={onConfigChange} />}
 
       <div className={styles.saveRow}>
-        <Button variant="primary" onClick={onSave} loading={busy}>Guardar</Button>
+        {/* image_url vacío -> el schema (.strict(), sin .optional()) rechaza el
+            POST/PATCH igual, pero deshabilitar acá evita el viaje a la API y
+            el mensaje de error genérico: "el form no debe permitir guardar
+            sin imagen" (nota de diseño explícita del sprint). */}
+        <Button
+          variant="primary"
+          onClick={onSave}
+          loading={busy}
+          disabled={section.type === 'announcement_popup' && !(section.config as unknown as AnnouncementPopupConfig).image_url}
+        >
+          Guardar
+        </Button>
       </div>
     </div>
   )
@@ -557,6 +566,38 @@ function StoryForm({ config, onChange }: { config: StoryConfig; onChange: (c: St
         />
       </div>
       <ImageField label="Foto" value={config.image_url} onChange={v => onChange({ ...config, image_url: v })} />
+    </div>
+  )
+}
+
+function AnnouncementPopupForm({ config, onChange }: { config: AnnouncementPopupConfig; onChange: (c: AnnouncementPopupConfig) => void }) {
+  return (
+    <div className={styles.formFields}>
+      <ImageField label="Imagen (obligatoria)" value={config.image_url} onChange={v => onChange({ ...config, image_url: v })} />
+      <Input label="Encabezado" value={config.heading} onChange={e => onChange({ ...config, heading: e.target.value })} maxLength={80} />
+      <Input
+        label="Texto del botón (opcional)"
+        value={config.cta_text ?? ''}
+        onChange={e => onChange({ ...config, cta_text: e.target.value || undefined })}
+        maxLength={40}
+      />
+      <Input
+        label="Link del botón (opcional)"
+        value={config.cta_link ?? ''}
+        onChange={e => onChange({ ...config, cta_link: e.target.value || undefined })}
+        placeholder="/catalogo-premium/mi-slug/productos"
+        maxLength={500}
+      />
+      <Input
+        label="Retraso antes de mostrar (segundos)"
+        type="number"
+        min={0}
+        max={15}
+        step={0.5}
+        value={config.delay_ms / 1000}
+        onChange={e => onChange({ ...config, delay_ms: Math.round(Number(e.target.value) * 1000) })}
+        hint="0 a 15 segundos"
+      />
     </div>
   )
 }

@@ -61,6 +61,7 @@ export interface PaymentMethod {
 /* ── Internal types ──────────────────────────────────────────── */
 
 interface Props {
+  businessId:     number
   products:       CatalogProduct[]
   categories:     string[]
   categoryColors: Record<string, string | null>
@@ -150,6 +151,7 @@ const MINI_BANNERS: { title: string; subtitle: string }[] = [
 /* ── Component ───────────────────────────────────────────────── */
 
 export function CatalogoGrid({
+  businessId,
   products,
   categories,
   categoryColors,
@@ -935,7 +937,7 @@ export function CatalogoGrid({
           ninguna, landingSections=[] y esto no renderiza nada: fallback
           automático al hero genérico de abajo, cero cambio de comportamiento. ── */}
       {catalogMode === 'home' && browseMode && landingSections.length > 0 && (
-        <LandingSections sections={landingSections} slug={slug} />
+        <LandingSections sections={landingSections} slug={slug} businessId={businessId} />
       )}
 
       {/* ── Hero banner genérico — solo si el tenant NO configuró un hero

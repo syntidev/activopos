@@ -8,11 +8,13 @@ import type {
   CollectionGridRenderConfig,
 } from '@/lib/landing-sections'
 import { ImgWithFallback } from './ImgWithFallback'
+import { AnnouncementPopup } from './AnnouncementPopup'
 import styles from './catalogo.module.css'
 
 interface Props {
-  sections: RenderableLandingSection[]
-  slug:     string
+  sections:   RenderableLandingSection[]
+  slug:       string
+  businessId: number
 }
 
 const SLIDER_INTERVAL_MS = 6000
@@ -24,18 +26,21 @@ function initialLetter(text: string | null | undefined, fallback: string): strin
   return (text?.match(/[A-Za-zÀ-ÿ]/)?.[0] ?? fallback).toUpperCase()
 }
 
-export function LandingSections({ sections, slug }: Props) {
+export function LandingSections({ sections, slug, businessId }: Props) {
   if (sections.length === 0) return null
   return (
     <>
       {sections.map(s => {
         switch (s.type) {
-          case 'hero':            return <HeroSection          key={s.id} config={s.config} />
-          case 'event_slider':    return <EventSlider          key={s.id} config={s.config} />
-          case 'community':       return <CommunitySection     key={s.id} config={s.config} />
-          case 'story':           return <StorySection         key={s.id} config={s.config} />
-          case 'collection_grid': return <CollectionGridSection key={s.id} config={s.config} slug={slug} />
-          default:                 return null
+          case 'hero':               return <HeroSection          key={s.id} config={s.config} />
+          case 'event_slider':       return <EventSlider          key={s.id} config={s.config} />
+          case 'community':          return <CommunitySection     key={s.id} config={s.config} />
+          case 'story':              return <StorySection         key={s.id} config={s.config} />
+          case 'collection_grid':    return <CollectionGridSection key={s.id} config={s.config} slug={slug} />
+          // No es una <section> del flujo -- overlay position:fixed propio,
+          // por eso vive fuera del <> sin afectar el layout de las demás.
+          case 'announcement_popup': return <AnnouncementPopup key={s.id} config={s.config} businessId={businessId} sectionId={s.id} />
+          default:                    return null
         }
       })}
     </>

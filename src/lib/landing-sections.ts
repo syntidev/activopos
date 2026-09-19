@@ -124,8 +124,9 @@ export type CollectionGridRenderConfig = CollectionGridConfig & {
 }
 
 export type RenderableLandingSection =
-  | { id: number; order: number; type: 'hero';            config: HeroConfig }
-  | { id: number; order: number; type: 'event_slider';    config: EventSliderConfig }
-  | { id: number; order: number; type: 'community';       config: CommunityConfig }
-  | { id: number; order: number; type: 'story';           config: StoryConfig }
-  | { id: number; order: number; type: 'collection_grid'; config: CollectionGridRenderConfig }
+  | { id: number; order: number; type: 'hero';               config: HeroConfig }
+  | { id: number; order: number; type: 'event_slider';       config: EventSliderConfig }
+  | { id: number; order: number; type: 'community';          config: CommunityConfig }
+  | { id: number; order: number; type: 'story';              config: StoryConfig }
+  | { id: number; order: number; type: 'collection_grid';    config: CollectionGridRenderConfig }
+  | { id: number; order: number; type: 'announcement_popup'; config: AnnouncementPopupConfig }

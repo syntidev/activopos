@@ -332,6 +332,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     >
       {/* ── CatalogoGrid: header + hero + search + tabs + grid + modals ── */}
       <CatalogoGrid
+        businessId={business.id}
         products={catalogProducts}
         categories={categories}
         categoryColors={categoryColors}

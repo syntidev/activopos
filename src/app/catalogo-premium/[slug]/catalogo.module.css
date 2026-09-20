@@ -3678,6 +3678,7 @@
 
 .brandSection {
   padding: var(--space-6) var(--space-4);
+  scroll-margin-top: 112px;
 }
 
 @media (min-width: 1024px) {

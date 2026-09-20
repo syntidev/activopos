@@ -710,16 +710,27 @@ export function CatalogoGrid({
             en la navBar secundaria (Inicio/Catálogo, 2 links) -- ese quedaba
             duplicado visualmente con este (misma función, mejor ubicación),
             se eliminó de ahí.
-            "Marcas" apunta a /productos por ahora (sin destino
-            propio distinto) -- Barra-de-marcas es Fase 2 explícita en
-            landing-sections.ts, y /productos no lee ningún query param de
-            colección todavía. Cero Fachadas: mejor un link real y compartido
-            que uno que aparente filtrar y no haga nada. Cuando exista shop-
-            by-brand o filtro por colección, apuntar cada uno a su propia URL. */}
+            "Marcas" ancla a #marcas (sección "Comprá por marca"): en el home
+            hace scroll suave dentro de .root (que es el scroller, no el
+            documento, por eso scrollIntoView y no el hash nativo de Next);
+            desde /productos, donde la sección no existe, navega al home#marcas.
+            "Tienda" sí es otra vista (grid completo), navegar es correcto. */}
         <nav className={styles.headerNav} aria-label="Navegación principal">
           <Link href={`/catalogo-premium/${slug}`} className={styles.headerNavLink}>Inicio</Link>
           <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Tienda</Link>
-          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Marcas</Link>
+          <Link
+            href={`/catalogo-premium/${slug}#marcas`}
+            className={styles.headerNavLink}
+            onClick={(e) => {
+              const target = document.getElementById('marcas')
+              if (!target) return
+              e.preventDefault()
+              const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+              target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+            }}
+          >
+            Marcas
+          </Link>
         </nav>
 
         {/* iconCluster envuelve los 3 -- visible en TODOS los anchos (info+
@@ -1002,7 +1013,7 @@ export function CatalogoGrid({
           Hero (antes vivía casi al final). Mecanismo sin tocar (Brand
           real + scroll horizontal ya resuelto), solo cambia el orden. ── */}
       {catalogMode === 'home' && browseMode && brands.length > 0 && (
-        <section className={styles.brandSection} aria-label="Marcas">
+        <section id="marcas" className={styles.brandSection} aria-label="Marcas">
           <div className={styles.brandHeader}>
             <span className={styles.brandTitle}>
               <Tag size={16} aria-hidden="true" />

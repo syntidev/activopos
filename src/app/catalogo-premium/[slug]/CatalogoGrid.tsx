@@ -710,7 +710,7 @@ export function CatalogoGrid({
             en la navBar secundaria (Inicio/Catálogo, 2 links) -- ese quedaba
             duplicado visualmente con este (misma función, mejor ubicación),
             se eliminó de ahí.
-            "Marcas" y "200K" apuntan a /productos por ahora (sin destino
+            "Marcas" apunta a /productos por ahora (sin destino
             propio distinto) -- Barra-de-marcas es Fase 2 explícita en
             landing-sections.ts, y /productos no lee ningún query param de
             colección todavía. Cero Fachadas: mejor un link real y compartido
@@ -720,7 +720,6 @@ export function CatalogoGrid({
           <Link href={`/catalogo-premium/${slug}`} className={styles.headerNavLink}>Inicio</Link>
           <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Tienda</Link>
           <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Marcas</Link>
-          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>200K</Link>
         </nav>
 
         {/* iconCluster envuelve los 3 -- visible en TODOS los anchos (info+

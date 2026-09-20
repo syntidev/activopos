@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import {
   Package, X, MessageCircle, ShoppingBag, Plus, Minus, Search,
   Star, Archive, Menu, Flame, Sparkles, Tag, ThumbsUp,
-  Info, AtSign, Phone, Share2, ArrowUp, SlidersHorizontal, LayoutGrid, Grid,
+  Info, AtSign, Phone, Share2, ArrowUp, SlidersHorizontal, Grid,
+  Truck, ShieldCheck, ImageOff,
 } from 'lucide-react'
 import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
@@ -197,9 +198,6 @@ export function CatalogoGrid({
   const [selectedDim1,    setSelectedDim1]    = useState<string | null>(null)
   const [showBackTop,    setShowBackTop]    = useState(false)
   const [heroIdx,        setHeroIdx]        = useState(0)
-  // Path de categoría con 404 confirmado (onError) -> misma tarjeta "blank"
-  // que la categoría sin foto, nunca el ícono nativo de imagen rota.
-  const [brokenCatImages, setBrokenCatImages] = useState<Set<string>>(new Set())
   const [activePriceRange, setActivePriceRange] = useState<{ min: number; max: number } | null>(null)
 
   const closeRef  = useRef<HTMLButtonElement>(null)
@@ -248,22 +246,6 @@ export function CatalogoGrid({
     return map
   }, [products])
 
-  // "Explora por precio" — tramos fijos, solo se muestran los que tienen
-  // al menos 1 producto real (nada de bloques vacíos como fachada).
-  const priceRanges = useMemo(() => {
-    const tiers = [
-      { label: 'Menos de $25',    min: 0,   max: 25 },
-      { label: '$25 – $75',       min: 25,  max: 75 },
-      { label: '$75 – $200',      min: 75,  max: 200 },
-      { label: 'Más de $200',     min: 200, max: Infinity },
-    ]
-    return tiers
-      .map(t => ({
-        ...t,
-        count: products.filter(p => p.priceUsd > 0 && p.priceUsd >= t.min && p.priceUsd < t.max).length,
-      }))
-      .filter(t => t.count > 0)
-  }, [products])
 
   // Categoría de contexto para el bar de subcategorías: en modo filtrado es
   // activeCategory; en browse sigue a la sección visible (scroll-spy).
@@ -325,16 +307,6 @@ export function CatalogoGrid({
   // subcategorías siguen usando el grid filtrado único de arriba.
   const browseMode = activeCategory === null && !query.trim() && !activePriceRange
 
-  // Selecciona un tramo de precio — filtro real (misma familia que selectCategory),
-  // mutuamente excluyente con categoría/búsqueda para no combinar filtros a medias.
-  const selectPriceRange = (r: { min: number; max: number }) => {
-    setActiveCategory(null)
-    setActiveSub(null)
-    setQuery('')
-    setSpyCategory(null)
-    setActivePriceRange(r)
-  }
-
   const ORPHAN_KEY = '__otros__'
 
   const sections = useMemo(() => {
@@ -352,6 +324,45 @@ export function CatalogoGrid({
     if (orphans.length) out.push({ key: ORPHAN_KEY, name: 'Otros', color: null, items: orphans })
     return out
   }, [products, categories, categoryColors])
+
+  // ── Restructuración patrón conversión (Flatsome-validated) — extrae hero/
+  // banner-de-marca/foto-ambiente de Landing Sections para posicionarlos en
+  // el orden fijo de la página, en vez del orden libre por `order` de DB.
+  // community y el texto completo de story quedan archivados (código intacto
+  // en LandingSections.tsx, solo sin invocar acá).
+  const heroSection = useMemo(() =>
+    landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'hero' }> => s.type === 'hero')
+  , [landingSections])
+
+  const brandBannerSection = useMemo(() =>
+    landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'event_slider' }> => s.type === 'event_slider')
+  , [landingSections])
+
+  const ambientPhotoSection = useMemo(() =>
+    landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'story' }> => s.type === 'story')
+  , [landingSections])
+
+  // Primera categoría no vacía, mismo orden que el admin definió en
+  // Configuración > Categorías — proxy real de "categoría más relevante"
+  // sin inventar un campo de popularidad que no existe.
+  const topCategorySection = sections.find(s => s.key !== ORPHAN_KEY) ?? null
+
+  // Grid final mixto — 4 columnas por criterio real disponible (badge nuevo,
+  // isFeatured, categorías siguientes). Nunca fuerza 4 columnas fabricadas:
+  // si hay menos señales reales, hay menos columnas.
+  const finalGridColumns = useMemo(() => {
+    const cols: { title: string; items: CatalogProduct[] }[] = []
+    if (nuevosIngresos.length) cols.push({ title: 'Nuevo', items: nuevosIngresos.slice(0, 4) })
+    const featured = products.filter(p => p.isFeatured)
+    if (featured.length) cols.push({ title: 'Destacado', items: featured.slice(0, 4) })
+    for (const s of sections) {
+      if (cols.length >= 4) break
+      if (s.key === ORPHAN_KEY) continue
+      if (cols.some(c => c.title === s.name)) continue
+      cols.push({ title: s.name, items: s.items.slice(0, 4) })
+    }
+    return cols.slice(0, 4)
+  }, [nuevosIngresos, products, sections])
 
   const catSectionRefs = useRef<Map<string, HTMLElement>>(new Map())
 
@@ -935,17 +946,16 @@ export function CatalogoGrid({
         </div>
       )}
 
-      {/* ── Landing Sections (Fase 1) — hero/event_slider/community/story
-          configurados por admin, en su `order`. Si el tenant no tiene
-          ninguna, landingSections=[] y esto no renderiza nada: fallback
-          automático al hero genérico de abajo, cero cambio de comportamiento. ── */}
-      {catalogMode === 'home' && browseMode && landingSections.length > 0 && (
-        <LandingSections sections={landingSections} slug={slug} businessId={businessId} />
+      {/* ── SECCIÓN 1: Hero — único tipo de Landing Section que se pasa acá,
+          extraído explícitamente (no el mapper genérico) para fijar su
+          posición #1 sin depender del `order` de DB. ── */}
+      {catalogMode === 'home' && browseMode && heroSection && (
+        <LandingSections sections={[heroSection]} slug={slug} businessId={businessId} />
       )}
 
       {/* ── Hero banner genérico — solo si el tenant NO configuró un hero
           de Landing Sections (evita hero duplicado) ── */}
-      {catalogMode === 'home' && browseMode && !landingSections.some(s => s.type === 'hero') && (() => {
+      {catalogMode === 'home' && browseMode && !heroSection && (() => {
         const covers = heroCovers?.length ? heroCovers : heroCover ? [heroCover] : []
         if (!covers.length) return (
           <section className={styles.heroBanner}>
@@ -989,86 +999,9 @@ export function CatalogoGrid({
         )
       })()}
 
-      {/* ── Categorías editoriales — mismo mecanismo (foto+nombre+contador),
-          formato grande estilo revista en vez de ícono circular genérico ── */}
-      {catalogMode === 'home' && browseMode && categories.length > 0 && (
-        <section className={styles.editorialCatSection} aria-label="Categorías">
-          <div className={styles.editorialCatHeader}>
-            <span className={styles.editorialCatTitle}>
-              <LayoutGrid size={16} aria-hidden="true" />
-              Explorar categorías
-            </span>
-            <button
-              type="button"
-              className={styles.editorialCatVerTodos}
-              onClick={() => router.push(`/catalogo-premium/${slug}/productos`)}
-            >
-              Ver todos →
-            </button>
-          </div>
-          <div className={styles.editorialCatGrid}>
-            {categories.map(cat => {
-              const catImage = categoryImages[cat] ?? null
-              const count = categoryCounts.get(cat) ?? 0
-              // Sin foto real subida todavía (categorías OnBike sin asset), o con
-              // foto pero el path da 404 (brokenCatImages, onError) — en vez de un
-              // placeholder gris tipo "imagen rota", tarjeta blanca intencional
-              // con el nombre en tipografía del sistema + textura de constelación.
-              if (!catImage || brokenCatImages.has(cat)) {
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    className={`${styles.editorialCatCard} ${styles.editorialCatCardBlank}`}
-                    onClick={() => scrollToSection(cat)}
-                  >
-                    <span className={styles.editorialCatBlankMedia}>
-                      <span className={styles.constellationDark} aria-hidden="true" />
-                      <span className={styles.editorialCatBlankName}>{cat}</span>
-                      <span className={styles.editorialCatBlankCount}>
-                        {count} producto{count !== 1 ? 's' : ''}
-                      </span>
-                    </span>
-                  </button>
-                )
-              }
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  className={styles.editorialCatCard}
-                  onClick={() => scrollToSection(cat)}
-                >
-                  <span className={styles.editorialCatMedia}>
-                    <img
-                      src={catImage}
-                      alt=""
-                      className={styles.editorialCatImg}
-                      loading="lazy"
-                      aria-hidden="true"
-                      onError={() => setBrokenCatImages(prev => new Set(prev).add(cat))}
-                    />
-                    <span className={styles.editorialCatScrim} aria-hidden="true" />
-                  </span>
-                  <span className={styles.editorialCatLabel}>
-                    <span className={styles.editorialCatName}>{cat}</span>
-                    <span className={styles.editorialCatCount}>
-                      {count} producto{count !== 1 ? 's' : ''}
-                    </span>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* ── Comprá por marca — modelo real Brand (Configuración > Marcas),
-          sin campo `marca` estructurado en Product todavía: cada tile
-          linkea al buscador existente vía ?buscar=search_term, mismo
-          mecanismo que ya usa la barra de búsqueda (query -> initialQuery ->
-          useState). Placeholder de imagen (textura constelación) cuando la
-          marca no tiene image_url propio. ── */}
+      {/* ── SECCIÓN 2: Marcas — reposicionada inmediatamente después del
+          Hero (antes vivía casi al final). Mecanismo sin tocar (Brand
+          real + scroll horizontal ya resuelto), solo cambia el orden. ── */}
       {catalogMode === 'home' && browseMode && brands.length > 0 && (
         <section className={styles.brandSection} aria-label="Marcas">
           <div className={styles.brandHeader}>
@@ -1101,71 +1034,135 @@ export function CatalogoGrid({
         </section>
       )}
 
-      {/* ── Explora por precio — patrón "explorar por precio" tipo Amazon,
-          sin badges de descuento. Filtro real sobre `products`, no decorativo ── */}
-      {catalogMode === 'home' && browseMode && priceRanges.length > 0 && (
-        <section className={styles.priceExploreSection} aria-label="Explorar por precio">
-          <div className={styles.priceExploreHeader}>
-            <span className={styles.priceExploreTitle}>Explora por precio</span>
-          </div>
-          <div className={styles.priceExploreGrid}>
-            {priceRanges.map(r => (
-              <button
-                key={r.label}
-                type="button"
-                className={styles.priceExploreCard}
-                onClick={() => selectPriceRange(r)}
-              >
-                <span className={styles.priceExploreRange}>{r.label}</span>
-                <span className={styles.priceExploreCount}>
-                  {r.count} producto{r.count !== 1 ? 's' : ''}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── Destacados — showcase de vista inicial ─────────────── */}
-      {catalogMode === 'home' && hasFeatured && browseMode && (
+      {/* ── SECCIÓN 3: Riel de productos destacados — scroll horizontal
+          (antes era grid vertical `.featuredGrid`), mismo patrón shelfTrack
+          que el resto del catálogo. Empty-state compacto DENTRO de la
+          sección si el catálogo real está vacío, nunca un bloque aislado. ── */}
+      {catalogMode === 'home' && browseMode && (
         <section className={styles.featuredSection} data-section="featured" aria-label="Productos destacados">
           <div className={styles.featuredHeader}>
             <div className={styles.featuredTitlePill}>
               <Star size={14} aria-hidden="true" />
               Productos Destacados
             </div>
-            <button
-              type="button"
-              className={styles.shelfVerTodos}
-              onClick={() => selectCategory(FEATURED_KEY)}
-            >
-              Ver todos →
-            </button>
+            {hasFeatured && (
+              <button type="button" className={styles.shelfVerTodos} onClick={() => selectCategory(FEATURED_KEY)}>
+                Ver todos →
+              </button>
+            )}
           </div>
-          {/* Misma card que el resto del main — antes tenía markup propio
-              (featuredCard) y quedaba con el formato viejo tras el rediseño. */}
-          <div className={styles.featuredGrid}>
-            {products.filter(p => p.isFeatured).map((p, i) => renderProductCard(p, i))}
+          {products.length === 0 ? (
+            <div className={styles.empty}>
+              <Package className={styles.emptyIcon} size={36} strokeWidth={1.25} aria-hidden="true" />
+              <p className={styles.emptyTitle}>Catálogo en construcción</p>
+              <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
+            </div>
+          ) : (
+            <div className={styles.shelfTrack}>
+              {(hasFeatured ? products.filter(p => p.isFeatured) : products.slice(0, 8)).map((p, i) => (
+                <div key={p.id} className={styles.shelfCard}>
+                  {renderProductCard(p, i)}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── SECCIÓN 5: Fila de confianza — reemplaza el hueco decorativo de
+          "Ruta/Montaña/Urbano" (nunca tuvo clasificación real de producto,
+          puramente decorativo, generaba espacio vacío). 3 íconos, franja
+          delgada, sin foto. ── */}
+      {catalogMode === 'home' && browseMode && (
+        <section className={styles.trustStripSection} aria-label="Confianza">
+          <div className={styles.trustStripItem}>
+            <Truck size={22} aria-hidden="true" />
+            <div>
+              <p className={styles.trustStripTitle}>Envío en Margarita</p>
+              <p className={styles.trustStripDesc}>Coordinamos entrega en toda la isla.</p>
+            </div>
+          </div>
+          <div className={styles.trustStripItem}>
+            <ShieldCheck size={22} aria-hidden="true" />
+            <div>
+              <p className={styles.trustStripTitle}>Garantía de marca oficial</p>
+              <p className={styles.trustStripDesc}>Distribuidor autorizado, producto original.</p>
+            </div>
+          </div>
+          <div className={styles.trustStripItem}>
+            <MessageCircle size={22} aria-hidden="true" />
+            <div>
+              <p className={styles.trustStripTitle}>Atención directa</p>
+              <p className={styles.trustStripDesc}>Escríbenos por WhatsApp, respondemos rápido.</p>
+            </div>
           </div>
         </section>
       )}
 
-      {/* ── Nuevos Ingresos — productos con badge 'nuevo' ────────── */}
-      {catalogMode === 'home' && browseMode && nuevosIngresos.length > 0 && (
-        <section className={styles.featuredSection} aria-label="Nuevos ingresos">
+      {/* ── SECCIÓN 6: Riel por categoría — mismo patrón que Destacados,
+          filtrado a la primera categoría real (orden del admin), no una
+          métrica de popularidad inventada. ── */}
+      {catalogMode === 'home' && browseMode && (
+        <section className={styles.featuredSection} aria-label="Productos por categoría">
           <div className={styles.featuredHeader}>
             <div className={styles.featuredTitlePill}>
               <Sparkles size={14} aria-hidden="true" />
-              Nuevos Ingresos
+              {topCategorySection ? `Lo más nuevo en ${topCategorySection.name}` : 'Por categoría'}
             </div>
+            {topCategorySection && (
+              <button
+                type="button"
+                className={styles.shelfVerTodos}
+                onClick={() => router.push(`/catalogo-premium/${slug}/productos?categoria=${encodeURIComponent(topCategorySection.key)}`)}
+              >
+                Ver todos →
+              </button>
+            )}
           </div>
-          <div className={styles.shelfTrack}>
-            {nuevosIngresos.map((p, i) => (
-              <div key={p.id} className={styles.shelfCard}>
-                {renderProductCard(p, i)}
+          {!topCategorySection ? (
+            <div className={styles.empty}>
+              <Package className={styles.emptyIcon} size={36} strokeWidth={1.25} aria-hidden="true" />
+              <p className={styles.emptyTitle}>Aún sin categorías con productos</p>
+              <p className={styles.emptySubtitle}>Se completa automáticamente al cargar inventario.</p>
+            </div>
+          ) : (
+            <div className={styles.shelfTrack}>
+              {topCategorySection.items.map((p, i) => (
+                <div key={p.id} className={styles.shelfCard}>
+                  {renderProductCard(p, i, topCategorySection.color)}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── SECCIÓN 7: Banner de marca rotativo — repurpose del EventSlider
+          ya construido (crossfade, autoplay, dots+flechas): NO se reconstruyó,
+          solo cambia dónde vive en la página y qué representa el contenido
+          (publicidad de marca, no evento). Lado de texto y contraste se leen
+          del propio slide en LandingSections.tsx, no hardcodeados acá. ── */}
+      {catalogMode === 'home' && browseMode && brandBannerSection && (
+        <LandingSections sections={[brandBannerSection]} slug={slug} businessId={businessId} />
+      )}
+
+      {/* ── SECCIÓN 8: Franja de foto ambiente — todo lo que sobrevive del
+          bloque "Nuestra Historia": SOLO la imagen, sin eyebrow/título/párrafo
+          largo. El texto completo y "La comunidad OnBike" quedan archivados
+          en LandingSections.tsx (código intacto, sin invocar acá) para
+          onbikemargarita.com. ── */}
+      {catalogMode === 'home' && browseMode && ambientPhotoSection && (
+        <section className={styles.ambientPhotoSection} aria-label="Foto ambiente">
+          <ImgWithFallback
+            src={ambientPhotoSection.config.image_url}
+            className={styles.ambientPhotoImg}
+            loading="lazy"
+            fallback={
+              <div className={styles.ambientPhotoPlaceholder} aria-hidden="true">
+                <ImageOff size={28} strokeWidth={1.5} />
               </div>
-            ))}
-          </div>
+            }
+          />
         </section>
       )}
 
@@ -1203,92 +1200,22 @@ export function CatalogoGrid({
             <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
           </div>
         ) : (browseMode && catalogMode === 'home') ? (
-          // Shelves horizontales por categoría — scroll-spy vía catSectionRefs.
-          // flatMap en vez de map: intercala un mini-banner temático cada 2
-          // secciones (patrón Walmart de bloques, sin urgencia/descuentos).
-          sections.flatMap((section, sectionIdx) => {
-            const sectionEl = (
-            <section
-              key={section.key}
-              className={styles.catSection}
-              data-cat-key={section.key}
-              ref={el => {
-                if (el) catSectionRefs.current.set(section.key, el)
-                else catSectionRefs.current.delete(section.key)
-              }}
-              aria-label={section.name}
-            >
-              {/* Header del shelf */}
-              <div
-                className={styles.shelfHeader}
-                style={section.color
-                  ? ({ '--section-accent': section.color } as CSSProperties)
-                  : undefined}
-              >
-                <h2 className={styles.shelfTitle}>
-                  <span className={styles.shelfTitleAccent} aria-hidden="true" />
-                  {section.name}
-                  <span className={styles.shelfCount}>{section.items.length}</span>
-                </h2>
-                <button
-                  type="button"
-                  className={styles.shelfVerTodos}
-                  onClick={() => router.push(
-                    section.key === '__otros__'
-                      ? `/catalogo-premium/${slug}/productos`
-                      : `/catalogo-premium/${slug}/productos?categoria=${encodeURIComponent(section.key)}`
-                  )}
-                  aria-label={`Ver todos los productos de ${section.name}`}
-                >
-                  Ver todos →
-                </button>
-              </div>
-
-              {/* Track horizontal */}
-              <div className={styles.shelfTrack} role="list" aria-label={`Productos de ${section.name}`}>
-                {section.items.map((p, i) => (
-                  <div key={p.id} className={styles.shelfCard} role="listitem">
-                    {renderProductCard(p, i, section.color)}
+          // ── SECCIÓN 9: Grid final mixto — 4 columnas por criterio real
+          // (nuevo/destacado/categorías), patrón Grid Style 2. Reemplaza el
+          // shelf-por-categoría-con-mini-banners anterior (esa vista sigue
+          // completa en /productos, esto es solo el cierre de la home). ──
+          <div className={styles.finalMixedGrid}>
+            {finalGridColumns.map(col => (
+              <div key={col.title} className={styles.finalMixedCol}>
+                <h2 className={styles.finalMixedColTitle}>{col.title}</h2>
+                {col.items.map((p, i) => (
+                  <div key={p.id} className={styles.finalMixedCard}>
+                    {renderProductCard(p, i)}
                   </div>
                 ))}
               </div>
-            </section>
-            )
-
-            const showBanner = sectionIdx > 0 && sectionIdx % 2 === 1
-            if (!showBanner) return [sectionEl]
-
-            const banner = MINI_BANNERS[Math.floor(sectionIdx / 2) % MINI_BANNERS.length]
-            const bannerHref = businessPhone
-              ? `https://wa.me/${normalizePhone(businessPhone)}?text=${encodeURIComponent(`Hola, quiero más información sobre: ${banner.title}`)}`
-              : null
-
-            const bannerContent = (
-              <>
-                <p className={styles.miniBannerTitle}>{banner.title}</p>
-                <p className={styles.miniBannerSubtitle}>{banner.subtitle}</p>
-              </>
-            )
-
-            return [
-              sectionEl,
-              bannerHref ? (
-                <a
-                  key={`banner-${section.key}`}
-                  href={bannerHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.miniBanner}
-                >
-                  {bannerContent}
-                </a>
-              ) : (
-                <div key={`banner-${section.key}`} className={styles.miniBanner}>
-                  {bannerContent}
-                </div>
-              ),
-            ]
-          })
+            ))}
+          </div>
         ) : visible.length === 0 ? (
           <div className={styles.empty}>
             {query ? (

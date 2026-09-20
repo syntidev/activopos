@@ -460,6 +460,18 @@ function EventSliderForm({ config, onChange }: { config: EventSliderConfig; onCh
             <Input label="Subtítulo" value={slide.subtitle} onChange={e => setSlide(i, { subtitle: e.target.value })} maxLength={200} />
             <Input label="Texto del botón" value={slide.cta_text} onChange={e => setSlide(i, { cta_text: e.target.value })} maxLength={40} />
             <Input label="Link del botón" value={slide.cta_link} onChange={e => setSlide(i, { cta_link: e.target.value })} maxLength={500} />
+            <div className={styles.fieldGroup}>
+              <label className={styles.label} htmlFor={`ls-slide-theme-${i}`}>Contraste de texto</label>
+              <select
+                id={`ls-slide-theme-${i}`}
+                className={styles.select}
+                value={slide.text_theme ?? 'light'}
+                onChange={e => setSlide(i, { text_theme: e.target.value === 'dark' ? 'dark' : 'light' })}
+              >
+                <option value="light">Claro (fondo oscuro)</option>
+                <option value="dark">Oscuro (fondo claro)</option>
+              </select>
+            </div>
             <ImageField label={`Imagen slide ${i + 1}`} value={slide.image_url} onChange={v => setSlide(i, { image_url: v })} />
           </div>
         </div>

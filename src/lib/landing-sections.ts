@@ -41,6 +41,11 @@ const SlideSchema = z.object({
   cta_text:  trimmed(40),
   cta_link:  linkUrl(500),
   image_url: imagePath(),
+  // Contraste del texto/CTA sobre el fondo de ESTE slide -- 'light' (blanco,
+  // default, banners oscuros) | 'dark' (texto oscuro, banners claros).
+  // Leído del slide, nunca asumido fijo -- fondos claros con texto blanco
+  // vuelven el CTA ilegible.
+  text_theme: z.enum(['light', 'dark']).optional(),
 }).strict()
 
 const CommunityItemSchema = z.object({

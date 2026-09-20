@@ -73,23 +73,23 @@
 }
 
 .headerLogoImg {
-  width:         32px;
-  height:        32px;
+  width:         40px;
+  height:        40px;
   border-radius: var(--radius-md);
   object-fit:    contain;
   flex-shrink:   0;
 }
 
 .headerLogoInitials {
-  width:           32px;
-  height:          32px;
+  width:           40px;
+  height:          40px;
   border-radius:   var(--radius-md);
   background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-text-on-brand);
   display:         flex;
   align-items:     center;
   justify-content: center;
-  font-size:       var(--text-xs);
+  font-size:       var(--text-sm);
   font-weight:     var(--weight-bold);
   flex-shrink:     0;
   letter-spacing:  0.03em;
@@ -251,8 +251,8 @@
 
   .headerLogoImg,
   .headerLogoInitials {
-    width:  44px;
-    height: 44px;
+    width:  48px;
+    height: 48px;
   }
 
   .headerLogoInitials {
@@ -4055,6 +4055,26 @@
   .lsSliderContent { padding: 0 56px; }
 }
 
+/* Alterna lado por índice de slide (par/impar, calculado en el componente,
+   nunca fijo) -- banner de marca rotativo, no todos los slides pegados
+   al mismo borde. */
+.lsSliderContentRight {
+  margin-left: auto;
+  align-items: flex-end;
+  text-align:  right;
+}
+
+/* Contraste leído de slide.text_theme -- fondos claros necesitan texto
+   oscuro y CTA invertido, blanco-sobre-blanco es ilegible. */
+.lsSliderContentDark {
+  color: var(--color-text-primary);
+}
+
+.lsSliderCtaDark {
+  background: var(--color-text-primary);
+  color:      #FFFFFF;
+}
+
 .lsSliderTitle {
   font-family: var(--font-display);
   font-size:   var(--text-xl);
@@ -4490,3 +4510,106 @@
 
   .backTopBtnStacked { bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--space-3) + 64px); }
 }
+
+/* ── SECCIÓN 5 — Fila de confianza (restructuración conversión) ────────── */
+
+.trustStripSection {
+  display:               grid;
+  grid-template-columns: 1fr;
+  gap:                   var(--space-4);
+  padding:               var(--space-5) var(--space-4);
+  background:            var(--color-surface-2, #F7F7F8);
+}
+
+@media (min-width: 640px) {
+  .trustStripSection { grid-template-columns: repeat(3, 1fr); }
+}
+
+.trustStripItem {
+  display:     flex;
+  align-items: flex-start;
+  gap:         var(--space-3);
+  color:       var(--biz-color, var(--onbike-blue));
+}
+
+.trustStripTitle {
+  margin:      0;
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+}
+
+.trustStripDesc {
+  margin:    var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color:     var(--color-text-secondary);
+}
+
+/* ── SECCIÓN 8 — Franja de foto ambiente ────────────────────────────────
+   Separador puramente visual entre bloques de producto -- sin encabezado
+   ni párrafo, solo la imagen. */
+
+.ambientPhotoSection {
+  position: relative;
+  width:    100%;
+  height:   260px;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .ambientPhotoSection { height: 380px; }
+}
+
+.ambientPhotoImg {
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  display:    block;
+}
+
+.ambientPhotoPlaceholder {
+  width:           100%;
+  height:          100%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--color-surface-2, #F7F7F8);
+  color:           var(--color-text-muted);
+}
+
+/* ── SECCIÓN 9 — Grid final mixto (patrón Grid Style 2) ─────────────────
+   4 columnas paralelas por criterio real (nuevo/destacado/categoría),
+   cada una apila sus propias cards de producto -- nunca fuerza 4 columnas
+   fabricadas si hay menos señales reales disponibles. */
+
+.finalMixedGrid {
+  display:               grid;
+  grid-template-columns: 1fr;
+  gap:                   var(--space-5);
+  padding:               var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .finalMixedGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .finalMixedGrid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.finalMixedCol {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-3);
+}
+
+.finalMixedColTitle {
+  margin:      0;
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-primary);
+  padding-bottom: var(--space-2);
+  border-bottom:  1px solid var(--color-border-subtle);
+}
+
+.finalMixedCard { width: 100%; }

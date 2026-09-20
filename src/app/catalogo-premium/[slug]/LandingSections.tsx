@@ -121,10 +121,21 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
             }
           />
           <div className={styles.lsSliderScrim} aria-hidden="true" />
-          <div className={styles.lsSliderContent}>
+          <div
+            className={[
+              styles.lsSliderContent,
+              idx % 2 === 1 ? styles.lsSliderContentRight : '',
+              slide.text_theme === 'dark' ? styles.lsSliderContentDark : '',
+            ].filter(Boolean).join(' ')}
+          >
             <h2 className={styles.lsSliderTitle}>{slide.title}</h2>
             <p className={styles.lsSliderSubtitle}>{slide.subtitle}</p>
-            <a href={slide.cta_link} className={styles.lsSliderCta}>{slide.cta_text}</a>
+            <a
+              href={slide.cta_link}
+              className={`${styles.lsSliderCta} ${slide.text_theme === 'dark' ? styles.lsSliderCtaDark : ''}`}
+            >
+              {slide.cta_text}
+            </a>
           </div>
         </motion.div>
       </AnimatePresence>

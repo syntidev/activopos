@@ -81,6 +81,7 @@ export function CatalogFooter({
         {/* BLOQUE B — tres columnas de datos */}
         <div className={styles.footerCols}>
 
+          {(address || location) && (
           <div className={styles.footerCol}>
             <p className={styles.footerColTitle}>Ubicaciones</p>
             {address && (
@@ -95,9 +96,10 @@ export function CatalogFooter({
                 <span>{location}</span>
               </div>
             )}
-            {!address && !location && <span className={styles.footerColEmpty}>—</span>}
           </div>
+          )}
 
+          {(waPhone || igHandle || catalogHours) && (
           <div className={styles.footerCol}>
             <p className={styles.footerColTitle}>Contacto</p>
             {waPhone && (
@@ -125,16 +127,15 @@ export function CatalogFooter({
                 <span>{catalogHours}</span>
               </div>
             )}
-            {!waPhone && !igHandle && !catalogHours && (
-              <span className={styles.footerColEmpty}>—</span>
-            )}
           </div>
+          )}
 
           {/* Solo WhatsApp e Instagram: son los únicos datos de red que existen
-              en Business (phone y catalog_instagram). No hay campo de Facebook. */}
+              en Business (phone y catalog_instagram). No hay campo de Facebook.
+              Cada columna se oculta entera si no tiene dato (sin "—" de relleno). */}
+          {(waPhone || igHandle) && (
           <div className={styles.footerCol}>
             <p className={styles.footerColTitle}>Síguenos</p>
-            {(waPhone || igHandle) ? (
               <div className={styles.footerSocials}>
                 {waPhone && (
                   <a
@@ -159,10 +160,8 @@ export function CatalogFooter({
                   </a>
                 )}
               </div>
-            ) : (
-              <span className={styles.footerColEmpty}>—</span>
-            )}
           </div>
+          )}
 
         </div>
       </div>

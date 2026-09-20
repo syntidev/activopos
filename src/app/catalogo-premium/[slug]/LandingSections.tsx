@@ -120,7 +120,10 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
               </div>
             }
           />
-          <div className={styles.lsSliderScrim} aria-hidden="true" />
+          <div
+            className={`${styles.lsSliderScrim} ${slide.text_theme === 'dark' ? styles.lsSliderScrimLight : ''}`}
+            aria-hidden="true"
+          />
           <div
             className={[
               styles.lsSliderContent,

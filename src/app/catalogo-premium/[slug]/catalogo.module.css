@@ -3117,11 +3117,6 @@
   margin:         0 0 var(--space-1);
 }
 
-.footerColEmpty {
-  font-size: var(--text-sm);
-  color:     var(--color-text-muted);
-}
-
 .footerSocials {
   display: flex;
   gap:     var(--space-2);
@@ -4046,6 +4041,12 @@
   background: linear-gradient(100deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0.05) 100%);
 }
 
+/* text_theme dark = texto oscuro: el scrim debe ser CLARO, no oscuro sobre
+   oscuro. Cubre también el caso sin imagen (placeholder gris claro). */
+.lsSliderScrimLight {
+  background: linear-gradient(100deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.55) 60%, rgba(255,255,255,0.15) 100%);
+}
+
 .lsSliderContent {
   position:        relative;
   height:          100%;
@@ -4086,6 +4087,7 @@
   font-size:   var(--text-xl);
   font-weight: 700;
   margin:      0 0 var(--space-2);
+  color:       inherit; /* h2/p globales pisaban el blanco del contenedor */
 }
 
 @media (min-width: 1024px) {
@@ -4096,6 +4098,7 @@
   font-size: var(--text-xs);
   margin:    0 0 var(--space-4);
   opacity:   0.9;
+  color:     inherit;
 }
 
 @media (min-width: 1024px) {
@@ -4523,31 +4526,41 @@
   display:               grid;
   grid-template-columns: 1fr;
   gap:                   var(--space-4);
-  padding:               var(--space-5) var(--space-4);
+  padding:               var(--space-8) var(--space-4);
   background:            var(--color-surface-2, #F7F7F8);
 }
 
 @media (min-width: 640px) {
-  .trustStripSection { grid-template-columns: repeat(3, 1fr); }
+  .trustStripSection { grid-template-columns: repeat(3, 1fr); gap: var(--space-6); padding: var(--space-10) var(--space-6); }
 }
 
+/* Ícono grande arriba, título y descripción centrados (patrón Flatsome
+   Classic Shop). El tamaño real lo fija el CSS sobre el <svg> de lucide. */
 .trustStripItem {
-  display:     flex;
-  align-items: flex-start;
-  gap:         var(--space-3);
-  color:       var(--biz-color, var(--onbike-blue));
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  text-align:     center;
+  gap:            var(--space-3);
+  color:          var(--biz-color, var(--onbike-blue));
+}
+
+.trustStripItem > svg {
+  width:  40px;
+  height: 40px;
 }
 
 .trustStripTitle {
   margin:      0;
-  font-size:   var(--text-sm);
+  font-size:   var(--text-base);
   font-weight: var(--weight-semibold);
   color:       var(--color-text-primary);
 }
 
 .trustStripDesc {
-  margin:    var(--space-1) 0 0;
-  font-size: var(--text-xs);
+  margin:    var(--space-1) auto 0;
+  max-width: 32ch;
+  font-size: var(--text-sm);
   color:     var(--color-text-secondary);
 }
 

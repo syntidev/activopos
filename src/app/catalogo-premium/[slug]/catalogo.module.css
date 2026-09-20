@@ -35,6 +35,11 @@
      ese valor gana siempre (--biz-color tiene prioridad sobre este). */
   --onbike-blue: #0B4FCC;
 
+  /* Altura del header sticky: logo 56px + 8px de aire arriba/abajo (mobile),
+     logo 64px + 12px (desktop, ver media query). navBar, sidebar y anclas la
+     consumen para no desalinearse si el header cambia. */
+  --header-h: 72px;
+
   color-scheme:     light;
   background:     var(--color-bg);
   color:          var(--color-text-primary);
@@ -55,7 +60,7 @@
   border-bottom:     1px solid var(--color-border-subtle);
   box-shadow:        0 1px 3px rgba(0, 0, 0, 0.08);
   padding:           0 var(--space-4);
-  height:            56px;
+  height:            var(--header-h);
   flex-shrink:       0;
   display:           flex;
   align-items:       center;
@@ -74,16 +79,16 @@
 
 .headerLogoImg {
   width:         auto;
-  max-width:     96px;
-  height:        40px;
+  max-width:     120px;
+  height:        56px;
   border-radius: var(--radius-md);
   object-fit:    contain;
   flex-shrink:   0;
 }
 
 .headerLogoInitials {
-  width:           40px;
-  height:          40px;
+  width:           56px;
+  height:          56px;
   border-radius:   var(--radius-md);
   background:      var(--biz-color, var(--onbike-blue));
   color:           var(--color-text-on-brand);
@@ -197,10 +202,12 @@
 }
 
 @media (min-width: 1024px) {
-  /* Escala proporcional del header desktop (72->80px): logo, tipografía del
-     nombre e íconos crecen con la altura -- no solo el contenedor. */
+  .root { --header-h: 88px; }
+
+  /* Escala proporcional del header desktop (88px = logo 64px + aire): el
+     header CRECE para dar espacio al logo, no lo comprime. La altura viene de
+     --header-h. */
   .stickyHeader {
-    height:          80px;
     padding:         0 var(--space-7);
     /* logo + nav quedan pegados a la izquierda; .iconCluster (margin-left:
        auto) es lo único que empuja a la derecha -- space-between del mobile
@@ -244,20 +251,20 @@
   }
   .headerNavLink:hover { color: var(--color-text-primary); }
 
-  /* Logo/avatar proporcional a los 80px del header -- 32px se veía
-     minúsculo contra un header pensado para una tienda como OnBike. */
+  /* Logo/avatar proporcional al header de 88px (logo 64px, ancho libre según
+     la proporción real del archivo, con tope). */
   .headerLogo {
     gap: var(--space-3);
   }
 
   .headerLogoImg {
-    max-width: 120px;
-    height:    48px;
+    max-width: 140px;
+    height:    64px;
   }
 
   .headerLogoInitials {
-    width:  48px;
-    height: 48px;
+    width:  64px;
+    height: 64px;
   }
 
   .headerLogoInitials {
@@ -629,7 +636,7 @@
 
 .navBar {
   position:        sticky;
-  top:             56px;
+  top:             var(--header-h);
   z-index:         calc(var(--z-sticky) - 5);
   display:         flex;
   /* relative context para el dropdown de categorías */
@@ -1121,7 +1128,7 @@
   max-width:  1600px;
   width:      100%;
   margin:     0 auto;
-  scroll-margin-top: 112px;
+  scroll-margin-top: calc(var(--header-h) + 56px);
 }
 
 .catSection:nth-child(even) { background: var(--table-header-bg); }
@@ -3025,11 +3032,13 @@
 }
 
 .footerLogo {
-  width:         64px;
+  width:         auto;
+  max-width:     140px;
   height:        64px;
   border-radius: 12px;
-  object-fit:    cover;
+  object-fit:    contain; /* cover recortaba logos rectangulares (811x412) */
   display:       block;
+  align-self:    flex-start; /* el contenedor flex lo estiraba al ancho del tope */
 }
 
 .footerLogoFallback {
@@ -3324,7 +3333,7 @@
     border-radius: var(--radius-lg);
     padding:       var(--space-4);
     position:      sticky;
-    top:           80px;
+    top:           var(--header-h);
     box-shadow:    0 1px 4px rgba(0,0,0,0.08);
   }
 
@@ -3673,7 +3682,7 @@
 
 .brandSection {
   padding: var(--space-6) var(--space-4);
-  scroll-margin-top: 112px;
+  scroll-margin-top: calc(var(--header-h) + 56px); /* header + navBar 48px + aire */
 }
 
 @media (min-width: 1024px) {

@@ -1,7 +1,9 @@
 // Service Worker — ActivoPOS PWA
 // Estrategia: Network First con fallback a cache
 
-const CACHE_NAME = 'activopos-v2'
+// v3: el bump purga (vía 'activate') las cachés v1/v2, que pudieron guardar
+// respuestas de error (500/502) porque antes no se validaba response.ok.
+const CACHE_NAME = 'activopos-v3'
 const OFFLINE_URL = '/offline.html'
 
 const STATIC_ASSETS = [
@@ -58,12 +60,18 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
   if (!event.request.url.startsWith(self.location.origin)) return
   if (event.request.url.includes('/api/')) return
+  // El catálogo público nunca pasa por el SW: siempre va a la red (y a su propio
+  // Cache-Control). Una copia cacheada podía mostrar una versión vieja o degradada.
+  if (new URL(event.request.url).pathname.startsWith('/catalogo')) return
 
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        const clone = response.clone()
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
+        // Solo se cachean respuestas exitosas; un 500/502 nunca debe quedar guardado.
+        if (response.ok) {
+          const clone = response.clone()
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
+        }
         return response
       })
       .catch(() =>

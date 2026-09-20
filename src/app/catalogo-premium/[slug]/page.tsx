@@ -219,14 +219,22 @@ export default async function CatalogoPage({ params }: PageProps) {
       where:   { business_id: business.id, visible: true },
       select:  { id: true, type: true, order: true, config: true },
       orderBy: { order: 'asc' },
-    }).catch(() => []),
+    }).catch((error: unknown) => {
+      // Degrada sin tumbar el catálogo, pero deja evidencia: sin este log, una
+      // caída de DB/pool se veía como "la página a veces trae menos secciones".
+      console.error('[catalogo-premium] landing_sections falló, se renderiza sin secciones', { slug: params.slug, business_id: business.id, error })
+      return []
+    }),
     // "Comprá por marca" (Configuración > Marcas) — mismo motivo que Landing
     // Sections: server component sin sesión, /api/brands no aplica acá.
     prisma.brand.findMany({
       where:   { business_id: business.id, visible: true },
       select:  { name: true, image_url: true, search_term: true },
       orderBy: { order: 'asc' },
-    }).catch(() => []),
+    }).catch((error: unknown) => {
+      console.error('[catalogo-premium] brands falló, se renderiza sin marcas', { slug: params.slug, business_id: business.id, error })
+      return []
+    }),
   ])
 
   // Config es JSON crudo en DB — se revalida contra el mismo schema Zod que la

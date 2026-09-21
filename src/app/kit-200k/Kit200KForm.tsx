@@ -82,16 +82,13 @@ export function Kit200KForm({ slug, kitId }: Props) {
     setExtras(prev => prev.filter((_, i) => i !== idx))
   }
 
-  // La talla de la franela del kit viaja en el payload (limitación de schema:
-  // Reserva.talla es un solo campo) pero NO se muestra como línea propia en el
-  // resumen -- el mockup no la itemiza, va implícita en "Kit 200K". Ver nota
-  // GAP-TALLA-INDEPENDIENTE en el commit.
-  const franelaKitExtra: Extra = { nombre: 'Franela del kit (talla independiente)', cantidad: 1, talla: franelaTalla }
+  // Talla independiente por componente -- schema real (componentes_tallas),
+  // ya no el workaround de extras[]. No se muestra como línea propia en el
+  // resumen: el mockup no la itemiza, va implícita en "Kit 200K".
   const visibleExtras: Extra[] = [
     ...(medallaIncluded ? [{ nombre: 'Medalla Finalista', cantidad: 1, talla: null }] : []),
     ...extras,
   ]
-  const payloadExtras: Extra[] = [franelaKitExtra, ...visibleExtras]
 
   const handleSubmit = async () => {
     if (!clienteNombre.trim() || !clienteTelefono.trim() || submitting) return
@@ -106,8 +103,9 @@ export function Kit200KForm({ slug, kitId }: Props) {
           cliente_telefono: clienteTelefono.trim(),
           kit_id:           kitId,
           talla:            maillotTalla,
+          componentes_tallas: { maillot: maillotTalla, franela: franelaTalla },
           cantidad:         1,
-          extras:           payloadExtras,
+          extras:           visibleExtras,
         }),
       })
       const data: { ok: boolean; reserva?: { ticket_number: string }; error?: string } = await res.json()

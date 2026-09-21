@@ -235,6 +235,47 @@ sharp              → Procesamiento de imágenes WebP
 | super_admin | Todo el sistema                             | Solo Carlos Bolívar                  |
 | admin       | Todo excepto super_admin                    | No puede ver otros tenants           |
 | cashier     | POS, Caja, Clientes — sin costos ni config  | Sin finanzas, sin configuración      |
+| operador_reservas | SOLO `/reservas` y `/api/reservas*`   | Deniega por defecto: nada más del negocio |
+
+`operador_reservas` es un rol **restringido con denegación por defecto** (a diferencia de
+`cashier`, que solo pierde lo listado en `ADMIN_ONLY`). Se define en `src/middleware.ts`
+(`OPERADOR_ALLOWED`: lista blanca por ruta y método). Un rol restringido nuevo sigue ese
+mismo patrón y además necesita su propio shell mínimo (`OperadorShell`), no el del negocio.
+
+---
+
+## 🔎 CONVENCIÓN — BÚSQUEDA HÍBRIDA EN LISTADOS (obligatoria)
+
+Todo módulo con listado y búsqueda usa **un solo input** que busca a la vez en **todos los
+campos identificatorios** de la entidad (ticket/código, nombre, teléfono, email, etc.).
+NUNCA obligar al usuario a saber en qué campo está el dato, ni búsqueda de un solo campo exacto.
+
+- **Varias palabras = AND entre palabras, OR entre campos.** "juan 047" encuentra al cliente
+  Juan con ticket 047.
+- **Coincidencia parcial**, sin distinguir mayúsculas ni acentos ("maria" encuentra "María").
+- **Teléfonos:** guardarlos normalizados (solo dígitos y `+`) y comparar también solo por
+  dígitos, para que "0414-555" encuentre "04145551234".
+- **Doble capa:** filtro instantáneo en cliente sobre lo ya cargado + endpoint de servidor con
+  el mismo criterio (parámetro `q`) para listas paginadas o grandes.
+- **El texto va como parámetro** a Prisma (`contains`), nunca concatenado. Acotar largo (≤60) y
+  número de palabras (≤5).
+- Referencia de implementación: `src/lib/reservas.ts` (`parseSearchParam`, `reservasBySearch`)
+  y `src/app/(dashboard)/reservas/format.ts` (`matchesSearch`).
+
+---
+
+## 🚩 CONVENCIÓN — MÓDULOS POR NEGOCIO (feature flag)
+
+Un módulo que no aplica a todos los tenants (ej. Reservas 200K, solo OnBike) NUNCA se muestra
+por defecto a cualquier admin. Debe tener un flag **propio por negocio**, apagado por defecto:
+
+- Columna booleana en `Business` (`reservas_enabled Boolean @default(false)`). **No** usar
+  `modules_enabled`: esa lista la reescribe el tenant desde Configuración > Módulos.
+- Gatear en **cuatro** sitios: (1) link del sidebar (`featureFlag`), (2) la página, con un
+  `layout.tsx` de servidor que hace `notFound()`, (3) TODOS sus endpoints, por una única función
+  de acceso (`requireReservasAccess`), (4) la creación de roles ligados al módulo.
+- Ninguna API de tenant escribe el flag: se activa por SQL/script del equipo (`UPDATE businesses
+  SET reservas_enabled = 1 WHERE id = N`), previa autorización.
 
 ---
 

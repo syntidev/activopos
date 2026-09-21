@@ -4,13 +4,14 @@ import bcrypt from 'bcryptjs'
 import { Prisma } from '@prisma/client'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
+import { prisma } from '@/lib/prisma'
 
 const PostSchema = z.object({
   name:     z.string().min(2).max(255),
   email:    z.string().email().max(255),
   password: z.string().min(6).max(72).optional(),
   pin:      z.string().regex(/^\d{4}$/).optional(),
-  role:     z.enum(['admin', 'cashier']),
+  role:     z.enum(['admin', 'cashier', 'operador_reservas']),
 }).refine(d => d.password ?? d.pin, { message: 'password o pin requerido' })
 
 const USER_SELECT = {
@@ -64,6 +65,17 @@ export async function POST(request: Request) {
       })
       if (cashierCount >= 5) {
         return NextResponse.json({ error: 'Límite de 5 cajeros activos alcanzado' }, { status: 422 })
+      }
+    }
+
+    // El operador de reservas solo tiene sentido en un negocio con el módulo habilitado.
+    if (data.role === 'operador_reservas') {
+      const business = await prisma.business.findUnique({
+        where:  { id: session.businessId },
+        select: { reservas_enabled: true },
+      })
+      if (!business?.reservas_enabled) {
+        return NextResponse.json({ error: 'El módulo de Reservas no está habilitado para este negocio' }, { status: 422 })
       }
     }
 

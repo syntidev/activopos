@@ -28,6 +28,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: 'Super Admin',
   admin:       'Admin',
   cashier:     'Cajero',
+  operador_reservas: 'Operador de reservas',
 }
 
 function getInitials(name: string): string {

@@ -12,6 +12,9 @@ enum Role {
   super_admin
   admin
   cashier
+  // Acceso EXCLUSIVO a /reservas y /api/reservas* (ver middleware.ts). Para que
+  // varias personas trabajen el evento sin ver nada más del negocio.
+  operador_reservas
 }
 
 enum SaleMode {
@@ -200,6 +203,11 @@ model Business {
   max_discount_pct             Float     @default(0)
   allow_cashier_price_override Boolean   @default(false)
   modules_enabled              String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,suppliers") @db.VarChar(500)
+  // Feature flag por negocio del módulo Reservas (preventa 200K). Default false:
+  // solo se activa a mano para los negocios que lo usan (OnBike, business_id=33).
+  // NO vive en modules_enabled: esa lista la reescribe el tenant desde
+  // Configuración > Módulos (PATCH) y ahí se perdería o el tenant se lo autoactivaría.
+  reservas_enabled             Boolean   @default(false)
   notifications_last_read      DateTime?
   ai_tokens_used_month         Int       @default(0)
   ai_tokens_limit_month        Int       @default(100)
@@ -240,6 +248,7 @@ model Business {
   landing_sections     LandingSection[]
   collections          Collection[]
   brands               Brand[]
+  reservas             Reserva[]
 
   @@map("businesses")
 }
@@ -381,6 +390,7 @@ model Product {
   usedIn            ProductComponent[] @relation("ComponentUsedIn")
   purchase_items    PurchaseItem[]
   collections       ProductCollection[]
+  reservas          Reserva[]
 
   @@map("products")
 }
@@ -420,6 +430,46 @@ model ProductCollection {
 
   @@id([product_id, collection_id])
   @@map("product_collections")
+}
+
+// Preventa / inscripción (ej. kit 200K, para dimensionar la orden de
+// fabricación). NO es una venta: no pasa por Order/Sale/cobrar. El pago es en
+// efectivo y en persona, en un momento independiente de la entrega (a veces
+// antes, a veces después). Las 3 banderas (armado / entregado / pagado) son
+// INDEPENDIENTES: nunca combinarlas en un solo campo de estado.
+// business_id => el tenant layer (prisma-tenant.ts) la aísla sola vía DMMF.
+// ticket_number es único POR negocio (no global): dos tenants pueden tener
+// ambos "200K-001".
+model Reserva {
+  id               Int      @id @default(autoincrement())
+  business_id      Int
+  ticket_number    String   @db.VarChar(30)
+  cliente_nombre   String   @db.VarChar(120)
+  cliente_telefono String?  @db.VarChar(30)
+  kit_id           Int
+  talla            String?  @db.VarChar(20)
+  cantidad         Int      @default(1)
+  // Ítems sueltos agregados: [{ nombre, cantidad, talla? }] — validado en la API.
+  extras           Json?
+
+  armado           Boolean  @default(false)
+  entregado        Boolean  @default(false)
+  // Ruta interna /storage/tenants/{business_id}/reservas/...; obligatoria si entregado=true.
+  entregado_foto   String?  @db.VarChar(500)
+  pagado           Boolean  @default(false)
+  // USD. La conversión a Bs se hace al mostrar (regla monetaria del sistema).
+  pagado_monto     Decimal? @db.Decimal(10, 2)
+  pagado_metodo    String?  @db.VarChar(30)
+
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  business Business @relation(fields: [business_id], references: [id])
+  kit      Product  @relation(fields: [kit_id], references: [id])
+
+  @@unique([business_id, ticket_number])
+  @@index([business_id, kit_id])
+  @@map("reservas")
 }
 
 // "Comprá por marca" del catálogo público (catalogo-premium) — reemplaza el

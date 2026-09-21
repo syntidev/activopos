@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   ShoppingBag,
+  ClipboardList,
   Users,
   Package,
   Calculator,
@@ -41,12 +42,14 @@ const ROLE_LABELS: Record<SessionUser['role'], string> = {
   super_admin: 'Super Admin',
   admin:       'Admin',
   cashier:     'Cajero',
+  operador_reservas: 'Operador de reservas',
 }
 
 const ROLE_BADGE_CLASSES: Record<SessionUser['role'], string> = {
   admin:       styles.roleAdmin,
   cashier:     styles.roleCashier,
   super_admin: styles.roleSuperAdmin,
+  operador_reservas: styles.roleCashier,
 }
 
 const ICON_COLOR_CLASSES: Record<string, string> = {
@@ -68,6 +71,8 @@ interface NavItem {
   adminOnly?: boolean
   /** Además del toggle en modules_enabled, requiere que el plan del tenant lo incluya */
   requiresCatalogPlan?: boolean
+  /** Feature flag por negocio (columna propia en Business): oculto salvo confirmación del servidor */
+  featureFlag?: 'reservas'
 }
 
 interface NavGroup {
@@ -97,6 +102,9 @@ const NAV_GROUPS: NavGroup[] = [
       // grupo. VENTAS no lo es, y /api/quotations rechaza al cajero con 403.
       { href: '/cotizaciones', icon: FileText,  label: 'Cotizaciones',                         colorKey: 'ventas', adminOnly: true },
       { href: '/clientes', icon: Users,         label: 'Clientes',                             colorKey: 'ventas' },
+      // Preventa/inscripción con logística propia (no pasa por Order/Sale). Solo admin Y solo
+      // negocios con Business.reservas_enabled (hoy: OnBike). Sin el flag ni el link ni la ruta existen.
+      { href: '/reservas', icon: ClipboardList, label: 'Reservas',                             colorKey: 'ventas', adminOnly: true, featureFlag: 'reservas' },
     ],
   },
   {
@@ -189,6 +197,7 @@ interface NavContentProps {
   notifUnread?: number
   enabledModules?: string[] | null
   catalogPlanAllowed?: boolean
+  reservasEnabled?: boolean
   sidebarCounts?: SidebarCounts
   showMobileInfo?: boolean
   session?: SessionUser | null
@@ -210,6 +219,7 @@ function NavContent({
   notifUnread = 0,
   enabledModules,
   catalogPlanAllowed = true,
+  reservasEnabled = false,
   sidebarCounts,
   showMobileInfo = false,
   session,
@@ -263,7 +273,8 @@ function NavContent({
           const visibleItems = group.items.filter(item =>
             (!item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)) &&
             (!item.requiresCatalogPlan || catalogPlanAllowed) &&
-            (!item.adminOnly || isAdmin)
+            (!item.adminOnly || isAdmin) &&
+            (item.featureFlag !== 'reservas' || reservasEnabled)
           )
           if (visibleItems.length === 0) return null
 
@@ -469,6 +480,7 @@ interface SidebarProps {
   onCloseMobile: () => void
   enabledModules?: string[] | null
   catalogPlanAllowed?: boolean
+  reservasEnabled?: boolean
 }
 
 export function Sidebar({
@@ -480,6 +492,7 @@ export function Sidebar({
   onCloseMobile,
   enabledModules,
   catalogPlanAllowed,
+  reservasEnabled,
 }: SidebarProps) {
   useScrollLock(isMobileOpen)
 
@@ -540,6 +553,7 @@ export function Sidebar({
     notifUnread,
     enabledModules,
     catalogPlanAllowed,
+    reservasEnabled,
     sidebarCounts,
     session,
     isImpersonating,

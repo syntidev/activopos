@@ -22,6 +22,11 @@ export async function POST(req: NextRequest) {
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const formData = await req.formData()
+    // Defensa en profundidad (el middleware ya restringe la ruta): el operador de
+    // reservas solo puede subir fotos del módulo Reservas, nunca logos/productos/etc.
+    if (session.role === 'operador_reservas' && formData.get('type') !== 'reservas') {
+      return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    }
     const file     = formData.get('file')
     // type selecciona el subdirectorio del tenant; default 'products' (backward compatible)
     const rawType  = formData.get('type')
@@ -29,6 +34,7 @@ export async function POST(req: NextRequest) {
                    : rawType === 'catalog_cover' ? 'catalog_cover'
                    : rawType === 'landing' ? 'landing'
                    : rawType === 'brand' ? 'brand'
+                   : rawType === 'reservas' ? 'reservas'
                    : 'products'
 
     if (!(file instanceof Blob)) {

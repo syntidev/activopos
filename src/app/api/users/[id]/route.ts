@@ -9,7 +9,7 @@ type RouteContext = { params: { id: string } }
 const PatchSchema = z.object({
   name: z.string().min(2).max(255).optional(),
   email: z.string().email().max(255).optional(),
-  role: z.enum(['admin', 'cashier']).optional(),
+  role: z.enum(['admin', 'cashier', 'operador_reservas']).optional(),
   is_active: z.boolean().optional(),
 })
 

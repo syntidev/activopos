@@ -1,0 +1,547 @@
+/* ============================================================
+   RESERVAS — Kanban de logística (preventa 200K)
+   src/app/(dashboard)/reservas/reservas.module.css
+   Columnas por ARMADO/ENTREGA; el pago es una bandera aparte en cada tarjeta.
+   ============================================================ */
+
+/* ── Page shell ── */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-height: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.pageTitle {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: var(--space-0-5) 0 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* ── Selector de colección ── */
+
+.select {
+  height: var(--touch-min);
+  padding: 0 var(--space-3);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--input-border-focus);
+  box-shadow: var(--shadow-brand);
+}
+
+/* ── Búsqueda por ticket ── */
+
+.searchWrap {
+  position: relative;
+  min-width: 220px;
+  width: 280px;
+  max-width: 100%;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: var(--touch-min);
+  padding: 0 var(--space-8);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  color: var(--input-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.searchInput::placeholder { color: var(--input-placeholder); }
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--input-border-focus);
+  box-shadow: var(--shadow-brand);
+}
+
+.searchInput::-webkit-search-cancel-button { display: none; }
+
+.searchClear {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.searchClear:hover { color: var(--color-text-primary); }
+
+/* ── Demanda (orden de fabricación) ── */
+
+.demanda {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevation);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.demandaHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.demandaTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.demandaTotal {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.demandaTotal strong {
+  font-size: var(--text-lg);
+  color: var(--color-text-primary);
+}
+
+.demandaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.demandaGroupLabel {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.chipQty {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-sm);
+  color: var(--info-text); /* se adapta a claro/oscuro; brand-hover se pierde en oscuro */
+}
+
+/* ── Kanban board ── */
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .kanban {
+    grid-template-columns: repeat(3, minmax(280px, 1fr));
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: var(--space-2);
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3);
+  min-height: 240px;
+  box-shadow: var(--shadow-card);
+  scroll-snap-align: start;
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1) var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.columnTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.columnDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.colPendiente { background: var(--warning); }
+.colArmado    { background: var(--info); }
+.colEntregado { background: var(--success); }
+
+.columnLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+
+.columnCount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--space-2);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.columnEmpty {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+}
+
+/* ── Tarjeta ── */
+
+.card {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-elevation);
+  transition: box-shadow var(--transition-fast), opacity var(--transition-fast);
+}
+
+.card:hover { box-shadow: var(--shadow-card-brand-hover); }
+
+.cardBusy { opacity: 0.6; }
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ticket {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--info-text);
+  letter-spacing: var(--tracking-wide);
+}
+
+.cardDate {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.cardClient {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.cardPhone {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.cardKit {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.cardKit strong { color: var(--color-text-primary); }
+
+.extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.extraChip {
+  padding: 2px var(--space-2);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  font-size: var(--text-2xs);
+  color: var(--color-text-secondary);
+}
+
+/* ── 3 banderas independientes ── */
+
+.flags {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-1);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.flag:active:not(:disabled) { transform: scale(0.97); }
+
+.flag:disabled { cursor: wait; }
+
+.flag:focus-visible {
+  outline: 2px solid var(--input-border-focus);
+  outline-offset: 2px;
+}
+
+.flagOn {
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+.flagOff {
+  background: var(--warning-soft);
+  color: var(--warning-text);
+}
+
+/* ── Pago (USD + Bs siempre juntos) y foto ── */
+
+.pago {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-tight);
+}
+
+.pagoUsd {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.pagoMetodo {
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.fotoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.fotoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  background: var(--color-surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.fotoBtn:hover:not(:disabled) {
+  background: var(--color-brand-subtle);
+  color: var(--color-text-primary);
+}
+
+.fotoBtn:disabled { cursor: wait; }
+
+.photoLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--info-text);
+  text-decoration: none;
+}
+
+.photoLink:hover { text-decoration: underline; }
+
+/* ── Modales ── */
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modalText {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.fileLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 140px;
+  padding: var(--space-4);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.fileLabel:hover,
+.fileLabel:focus-within {
+  border-color: var(--color-brand-border);
+  background: var(--color-brand-subtle);
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.previewImg {
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+}
+
+.bsPreview {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.errorText {
+  font-size: var(--text-sm);
+  color: var(--danger-text);
+  margin: 0;
+}
+
+/* ── Estados de carga / error ── */
+
+.stateBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}

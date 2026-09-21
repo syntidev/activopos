@@ -58,7 +58,7 @@ export async function GET() {
 
   const business = await prisma.business.findUnique({
     where:  { id: session.businessId },
-    select: { modules_enabled: true, catalog_plan: true },
+    select: { modules_enabled: true, catalog_plan: true, reservas_enabled: true },
   })
 
   if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
@@ -78,5 +78,8 @@ export async function GET() {
     allowed_modules: ALLOWED_MODULES,
     core_modules:    CORE_MODULES,
     catalog_plan_allows,
+    // Flag por negocio (solo lectura acá). Va aparte de modules_enabled a propósito:
+    // el PATCH de arriba reescribe esa lista completa y su enum no incluye "reservas".
+    reservas_enabled: business.reservas_enabled,
   })
 }

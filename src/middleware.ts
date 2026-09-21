@@ -52,7 +52,7 @@ const PROTECTED_PREFIXES = [
   '/analytics', '/ayuda', '/caja', '/catalogo-digital', '/clientes', '/configuracion',
   '/cotizaciones', '/devoluciones', '/escritorio', '/finanzas', '/inventario', '/kds',
   '/onboarding', '/pedidos', '/pos', '/productos', '/proveedores', '/reportes',
-  '/tu-dia', '/usuarios', '/ventas',
+  '/reservas', '/tu-dia', '/usuarios', '/ventas',
   '/admin', '/blog-admin', '/businesses', '/invoices', '/settings', '/stats', '/tickets',
   '/api/',
 ]
@@ -83,7 +83,41 @@ const ADMIN_ONLY = [
   '/productos',
   '/proveedores',
   '/inventario',
+  '/reservas',
+  '/api/reservas',
 ]
+
+// Rol restringido `operador_reservas`: a diferencia de cashier (que solo pierde
+// ADMIN_ONLY), este rol DENIEGA POR DEFECTO. Solo entra a lo listado aquí: el
+// módulo Reservas y lo mínimo que necesita para funcionar. Todo lo demás
+// (POS, productos, reportes, config, usuarios…) se rechaza: las páginas
+// redirigen a /reservas y las APIs responden 403.
+interface OperadorRule {
+  path: string
+  /** true = solo esa ruta exacta; false = también sus subrutas */
+  exact?: boolean
+  /** Si se omite, cualquier método */
+  methods?: readonly string[]
+}
+
+const OPERADOR_ALLOWED: readonly OperadorRule[] = [
+  { path: '/reservas' },
+  { path: '/api/reservas' },
+  // Selector de colección de la página. Exacto y solo GET: sus subrutas
+  // (/api/collections/[slug]/products) devuelven productos del negocio.
+  { path: '/api/collections', exact: true, methods: ['GET'] },
+  // Foto de entrega. La propia ruta limita al operador al tipo "reservas".
+  { path: '/api/upload/image', exact: true, methods: ['POST'] },
+]
+
+function operadorAllows(pathname: string, method: string): boolean {
+  return OPERADOR_ALLOWED.some(rule => {
+    const pathOk = rule.exact
+      ? pathname === rule.path
+      : pathname === rule.path || pathname.startsWith(rule.path + '/')
+    return pathOk && (!rule.methods || rule.methods.includes(method))
+  })
+}
 
 
 export async function middleware(req: NextRequest) {
@@ -128,6 +162,14 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.redirect(new URL('/login', req.url))
     res.cookies.delete('activopos_session')
     return res
+  }
+
+  // Rol restringido: primero, antes de cualquier otra regla. Lo que no esté en
+  // la lista blanca no existe para él.
+  if (session.role === 'operador_reservas' && !operadorAllows(pathname, req.method)) {
+    return pathname.startsWith('/api/')
+      ? NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+      : NextResponse.redirect(new URL('/reservas', req.url))
   }
 
   if (SUPER_ADMIN_ONLY.some(p => pathname.startsWith(p))) {

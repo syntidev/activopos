@@ -21,14 +21,17 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
   const [isMobileOpen, setIsMobileOpen]     = useState(false)
   const [enabledModules, setEnabledModules]         = useState<string[] | null>(null)
   const [catalogPlanAllowed, setCatalogPlanAllowed] = useState(true)
+  // Feature flag por negocio: oculto hasta que el servidor confirme que está activo.
+  const [reservasEnabled, setReservasEnabled]       = useState(false)
 
   /* ── Fetch enabled modules once on mount ── */
   useEffect(() => {
     fetch('/api/config/business/modules')
       .then(r => r.ok ? r.json() : null)
-      .then((j: { modules_enabled?: string[]; catalog_plan_allows?: boolean } | null) => {
+      .then((j: { modules_enabled?: string[]; catalog_plan_allows?: boolean; reservas_enabled?: boolean } | null) => {
         if (Array.isArray(j?.modules_enabled)) setEnabledModules(j!.modules_enabled)
         if (typeof j?.catalog_plan_allows === 'boolean') setCatalogPlanAllowed(j.catalog_plan_allows)
+        setReservasEnabled(j?.reservas_enabled === true)
       })
       .catch(() => {})
   }, [])
@@ -71,6 +74,7 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
           onCloseMobile={handleCloseMobile}
           enabledModules={enabledModules}
           catalogPlanAllowed={catalogPlanAllowed}
+          reservasEnabled={reservasEnabled}
         />
 
         {isMobileOpen && (

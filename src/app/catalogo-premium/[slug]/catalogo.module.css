@@ -36,6 +36,8 @@
   --onbike-blue: #0B4FCC;
   /* Fondo de tiles/imágenes del mockup (#F5F5F5) — sección Novedades */
   --onbike-tile: #F5F5F5;
+  /* Tinta de texto del mockup (#141414, negro neutro) — sección Novedades */
+  --onbike-ink: #141414;
 
   /* Altura del header sticky: logo 56px + 8px de aire arriba/abajo (mobile),
      logo 64px + 12px (desktop, ver media query). navBar, sidebar y anclas la
@@ -4600,7 +4602,7 @@
   font-size:   22px;
   font-weight: 700;
   line-height: normal;
-  color:       var(--color-text-primary);
+  color:       var(--onbike-ink);
 }
 
 .novedadesLink {
@@ -4653,13 +4655,13 @@
   font-size:   13px;
   font-weight: 600;
   line-height: normal;
-  color:       var(--color-text-primary);
+  color:       var(--onbike-ink);
 }
 
 .novedadesPrice {
   font-size:   14px;
   font-weight: 700;
-  color:       var(--color-text-primary);
+  color:       var(--onbike-ink);
 }
 
 /* Bs siempre junto al USD (regla monetaria sellada); el mockup solo dibuja USD */

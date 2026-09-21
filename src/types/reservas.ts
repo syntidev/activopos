@@ -14,10 +14,13 @@ export interface ReservaDTO {
   ticket_number:    string
   cliente_nombre:   string
   cliente_telefono: string | null
-  kit_id:           number
-  kit_nombre:       string
-  talla:            string | null
-  cantidad:         number
+  kit_id:             number
+  kit_nombre:         string
+  /** @deprecated usar componentes_tallas -- se mantiene por compatibilidad con reservas viejas */
+  talla:              string | null
+  /** { "maillot": "L", "franela": "S" } -- null en reservas creadas antes de este campo */
+  componentes_tallas: Record<string, string> | null
+  cantidad:           number
   extras:           ReservaExtra[] | null
   armado:           boolean
   entregado:        boolean
@@ -30,10 +33,15 @@ export interface ReservaDTO {
   updated_at:       string
 }
 
-/** Una combinación kit + talla del contador de demanda (orden de fabricación). */
+/**
+ * Una combinación kit (+ componente) + talla del contador de demanda (orden
+ * de fabricación). `componente` es null para reservas legacy (talla única,
+ * sin desglose) -- no confundir con "sin componente definido".
+ */
 export interface DemandaItem {
   kit_id:     number
   kit_nombre: string
+  componente: string | null
   talla:      string | null
   /** Suma de `cantidad` de todas las reservas de esta combinación. */
   unidades:   number

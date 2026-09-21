@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
   RESERVAS_LIST_LIMIT,
+  componentesTallasSchema,
   extraSchema,
   handleReservaError,
   parseCollectionParam,
@@ -25,10 +26,23 @@ function compareTalla(a: string | null, b: string | null): number {
   return a.localeCompare(b)
 }
 
+interface Bucket {
+  kit_id:     number
+  componente: string | null
+  talla:      string | null
+  unidades:   number
+  reservas:   number
+}
+
 // GET /api/reservas/demanda?collection=200k-2027
-// Cuenta UNIDADES (suma de `cantidad`) por kit + talla: es el número real que se
-// usa para la orden de fabricación (ej. "Maillot M: 47"). Los ítems extra se
-// agregan aparte (por nombre + talla) porque también hay que fabricarlos.
+// Cuenta UNIDADES (suma de `cantidad`) por kit (+ componente, si la reserva trae
+// desglose) + talla: es el número real que se usa para la orden de fabricación
+// (ej. "Maillot M: 47"). componentes_tallas es JSON -- no agrupable con SQL
+// groupBy, se agrega en memoria. Una reserva con Maillot L + Franela S aporta
+// a 2 buckets (hace falta 1 de cada pieza) pero cuenta 1 sola vez en
+// total_unidades (eso sigue siendo "cuántos kits", no "cuántas piezas").
+// Los ítems extra se agregan aparte (por nombre + talla) porque también hay
+// que fabricarlos.
 export async function GET(req: NextRequest) {
   try {
     const access = await requireReservasAccess()
@@ -40,38 +54,55 @@ export async function GET(req: NextRequest) {
 
     const where = reservasByCollection(param.slug, session.businessId)
 
-    const [groups, withExtras] = await Promise.all([
-      db.reserva.groupBy({
-        by:     ['kit_id', 'talla'],
-        where,
-        _sum:   { cantidad: true },
-        _count: { _all: true },
-      }),
-      db.reserva.findMany({
-        where,
-        select: { extras: true },
-        take:   RESERVAS_LIST_LIMIT,
-      }),
-    ])
+    const rows = await db.reserva.findMany({
+      where,
+      select: { kit_id: true, talla: true, componentes_tallas: true, cantidad: true, extras: true },
+      take:   RESERVAS_LIST_LIMIT,
+    })
+
+    const buckets = new Map<string, Bucket>()
+    let totalUnidades = 0
+    for (const row of rows) {
+      totalUnidades += row.cantidad
+      const parsedTallas = componentesTallasSchema.safeParse(row.componentes_tallas)
+      const entries: [string | null, string | null][] =
+        parsedTallas.success && Object.keys(parsedTallas.data).length > 0
+          ? Object.entries(parsedTallas.data)
+          : [[null, row.talla]]
+      for (const [componente, talla] of entries) {
+        const key = `${row.kit_id}|${componente ?? ''}|${talla ?? ''}`
+        const prev = buckets.get(key)
+        buckets.set(key, {
+          kit_id:     row.kit_id,
+          componente,
+          talla,
+          unidades:   (prev?.unidades ?? 0) + row.cantidad,
+          reservas:   (prev?.reservas ?? 0) + 1,
+        })
+      }
+    }
 
     const kits = await db.product.findMany({
-      where:  { id: { in: Array.from(new Set(groups.map(g => g.kit_id))) } },
+      where:  { id: { in: Array.from(new Set(Array.from(buckets.values()).map(b => b.kit_id))) } },
       select: { id: true, name: true },
     })
     const kitName = new Map(kits.map(k => [k.id, k.name]))
 
-    const items: DemandaItem[] = groups
-      .map(g => ({
-        kit_id:     g.kit_id,
-        kit_nombre: kitName.get(g.kit_id) ?? `Kit #${g.kit_id}`,
-        talla:      g.talla,
-        unidades:   g._sum.cantidad ?? 0,
-        reservas:   g._count._all,
+    const items: DemandaItem[] = Array.from(buckets.values())
+      .map(b => ({
+        kit_id:     b.kit_id,
+        kit_nombre: kitName.get(b.kit_id) ?? `Kit #${b.kit_id}`,
+        componente: b.componente,
+        talla:      b.talla,
+        unidades:   b.unidades,
+        reservas:   b.reservas,
       }))
-      .sort((a, b) => a.kit_nombre.localeCompare(b.kit_nombre) || compareTalla(a.talla, b.talla))
+      .sort((a, b) => a.kit_nombre.localeCompare(b.kit_nombre)
+        || (a.componente ?? '').localeCompare(b.componente ?? '')
+        || compareTalla(a.talla, b.talla))
 
     const extrasMap = new Map<string, DemandaExtra>()
-    for (const row of withExtras) {
+    for (const row of rows) {
       const parsed = z.array(extraSchema).safeParse(row.extras)
       if (!parsed.success) continue
       for (const e of parsed.data) {
@@ -87,7 +118,7 @@ export async function GET(req: NextRequest) {
     const body: DemandaResponse = {
       ok:             true,
       collection:     param.slug,
-      total_unidades: items.reduce((sum, i) => sum + i.unidades, 0),
+      total_unidades: totalUnidades,
       items,
       extras,
     }

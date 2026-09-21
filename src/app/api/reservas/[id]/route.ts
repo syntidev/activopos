@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import {
   RESERVA_INCLUDE,
   badRequest,
@@ -53,9 +54,19 @@ export async function PATCH(
     )
     if (!update.ok) return NextResponse.json({ error: update.error }, { status: 400 })
 
+    // Independiente de las 3 banderas -- se procesa aparte, no via buildFlagUpdate.
+    // Prisma.JsonNull (no `null` de JS) para borrar el desglose explícitamente;
+    // omitido del objeto = no tocar la columna.
+    const data: Prisma.ReservaUpdateInput = { ...update.data }
+    if (parsed.data.componentes_tallas !== undefined) {
+      data.componentes_tallas = parsed.data.componentes_tallas === null
+        ? Prisma.JsonNull
+        : parsed.data.componentes_tallas
+    }
+
     const row = await db.reserva.update({
       where:   { id },
-      data:    update.data,
+      data,
       include: RESERVA_INCLUDE,
     })
 

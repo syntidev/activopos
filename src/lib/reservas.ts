@@ -62,24 +62,39 @@ export const extraSchema = z.object({
   talla:    z.string().trim().max(20).nullable().optional(),
 }).strict()
 
+// { "maillot": "L", "franela": "S" } -- claves libres (nombre de componente
+// tal como lo tipea el operador), sin validar contra ProductComponent real,
+// mismo criterio que extraSchema.nombre. Tope de 20 pares, igual que extras.
+export const componentesTallasSchema = z.record(
+  z.string().trim().min(1).max(40),
+  z.string().trim().min(1).max(20),
+).refine(obj => Object.keys(obj).length <= 20, { message: 'Máximo 20 componentes' })
+
 export const createReservaSchema = z.object({
-  cliente_nombre:   z.string().trim().min(1).max(120),
-  cliente_telefono: z.string().trim().max(30).nullable().optional(),
-  kit_id:           z.number().int().positive(),
-  talla:            z.string().trim().max(20).nullable().optional(),
-  cantidad:         z.number().int().min(1).max(100).default(1),
-  extras:           z.array(extraSchema).max(20).nullable().optional(),
+  cliente_nombre:     z.string().trim().min(1).max(120),
+  cliente_telefono:   z.string().trim().max(30).nullable().optional(),
+  kit_id:             z.number().int().positive(),
+  // Legacy: una sola talla para todo el kit. Sigue aceptado para kits sin
+  // desglose por componente; si viene componentes_tallas, ese es el que
+  // se muestra (ver serializeReserva / ReservaCard).
+  talla:              z.string().trim().max(20).nullable().optional(),
+  componentes_tallas: componentesTallasSchema.nullable().optional(),
+  cantidad:           z.number().int().min(1).max(100).default(1),
+  extras:             z.array(extraSchema).max(20).nullable().optional(),
 }).strict() // business_id NUNCA del body: viene de la sesión
 
 export const patchReservaSchema = z.object({
-  armado:         z.boolean().optional(),
-  entregado:      z.boolean().optional(),
+  armado:             z.boolean().optional(),
+  entregado:          z.boolean().optional(),
   // OPCIONAL e independiente de `entregado`: se agrega antes, durante o después
   // de la entrega (o nunca). `null` la quita.
-  entregado_foto: z.string().trim().min(1).max(500).nullable().optional(),
-  pagado:         z.boolean().optional(),
-  pagado_monto:   z.number().positive().max(MAX_PAGADO_USD).optional(),
-  pagado_metodo:  z.string().trim().min(1).max(30).optional(),
+  entregado_foto:     z.string().trim().min(1).max(500).nullable().optional(),
+  pagado:             z.boolean().optional(),
+  pagado_monto:       z.number().positive().max(MAX_PAGADO_USD).optional(),
+  pagado_metodo:      z.string().trim().min(1).max(30).optional(),
+  // Corrección post-creación (ej. el cliente cambió de talla). Independiente
+  // de las 3 banderas -- un PATCH con solo esto no las toca.
+  componentes_tallas: componentesTallasSchema.nullable().optional(),
 }).strict().refine(d => Object.keys(d).length > 0, { message: 'Sin cambios' })
 
 export type CreateReservaBody = z.infer<typeof createReservaSchema>
@@ -254,15 +269,17 @@ export type ReservaRow = Prisma.ReservaGetPayload<{ include: typeof RESERVA_INCL
 
 export function serializeReserva(row: ReservaRow): ReservaDTO {
   const parsedExtras = z.array(extraSchema).safeParse(row.extras)
+  const parsedTallas = componentesTallasSchema.safeParse(row.componentes_tallas)
   return {
-    id:               row.id,
-    ticket_number:    row.ticket_number,
-    cliente_nombre:   row.cliente_nombre,
-    cliente_telefono: row.cliente_telefono,
-    kit_id:           row.kit_id,
-    kit_nombre:       row.kit.name,
-    talla:            row.talla,
-    cantidad:         row.cantidad,
+    id:                 row.id,
+    ticket_number:      row.ticket_number,
+    cliente_nombre:     row.cliente_nombre,
+    cliente_telefono:   row.cliente_telefono,
+    kit_id:             row.kit_id,
+    kit_nombre:         row.kit.name,
+    talla:              row.talla,
+    componentes_tallas: parsedTallas.success ? parsedTallas.data : null,
+    cantidad:           row.cantidad,
     extras: parsedExtras.success
       ? parsedExtras.data.map(e => ({ nombre: e.nombre, cantidad: e.cantidad, talla: e.talla ?? null }))
       : null,

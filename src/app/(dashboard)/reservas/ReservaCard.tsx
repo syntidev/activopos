@@ -73,8 +73,21 @@ export function ReservaCard({
 
       <p className={styles.cardKit}>
         <strong>{r.kit_nombre}</strong>
-        {r.talla ? ` · Talla ${r.talla}` : ''} × {r.cantidad}
+        {/* componentes_tallas manda si existe -- kit con desglose por pieza
+            (Maillot L, Franela S) no cabe en un solo "Talla X". Legacy
+            (reservas de antes de este campo) sigue mostrando la talla única. */}
+        {!r.componentes_tallas && r.talla ? ` · Talla ${r.talla}` : ''} × {r.cantidad}
       </p>
+
+      {r.componentes_tallas && Object.keys(r.componentes_tallas).length > 0 ? (
+        <div className={styles.extras}>
+          {Object.entries(r.componentes_tallas).map(([componente, talla]) => (
+            <span key={componente} className={styles.extraChip}>
+              {componente}: {talla}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {r.extras && r.extras.length > 0 ? (
         <div className={styles.extras}>

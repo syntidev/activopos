@@ -182,7 +182,7 @@ model Business {
   // Plantilla de render del catálogo público -- independiente de catalog_plan
   // (features) y catalog_active (visibilidad). 'generic' | 'premium'. Ver
   // guard en catalogo-premium/[slug]/page.tsx y catalogo/[slug]/page.tsx.
-  catalog_template              String?   @default("generic") @db.VarChar(20)
+  catalog_template             String?   @default("generic") @db.VarChar(20)
   catalog_slug                 String?   @unique @db.VarChar(80)
   catalog_active               Boolean   @default(false)
   // Moneda visible en el catálogo público y en el mensaje de WhatsApp.
@@ -381,13 +381,13 @@ model Product {
   created_at                 DateTime          @default(now())
   updated_at                 DateTime          @updatedAt
 
-  business          Business           @relation(fields: [business_id], references: [id])
-  category          Category?          @relation(fields: [category_id], references: [id])
+  business          Business            @relation(fields: [business_id], references: [id])
+  category          Category?           @relation(fields: [category_id], references: [id])
   inventory_entries InventoryEntry[]
   sale_items        SaleItem[]
   variants          ProductVariant[]
-  components        ProductComponent[] @relation("ComboComponents")
-  usedIn            ProductComponent[] @relation("ComponentUsedIn")
+  components        ProductComponent[]  @relation("ComboComponents")
+  usedIn            ProductComponent[]  @relation("ComponentUsedIn")
   purchase_items    PurchaseItem[]
   collections       ProductCollection[]
   reservas          Reserva[]
@@ -441,28 +441,37 @@ model ProductCollection {
 // ticket_number es único POR negocio (no global): dos tenants pueden tener
 // ambos "200K-001".
 model Reserva {
-  id               Int      @id @default(autoincrement())
-  business_id      Int
-  ticket_number    String   @db.VarChar(30)
-  cliente_nombre   String   @db.VarChar(120)
-  cliente_telefono String?  @db.VarChar(30)
-  kit_id           Int
-  talla            String?  @db.VarChar(20)
-  cantidad         Int      @default(1)
+  id                 Int     @id @default(autoincrement())
+  business_id        Int
+  ticket_number      String  @db.VarChar(30)
+  cliente_nombre     String  @db.VarChar(120)
+  cliente_telefono   String? @db.VarChar(30)
+  kit_id             Int
+  // DEPRECATED -- reemplazado por componentes_tallas (un kit puede tener
+  // componentes con tallas distintas, ej. Maillot L + Franela S). Se
+  // mantiene sin borrar por compatibilidad con reservas ya creadas; el
+  // create/patch nuevo no la exige, y el render cae acá solo si
+  // componentes_tallas es null.
+  talla              String? @db.VarChar(20)
+  // { "maillot": "L", "franela": "S" } -- claves libres (no validadas contra
+  // ProductComponent real, mismo criterio que extras[].nombre ya usa: texto
+  // libre que el operador tipea, no un catálogo cerrado).
+  componentes_tallas Json?
+  cantidad           Int     @default(1)
   // Ítems sueltos agregados: [{ nombre, cantidad, talla? }] — validado en la API.
-  extras           Json?
+  extras             Json?
 
-  armado           Boolean  @default(false)
-  entregado        Boolean  @default(false)
+  armado         Boolean  @default(false)
+  entregado      Boolean  @default(false)
   // Ruta interna /storage/tenants/{business_id}/reservas/...; obligatoria si entregado=true.
-  entregado_foto   String?  @db.VarChar(500)
-  pagado           Boolean  @default(false)
+  entregado_foto String?  @db.VarChar(500)
+  pagado         Boolean  @default(false)
   // USD. La conversión a Bs se hace al mostrar (regla monetaria del sistema).
-  pagado_monto     Decimal? @db.Decimal(10, 2)
-  pagado_metodo    String?  @db.VarChar(30)
+  pagado_monto   Decimal? @db.Decimal(10, 2)
+  pagado_metodo  String?  @db.VarChar(30)
 
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   business Business @relation(fields: [business_id], references: [id])
   kit      Product  @relation(fields: [kit_id], references: [id])

@@ -450,6 +450,16 @@ npm run build 2>&1 | tail -10       # Compiled successfully
 cd /var/www/activopos
 git pull origin main
 npx prisma generate
+# ⚠️ UNA SOLA VEZ, ANTES del primer `migrate deploy` que incluya las migraciones
+# 20260920000001_baseline_brands_catalog_template y 20260920000002_add_reservas:
+# esos objetos (brands, catalog_template, reservas, reservas_enabled, rol
+# operador_reservas) YA existen en el VPS por `db push`. Ejecutarlas falla con
+# P3018 "Duplicate column" y BLOQUEA toda migración futura. Se marcan aplicadas:
+#   npx prisma migrate resolve --applied 20260920000001_baseline_brands_catalog_template
+#   npx prisma migrate resolve --applied 20260920000002_add_reservas
+#   npx prisma migrate status    # debe decir "Database schema is up to date!"
+# Regla: `db push` en el VPS deja drift sin migración. Todo cambio de schema nuevo
+# lleva su migración versionada (prisma migrate dev en local) ANTES de desplegar.
 npx prisma migrate deploy
 pm2 stop activopos
 rm -rf .next

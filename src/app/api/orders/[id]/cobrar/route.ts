@@ -56,7 +56,14 @@ export async function POST(req: NextRequest, { params }: Context) {
       const products   = await tx.product.findMany({
         where:  { id: { in: productIds }, business_id: session.businessId },
         select: { id: true, sale_mode: true, base_unit_label: true,
-                  price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true },
+                  price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true,
+                  product_type: true,
+                  components: {
+                    select: {
+                      component_id: true, quantity: true, unit_label: true,
+                      component: { select: { id: true, name: true } },
+                    },
+                  } },
       })
       const productMap = new Map(products.map(p => [p.id, p]))
       if (products.length !== productIds.length) throw new Error('PRODUCTS_CHANGED')
@@ -69,6 +76,20 @@ export async function POST(req: NextRequest, { params }: Context) {
           : Number(item.price_per_unit_usd)
         const subtotal_usd = Math.round(Number(item.quantity) * priceUsd * 100) / 100
         const subtotal_bs  = Math.round(subtotal_usd * rate * 100) / 100
+        // Mismo criterio que sales/route.ts: snapshot inmutable de la receta al
+        // momento del cobro, para combos/fabricables (GAP-COMBO-PEDIDOS: esta
+        // ruta nunca lo calculaba, quedaba siempre null para pedidos con kits).
+        const recipe_snapshot =
+          p && p.product_type !== 'simple' && p.components.length > 0
+            ? JSON.stringify(
+                p.components.map(c => ({
+                  component_id:   c.component_id,
+                  component_name: c.component.name,
+                  quantity:       c.quantity,
+                  unit_label:     c.unit_label,
+                }))
+              )
+            : null
         return {
           product_id:         item.product_id,
           product_name:       item.product_name,
@@ -81,6 +102,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           subtotal_bs,
           rate_used:          rate,
           discount_usd:       0,
+          recipe_snapshot,
           variant_id:         null,
         }
       })
@@ -137,8 +159,26 @@ export async function POST(req: NextRequest, { params }: Context) {
           notes:       { endsWith: order.order_number },
         },
       })
-      await tx.inventoryEntry.createMany({
-        data: order.items.map(item => ({
+
+      // GAP-COMBO-PEDIDOS: esta ruta descontaba siempre contra item.product_id
+      // sin mirar product_type/components -- un pedido con un Kit (combo)
+      // nunca tocaba el stock de sus componentes reales, solo el pool del
+      // propio combo (que no se usa para nada). Mismo bloque que
+      // sales/route.ts POST ya usa para venta directa.
+      const deductions = order.items.flatMap(item => {
+        const p = productMap.get(item.product_id)
+        if (p && p.product_type !== 'simple' && p.components.length > 0) {
+          return p.components.map(comp => ({
+            business_id: session.businessId,
+            product_id:  comp.component_id,
+            quantity:    -(Number(item.quantity) * comp.quantity),
+            waste:       0,
+            entry_type:  'sale',
+            notes:       `VENTA #${ticket_number} (componente de ${item.product_name}, pedido ${order.order_number})`,
+            created_by:  session.userId,
+          }))
+        }
+        return [{
           business_id: session.businessId,
           product_id:  item.product_id,
           quantity:    -Number(item.quantity),
@@ -146,8 +186,9 @@ export async function POST(req: NextRequest, { params }: Context) {
           entry_type:  'sale',
           notes:       `VENTA #${ticket_number} (pedido ${order.order_number})`,
           created_by:  session.userId,
-        })),
+        }]
       })
+      await tx.inventoryEntry.createMany({ data: deductions })
 
       await tx.order.update({
         where: { id: orderId },

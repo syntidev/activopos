@@ -34,6 +34,8 @@
      pide más adelante. Si el tenant real define `theme_color` en Business,
      ese valor gana siempre (--biz-color tiene prioridad sobre este). */
   --onbike-blue: #0B4FCC;
+  /* Fondo de tiles/imágenes del mockup (#F5F5F5) — sección Novedades */
+  --onbike-tile: #F5F5F5;
 
   /* Altura del header sticky: logo 56px + 8px de aire arriba/abajo (mobile),
      logo 64px + 12px (desktop, ver media query). navBar, sidebar y anclas la
@@ -4571,6 +4573,112 @@
   max-width: 32ch;
   font-size: var(--text-sm);
   color:     var(--color-text-secondary);
+}
+
+/* ── SECCIÓN NOVEDADES — grid mixto de producto ─────────────────────────
+   Clon del mockup (artboard Desktop §6 + Mobile §6), valores EXACTOS.
+   Mobile:  padding 0 20px 40px · título 22px · 2 cols · gap 14px.
+   Desktop ≥1024: padding 0 64px 96px · título 36px/700 Fraunces · 4 cols · gap 20px.
+   Todas las cards iguales: imagen aspect-ratio 1/1, sin excepciones. ── */
+
+.novedadesSection {
+  padding:    0 var(--space-5) var(--space-10);
+  background: var(--color-white);
+}
+
+.novedadesHeader {
+  display:         flex;
+  align-items:     baseline;
+  justify-content: space-between;
+  margin-bottom:   var(--space-4);
+}
+
+/* h2/p globales pisan color y márgenes: se fijan explícitos */
+.novedadesTitle {
+  margin:      0;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size:   22px;
+  font-weight: 700;
+  line-height: normal;
+  color:       var(--color-text-primary);
+}
+
+.novedadesLink {
+  font-size:       13px;
+  font-weight:     600;
+  color:           var(--biz-color, var(--onbike-blue));
+  text-decoration: none;
+}
+
+.novedadesGrid {
+  display:               grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:                   14px;
+}
+
+.novedadesCard {
+  display:         block;
+  color:           inherit;
+  text-decoration: none;
+}
+
+.novedadesMedia {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  aspect-ratio:    1 / 1;
+  margin-bottom:   8px;
+  overflow:        hidden;
+  background:      var(--onbike-tile);
+  border-radius:   8px;
+  color:           var(--color-text-muted);
+}
+
+.novedadesImg {
+  display:    block;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+}
+
+.novedadesCategory {
+  font-size:      var(--text-2xs);
+  font-weight:    600;
+  text-transform: uppercase;
+  color:          var(--biz-color, var(--onbike-blue));
+}
+
+.novedadesName {
+  margin:      2px 0;
+  font-size:   13px;
+  font-weight: 600;
+  line-height: normal;
+  color:       var(--color-text-primary);
+}
+
+.novedadesPrice {
+  font-size:   14px;
+  font-weight: 700;
+  color:       var(--color-text-primary);
+}
+
+/* Bs siempre junto al USD (regla monetaria sellada); el mockup solo dibuja USD */
+.novedadesPriceBs {
+  margin-top: 2px;
+  font-size:  var(--text-xs);
+  color:      var(--color-text-secondary);
+}
+
+@media (min-width: 1024px) {
+  .novedadesSection  { padding: 0 var(--space-16) var(--space-24); }
+  .novedadesHeader   { margin-bottom: var(--space-10); }
+  .novedadesTitle    { font-size: 36px; }
+  .novedadesLink     { font-size: 14px; }
+  .novedadesGrid     { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+  .novedadesMedia    { margin-bottom: 12px; }
+  .novedadesCategory { font-size: 11px; letter-spacing: 0.06em; }
+  .novedadesName     { margin: 4px 0; font-size: 15px; }
+  .novedadesPrice    { font-size: 16px; }
 }
 
 /* ── SECCIÓN 8 — Franja de foto ambiente ────────────────────────────────

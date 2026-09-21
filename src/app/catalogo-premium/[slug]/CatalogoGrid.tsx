@@ -15,6 +15,7 @@ import { CartDrawer } from './CartDrawer'
 import { LandingSections } from './LandingSections'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { ImgWithFallback } from './ImgWithFallback'
+import { NovedadesSection } from './NovedadesSection'
 import { MobileTabBar } from './MobileTabBar'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility } from './catalogUtils'
@@ -138,6 +139,8 @@ const BADGE_ICON: Record<string, ReactNode> = {
 }
 
 const FEATURED_KEY = '__destacados__'
+/** Cards de la sección Novedades (grid 4×2 del mockup: 6 productos). */
+const NOVEDADES_COUNT = 6
 
 // TODO(Carlos/Daniel): copy SIN CONFIRMAR. Tomado tal cual de las "ideas de
 // diseño" en .doc/PLAN_TRABAJO_OnBike_ActivoPOS.md (Gran Fondo 200K, Zafeti,
@@ -238,6 +241,16 @@ export function CatalogoGrid({
       .filter(p => p.badge === 'nuevo' && !p.outOfStock)
       .slice(0, 8)
   , [products])
+
+  // Novedades: primero los marcados 'nuevo'; se completa con los ingresos más
+  // recientes (id descendente como proxy: CatalogProduct no trae created_at).
+  // Solo productos con stock; sin ninguno, la sección no se renderiza.
+  const novedades = useMemo(() => {
+    const inStock = products.filter(p => !p.outOfStock)
+    const flagged = inStock.filter(p => p.badge === 'nuevo')
+    const recent  = inStock.filter(p => p.badge !== 'nuevo').sort((a, b) => b.id - a.id)
+    return [...flagged, ...recent].slice(0, NOVEDADES_COUNT)
+  }, [products])
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -1177,6 +1190,12 @@ export function CatalogoGrid({
           del propio slide en LandingSections.tsx, no hardcodeados acá. ── */}
       {catalogMode === 'home' && browseMode && brandBannerSection && (
         <LandingSections sections={[brandBannerSection]} slug={slug} businessId={businessId} />
+      )}
+
+      {/* ── SECCIÓN 7.5: Novedades — grid mixto del mockup (§6). Va pegada al
+          slider: cierra el hueco con contenido real (productos del catálogo). ── */}
+      {catalogMode === 'home' && browseMode && novedades.length > 0 && (
+        <NovedadesSection products={novedades} slug={slug} />
       )}
 
       {/* ── SECCIÓN 8: Franja de foto ambiente — todo lo que sobrevive del

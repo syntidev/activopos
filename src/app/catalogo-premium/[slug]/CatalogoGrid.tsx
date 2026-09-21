@@ -13,6 +13,7 @@ import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { LandingSections } from './LandingSections'
+import { AnnouncementPopup } from './AnnouncementPopup'
 import { ImgWithFallback } from './ImgWithFallback'
 import { MobileTabBar } from './MobileTabBar'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
@@ -340,6 +341,21 @@ export function CatalogoGrid({
 
   const ambientPhotoSection = useMemo(() =>
     landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'story' }> => s.type === 'story')
+  , [landingSections])
+
+  // Restructuración a64526b reescribió el render entero y dejó de invocar
+  // AnnouncementPopup (el componente y su lógica de localStorage seguían
+  // intactos, solo nadie lo montaba) -- root cause de que el popup nunca
+  // se viera funcionando pese a estar implementado.
+  const popupSection = useMemo(() =>
+    landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'announcement_popup' }> => s.type === 'announcement_popup')
+  , [landingSections])
+
+  // Mismo caso que el popup: collection_grid (Línea 200K) quedó sin
+  // extraer del restructure -- el mecanismo de render ya existe en
+  // LandingSections.tsx, solo faltaba invocarlo acá.
+  const collectionGridSection = useMemo(() =>
+    landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'collection_grid' }> => s.type === 'collection_grid')
   , [landingSections])
 
   // Primera categoría no vacía, mismo orden que el admin definió en
@@ -1009,6 +1025,13 @@ export function CatalogoGrid({
         )
       })()}
 
+      {/* ── Collection grid (Línea 200K) — mismo caso que el popup: el
+          restructure dejó de invocar este tipo de sección aunque el
+          renderer (LandingSections.tsx) sigue intacto. ── */}
+      {catalogMode === 'home' && browseMode && collectionGridSection && (
+        <LandingSections sections={[collectionGridSection]} slug={slug} businessId={businessId} />
+      )}
+
       {/* ── SECCIÓN 2: Marcas — reposicionada inmediatamente después del
           Hero (antes vivía casi al final). Mecanismo sin tocar (Brand
           real + scroll horizontal ya resuelto), solo cambia el orden. ── */}
@@ -1276,6 +1299,10 @@ export function CatalogoGrid({
       )}
 
       <CartDrawer slug={slug} rate={rate} currency={currency} paymentMethods={paymentMethods} />
+
+      {popupSection && (
+        <AnnouncementPopup config={popupSection.config} businessId={businessId} sectionId={popupSection.id} />
+      )}
 
       {/* ── Product detail modal (bottom sheet) ────────────────── */}
       {selP && (

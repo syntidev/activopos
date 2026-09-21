@@ -43,6 +43,12 @@ export const uploadLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+// Landing pública de reservas (ej. /kit-200k) — sin sesión, mismo criterio que catalogLimiter
+export const reservaPublicLimiter = new RateLimiterMemory({
+  points:   10,   // 10 reservas por IP
+  duration: 3600, // en 1 hora
+})
+
 // Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
 // antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
 export const getClientIp = (req: Request): string =>

@@ -37,6 +37,7 @@ const PUBLIC_EXACT = new Set([
   '/robots.txt',
   '/llms.txt',
   '/catalogo',                         // landing sin slug — fallback público, no requiere auth
+  '/kit-200k',                         // landing pública de preventa Kit 200K (OnBike) — sin auth
   '/api/reports/monthly/pending',        // n8n: lista pending (x-api-key)
   '/api/reports/monthly/mark-pending',   // n8n: marca todos como pending (x-api-key)
   '/api/reports/monthly/mark-notified',  // n8n: marca notificado + guarda wa_url (x-api-key)

@@ -129,8 +129,9 @@ export default async function ProductoPage({ params }: PageProps) {
   ])
 
   const imgs      = parseImages(product.images)
-  const priceUsd  = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
-  const priceBs   = priceUsd > 0 ? priceUsd * rate : null
+  const priceUsd     = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+  const priceBs      = priceUsd > 0 ? priceUsd * rate : null
+  const priceDivisa  = product.precio_divisa !== null ? Number(product.precio_divisa) : null
   const location  = [business.city, business.state].filter(Boolean).join(', ')
 
   const relatedRaw = await prisma.product.findMany({
@@ -177,6 +178,7 @@ export default async function ProductoPage({ params }: PageProps) {
         categoryColor={product.category?.color ?? null}
         priceUsd={priceUsd}
         priceBs={priceBs}
+        priceDivisa={priceDivisa}
         variants={product.variants.map(v => ({
           id:              v.id,
           tipo:            v.tipo,

@@ -287,6 +287,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       categoryName: p.category?.name ?? null,
       priceUsd,
       priceBs,
+      priceDivisa:  p.precio_divisa !== null ? Number(p.precio_divisa) : null,
       isService:    p.sale_mode === 'service',
       stockQty:     p.sale_mode === 'service' ? null : (netQty ?? null),
       outOfStock:   p.sale_mode !== 'service' && (

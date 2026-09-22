@@ -1637,6 +1637,18 @@
   line-height:    1.2;
 }
 
+/* Precio normal tachado cuando el producto tiene precio_divisa -- precede al
+   .priceUsd (que pasa a mostrar precio_divisa, el destacado). Patrón KTM
+   Store: precio de lista arriba tachado, precio final grande debajo. */
+.priceUsdOld {
+  font-size:         11px;
+  font-weight:       var(--weight-medium);
+  color:             var(--color-text-secondary);
+  text-decoration:   line-through;
+  opacity:           0.65;
+  line-height:       1.2;
+}
+
 /* Símbolo de moneda pequeño y atenuado antes del número */
 .priceSymbol {
   font-size:    0.75em;
@@ -1897,6 +1909,22 @@
   color:          var(--color-text-primary);
   letter-spacing: -0.02em;
   line-height:    1.1;
+}
+
+/* Envuelve símbolo+tachado+destacado en columna -- .modalPrice es flex-row
+   (precio junto a Bs), este wrapper interno apila precio_bcv tachado arriba
+   del precio_divisa destacado sin romper ese layout horizontal. */
+.modalPriceUsdCol {
+  display:        flex;
+  flex-direction: column;
+}
+
+.modalPriceOld {
+  font-size:       var(--text-sm);
+  font-weight:     var(--weight-medium);
+  color:           var(--color-text-secondary);
+  text-decoration: line-through;
+  opacity:         0.65;
 }
 
 .modalPriceBs {

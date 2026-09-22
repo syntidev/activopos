@@ -624,6 +624,14 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                       <span className={styles.checkoutSummaryValue}>{delivery!.zones![zoneIdx].nombre}</span>
                     </div>
                   )}
+                  {/* checkoutTotalUsd (línea de abajo) YA incluía el delivery -- esto
+                      no cambia el total, solo lo desglosa. */}
+                  {deliveryType === 'delivery' && deliveryCost > 0 && (
+                    <div className={styles.checkoutSummaryRow}>
+                      <span className={styles.checkoutSummaryLabel}>Envío</span>
+                      <span className={styles.checkoutSummaryValue}>{fmtUsd(deliveryCost)}</span>
+                    </div>
+                  )}
                   <div className={styles.checkoutSummaryRow}>
                     <span className={styles.checkoutSummaryLabel}>Total</span>
                     <span className={styles.checkoutSummaryValue}>

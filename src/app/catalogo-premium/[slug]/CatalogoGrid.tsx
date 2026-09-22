@@ -46,6 +46,9 @@ export interface CatalogProduct {
   categoryName:      string | null
   priceUsd:          number
   priceBs:           number | null
+  // Precio directo en $ para pago EN divisas -- ver Product.precio_divisa.
+  // null = sin precio propio en divisas, el carrito solo muestra Bs.
+  priceDivisa:       number | null
   outOfStock:        boolean
   isService:         boolean
   stockQty:          number | null
@@ -435,7 +438,9 @@ export function CatalogoGrid({
       product_id:    product.id,
       name:          product.name,
       qty,
-      price_usd:     product.priceUsd + (variant?.precio_extra ?? 0),
+      // precio_divisa (si existe) es el precio final real, no un tachado
+      // decorativo -- el carrito cobra ese, no el de lista.
+      price_usd:     (product.priceDivisa ?? product.priceUsd) + (variant?.precio_extra ?? 0),
       image_url:     product.image,
       variant_id:    variant?.id,
       variant_label: variant ? `${capitalize(variant.tipo)}: ${variant.valor}` : undefined,
@@ -673,10 +678,22 @@ export function CatalogoGrid({
             ) : p.priceUsd > 0 ? (
               <>
                 {showUsd && (
-                  <span className={styles.priceUsd}>
-                    <span className={styles.priceSymbol}>$</span>
-                    {p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </span>
+                  <>
+                    {/* precio_divisa existe: precio normal (precio_bcv) tachado arriba,
+                        precio_divisa como destacado -- Bs abajo sigue leyendo priceUsd/
+                        priceBs sin cambio, es el precio_bcv convertido para quien paga
+                        en bolívares (Pago Móvil/efectivo Bs). */}
+                    {p.priceDivisa !== null && p.priceDivisa > 0 && (
+                      <span className={styles.priceUsdOld}>
+                        <span className={styles.priceSymbol}>$</span>
+                        {p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
+                    <span className={styles.priceUsd}>
+                      <span className={styles.priceSymbol}>$</span>
+                      {(p.priceDivisa ?? p.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                  </>
                 )}
                 {showBs && p.priceBs && (
                   <span className={styles.priceBs}>
@@ -1463,12 +1480,19 @@ export function CatalogoGrid({
                 ) : selP.priceUsd > 0 ? (
                   <>
                     {showUsd && (
-                      <>
-                        <span className={styles.modalPriceSymbol}>$</span>
-                        <span className={styles.modalPriceNumber}>
-                          {selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      <div className={styles.modalPriceUsdCol}>
+                        {selP.priceDivisa !== null && selP.priceDivisa > 0 && (
+                          <span className={styles.modalPriceOld}>
+                            ${selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
+                        <span>
+                          <span className={styles.modalPriceSymbol}>$</span>
+                          <span className={styles.modalPriceNumber}>
+                            {(selP.priceDivisa ?? selP.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </span>
                         </span>
-                      </>
+                      </div>
                     )}
                     {showBs && selP.priceBs && (
                       <span className={styles.modalPriceBs}>
@@ -1639,7 +1663,7 @@ export function CatalogoGrid({
                     }}
                   >
                     <ShoppingBag size={17} aria-hidden="true" />
-                    Agregar · ${((selP.priceUsd + (selectedVariant?.precio_extra ?? 0)) * modalQty).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    Agregar · ${(((selP.priceDivisa ?? selP.priceUsd) + (selectedVariant?.precio_extra ?? 0)) * modalQty).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </button>
                   {/* Directo desde la ficha, no solo al final del carrito -- misma
                       URL/mensaje que "Consultar disponibilidad" arriba (getConsultarWaUrl). */}

@@ -24,8 +24,13 @@ const BodySchema = z.object({
   payment_method:     z.string().min(1).max(60).trim(),
   notes:              z.string().max(500).trim().optional(),
   delivery_type:      z.enum(['pickup', 'delivery']).default('pickup'),
-  recipient_name:     z.string().max(120).trim().optional(),
-  delivery_address:   z.string().max(500).trim().optional(),
+  // .nullable() además de .optional(): CartDrawer manda `null` explícito
+  // (`recipientName.trim() || null`) cuando el campo queda vacío -- típico
+  // en TODO pedido "Retirar en tienda". .optional() solo acepta undefined,
+  // no null -- rechazaba null con 422 "Datos inválidos" en cada pickup.
+  // Root cause confirmado con test aislado de Zod antes de tocar esto.
+  recipient_name:     z.string().max(120).trim().nullable().optional(),
+  delivery_address:   z.string().max(500).trim().nullable().optional(),
 })
 
 type TxClient = Omit<
@@ -72,8 +77,8 @@ function buildWaMessage(
   totalUsd:           number,
   totalBs:            number,
   delivery_type:      'pickup' | 'delivery',
-  recipient_name:     string | undefined,
-  delivery_address:   string | undefined,
+  recipient_name:     string | null | undefined,
+  delivery_address:   string | null | undefined,
   currency:           string,
   rate:               number,
 ): string {

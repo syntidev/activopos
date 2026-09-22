@@ -356,6 +356,14 @@ model Product {
   base_unit_label            String            @default("und") @db.VarChar(20)
   price_per_kg_usd           Decimal?          @db.Decimal(10, 2)
   price_per_unit_usd         Decimal?          @db.Decimal(10, 2)
+  // Precio directo en $ para pago EN divisas (Zelle/Binance/efectivo USD) --
+  // NO es price_per_unit_usd convertido a Bs y vuelto a mostrar, ni un
+  // descuento/porcentaje. Es un segundo precio independiente que Daniel fija
+  // a mano (suele ser menor: cobrar en divisas evita el riesgo/comisión de
+  // convertir Bs). null = el producto no tiene precio propio en divisas,
+  // la ficha muestra solo el precio normal (Bs) sin importar el método de
+  // pago elegido.
+  precio_divisa              Decimal?          @db.Decimal(10, 2)
   cost_per_unit_usd          Decimal?          @db.Decimal(10, 4)
   cost_unknown               Boolean           @default(false)
   wholesale_price_usd        Decimal?          @db.Decimal(10, 2)
@@ -400,21 +408,21 @@ model Product {
 // singular, estructura permanente del catálogo): un producto conserva su
 // categoría normal y puede además pertenecer a 0+ colecciones a la vez.
 model Collection {
-  id          Int      @id @default(autoincrement())
-  business_id Int
-  slug        String   @db.VarChar(60)
-  name        String   @db.VarChar(120)
+  id                  Int      @id @default(autoincrement())
+  business_id         Int
+  slug                String   @db.VarChar(60)
+  name                String   @db.VarChar(120)
   // Edición/año de la colección (ej. "200k-2027" -> 2027). Opcional: no toda
   // colección es anual (puede ser temática, sin año).
-  year        Int?
-  cover_path  String?  @db.VarChar(500)
-  active      Boolean  @default(true)
+  year                Int?
+  cover_path          String?  @db.VarChar(500)
+  active              Boolean  @default(true)
   // "Cartelera del momento": la campaña que el catálogo público empuja en su
   // grid premium (tile grande + 4). SOLO UNA activa por negocio: la API la
   // mueve en transacción (ver PATCH /api/collections/[slug]); MySQL no tiene
   // índice único parcial, así que la garantía vive en la API, no en el schema.
-  is_cartelera_activa Boolean @default(false)
-  created_at  DateTime @default(now())
+  is_cartelera_activa Boolean  @default(false)
+  created_at          DateTime @default(now())
 
   business Business            @relation(fields: [business_id], references: [id])
   products ProductCollection[]

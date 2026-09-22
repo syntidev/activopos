@@ -52,6 +52,7 @@ interface Props {
   categoryColor: string | null
   priceUsd:      number
   priceBs:       number | null
+  priceDivisa:   number | null
   variants:      CatalogProductVariant[]
   businessName:  string
   slug:          string
@@ -72,7 +73,7 @@ interface Props {
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
-  priceUsd, priceBs, variants, businessName,
+  priceUsd, priceBs, priceDivisa, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
 }: Props) {
@@ -130,10 +131,15 @@ export function ProductoDetalle({
   }, [cartOpen, checkoutOpen])
 
   const selectedVariant  = variants.find(v => v.id === selectedVariantId) ?? null
+  // precio_bcv (normal): base de la conversión a Bs, siempre -- sin importar
+  // si hay precio_divisa. Se muestra tachado cuando precio_divisa existe.
   const effectivePrice   = priceUsd + (selectedVariant?.precio_extra ?? 0)
   const effectivePriceBs = priceBs !== null
     ? effectivePrice * rate
     : null
+  // Precio final real: precio_divisa (si existe) es lo que se cobra y se
+  // destaca en $ -- no un tachado decorativo. Bs arriba sigue de precio_bcv.
+  const effectivePriceFinal = (priceDivisa ?? priceUsd) + (selectedVariant?.precio_extra ?? 0)
 
   const availableStock = selectedVariant
     ? selectedVariant.stock
@@ -179,7 +185,7 @@ export function ProductoDetalle({
       product_id:    productId,
       name,
       qty,
-      price_usd:     effectivePrice,
+      price_usd:     effectivePriceFinal,
       image_url:     images[0] ?? null,
       variant_id:    selectedVariant?.id,
       variant_label: selectedVariant ? `${capitalize(selectedVariant.tipo)}: ${selectedVariant.valor}` : undefined,
@@ -473,7 +479,12 @@ export function ProductoDetalle({
 
           <div className={styles.priceBlock}>
             {showUsd && (
-              <span className={styles.priceUsd}>{fmtUsd(effectivePrice)}</span>
+              <>
+                {priceDivisa !== null && priceDivisa > 0 && (
+                  <span className={styles.priceUsdOld}>{fmtUsd(effectivePrice)}</span>
+                )}
+                <span className={styles.priceUsd}>{fmtUsd(effectivePriceFinal)}</span>
+              </>
             )}
             {showBs && effectivePriceBs !== null && (
               <span className={styles.priceBs}>{fmtBs(effectivePriceBs)}</span>
@@ -632,7 +643,7 @@ export function ProductoDetalle({
               onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
             >
               <Zap size={18} aria-hidden="true" />
-              Pedir ahora · {showUsd ? fmtUsd(effectivePrice * qty) : fmtBs(effectivePrice * qty * rate)}
+              Pedir ahora · {showUsd ? fmtUsd(effectivePriceFinal * qty) : fmtBs(effectivePrice * qty * rate)}
             </button>
             <button
               type="button"

@@ -1427,6 +1427,29 @@
 }
 
 /* Badges de categoría — esquina inferior izquierda */
+/* Badge de categoría con color propio, esquina libre (bottom-right) del overlay
+   de la imagen. Mismo patrón --badge-color + color-mix que .categoryBadge del
+   modal de producto (ver categoryBadgeColor() en CatalogoGrid.tsx). */
+.categoryImgBadge {
+  position:       absolute;
+  bottom:         6px;
+  right:          6px;
+  z-index:        3;
+  max-width:      65%;
+  padding:        4px 8px;
+  border-radius:  20px;
+  background:     color-mix(in srgb, var(--badge-color) 88%, white);
+  color:          #FFFFFF;
+  font-size:      9px;
+  font-weight:    700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height:    1.4;
+  overflow:       hidden;
+  text-overflow:  ellipsis;
+  white-space:    nowrap;
+}
+
 .productBadge {
   position:       absolute;
   bottom:         6px;
@@ -2102,6 +2125,30 @@
   display:     flex;
   gap:         var(--space-2-5);
   align-items: center;
+}
+
+/* Botón compacto junto a "Agregar al carrito" -- mismo tamaño/patrón que
+   .modalShareBtn, coloreado con el token --whatsapp en vez de neutro. */
+.btnWhatsappIcon {
+  flex-shrink:     0;
+  width:           var(--touch-large);
+  height:          var(--touch-large);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--whatsapp);
+  color:           var(--color-white);
+  border:          none;
+  border-radius:   var(--radius-md);
+  cursor:          pointer;
+  text-decoration: none;
+  transition:      background var(--transition-fast), transform var(--duration-fast);
+}
+.btnWhatsappIcon:hover  { background: color-mix(in srgb, var(--whatsapp) 85%, black); }
+.btnWhatsappIcon:active { transform: scale(0.96); }
+.btnWhatsappIcon:focus-visible {
+  outline:        2px solid var(--input-border-focus);
+  outline-offset: 2px;
 }
 
 .btnAddCart {

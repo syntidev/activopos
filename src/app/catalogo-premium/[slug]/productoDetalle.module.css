@@ -57,11 +57,48 @@
 
 /* Breadcrumb */
 .breadcrumb {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--space-2);
+  padding:         var(--space-3) var(--space-4);
+  font-size:       var(--text-sm);
+}
+
+.breadcrumbLeft {
   display:     flex;
   align-items: center;
   gap:         var(--space-2);
-  padding:     var(--space-3) var(--space-4);
-  font-size:   var(--text-sm);
+  min-width:   0;
+}
+
+/* Anterior | Siguiente -- mismo orden (sort_order) que la home, dentro de la
+   categoría del producto (o de todo el catálogo si no tiene categoría). */
+.adjacentNav {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  flex-shrink: 0;
+}
+
+.adjacentLink {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             4px;
+  color:           var(--biz-color, var(--onbike-blue));
+  text-decoration: none;
+  font-weight:     var(--weight-medium);
+  font-size:       var(--text-sm);
+  max-width:       120px;
+  overflow:        hidden;
+  text-overflow:   ellipsis;
+  white-space:     nowrap;
+}
+.adjacentLink:hover { text-decoration: underline; }
+
+.adjacentLinkDisabled {
+  color:   var(--color-text-muted);
+  opacity: 0.5;
 }
 
 .breadcrumbBack {
@@ -214,12 +251,19 @@
   }
 }
 
+/* Pill con color propio -- mismo patrón --badge-color + color-mix que el badge
+   de categoría en CatalogoGrid.tsx (ver categoryBadgeColor() en catalogUtils.ts). */
 .categoryBadge {
+  display:        inline-flex;
+  align-self:     flex-start;
   font-size:      var(--text-2xs);
   font-weight:    var(--weight-semibold);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color:          var(--biz-color, var(--onbike-blue));
+  color:          var(--badge-color);
+  background:     color-mix(in srgb, var(--badge-color) 15%, transparent);
+  padding:        3px var(--space-2);
+  border-radius:  var(--radius-full);
 }
 
 .productName {
@@ -447,6 +491,25 @@
   transition:      background 150ms ease;
 }
 .btnAddCart:hover { background: var(--color-surface-2); }
+
+/* Mismo tamaño/patrón que .btnShare -- coloreado con el token --whatsapp. */
+.btnWhatsapp {
+  flex-shrink:     0;
+  width:           52px;
+  height:          52px;
+  border-radius:   var(--radius-lg);
+  border:          none;
+  background:      var(--whatsapp);
+  color:           #FFFFFF;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          pointer;
+  text-decoration: none;
+  transition:      background var(--transition-fast), transform var(--duration-fast);
+}
+.btnWhatsapp:hover  { background: color-mix(in srgb, var(--whatsapp) 85%, black); }
+.btnWhatsapp:active { transform: scale(0.96); }
 
 .btnShare {
   width:           52px;

@@ -20,7 +20,7 @@ import { CarteleraGrid } from './CarteleraGrid'
 import type { CarteleraData } from './cartelera'
 import { MobileTabBar } from './MobileTabBar'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
-import { capitalize, currencyVisibility } from './catalogUtils'
+import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
 
@@ -111,11 +111,6 @@ function getInitials(name: string): string {
     .slice(0, 2)
     .map(w => w[0]?.toUpperCase() ?? '')
     .join('')
-}
-
-function getConsultarWaUrl(phone: string, productName: string): string {
-  if (!phone) return '#'
-  return `https://wa.me/${normalizePhone(phone)}?text=${encodeURIComponent(`Hola, quiero consultar disponibilidad de: ${productName}`)}`
 }
 
 function getBadgeClass(badge: string | null | undefined): string {
@@ -648,6 +643,18 @@ export function CatalogoGrid({
             <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
               {BADGE_ICON[p.badge]}
               {BADGE_LABEL[p.badge]}
+            </span>
+          )}
+
+          {/* Badge de categoría con color propio -- complementa "Especial" (que marca
+              isFeatured, otro dato): categoría siempre se distingue por color, "Especial"
+              solo aparece si el producto está marcado como tal. */}
+          {p.categoryName && p.catalogVisibility !== 'on_request' && (
+            <span
+              className={styles.categoryImgBadge}
+              style={{ '--badge-color': categoryBadgeColor(p.categoryName, categoryColors[p.categoryName]) } as CSSProperties}
+            >
+              {p.categoryName}
             </span>
           )}
         </div>
@@ -1438,7 +1445,7 @@ export function CatalogoGrid({
               {selP.categoryName && (
                 <span
                   className={styles.categoryBadge}
-                  style={{ '--badge-color': categoryColors[selP.categoryName] ?? undefined } as CSSProperties}
+                  style={{ '--badge-color': categoryBadgeColor(selP.categoryName, categoryColors[selP.categoryName]) } as CSSProperties}
                 >
                   {selP.categoryName}
                 </span>
@@ -1634,6 +1641,19 @@ export function CatalogoGrid({
                     <ShoppingBag size={17} aria-hidden="true" />
                     Agregar · ${((selP.priceUsd + (selectedVariant?.precio_extra ?? 0)) * modalQty).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </button>
+                  {/* Directo desde la ficha, no solo al final del carrito -- misma
+                      URL/mensaje que "Consultar disponibilidad" arriba (getConsultarWaUrl). */}
+                  {businessPhone && (
+                    <a
+                      href={getConsultarWaUrl(businessPhone, selP.name)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.btnWhatsappIcon}
+                      aria-label={`Consultar ${selP.name} por WhatsApp`}
+                    >
+                      <MessageCircle size={20} aria-hidden="true" />
+                    </a>
+                  )}
                 </div>
               ) : (
                 <a

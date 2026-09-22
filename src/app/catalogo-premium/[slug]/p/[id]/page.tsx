@@ -92,6 +92,42 @@ export default async function ProductoPage({ params }: PageProps) {
   ])
   if (!product) notFound()
 
+  // Anterior/Siguiente: mismo orden que la home (sort_order, luego id como
+  // desempate estable), dentro de la categoría del producto -- o de todo el
+  // catálogo si no tiene categoría, nunca "sin navegación" por esa causa.
+  const adjacentWhere = {
+    business_id:       business.id,
+    active:            true,
+    show_in_catalog:   true,
+    available_in_pos:  true,
+    category_id:       product.category_id,
+    ...CATALOG_WHERE_FILTER,
+  }
+  const [prevRaw, nextRaw] = await Promise.all([
+    prisma.product.findFirst({
+      where: {
+        ...adjacentWhere,
+        OR: [
+          { sort_order: { lt: product.sort_order } },
+          { sort_order: product.sort_order, id: { lt: product.id } },
+        ],
+      },
+      select:  { id: true, name: true },
+      orderBy: [{ sort_order: 'desc' }, { id: 'desc' }],
+    }),
+    prisma.product.findFirst({
+      where: {
+        ...adjacentWhere,
+        OR: [
+          { sort_order: { gt: product.sort_order } },
+          { sort_order: product.sort_order, id: { gt: product.id } },
+        ],
+      },
+      select:  { id: true, name: true },
+      orderBy: [{ sort_order: 'asc' }, { id: 'asc' }],
+    }),
+  ])
+
   const imgs      = parseImages(product.images)
   const priceUsd  = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
   const priceBs   = priceUsd > 0 ? priceUsd * rate : null
@@ -158,6 +194,8 @@ export default async function ProductoPage({ params }: PageProps) {
         paymentMethods={paymentMethods as PaymentMethod[]}
         catalogUrl={`/catalogo-premium/${params.slug}`}
         relatedProducts={relatedProducts}
+        prevProduct={prevRaw}
+        nextProduct={nextRaw}
         businessLogo={business.logo_path}
         businessCity={location || null}
         businessDesc={business.catalog_desc ?? null}

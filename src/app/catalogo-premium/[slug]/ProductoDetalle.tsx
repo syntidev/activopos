@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag, Ruler,
+  ArrowLeft, ArrowRight, Share2, Plus, Minus, Zap, ShoppingBag, Ruler,
   Search, Info, X, MessageCircle, AtSign, Phone,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -13,7 +13,7 @@ import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
-import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
+import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './productoDetalle.module.css'
 // Mismo header/panel de info que Home y /productos (CatalogoGrid.tsx) --
@@ -38,6 +38,11 @@ interface RelatedProduct {
   priceUsd: number
 }
 
+interface AdjacentProduct {
+  id:   number
+  name: string
+}
+
 interface Props {
   productId:     number
   name:          string
@@ -55,6 +60,8 @@ interface Props {
   paymentMethods: PaymentMethod[]
   catalogUrl:    string
   relatedProducts: RelatedProduct[]
+  prevProduct:   AdjacentProduct | null
+  nextProduct:   AdjacentProduct | null
   businessLogo:  string | null
   businessCity:      string | null
   businessDesc:      string | null
@@ -66,7 +73,7 @@ interface Props {
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessName,
-  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo,
+  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
 }: Props) {
   const router = useRouter()
@@ -360,17 +367,48 @@ export function ProductoDetalle({
         </div>
       )}
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb + Anterior/Siguiente dentro de la misma categoría (o del
+          catálogo completo si el producto no tiene categoría) -- mismo orden
+          que la home (sort_order), ver prevProduct/nextProduct en page.tsx. */}
       <nav className={styles.breadcrumb} aria-label="Navegación">
-        <Link href={catalogUrl} className={styles.breadcrumbBack}>
-          <ArrowLeft size={16} aria-hidden="true" />
-          <span>Volver al catálogo</span>
-        </Link>
-        {categoryName && (
-          <>
-            <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
-            <span className={styles.breadcrumbCat}>{categoryName}</span>
-          </>
+        <div className={styles.breadcrumbLeft}>
+          <Link href={catalogUrl} className={styles.breadcrumbBack}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            <span>Volver al catálogo</span>
+          </Link>
+          {categoryName && (
+            <>
+              <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
+              <span className={styles.breadcrumbCat}>{categoryName}</span>
+            </>
+          )}
+        </div>
+        {(prevProduct || nextProduct) && (
+          <div className={styles.adjacentNav} aria-label="Producto anterior y siguiente">
+            {prevProduct ? (
+              <Link href={`/catalogo-premium/${slug}/p/${prevProduct.id}`} className={styles.adjacentLink} title={prevProduct.name}>
+                <ArrowLeft size={14} aria-hidden="true" />
+                Anterior
+              </Link>
+            ) : (
+              <span className={`${styles.adjacentLink} ${styles.adjacentLinkDisabled}`} aria-hidden="true">
+                <ArrowLeft size={14} aria-hidden="true" />
+                Anterior
+              </span>
+            )}
+            <span className={styles.breadcrumbSep} aria-hidden="true">|</span>
+            {nextProduct ? (
+              <Link href={`/catalogo-premium/${slug}/p/${nextProduct.id}`} className={styles.adjacentLink} title={nextProduct.name}>
+                Siguiente
+                <ArrowRight size={14} aria-hidden="true" />
+              </Link>
+            ) : (
+              <span className={`${styles.adjacentLink} ${styles.adjacentLinkDisabled}`} aria-hidden="true">
+                Siguiente
+                <ArrowRight size={14} aria-hidden="true" />
+              </span>
+            )}
+          </div>
         )}
       </nav>
 
@@ -425,7 +463,7 @@ export function ProductoDetalle({
           {categoryName && (
             <span
               className={styles.categoryBadge}
-              style={categoryColor ? ({ color: categoryColor } as CSSProperties) : undefined}
+              style={{ '--badge-color': categoryBadgeColor(categoryName, categoryColor) } as CSSProperties}
             >
               {categoryName.toUpperCase()}
             </span>
@@ -576,6 +614,18 @@ export function ProductoDetalle({
               <ShoppingBag size={18} aria-hidden="true" />
               Agregar al carrito
             </button>
+            {/* Directo desde la ficha, no solo al final del carrito. */}
+            {businessPhone && (
+              <a
+                href={getConsultarWaUrl(businessPhone, name)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.btnWhatsapp}
+                aria-label={`Consultar ${name} por WhatsApp`}
+              >
+                <MessageCircle size={18} aria-hidden="true" />
+              </a>
+            )}
             <button
               type="button"
               className={styles.btnPedir}

@@ -4234,6 +4234,15 @@
   border:     none; /* no-op en img/video; evita el borde default de <iframe> (YouTube) */
 }
 
+/* iframe (YouTube) no soporta object-fit -- mismo criterio "cover" que
+   img/video pero vía transform:scale + overflow:hidden del padre
+   (.lsHero), aceptando recorte de bordes. ponytail: factor de escala fijo,
+   subir si el video real (proporción distinta al ancho de pantalla) sigue
+   dejando franja negra visible. */
+iframe.lsHeroMedia {
+  transform: scale(1.9);
+}
+
 .lsHeroScrim {
   position:   absolute;
   inset:      0;

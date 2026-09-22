@@ -7,7 +7,7 @@ import {
   Warehouse, MapPin,
 } from 'lucide-react'
 import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProductForm'
-import { PRESET_GROUPS, SHOE_GROUP_IDS } from '@/lib/variantPresets'
+import { PRESET_GROUPS, SHOE_GROUP_IDS, categoryRequiresVariant } from '@/lib/variantPresets'
 import { AccordionCard } from './AccordionCard'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import type { ModalCategory } from './ProductModal'
@@ -60,6 +60,13 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
   const [wholesaleMode, setWholesaleMode] = useState<'percent' | 'fixed'>('percent')
   const [wholesalePct, setWholesalePct]   = useState('')
   const [wholesaleAmt, setWholesaleAmt]   = useState('')
+
+  // TAREA 4 (auditoría 2026-09-22): advertencia visual, NO bloqueo -- Carlos
+  // no confirmó si prefiere bloquear el guardado, así que por ahora solo
+  // avisa. Cubre los dos casos reales encontrados: el toggle "Tiene
+  // variantes" apagado, y encendido pero sin ninguna talla agregada todavía.
+  const selectedCategoryName = categories.find(cat => cat.id === f.categoryId)?.name ?? null
+  const showVariantWarning = categoryRequiresVariant(selectedCategoryName) && f.variants.length === 0
 
   return (
     <>
@@ -909,6 +916,12 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                 <span className={c.toggleThumb} />
               </label>
             </div>
+
+            {showVariantWarning && (
+              <p className={s.variantStockWarning} role="alert">
+                &quot;{selectedCategoryName}&quot; suele necesitar talla — este producto se guardará sin ninguna variante.
+              </p>
+            )}
 
             {f.hasVariants && f.isEdit && (
               <div className={c.variantsSection}>

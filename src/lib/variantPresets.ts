@@ -18,3 +18,22 @@ export const PRESET_GROUPS = [
 
 // Presets de calzado -> muestran el input de equivalencia opcional junto al chip.
 export const SHOE_GROUP_IDS = ['zap-dama', 'zap-caballero', 'zap-nino', 'zap-nina'] as const
+
+// Categorías que "requieren talla" -- heurística por nombre (sin campo real
+// en Category, ver auditoría 2026-09-22), mismo criterio que Brand.search_term
+// ya usa en este proyecto para matching blando. Funciona en TODOS los
+// tenants sin depender de un ID fijo, pero es un heurístico de texto, no una
+// regla estructurada: si Carlos confirma la lista exacta de categorías o
+// pide algo más preciso, la extensión correcta es un campo real
+// `requires_variant` en Category (migración), no ampliar este arreglo.
+const REQUIRES_VARIANT_KEYWORDS = ['calzado', 'ropa', 'indumentaria', 'zapato', 'zapatilla', 'vestimenta']
+
+function normalize(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+export function categoryRequiresVariant(categoryName: string | null | undefined): boolean {
+  if (!categoryName) return false
+  const n = normalize(categoryName)
+  return REQUIRES_VARIANT_KEYWORDS.some(k => n.includes(k))
+}

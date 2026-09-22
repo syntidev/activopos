@@ -5,7 +5,7 @@ import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, Boxes, Search, Pencil, Trash2, ScanBarcode, Warehouse, MapPin } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
-import { PRESET_GROUPS } from '@/lib/variantPresets'
+import { PRESET_GROUPS, categoryRequiresVariant } from '@/lib/variantPresets'
 import { suggestEquivalence } from '@/lib/size-guide'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
@@ -1456,6 +1456,12 @@ export function ProductModal({
                           <span className={styles.toggleThumb} />
                         </label>
                       </div>
+
+                      {categoryRequiresVariant(categories.find(cat => cat.id === categoryId)?.name) && variants.length === 0 && (
+                        <p className={styles.variantMissingWarning} role="alert">
+                          Esta categoría suele necesitar talla — este producto se guardará sin ninguna variante.
+                        </p>
+                      )}
 
                       {/* ── Sección Variantes ── */}
                       {hasVariants && (

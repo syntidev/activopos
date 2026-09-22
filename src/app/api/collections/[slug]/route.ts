@@ -16,6 +16,9 @@ const patchSchema = z.object({
     'cover_path debe ser una ruta interna (/uploads/... o /storage/tenants/...)',
   ).nullable().optional(),
   active:     z.boolean().optional(),
+  // "Cartelera del momento" (grid premium del catálogo). true = esta pasa a ser
+  // LA cartelera y las demás del negocio se apagan (una sola activa a la vez).
+  is_cartelera_activa: z.boolean().optional(),
 }).strict()
 
 type RouteContext = { params: { slug: string } }
@@ -38,14 +41,41 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const existing = await db.collection.findFirst({ where: { slug: params.slug } }) // business_id inyectado
     if (!existing) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
 
+    // Una colección desactivada (soft delete) no puede ser la cartelera.
+    if (data.is_cartelera_activa === true && (data.active ?? existing.active) === false) {
+      return NextResponse.json({ error: 'Una colección inactiva no puede ser la cartelera' }, { status: 422 })
+    }
+
+    const scalarData = {
+      ...(data.name       !== undefined ? { name:       data.name }               : {}),
+      ...(data.year       !== undefined ? { year:       data.year }               : {}),
+      ...(data.cover_path !== undefined ? { cover_path: data.cover_path || null } : {}),
+      ...(data.active     !== undefined ? { active:     data.active }             : {}),
+    }
+
+    // Regla "solo UNA cartelera activa por negocio": activar una apaga las demás
+    // en la MISMA transacción (si falla algo, no queda ninguna o dos a medias).
+    // El tenant layer inyecta business_id en ambas operaciones.
+    if (data.is_cartelera_activa === true) {
+      const [, collection] = await db.$transaction([
+        db.collection.updateMany({
+          where: { is_cartelera_activa: true, NOT: { id: existing.id } },
+          data:  { is_cartelera_activa: false },
+        }),
+        db.collection.update({
+          where: { id: existing.id },
+          data:  { ...scalarData, is_cartelera_activa: true },
+        }),
+      ])
+      return NextResponse.json({ ok: true, collection })
+    }
+
+    // Apagar la cartelera (o desactivar la colección) deja el negocio sin cartelera:
+    // el catálogo vuelve al bloque de colección de siempre.
+    const clearsCartelera = data.is_cartelera_activa === false || data.active === false
     const collection = await db.collection.update({
       where: { id: existing.id },
-      data: {
-        ...(data.name       !== undefined ? { name:       data.name }               : {}),
-        ...(data.year       !== undefined ? { year:       data.year }               : {}),
-        ...(data.cover_path !== undefined ? { cover_path: data.cover_path || null } : {}),
-        ...(data.active     !== undefined ? { active:     data.active }             : {}),
-      },
+      data:  { ...scalarData, ...(clearsCartelera ? { is_cartelera_activa: false } : {}) },
     })
 
     return NextResponse.json({ ok: true, collection })
@@ -65,7 +95,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
 
     // Soft delete (active=false) igual que Category/Product -- evita romper el
     // FK de product_collections y preserva el historial si el admin se arrepiente.
-    await db.collection.update({ where: { id: existing.id }, data: { active: false } })
+    await db.collection.update({ where: { id: existing.id }, data: { active: false, is_cartelera_activa: false } })
 
     return NextResponse.json({ ok: true })
   } catch (e) {

@@ -16,6 +16,8 @@ import { LandingSections } from './LandingSections'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { ImgWithFallback } from './ImgWithFallback'
 import { NovedadesSection } from './NovedadesSection'
+import { CarteleraGrid } from './CarteleraGrid'
+import type { CarteleraData } from './cartelera'
 import { MobileTabBar } from './MobileTabBar'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility } from './catalogUtils'
@@ -90,6 +92,8 @@ interface Props {
   initialCategory?:   string | null
   initialQuery?:      string | null
   landingSections?:   RenderableLandingSection[]
+  /** Cartelera de campaña activa (grid premium 1+4); null/omitida = bloque de colección de siempre */
+  cartelera?:         CarteleraData | null
   brands?:            CatalogBrand[]
 }
 
@@ -180,6 +184,7 @@ export function CatalogoGrid({
   initialCategory = null,
   initialQuery = null,
   landingSections = [],
+  cartelera = null,
   brands = [],
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
@@ -1041,8 +1046,16 @@ export function CatalogoGrid({
       {/* ── Collection grid (Línea 200K) — mismo caso que el popup: el
           restructure dejó de invocar este tipo de sección aunque el
           renderer (LandingSections.tsx) sigue intacto. ── */}
-      {catalogMode === 'home' && browseMode && collectionGridSection && (
-        <LandingSections sections={[collectionGridSection]} slug={slug} businessId={businessId} />
+      {/* Cartelera de campaña activa (grid premium 1+4, data-driven por
+          Collection.is_cartelera_activa) REEMPLAZA a este bloque fijo. Sin cartelera
+          activa (o con menos de 5 productos) sigue el bloque de colección de siempre,
+          para que activar/desactivar campañas nunca deje la página sin este espacio. */}
+      {catalogMode === 'home' && browseMode && (
+        cartelera
+          ? <CarteleraGrid data={cartelera} slug={slug} />
+          : collectionGridSection && (
+              <LandingSections sections={[collectionGridSection]} slug={slug} businessId={businessId} />
+            )
       )}
 
       {/* ── SECCIÓN 2: Marcas — reposicionada inmediatamente después del

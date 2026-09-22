@@ -38,6 +38,8 @@
   --onbike-tile: #F5F5F5;
   /* Tinta de texto del mockup (#141414, negro neutro) — sección Novedades */
   --onbike-ink: #141414;
+  /* Categoría sobre el degradado oscuro de los tiles de la cartelera (#8FB2FF) */
+  --onbike-cat-on-dark: #8FB2FF;
 
   /* Altura del header sticky: logo 56px + 8px de aire arriba/abajo (mobile),
      logo 64px + 12px (desktop, ver media query). navBar, sidebar y anclas la
@@ -4575,6 +4577,160 @@
   max-width: 32ch;
   font-size: var(--text-sm);
   color:     var(--color-text-secondary);
+}
+
+/* ── CARTELERA DE CAMPAÑA — grid premium 1+4 ─────────────────────────────
+   Clon del artboard "Destacados — grid premium". Desktop ≥1024: 4 columnas,
+   2 filas de 260px, gap 20px; tile grande 2×2 y 4 tiles 1×1 IGUALES entre sí
+   (el tamaño lo fija el grid-template, nunca un aspect-ratio suelto por item).
+   Tile: radio 16, sombra 0 8px 30px, degradado 0→.75 negro desde el 40%.
+   Mobile: 2 columnas; el grande ocupa la fila superior completa (asunción
+   propia: el mockup solo dibuja desktop). ── */
+
+.carteleraSection {
+  padding:    0 var(--space-5) var(--space-10);
+  background: var(--color-white);
+}
+
+.carteleraHeader {
+  display:         flex;
+  align-items:     baseline;
+  justify-content: space-between;
+  margin-bottom:   var(--space-5);
+}
+
+.carteleraTitle {
+  margin:      0;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size:   28px;
+  font-weight: 700;
+  line-height: normal;
+  color:       var(--onbike-ink);
+}
+
+.carteleraLink {
+  font-size:       13px;
+  font-weight:     600;
+  color:           var(--biz-color, var(--onbike-blue));
+  text-decoration: none;
+}
+
+.carteleraGrid {
+  display:               grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows:    280px repeat(2, 160px);
+  gap:                   12px;
+}
+
+.carteleraTile {
+  position:        relative;
+  display:         block;
+  overflow:        hidden;
+  border-radius:   16px;
+  box-shadow:      0 8px 30px rgba(0, 0, 0, 0.10);
+  color:           #FFFFFF;
+  text-decoration: none;
+}
+
+.carteleraTileBig { grid-column: span 2; }
+
+.carteleraImg {
+  position:   absolute;
+  inset:      0;
+  display:    block;
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+}
+
+.carteleraImgFallback {
+  position:        absolute;
+  inset:           0;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--onbike-tile);
+  color:           var(--color-text-muted);
+}
+
+.carteleraScrim {
+  position:   absolute;
+  inset:      0;
+  z-index:    1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.75) 100%);
+}
+
+.carteleraBadge {
+  position:       absolute;
+  top:            16px;
+  left:           16px;
+  z-index:        2;
+  padding:        6px 14px;
+  border-radius:  20px;
+  background:     var(--biz-color, var(--onbike-blue));
+  color:          #FFFFFF;
+  font-size:      11px;
+  font-weight:    700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.carteleraLabel {
+  position: absolute;
+  left:     16px;
+  right:    16px;
+  bottom:   16px;
+  z-index:  2;
+}
+
+.carteleraCat {
+  font-size:      11px;
+  font-weight:    700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--onbike-cat-on-dark);
+}
+
+.carteleraName {
+  display:            -webkit-box;
+  margin:             2px 0;
+  overflow:           hidden;
+  font-size:          15px;
+  font-weight:        700;
+  line-height:        1.25;
+  color:              #FFFFFF;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.carteleraTileBig .carteleraName { font-size: 22px; }
+
+.carteleraPrice {
+  font-size:   14px;
+  font-weight: 700;
+  color:       #FFFFFF;
+}
+
+/* Bs siempre junto al USD (regla monetaria sellada); el mockup solo dibuja texto libre */
+.carteleraPriceBs {
+  font-size:   12px;
+  font-weight: 500;
+  opacity:     0.85;
+}
+
+@media (min-width: 1024px) {
+  .carteleraSection { padding: 0 var(--space-16) var(--space-24); }
+  .carteleraHeader  { margin-bottom: 36px; }
+  .carteleraTitle   { font-size: 40px; }
+  .carteleraLink    { font-size: 14px; }
+  .carteleraGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows:    repeat(2, 260px);
+    gap:                   20px;
+  }
+  .carteleraTileBig  { grid-column: span 2; grid-row: span 2; }
+  .carteleraBadge    { top: 20px; left: 20px; }
+  .carteleraLabel    { left: 20px; right: 20px; bottom: 20px; }
 }
 
 /* ── SECCIÓN NOVEDADES — grid mixto de producto ─────────────────────────

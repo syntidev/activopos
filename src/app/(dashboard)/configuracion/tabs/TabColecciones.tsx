@@ -17,8 +17,12 @@ interface CollectionRow {
   year:        number | null
   cover_path:  string | null
   active:      boolean
+  is_cartelera_activa: boolean
   _count?:     { products: number }
 }
+
+/** Productos que necesita la cartelera (grid premium 1+4); con menos, el catálogo no la muestra. */
+const CARTELERA_MIN_PRODUCTS = 5
 
 const EMPTY_DRAFT = { slug: '', name: '', year: '', cover_path: '' }
 
@@ -112,6 +116,30 @@ export function TabColecciones({ businessId: _b }: Props) {
     }
   }
 
+  /* 1 clic: activar una cartelera apaga la anterior (la API lo hace en una
+     transacción), por eso se recarga la lista completa y no solo esta fila. */
+  async function toggleCartelera(c: CollectionRow) {
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/collections/${c.slug}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ is_cartelera_activa: !c.is_cartelera_activa }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null) as { error?: string } | null
+        toast(data?.error ?? 'No se pudo cambiar la cartelera.', 'error')
+        return
+      }
+      toast(c.is_cartelera_activa ? 'Cartelera desactivada.' : `"${c.name}" es ahora la cartelera del momento.`, 'success')
+      await load()
+    } catch {
+      toast('Error de conexión.', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function remove(c: CollectionRow) {
     if (!confirm(`¿Eliminar la colección "${c.name}"? Los productos no se borran, solo dejan de estar agrupados acá.`)) return
     setBusy(true)
@@ -167,6 +195,28 @@ export function TabColecciones({ businessId: _b }: Props) {
             </div>
           </div>
           <p className={styles.pageSubtitle}>/{c.slug}</p>
+          <div className={styles.toggleRow}>
+            <div>
+              <p className={styles.toggleLabel}>Cartelera del momento</p>
+              <p className={styles.toggleHint}>
+                Grid premium en el catálogo (1 destacado grande + 4). Solo una a la vez: al activar
+                esta se apaga la anterior.
+                {(c._count?.products ?? 0) < CARTELERA_MIN_PRODUCTS && (
+                  <> Necesita {CARTELERA_MIN_PRODUCTS} productos visibles (tiene {c._count?.products ?? 0}); con menos no se muestra.</>
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${c.is_cartelera_activa ? styles.toggleBtnOn : ''}`}
+              onClick={() => toggleCartelera(c)}
+              disabled={busy}
+              aria-pressed={c.is_cartelera_activa}
+              aria-label={`${c.is_cartelera_activa ? 'Desactivar' : 'Activar'} "${c.name}" como cartelera del momento`}
+            >
+              <span className={`${styles.toggleKnob} ${c.is_cartelera_activa ? styles.toggleKnobOn : ''}`} />
+            </button>
+          </div>
         </div>
       ))}
 

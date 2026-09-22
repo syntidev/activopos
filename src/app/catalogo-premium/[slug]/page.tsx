@@ -6,6 +6,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import { CatalogFooter } from './CatalogFooter'
+import { getCartelera } from './cartelera'
 import { CONFIG_SCHEMAS, isSectionType } from '@/lib/landing-sections'
 import type { RenderableLandingSection, CollectionGridProduct } from '@/lib/landing-sections'
 import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
@@ -255,6 +256,14 @@ export default async function CatalogoPage({ params }: PageProps) {
   // sección se descarta, no rompe el resto del catálogo.
   const landingSections = await resolveCollectionGridSections(parsedSections, business.id, rate)
 
+  // Cartelera de campaña (grid premium 1+4): null si no hay una activa o si le
+  // faltan productos. Un fallo acá nunca tumba el catálogo: se registra (para
+  // que quede evidencia) y se cae al bloque de colección de siempre.
+  const cartelera = await getCartelera(business.id, rate).catch((error: unknown) => {
+    console.error('[catalogo-premium] cartelera falló, se usa el bloque de colección', { slug: params.slug, business_id: business.id, error })
+    return null
+  })
+
   const stockMap = new Map<number, number>()
   for (const e of stockEntries) {
     stockMap.set(
@@ -360,6 +369,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         categoryColors={categoryColors}
         categoryImages={categoryImages}
         landingSections={landingSections}
+        cartelera={cartelera}
         brands={brandRows}
         slug={params.slug}
         rate={rate}

@@ -409,6 +409,11 @@ model Collection {
   year        Int?
   cover_path  String?  @db.VarChar(500)
   active      Boolean  @default(true)
+  // "Cartelera del momento": la campaña que el catálogo público empuja en su
+  // grid premium (tile grande + 4). SOLO UNA activa por negocio: la API la
+  // mueve en transacción (ver PATCH /api/collections/[slug]); MySQL no tiene
+  // índice único parcial, así que la garantía vive en la API, no en el schema.
+  is_cartelera_activa Boolean @default(false)
   created_at  DateTime @default(now())
 
   business Business            @relation(fields: [business_id], references: [id])

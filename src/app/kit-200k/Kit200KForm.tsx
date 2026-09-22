@@ -19,6 +19,13 @@ interface Extra {
   nombre: string
   cantidad: number
   talla: string | null
+  product_id: number | null
+  variant_id: number | null
+}
+
+interface FranelaProduct {
+  productId: number
+  variants: { id: number; valor: string }[]
 }
 
 interface KitConfig {
@@ -42,6 +49,9 @@ interface Props {
   phone:            string | null
   catalogInstagram: string | null
   catalogHours:     string | null
+  franelaDamas:      FranelaProduct | null
+  franelaCaballeros: FranelaProduct | null
+  franelaNinos:      FranelaProduct | null
 }
 
 function TallaChips({
@@ -83,6 +93,7 @@ function Stepper({ value, onChange, max = 20 }: { value: number; onChange: (v: n
 export function Kit200KForm({
   slug, kitId, businessName, businessLogo, businessCity,
   catalogDesc, rif, address, location, waPhone, phone, catalogInstagram, catalogHours,
+  franelaDamas, franelaCaballeros, franelaNinos,
 }: Props) {
   const headerRef = useRef<HTMLElement>(null)
   const [isScrolled, setIsScrolled] = useState(false)
@@ -146,14 +157,16 @@ export function Kit200KForm({
   // pasos 2/3 no son Entrega/Pago -- son Revisar tu kit / Confirmar.
   const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1)
 
-  const addExtra = (nombre: string, cantidad: number, talla: string | null) => {
-    setExtras(prev => [...prev, { nombre, cantidad, talla }])
-  }
   const removeExtra = (idx: number) => {
     setExtras(prev => prev.filter((_, i) => i !== idx))
   }
-  const handleAddExtra = (key: string, nombre: string, cantidad: number, talla: string | null) => {
-    addExtra(nombre, cantidad, talla)
+  // product_id/variant_id referencian el catálogo real (Product/ProductVariant
+  // del Kit 200K) -- nunca un string suelto. franela null (producto no
+  // seedeado/desactivado) => no hay nada real que referenciar, no agrega.
+  const handleAddExtra = (key: string, nombre: string, cantidad: number, talla: string, franela: FranelaProduct | null) => {
+    if (!franela) return
+    const variantId = franela.variants.find(v => v.valor === talla)?.id ?? null
+    setExtras(prev => [...prev, { nombre, cantidad, talla, product_id: franela.productId, variant_id: variantId }])
     setJustAdded(key)
     if (justAddedTimeout.current) clearTimeout(justAddedTimeout.current)
     justAddedTimeout.current = setTimeout(() => setJustAdded(null), 1200)
@@ -363,7 +376,12 @@ export function Kit200KForm({
               <TallaChips tallas={TALLAS_ROPA} value={damasTalla} onChange={setDamasTalla} />
               <div className={styles.shopFooter}>
                 <Stepper value={damasQty} onChange={setDamasQty} />
-                <button type="button" className={styles.btnDark} onClick={() => handleAddExtra('damas', 'Franela Damas', damasQty, damasTalla)}>
+                <button
+                  type="button"
+                  className={styles.btnDark}
+                  disabled={!franelaDamas}
+                  onClick={() => handleAddExtra('damas', 'Franela Damas', damasQty, damasTalla, franelaDamas)}
+                >
                   {justAdded === 'damas' ? 'Agregado ✓' : 'Agregar'}
                 </button>
               </div>
@@ -380,7 +398,12 @@ export function Kit200KForm({
               <TallaChips tallas={TALLAS_ROPA} value={caballerosTalla} onChange={setCaballerosTalla} />
               <div className={styles.shopFooter}>
                 <Stepper value={caballerosQty} onChange={setCaballerosQty} />
-                <button type="button" className={styles.btnDark} onClick={() => handleAddExtra('caballeros', 'Franela Caballeros', caballerosQty, caballerosTalla)}>
+                <button
+                  type="button"
+                  className={styles.btnDark}
+                  disabled={!franelaCaballeros}
+                  onClick={() => handleAddExtra('caballeros', 'Franela Caballeros', caballerosQty, caballerosTalla, franelaCaballeros)}
+                >
                   {justAdded === 'caballeros' ? 'Agregado ✓' : 'Agregar'}
                 </button>
               </div>
@@ -397,7 +420,12 @@ export function Kit200KForm({
               <TallaChips tallas={TALLAS_NINOS} value={ninosTalla} onChange={setNinosTalla} />
               <div className={styles.shopFooter}>
                 <Stepper value={ninosQty} onChange={setNinosQty} />
-                <button type="button" className={styles.btnDark} onClick={() => handleAddExtra('ninos', 'Franela Niños', ninosQty, ninosTalla)}>
+                <button
+                  type="button"
+                  className={styles.btnDark}
+                  disabled={!franelaNinos}
+                  onClick={() => handleAddExtra('ninos', 'Franela Niños', ninosQty, ninosTalla, franelaNinos)}
+                >
                   {justAdded === 'ninos' ? 'Agregado ✓' : 'Agregar'}
                 </button>
               </div>

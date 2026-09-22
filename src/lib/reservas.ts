@@ -57,9 +57,15 @@ export async function requireReservasAccess(): Promise<ReservasAccess | NextResp
 /* ── Schemas ── */
 
 export const extraSchema = z.object({
-  nombre:   z.string().trim().min(1).max(80),
-  cantidad: z.number().int().min(1).max(50),
-  talla:    z.string().trim().max(20).nullable().optional(),
+  nombre:     z.string().trim().min(1).max(80),
+  cantidad:   z.number().int().min(1).max(50),
+  talla:      z.string().trim().max(20).nullable().optional(),
+  // Referencia real al catálogo (Kit 200K: franelas sueltas Damas/Caballeros/
+  // Niños) -- opcional/nullable porque extras viejas (o texto libre de otros
+  // flujos) no la tienen; no se valida contra ProductVariant real acá, eso
+  // vive en el caller (mismo criterio que kit_id).
+  product_id: z.number().int().positive().nullable().optional(),
+  variant_id: z.number().int().positive().nullable().optional(),
 }).strict()
 
 // { "maillot": "L", "franela": "S" } -- claves libres (nombre de componente

@@ -82,7 +82,13 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     // la primera Reserva del grupo.
     const MEDALLA_EXTRA = { nombre: 'Medalla Finalista', cantidad: 1, talla: null }
     const sharedExtras = data.extras
-      ? data.extras.map(e => ({ nombre: e.nombre, cantidad: e.cantidad, talla: e.talla ?? null }))
+      ? data.extras.map(e => ({
+          nombre:     e.nombre,
+          cantidad:   e.cantidad,
+          talla:      e.talla ?? null,
+          product_id: e.product_id ?? null,
+          variant_id: e.variant_id ?? null,
+        }))
       : []
     const grupoPedido = data.kits.length > 1 ? randomUUID() : null
 

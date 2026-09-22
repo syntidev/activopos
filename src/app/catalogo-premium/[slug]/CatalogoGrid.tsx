@@ -395,7 +395,13 @@ export function CatalogoGrid({
       if (cols.some(c => c.title === s.name)) continue
       cols.push({ title: s.name, items: s.items.slice(0, 4) })
     }
-    return cols.slice(0, 4)
+    // Columnas independientes con distinto largo (ej. "Nuevo" con 2 items vs.
+    // "Destacado" con 4) dejan un hueco al fondo de la más corta, sandwicheado
+    // entre columnas completas -- se pareja todo al mínimo real, nunca se
+    // rellena con productos inventados (Cero Fachadas).
+    const trimmed = cols.slice(0, 4)
+    const minLen = trimmed.length ? Math.min(...trimmed.map(c => c.items.length)) : 0
+    return trimmed.map(c => ({ ...c, items: c.items.slice(0, minLen) }))
   }, [nuevosIngresos, products, sections])
 
   const catSectionRefs = useRef<Map<string, HTMLElement>>(new Map())
@@ -589,7 +595,7 @@ export function CatalogoGrid({
         {/* Hija directa de la card: con el inset de la imagen, dentro del wrap
             la barra dejaría de ir al ancho completo del borde superior. */}
         <span className={styles.productCardAccent} aria-hidden="true" />
-        <div className={`${styles.productImageWrap} ${i % 3 === 1 ? styles.productImageWrapTall : ''}`}>
+        <div className={styles.productImageWrap}>
           {p.image ? (
             <ImgWithFallback
               src={p.image}

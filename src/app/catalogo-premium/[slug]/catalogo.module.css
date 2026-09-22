@@ -1368,10 +1368,6 @@
   flex-shrink:   0;
 }
 
-/* Tarjetas mixtas (G) — variante vertical rectangular intercalada entre las
-   cuadradas por defecto, rompe la monotonía del grid tipo Amazon. */
-.productImageWrapTall { aspect-ratio: 3 / 4; }
-
 .productImage {
   width:      100%;
   height:     100%;

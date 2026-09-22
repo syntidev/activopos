@@ -296,7 +296,7 @@ export async function POST(req: NextRequest) {
       const variants = variantIds.length > 0
         ? await tx.productVariant.findMany({
             where: { id: { in: variantIds }, is_active: true },
-            select: { id: true, product_id: true, price_usd: true, stock: true },
+            select: { id: true, product_id: true, price_usd: true, precio_extra: true, stock: true },
           })
         : []
       const variantMap = new Map(variants.map(v => [v.id, v]))
@@ -337,9 +337,14 @@ export async function POST(req: NextRequest) {
             : Number(product.wholesale_price_usd ?? 0)
           if (wholesale > 0) basePrice = wholesale
         }
+        // DT-15: variant.price_usd es un override ABSOLUTO (casi siempre null en
+        // la práctica -- ninguna UI de admin lo expone). Cuando es null había que
+        // sumar precio_extra al precio base, no usar solo basePrice -- mismo bug
+        // y mismo fix que cobrar/route.ts (DT-14). Ver VariantSelector.tsx línea
+        // 90 para la semántica de referencia: price_usd ?? (base + price_extra_usd).
         const dbPrice = variant?.price_usd != null
           ? Number(variant.price_usd)
-          : basePrice
+          : basePrice + Number(variant?.precio_extra ?? 0)
         const priceUsd = item.unit_price_override ?? dbPrice
         if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
 

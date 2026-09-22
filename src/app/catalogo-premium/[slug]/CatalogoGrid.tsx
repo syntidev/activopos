@@ -788,6 +788,61 @@ export function CatalogoGrid({
     )
   }
 
+  // Fila compacta — sección final "4 columnas con título" (patrón Flatsome
+  // Classic Shop: foto chica + nombre + precio, sin badges ni CTA propio,
+  // clic navega al detalle). Distinta a propósito de renderProductCard
+  // (esa es la card grande del resto del catálogo) -- acá el objetivo es una
+  // lista densa, no otra vitrina de cards.
+  const renderCompactRow = (p: CatalogProduct) => (
+    <a
+      key={p.id}
+      href={`/catalogo-premium/${slug}/p/${p.id}`}
+      className={styles.compactRow}
+      onClick={e => { e.preventDefault(); router.push(`/catalogo-premium/${slug}/p/${p.id}`) }}
+    >
+      <span className={styles.compactThumb}>
+        {p.image ? (
+          <ImgWithFallback
+            src={p.image}
+            className={styles.compactThumbImg}
+            loading="lazy"
+            fallback={<span className={styles.compactThumbInitial}>{p.name.charAt(0).toUpperCase()}</span>}
+          />
+        ) : (
+          <span className={styles.compactThumbInitial}>{p.name.charAt(0).toUpperCase()}</span>
+        )}
+      </span>
+      <span className={styles.compactInfo}>
+        <span className={styles.compactName}>{p.name}</span>
+        {p.catalogVisibility === 'on_request' ? (
+          <span className={styles.compactPriceConsultar}>Consultar</span>
+        ) : p.priceUsd > 0 ? (
+          <span className={styles.compactPriceRow}>
+            {showUsd && (
+              <>
+                {p.priceDivisa !== null && p.priceDivisa > 0 && (
+                  <span className={styles.compactPriceOld}>
+                    ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                )}
+                <span className={styles.compactPrice}>
+                  ${(p.priceDivisa ?? p.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </span>
+              </>
+            )}
+            {showBs && p.priceBs && (
+              <span className={styles.compactPriceBs}>
+                Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className={styles.compactPriceConsultar}>Consultar</span>
+        )}
+      </span>
+    </a>
+  )
+
   return (
     <>
       {/* ── Sticky header ──────────────────────────────────────── */}
@@ -1413,19 +1468,18 @@ export function CatalogoGrid({
             <p className={styles.emptySubtitle}>Este negocio está preparando su vitrina digital.</p>
           </div>
         ) : (browseMode && catalogMode === 'home') ? (
-          // ── SECCIÓN 9: Grid final mixto — 4 columnas por criterio real
-          // (nuevo/destacado/categorías), patrón Grid Style 2. Reemplaza el
-          // shelf-por-categoría-con-mini-banners anterior (esa vista sigue
-          // completa en /productos, esto es solo el cierre de la home). ──
+          // ── SECCIÓN 9: 4 columnas con título, patrón Flatsome Classic Shop
+          // (LATEST/BEST SELLING/FEATURED/TOP RATED) -- título propio por
+          // criterio real disponible (nuevo/destacado/categorías), lista
+          // vertical compacta (foto chica+nombre+precio, renderCompactRow),
+          // no la card grande del resto del catálogo. ──
           <div className={styles.finalMixedGrid}>
             {finalGridColumns.map(col => (
               <div key={col.title} className={styles.finalMixedCol}>
                 <h2 className={styles.finalMixedColTitle}>{col.title}</h2>
-                {col.items.map((p, i) => (
-                  <div key={p.id} className={styles.finalMixedCard}>
-                    {renderProductCard(p, i)}
-                  </div>
-                ))}
+                <div className={styles.finalMixedList}>
+                  {col.items.map(p => renderCompactRow(p))}
+                </div>
               </div>
             ))}
           </div>

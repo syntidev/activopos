@@ -833,6 +833,11 @@ export function CatalogoGrid({
         <nav className={styles.headerNav} aria-label="Navegación principal">
           <Link href={`/catalogo-premium/${slug}`} className={styles.headerNavLink}>Inicio</Link>
           <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Tienda</Link>
+          {/* TEMPORAL — demo Gran Fondo 200K. Remover cuando no aplique el
+              link público (o cuando el evento termine). No usar
+              /catalogo-premium/${slug}/kit-200k -- /kit-200k es standalone,
+              top-level (src/app/kit-200k/page.tsx), no vive bajo esta ruta. */}
+          <Link href="/kit-200k" className={styles.headerNavLink}>200K</Link>
           <Link
             href={`/catalogo-premium/${slug}#marcas`}
             className={styles.headerNavLink}

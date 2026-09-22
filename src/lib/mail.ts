@@ -5,6 +5,7 @@ import {
   alertaModeloIaEmail,
   recordatorioVencimientoEmail,
   modulosBloqueadosEmail,
+  reservaConfirmadaEmail,
   resetPasswordEmail,
 } from './email/templates'
 
@@ -113,6 +114,26 @@ export async function sendModulesBlockedEmail(to: string, businessName: string):
   } catch (err) {
     console.error(`[mail] FALLO alerta de módulos bloqueados a ${to}:`, err instanceof Error ? err.message : err)
     throw err
+  }
+}
+
+/**
+ * Confirmación de reserva (Kit 200K y futuras preventas). Igual criterio que
+ * sendAiModelAlertEmail: NO relanza el error -- la reserva ya quedó creada en
+ * DB, un SMTP caído no puede tumbar una reserva ya confirmada.
+ */
+export async function sendReservaConfirmationEmail(
+  to: string,
+  ticketNumber: string,
+  kitNombre: string,
+  resumen: { nombre: string; cantidad: number; talla: string | null }[],
+): Promise<void> {
+  const { subject, html, text } = reservaConfirmadaEmail(ticketNumber, kitNombre, resumen)
+  try {
+    const info = await getTransporter().sendMail({ from: getFrom(), to, subject: sanitizeHeader(subject), text, html })
+    console.log(`[mail] confirmación de reserva ${ticketNumber} enviada a ${to} — messageId=${info.messageId} response="${info.response}"`)
+  } catch (err) {
+    console.error(`[mail] FALLO confirmación de reserva ${ticketNumber} a ${to}:`, err instanceof Error ? err.message : err)
   }
 }
 

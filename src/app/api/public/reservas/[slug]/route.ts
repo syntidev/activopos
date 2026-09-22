@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { sendReservaConfirmationEmail } from '@/lib/mail'
 import { reservaPublicLimiter, getClientIp } from '@/lib/rate-limit'
 import {
   RESERVA_INCLUDE,
@@ -52,7 +53,8 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const kit = await prisma.product.findFirst({
       where: { id: data.kit_id, business_id: business.id, product_type: 'combo', active: true },
       select: {
-        id: true,
+        id:   true,
+        name: true,
         collections: {
           select:  { collection: { select: { slug: true } } },
           orderBy: { collection_id: 'asc' },
@@ -83,6 +85,8 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
             ticket_number:    ticket,
             cliente_nombre:   data.cliente_nombre,
             cliente_telefono: data.cliente_telefono?.replace(/[^\d+]/g, '') || null,
+            cliente_cedula:   data.cliente_cedula,
+            cliente_correo:   data.cliente_correo,
             kit_id:             kit.id,
             talla:              data.talla || null,
             componentes_tallas: data.componentes_tallas ?? undefined,
@@ -91,6 +95,13 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
           },
           include: RESERVA_INCLUDE,
         })
+        // Resumen: componentes_tallas (talla por pieza) + extras sueltos --
+        // mismo criterio que ReservaCard muestra en el Kanban interno.
+        const resumen = [
+          ...Object.entries(data.componentes_tallas ?? {}).map(([nombre, talla]) => ({ nombre, cantidad: 1, talla })),
+          ...(extras ?? []),
+        ]
+        await sendReservaConfirmationEmail(data.cliente_correo, ticket, kit.name, resumen)
         return NextResponse.json({ ok: true, reserva: serializeReserva(row) }, { status: 201 })
       } catch (err) {
         if ((err as { code?: string }).code === 'P2002') continue

@@ -110,6 +110,34 @@ export function modulosBloqueadosEmail(businessName: string): EmailContent {
   return { subject: 'Se bloquearon tus módulos de pago', html, text }
 }
 
+interface ReservaResumenItem {
+  nombre: string
+  cantidad: number
+  talla:  string | null
+}
+
+// Kit 200K (preventa 200K): confirma el ticket al cliente que reservó desde
+// /kit-200k. resumen ya viene armado por el caller (componentes_tallas +
+// extras normalizados a { nombre, cantidad, talla }), esta función no conoce
+// esas estructuras.
+export function reservaConfirmadaEmail(ticketNumber: string, kitNombre: string, resumen: ReservaResumenItem[]): EmailContent {
+  const filas = resumen.map(i =>
+    `<tr><td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${BRAND_NAVY};">${escapeHtml(i.nombre)}${i.talla ? ` — talla ${escapeHtml(i.talla)}` : ''}</td>
+         <td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${TEXT_MUTED}; text-align:right;">×${i.cantidad}</td></tr>`,
+  ).join('')
+  const html = emailShell({
+    previewText: `Tu reserva ${ticketNumber} quedó confirmada.`,
+    bodyHtml:
+      heading('¡Reserva confirmada!') +
+      paragraph(`Tu número de ticket es <strong>${escapeHtml(ticketNumber)}</strong>. Preséntalo al retirar tu kit — el pago se hace en ese momento, esto es solo tu apartado.`) +
+      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-top:8px;">${filas}</table>` +
+      paragraph(`<span style="font-size:13px; color:${TEXT_MUTED};">${escapeHtml(kitNombre)}</span>`),
+  })
+  const resumenTxt = resumen.map(i => `- ${i.nombre}${i.talla ? ` (talla ${i.talla})` : ''} x${i.cantidad}`).join('\n')
+  const text = `¡Reserva confirmada!\n\nTu número de ticket es ${ticketNumber}. Preséntalo al retirar tu kit — el pago se hace en ese momento.\n\n${kitNombre}\n${resumenTxt}\n\n— OnBike Margarita`
+  return { subject: `Reserva confirmada — ${ticketNumber}`, html, text }
+}
+
 export function resetPasswordEmail(ownerName: string, resetUrl: string): EmailContent {
   const html = emailShell({
     previewText: 'Solicitud para cambiar tu contraseña de ActivoPOS.',

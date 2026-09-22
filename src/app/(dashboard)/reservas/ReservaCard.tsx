@@ -62,12 +62,21 @@ export function ReservaCard({
         <span className={styles.ticket}>{r.ticket_number}</span>
         <span className={styles.cardDate}>{formatShortDate(r.created_at)}</span>
       </div>
+      {/* Solo estado por ahora -- "cobranza" no tiene flujo propio todavía,
+          ninguna acción de la UI cambia esta fase. */}
+      <span className={styles.extraChip}>{r.fase === 'cobranza' ? 'Cobranza' : 'Preventa · apartado'}</span>
 
       <p className={styles.cardClient}>{r.cliente_nombre}</p>
       {r.cliente_telefono ? (
         <p className={styles.cardPhone}>
           <Phone size={12} aria-hidden="true" />
           {r.cliente_telefono}
+        </p>
+      ) : null}
+      {/* Cédula/correo: null en reservas de antes de este campo (2026-09) */}
+      {r.cliente_cedula || r.cliente_correo ? (
+        <p className={styles.cardPhone}>
+          {[r.cliente_cedula, r.cliente_correo].filter(Boolean).join(' · ')}
         </p>
       ) : null}
 

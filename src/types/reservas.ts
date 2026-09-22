@@ -14,6 +14,9 @@ export interface ReservaDTO {
   ticket_number:    string
   cliente_nombre:   string
   cliente_telefono: string | null
+  /** null en reservas creadas antes de este campo (2026-09) */
+  cliente_cedula:   string | null
+  cliente_correo:   string | null
   kit_id:             number
   kit_nombre:         string
   /** @deprecated usar componentes_tallas -- se mantiene por compatibilidad con reservas viejas */
@@ -22,6 +25,8 @@ export interface ReservaDTO {
   componentes_tallas: Record<string, string> | null
   cantidad:           number
   extras:           ReservaExtra[] | null
+  /** Solo estado -- "cobranza" es fase futura, sin lógica de cobro todavía. */
+  fase:             'preventa_apartado' | 'cobranza'
   armado:           boolean
   entregado:        boolean
   entregado_foto:   string | null

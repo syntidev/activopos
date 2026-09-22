@@ -459,6 +459,10 @@ model Reserva {
   ticket_number      String  @db.VarChar(30)
   cliente_nombre     String  @db.VarChar(120)
   cliente_telefono   String? @db.VarChar(30)
+  // Requeridos a nivel formulario (createReservaSchema) para reservas nuevas;
+  // nullable en DB -- migración aditiva, no rompe reservas ya creadas sin estos datos.
+  cliente_cedula     String? @db.VarChar(15)
+  cliente_correo     String? @db.VarChar(160)
   kit_id             Int
   // DEPRECATED -- reemplazado por componentes_tallas (un kit puede tener
   // componentes con tallas distintas, ej. Maillot L + Franela S). Se
@@ -474,6 +478,9 @@ model Reserva {
   // Ítems sueltos agregados: [{ nombre, cantidad, talla? }] — validado en la API.
   extras             Json?
 
+  // Solo estado por ahora, sin lógica de cobro -- "cobranza" es fase futura,
+  // ninguna ruta la exige ni la usa todavía.
+  fase           String   @default("preventa_apartado") @db.VarChar(20) // preventa_apartado | cobranza
   armado         Boolean  @default(false)
   entregado      Boolean  @default(false)
   // Ruta interna /storage/tenants/{business_id}/reservas/...; obligatoria si entregado=true.

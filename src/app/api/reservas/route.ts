@@ -93,6 +93,8 @@ export async function POST(req: NextRequest) {
             cliente_nombre:   data.cliente_nombre,
             // Solo dígitos y "+": "0414-111 22 33" y "04141112233" quedan iguales al buscar.
             cliente_telefono: data.cliente_telefono?.replace(/[^\d+]/g, '') || null,
+            cliente_cedula:   data.cliente_cedula,
+            cliente_correo:   data.cliente_correo,
             kit_id:             kit.id,
             talla:              data.talla || null,
             componentes_tallas: data.componentes_tallas ?? undefined,

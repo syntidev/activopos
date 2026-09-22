@@ -5,6 +5,10 @@ import styles from './kit200k.module.css'
 
 const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'] as const
 const TALLAS_NINOS = ['4', '6', '8', '10', '12', '14'] as const
+// Mismo patrón que createReservaSchema (src/lib/reservas.ts) -- validación
+// visual aquí, la real (fuente de verdad) es la del servidor.
+const CEDULA_RE = /^[VEve]-\d{6,9}$/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 interface Extra {
   nombre: string
@@ -56,7 +60,6 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
 export function Kit200KForm({ slug, kitId }: Props) {
   const [maillotTalla, setMaillotTalla] = useState('L')
   const [franelaTalla, setFranelaTalla] = useState('S')
-  const [medallaIncluded, setMedallaIncluded] = useState(true)
 
   const [damasTalla, setDamasTalla] = useState('XS')
   const [damasQty, setDamasQty] = useState(1)
@@ -71,6 +74,8 @@ export function Kit200KForm({ slug, kitId }: Props) {
 
   const [clienteNombre, setClienteNombre] = useState('')
   const [clienteTelefono, setClienteTelefono] = useState('')
+  const [clienteCedula, setClienteCedula] = useState('')
+  const [clienteCorreo, setClienteCorreo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState<string | null>(null)
@@ -91,12 +96,12 @@ export function Kit200KForm({ slug, kitId }: Props) {
   // ya no el workaround de extras[]. No se muestra como línea propia en el
   // resumen: el mockup no la itemiza, va implícita en "Kit 200K".
   const visibleExtras: Extra[] = [
-    ...(medallaIncluded ? [{ nombre: 'Medalla Finalista', cantidad: 1, talla: null }] : []),
+    { nombre: 'Medalla Finalista', cantidad: 1, talla: null },
     ...extras,
   ]
 
   const handleSubmit = async () => {
-    if (!clienteNombre.trim() || !clienteTelefono.trim() || submitting) return
+    if (!clienteNombre.trim() || !clienteTelefono.trim() || !CEDULA_RE.test(clienteCedula.trim()) || !EMAIL_RE.test(clienteCorreo.trim()) || submitting) return
     setSubmitting(true)
     setError('')
     try {
@@ -106,6 +111,8 @@ export function Kit200KForm({ slug, kitId }: Props) {
         body: JSON.stringify({
           cliente_nombre:   clienteNombre.trim(),
           cliente_telefono: clienteTelefono.trim(),
+          cliente_cedula:   clienteCedula.trim(),
+          cliente_correo:   clienteCorreo.trim(),
           kit_id:           kitId,
           talla:            maillotTalla,
           componentes_tallas: { maillot: maillotTalla, franela: franelaTalla },
@@ -188,22 +195,14 @@ export function Kit200KForm({ slug, kitId }: Props) {
               <div className={styles.compSub}>Talla única</div>
             </div>
           </div>
-          <button
-            type="button"
-            className={`${styles.compCard} ${styles.compCardToggle} ${medallaIncluded ? styles.compCardToggleActive : ''}`}
-            aria-pressed={medallaIncluded}
-            onClick={() => setMedallaIncluded(v => !v)}
-          >
-            <div className={styles.compMedia}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/kit-200k/medalla.png" alt="Medalla Finalista" className={styles.compImg} />
-              <span className={styles.compBadge}>OPCIONAL +$1</span>
-            </div>
+          <div className={styles.compCard}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/kit-200k/medalla.png" alt="Medalla Finalista" className={styles.compImg} />
             <div className={styles.compBody}>
               <div className={styles.compName}>Medalla Finalista</div>
-              <div className={styles.compSub}>{medallaIncluded ? 'Toca para quitar' : 'Toca para agregar'}</div>
+              <div className={styles.compSub}>Incluida en tu kit</div>
             </div>
-          </button>
+          </div>
           <div className={styles.compCard}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/kit-200k/franela.png" alt="Franela Oficial" className={styles.compImg} />
@@ -358,12 +357,27 @@ export function Kit200KForm({ slug, kitId }: Props) {
                   onChange={e => setClienteTelefono(e.target.value)}
                   maxLength={30}
                 />
+                <input
+                  className={styles.textInput}
+                  placeholder="Cédula (V-12345678)"
+                  value={clienteCedula}
+                  onChange={e => setClienteCedula(e.target.value)}
+                  maxLength={15}
+                />
+                <input
+                  className={styles.textInput}
+                  type="email"
+                  placeholder="Correo electrónico"
+                  value={clienteCorreo}
+                  onChange={e => setClienteCorreo(e.target.value)}
+                  maxLength={160}
+                />
               </div>
               <div className={styles.checkoutNavRow}>
                 <button
                   type="button"
                   className={styles.btnPrimary}
-                  disabled={!clienteNombre.trim() || !clienteTelefono.trim()}
+                  disabled={!clienteNombre.trim() || !clienteTelefono.trim() || !CEDULA_RE.test(clienteCedula.trim()) || !EMAIL_RE.test(clienteCorreo.trim())}
                   onClick={() => setCheckoutStep(2)}
                 >
                   Continuar →
@@ -383,7 +397,7 @@ export function Kit200KForm({ slug, kitId }: Props) {
                   <span className={styles.summaryHighlight}>Talla {maillotTalla}</span>
                 </div>
                 {visibleExtras.map((e, i) => {
-                  const isRemovable = i >= (medallaIncluded ? 1 : 0)
+                  const isRemovable = i >= 1
                   return (
                     <div key={`${e.nombre}-${i}`} className={styles.summaryRow}>
                       <span>+ {e.cantidad > 1 ? `${e.cantidad} ` : ''}{e.nombre}</span>
@@ -394,7 +408,7 @@ export function Kit200KForm({ slug, kitId }: Props) {
                             type="button"
                             className={styles.summaryRemove}
                             aria-label={`Quitar ${e.nombre}`}
-                            onClick={() => removeExtra(i - (medallaIncluded ? 1 : 0))}
+                            onClick={() => removeExtra(i - 1)}
                           >
                             ×
                           </button>

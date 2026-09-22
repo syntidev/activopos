@@ -70,9 +70,15 @@ export const componentesTallasSchema = z.record(
   z.string().trim().min(1).max(20),
 ).refine(obj => Object.keys(obj).length <= 20, { message: 'Máximo 20 componentes' })
 
+// V-12345678 / E-12345678 -- prefijo V o E, 6 a 9 dígitos (tolera cédulas cortas
+// viejas y las más largas actuales). Se normaliza a mayúscula antes de guardar.
+const CEDULA_RE = /^[VE]-\d{6,9}$/
+
 export const createReservaSchema = z.object({
   cliente_nombre:     z.string().trim().min(1).max(120),
   cliente_telefono:   z.string().trim().max(30).nullable().optional(),
+  cliente_cedula:     z.string().trim().toUpperCase().regex(CEDULA_RE, 'Cédula inválida (formato V-12345678 o E-12345678)'),
+  cliente_correo:     z.string().trim().toLowerCase().email('Correo inválido').max(160),
   kit_id:             z.number().int().positive(),
   // Legacy: una sola talla para todo el kit. Sigue aceptado para kits sin
   // desglose por componente; si viene componentes_tallas, ese es el que
@@ -275,6 +281,8 @@ export function serializeReserva(row: ReservaRow): ReservaDTO {
     ticket_number:      row.ticket_number,
     cliente_nombre:     row.cliente_nombre,
     cliente_telefono:   row.cliente_telefono,
+    cliente_cedula:     row.cliente_cedula,
+    cliente_correo:     row.cliente_correo,
     kit_id:             row.kit_id,
     kit_nombre:         row.kit.name,
     talla:              row.talla,
@@ -283,6 +291,9 @@ export function serializeReserva(row: ReservaRow): ReservaDTO {
     extras: parsedExtras.success
       ? parsedExtras.data.map(e => ({ nombre: e.nombre, cantidad: e.cantidad, talla: e.talla ?? null }))
       : null,
+    // Columna String libre en DB (mismo criterio que status/estado en el resto
+    // del schema); la app solo escribe estos dos valores por ahora.
+    fase: row.fase === 'cobranza' ? 'cobranza' : 'preventa_apartado',
     armado:           row.armado,
     entregado:        row.entregado,
     entregado_foto:   row.entregado_foto,

@@ -189,28 +189,11 @@
   cursor: default;
 }
 
-.compCardToggle { cursor: pointer; }
-.compCardToggleActive { box-shadow: 0 0 0 2px #0B4FCC, 0 4px 16px rgba(0, 0, 0, 0.08); }
-
 .compImg {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
   display: block;
-}
-
-.compMedia { position: relative; }
-
-.compBadge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #0B4FCC;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 5px;
 }
 
 .compBody {

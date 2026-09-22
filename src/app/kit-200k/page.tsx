@@ -8,6 +8,14 @@ import styles from './kit200k.module.css'
 // Ruta fija, sin [slug]: es el patrón "página de evento", no una feature
 // multi-tenant genérica (ver nota de scope en el commit).
 const SLUG = 'onbike'
+// UN SOLO combo real, siempre -- nunca crear un segundo producto combo en
+// paralelo (ej. un "Kit 200K Básico" con menos componentes). Si en algún
+// momento falta un componente real (ej. sin Maillot en inventario), el
+// flujo correcto es EDITAR este mismo product_id: bajar precio_per_unit_usd,
+// quitar el ProductComponent que falte, renombrar a "Kit 200K Reducido"
+// mientras dure esa condición, y revertir el nombre cuando se repone.
+// Decisión de Carlos tras retirar "Kit 200K Básico" (859, combo paralelo) --
+// quedó desactivado (active=false), no borrado, por si hace falta auditar.
 const KIT_NAME = 'Kit 200K Completo'
 
 // Sin esto Next la prerrenderiza estática al build (ruta fija, sin [slug]) y

@@ -160,8 +160,8 @@ export function Kit200KForm({
   }
 
   // "Resumen" para habilitar la entrada al wizard: kits.length nunca baja de
-  // 1 (setKitCount lo clampa), así que hoy esto siempre es true -- se deja
-  // explícito por si ese mínimo cambia, no un no-op disfrazado.
+  // 1 (removeKit se niega a dejarlo en 0), así que hoy esto siempre es true
+  // -- se deja explícito por si ese mínimo cambia, no un no-op disfrazado.
   const hasItems = kits.length > 0 || extras.length > 0
   const extrasTotalQty = extras.reduce((n, e) => n + e.cantidad, 0)
 

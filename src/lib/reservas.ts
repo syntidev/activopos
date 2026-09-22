@@ -89,7 +89,7 @@ export const createReservaSchema = z.object({
   extras:             z.array(extraSchema).max(20).nullable().optional(),
 }).strict() // business_id NUNCA del body: viene de la sesión
 
-export const MAX_KITS_PER_PEDIDO = 10
+export const MAX_KITS_PER_PEDIDO = 20
 
 // Pedido de N kits (Kit 200K): mismos datos de contacto, un componentes_tallas
 // por kit (cada uno independiente, ej. kit 1 Maillot L, kit 2 Maillot M).

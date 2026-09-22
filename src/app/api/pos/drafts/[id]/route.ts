@@ -89,9 +89,27 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
         const productMap = new Map(products.map(p => [p.id, p]))
 
+        // DT-15: mismo bug que sales/route.ts -- el precio ignoraba la variante.
+        // price_usd de la variante es override absoluto; si es null se suma
+        // precio_extra al precio base.
+        const variantIds = body.items
+          .map(i => i.variant_id)
+          .filter((v): v is number => v != null)
+        const variants = variantIds.length > 0
+          ? await tx.productVariant.findMany({
+              where:  { id: { in: variantIds }, is_active: true },
+              select: { id: true, product_id: true, price_usd: true, precio_extra: true },
+            })
+          : []
+        const variantMap = new Map(variants.map(v => [v.id, v]))
+
         saleItemsData = body.items.map(item => {
           const p        = productMap.get(item.product_id)!
-          const dbPrice  = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+          const variant  = item.variant_id != null ? variantMap.get(item.variant_id) : undefined
+          if (item.variant_id != null && variant?.product_id !== p.id) throw new Error('VARIANT_INVALID')
+          const dbPrice  = variant?.price_usd != null
+            ? Number(variant.price_usd)
+            : Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0) + Number(variant?.precio_extra ?? 0)
           const priceUsd = item.unit_price_override ?? dbPrice
           if (priceUsd <= 0) throw new Error('PRICE_MISSING')
           const subtotal_usd = Math.max(0, item.quantity * priceUsd - item.discount_usd)
@@ -145,6 +163,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       if (err.message === 'NOT_FOUND')         return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
       if (err.message === 'PRODUCT_NOT_FOUND') return NextResponse.json({ error: 'Producto no encontrado' }, { status: 400 })
       if (err.message === 'PRICE_MISSING')     return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
+      if (err.message === 'VARIANT_INVALID')   return NextResponse.json({ error: 'Variante inválida para el producto' }, { status: 400 })
     }
     console.error('drafts PATCH:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

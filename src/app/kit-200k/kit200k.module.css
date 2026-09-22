@@ -458,6 +458,93 @@
   margin-bottom: 20px;
 }
 
+/* ── Asistente de 3 pasos — mismo patrón visual que el checkout del
+   catálogo general (catalogo-premium/CartDrawer.tsx), colores propios de
+   esta página en vez de var(--biz-color) (standalone, sin tema de tenant). ── */
+
+.checkoutStepper {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  margin-bottom:   20px;
+}
+
+.stepperItem {
+  display:     flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+.stepperDotWrapper {
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            4px;
+}
+
+.stepperDot {
+  width:           28px;
+  height:          28px;
+  border-radius:   50%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-size:       12px;
+  font-weight:     700;
+  flex-shrink:     0;
+  transition:      background 200ms ease, color 200ms ease;
+}
+
+.stepperDotActive { background: #0B4FCC; color: #fff; }
+.stepperDotDone    { background: #0B4FCC; color: #fff; opacity: 0.5; }
+.stepperDotPending { background: #F0F0F0; color: #888; }
+
+.stepperLabel {
+  font-size:   10px;
+  color:       #888;
+  white-space: nowrap;
+}
+.stepperLabelActive { color: #0B4FCC; font-weight: 600; }
+
+.stepperLine {
+  width:      32px;
+  height:     1px;
+  background: #DDD;
+  flex-shrink: 0;
+}
+.stepperLineDone { background: #0B4FCC; opacity: 0.4; }
+
+.checkoutStepLabel {
+  font-size:      10px;
+  font-weight:    600;
+  color:          #0B4FCC;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+
+.checkoutNavRow {
+  display:    flex;
+  gap:        12px;
+  margin-top: 16px;
+}
+.checkoutNavRow .btnPrimary { flex: 2; min-width: 0; }
+
+.btnBack {
+  flex:          1;
+  height:        44px;
+  border:        1.5px solid #E0E0E0;
+  border-radius: 8px;
+  background:    #fff;
+  color:         #666;
+  font-size:     14px;
+  font-weight:   500;
+  font-family:   inherit;
+  cursor:        pointer;
+}
+.btnBack:hover:not(:disabled) { background: #F5F5F5; }
+.btnBack:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .reservaSummary {
   border: 1px solid #EEE;
   border-radius: 10px;

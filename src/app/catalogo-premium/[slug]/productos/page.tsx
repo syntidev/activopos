@@ -71,7 +71,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
     (session?.role === 'admin' && session.businessId === business.id)
   if (!isOwnerPreview && !isCatalogLive(business)) notFound()
 
-  const [products, rate, stockEntries, paymentMethods, dbCategories] = await Promise.all([
+  const [products, rate, stockEntries, paymentMethods, dbCategories, brandRows] = await Promise.all([
     prisma.product.findMany({
       where: {
         business_id:      business.id,
@@ -104,6 +104,15 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       where:   { business_id: business.id, active: true },
       select:  { name: true, color: true, sort_order: true, image_url: true },
       orderBy: { sort_order: 'asc' },
+    }),
+    // "Marca" del panel de filtros -- mismo query que ../page.tsx (home).
+    prisma.brand.findMany({
+      where:   { business_id: business.id, visible: true },
+      select:  { name: true, image_url: true, search_term: true },
+      orderBy: { order: 'asc' },
+    }).catch((error: unknown) => {
+      console.error('[catalogo-premium] brands falló en /productos, se renderiza sin marcas', { slug: params.slug, business_id: business.id, error })
+      return []
     }),
   ])
 
@@ -196,6 +205,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         categories={categories}
         categoryColors={categoryColors}
         categoryImages={categoryImages}
+        brands={brandRows}
         slug={params.slug}
         rate={rate}
         currency={business.catalog_default_currency}

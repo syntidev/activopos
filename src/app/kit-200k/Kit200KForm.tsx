@@ -74,6 +74,11 @@ export function Kit200KForm({ slug, kitId }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState<string | null>(null)
+  // Asistente de 3 pasos (mismo patrón visual que el checkout del catálogo
+  // general: Contacto -> revisión -> confirmar). Contenido propio: Kit 200K
+  // es preventa, sin entrega ni cobro ("pagas al retirar"), así que los
+  // pasos 2/3 no son Entrega/Pago -- son Revisar tu kit / Confirmar.
+  const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1)
 
   const addExtra = (nombre: string, cantidad: number, talla: string | null) => {
     setExtras(prev => [...prev, { nombre, cantidad, talla }])
@@ -304,68 +309,152 @@ export function Kit200KForm({ slug, kitId }: Props) {
         </div>
       </div>
 
-      {/* 4. Resumen + datos del cliente */}
+      {/* 4. Asistente de reserva — 3 pasos: Contacto / Revisar tu kit / Confirmar */}
       <div className={styles.reservaSection} id="reserva">
         <div className={styles.reservaCard}>
-          <div className={`${styles.disp} ${styles.reservaTitle}`}>Tu reserva</div>
-
-          <div className={styles.reservaSummary}>
-            <div className={styles.summaryRowMain}>
-              <span>Kit 200K (Maillot + Medias)</span>
-              <span className={styles.summaryHighlight}>Talla {maillotTalla}</span>
-            </div>
-            {visibleExtras.map((e, i) => {
-              const isRemovable = i >= (medallaIncluded ? 1 : 0)
-              return (
-                <div key={`${e.nombre}-${i}`} className={styles.summaryRow}>
-                  <span>+ {e.cantidad > 1 ? `${e.cantidad} ` : ''}{e.nombre}</span>
-                  <span className={styles.summaryRowRight}>
-                    {e.talla ? `Talla ${e.talla}` : 'Incluida'}
-                    {isRemovable && (
-                      <button
-                        type="button"
-                        className={styles.summaryRemove}
-                        aria-label={`Quitar ${e.nombre}`}
-                        onClick={() => removeExtra(i - (medallaIncluded ? 1 : 0))}
-                      >
-                        ×
-                      </button>
-                    )}
+          <div className={styles.checkoutStepper}>
+            {([
+              { n: 1, label: 'Contacto' },
+              { n: 2, label: 'Revisar tu kit' },
+              { n: 3, label: 'Confirmar' },
+            ] as { n: 1 | 2 | 3; label: string }[]).map(({ n, label }, idx) => (
+              <div key={n} className={styles.stepperItem}>
+                {idx > 0 && (
+                  <div className={`${styles.stepperLine} ${checkoutStep > idx ? styles.stepperLineDone : ''}`} />
+                )}
+                <div className={styles.stepperDotWrapper}>
+                  <div className={`${styles.stepperDot} ${
+                    checkoutStep === n ? styles.stepperDotActive :
+                    checkoutStep > n  ? styles.stepperDotDone   :
+                                        styles.stepperDotPending
+                  }`}>
+                    {checkoutStep > n ? '✓' : n}
+                  </div>
+                  <span className={`${styles.stepperLabel} ${checkoutStep === n ? styles.stepperLabelActive : ''}`}>
+                    {label}
                   </span>
                 </div>
-              )
-            })}
-            <div className={styles.summaryFootnote}>Precio se confirma al retirar — kit sin definir todavía</div>
+              </div>
+            ))}
           </div>
 
-          <div className={styles.reservaForm}>
-            <div className={styles.reservaFormGrid}>
-              <input
-                className={styles.textInput}
-                placeholder="Tu nombre"
-                value={clienteNombre}
-                onChange={e => setClienteNombre(e.target.value)}
-                maxLength={120}
-              />
-              <input
-                className={styles.textInput}
-                placeholder="WhatsApp"
-                value={clienteTelefono}
-                onChange={e => setClienteTelefono(e.target.value)}
-                maxLength={30}
-              />
-            </div>
-            {error && <p className={styles.errorMsg} role="alert">{error}</p>}
-            <button
-              type="button"
-              className={styles.btnPrimary}
-              onClick={handleSubmit}
-              disabled={submitting || !clienteNombre.trim() || !clienteTelefono.trim()}
-            >
-              {submitting ? 'Confirmando…' : 'Confirmar reserva'}
-            </button>
-            <div className={styles.reservaHint}>Recibirás tu número de ticket por WhatsApp</div>
-          </div>
+          {/* Paso 1 — Contacto */}
+          {checkoutStep === 1 && (
+            <>
+              <p className={styles.checkoutStepLabel}>Paso 1</p>
+              <h3 className={`${styles.disp} ${styles.reservaTitle}`}>Contacto</h3>
+              <div className={styles.reservaFormGrid}>
+                <input
+                  className={styles.textInput}
+                  placeholder="Tu nombre"
+                  value={clienteNombre}
+                  onChange={e => setClienteNombre(e.target.value)}
+                  maxLength={120}
+                />
+                <input
+                  className={styles.textInput}
+                  placeholder="WhatsApp"
+                  value={clienteTelefono}
+                  onChange={e => setClienteTelefono(e.target.value)}
+                  maxLength={30}
+                />
+              </div>
+              <div className={styles.checkoutNavRow}>
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  disabled={!clienteNombre.trim() || !clienteTelefono.trim()}
+                  onClick={() => setCheckoutStep(2)}
+                >
+                  Continuar →
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Paso 2 — Revisar tu kit */}
+          {checkoutStep === 2 && (
+            <>
+              <p className={styles.checkoutStepLabel}>Paso 2</p>
+              <h3 className={`${styles.disp} ${styles.reservaTitle}`}>Revisar tu kit</h3>
+              <div className={styles.reservaSummary}>
+                <div className={styles.summaryRowMain}>
+                  <span>Kit 200K (Maillot + Medias)</span>
+                  <span className={styles.summaryHighlight}>Talla {maillotTalla}</span>
+                </div>
+                {visibleExtras.map((e, i) => {
+                  const isRemovable = i >= (medallaIncluded ? 1 : 0)
+                  return (
+                    <div key={`${e.nombre}-${i}`} className={styles.summaryRow}>
+                      <span>+ {e.cantidad > 1 ? `${e.cantidad} ` : ''}{e.nombre}</span>
+                      <span className={styles.summaryRowRight}>
+                        {e.talla ? `Talla ${e.talla}` : 'Incluida'}
+                        {isRemovable && (
+                          <button
+                            type="button"
+                            className={styles.summaryRemove}
+                            aria-label={`Quitar ${e.nombre}`}
+                            onClick={() => removeExtra(i - (medallaIncluded ? 1 : 0))}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })}
+                <div className={styles.summaryFootnote}>Precio se confirma al retirar — kit sin definir todavía</div>
+              </div>
+              <div className={styles.checkoutNavRow}>
+                <button type="button" className={styles.btnBack} onClick={() => setCheckoutStep(1)}>
+                  ← Volver
+                </button>
+                <button type="button" className={styles.btnPrimary} onClick={() => setCheckoutStep(3)}>
+                  Continuar →
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Paso 3 — Confirmar */}
+          {checkoutStep === 3 && (
+            <>
+              <p className={styles.checkoutStepLabel}>Paso 3</p>
+              <h3 className={`${styles.disp} ${styles.reservaTitle}`}>Confirmar reserva</h3>
+              <div className={styles.reservaSummary}>
+                <div className={styles.summaryRow}>
+                  <span>Contacto</span>
+                  <span className={styles.summaryRowRight}>{clienteNombre} · {clienteTelefono}</span>
+                </div>
+                <div className={styles.summaryRowMain}>
+                  <span>Kit 200K (Maillot + Medias)</span>
+                  <span className={styles.summaryHighlight}>Talla {maillotTalla}</span>
+                </div>
+                {visibleExtras.map((e, i) => (
+                  <div key={`${e.nombre}-${i}`} className={styles.summaryRow}>
+                    <span>+ {e.cantidad > 1 ? `${e.cantidad} ` : ''}{e.nombre}</span>
+                    <span className={styles.summaryRowRight}>{e.talla ? `Talla ${e.talla}` : 'Incluida'}</span>
+                  </div>
+                ))}
+                <div className={styles.summaryFootnote}>Precio se confirma al retirar — kit sin definir todavía</div>
+              </div>
+              {error && <p className={styles.errorMsg} role="alert">{error}</p>}
+              <div className={styles.checkoutNavRow}>
+                <button type="button" className={styles.btnBack} onClick={() => setCheckoutStep(2)} disabled={submitting}>
+                  ← Volver
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                >
+                  {submitting ? 'Confirmando…' : 'Confirmar reserva'}
+                </button>
+              </div>
+              <div className={styles.reservaHint}>Recibirás tu número de ticket por WhatsApp</div>
+            </>
+          )}
         </div>
       </div>
 

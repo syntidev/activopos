@@ -19,6 +19,7 @@ import { NovedadesSection } from './NovedadesSection'
 import { CarteleraGrid } from './CarteleraGrid'
 import type { CarteleraData } from './cartelera'
 import { MobileTabBar } from './MobileTabBar'
+import { FilterPanel } from './FilterPanel'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
@@ -206,6 +207,12 @@ export function CatalogoGrid({
   const [showBackTop,    setShowBackTop]    = useState(false)
   const [heroIdx,        setHeroIdx]        = useState(0)
   const [activePriceRange, setActivePriceRange] = useState<{ min: number; max: number } | null>(null)
+  // Panel de filtros real de /productos (precio + marca + categoría, AND
+  // combinado con lo que ya filtre el sidebar/búsqueda). filterCategories es
+  // multi-select, independiente del sidebar (activeCategory, single-select).
+  const [filterPanelOpen,   setFilterPanelOpen]   = useState(false)
+  const [filterCategories,  setFilterCategories]  = useState<string[]>([])
+  const [filterBrands,      setFilterBrands]      = useState<string[]>([])
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -297,24 +304,53 @@ export function CatalogoGrid({
     }
   }, [searchExpanded])
 
+  // Todos los filtros combinan en AND -- panel de filtros (precio/marca/
+  // categoría múltiple) nunca es mutuamente excluyente con búsqueda/sidebar,
+  // a diferencia del comportamiento anterior (un solo filtro a la vez).
   const visible = useMemo(() => {
+    let result = products
+
     if (query.trim()) {
       const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-      return products.filter(p =>
+      result = result.filter(p =>
         p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q) ||
         (p.categoryName?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ?? '').includes(q),
       )
     }
-    if (activePriceRange) {
-      return products.filter(p => p.priceUsd > 0 && p.priceUsd >= activePriceRange.min && p.priceUsd < activePriceRange.max)
+
+    if (activeCategory === FEATURED_KEY) {
+      result = result.filter(p => p.isFeatured)
+    } else if (activeCategory) {
+      result = result.filter(p => p.categoryName === activeCategory)
+      if (activeSub) result = result.filter(p => p.subcategory === activeSub)
     }
-    if (activeCategory === FEATURED_KEY) return products.filter(p => p.isFeatured)
-    const byCat = activeCategory ? products.filter(p => p.categoryName === activeCategory) : products
-    return activeSub ? byCat.filter(p => p.subcategory === activeSub) : byCat
-  }, [products, query, activeCategory, activeSub, activePriceRange])
+
+    if (filterCategories.length > 0) {
+      result = result.filter(p => p.categoryName != null && filterCategories.includes(p.categoryName))
+    }
+
+    // GAP-BRAND-FILTER: Product no tiene brand_id/relación real a Brand (ver
+    // schema.prisma) -- Brand es solo el tile de "Comprá por marca", nunca se
+    // ligó a productos concretos. Mismo criterio que esos tiles ya usan
+    // (?buscar=<marca>): coincidencia de texto contra el nombre del producto,
+    // no un filtro relacional preciso. Documentado, no es un filtro exacto.
+    if (filterBrands.length > 0) {
+      const terms = filterBrands.map(b => b.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''))
+      result = result.filter(p => {
+        const name = p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        return terms.some(t => name.includes(t))
+      })
+    }
+
+    if (activePriceRange) {
+      result = result.filter(p => p.priceUsd > 0 && p.priceUsd >= activePriceRange.min && p.priceUsd < activePriceRange.max)
+    }
+
+    return result
+  }, [products, query, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
-  useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, activePriceRange])
+  useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, activePriceRange, filterCategories, filterBrands])
 
   const paged     = visible.slice(0, visibleCount)
   const remaining = visible.length - visibleCount
@@ -323,6 +359,7 @@ export function CatalogoGrid({
   // Activo solo sin filtro de categoría real, precio ni búsqueda; Destacados y
   // subcategorías siguen usando el grid filtrado único de arriba.
   const browseMode = activeCategory === null && !query.trim() && !activePriceRange
+    && filterCategories.length === 0 && filterBrands.length === 0
 
   const ORPHAN_KEY = '__otros__'
 
@@ -613,6 +650,20 @@ export function CatalogoGrid({
             <div className={`${styles.productImagePlaceholder} ${styles.gradDefault}`} aria-hidden="true">
               <span className={styles.productInitial}>{p.name.charAt(0).toUpperCase()}</span>
             </div>
+          )}
+
+          {/* Hover con 2da imagen — CSS-only (sin JS/estado), mismo criterio
+              de crossfade que el resto del catálogo. No hay ningún producto
+              de OnBike con 2+ imágenes hoy (verificado en DB): el mecanismo
+              queda listo, invisible hasta que se suba contenido real. */}
+          {p.images.length >= 2 && (
+            <img
+              src={p.images[1]}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className={styles.productImageHover}
+            />
           )}
 
           {p.availability === 'discontinued' ? (
@@ -1007,11 +1058,16 @@ export function CatalogoGrid({
             <button
               type="button"
               className={styles.catalogFiltrosBtn}
-              onClick={() => setCatMenuOpen(o => !o)}
-              aria-expanded={catMenuOpen}
+              onClick={() => setFilterPanelOpen(true)}
+              aria-expanded={filterPanelOpen}
             >
               <SlidersHorizontal size={14} aria-hidden="true" />
               Filtros
+              {(filterCategories.length + filterBrands.length + (activePriceRange ? 1 : 0)) > 0 && (
+                <span className={styles.catalogFiltrosBadge}>
+                  {filterCategories.length + filterBrands.length + (activePriceRange ? 1 : 0)}
+                </span>
+              )}
             </button>
             <span className={styles.catalogCount}>
               {visible.length} producto{visible.length !== 1 ? 's' : ''}
@@ -1285,6 +1341,63 @@ export function CatalogoGrid({
           </div>
         </div>
       )}
+
+      {/* ── Chips de filtros aplicados — removibles, arriba del grid ── */}
+      {catalogMode === 'productos' && (filterCategories.length > 0 || filterBrands.length > 0 || activePriceRange) && (
+        <div className={styles.filterChipsRow} role="group" aria-label="Filtros aplicados">
+          {activePriceRange && (
+            <button type="button" className={styles.filterChip} onClick={() => setActivePriceRange(null)}>
+              ${activePriceRange.min} - ${activePriceRange.max}
+              <X size={12} aria-hidden="true" />
+            </button>
+          )}
+          {filterCategories.map(cat => (
+            <button
+              key={cat}
+              type="button"
+              className={styles.filterChip}
+              onClick={() => setFilterCategories(prev => prev.filter(c => c !== cat))}
+            >
+              {cat}
+              <X size={12} aria-hidden="true" />
+            </button>
+          ))}
+          {filterBrands.map(brand => (
+            <button
+              key={brand}
+              type="button"
+              className={styles.filterChip}
+              onClick={() => setFilterBrands(prev => prev.filter(b => b !== brand))}
+            >
+              {brand}
+              <X size={12} aria-hidden="true" />
+            </button>
+          ))}
+          <button
+            type="button"
+            className={styles.filterChipsClear}
+            onClick={() => { setActivePriceRange(null); setFilterCategories([]); setFilterBrands([]) }}
+          >
+            Limpiar todo
+          </button>
+        </div>
+      )}
+
+      <FilterPanel
+        open={filterPanelOpen}
+        onClose={() => setFilterPanelOpen(false)}
+        categories={categories}
+        brands={brands}
+        selectedCategories={filterCategories}
+        selectedBrands={filterBrands}
+        priceRange={activePriceRange}
+        onApply={(next) => {
+          setFilterCategories(next.categories)
+          setFilterBrands(next.brands)
+          setActivePriceRange(next.priceRange)
+          setFilterPanelOpen(false)
+        }}
+      />
 
       {/* ── Product grid ───────────────────────────────────────── */}
       <main className={styles.productsSection} data-section="products">

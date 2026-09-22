@@ -13,6 +13,7 @@ import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
+import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './productoDetalle.module.css'
@@ -541,31 +542,58 @@ export function ProductoDetalle({
                   )}
                 </>
               ) : (
-                variantGroups.map(g => (
-                  <div key={g.tipo} className={styles.variantGroup}>
-                    <span className={styles.variantLabel}>{capitalize(g.tipo)}</span>
-                    <div className={styles.variantChips}>
-                      {g.options.map(v => {
-                        const soldOut = v.stock <= 0
-                        const active  = selectedVariantId === v.id
-                        return (
-                          <button
-                            key={v.id}
-                            type="button"
-                            className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
-                            onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
-                            disabled={soldOut}
-                            aria-pressed={active}
-                            aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
-                          >
-                            {v.valor}{v.sku ? ` (${v.sku})` : ''}
-                            {soldOut && <span className={styles.soldOutLabel}>Agotado</span>}
-                          </button>
-                        )
-                      })}
+                variantGroups.map(g => {
+                  // Si alguna variante trae variant_group con preset conocido, se
+                  // completa la grilla con las tallas faltantes de ese preset
+                  // (deshabilitadas "No disponible") -- pedido explícito: producto
+                  // con variantes parciales debe mostrar el preset completo, no
+                  // solo las tallas cargadas.
+                  const presetId = g.options.find(v => v.variant_group)?.variant_group ?? null
+                  const preset   = presetId ? PRESET_GROUPS.find(p => p.id === presetId) : null
+                  const slots: { value: string; variant: CatalogProductVariant | null }[] = preset
+                    ? preset.values.map(val => ({ value: val, variant: g.options.find(o => o.valor === val) ?? null }))
+                    : g.options.map(v => ({ value: v.valor, variant: v }))
+
+                  return (
+                    <div key={g.tipo} className={styles.variantGroup}>
+                      <span className={styles.variantLabel}>{capitalize(g.tipo)}</span>
+                      <div className={styles.variantChips}>
+                        {slots.map(({ value, variant: v }) => {
+                          if (!v) {
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                className={`${styles.variantChip} ${styles.variantChipDisabled}`}
+                                disabled
+                                aria-label={`${capitalize(g.tipo)}: ${value} — no disponible`}
+                              >
+                                {value}
+                                <span className={styles.soldOutLabel}>No disponible</span>
+                              </button>
+                            )
+                          }
+                          const soldOut = v.stock <= 0
+                          const active  = selectedVariantId === v.id
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
+                              onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
+                              disabled={soldOut}
+                              aria-pressed={active}
+                              aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
+                            >
+                              {v.valor}{v.sku ? ` (${v.sku})` : ''}
+                              {soldOut && <span className={styles.soldOutLabel}>Agotado</span>}
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
               {variantError && (
                 <p className={styles.variantError}>Selecciona una opción para continuar</p>

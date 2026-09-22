@@ -1,7 +1,11 @@
 'use client'
 
-import { useEffect, useState, useMemo, type CSSProperties } from 'react'
-import { ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag, Ruler } from 'lucide-react'
+import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag, Ruler,
+  Search, Info, X, MessageCircle, AtSign, Phone,
+} from 'lucide-react'
 import Link from 'next/link'
 import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
 import { useCart } from './CartContext'
@@ -10,7 +14,22 @@ import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
+import { normalizePhone } from '@/lib/utils'
 import styles from './productoDetalle.module.css'
+// Mismo header/panel de info que Home y /productos (CatalogoGrid.tsx) --
+// clases de catalogo.module.css, no duplicadas en productoDetalle.module.css.
+// Antes esta página tenía un "mini header" propio (solo logo+carrito), lo
+// que rompía la consistencia pedida ("mismo logo, misma altura, mismo
+// comportamiento" en las 3 páginas reales del árbol catalogo-premium).
+import catStyles from './catalogo.module.css'
+
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('')
+}
 
 interface RelatedProduct {
   id:       number
@@ -37,13 +56,20 @@ interface Props {
   catalogUrl:    string
   relatedProducts: RelatedProduct[]
   businessLogo:  string | null
+  businessCity:      string | null
+  businessDesc:      string | null
+  businessPhone:     string
+  businessInstagram: string | null
+  businessHours:     string | null
 }
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo,
+  businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
 }: Props) {
+  const router = useRouter()
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
   const [imageIndex,        setImageIndex]        = useState(0)
@@ -52,6 +78,42 @@ export function ProductoDetalle({
   const [qty,               setQty]               = useState(1)
   const [variantError,      setVariantError]      = useState(false)
   const [sizeGuideOpen,     setSizeGuideOpen]      = useState(false)
+
+  // Estado del header compartido (mismo patrón que CatalogoGrid): glass-on-scroll,
+  // búsqueda expandible, panel de info. Esta página no tiene lista de productos
+  // que filtrar -- buscar navega a /productos?buscar= en vez de filtrar in-place.
+  const [isScrolled,     setIsScrolled]     = useState(false)
+  const [searchExpanded, setSearchExpanded] = useState(false)
+  const [searchQuery,    setSearchQuery]    = useState('')
+  const [infoOpen,       setInfoOpen]       = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const initials  = getInitials(businessName)
+
+  // El scroll vive en `.root` (page.tsx), no en window -- mismo criterio que
+  // CatalogoGrid. Acá el header NO es hijo directo de `.root`: esta página
+  // envuelve todo en su propio `.page` (productoDetalle.module.css), así que
+  // hay que subir 2 niveles, no 1.
+  useEffect(() => {
+    const scroller = headerRef.current?.parentElement?.parentElement
+    if (!scroller) return
+    const onScroll = () => setIsScrolled(scroller.scrollTop > 8)
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => scroller.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (searchExpanded) {
+      const t = setTimeout(() => searchRef.current?.focus(), 50)
+      return () => clearTimeout(t)
+    }
+  }, [searchExpanded])
+
+  const submitSearch = () => {
+    const q = searchQuery.trim()
+    router.push(`/catalogo-premium/${slug}/productos${q ? `?buscar=${encodeURIComponent(q)}` : ''}`)
+  }
 
   // Scroll lock — el drawer/checkout del carrito puede abrirse desde esta página también
   useEffect(() => {
@@ -121,20 +183,182 @@ export function ProductoDetalle({
   return (
     <div className={styles.page}>
 
-      {/* Mini header del negocio */}
-      <header className={styles.productHeader}>
-        <Link href={catalogUrl} className={styles.productHeaderBrand}>
+      {/* Header idéntico a Home/productos -- mismas clases de catalogo.module.css,
+          mismo comportamiento (glass-on-scroll, búsqueda expandible, panel de
+          info), solo cambia qué hace "buscar" (acá navega, no filtra in-place). */}
+      <header ref={headerRef} className={`${catStyles.stickyHeader} ${isScrolled ? catStyles.stickyHeaderScrolled : ''}`}>
+        <Link href={catalogUrl} className={catStyles.headerLogo} aria-label={`Ir al inicio de ${businessName}`}>
           {businessLogo ? (
-            <img src={businessLogo} alt={businessName} className={styles.productHeaderLogo} />
+            <img src={businessLogo} alt={businessName} className={catStyles.headerLogoImg} />
           ) : (
-            <span className={styles.productHeaderInitial}>
-              {businessName.charAt(0).toUpperCase()}
-            </span>
+            <span className={catStyles.headerLogoInitials} aria-hidden="true">{initials}</span>
           )}
-          <span className={styles.productHeaderName}>{businessName}</span>
+          <span className={catStyles.headerInfo}>
+            <span className={catStyles.headerNameRow}>
+              <span className={catStyles.headerName}>{businessName}</span>
+              <span className={catStyles.headerStatusDot} aria-label="Abierto" title="Abierto" />
+            </span>
+            {businessCity && <span className={catStyles.headerCity}>{businessCity}</span>}
+          </span>
         </Link>
-        <CartHeaderButton />
+
+        <nav className={catStyles.headerNav} aria-label="Navegación principal">
+          <Link href={catalogUrl} className={catStyles.headerNavLink}>Inicio</Link>
+          <Link href={`/catalogo-premium/${slug}/productos`} className={catStyles.headerNavLink}>Tienda</Link>
+          <Link href={`${catalogUrl}#marcas`} className={catStyles.headerNavLink}>Marcas</Link>
+        </nav>
+
+        <div className={catStyles.iconCluster}>
+          <button
+            type="button"
+            className={catStyles.desktopSearchBtn}
+            onClick={() => setSearchExpanded(true)}
+            aria-label="Buscar productos"
+          >
+            <Search size={18} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={catStyles.infoBtn}
+            onClick={() => setInfoOpen(true)}
+            aria-label="Información del negocio"
+          >
+            <Info size={20} aria-hidden="true" />
+          </button>
+          <CartHeaderButton />
+        </div>
       </header>
+
+      {searchExpanded && (
+        <div className={catStyles.navBar}>
+          <div className={catStyles.searchExpanded} role="search">
+            <Search size={16} className={catStyles.searchExpandedIcon} aria-hidden="true" />
+            <input
+              ref={searchRef}
+              type="search"
+              className={catStyles.searchExpandedInput}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') submitSearch() }}
+              placeholder="Buscar productos…"
+              aria-label="Buscar productos"
+            />
+            <button
+              type="button"
+              className={catStyles.searchExpandedClose}
+              onClick={() => { setSearchExpanded(false); setSearchQuery('') }}
+              aria-label="Cerrar búsqueda"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {infoOpen && (
+        <div className={catStyles.infoOverlay} onClick={() => setInfoOpen(false)}>
+          <div
+            className={catStyles.infoPanel}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Información del negocio"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={catStyles.infoPanelClose}
+              onClick={() => setInfoOpen(false)}
+              aria-label="Cerrar información"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+
+            <div className={catStyles.infoBizHeader}>
+              {businessLogo ? (
+                <img src={businessLogo} alt={businessName} className={catStyles.infoBizLogo} />
+              ) : (
+                <div className={catStyles.infoBizInitials} aria-hidden="true">{initials}</div>
+              )}
+              <div>
+                <h2 className={catStyles.infoBizName}>{businessName}</h2>
+                {businessDesc && <p className={catStyles.infoBizDesc}>{businessDesc}</p>}
+                {businessCity && <p className={catStyles.infoBizCity}>{businessCity}</p>}
+              </div>
+            </div>
+
+            {paymentMethods.length > 0 && (
+              <div className={catStyles.infoSection}>
+                <p className={catStyles.infoSectionLabel}>Métodos de pago</p>
+                <div className={catStyles.infoPayMethods}>
+                  {paymentMethods.map(m => (
+                    <span key={m.id} className={catStyles.infoPayPill}>{m.name}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(businessPhone || businessInstagram) && (
+              <div className={catStyles.infoSection}>
+                <p className={catStyles.infoSectionLabel}>Contáctanos</p>
+                <div className={catStyles.infoContacts}>
+                  {businessPhone && (
+                    <a
+                      href={`https://wa.me/${normalizePhone(businessPhone)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={catStyles.infoContactBtn}
+                      style={{ '--btn-color': '#25D366' } as CSSProperties}
+                    >
+                      <MessageCircle size={18} aria-hidden="true" />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                  {businessInstagram && (
+                    <a
+                      href={`https://instagram.com/${businessInstagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={catStyles.infoContactBtn}
+                      style={{ '--btn-color': '#E1306C' } as CSSProperties}
+                    >
+                      <AtSign size={18} aria-hidden="true" />
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                  {businessPhone && (
+                    <a
+                      href={`tel:+${businessPhone}`}
+                      className={catStyles.infoContactBtn}
+                      style={{ '--btn-color': 'var(--biz-color)' } as CSSProperties}
+                    >
+                      <Phone size={18} aria-hidden="true" />
+                      <span>Llamar</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {businessHours && (
+              <div className={catStyles.infoSection}>
+                <p className={catStyles.infoSectionLabel}>Horario de atención</p>
+                <p className={catStyles.infoHours}>{businessHours}</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className={catStyles.infoShareBtn}
+              onClick={() => {
+                navigator.share?.({ title: businessName, url: window.location.href }).catch(() => {})
+              }}
+            >
+              <Share2 size={16} aria-hidden="true" />
+              Compartir catálogo
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Breadcrumb */}
       <nav className={styles.breadcrumb} aria-label="Navegación">

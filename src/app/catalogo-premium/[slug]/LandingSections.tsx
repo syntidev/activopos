@@ -228,17 +228,9 @@ function CollectionGridSection({ config, slug }: { config: CollectionGridRenderC
                 <span>{initialLetter(p.name, 'P')}</span>
               </div>
             )}
+            {/* Sin precio a propósito -- regla de negocio: un kit es "un todo",
+                sin precio total definido todavía. */}
             <span className={styles.lsCollectionName}>{p.name}</span>
-            {p.priceUsd > 0 && (
-              <span className={styles.lsCollectionPrice}>
-                <span>${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                {p.priceBs && (
-                  <span className={styles.lsCollectionPriceBs}>
-                    Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-                  </span>
-                )}
-              </span>
-            )}
           </a>
         ))}
       </div>

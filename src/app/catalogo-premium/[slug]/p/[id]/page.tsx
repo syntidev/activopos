@@ -159,6 +159,11 @@ export default async function ProductoPage({ params }: PageProps) {
         catalogUrl={`/catalogo-premium/${params.slug}`}
         relatedProducts={relatedProducts}
         businessLogo={business.logo_path}
+        businessCity={location || null}
+        businessDesc={business.catalog_desc ?? null}
+        businessPhone={business.phone ?? ''}
+        businessInstagram={business.catalog_instagram ?? null}
+        businessHours={business.catalog_hours ?? null}
       />
       <CatalogFooter
         slug={params.slug}

@@ -4235,12 +4235,29 @@
 }
 
 /* iframe (YouTube) no soporta object-fit -- mismo criterio "cover" que
-   img/video pero vía transform:scale + overflow:hidden del padre
-   (.lsHero), aceptando recorte de bordes. ponytail: factor de escala fijo,
-   subir si el video real (proporción distinta al ancho de pantalla) sigue
-   dejando franja negra visible. */
+   img/video, vía aspect-ratio + min-width/min-height 100% (patrón estándar de
+   "video de fondo"): el iframe crece 16:9 hasta cubrir ancho Y alto del
+   contenedor, el que le pida más. Cubre cualquier proporción de pantalla sin
+   número fijo por viewport.
+   El scale(1.4) extra es OTRA cosa: el video fuente no es 16:9 (viene de
+   celular) y YouTube le agrega pillarbox negro HORNEADO en el frame al
+   transcodificar -- eso vive dentro del contenido del iframe, ningún ajuste
+   de tamaño del elemento <iframe> lo saca. Medido en pantalla: el contenido
+   real ocupa ~75% del ancho del iframe -> hace falta ~1.33x adicional para
+   que el recorte llegue al pillarbox. overflow:hidden en .lsHero recorta el
+   sobrante en ambos casos. ponytail: 1.4 con margen, subir si sigue
+   asomando franja. */
 iframe.lsHeroMedia {
-  transform: scale(1.9);
+  top:         50%;
+  left:        50%;
+  right:       auto;
+  bottom:      auto;
+  width:       auto;
+  height:      auto;
+  min-width:   100%;
+  min-height:  100%;
+  aspect-ratio: 16 / 9;
+  transform:   translate(-50%, -50%) scale(1.4);
 }
 
 .lsHeroScrim {

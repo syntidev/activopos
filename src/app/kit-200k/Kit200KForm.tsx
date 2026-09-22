@@ -127,6 +127,11 @@ export function Kit200KForm({
   const [ninosQty, setNinosQty] = useState(1)
 
   const [extras, setExtras] = useState<Extra[]>([])
+  // Feedback visual del botón "Agregar" -- key de la categoría en vez de un
+  // solo boolean porque hay 3 botones independientes (Damas/Caballeros/Niños).
+  const [justAdded, setJustAdded] = useState<string | null>(null)
+  const justAddedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (justAddedTimeout.current) clearTimeout(justAddedTimeout.current) }, [])
 
   const [clienteNombre, setClienteNombre] = useState('')
   const [clienteTelefono, setClienteTelefono] = useState('')
@@ -147,6 +152,18 @@ export function Kit200KForm({
   const removeExtra = (idx: number) => {
     setExtras(prev => prev.filter((_, i) => i !== idx))
   }
+  const handleAddExtra = (key: string, nombre: string, cantidad: number, talla: string | null) => {
+    addExtra(nombre, cantidad, talla)
+    setJustAdded(key)
+    if (justAddedTimeout.current) clearTimeout(justAddedTimeout.current)
+    justAddedTimeout.current = setTimeout(() => setJustAdded(null), 1200)
+  }
+
+  // "Resumen" para habilitar la entrada al wizard: kits.length nunca baja de
+  // 1 (setKitCount lo clampa), así que hoy esto siempre es true -- se deja
+  // explícito por si ese mínimo cambia, no un no-op disfrazado.
+  const hasItems = kits.length > 0 || extras.length > 0
+  const extrasTotalQty = extras.reduce((n, e) => n + e.cantidad, 0)
 
   const handleSubmit = async () => {
     if (!clienteNombre.trim() || !clienteTelefono.trim() || !CEDULA_RE.test(clienteCedula.trim()) || !EMAIL_RE.test(clienteCorreo.trim()) || submitting) return
@@ -228,7 +245,14 @@ export function Kit200KForm({
             Maillot + Medias oficiales del evento. Reserva ahora — la fábrica
             arma el pedido con el número exacto de reservas confirmadas.
           </div>
-          <a href="#reserva" className={styles.btnPrimary}>Reservar mi kit</a>
+          <button
+            type="button"
+            className={styles.btnPrimary}
+            disabled={!hasItems}
+            onClick={() => document.getElementById('reserva')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Reservar mi kit
+          </button>
         </div>
       </div>
 
@@ -339,7 +363,9 @@ export function Kit200KForm({
               <TallaChips tallas={TALLAS_ROPA} value={damasTalla} onChange={setDamasTalla} />
               <div className={styles.shopFooter}>
                 <Stepper value={damasQty} onChange={setDamasQty} />
-                <button type="button" className={styles.btnDark} onClick={() => addExtra('Franela Damas', damasQty, damasTalla)}>Agregar</button>
+                <button type="button" className={styles.btnDark} onClick={() => handleAddExtra('damas', 'Franela Damas', damasQty, damasTalla)}>
+                  {justAdded === 'damas' ? 'Agregado ✓' : 'Agregar'}
+                </button>
               </div>
             </div>
           </div>
@@ -354,7 +380,9 @@ export function Kit200KForm({
               <TallaChips tallas={TALLAS_ROPA} value={caballerosTalla} onChange={setCaballerosTalla} />
               <div className={styles.shopFooter}>
                 <Stepper value={caballerosQty} onChange={setCaballerosQty} />
-                <button type="button" className={styles.btnDark} onClick={() => addExtra('Franela Caballeros', caballerosQty, caballerosTalla)}>Agregar</button>
+                <button type="button" className={styles.btnDark} onClick={() => handleAddExtra('caballeros', 'Franela Caballeros', caballerosQty, caballerosTalla)}>
+                  {justAdded === 'caballeros' ? 'Agregado ✓' : 'Agregar'}
+                </button>
               </div>
             </div>
           </div>
@@ -369,7 +397,9 @@ export function Kit200KForm({
               <TallaChips tallas={TALLAS_NINOS} value={ninosTalla} onChange={setNinosTalla} />
               <div className={styles.shopFooter}>
                 <Stepper value={ninosQty} onChange={setNinosQty} />
-                <button type="button" className={styles.btnDark} onClick={() => addExtra('Franela Niños', ninosQty, ninosTalla)}>Agregar</button>
+                <button type="button" className={styles.btnDark} onClick={() => handleAddExtra('ninos', 'Franela Niños', ninosQty, ninosTalla)}>
+                  {justAdded === 'ninos' ? 'Agregado ✓' : 'Agregar'}
+                </button>
               </div>
             </div>
           </div>
@@ -544,6 +574,43 @@ export function Kit200KForm({
           )}
         </div>
       </div>
+
+      {/* Mini carrito de reserva -- fijo, visible mientras se hace scroll.
+          Solo franelas sueltas (extras): el kit base no se "agrega", ya está
+          incluido en el wizard desde el inicio. */}
+      {extras.length > 0 && (
+        <div className={styles.miniCart} role="status" aria-live="polite">
+          <div className={styles.miniCartHeader}>
+            <span className={styles.miniCartTitle}>Tu resumen</span>
+            <span className={styles.miniCartCount}>{extrasTotalQty} franela{extrasTotalQty === 1 ? '' : 's'}</span>
+          </div>
+          <div className={styles.miniCartList}>
+            {extras.map((e, i) => (
+              <div key={`${e.nombre}-${i}`} className={styles.miniCartRow}>
+                <span className={styles.miniCartRowName}>
+                  {e.cantidad > 1 ? `${e.cantidad} × ` : ''}{e.nombre}
+                  <span className={styles.miniCartRowTalla}> · Talla {e.talla}</span>
+                </span>
+                <button
+                  type="button"
+                  className={styles.miniCartRemove}
+                  aria-label={`Quitar ${e.nombre}`}
+                  onClick={() => removeExtra(i)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className={styles.miniCartCta}
+            onClick={() => document.getElementById('reserva')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Reservar mi kit →
+          </button>
+        </div>
+      )}
 
       <CatalogFooter
         slug={slug}

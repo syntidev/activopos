@@ -838,8 +838,9 @@ model ProductVariant {
   sort_order      Int      @default(0)
   created_at      DateTime @default(now())
 
-  product    Product    @relation(fields: [product_id], references: [id])
-  sale_items SaleItem[]
+  product     Product     @relation(fields: [product_id], references: [id])
+  sale_items  SaleItem[]
+  order_items OrderItem[]
 
   @@map("product_variants")
 }
@@ -883,11 +884,17 @@ model OrderItem {
   product_id         Int
   product_name       String  @db.VarChar(120)
   variant_label      String? @db.VarChar(100)
+  // DT-14: sin esto, /api/orders/[id]/cobrar no podía re-consultar
+  // precio_extra de la variante al convertir el pedido en venta -- recalculaba
+  // el precio solo desde el producto base y perdía el extra. variant_label
+  // (arriba) es solo texto para mostrar, no sirve para volver a la DB.
+  variant_id         Int?
   quantity           Decimal @db.Decimal(10, 3)
   price_per_unit_usd Decimal @db.Decimal(10, 4)
   subtotal_usd       Decimal @db.Decimal(10, 2)
 
-  order Order @relation(fields: [order_id], references: [id])
+  order   Order           @relation(fields: [order_id], references: [id])
+  variant ProductVariant? @relation(fields: [variant_id], references: [id])
 
   @@map("order_items")
 }

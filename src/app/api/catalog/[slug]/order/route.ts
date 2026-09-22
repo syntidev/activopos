@@ -44,6 +44,7 @@ interface ResolvedItem {
   qty:           number
   price_usd:     number
   subtotal_usd:  number
+  variant_id:    number | null
   variant_label: string | null
 }
 
@@ -265,6 +266,7 @@ export async function POST(
         qty:           item.qty,
         price_usd:     finalPrice,
         subtotal_usd:  Math.round(item.qty * finalPrice * 100) / 100,
+        variant_id:    item.variant_id ?? null,
         variant_label: variantLabel,
       })
     }
@@ -341,6 +343,7 @@ export async function POST(
           create: resolvedItems.map(item => ({
             product_id:         item.product_id,
             product_name:       item.product_name,
+            variant_id:         item.variant_id,
             variant_label:      item.variant_label,
             quantity:           item.qty,
             price_per_unit_usd: item.price_usd,

@@ -420,7 +420,14 @@ function HeroForm({ config, onChange }: { config: HeroConfig; onChange: (c: Hero
       <Input label="Texto del botón" value={config.cta_text} onChange={e => set('cta_text')(e.target.value)} maxLength={40} />
       <Input label="Link del botón" value={config.cta_link} onChange={e => set('cta_link')(e.target.value)} placeholder="/catalogo-premium/mi-slug/productos" maxLength={500} />
       <ImageField label="Imagen de fondo" value={config.image_url} onChange={v => set('image_url')(v)} />
-      <Input label="Video (opcional)" value={config.video_url ?? ''} onChange={e => set('video_url')(e.target.value || undefined)} placeholder="https://…mp4" maxLength={500} />
+      <Input
+        label="Video (opcional)"
+        value={config.video_url ?? ''}
+        onChange={e => set('video_url')(e.target.value || undefined)}
+        placeholder="https://youtu.be/… o https://…mp4"
+        hint="Acepta un link de YouTube o un archivo de video directo (.mp4/.webm). Si lo dejas vacío, se muestra la imagen de fondo."
+        maxLength={500}
+      />
     </div>
   )
 }

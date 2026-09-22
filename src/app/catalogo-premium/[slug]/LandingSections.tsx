@@ -49,10 +49,34 @@ export function LandingSections({ sections, slug, businessId }: Props) {
 
 /* ── HERO ────────────────────────────────────────────────────────────── */
 
+// video_url acepta DOS formatos (ver TabLanding.tsx): archivo directo (.mp4/.webm,
+// va a <video src>) o link de YouTube (youtu.be/ID o youtube.com/watch?v=ID, va a
+// <iframe> con la URL de embed). null si no matchea ninguno de los 2 patrones de
+// YouTube -- ese caso cae al <video> nativo (archivo directo).
+// ponytail: solo esos 2 patrones (los que pide el campo), no Shorts/live/embed ya
+// hecho -- agregar si algún día alguien pega uno de esos y no funciona.
+function youtubeEmbedUrl(url: string): string | null {
+  const id = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]{11})/)?.[1]
+  if (!id) return null
+  // autoplay+mute+loop silencioso sin controles -- mismo comportamiento que el
+  // <video autoPlay muted loop playsInline> que reemplaza (pedido explícito:
+  // loop continuo, sin sonido, sin que se detenga).
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&playsinline=1`
+}
+
 function HeroSection({ config }: { config: HeroConfig }) {
+  const youtubeUrl = config.video_url ? youtubeEmbedUrl(config.video_url) : null
   return (
     <section className={styles.lsHero}>
-      {config.video_url ? (
+      {youtubeUrl ? (
+        <iframe
+          className={styles.lsHeroMedia}
+          src={youtubeUrl}
+          title={config.title}
+          allow="autoplay; encrypted-media"
+          referrerPolicy="strict-origin-when-cross-origin"
+        />
+      ) : config.video_url ? (
         <video className={styles.lsHeroMedia} src={config.video_url} autoPlay muted loop playsInline />
       ) : (
         <ImgWithFallback

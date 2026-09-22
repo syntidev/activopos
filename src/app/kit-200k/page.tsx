@@ -24,7 +24,22 @@ export const metadata: Metadata = {
 export default async function Kit200KPage() {
   const business = await prisma.business.findFirst({
     where:  { catalog_slug: SLUG, active: true },
-    select: { id: true, reservas_enabled: true },
+    select: {
+      id:                true,
+      reservas_enabled:  true,
+      name:              true,
+      logo_path:         true,
+      city:              true,
+      state:             true,
+      phone:             true,
+      rif:               true,
+      address:           true,
+      catalog_title:     true,
+      catalog_desc:      true,
+      catalog_desc_enabled: true,
+      catalog_instagram: true,
+      catalog_hours:     true,
+    },
   })
   if (!business) notFound()
 
@@ -42,5 +57,26 @@ export default async function Kit200KPage() {
     )
   }
 
-  return <Kit200KForm slug={SLUG} kitId={kit.id} />
+  const displayTitle = business.catalog_title ?? business.name
+  const location      = [business.city, business.state].filter(Boolean).join(', ')
+  const waPhone        = business.phone?.replace(/\D/g, '') ?? ''
+  const catalogDesc  = business.catalog_desc_enabled ? (business.catalog_desc ?? null) : null
+
+  return (
+    <Kit200KForm
+      slug={SLUG}
+      kitId={kit.id}
+      businessName={displayTitle}
+      businessLogo={business.logo_path}
+      businessCity={location || null}
+      catalogDesc={catalogDesc}
+      rif={business.rif ?? null}
+      address={business.address ?? null}
+      location={location}
+      waPhone={waPhone}
+      phone={business.phone}
+      catalogInstagram={business.catalog_instagram ?? null}
+      catalogHours={business.catalog_hours ?? null}
+    />
+  )
 }

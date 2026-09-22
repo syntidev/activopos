@@ -27,6 +27,16 @@ export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+// Movido de CatalogoGrid.tsx -- ahora también lo usa CatalogHeader.tsx
+// (compartido con kit-200k), fuente única.
+export function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
 /* Links de navegación del catálogo — fuente única para el nav superior
    (CatalogoGrid) y la barra de cierre del footer, que si no los repetiría
    hardcodeados y podrían quedar desincronizados. */

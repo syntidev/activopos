@@ -9,7 +9,23 @@
   background: #fff;
   color: #141414;
   width: 100%;
-  overflow-x: hidden;
+  /* overflow-x:hidden solo (sin overflow-y) hace que el navegador compute
+     overflow-y:auto acá (regla CSSOM: un eje 'visible' + el otro no-visible
+     -> el 'visible' pasa a 'auto') -- eso vuelve a .page "scroll container"
+     para position:sticky pero SIN alto fijo no hay scroll real dentro de
+     .page, así que el header sticky nunca se ancla (mismo bug ya documentado
+     en catalogo.module.css para html/body -- ver comentario de .root ahí).
+     height:100dvh + overflow:hidden auto es el mismo fix que .root ya usa. */
+  height:   100dvh;
+  overflow: hidden auto;
+  /* CatalogHeader/CatalogFooter (catalogo-premium/[slug]/catalogo.module.css)
+     leen var(--onbike-blue) y var(--header-h) -- ahí solo se declaran dentro
+     de .root, que esta página no usa (no tiene scroller propio). Sin esto el
+     logo/links del header/footer quedan con background/color transparente
+     (var() sin fallback resuelto = valor inválido). Mismo valor #0B4FCC ya
+     usado arriba en este archivo. */
+  --onbike-blue: #0B4FCC;
+  --header-h:    72px;
 }
 
 .disp {
@@ -24,32 +40,6 @@
   font-family: sans-serif;
   text-align: center;
   padding: 24px;
-  color: #666;
-}
-
-/* ── Header ── */
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 64px;
-  border-bottom: 1px solid #EEE;
-}
-
-.headerBrand {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.headerBrandSub {
-  font-weight: 400;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-}
-
-.headerLine {
-  font-size: 13px;
   color: #666;
 }
 
@@ -630,21 +620,9 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
 }
 
-/* ── Footer ── */
-
-.footer {
-  padding: 32px 64px;
-  background: #0D0D0D;
-  color: #999;
-  font-size: 12px;
-  text-align: center;
-}
-
 /* ── Mobile (<1024px) — no está en el mockup fijo de 1440, criterio propio ── */
 
 @media (max-width: 1023px) {
-  .header { padding: 16px 20px; }
-
   .hero { height: 560px; }
   .heroContent { padding: 0 20px 40px; }
   .heroTitle { font-size: 38px; }

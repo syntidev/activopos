@@ -10,8 +10,8 @@ import {
   Truck, ShieldCheck, ImageOff,
 } from 'lucide-react'
 import { useCart } from './CartContext'
-import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
+import { CatalogHeader } from './CatalogHeader'
 import { LandingSections } from './LandingSections'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { ImgWithFallback } from './ImgWithFallback'
@@ -21,7 +21,7 @@ import type { CarteleraData } from './cartelera'
 import { MobileTabBar } from './MobileTabBar'
 import { FilterPanel } from './FilterPanel'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
-import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
+import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, getInitials } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
 
@@ -108,14 +108,6 @@ export interface CatalogBrand {
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
-
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() ?? '')
-    .join('')
-}
 
 function getBadgeClass(badge: string | null | undefined): string {
   switch (badge) {
@@ -846,92 +838,19 @@ export function CatalogoGrid({
   return (
     <>
       {/* ── Sticky header ──────────────────────────────────────── */}
-      <header ref={headerRef} className={`${styles.stickyHeader} ${isScrolled ? styles.stickyHeaderScrolled : ''}`}>
-        <Link
-          href={`/catalogo-premium/${slug}`}
-          className={styles.headerLogo}
-          aria-label={`Ir al inicio de ${businessName}`}
-        >
-          {businessLogo ? (
-            <img
-              src={businessLogo}
-              alt={businessName}
-              className={styles.headerLogoImg}
-            />
-          ) : (
-            <span className={styles.headerLogoInitials} aria-hidden="true">
-              {initials}
-            </span>
-          )}
-          <span className={styles.headerInfo}>
-            <span className={styles.headerNameRow}>
-              <span className={styles.headerName}>{businessName}</span>
-              <span className={styles.headerStatusDot} aria-label="Abierto" title="Abierto" />
-            </span>
-            {businessCity && (
-              <span className={styles.headerCity}>{businessCity}</span>
-            )}
-          </span>
-        </Link>
-
-        {/* Nav del header -- oculta en mobile (styles.headerNav: display:none
-            bajo 1024px). Mobile sigue con el header compacto de siempre, sin
-            tocar. Reemplaza al <nav className={styles.desktopNav}> que vivía
-            en la navBar secundaria (Inicio/Catálogo, 2 links) -- ese quedaba
-            duplicado visualmente con este (misma función, mejor ubicación),
-            se eliminó de ahí.
-            "Marcas" ancla a #marcas (sección "Comprá por marca"): en el home
-            hace scroll suave dentro de .root (que es el scroller, no el
-            documento, por eso scrollIntoView y no el hash nativo de Next);
-            desde /productos, donde la sección no existe, navega al home#marcas.
-            "Tienda" sí es otra vista (grid completo), navegar es correcto. */}
-        <nav className={styles.headerNav} aria-label="Navegación principal">
-          <Link href={`/catalogo-premium/${slug}`} className={styles.headerNavLink}>Inicio</Link>
-          <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Tienda</Link>
-          {/* TEMPORAL — demo Gran Fondo 200K. Remover cuando no aplique el
-              link público (o cuando el evento termine). No usar
-              /catalogo-premium/${slug}/kit-200k -- /kit-200k es standalone,
-              top-level (src/app/kit-200k/page.tsx), no vive bajo esta ruta. */}
-          <Link href="/kit-200k" className={styles.headerNavLink}>200K</Link>
-          <Link
-            href={`/catalogo-premium/${slug}#marcas`}
-            className={styles.headerNavLink}
-            onClick={(e) => {
-              const target = document.getElementById('marcas')
-              if (!target) return
-              e.preventDefault()
-              const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-              target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
-            }}
-          >
-            Marcas
-          </Link>
-        </nav>
-
-        {/* iconCluster envuelve los 3 -- visible en TODOS los anchos (info+
-            carrito ya existían en mobile). Solo el botón de buscar es
-            desktop-only (styles.desktopSearchBtn: display:none bajo 1024px);
-            info+carrito no cambian de comportamiento en mobile. */}
-        <div className={styles.iconCluster}>
-          <button
-            type="button"
-            className={styles.desktopSearchBtn}
-            onClick={() => setSearchExpanded(true)}
-            aria-label="Buscar productos"
-          >
-            <Search size={18} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={styles.infoBtn}
-            onClick={() => setInfoOpen(true)}
-            aria-label="Información del negocio"
-          >
-            <Info size={20} aria-hidden="true" />
-          </button>
-          <CartHeaderButton />
-        </div>
-      </header>
+      {/* Extraído a CatalogHeader.tsx (compartido con /kit-200k) -- misma
+          nav/logo/iconCluster, esta vista solo aporta ref+isScrolled del
+          scroller .root y los callbacks de buscar/info. */}
+      <CatalogHeader
+        ref={headerRef}
+        slug={slug}
+        businessName={businessName}
+        businessLogo={businessLogo}
+        businessCity={businessCity}
+        isScrolled={isScrolled}
+        onSearchClick={() => setSearchExpanded(true)}
+        onInfoClick={() => setInfoOpen(true)}
+      />
 
       {/* ── H2: Navegación + búsqueda expandible (sticky) ──────── */}
       <div className={styles.navBar}>

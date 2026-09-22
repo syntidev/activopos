@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { CatalogHeader } from '../catalogo-premium/[slug]/CatalogHeader'
+import { CatalogFooter } from '../catalogo-premium/[slug]/CatalogFooter'
 import styles from './kit200k.module.css'
 
 const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'] as const
@@ -17,8 +19,19 @@ interface Extra {
 }
 
 interface Props {
-  slug:  string
-  kitId: number
+  slug:             string
+  kitId:            number
+  businessName:     string
+  businessLogo:     string | null
+  businessCity:     string | null
+  catalogDesc:      string | null
+  rif:              string | null
+  address:          string | null
+  location:         string
+  waPhone:          string
+  phone:            string | null
+  catalogInstagram: string | null
+  catalogHours:     string | null
 }
 
 function TallaChips({
@@ -57,7 +70,26 @@ function Stepper({ value, onChange }: { value: number; onChange: (v: number) => 
   )
 }
 
-export function Kit200KForm({ slug, kitId }: Props) {
+export function Kit200KForm({
+  slug, kitId, businessName, businessLogo, businessCity,
+  catalogDesc, rif, address, location, waPhone, phone, catalogInstagram, catalogHours,
+}: Props) {
+  const headerRef = useRef<HTMLElement>(null)
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  // .page es el scroller real (mismo patrón que .root en CatalogoGrid) --
+  // overflow-x:hidden por sí solo vuelve sticky inerte sin un scroller con
+  // alto fijo (ver comentario en kit200k.module.css .page), por eso .page
+  // scrollea, no window.
+  useEffect(() => {
+    const scroller = headerRef.current?.parentElement
+    if (!scroller) return
+    const onScroll = () => setIsScrolled(scroller.scrollTop > 8)
+    onScroll()
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    return () => scroller.removeEventListener('scroll', onScroll)
+  }, [])
+
   const [maillotTalla, setMaillotTalla] = useState('L')
   const [franelaTalla, setFranelaTalla] = useState('S')
 
@@ -149,13 +181,19 @@ export function Kit200KForm({ slug, kitId }: Props) {
 
   return (
     <div className={styles.page}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={`${styles.disp} ${styles.headerBrand}`}>
-          ONBIKE <span className={styles.headerBrandSub}>MARGARITA</span>
-        </div>
-        <div className={styles.headerLine}>Linea oficial del evento</div>
-      </div>
+      {/* Header real del catálogo (compartido con /catalogo-premium/onbike) --
+          showIconCluster=false: esta página no tiene búsqueda de productos ni
+          carrito (no es CatalogoGrid), mostrar esos botones sería un botón sin
+          función real. */}
+      <CatalogHeader
+        ref={headerRef}
+        slug={slug}
+        businessName={businessName}
+        businessLogo={businessLogo}
+        businessCity={businessCity}
+        isScrolled={isScrolled}
+        showIconCluster={false}
+      />
 
       {/* 1. Hero */}
       <div className={styles.hero}>
@@ -472,9 +510,19 @@ export function Kit200KForm({ slug, kitId }: Props) {
         </div>
       </div>
 
-      <div className={styles.footer}>
-        OnBike Margarita — Gran Fondo Virgen del Valle 2027 — Consultas por WhatsApp
-      </div>
+      <CatalogFooter
+        slug={slug}
+        displayTitle={businessName}
+        logoPath={businessLogo}
+        catalogDesc={catalogDesc}
+        rif={rif}
+        address={address}
+        location={location}
+        waPhone={waPhone}
+        phone={phone}
+        catalogInstagram={catalogInstagram}
+        catalogHours={catalogHours}
+      />
     </div>
   )
 }

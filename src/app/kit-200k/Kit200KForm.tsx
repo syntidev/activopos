@@ -7,16 +7,26 @@ import styles from './kit200k.module.css'
 
 const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'] as const
 const TALLAS_NINOS = ['4', '6', '8', '10', '12', '14'] as const
-// Mismo patrón que createReservaSchema (src/lib/reservas.ts) -- validación
+// Mismo patrón que createReservaBatchSchema (src/lib/reservas.ts) -- validación
 // visual aquí, la real (fuente de verdad) es la del servidor.
 const CEDULA_RE = /^[VEve]-\d{6,9}$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Mismo tope que MAX_KITS_PER_PEDIDO en lib/reservas.ts (el servidor lo vuelve
+// a validar, esto es solo el límite visual del selector).
+const MAX_KITS = 10
 
 interface Extra {
   nombre: string
   cantidad: number
   talla: string | null
 }
+
+interface KitConfig {
+  maillotTalla: string
+  franelaTalla: string
+}
+
+const DEFAULT_KIT: KitConfig = { maillotTalla: 'L', franelaTalla: 'S' }
 
 interface Props {
   slug:             string
@@ -60,12 +70,12 @@ function TallaChips({
   )
 }
 
-function Stepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function Stepper({ value, onChange, max = 20 }: { value: number; onChange: (v: number) => void; max?: number }) {
   return (
     <div className={styles.stepperRow}>
       <button type="button" className={styles.stepBtn} aria-label="Disminuir cantidad" onClick={() => onChange(Math.max(1, value - 1))}>−</button>
       <span className={styles.stepValue}>{value}</span>
-      <button type="button" className={styles.stepBtn} aria-label="Aumentar cantidad" onClick={() => onChange(Math.min(20, value + 1))}>+</button>
+      <button type="button" className={styles.stepBtn} aria-label="Aumentar cantidad" onClick={() => onChange(Math.min(max, value + 1))}>+</button>
     </div>
   )
 }
@@ -90,17 +100,33 @@ export function Kit200KForm({
     return () => scroller.removeEventListener('scroll', onScroll)
   }, [])
 
-  const [maillotTalla, setMaillotTalla] = useState('L')
-  const [franelaTalla, setFranelaTalla] = useState('S')
+  // kits[0] es "Kit 1" -- sus tallas se eligen en la sección 2 (marketing,
+  // "Tu Kit 200K incluye"), igual que siempre. Si el cliente pide más de un
+  // kit, kits[1..N-1] ("Kit 2", "Kit 3"...) se agregan y cada uno tiene su
+  // propia talla independiente, elegida en el Paso 2 del wizard.
+  const [kits, setKits] = useState<KitConfig[]>([DEFAULT_KIT])
 
+  const setKitCount = (n: number) => {
+    setKits(prev => {
+      const clamped = Math.max(1, Math.min(MAX_KITS, n))
+      if (clamped === prev.length) return prev
+      if (clamped < prev.length) return prev.slice(0, clamped)
+      return [...prev, ...Array.from({ length: clamped - prev.length }, () => ({ ...DEFAULT_KIT }))]
+    })
+  }
+  const updateKit = (idx: number, patch: Partial<KitConfig>) => {
+    setKits(prev => prev.map((k, i) => (i === idx ? { ...k, ...patch } : k)))
+  }
+
+  // Franelas sueltas (Damas/Caballeros/Niños) -- del PEDIDO, no de un kit en
+  // particular. "Maillot extra" se eliminó por completo (corrección de
+  // alcance: nunca debió estar, lo único suelto son franelas).
   const [damasTalla, setDamasTalla] = useState('XS')
   const [damasQty, setDamasQty] = useState(1)
   const [caballerosTalla, setCaballerosTalla] = useState('M')
   const [caballerosQty, setCaballerosQty] = useState(1)
   const [ninosTalla, setNinosTalla] = useState('10')
   const [ninosQty, setNinosQty] = useState(1)
-  const [maillotExtraTalla, setMaillotExtraTalla] = useState('M')
-  const [maillotExtraQty, setMaillotExtraQty] = useState(1)
 
   const [extras, setExtras] = useState<Extra[]>([])
 
@@ -110,7 +136,7 @@ export function Kit200KForm({
   const [clienteCorreo, setClienteCorreo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [ticket, setTicket] = useState<string | null>(null)
+  const [tickets, setTickets] = useState<string[] | null>(null)
   // Asistente de 3 pasos (mismo patrón visual que el checkout del catálogo
   // general: Contacto -> revisión -> confirmar). Contenido propio: Kit 200K
   // es preventa, sin entrega ni cobro ("pagas al retirar"), así que los
@@ -123,14 +149,6 @@ export function Kit200KForm({
   const removeExtra = (idx: number) => {
     setExtras(prev => prev.filter((_, i) => i !== idx))
   }
-
-  // Talla independiente por componente -- schema real (componentes_tallas),
-  // ya no el workaround de extras[]. No se muestra como línea propia en el
-  // resumen: el mockup no la itemiza, va implícita en "Kit 200K".
-  const visibleExtras: Extra[] = [
-    { nombre: 'Medalla Finalista', cantidad: 1, talla: null },
-    ...extras,
-  ]
 
   const handleSubmit = async () => {
     if (!clienteNombre.trim() || !clienteTelefono.trim() || !CEDULA_RE.test(clienteCedula.trim()) || !EMAIL_RE.test(clienteCorreo.trim()) || submitting) return
@@ -146,18 +164,16 @@ export function Kit200KForm({
           cliente_cedula:   clienteCedula.trim(),
           cliente_correo:   clienteCorreo.trim(),
           kit_id:           kitId,
-          talla:            maillotTalla,
-          componentes_tallas: { maillot: maillotTalla, franela: franelaTalla },
-          cantidad:         1,
-          extras:           visibleExtras,
+          kits: kits.map(k => ({ componentes_tallas: { maillot: k.maillotTalla, franela: k.franelaTalla } })),
+          extras,
         }),
       })
-      const data: { ok: boolean; reserva?: { ticket_number: string }; error?: string } = await res.json()
-      if (!res.ok || !data.ok || !data.reserva) {
+      const data: { ok: boolean; reservas?: { ticket_number: string }[]; error?: string } = await res.json()
+      if (!res.ok || !data.ok || !data.reservas?.length) {
         setError(data.error ?? 'No se pudo confirmar la reserva. Intenta de nuevo.')
         return
       }
-      setTicket(data.reserva.ticket_number)
+      setTickets(data.reservas.map(r => r.ticket_number))
     } catch {
       setError('Error de conexión. Intenta de nuevo.')
     } finally {
@@ -165,14 +181,21 @@ export function Kit200KForm({
     }
   }
 
-  if (ticket) {
+  if (tickets) {
+    const esGrupo = tickets.length > 1
     return (
       <div className={styles.page}>
         <div className={styles.confirmWrap}>
           <div className={styles.confirmCard}>
-            <div className={styles.disp} style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>¡Reserva confirmada!</div>
-            <p style={{ fontSize: 32, fontWeight: 700, color: '#0B4FCC', margin: '8px 0' }}>{ticket}</p>
-            <p style={{ fontSize: 14, color: '#666' }}>Recibirás tu número de ticket por WhatsApp. Preséntalo al retirar tu kit.</p>
+            <div className={styles.disp} style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>
+              {esGrupo ? `¡${tickets.length} reservas confirmadas!` : '¡Reserva confirmada!'}
+            </div>
+            {tickets.map(t => (
+              <p key={t} style={{ fontSize: esGrupo ? 22 : 32, fontWeight: 700, color: '#0B4FCC', margin: '4px 0' }}>{t}</p>
+            ))}
+            <p style={{ fontSize: 14, color: '#666' }}>
+              Recibirás tu{esGrupo ? 's' : ''} número{esGrupo ? 's' : ''} de ticket por WhatsApp. Preséntalo{esGrupo ? 's' : ''} al retirar tu{esGrupo ? 's' : ''} kit{esGrupo ? 's' : ''}.
+            </p>
           </div>
         </div>
       </div>
@@ -211,7 +234,10 @@ export function Kit200KForm({
         </div>
       </div>
 
-      {/* 2. Un solo kit */}
+      {/* 2. Un solo kit -- si el cliente pide más de uno, las tallas de los
+          kits 2+ se piden en el Paso 2 del wizard (ver más abajo). El kit en
+          sí es siempre uno solo (Maillot+Franela+Medias+Medalla fijo); "más
+          de un kit" es cantidad de reservas, no una segunda composición. */}
       <div className={styles.section}>
         <div className={`${styles.disp} ${styles.sectionTitle}`}>Tu Kit 200K incluye</div>
         <div className={styles.sectionSubtitle}>Pagas al retirar — esto es tu reserva</div>
@@ -254,11 +280,11 @@ export function Kit200KForm({
         <div className={styles.tallaCols}>
           <div className={styles.tallaCol}>
             <div className={styles.tallaLabel}>TALLA MAILLOT</div>
-            <TallaChips tallas={TALLAS_ROPA} value={maillotTalla} onChange={setMaillotTalla} />
+            <TallaChips tallas={TALLAS_ROPA} value={kits[0].maillotTalla} onChange={v => updateKit(0, { maillotTalla: v })} />
           </div>
           <div className={styles.tallaCol}>
             <div className={styles.tallaLabel}>TALLA FRANELA (del kit)</div>
-            <TallaChips tallas={TALLAS_ROPA} value={franelaTalla} onChange={setFranelaTalla} />
+            <TallaChips tallas={TALLAS_ROPA} value={kits[0].franelaTalla} onChange={v => updateKit(0, { franelaTalla: v })} />
           </div>
         </div>
         <div className={styles.tallaNote}>Cada talla es independiente — puedes combinar Maillot y Franela en tallas distintas</div>
@@ -321,29 +347,6 @@ export function Kit200KForm({
             </div>
           </div>
         </div>
-
-        <div className={styles.maillotExtraRow}>
-          <div className={styles.maillotExtraLeft}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/maillot.png" alt="Maillot extra" className={styles.maillotExtraImg} />
-            <div>
-              <div className={styles.compName}>Maillot extra</div>
-              <div className={styles.compSub}>Mismo diseño oficial — pide uno extra si tu kit ya trae uno</div>
-            </div>
-          </div>
-          <div className={styles.maillotExtraRight}>
-            <select
-              className={styles.tallaSelect}
-              value={maillotExtraTalla}
-              onChange={e => setMaillotExtraTalla(e.target.value)}
-              aria-label="Talla del maillot extra"
-            >
-              {TALLAS_ROPA.map(t => <option key={t} value={t}>Talla {t}</option>)}
-            </select>
-            <Stepper value={maillotExtraQty} onChange={setMaillotExtraQty} />
-            <button type="button" className={styles.btnPrimarySm} onClick={() => addExtra('Maillot extra', maillotExtraQty, maillotExtraTalla)}>Agregar</button>
-          </div>
-        </div>
       </div>
 
       {/* 4. Asistente de reserva — 3 pasos: Contacto / Revisar tu kit / Confirmar */}
@@ -380,6 +383,12 @@ export function Kit200KForm({
             <>
               <p className={styles.checkoutStepLabel}>Paso 1</p>
               <h3 className={`${styles.disp} ${styles.reservaTitle}`}>Contacto</h3>
+
+              <div className={styles.kitCountRow}>
+                <span className={styles.kitCountLabel}>¿Cuántos kits necesitas?</span>
+                <Stepper value={kits.length} onChange={setKitCount} max={MAX_KITS} />
+              </div>
+
               <div className={styles.reservaFormGrid}>
                 <input
                   className={styles.textInput}
@@ -424,37 +433,49 @@ export function Kit200KForm({
             </>
           )}
 
-          {/* Paso 2 — Revisar tu kit */}
+          {/* Paso 2 — Revisar tu kit (tallas independientes por kit si hay más de uno) */}
           {checkoutStep === 2 && (
             <>
               <p className={styles.checkoutStepLabel}>Paso 2</p>
               <h3 className={`${styles.disp} ${styles.reservaTitle}`}>Revisar tu kit</h3>
               <div className={styles.reservaSummary}>
                 <div className={styles.summaryRowMain}>
-                  <span>Kit 200K (Maillot + Medias)</span>
-                  <span className={styles.summaryHighlight}>Talla {maillotTalla}</span>
+                  <span>Kit 200K (Maillot + Medias){kits.length > 1 ? ' · Kit 1' : ''}</span>
+                  <span className={styles.summaryHighlight}>Talla {kits[0].maillotTalla}</span>
                 </div>
-                {visibleExtras.map((e, i) => {
-                  const isRemovable = i >= 1
-                  return (
-                    <div key={`${e.nombre}-${i}`} className={styles.summaryRow}>
-                      <span>+ {e.cantidad > 1 ? `${e.cantidad} ` : ''}{e.nombre}</span>
-                      <span className={styles.summaryRowRight}>
-                        {e.talla ? `Talla ${e.talla}` : 'Incluida'}
-                        {isRemovable && (
-                          <button
-                            type="button"
-                            className={styles.summaryRemove}
-                            aria-label={`Quitar ${e.nombre}`}
-                            onClick={() => removeExtra(i - 1)}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </span>
+
+                {kits.length > 1 && kits.slice(1).map((k, i) => (
+                  <div key={i} className={styles.kitBlock}>
+                    <div className={styles.kitBlockTitle}>Kit {i + 2}</div>
+                    <div className={styles.tallaCols}>
+                      <div className={styles.tallaCol}>
+                        <div className={styles.tallaLabel}>TALLA MAILLOT</div>
+                        <TallaChips tallas={TALLAS_ROPA} value={k.maillotTalla} onChange={v => updateKit(i + 1, { maillotTalla: v })} />
+                      </div>
+                      <div className={styles.tallaCol}>
+                        <div className={styles.tallaLabel}>TALLA FRANELA (del kit)</div>
+                        <TallaChips tallas={TALLAS_ROPA} value={k.franelaTalla} onChange={v => updateKit(i + 1, { franelaTalla: v })} />
+                      </div>
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
+
+                {extras.map((e, i) => (
+                  <div key={`${e.nombre}-${i}`} className={styles.summaryRow}>
+                    <span>+ {e.cantidad > 1 ? `${e.cantidad} ` : ''}{e.nombre}</span>
+                    <span className={styles.summaryRowRight}>
+                      Talla {e.talla}
+                      <button
+                        type="button"
+                        className={styles.summaryRemove}
+                        aria-label={`Quitar ${e.nombre}`}
+                        onClick={() => removeExtra(i)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                ))}
                 <div className={styles.summaryFootnote}>Precio se confirma al retirar — kit sin definir todavía</div>
               </div>
               <div className={styles.checkoutNavRow}>
@@ -479,13 +500,19 @@ export function Kit200KForm({
                   <span className={styles.summaryRowRight}>{clienteNombre} · {clienteTelefono}</span>
                 </div>
                 <div className={styles.summaryRowMain}>
-                  <span>Kit 200K (Maillot + Medias)</span>
-                  <span className={styles.summaryHighlight}>Talla {maillotTalla}</span>
+                  <span>Kit 200K (Maillot + Medias){kits.length > 1 ? ' · Kit 1' : ''}</span>
+                  <span className={styles.summaryHighlight}>Talla {kits[0].maillotTalla}</span>
                 </div>
-                {visibleExtras.map((e, i) => (
+                {kits.length > 1 && kits.slice(1).map((k, i) => (
+                  <div key={i} className={styles.summaryRow}>
+                    <span>Kit {i + 2}</span>
+                    <span className={styles.summaryRowRight}>Maillot {k.maillotTalla} · Franela {k.franelaTalla}</span>
+                  </div>
+                ))}
+                {extras.map((e, i) => (
                   <div key={`${e.nombre}-${i}`} className={styles.summaryRow}>
                     <span>+ {e.cantidad > 1 ? `${e.cantidad} ` : ''}{e.nombre}</span>
-                    <span className={styles.summaryRowRight}>{e.talla ? `Talla ${e.talla}` : 'Incluida'}</span>
+                    <span className={styles.summaryRowRight}>Talla {e.talla}</span>
                   </div>
                 ))}
                 <div className={styles.summaryFootnote}>Precio se confirma al retirar — kit sin definir todavía</div>

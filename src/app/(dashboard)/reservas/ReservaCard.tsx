@@ -39,6 +39,8 @@ interface ReservaCardProps {
   reserva: ReservaDTO
   rate: number | null
   busy: boolean
+  /** Cuántas reservas comparten reserva.grupo_pedido (todas las columnas, no solo esta). 0/undefined si no hay grupo. */
+  groupTotal?: number
   onToggleArmado: (r: ReservaDTO) => void
   onToggleEntregado: (r: ReservaDTO) => void
   onTogglePagado: (r: ReservaDTO) => void
@@ -49,6 +51,7 @@ export function ReservaCard({
   reserva: r,
   rate,
   busy,
+  groupTotal,
   onToggleArmado,
   onToggleEntregado,
   onTogglePagado,
@@ -62,6 +65,11 @@ export function ReservaCard({
         <span className={styles.ticket}>{r.ticket_number}</span>
         <span className={styles.cardDate}>{formatShortDate(r.created_at)}</span>
       </div>
+      {/* Pedido de N kits (Kit 200K): agrupación visual solamente -- cada kit
+          sigue con sus propias 3 banderas, esto no las une ni las condiciona. */}
+      {r.grupo_pedido && groupTotal && groupTotal > 1 && (
+        <span className={styles.extraChip}>Pedido de {groupTotal} kits</span>
+      )}
       {/* Solo estado por ahora -- "cobranza" no tiene flujo propio todavía,
           ninguna acción de la UI cambia esta fase. */}
       <span className={styles.extraChip}>{r.fase === 'cobranza' ? 'Cobranza' : 'Preventa · apartado'}</span>

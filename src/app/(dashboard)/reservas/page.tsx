@@ -188,6 +188,18 @@ function ReservasContent() {
     return groups
   }, [visible])
 
+  // Pedido de N kits: cuenta reservas por grupo_pedido sobre TODAS las
+  // reservas cargadas (no solo `visible`) -- si el operador filtra la
+  // búsqueda, el badge sigue mostrando el tamaño real del pedido completo.
+  const groupSizes = useMemo(() => {
+    const sizes = new Map<string, number>()
+    for (const r of reservas) {
+      if (!r.grupo_pedido) continue
+      sizes.set(r.grupo_pedido, (sizes.get(r.grupo_pedido) ?? 0) + 1)
+    }
+    return sizes
+  }, [reservas])
+
   const collectionName = collections.find(c => c.slug === slug)?.name
 
   return (
@@ -267,6 +279,7 @@ function ReservasContent() {
                         reserva={r}
                         rate={rate}
                         busy={busyIds.includes(r.id)}
+                        groupTotal={r.grupo_pedido ? groupSizes.get(r.grupo_pedido) : undefined}
                         onToggleArmado={toggleArmado}
                         onToggleEntregado={toggleEntregado}
                         onTogglePagado={togglePagado}

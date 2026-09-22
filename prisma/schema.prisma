@@ -477,6 +477,10 @@ model Reserva {
   cantidad           Int     @default(1)
   // Ítems sueltos agregados: [{ nombre, cantidad, talla? }] — validado en la API.
   extras             Json?
+  // Pedido de N kits (Kit 200K) -- crea N Reservas reales, una por kit, cada
+  // una con su propio ticket_number pero el mismo grupo_pedido (UUID). null
+  // cuando el cliente reservó un solo kit (caso normal, sin agrupar nada).
+  grupo_pedido       String? @db.VarChar(40)
 
   // Solo estado por ahora, sin lógica de cobro -- "cobranza" es fase futura,
   // ninguna ruta la exige ni la usa todavía.

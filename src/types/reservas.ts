@@ -17,6 +17,8 @@ export interface ReservaDTO {
   /** null en reservas creadas antes de este campo (2026-09) */
   cliente_cedula:   string | null
   cliente_correo:   string | null
+  /** UUID compartido por las N reservas de un mismo pedido multi-kit; null si fue un solo kit. */
+  grupo_pedido:     string | null
   kit_id:             number
   kit_nombre:         string
   /** @deprecated usar componentes_tallas -- se mantiene por compatibilidad con reservas viejas */

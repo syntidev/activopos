@@ -124,16 +124,16 @@ export async function sendModulesBlockedEmail(to: string, businessName: string):
  */
 export async function sendReservaConfirmationEmail(
   to: string,
-  ticketNumber: string,
+  tickets: { ticketNumber: string; resumen: { nombre: string; cantidad: number; talla: string | null }[] }[],
   kitNombre: string,
-  resumen: { nombre: string; cantidad: number; talla: string | null }[],
 ): Promise<void> {
-  const { subject, html, text } = reservaConfirmadaEmail(ticketNumber, kitNombre, resumen)
+  const ticketsTxt = tickets.map(t => t.ticketNumber).join(', ')
+  const { subject, html, text } = reservaConfirmadaEmail(tickets, kitNombre)
   try {
     const info = await getTransporter().sendMail({ from: getFrom(), to, subject: sanitizeHeader(subject), text, html })
-    console.log(`[mail] confirmación de reserva ${ticketNumber} enviada a ${to} — messageId=${info.messageId} response="${info.response}"`)
+    console.log(`[mail] confirmación de reserva(s) ${ticketsTxt} enviada a ${to} — messageId=${info.messageId} response="${info.response}"`)
   } catch (err) {
-    console.error(`[mail] FALLO confirmación de reserva ${ticketNumber} a ${to}:`, err instanceof Error ? err.message : err)
+    console.error(`[mail] FALLO confirmación de reserva(s) ${ticketsTxt} a ${to}:`, err instanceof Error ? err.message : err)
   }
 }
 

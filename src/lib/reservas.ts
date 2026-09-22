@@ -89,6 +89,24 @@ export const createReservaSchema = z.object({
   extras:             z.array(extraSchema).max(20).nullable().optional(),
 }).strict() // business_id NUNCA del body: viene de la sesión
 
+export const MAX_KITS_PER_PEDIDO = 10
+
+// Pedido de N kits (Kit 200K): mismos datos de contacto, un componentes_tallas
+// por kit (cada uno independiente, ej. kit 1 Maillot L, kit 2 Maillot M).
+// extras (franelas sueltas) son del PEDIDO, no de un kit -- se guardan en la
+// primera Reserva del grupo, ver POST /api/public/reservas/[slug].
+export const createReservaBatchSchema = z.object({
+  cliente_nombre:   z.string().trim().min(1).max(120),
+  cliente_telefono: z.string().trim().max(30).nullable().optional(),
+  cliente_cedula:   z.string().trim().toUpperCase().regex(CEDULA_RE, 'Cédula inválida (formato V-12345678 o E-12345678)'),
+  cliente_correo:   z.string().trim().toLowerCase().email('Correo inválido').max(160),
+  kit_id:           z.number().int().positive(),
+  kits: z.array(z.object({
+    componentes_tallas: componentesTallasSchema,
+  })).min(1).max(MAX_KITS_PER_PEDIDO),
+  extras: z.array(extraSchema).max(20).nullable().optional(),
+}).strict()
+
 export const patchReservaSchema = z.object({
   armado:             z.boolean().optional(),
   entregado:          z.boolean().optional(),
@@ -283,6 +301,7 @@ export function serializeReserva(row: ReservaRow): ReservaDTO {
     cliente_telefono:   row.cliente_telefono,
     cliente_cedula:     row.cliente_cedula,
     cliente_correo:     row.cliente_correo,
+    grupo_pedido:       row.grupo_pedido,
     kit_id:             row.kit_id,
     kit_nombre:         row.kit.name,
     talla:              row.talla,

@@ -120,12 +120,6 @@
 }
 .btnPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.btnPrimarySm {
-  composes: btnPrimary;
-  padding: 10px 20px;
-  font-size: 13px;
-}
-
 .btnDark {
   display: inline-block;
   padding: 10px 18px;
@@ -257,6 +251,42 @@
   margin-top: 16px;
 }
 
+/* ── Selector de cantidad de kits (Paso 1) y tallas por kit (Paso 2) ── */
+
+.kitCountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #F5F5F5;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.kitCountLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #141414;
+}
+
+.kitBlock {
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid #EEE;
+}
+.kitBlock:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.kitBlockTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0B4FCC;
+  margin-bottom: 10px;
+}
+
 /* ── Showroom ── */
 
 .showroom {
@@ -361,52 +391,6 @@
   font-size: 15px;
   min-width: 16px;
   text-align: center;
-}
-
-.maillotExtraRow {
-  max-width: 1100px;
-  margin: 24px auto 0;
-  background: #fff;
-  border-radius: 14px;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.maillotExtraLeft {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.maillotExtraImg {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.maillotExtraRight {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.tallaSelect {
-  height: 40px;
-  background: #F5F5F5;
-  border-radius: 8px;
-  border: 1px solid #E0E0E0;
-  padding: 0 12px;
-  font-size: 13px;
-  color: #333;
-  font-family: inherit;
 }
 
 /* ── Resumen / Reserva ── */
@@ -636,9 +620,6 @@
 
   .showroom { padding: 40px 20px; }
   .grid3 { grid-template-columns: 1fr; }
-
-  .maillotExtraRow { flex-direction: column; align-items: stretch; }
-  .maillotExtraRight { justify-content: space-between; }
 
   .reservaSection { padding: 40px 20px; }
   .reservaCard { padding: 24px; }

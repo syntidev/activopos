@@ -116,26 +116,47 @@ interface ReservaResumenItem {
   talla:  string | null
 }
 
-// Kit 200K (preventa 200K): confirma el ticket al cliente que reservó desde
-// /kit-200k. resumen ya viene armado por el caller (componentes_tallas +
+interface ReservaGrupoItem {
+  ticketNumber: string
+  resumen:      ReservaResumenItem[]
+}
+
+// Kit 200K (preventa 200K): confirma el/los ticket(s) al cliente que reservó
+// desde /kit-200k. Un pedido puede ser 1 kit (tickets.length === 1, caso
+// normal) o varios kits del mismo pedido -- siempre UN solo correo, nunca
+// uno por ticket. resumen ya viene armado por el caller (componentes_tallas +
 // extras normalizados a { nombre, cantidad, talla }), esta función no conoce
 // esas estructuras.
-export function reservaConfirmadaEmail(ticketNumber: string, kitNombre: string, resumen: ReservaResumenItem[]): EmailContent {
-  const filas = resumen.map(i =>
-    `<tr><td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${BRAND_NAVY};">${escapeHtml(i.nombre)}${i.talla ? ` — talla ${escapeHtml(i.talla)}` : ''}</td>
-         <td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${TEXT_MUTED}; text-align:right;">×${i.cantidad}</td></tr>`,
-  ).join('')
+export function reservaConfirmadaEmail(tickets: ReservaGrupoItem[], kitNombre: string): EmailContent {
+  const esGrupo = tickets.length > 1
+  const bloques = tickets.map(t => {
+    const filas = t.resumen.map(i =>
+      `<tr><td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${BRAND_NAVY};">${escapeHtml(i.nombre)}${i.talla ? ` — talla ${escapeHtml(i.talla)}` : ''}</td>
+           <td style="padding:6px 0; font-family:${FONT_STACK}; font-size:14px; color:${TEXT_MUTED}; text-align:right;">×${i.cantidad}</td></tr>`,
+    ).join('')
+    return (esGrupo
+      ? `<p style="margin:16px 0 4px; font-family:${FONT_STACK}; font-size:15px; font-weight:700; color:${BRAND_NAVY};">Ticket ${escapeHtml(t.ticketNumber)}</p>`
+      : '') +
+      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-top:4px;">${filas}</table>`
+  }).join('')
+  const ticketsTxt = tickets.map(t => t.ticketNumber).join(', ')
   const html = emailShell({
-    previewText: `Tu reserva ${ticketNumber} quedó confirmada.`,
+    previewText: esGrupo ? `Tus ${tickets.length} reservas quedaron confirmadas.` : `Tu reserva ${tickets[0].ticketNumber} quedó confirmada.`,
     bodyHtml:
-      heading('¡Reserva confirmada!') +
-      paragraph(`Tu número de ticket es <strong>${escapeHtml(ticketNumber)}</strong>. Preséntalo al retirar tu kit — el pago se hace en ese momento, esto es solo tu apartado.`) +
-      `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%; margin-top:8px;">${filas}</table>` +
+      heading(esGrupo ? '¡Reservas confirmadas!' : '¡Reserva confirmada!') +
+      paragraph(
+        esGrupo
+          ? `Tus números de ticket son <strong>${escapeHtml(ticketsTxt)}</strong>. Preséntalos al retirar tus kits — el pago se hace en ese momento, esto es solo tu apartado.`
+          : `Tu número de ticket es <strong>${escapeHtml(ticketsTxt)}</strong>. Preséntalo al retirar tu kit — el pago se hace en ese momento, esto es solo tu apartado.`,
+      ) +
+      bloques +
       paragraph(`<span style="font-size:13px; color:${TEXT_MUTED};">${escapeHtml(kitNombre)}</span>`),
   })
-  const resumenTxt = resumen.map(i => `- ${i.nombre}${i.talla ? ` (talla ${i.talla})` : ''} x${i.cantidad}`).join('\n')
-  const text = `¡Reserva confirmada!\n\nTu número de ticket es ${ticketNumber}. Preséntalo al retirar tu kit — el pago se hace en ese momento.\n\n${kitNombre}\n${resumenTxt}\n\n— OnBike Margarita`
-  return { subject: `Reserva confirmada — ${ticketNumber}`, html, text }
+  const resumenTxt = tickets.map(t =>
+    `${esGrupo ? `Ticket ${t.ticketNumber}:\n` : ''}${t.resumen.map(i => `- ${i.nombre}${i.talla ? ` (talla ${i.talla})` : ''} x${i.cantidad}`).join('\n')}`,
+  ).join('\n\n')
+  const text = `${esGrupo ? '¡Reservas confirmadas!' : '¡Reserva confirmada!'}\n\nTus número(s) de ticket: ${ticketsTxt}. Preséntalo(s) al retirar tu(s) kit(s) — el pago se hace en ese momento.\n\n${kitNombre}\n${resumenTxt}\n\n— OnBike Margarita`
+  return { subject: esGrupo ? `Reservas confirmadas — ${ticketsTxt}` : `Reserva confirmada — ${ticketsTxt}`, html, text }
 }
 
 export function resetPasswordEmail(ownerName: string, resetUrl: string): EmailContent {

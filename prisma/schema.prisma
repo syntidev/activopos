@@ -364,6 +364,13 @@ model Product {
   // la ficha muestra solo el precio normal (Bs) sin importar el método de
   // pago elegido.
   precio_divisa              Decimal?          @db.Decimal(10, 2)
+  // Precio para pago con Cashea (fintech "compra ahora, paga después" --
+  // el comercio paga comisión a Cashea, por eso este precio es el más alto
+  // de los 3). USO INTERNO ÚNICAMENTE: nunca se renderiza en el catálogo
+  // público (card ni ficha), solo lo lee el admin/POS al cerrar una venta
+  // con ese método de pago. El catálogo público solo muestra precio_divisa
+  // y price_per_unit_usd ("BCV/Full").
+  precio_cashea              Decimal?          @db.Decimal(10, 2)
   cost_per_unit_usd          Decimal?          @db.Decimal(10, 4)
   cost_unknown               Boolean           @default(false)
   wholesale_price_usd        Decimal?          @db.Decimal(10, 2)

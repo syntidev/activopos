@@ -141,7 +141,10 @@ interface UseDraftTabsResult {
 
 // preferredId: id de draft a activar al montar (viene de /pos?draft=N). Si no
 // existe entre los restaurados, se cae al primero.
-export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string | null): UseDraftTabsResult {
+// maxTickets: Business.max_open_tickets (Configuración > General) -- gate
+// del lado cliente para evitar el viaje de red; el servidor (POST
+// /api/pos/drafts) vuelve a validar el mismo tope de forma autoritativa.
+export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string | null, maxTickets = 5): UseDraftTabsResult {
   const [tabs,     setTabs]     = useState<DraftTab[]>([])
   const [activeId, setActiveId] = useState('')
   const [loading,  setLoading]  = useState(true)
@@ -211,7 +214,7 @@ export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string 
   // ── addTab — create new draft in DB ────────────────────────────────────
 
   const addTab = useCallback(async (current: TicketState): Promise<TicketState | null> => {
-    if (tabs.length >= 5) return null
+    if (tabs.length >= maxTickets) return null
 
     // Persist current tab before creating new one
     setTabs(prev => prev.map(t => t.id === activeId ? { ...t, snapshot: current } : t))
@@ -229,7 +232,7 @@ export function useDraftTabs(rate: number, ivaPct: number, preferredId?: string 
     setTabs(prev => [...prev, { id: newId, label: `Ticket ${num}`, snapshot: fresh }])
     setActiveId(newId)
     return fresh
-  }, [tabs, activeId, rate, ivaPct])
+  }, [tabs, activeId, rate, ivaPct, maxTickets])
 
   // ── closeTab — remove tab + delete from DB ─────────────────────────────
 

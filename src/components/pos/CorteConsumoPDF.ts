@@ -1,7 +1,8 @@
-// Imprime el consumo acumulado de un pedido abierto — NO cambia su estado.
-// Reusa el patrón de impresión (Blob URL) de TicketPDF.ts.
+// Imprime el consumo acumulado de un pedido/ticket abierto — NO cambia su
+// estado. Reusa el patrón de impresión (Blob URL) de TicketPDF.ts. Compartido
+// entre Pedidos (OrderDetalleModal) y el multi-ticket del POS (TicketPanel).
 
-import { esc, openPrintWindow } from '@/components/pos/TicketPDF'
+import { esc, openPrintWindow } from './TicketPDF'
 
 export interface CorteItem {
   product_name: string
@@ -11,7 +12,8 @@ export interface CorteItem {
 }
 
 export interface CorteOptions {
-  orderNumber: string
+  // Ya formateado por el caller: "Pedido PED-00042" o "Ticket 1".
+  docLabel: string
   clientName: string | null
   items: CorteItem[]
   totalUsd: number
@@ -58,7 +60,7 @@ export function generarCorteConsumoPDF(options: CorteOptions): void {
     '<div class="hdr">',
     `  <div class="biz">${esc(options.businessName)}</div>`,
     '  <div class="badge">CORTE DE CONSUMO — NO ES FACTURA</div>',
-    `  <div class="sub">Pedido ${esc(options.orderNumber)}</div>`,
+    `  <div class="sub">${esc(options.docLabel)}</div>`,
     options.clientName ? `  <div class="sub">Cliente: ${esc(options.clientName)}</div>` : '',
     `  <div class="sub">${esc(today)}</div>`,
     '</div>',
@@ -67,7 +69,7 @@ export function generarCorteConsumoPDF(options: CorteOptions): void {
     `  <div class="trow"><span>Total USD</span><span>${esc(fUSD(options.totalUsd))}</span></div>`,
     `  <div class="trow main"><span>Total Bs</span><span>${esc(fBs(options.totalBs))}</span></div>`,
     '</div>',
-    '<div class="footer">Cuenta abierta — el pedido sigue activo y editable.</div>',
+    '<div class="footer">Cuenta abierta — sigue activo y editable.</div>',
   ].join('\n')
 
   openPrintWindow(html, css)

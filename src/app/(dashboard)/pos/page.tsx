@@ -21,6 +21,7 @@ import { CreditoModal } from '@/components/pos/CreditoModal'
 import { QtyInput } from '@/components/pos/QtyInput'
 import { VariantSelector } from '@/components/products/VariantSelector'
 import { HelpButton } from '@/components/help/HelpButton'
+import { generarCorteConsumoPDF } from '@/components/pos/CorteConsumoPDF'
 import { useToast } from '@/components/ui'
 import { useHardwareScanner } from '@/hooks/useHardwareScanner'
 import type { ProductForPOS } from '@/lib/pos'
@@ -42,13 +43,15 @@ function POSView() {
   const [cartOpen, setCartOpen]           = useState(false)
   const [scannerOpen, setScannerOpen]     = useState(false)
   const [businessName, setBusinessName]   = useState('')
+  const [maxOpenTickets, setMaxOpenTickets] = useState(5)
   const [userRole, setUserRole]           = useState<'admin' | 'super_admin' | 'cashier'>('cashier')
 
   useEffect(() => {
     fetch('/api/config/business')
       .then(r => r.json())
-      .then((j: { business?: { name?: string } }) => {
+      .then((j: { business?: { name?: string; max_open_tickets?: number } }) => {
         if (j.business?.name) setBusinessName(j.business.name)
+        if (j.business?.max_open_tickets) setMaxOpenTickets(j.business.max_open_tickets)
       })
       .catch(() => {})
   }, [])
@@ -69,7 +72,7 @@ function POSView() {
   const itemCount = pos.ticket.items.length
   useUnsavedChangesGuard(!isEmpty, 'Si sales ahora, perderás la venta en curso en este ticket.')
 
-  const drafts = useDraftTabs(pos.rate, 0, useSearchParams().get('draft'))
+  const drafts = useDraftTabs(pos.rate, 0, useSearchParams().get('draft'), maxOpenTickets)
 
   // El ticket vive en usePOS, las pestañas en useDraftTabs: sin esto el POS
   // arranca vacío aunque haya drafts restaurados (incluido el de una cotización
@@ -135,7 +138,7 @@ function POSView() {
 
   const handleNewTab = async () => {
     const newTicket = await drafts.addTab(pos.ticket)
-    if (!newTicket) { toast('Máximo 5 tickets simultáneos', 'warning'); return }
+    if (!newTicket) { toast(`Máximo ${maxOpenTickets} tickets simultáneos`, 'warning'); return }
     pos.setTicketDirect(newTicket)
   }
 
@@ -148,6 +151,26 @@ function POSView() {
   const handlePaymentComplete = async () => {
     const nextTicket = await drafts.paymentComplete()
     pos.setTicketDirect(nextTicket)
+  }
+
+  // "Imprimir cuenta" -- corte de consumo del ticket abierto, NO cobra ni
+  // cierra (mismo mecanismo que Pedidos/OrderDetalleModal, ver CorteConsumoPDF).
+  const handleImprimirCuenta = () => {
+    if (isEmpty) return
+    const activeLabel = drafts.tabs.find(t => t.id === drafts.activeId)?.label ?? 'Ticket'
+    generarCorteConsumoPDF({
+      docLabel:     activeLabel,
+      clientName:   pos.ticket.client_name || null,
+      items:        pos.ticket.items.map(i => ({
+        product_name:  i.product_name,
+        variant_label: i.variant_label,
+        quantity:      i.quantity,
+        subtotal_usd:  i.subtotal_usd - i.discount_usd,
+      })),
+      totalUsd:     totals.total_usd,
+      totalBs:      totals.total_bs,
+      businessName: businessName || 'ActivoPOS',
+    })
   }
 
   return (
@@ -220,6 +243,7 @@ function POSView() {
           }}
           onDescuento={() => pos.setShowPinDescuento(true)}
           onCargo={() => pos.setShowCargo(true)}
+          onImprimirCuenta={handleImprimirCuenta}
           userRole={userRole}
           onPriceOverride={pos.overrideItemPrice}
           allowCashierPriceOverride={pos.allowCashierPriceOverride}

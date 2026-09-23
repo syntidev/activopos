@@ -202,6 +202,10 @@ model Business {
   whatsapp                     String?   @db.VarChar(30)
   max_discount_pct             Float     @default(0)
   allow_cashier_price_override Boolean   @default(false)
+  // Tope de tickets/mesas abiertas en simultáneo por cajero en el POS. Default
+  // 5 (el hardcode que reemplaza) para no romper negocios existentes -- solo
+  // negocios de mesas (restaurantes, sportbars) suelen necesitar subirlo.
+  max_open_tickets             Int       @default(5)
   modules_enabled              String    @default("pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,suppliers") @db.VarChar(500)
   // Feature flag por negocio del módulo Reservas (preventa 200K). Default false:
   // solo se activa a mano para los negocios que lo usan (OnBike, business_id=33).

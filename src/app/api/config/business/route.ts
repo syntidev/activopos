@@ -30,6 +30,10 @@ const PatchSchema = z.object({
   segment:          z.string().max(50).optional(),
   max_discount_pct:             z.number().min(0).max(100).optional(),
   allow_cashier_price_override: z.boolean().optional(),
+  // Tope de tickets abiertos en simultáneo por cajero -- reemplaza el
+  // MAX_DRAFTS=5 hardcodeado. Rango razonable: 1 (no tendría sentido 0) a 50
+  // (negocio de mesas grande, no hay caso real por encima de eso hoy).
+  max_open_tickets:             z.number().int().min(1).max(50).optional(),
   quotation_footer: z.string().optional(),
   pos_mode: z.enum(['ticket', 'invoice']).optional(),
   catalog_active:    z.boolean().optional(),
@@ -85,6 +89,7 @@ export async function GET() {
       segment: true,
       max_discount_pct: true,
       allow_cashier_price_override: true,
+      max_open_tickets: true,
       created_at: true,
       catalog_active: true,
       catalog_default_currency: true,
@@ -182,6 +187,7 @@ export async function PATCH(request: Request) {
       segment: true,
       max_discount_pct: true,
       allow_cashier_price_override: true,
+      max_open_tickets: true,
     },
   })
 

@@ -75,6 +75,7 @@ export interface BusinessConfig {
   rate_source:                 'bcv' | 'parallel' | 'manual' | string
   current_rate:                number
   allow_cashier_price_override: boolean
+  max_open_tickets:            number
   pos_mode?:                   'ticket' | 'invoice'
   catalog_title?:              string | null
   catalog_desc?:               string | null

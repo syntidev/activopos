@@ -49,7 +49,11 @@ export const helpContent = {
       },
       {
         title: 'Usa varios tickets en paralelo',
-        body:  'Puedes tener hasta 5 ventas abiertas al mismo tiempo. Pausa una para atender a otro cliente y retómala después sin perder el carrito.',
+        body:  'Puedes tener hasta 5 ventas abiertas al mismo tiempo por defecto — configurable en Configuración > General si atiendes mesas (restaurantes, sportbars). Pausa una para atender a otro cliente y retómala después sin perder el carrito. Toca la pestaña de un ticket para renombrarlo, por ejemplo a "Mesa 3".',
+      },
+      {
+        title: 'Imprime la cuenta sin cobrar',
+        body:  'El ícono de impresora en el ticket genera un corte de consumo (ítems + total) para llevarle la cuenta al cliente, sin cerrar la venta ni descontar stock. Puedes seguir agregando o quitando productos después.',
       },
       {
         title: 'Convierte a cotización si el cliente no decide',
@@ -94,7 +98,7 @@ export const helpContent = {
         a: 'Sí. El escáner por cámara funciona en el buscador del POS sin necesidad de una pistola física. También puedes usar una pistola USB o escribir el código a mano.',
       },
     ],
-    tip: 'Puedes pausar una venta y atender otra al mismo tiempo — hasta 5 tickets abiertos en paralelo.',
+    tip: 'Puedes pausar una venta y atender otra al mismo tiempo — el límite de tickets en paralelo es configurable (5 por defecto).',
   },
 
   /* ── INVENTARIO ───────────────────────────────────────── */

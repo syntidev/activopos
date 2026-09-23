@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, Lock, Percent, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { RefreshCw, Lock, Percent, KeyRound, Eye, EyeOff, Clock3 } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { Input }    from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
@@ -84,6 +84,8 @@ export function TabGeneral({ businessId: _businessId }: Props) {
 
   const [allowOverride, setAllowOverride]     = useState(false)
   const [savingOverride, setSavingOverride]   = useState(false)
+  const [maxOpenTickets, setMaxOpenTickets]   = useState('5')
+  const [savingMaxTickets, setSavingMaxTickets] = useState(false)
   const [pwSuccess, setPwSuccess] = useState(false)
 
   const [showPwCurrent,  setShowPwCurrent]  = useState(false)
@@ -106,6 +108,7 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       setRateSource(body.business.rate_source === 'manual' ? 'manual' : 'bcv')
       setManualRate(String(body.current_rate))
       setAllowOverride(body.business.allow_cashier_price_override ?? false)
+      setMaxOpenTickets(String(body.business.max_open_tickets ?? 5))
     } catch {
       toast('Error al cargar la configuración.', 'error')
     } finally {
@@ -267,6 +270,25 @@ export function TabGeneral({ businessId: _businessId }: Props) {
       toast('Error al guardar la configuración.', 'error')
     } finally {
       setSavingOverride(false)
+    }
+  }
+
+  const handleSaveMaxTickets = async () => {
+    const n = parseInt(maxOpenTickets, 10)
+    if (isNaN(n) || n < 1 || n > 50) { toast('Ingresa un número entre 1 y 50.', 'error'); return }
+    setSavingMaxTickets(true)
+    try {
+      const res = await fetch('/api/config/business', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ max_open_tickets: n }),
+      })
+      if (!res.ok) throw new Error()
+      toast('Límite de tickets abiertos actualizado.', 'success')
+    } catch {
+      toast('Error al guardar la configuración.', 'error')
+    } finally {
+      setSavingMaxTickets(false)
     }
   }
 
@@ -492,6 +514,35 @@ export function TabGeneral({ businessId: _businessId }: Props) {
           >
             <span className={`${styles.toggleKnob} ${allowOverride ? styles.toggleKnobOn : ''}`} />
           </button>
+        </div>
+
+        <div className={styles.formDividerCompact} />
+
+        {/* ── Tickets abiertos (POS) ── */}
+        <h3 className={styles.formCardTitle}>
+          <Clock3 size={16} aria-hidden="true" />
+          Tickets Abiertos (POS)
+        </h3>
+        <p className={styles.formCardHint}>
+          Cuántas ventas puede tener un cajero pausadas al mismo tiempo en el POS
+          (multi-ticket). Súbelo si tu negocio atiende varias mesas o clientes en
+          paralelo (restaurantes, sportbars, food trucks) — cada ticket puede
+          renombrarse individualmente (ej. &quot;Mesa 3&quot;) tocando su pestaña.
+        </p>
+        <Input
+          label="Máximo de tickets abiertos simultáneos"
+          type="number"
+          min="1"
+          max="50"
+          step="1"
+          value={maxOpenTickets}
+          onChange={(e) => setMaxOpenTickets(e.target.value)}
+          hint="Entre 1 y 50. Por defecto 5."
+        />
+        <div className={styles.saveRow}>
+          <Button variant="primary" onClick={handleSaveMaxTickets} loading={savingMaxTickets}>
+            Guardar límite
+          </Button>
         </div>
       </div>
 

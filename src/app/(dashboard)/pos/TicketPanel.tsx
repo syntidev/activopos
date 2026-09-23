@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
   ChevronDown, Clock, Minus, Pencil, Percent, Plus,
-  ShoppingCart, Tag, Trash2, User,
+  Printer, ShoppingCart, Tag, Trash2, User,
 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import type { TicketItem, TicketState, TicketTotals } from '@/lib/pos'
@@ -25,6 +25,7 @@ interface TicketPanelProps {
   onCotizar: () => void
   onDescuento: () => void
   onCargo: () => void
+  onImprimirCuenta: () => void
   userRole: 'admin' | 'super_admin' | 'cashier'
   onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
@@ -34,7 +35,7 @@ interface TicketPanelProps {
 export function TicketPanel({
   ticket, totals, isEmpty,
   onUpdateQty, onRemove, onClear, onSelectClient,
-  onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo,
+  onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo, onImprimirCuenta,
   userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive,
 }: TicketPanelProps) {
   const router = useRouter()
@@ -53,6 +54,15 @@ export function TicketPanel({
           <ChevronDown size={14} aria-hidden="true" />
         </button>
         <div className={styles.ticketActions}>
+          <button
+            className={styles.ticketIconBtn}
+            onClick={onImprimirCuenta}
+            aria-label="Imprimir cuenta"
+            title="Imprimir cuenta (no cobra, no cierra el ticket)"
+            disabled={isEmpty}
+          >
+            <Printer size={16} aria-hidden="true" />
+          </button>
           <button className={styles.ticketIconBtn} onClick={() => router.push('/reportes')} aria-label="Historial" title="Historial de ventas">
             <Clock size={16} aria-hidden="true" />
           </button>

@@ -8,24 +8,34 @@ import { draftItemSchema } from '@/lib/draft-schema'
 import { redactSaleForRole } from '@/lib/redact'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
-const MAX_DRAFTS = 5
-
 const createDraftSchema = z.object({
   items: z.array(draftItemSchema).min(0).default([]),
   notes: z.string().max(500).optional(),
 })
+
+// Tope configurable por negocio (Configuración > General) -- reemplaza el
+// MAX_DRAFTS=5 fijo. Default 5 en DB, así que un negocio sin configurar
+// se comporta igual que antes.
+async function getMaxOpenTickets(businessId: number): Promise<number> {
+  const business = await prisma.business.findUnique({
+    where:  { id: businessId },
+    select: { max_open_tickets: true },
+  })
+  return business?.max_open_tickets ?? 5
+}
 
 /* ── GET /api/pos/drafts — list cashier's active drafts ── */
 
 export async function GET() {
   try {
     const { session, db } = await getAuthenticatedTenant()
+    const maxOpenTickets = await getMaxOpenTickets(session.businessId)
 
     const drafts = await db.sale.findMany({
       where:   { cashier_id: session.userId, status: 'draft' }, // business_id inyectado por el tenant layer
       include: { items: true },
       orderBy: { created_at: 'desc' },
-      take:    MAX_DRAFTS,
+      take:    maxOpenTickets,
     })
 
     // El POS lo llama al montar con el usuario en sesion: sin redactar, el
@@ -52,12 +62,14 @@ export async function POST(req: NextRequest) {
     // FIX 3: active rate fetched before transaction — avoids holding pool connection during network call
     const { rate } = await getActiveRate(session.businessId)
 
+    const maxOpenTickets = await getMaxOpenTickets(session.businessId)
+
     const draft = await prisma.$transaction(async (tx) => {
       const count = await tx.sale.count({
         where: { business_id: session.businessId, cashier_id: session.userId, status: 'draft' },
       })
-      if (count >= MAX_DRAFTS) {
-        throw new Error('MAX_DRAFTS')
+      if (count >= maxOpenTickets) {
+        throw new Error(`MAX_DRAFTS:${maxOpenTickets}`)
       }
 
       // Fetch prices from DB if items provided
@@ -148,7 +160,10 @@ export async function POST(req: NextRequest) {
     }
     if (err instanceof Error) {
       // FIX 8: 409 → 400 — quota rejection is a client error, not a conflict
-      if (err.message === 'MAX_DRAFTS')        return NextResponse.json({ error: `Máximo ${MAX_DRAFTS} tickets abiertos por cajero` }, { status: 400 })
+      if (err.message.startsWith('MAX_DRAFTS')) {
+        const max = err.message.split(':')[1] ?? '5'
+        return NextResponse.json({ error: `Máximo ${max} tickets abiertos por cajero` }, { status: 400 })
+      }
       if (err.message === 'PRODUCT_NOT_FOUND') return NextResponse.json({ error: 'Producto no encontrado' }, { status: 400 })
       if (err.message === 'PRICE_MISSING')     return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
       if (err.message === 'VARIANT_INVALID')   return NextResponse.json({ error: 'Variante inválida para el producto' }, { status: 400 })

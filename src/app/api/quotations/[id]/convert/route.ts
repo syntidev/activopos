@@ -7,11 +7,6 @@ import { getActiveRate } from '@/lib/bcv'
 
 type Context = { params: { id: string } }
 
-// Mismo tope que /api/pos/drafts — el POS no muestra más de 5 tickets abiertos
-// por cajero. Duplicado a propósito: la constante de allá no está exportada y
-// exportarla implicaría tocar ese archivo.
-const MAX_DRAFTS = 5
-
 /* ── POST /api/quotations/[id]/convert — Quotation(accepted) → draft del POS ──
  *
  * NO crea la venta ni descuenta stock: deja un ticket abierto en el POS con los
@@ -68,12 +63,20 @@ export async function POST(_req: NextRequest, { params }: Context) {
     )
   }
 
+  // Mismo tope configurable que /api/pos/drafts (Business.max_open_tickets,
+  // Configuración > General) -- no un hardcode propio.
+  const business = await prisma.business.findUnique({
+    where:  { id: session.businessId },
+    select: { max_open_tickets: true },
+  })
+  const maxOpenTickets = business?.max_open_tickets ?? 5
+
   const openDrafts = await db.sale.count({
     where: { cashier_id: session.userId, status: 'draft' }, // business_id inyectado
   })
-  if (openDrafts >= MAX_DRAFTS) {
+  if (openDrafts >= maxOpenTickets) {
     return NextResponse.json(
-      { error: `Tienes ${MAX_DRAFTS} tickets abiertos en el POS — cierra uno antes de convertir` },
+      { error: `Tienes ${maxOpenTickets} tickets abiertos en el POS — cierra uno antes de convertir` },
       { status: 409 }
     )
   }

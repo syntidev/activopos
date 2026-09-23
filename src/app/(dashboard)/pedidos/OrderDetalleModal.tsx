@@ -5,7 +5,7 @@ import { Search, Plus, Minus, Trash2, Printer } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
-import { generarCorteConsumoPDF } from './CorteConsumoPDF'
+import { generarCorteConsumoPDF } from '@/components/pos/CorteConsumoPDF'
 import styles from './NuevoPedidoModal.module.css'
 
 /* ── Types ── */
@@ -201,7 +201,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   const handleCorte = () => {
     if (!order) return
     generarCorteConsumoPDF({
-      orderNumber:  order.order_number,
+      docLabel:     `Pedido ${order.order_number}`,
       clientName:   order.client_name,
       items:        items.map((i) => ({
         product_name:  i.product_name,

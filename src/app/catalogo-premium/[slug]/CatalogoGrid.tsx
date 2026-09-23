@@ -134,8 +134,8 @@ const BADGE_ICON: Record<string, ReactNode> = {
 }
 
 const FEATURED_KEY = '__destacados__'
-/** Cards de la sección Novedades (grid 4×2 del mockup: 6 productos). */
-const NOVEDADES_COUNT = 6
+/** Cards de la sección Novedades (grid 4×2 del mockup: 8 productos). */
+const NOVEDADES_COUNT = 8
 
 // TODO(Carlos/Daniel): copy SIN CONFIRMAR. Tomado tal cual de las "ideas de
 // diseño" en .doc/PLAN_TRABAJO_OnBike_ActivoPOS.md (Gran Fondo 200K, Zafeti,
@@ -247,11 +247,17 @@ export function CatalogoGrid({
   // Novedades: primero los marcados 'nuevo'; se completa con los ingresos más
   // recientes (id descendente como proxy: CatalogProduct no trae created_at).
   // Solo productos con stock; sin ninguno, la sección no se renderiza.
+  // Se recorta a múltiplo de 4 (no solo NOVEDADES_COUNT): el grid es 4 col
+  // desktop / 2 col mobile, y 4 es múltiplo de ambas -- evita la última fila
+  // incompleta (ej. 6 items en grid de 4 dejaba 2 columnas vacías) sin
+  // depender de que siempre haya exactamente NOVEDADES_COUNT disponibles.
   const novedades = useMemo(() => {
     const inStock = products.filter(p => !p.outOfStock)
     const flagged = inStock.filter(p => p.badge === 'nuevo')
     const recent  = inStock.filter(p => p.badge !== 'nuevo').sort((a, b) => b.id - a.id)
-    return [...flagged, ...recent].slice(0, NOVEDADES_COUNT)
+    const available = [...flagged, ...recent].slice(0, NOVEDADES_COUNT)
+    const fullRows = Math.floor(available.length / 4) * 4
+    return available.slice(0, fullRows)
   }, [products])
 
   const categoryCounts = useMemo(() => {
@@ -1281,7 +1287,12 @@ export function CatalogoGrid({
           largo. El texto completo y "La comunidad OnBike" quedan archivados
           en LandingSections.tsx (código intacto, sin invocar acá) para
           onbikemargarita.com. ── */}
-      {catalogMode === 'home' && browseMode && ambientPhotoSection && (
+      {/* Solo la imagen, nada más en la sección (ver comentario arriba) --
+          sin image_url real no hay nada que mostrar: el fallback dejaba un
+          bloque de ~380px con solo el placeholder decorativo, mismo patrón
+          de "sección sin contenido real" ya visto hoy en Novedades. Gate
+          explícito en vez de dejar que ImgWithFallback absorba el vacío. */}
+      {catalogMode === 'home' && browseMode && ambientPhotoSection?.config.image_url && (
         <section className={styles.ambientPhotoSection} aria-label="Foto ambiente">
           <ImgWithFallback
             src={ambientPhotoSection.config.image_url}

@@ -416,25 +416,24 @@ export function CatalogoGrid({
 
   // Grid final mixto — 4 columnas por criterio real disponible (badge nuevo,
   // isFeatured, categorías siguientes). Nunca fuerza 4 columnas fabricadas:
-  // si hay menos señales reales, hay menos columnas.
+  // si hay menos señales reales, hay menos columnas. Hasta 6 productos por
+  // columna (patrón Flatsome Classic Shop: 4-6 filas). Cada columna con su
+  // propio largo real -- NO se recorta todo al mínimo de la más corta: una
+  // categoría con 1 solo producto (ej. Óptica) no puede arrastrar a una con
+  // 91 (Bicicletas) a mostrar también 1. Columnas dispares es el estado
+  // real del catálogo, no un hueco que tapar con menos contenido.
   const finalGridColumns = useMemo(() => {
     const cols: { title: string; items: CatalogProduct[] }[] = []
-    if (nuevosIngresos.length) cols.push({ title: 'Nuevo', items: nuevosIngresos.slice(0, 4) })
+    if (nuevosIngresos.length) cols.push({ title: 'Nuevo', items: nuevosIngresos.slice(0, 6) })
     const featured = products.filter(p => p.isFeatured)
-    if (featured.length) cols.push({ title: 'Destacado', items: featured.slice(0, 4) })
+    if (featured.length) cols.push({ title: 'Destacado', items: featured.slice(0, 6) })
     for (const s of sections) {
       if (cols.length >= 4) break
       if (s.key === ORPHAN_KEY) continue
       if (cols.some(c => c.title === s.name)) continue
-      cols.push({ title: s.name, items: s.items.slice(0, 4) })
+      cols.push({ title: s.name, items: s.items.slice(0, 6) })
     }
-    // Columnas independientes con distinto largo (ej. "Nuevo" con 2 items vs.
-    // "Destacado" con 4) dejan un hueco al fondo de la más corta, sandwicheado
-    // entre columnas completas -- se pareja todo al mínimo real, nunca se
-    // rellena con productos inventados (Cero Fachadas).
-    const trimmed = cols.slice(0, 4)
-    const minLen = trimmed.length ? Math.min(...trimmed.map(c => c.items.length)) : 0
-    return trimmed.map(c => ({ ...c, items: c.items.slice(0, minLen) }))
+    return cols.slice(0, 4)
   }, [nuevosIngresos, products, sections])
 
   const catSectionRefs = useRef<Map<string, HTMLElement>>(new Map())

@@ -9,6 +9,7 @@ import type {
 } from '@/lib/landing-sections'
 import { ImgWithFallback } from './ImgWithFallback'
 import { AnnouncementPopup } from './AnnouncementPopup'
+import { fmtUsd, fmtBs } from './catalogUtils'
 import styles from './catalogo.module.css'
 
 interface Props {
@@ -37,6 +38,8 @@ export function LandingSections({ sections, slug, businessId }: Props) {
           case 'community':          return <CommunitySection     key={s.id} config={s.config} />
           case 'story':              return <StorySection         key={s.id} config={s.config} />
           case 'collection_grid':    return <CollectionGridSection key={s.id} config={s.config} slug={slug} />
+          case 'product_list':        return <ProductListSection   key={s.id} config={s.config} slug={slug} />
+          case 'category_list':       return <CategoryListSection  key={s.id} config={s.config} slug={slug} />
           // No es una <section> del flujo -- overlay position:fixed propio,
           // por eso vive fuera del <> sin afectar el layout de las demás.
           case 'announcement_popup': return <AnnouncementPopup key={s.id} config={s.config} businessId={businessId} sectionId={s.id} />
@@ -255,6 +258,67 @@ function CollectionGridSection({ config, slug }: { config: CollectionGridRenderC
             {/* Sin precio a propósito -- regla de negocio: un kit es "un todo",
                 sin precio total definido todavía. */}
             <span className={styles.lsCollectionName}>{p.name}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ── PRODUCT LIST — mismo carrusel que la colección, con precio USD + Bs ── */
+
+type ProductListRender = Extract<RenderableLandingSection, { type: 'product_list' }>['config']
+type CategoryListRender = Extract<RenderableLandingSection, { type: 'category_list' }>['config']
+
+function ProductListSection({ config, slug }: { config: ProductListRender; slug: string }) {
+  return (
+    <section className={styles.lsCollection}>
+      {config.titulo && <h2 className={styles.lsCollectionHeading}>{config.titulo}</h2>}
+      {config.subtitulo && <p className={styles.lsCommunitySubheading}>{config.subtitulo}</p>}
+      <div className={styles.lsCollectionScroll}>
+        {config.products.map(p => (
+          <a key={p.id} href={`/catalogo-premium/${slug}/p/${p.id}`} className={styles.lsCollectionCard}>
+            {p.image ? (
+              <img src={p.image} alt="" className={styles.lsCollectionImg} loading="lazy" aria-hidden="true" />
+            ) : (
+              <div className={styles.lsCollectionImgPlaceholder} aria-hidden="true">
+                <span>{initialLetter(p.name, 'P')}</span>
+              </div>
+            )}
+            <span className={styles.lsCollectionName}>{p.name}</span>
+            {p.priceUsd > 0 && (
+              <span className={styles.lsCollectionPrice}>
+                {fmtUsd(p.priceUsd)}
+                {p.priceBs != null && <span className={styles.lsCollectionPriceBs}>{fmtBs(p.priceBs)}</span>}
+              </span>
+            )}
+          </a>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ── CATEGORY LIST — mismas tarjetas foto+nombre que "Comprá por marca" ── */
+
+function CategoryListSection({ config, slug }: { config: CategoryListRender; slug: string }) {
+  return (
+    <section className={styles.lsCollection}>
+      {config.titulo && <h2 className={styles.lsCollectionHeading}>{config.titulo}</h2>}
+      {config.subtitulo && <p className={styles.lsCommunitySubheading}>{config.subtitulo}</p>}
+      <div className={styles.brandScroll}>
+        {config.categories.map(c => (
+          <a
+            key={c.name}
+            href={`/catalogo-premium/${slug}/productos?categoria=${encodeURIComponent(c.name)}`}
+            className={styles.brandCard}
+          >
+            <span className={styles.brandCardMedia}>
+              {c.image
+                ? <img src={c.image} alt="" className={styles.brandCardImg} loading="lazy" />
+                : <span className={styles.brandCardInitial}>{initialLetter(c.name, 'C')}</span>}
+            </span>
+            <span className={styles.brandCardName}>{c.name}</span>
           </a>
         ))}
       </div>

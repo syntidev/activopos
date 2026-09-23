@@ -209,7 +209,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     }),
     prisma.category.findMany({
       where:   { business_id: business.id, active: true },
-      select:  { name: true, color: true, sort_order: true, image_url: true },
+      select:  { id: true, name: true, color: true, sort_order: true, image_url: true },
       orderBy: { sort_order: 'asc' },
     }),
     // Landing Sections (Fase 1) — directo por Prisma, igual que products/categories:
@@ -345,6 +345,48 @@ export default async function CatalogoPage({ params }: PageProps) {
     categoryImages[c.name] = firstWithImg?.image ?? null
   })
 
+  // product_list / category_list: se resuelven contra lo que el catálogo YA cargó
+  // (mismos filtros de visibilidad que el grid), sin query extra salvo el modo
+  // automático por colección. Sección sin nada visible -> se descarta.
+  const listCollectionIds = landingSections.flatMap(s =>
+    s.type === 'product_list' && s.config.collection_id ? [s.config.collection_id] : [])
+  const collectionLinks = listCollectionIds.length === 0 ? [] : await prisma.productCollection.findMany({
+    where:  { collection_id: { in: listCollectionIds }, collection: { business_id: business.id, active: true } },
+    select: { collection_id: true, product_id: true },
+  }).catch((error: unknown) => {
+    console.error('[catalogo-premium] product_list por colección falló, se omite', { slug: params.slug, business_id: business.id, error })
+    return []
+  })
+  const productById       = new Map(catalogProducts.map(p => [p.id, p]))
+  const categoryOfProduct = new Map(products.map(p => [p.id, p.category_id]))
+  const renderSections = landingSections.flatMap((s): RenderableLandingSection[] => {
+    if (s.type === 'product_list') {
+      const c = s.config
+      const list = c.modo === 'manual'
+        ? (c.product_ids ?? []).flatMap(id => productById.get(id) ?? [])
+        : catalogProducts
+            .filter(p => c.category_id != null
+              ? categoryOfProduct.get(p.id) === c.category_id
+              : collectionLinks.some(l => l.collection_id === c.collection_id && l.product_id === p.id))
+            .slice(0, c.cantidad_maxima ?? 8)
+      if (list.length === 0) return []
+      return [{ ...s, config: { ...c, products: list.map(p => ({
+        id: p.id, name: p.name, image: p.image, priceUsd: p.priceUsd, priceBs: p.priceBs,
+      })) } }]
+    }
+    if (s.type === 'category_list') {
+      // Solo categorías con productos visibles -- el link filtra el catálogo por
+      // nombre, una categoría vacía llevaría a una página en blanco.
+      const categoriesOut = s.config.category_ids.flatMap(id => {
+        const cat = dbCategories.find(c => c.id === id)
+        return cat && catMeta.has(cat.name) ? [{ name: cat.name, image: categoryImages[cat.name] ?? null }] : []
+      })
+      if (categoriesOut.length === 0) return []
+      return [{ ...s, config: { ...s.config, categories: categoriesOut } }]
+    }
+    return [s]
+  })
+
   const displayTitle = business.catalog_title ?? business.name
   const location     = [business.city, business.state].filter(Boolean).join(', ')
   const waPhone      = business.phone?.replace(/\D/g, '') ?? ''
@@ -369,7 +411,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         categories={categories}
         categoryColors={categoryColors}
         categoryImages={categoryImages}
-        landingSections={landingSections}
+        landingSections={renderSections}
         cartelera={cartelera}
         brands={brandRows}
         slug={params.slug}

@@ -1,16 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, ImageUp, LayoutTemplate,
+  Image as ImageIcon, GalleryHorizontal, Users, BookOpen, LayoutGrid, Megaphone, ShoppingBag, Tags,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { SECTION_TYPES } from '@/lib/landing-sections'
 import type {
   SectionType, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig, CollectionGridConfig,
-  AnnouncementPopupConfig, SlideConfig, CommunityItemConfig,
+  AnnouncementPopupConfig, SlideConfig, CommunityItemConfig, ProductListConfig, CategoryListConfig,
 } from '@/lib/landing-sections'
 import styles from '../configuracion.module.css'
 
@@ -25,28 +27,35 @@ interface SectionRow {
   isNew?:  boolean
 }
 
-// product_list/category_list existen en el schema (API los acepta y valida)
-// pero todavía no tienen formulario de admin -- Fase 1 fue solo backend.
-// Excluidos acá a propósito: SECTION_TYPES completo los ofrecería como
-// "Agregar sección" sin ningún campo para editarlos (fachada).
-type AdminSectionType = Exclude<SectionType, 'product_list' | 'category_list'>
-const ADMIN_SECTION_TYPES = SECTION_TYPES.filter(
-  (t): t is AdminSectionType => t !== 'product_list' && t !== 'category_list',
-)
-
-const TYPE_LABELS: Record<AdminSectionType, string> = {
+const TYPE_LABELS: Record<SectionType, string> = {
   hero:                'Hero',
   event_slider:        'Banner de evento',
   community:           'Comunidad',
   story:               'Historia de marca',
   collection_grid:     'Colección',
   announcement_popup:  'Popup de anuncio',
+  product_list:         'Lista de productos',
+  category_list:        'Lista de categorías',
 }
+
+const TYPE_ICONS: Record<SectionType, LucideIcon> = {
+  hero:               ImageIcon,
+  event_slider:       GalleryHorizontal,
+  community:          Users,
+  story:              BookOpen,
+  collection_grid:    LayoutGrid,
+  announcement_popup: Megaphone,
+  product_list:        ShoppingBag,
+  category_list:       Tags,
+}
+
+// Tipos que admiten varias secciones a la vez; el resto sigue siendo uno por landing.
+const REPEATABLE_TYPES: SectionType[] = ['product_list', 'category_list']
 
 const EMPTY_SLIDE: SlideConfig = { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' }
 const EMPTY_ITEM: CommunityItemConfig = { image_url: '', product_tag: '' }
 
-const DEFAULT_CONFIG: Record<AdminSectionType, Record<string, unknown>> = {
+const DEFAULT_CONFIG: Record<SectionType, Record<string, unknown>> = {
   hero:            { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' } satisfies HeroConfig,
   event_slider:    { slides: [EMPTY_SLIDE, { ...EMPTY_SLIDE }] } satisfies EventSliderConfig,
   community:       { heading: '', subheading: '', items: [EMPTY_ITEM, { ...EMPTY_ITEM }] } satisfies CommunityConfig,
@@ -56,6 +65,8 @@ const DEFAULT_CONFIG: Record<AdminSectionType, Record<string, unknown>> = {
   // que tampoco pasan min(1): "Se persiste recién cuando el admin llena el form".
   collection_grid: { collection_id: 0 } satisfies CollectionGridConfig,
   announcement_popup: { image_url: '', heading: '', delay_ms: 2500 } satisfies AnnouncementPopupConfig,
+  product_list:     { modo: 'manual', product_ids: [] } satisfies ProductListConfig,
+  category_list:    { category_ids: [] } satisfies CategoryListConfig,
 }
 
 /* Compresión client-side (Canvas -> WebP) — mismo patrón que ProductModal.tsx,
@@ -112,6 +123,7 @@ export function TabLanding({ businessId: _b }: Props) {
   const [sections, setSections] = useState<SectionRow[]>([])
   const [loading, setLoading]   = useState(true)
   const [busyId, setBusyId]     = useState<number | null>(null)
+  const [picking, setPicking]   = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -131,13 +143,13 @@ export function TabLanding({ businessId: _b }: Props) {
   }
 
   const existingTypes = new Set(sections.map(s => s.type))
-  const missingTypes  = ADMIN_SECTION_TYPES.filter(t => !existingTypes.has(t))
+  const addableTypes  = SECTION_TYPES.filter(t => REPEATABLE_TYPES.includes(t) || !existingTypes.has(t))
 
   // Borrador local, sin POST todavía — los campos requeridos (título, imagen…)
   // empiezan vacíos y el schema Zod exige min(1) + image_url con formato
   // válido, así que un POST inmediato con defaults vacíos siempre da 400.
   // Se persiste recién cuando el admin llena el form y presiona Guardar.
-  function addSection(type: AdminSectionType) {
+  function addSection(type: SectionType) {
     const draft: SectionRow = {
       id:      -Date.now(),
       type,
@@ -147,6 +159,7 @@ export function TabLanding({ businessId: _b }: Props) {
       isNew:   true,
     }
     setSections(prev => [...prev, draft])
+    setPicking(false)
   }
 
   async function patchSection(id: number, body: Partial<{ config: unknown; visible: boolean; order: number }>): Promise<boolean> {
@@ -223,8 +236,8 @@ export function TabLanding({ businessId: _b }: Props) {
           body:    JSON.stringify({ type: s.type, config: s.config, visible: s.visible }),
         })
         if (!res.ok) {
-          const data = await res.json().catch(() => null) as { error?: string } | null
-          toast(data?.error ?? 'Revisa los campos requeridos.', 'error')
+          const data = await res.json().catch(() => null) as { error?: string; issues?: { message: string }[] } | null
+          toast(data?.issues?.[0]?.message ?? data?.error ?? 'Revisa los campos requeridos.', 'error')
           return
         }
         const data = await res.json() as { section: SectionRow }
@@ -276,18 +289,29 @@ export function TabLanding({ businessId: _b }: Props) {
         />
       ))}
 
-      {missingTypes.length > 0 && (
+      {!picking ? (
+        <Button variant="secondary" onClick={() => setPicking(true)}>
+          <Plus size={14} aria-hidden="true" /> Agregar sección
+        </Button>
+      ) : (
         <div className={styles.formCard}>
-          <h3 className={styles.formCardTitle}>
-            <Plus size={16} aria-hidden="true" />
-            Agregar sección
-          </h3>
-          <div className={styles.landingAddRow}>
-            {missingTypes.map(t => (
-              <Button key={t} variant="secondary" onClick={() => addSection(t)} loading={busyId === -1}>
-                {TYPE_LABELS[t]}
-              </Button>
-            ))}
+          <div className={styles.landingCardHeader}>
+            <h3 className={styles.formCardTitle}>
+              <Plus size={16} aria-hidden="true" />
+              ¿Qué sección quieres agregar?
+            </h3>
+            <Button variant="ghost" onClick={() => setPicking(false)}>Cancelar</Button>
+          </div>
+          <div className={styles.segmentGrid}>
+            {addableTypes.map(t => {
+              const Icon = TYPE_ICONS[t]
+              return (
+                <button key={t} type="button" className={styles.segmentCard} onClick={() => addSection(t)}>
+                  <Icon size={22} aria-hidden="true" />
+                  <span className={styles.segmentCardLabel}>{TYPE_LABELS[t]}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -347,6 +371,8 @@ function SectionCard({
       {section.type === 'story'              && <StoryForm              config={section.config as unknown as StoryConfig} onChange={onConfigChange} />}
       {section.type === 'collection_grid'    && <CollectionGridForm     config={section.config as unknown as CollectionGridConfig} onChange={onConfigChange} />}
       {section.type === 'announcement_popup' && <AnnouncementPopupForm  config={section.config as unknown as AnnouncementPopupConfig} onChange={onConfigChange} />}
+      {section.type === 'product_list'        && <ProductListForm        config={section.config as unknown as ProductListConfig} onChange={onConfigChange} />}
+      {section.type === 'category_list'       && <CategoryListForm       config={section.config as unknown as CategoryListConfig} onChange={onConfigChange} />}
 
       <div className={styles.saveRow}>
         {/* image_url vacío -> el schema (.strict(), sin .optional()) rechaza el
@@ -629,6 +655,173 @@ function AnnouncementPopupForm({ config, onChange }: { config: AnnouncementPopup
         onChange={e => onChange({ ...config, delay_ms: Math.round(Number(e.target.value) * 1000) })}
         hint="0 a 15 segundos"
       />
+    </div>
+  )
+}
+
+/* ── Lista de productos / Lista de categorías ────────────────────────────── */
+
+interface Option { id: number; name: string }
+
+function useOptions(url: string, key: 'products' | 'categories' | 'collections'): Option[] {
+  const [options, setOptions] = useState<Option[]>([])
+  useEffect(() => {
+    fetch(url)
+      .then(r => r.ok ? r.json() : {})
+      .then((data: Partial<Record<typeof key, Option[]>>) => setOptions(data[key] ?? []))
+      .catch(() => {})
+  }, [url, key])
+  return options
+}
+
+// Búsqueda híbrida (convención CLAUDE.md): varias palabras = AND, sin acentos ni mayúsculas.
+const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+function matchesAll(name: string, query: string): boolean {
+  const n = normalize(name)
+  return normalize(query).split(/\s+/).filter(Boolean).slice(0, 5).every(w => n.includes(w))
+}
+
+const MAX_RESULTS = 8
+
+function TitleFields({ titulo, subtitulo, onChange }: {
+  titulo?: string; subtitulo?: string
+  onChange: (patch: { titulo?: string; subtitulo?: string }) => void
+}) {
+  const uid = useId()
+  return (
+    <>
+      <Input id={`${uid}-titulo`} label="Título (opcional)" value={titulo ?? ''} onChange={e => onChange({ titulo: e.target.value || undefined })} maxLength={120} />
+      <Input id={`${uid}-subtitulo`} label="Subtítulo (opcional)" value={subtitulo ?? ''} onChange={e => onChange({ subtitulo: e.target.value || undefined })} maxLength={200} />
+    </>
+  )
+}
+
+function ProductListForm({ config, onChange }: { config: ProductListConfig; onChange: (c: ProductListConfig) => void }) {
+  const products    = useOptions('/api/products', 'products')
+  const categories  = useOptions('/api/categories', 'categories')
+  const collections = useOptions('/api/collections', 'collections')
+  const [query, setQuery] = useState('')
+  const uid = useId()
+
+  const chosenIds = config.product_ids ?? []
+  const nameOf    = (id: number) => products.find(p => p.id === id)?.name ?? `Producto #${id}`
+  const results   = query.trim()
+    ? products.filter(p => !chosenIds.includes(p.id) && matchesAll(p.name, query)).slice(0, MAX_RESULTS)
+    : []
+  const source = config.category_id ? `cat:${config.category_id}` : config.collection_id ? `col:${config.collection_id}` : ''
+
+  const setModo = (modo: ProductListConfig['modo']) =>
+    onChange({ modo, titulo: config.titulo, subtitulo: config.subtitulo, ...(modo === 'manual' ? { product_ids: [] } : {}) })
+
+  return (
+    <div className={styles.formFields}>
+      <TitleFields titulo={config.titulo} subtitulo={config.subtitulo} onChange={p => onChange({ ...config, ...p })} />
+      <div className={styles.segmentGrid}>
+        {(['manual', 'automatico'] as const).map(m => (
+          <button
+            key={m}
+            type="button"
+            className={`${styles.segmentCard} ${config.modo === m ? styles.segmentCardActive : ''}`}
+            onClick={() => config.modo !== m && setModo(m)}
+            aria-pressed={config.modo === m}
+          >
+            <span className={`${styles.segmentCardLabel} ${config.modo === m ? styles.segmentCardLabelActive : ''}`}>
+              {m === 'manual' ? 'Manual — elijo los productos' : 'Automático — por categoría o colección'}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {config.modo === 'manual' ? (
+        <>
+          <Input id={`${uid}-buscar`} label="Buscar producto" value={query} onChange={e => setQuery(e.target.value)} placeholder="Nombre del producto…" maxLength={60} />
+          {results.map(p => (
+            <Button key={p.id} variant="secondary" onClick={() => { onChange({ ...config, product_ids: [...chosenIds, p.id] }); setQuery('') }} disabled={chosenIds.length >= 20}>
+              <Plus size={14} aria-hidden="true" /> {p.name}
+            </Button>
+          ))}
+          {chosenIds.map(id => (
+            <div key={id} className={`${styles.landingSubCard} ${styles.landingCardHeader}`}>
+              <span className={styles.landingSubCardTitle}>{nameOf(id)}</span>
+              <button
+                type="button"
+                className={`${styles.landingIconBtn} ${styles.landingIconBtnDanger}`}
+                onClick={() => onChange({ ...config, product_ids: chosenIds.filter(x => x !== id) })}
+                aria-label={`Quitar ${nameOf(id)}`}
+              >
+                <Trash2 size={14} aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </>
+      ) : (
+        <>
+          <div className={styles.fieldGroup}>
+            <label className={styles.label} htmlFor={`${uid}-source`}>Mostrar productos de</label>
+            <select
+              id={`${uid}-source`}
+              className={styles.select}
+              value={source}
+              onChange={e => {
+                const [kind, id] = e.target.value.split(':')
+                const { category_id: _c, collection_id: _k, ...rest } = config
+                onChange({ ...rest, ...(kind === 'cat' ? { category_id: Number(id) } : { collection_id: Number(id) }) })
+              }}
+            >
+              <option value="" disabled>Elige una categoría o colección…</option>
+              <optgroup label="Categorías">
+                {categories.map(c => <option key={c.id} value={`cat:${c.id}`}>{c.name}</option>)}
+              </optgroup>
+              <optgroup label="Colecciones">
+                {collections.map(c => <option key={c.id} value={`col:${c.id}`}>{c.name}</option>)}
+              </optgroup>
+            </select>
+          </div>
+          <Input
+            id={`${uid}-cantidad`}
+            label="Cantidad máxima"
+            type="number"
+            min={1}
+            max={20}
+            value={config.cantidad_maxima ?? 8}
+            onChange={e => onChange({ ...config, cantidad_maxima: Math.min(20, Math.max(1, Math.round(Number(e.target.value)) || 1)) })}
+            hint="Entre 1 y 20 productos"
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
+function CategoryListForm({ config, onChange }: { config: CategoryListConfig; onChange: (c: CategoryListConfig) => void }) {
+  const categories = useOptions('/api/categories', 'categories')
+  const toggle = (id: number) => onChange({
+    ...config,
+    category_ids: config.category_ids.includes(id)
+      ? config.category_ids.filter(x => x !== id)
+      : [...config.category_ids, id].slice(0, 12),
+  })
+
+  return (
+    <div className={styles.formFields}>
+      <TitleFields titulo={config.titulo} subtitulo={config.subtitulo} onChange={p => onChange({ ...config, ...p })} />
+      <label className={styles.label}>Categorías a mostrar ({config.category_ids.length}/12)</label>
+      <div className={styles.segmentGrid}>
+        {categories.map(c => {
+          const active = config.category_ids.includes(c.id)
+          return (
+            <button
+              key={c.id}
+              type="button"
+              className={`${styles.segmentCard} ${active ? styles.segmentCardActive : ''}`}
+              onClick={() => toggle(c.id)}
+              aria-pressed={active}
+            >
+              <span className={`${styles.segmentCardLabel} ${active ? styles.segmentCardLabelActive : ''}`}>{c.name}</span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

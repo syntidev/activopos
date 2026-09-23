@@ -409,6 +409,10 @@ export function CatalogoGrid({
     landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'collection_grid' }> => s.type === 'collection_grid')
   , [landingSections])
 
+  const listSections = useMemo(() =>
+    landingSections.filter(s => s.type === 'product_list' || s.type === 'category_list')
+  , [landingSections])
+
   // Primera categoría no vacía, mismo orden que el admin definió en
   // Configuración > Categorías — proxy real de "categoría más relevante"
   // sin inventar un campo de popularidad que no existe.
@@ -1126,6 +1130,12 @@ export function CatalogoGrid({
           : collectionGridSection && (
               <LandingSections sections={[collectionGridSection]} slug={slug} businessId={businessId} />
             )
+      )}
+
+      {/* Bloques de lista (product_list/category_list): pueden ser varios, van
+          juntos en el orden que el admin definió en Configuración > Landing. */}
+      {catalogMode === 'home' && browseMode && listSections.length > 0 && (
+        <LandingSections sections={listSections} slug={slug} businessId={businessId} />
       )}
 
       {/* ── SECCIÓN 2: Marcas — reposicionada inmediatamente después del

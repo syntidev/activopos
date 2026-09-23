@@ -163,3 +163,5 @@ export type RenderableLandingSection =
   | { id: number; order: number; type: 'story';              config: StoryConfig }
   | { id: number; order: number; type: 'collection_grid';    config: CollectionGridRenderConfig }
   | { id: number; order: number; type: 'announcement_popup'; config: AnnouncementPopupConfig }
+  | { id: number; order: number; type: 'product_list';        config: ProductListConfig & { products: CollectionGridProduct[] } }
+  | { id: number; order: number; type: 'category_list';       config: CategoryListConfig & { categories: { name: string; image: string | null }[] } }

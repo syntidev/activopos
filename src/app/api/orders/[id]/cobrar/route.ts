@@ -4,6 +4,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
+import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
 type Context = { params: { id: string } }
 
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest, { params }: Context) {
       const variants = variantIds.length > 0
         ? await tx.productVariant.findMany({
             where:  { id: { in: variantIds } },
-            select: { id: true, precio_extra: true },
+            select: { id: true, ...VARIANT_PRICING_SELECT },
           })
         : []
       const variantMap = new Map(variants.map(v => [v.id, v]))
@@ -87,11 +88,11 @@ export async function POST(req: NextRequest, { params }: Context) {
       const saleItems = order.items.map(item => {
         const p        = productMap.get(item.product_id)
         const variant  = item.variant_id !== null ? variantMap.get(item.variant_id) : undefined
-        // SEC-01: prices from DB — not from order snapshot
-        const basePriceUsd = p
-          ? Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+        // SEC-01: prices from DB — not from order snapshot. Regla única en
+        // lib/pricing.ts; pedidos de catálogo siempre a precio detal.
+        const priceUsd = p
+          ? resolveUnitPriceUsd(p, variant)
           : Number(item.price_per_unit_usd)
-        const priceUsd = basePriceUsd + Number(variant?.precio_extra ?? 0)
         const subtotal_usd = Math.round(Number(item.quantity) * priceUsd * 100) / 100
         const subtotal_bs  = Math.round(subtotal_usd * rate * 100) / 100
         // Mismo criterio que sales/route.ts: snapshot inmutable de la receta al
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           recipe_snapshot,
           // Si la variante fue borrada desde que se creó el pedido, no hay fila
           // que referenciar (evita violar el FK de sale_items.variant_id) --
-          // mismo criterio permisivo que basePriceUsd arriba cuando falta el producto.
+          // mismo criterio permisivo que priceUsd arriba cuando falta el producto.
           variant_id:         variant ? item.variant_id : null,
         }
       })

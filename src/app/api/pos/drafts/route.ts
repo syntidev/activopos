@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
 import { redactSaleForRole } from '@/lib/redact'
+import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
 const MAX_DRAFTS = 5
 
@@ -75,9 +76,23 @@ export async function POST(req: NextRequest) {
         if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
         const productMap = new Map(products.map(p => [p.id, p]))
 
+        // DT-15: el precio ignoraba la variante. Regla única en lib/pricing.ts.
+        const variantIds = body.items
+          .map(i => i.variant_id)
+          .filter((v): v is number => v != null)
+        const variants = variantIds.length > 0
+          ? await tx.productVariant.findMany({
+              where:  { id: { in: variantIds }, is_active: true },
+              select: { id: true, product_id: true, ...VARIANT_PRICING_SELECT },
+            })
+          : []
+        const variantMap = new Map(variants.map(v => [v.id, v]))
+
         saleItemsData = body.items.map(item => {
           const p        = productMap.get(item.product_id)!
-          const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+          const variant  = item.variant_id != null ? variantMap.get(item.variant_id) : undefined
+          if (item.variant_id != null && variant?.product_id !== p.id) throw new Error('VARIANT_INVALID')
+          const priceUsd = resolveUnitPriceUsd(p, variant)
           if (priceUsd <= 0) throw new Error('PRICE_MISSING')
           const subtotal_usd = Math.max(0, item.quantity * priceUsd - item.discount_usd)
           return {
@@ -136,6 +151,7 @@ export async function POST(req: NextRequest) {
       if (err.message === 'MAX_DRAFTS')        return NextResponse.json({ error: `Máximo ${MAX_DRAFTS} tickets abiertos por cajero` }, { status: 400 })
       if (err.message === 'PRODUCT_NOT_FOUND') return NextResponse.json({ error: 'Producto no encontrado' }, { status: 400 })
       if (err.message === 'PRICE_MISSING')     return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
+      if (err.message === 'VARIANT_INVALID')   return NextResponse.json({ error: 'Variante inválida para el producto' }, { status: 400 })
     }
     console.error('drafts POST:', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

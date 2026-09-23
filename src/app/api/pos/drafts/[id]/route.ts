@@ -6,6 +6,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 import { redactSaleForRole } from '@/lib/redact'
+import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
 const patchItemSchema = draftItemSchema.extend({
   unit_price_override: z.number().positive().optional(),
@@ -89,16 +90,14 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
         const productMap = new Map(products.map(p => [p.id, p]))
 
-        // DT-15: mismo bug que sales/route.ts -- el precio ignoraba la variante.
-        // price_usd de la variante es override absoluto; si es null se suma
-        // precio_extra al precio base.
+        // DT-15: el precio ignoraba la variante. Regla única en lib/pricing.ts.
         const variantIds = body.items
           .map(i => i.variant_id)
           .filter((v): v is number => v != null)
         const variants = variantIds.length > 0
           ? await tx.productVariant.findMany({
               where:  { id: { in: variantIds }, is_active: true },
-              select: { id: true, product_id: true, price_usd: true, precio_extra: true },
+              select: { id: true, product_id: true, ...VARIANT_PRICING_SELECT },
             })
           : []
         const variantMap = new Map(variants.map(v => [v.id, v]))
@@ -107,9 +106,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
           const p        = productMap.get(item.product_id)!
           const variant  = item.variant_id != null ? variantMap.get(item.variant_id) : undefined
           if (item.variant_id != null && variant?.product_id !== p.id) throw new Error('VARIANT_INVALID')
-          const dbPrice  = variant?.price_usd != null
-            ? Number(variant.price_usd)
-            : Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0) + Number(variant?.precio_extra ?? 0)
+          const dbPrice  = resolveUnitPriceUsd(p, variant)
           const priceUsd = item.unit_price_override ?? dbPrice
           if (priceUsd <= 0) throw new Error('PRICE_MISSING')
           const subtotal_usd = Math.max(0, item.quantity * priceUsd - item.discount_usd)

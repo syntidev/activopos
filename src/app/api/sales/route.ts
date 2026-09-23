@@ -8,6 +8,7 @@ import { generateTicketNumber } from '@/lib/ticket'
 import { createNotification } from '@/lib/notifications'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 import { redactSaleForRole } from '@/lib/redact'
+import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
 const saleItemSchema = z.object({
   product_id:          z.number().int().positive(),
@@ -296,7 +297,7 @@ export async function POST(req: NextRequest) {
       const variants = variantIds.length > 0
         ? await tx.productVariant.findMany({
             where: { id: { in: variantIds }, is_active: true },
-            select: { id: true, product_id: true, price_usd: true, precio_extra: true, stock: true },
+            select: { id: true, product_id: true, stock: true, ...VARIANT_PRICING_SELECT },
           })
         : []
       const variantMap = new Map(variants.map(v => [v.id, v]))
@@ -330,21 +331,8 @@ export async function POST(req: NextRequest) {
         // Tier mayorista: si el cliente es mayorista y el producto tiene precio
         // mayorista > 0 para su modo de venta, se usa ese en lugar del de detal.
         // Las variantes conservan su propio price_usd (no hay wholesale por variante).
-        let basePrice = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
-        if (clientTier === 'mayorista' && variant?.price_usd == null) {
-          const wholesale = item.sale_mode === 'weight'
-            ? Number(product.wholesale_price_per_kg_usd ?? 0)
-            : Number(product.wholesale_price_usd ?? 0)
-          if (wholesale > 0) basePrice = wholesale
-        }
-        // DT-15: variant.price_usd es un override ABSOLUTO (casi siempre null en
-        // la práctica -- ninguna UI de admin lo expone). Cuando es null había que
-        // sumar precio_extra al precio base, no usar solo basePrice -- mismo bug
-        // y mismo fix que cobrar/route.ts (DT-14). Ver VariantSelector.tsx línea
-        // 90 para la semántica de referencia: price_usd ?? (base + price_extra_usd).
-        const dbPrice = variant?.price_usd != null
-          ? Number(variant.price_usd)
-          : basePrice + Number(variant?.precio_extra ?? 0)
+        // Regla única en lib/pricing.ts (override de variante, precio_extra, mayorista).
+        const dbPrice  = resolveUnitPriceUsd(product, variant, clientTier, item.sale_mode)
         const priceUsd = item.unit_price_override ?? dbPrice
         if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
 

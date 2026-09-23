@@ -3,9 +3,9 @@
 // "Lubricantes y Cuidado", todo junto sin subdividir). NO son demo, sin
 // notes='DEMO_TEMPORAL'. product_type=simple, sin variantes.
 //
-// Precio: sin precio -- price_per_unit_usd queda null. La UI ya muestra
-// "Consultar precio" automático cuando priceUsd<=0 (ver CatalogoGrid.tsx),
-// no hace falta tocar catalog_visibility ni ningún otro campo.
+// Precio: $1.00 simbólico de referencia para TODOS (no null, no precio
+// real de venta) -- corrección explícita de Carlos, reemplaza el plan
+// original de "Consultar precio" (price_usd null) del prompt inicial.
 //
 // Stock: bicicletas usan el stock real (columna "TOTAL DE BIC" del listado
 // de Carlos) vía InventoryEntry. Squirt entra en 0 -- sin InventoryEntry
@@ -193,7 +193,7 @@ async function main() {
         sale_mode:          'unit',
         product_type:       'simple',
         unit_type:           'unit',
-        price_per_unit_usd:  null,
+        price_per_unit_usd:  1.00,
         show_in_catalog:     true,
         catalog_visibility:  'visible',
         available_in_pos:    true,
@@ -233,7 +233,7 @@ async function main() {
         sale_mode:          'unit',
         product_type:       'simple',
         unit_type:           'unit',
-        price_per_unit_usd:  null,
+        price_per_unit_usd:  1.00,
         show_in_catalog:     true,
         catalog_visibility:  'visible',
         available_in_pos:    true,

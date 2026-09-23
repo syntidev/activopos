@@ -1,6 +1,6 @@
 // Precio unitario (USD) de un ítem de venta -- fuente única para sales,
-// orders/[id]/cobrar, pos/drafts y pos/drafts/[id] (DT-14/DT-15: la regla
-// estaba copiada en 4 rutas y 3 perdían precio_extra de la variante).
+// orders/[id]/cobrar, pos/drafts, pos/drafts/[id] y catalog/[slug]/order
+// (DT-14/DT-15: la regla estaba copiada en 5 rutas y 3 perdían precio_extra).
 //
 // Semántica (misma que VariantSelector.tsx en el POS):
 //   1. variant.price_usd es override ABSOLUTO -- si existe, gana sin más.

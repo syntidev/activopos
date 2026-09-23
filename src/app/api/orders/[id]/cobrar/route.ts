@@ -212,6 +212,20 @@ export async function POST(req: NextRequest, { params }: Context) {
       })
       await tx.inventoryEntry.createMany({ data: deductions })
 
+      // Stock de variante: mismo patrón que sales/route.ts (solo productos
+      // simples). Esta ruta nunca lo descontaba -> variant.stock quedaba
+      // inflado tras cada venta de catálogo. Baja aquí, al pagar; al crear el
+      // pedido solo se reserva el pool del producto.
+      for (const item of order.items) {
+        const p = productMap.get(item.product_id)
+        if (item.variant_id === null || !variantMap.has(item.variant_id)) continue
+        if (p && p.product_type !== 'simple') continue
+        await tx.productVariant.update({
+          where: { id: item.variant_id },
+          data:  { stock: { decrement: Number(item.quantity) } },
+        })
+      }
+
       await tx.order.update({
         where: { id: orderId },
         data:  { sale_id: newSale.id, status: 'delivered' },

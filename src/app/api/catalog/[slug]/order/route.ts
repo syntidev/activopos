@@ -5,6 +5,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive } from '@/lib/catalog'
 import { normalizePhone } from '@/lib/utils'
+import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { currencyVisibility, fmtBs } from '@/app/catalogo/[slug]/catalogUtils'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
@@ -239,26 +240,22 @@ export async function POST(
     const items: ResolvedItem[] = []
     for (const item of body.items) {
       const p = productMap.get(item.product_id)!
-      const priceUsd = p.sale_mode === 'weight'
-        ? (p.price_per_kg_usd  ? Number(p.price_per_kg_usd)  : 0)
-        : (p.price_per_unit_usd ? Number(p.price_per_unit_usd) : 0)
 
-      let priceExtra = 0
       let variantLabel: string | null = null
-      if (item.variant_id) {
-        const variant = await tx.productVariant.findFirst({
-          where:  { id: item.variant_id, product_id: item.product_id, is_active: true },
-          select: { precio_extra: true, stock: true, valor: true },
-        })
-        if (variant) {
-          priceExtra   = Number(variant.precio_extra ?? 0)
-          variantLabel = variant.valor
-          if (variant.stock < item.qty) {
-            throw new Error(`STOCK_INSUFICIENTE:${p.name} (${variant.valor})`)
-          }
+      const variant = item.variant_id
+        ? await tx.productVariant.findFirst({
+            where:  { id: item.variant_id, product_id: item.product_id, is_active: true },
+            select: { stock: true, valor: true, ...VARIANT_PRICING_SELECT },
+          })
+        : null
+      if (variant) {
+        variantLabel = variant.valor
+        if (variant.stock < item.qty) {
+          throw new Error(`STOCK_INSUFICIENTE:${p.name} (${variant.valor})`)
         }
       }
-      const finalPrice = priceUsd + priceExtra
+      // Regla única en lib/pricing.ts (catálogo público = precio detal).
+      const finalPrice = resolveUnitPriceUsd(p, variant ?? undefined)
 
       items.push({
         product_id:    item.product_id,

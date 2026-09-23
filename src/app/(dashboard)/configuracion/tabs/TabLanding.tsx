@@ -25,7 +25,16 @@ interface SectionRow {
   isNew?:  boolean
 }
 
-const TYPE_LABELS: Record<SectionType, string> = {
+// product_list/category_list existen en el schema (API los acepta y valida)
+// pero todavía no tienen formulario de admin -- Fase 1 fue solo backend.
+// Excluidos acá a propósito: SECTION_TYPES completo los ofrecería como
+// "Agregar sección" sin ningún campo para editarlos (fachada).
+type AdminSectionType = Exclude<SectionType, 'product_list' | 'category_list'>
+const ADMIN_SECTION_TYPES = SECTION_TYPES.filter(
+  (t): t is AdminSectionType => t !== 'product_list' && t !== 'category_list',
+)
+
+const TYPE_LABELS: Record<AdminSectionType, string> = {
   hero:                'Hero',
   event_slider:        'Banner de evento',
   community:           'Comunidad',
@@ -37,7 +46,7 @@ const TYPE_LABELS: Record<SectionType, string> = {
 const EMPTY_SLIDE: SlideConfig = { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' }
 const EMPTY_ITEM: CommunityItemConfig = { image_url: '', product_tag: '' }
 
-const DEFAULT_CONFIG: Record<SectionType, Record<string, unknown>> = {
+const DEFAULT_CONFIG: Record<AdminSectionType, Record<string, unknown>> = {
   hero:            { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' } satisfies HeroConfig,
   event_slider:    { slides: [EMPTY_SLIDE, { ...EMPTY_SLIDE }] } satisfies EventSliderConfig,
   community:       { heading: '', subheading: '', items: [EMPTY_ITEM, { ...EMPTY_ITEM }] } satisfies CommunityConfig,
@@ -122,13 +131,13 @@ export function TabLanding({ businessId: _b }: Props) {
   }
 
   const existingTypes = new Set(sections.map(s => s.type))
-  const missingTypes  = SECTION_TYPES.filter(t => !existingTypes.has(t))
+  const missingTypes  = ADMIN_SECTION_TYPES.filter(t => !existingTypes.has(t))
 
   // Borrador local, sin POST todavía — los campos requeridos (título, imagen…)
   // empiezan vacíos y el schema Zod exige min(1) + image_url con formato
   // válido, así que un POST inmediato con defaults vacíos siempre da 400.
   // Se persiste recién cuando el admin llena el form y presiona Guardar.
-  function addSection(type: SectionType) {
+  function addSection(type: AdminSectionType) {
     const draft: SectionRow = {
       id:      -Date.now(),
       type,
@@ -310,7 +319,10 @@ function SectionCard({
       <div className={styles.landingCardHeader}>
         <h3 className={styles.formCardTitle}>
           <LayoutTemplate size={16} aria-hidden="true" />
-          {TYPE_LABELS[section.type]}
+          {/* product_list/category_list no tienen label propio todavía (sin
+              form de admin, ver nota en TYPE_LABELS) -- muestra el tipo crudo
+              en vez de undefined si una sección de ese tipo llega a existir. */}
+          {(TYPE_LABELS as Partial<Record<SectionType, string>>)[section.type] ?? section.type}
           {!section.visible && <span className={styles.landingHiddenBadge}>Oculta</span>}
         </h3>
         <div className={styles.landingCardControls}>
@@ -376,7 +388,7 @@ export function ImageField({ label, value, onChange }: { label: string; value: s
     <div className={styles.fieldGroup}>
       <label className={styles.label}>{label}</label>
       <div
-        className={`${styles.coverDropZone} ${dragging ? styles.logoDropZoneActive : ''}`}
+        className={`${styles.imageFieldDropZone} ${dragging ? styles.logoDropZoneActive : ''}`}
         role="button"
         tabIndex={0}
         aria-label={label}
@@ -387,14 +399,14 @@ export function ImageField({ label, value, onChange }: { label: string; value: s
         onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) void handleFile(f) }}
       >
         {value ? (
-          <img src={value} alt="" className={styles.coverPreview} />
+          <img src={value} alt="" className={styles.imageFieldPreview} />
         ) : (
-          <div className={styles.coverEmpty}>
+          <div className={styles.imageFieldEmpty}>
             <ImageUp size={20} aria-hidden="true" />
             <p className={styles.logoDropText}>Arrastra o haz clic</p>
           </div>
         )}
-        {uploading && <div className={styles.coverUploading}>Subiendo…</div>}
+        {uploading && <div className={styles.imageFieldUploading}>Subiendo…</div>}
       </div>
       <input
         id={inputId}

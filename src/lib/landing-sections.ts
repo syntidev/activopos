@@ -3,7 +3,7 @@ import { z } from 'zod'
 // Fase 1 de Landing Sections — Disciplinas/Arma-tu-equipo/Barra-de-marcas
 // quedan para Fase 2. El layout de cada tipo NO es editable por el usuario,
 // solo el contenido de `config` — validado aquí, nunca confiado del cliente.
-export const SECTION_TYPES = ['hero', 'event_slider', 'community', 'story', 'collection_grid', 'announcement_popup'] as const
+export const SECTION_TYPES = ['hero', 'event_slider', 'community', 'story', 'collection_grid', 'announcement_popup', 'product_list', 'category_list'] as const
 export type SectionType = typeof SECTION_TYPES[number]
 
 const trimmed = (max: number) => z.string().trim().min(1).max(max)
@@ -95,6 +95,32 @@ export const CONFIG_SCHEMAS = {
     cta_link:  linkUrl(500).optional(),
     delay_ms:  z.number().int().min(0).max(15000).default(2500),
   }).strict(),
+  // modo='manual': product_ids en el orden exacto que el admin definió (el
+  // array ES el orden, no se reordena). modo='automatico': category_id O
+  // collection_id (nunca ambos) + cantidad_maxima -- el renderer resuelve
+  // los productos reales server-side (mismo patrón que collection_grid ya
+  // usa), acá solo se valida y guarda la referencia.
+  product_list: z.object({
+    modo:            z.enum(['manual', 'automatico']),
+    product_ids:     z.array(z.number().int().positive()).max(20).optional(),
+    category_id:     z.number().int().positive().optional(),
+    collection_id:   z.number().int().positive().optional(),
+    cantidad_maxima: z.number().int().min(1).max(20).optional(),
+    titulo:          trimmed(120).optional(),
+    subtitulo:       trimmed(200).optional(),
+  }).strict().refine(d => {
+    if (d.modo === 'manual') return !!d.product_ids?.length
+    return (d.category_id != null) !== (d.collection_id != null)
+  }, { message: "modo 'manual' requiere product_ids (mínimo 1); modo 'automatico' requiere category_id O collection_id, no ambos" }),
+  // category_ids en el orden exacto que el admin eligió. Nombre + foto
+  // representativa se resuelven server-side desde Category (image_url
+  // propio si lo tiene, si no la del primer producto) -- ningún dato nuevo
+  // que guardar acá aparte del array.
+  category_list: z.object({
+    category_ids: z.array(z.number().int().positive()).min(1).max(12),
+    titulo:       trimmed(120).optional(),
+    subtitulo:    trimmed(200).optional(),
+  }).strict(),
 } satisfies Record<SectionType, z.ZodTypeAny>
 
 export function isSectionType(value: string): value is SectionType {
@@ -109,6 +135,8 @@ export type CommunityConfig          = z.infer<typeof CONFIG_SCHEMAS.community>
 export type StoryConfig              = z.infer<typeof CONFIG_SCHEMAS.story>
 export type CollectionGridConfig     = z.infer<typeof CONFIG_SCHEMAS.collection_grid>
 export type AnnouncementPopupConfig  = z.infer<typeof CONFIG_SCHEMAS.announcement_popup>
+export type ProductListConfig        = z.infer<typeof CONFIG_SCHEMAS.product_list>
+export type CategoryListConfig       = z.infer<typeof CONFIG_SCHEMAS.category_list>
 export type SlideConfig              = EventSliderConfig['slides'][number]
 export type CommunityItemConfig      = CommunityConfig['items'][number]
 

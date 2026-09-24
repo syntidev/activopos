@@ -461,81 +461,84 @@
 
 /* CTAs */
 .ctas {
-  display: flex;
-  gap:     var(--space-3);
+  display:     flex;
+  align-items: stretch;
+  gap:         var(--space-3);
 }
 
-.btnPedir {
-  flex:            1;
-  height:          52px;
-  display:         flex;
+/* Base común de los 4 controles de la fila: mismo alto (token de touch),
+   mismo radio, ícono y texto centrados en una sola línea. */
+.btnPedir,
+.btnAddCart,
+.btnWhatsapp,
+.btnShare {
+  height:          var(--touch-comfy);
+  display:         inline-flex;
   align-items:     center;
   justify-content: center;
   gap:             var(--space-2);
   border-radius:   var(--radius-lg);
-  background:      var(--biz-color, var(--onbike-blue));
-  color:           #FFFFFF;
   font-size:       var(--text-base);
   font-weight:     var(--weight-semibold);
+  line-height:     1;
+  white-space:     nowrap;
   text-decoration: none;
-  transition:      background 150ms ease;
+  cursor:          pointer;
+  transition:      background var(--transition-fast);
+}
+
+.btnPedir,
+.btnAddCart {
+  flex:      1 1 0;
+  min-width: 0;
+  padding:   0 var(--space-4);
+}
+
+/* Botones de solo ícono: cuadrados, mismo alto que los de texto. */
+.btnWhatsapp,
+.btnShare {
+  flex:        0 0 auto;
+  width:       var(--touch-comfy);
+  padding:     0;
+}
+
+.btnPedir {
+  border:     none;
+  background: var(--biz-color, var(--onbike-blue));
+  color:      var(--color-white);
 }
 .btnPedir:hover {
   background: color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 85%, black);
 }
 
 .btnAddCart {
-  flex:            1;
-  height:          52px;
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  gap:             var(--space-2);
-  border-radius:   var(--radius-lg);
-  border:          1.5px solid var(--biz-color, var(--onbike-blue));
-  background:      var(--color-white);
-  color:           var(--biz-color, var(--onbike-blue));
-  font-size:       var(--text-base);
-  font-weight:     var(--weight-semibold);
-  cursor:          pointer;
-  transition:      background 150ms ease;
+  border:     1.5px solid var(--biz-color, var(--onbike-blue));
+  background: var(--color-white);
+  color:      var(--biz-color, var(--onbike-blue));
 }
 .btnAddCart:hover { background: var(--color-surface-2); }
 
-/* Mismo tamaño/patrón que .btnShare -- coloreado con el token --whatsapp. */
 .btnWhatsapp {
-  flex-shrink:     0;
-  width:           52px;
-  height:          52px;
-  border-radius:   var(--radius-lg);
-  border:          none;
-  background:      var(--whatsapp);
-  color:           #FFFFFF;
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  cursor:          pointer;
-  text-decoration: none;
-  transition:      background var(--transition-fast), transform var(--duration-fast);
+  border:     none;
+  background: var(--whatsapp);
+  color:      var(--color-white);
 }
 .btnWhatsapp:hover  { background: color-mix(in srgb, var(--whatsapp) 85%, black); }
 .btnWhatsapp:active { transform: scale(0.96); }
 
 .btnShare {
-  width:           52px;
-  height:          52px;
-  border-radius:   var(--radius-lg);
-  border:          1.5px solid var(--color-border-subtle);
-  background:      var(--color-white);
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  cursor:          pointer;
-  color:           var(--color-text-secondary);
-  flex-shrink:     0;
-  transition:      background 150ms ease;
+  border:     1.5px solid var(--color-border-subtle);
+  background: var(--color-white);
+  color:      var(--color-text-secondary);
 }
 .btnShare:hover { background: var(--color-surface-2); }
+
+/* Móvil: la acción principal va sola arriba a todo el ancho; debajo,
+   Agregar al carrito + botones de ícono. Así ningún texto se parte. */
+@media (max-width: 639px) {
+  .ctas      { flex-wrap: wrap; }
+  .btnPedir  { order: -1; flex-basis: 100%; }
+}
 
 /* Productos relacionados */
 .relatedSection {

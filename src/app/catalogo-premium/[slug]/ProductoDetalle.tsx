@@ -672,7 +672,7 @@ export function ProductoDetalle({
               onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
             >
               <Zap size={18} aria-hidden="true" />
-              Pedir ahora · {fmtUsd(effectivePriceFinal * qty)} · {fmtBs(effectivePrice * qty * rate)}
+              Comprar ahora
             </button>
             <button
               type="button"

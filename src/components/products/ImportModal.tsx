@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, Upload, Download, CheckCircle, AlertCircle, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { X, Upload, Download, CheckCircle, AlertCircle, FileSpreadsheet, Loader2, Plus, RefreshCw } from 'lucide-react'
+import type { PlanSummary } from '@/lib/product-import-plan'
 import mStyles from './modals.module.css'
 import styles from './ImportModal.module.css'
 
@@ -20,6 +21,8 @@ interface RowError {
 
 type ImportState = 'idle' | 'validating' | 'validated' | 'importing' | 'success' | 'error'
 
+const formatCell = (v: string | number | null): string => (v === null || v === '' ? '—' : String(v))
+
 export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   useScrollLock(isOpen)
 
@@ -27,6 +30,7 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   const [isDragging, setIsDragging]   = useState(false)
   const [importState, setImportState] = useState<ImportState>('idle')
   const [validCount, setValidCount]   = useState(0)
+  const [plan, setPlan]               = useState<PlanSummary | null>(null)
   const [rowErrors, setRowErrors]     = useState<RowError[]>([])
   const [errorMsg, setErrorMsg]       = useState('')
   const [progress, setProgress]       = useState(0)
@@ -37,6 +41,7 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
     setIsDragging(false)
     setImportState('idle')
     setValidCount(0)
+    setPlan(null)
     setRowErrors([])
     setErrorMsg('')
     setProgress(0)
@@ -66,6 +71,7 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
         error?: string
         valid?: number
         errors?: RowError[]
+        plan?: PlanSummary
       }
 
       if (!res.ok) {
@@ -75,6 +81,7 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
       }
 
       setValidCount(data.valid ?? 0)
+      setPlan(data.plan ?? null)
       setRowErrors(data.errors ?? [])
       setImportState('validated')
     } catch {
@@ -182,7 +189,7 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
             <div className={mStyles.modalHeader}>
               <div>
                 <h2 className={mStyles.modalTitle}>Importar desde Excel</h2>
-                <p className={mStyles.modalSubtitle}>Hasta 1000 productos por archivo</p>
+                <p className={mStyles.modalSubtitle}>Hasta 1000 filas por archivo. El stock del archivo reemplaza al actual.</p>
               </div>
               <button
                 className={mStyles.closeBtn}
@@ -255,11 +262,61 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
                     </button>
                   </div>
 
-                  {validCount > 0 && (
-                    <div className={styles.dryRunValid}>
-                      <CheckCircle size={15} aria-hidden="true" />
-                      <span><strong>{validCount}</strong> {validCount === 1 ? 'producto válido' : 'productos válidos'}</span>
-                    </div>
+                  {plan && plan.created.length > 0 && (
+                    <section className={styles.planBlock} aria-label="Productos que se crearán">
+                      <h3 className={styles.planTitle}>
+                        <Plus size={14} aria-hidden="true" />
+                        Se crearán {plan.created.length}
+                      </h3>
+                      <ul className={styles.planList}>
+                        {plan.created.map(c => (
+                          <li key={c.row} className={styles.planItem}>
+                            <span className={styles.planName}>{c.name}</span>
+                            <span className={styles.planDetail}>
+                              {c.variants.length > 0
+                                ? c.variants.map(v => `${v.valor}: ${v.new}`).join(' · ')
+                                : `stock ${c.stock ?? 0}`}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  {plan && plan.updated.length > 0 && (
+                    <section className={styles.planBlock} aria-label="Productos que se actualizarán">
+                      <h3 className={styles.planTitle}>
+                        <RefreshCw size={14} aria-hidden="true" />
+                        Se actualizarán {plan.updated.length}
+                      </h3>
+                      <ul className={styles.planList}>
+                        {plan.updated.map(u => (
+                          <li key={u.row} className={styles.planItem}>
+                            <span className={styles.planName}>{u.name}</span>
+                            {u.stock && (
+                              <span className={styles.planDetail}>stock {u.stock.old} → {u.stock.new}</span>
+                            )}
+                            {u.variants.map(v => (
+                              <span key={`${v.tipo}-${v.valor}`} className={styles.planDetail}>
+                                {v.valor}: {v.action === 'create' ? 'nueva' : v.old} → {v.new}
+                              </span>
+                            ))}
+                            {u.changes.map(c => (
+                              <span key={c.field} className={styles.planDetail}>
+                                {c.field}: {formatCell(c.old)} → {formatCell(c.new)}
+                              </span>
+                            ))}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  {plan && plan.unchanged.length > 0 && (
+                    <p className={styles.planUnchanged}>
+                      <CheckCircle size={14} aria-hidden="true" />
+                      <span><strong>{plan.unchanged.length}</strong> {plan.unchanged.length === 1 ? 'producto queda igual' : 'productos quedan igual'}</span>
+                    </p>
                   )}
 
                   {rowErrors.length > 0 && (
@@ -286,7 +343,9 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
 
                   {validCount === 0 && (
                     <div className={styles.dryRunNoValid}>
-                      No hay filas válidas para importar. Corrige el archivo e inténtalo de nuevo.
+                      {plan && plan.unchanged.length > 0 && rowErrors.length === 0
+                        ? 'El archivo no cambia nada: todo queda igual que en el sistema.'
+                        : 'No hay cambios válidos para aplicar. Corrige el archivo e inténtalo de nuevo.'}
                     </div>
                   )}
                 </div>
@@ -344,8 +403,8 @@ export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
                   <span className={mStyles.spinner} aria-hidden="true" />
                 )}
                 {importState === 'importing'
-                  ? 'Importando…'
-                  : `Importar ${validCount > 0 ? validCount : ''} productos`}
+                  ? 'Aplicando…'
+                  : `Aplicar cambios${validCount > 0 ? ` (${validCount})` : ''}`}
               </button>
             </div>
           </motion.div>

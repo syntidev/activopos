@@ -15,17 +15,28 @@ export async function GET() {
       'id', 'nombre', 'codigo_barras', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
       'tipo_producto', 'modo_venta', 'unidad',
       'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
+      'variante_tipo', 'variante_valor',
     ]
 
-    // La fila de ejemplo va en la hoja "Productos" para que se vea al abrir el
-    // archivo, pero lleva id = EJEMPLO y el import la descarta antes de validar
-    // (import-excel/route.ts). Sin ese seguro, al usuario que no la borre se le
-    // crearía un producto fantasma en su catálogo.
+    // Las filas de ejemplo van en la hoja "Productos" para que se vean al abrir
+    // el archivo, pero llevan id = EJEMPLO y el import las descarta antes de
+    // validar (import-excel/route.ts). Sin ese seguro, al usuario que no las
+    // borre se le crearían productos fantasma en su catálogo.
     const example = [
       'EJEMPLO', 'Arepa con Pollo', '', 'AREPA-001', 3.50, 1.50, 50, 'Alimentos',
-      'simple', 'unidad', 'und', '', '', 'Mostrador', 'Producto estrella del negocio',
+      'simple', 'unidad', 'und', '', '', 'Mostrador', 'Producto estrella del negocio', '', '',
     ]
-    const ws = XLSX.utils.aoa_to_sheet([headers, example])
+    // Producto con variantes: una fila por talla/color, mismo nombre; el stock de
+    // cada fila es el de esa variante.
+    const exampleVariantS = [
+      'EJEMPLO', 'Franela Deportiva', '', '', 12, 6, 10, 'Ropa',
+      'simple', 'unidad', 'und', '', '', '', '', 'talla', 'S',
+    ]
+    const exampleVariantM = [
+      'EJEMPLO', 'Franela Deportiva', '', '', 12, 6, 8, 'Ropa',
+      'simple', 'unidad', 'und', '', '', '', '', 'talla', 'M',
+    ]
+    const ws = XLSX.utils.aoa_to_sheet([headers, example, exampleVariantS, exampleVariantM])
 
     // xlsx 0.18 (community) ignora los estilos al escribir: el resaltado amarillo
     // no es posible sin cambiar de librería. El comentario sí viaja en el archivo.
@@ -48,6 +59,8 @@ export async function GET() {
       { wch: 24 }, // wholesale_price_per_kg_usd
       { wch: 22 }, // location
       { wch: 24 }, // notes
+      { wch: 14 }, // variante_tipo
+      { wch: 16 }, // variante_valor
     ]
 
     const guide = [
@@ -58,7 +71,7 @@ export async function GET() {
       ['sku', 'No', 'Texto, máx 50 — tu código interno', 'HAR-001'],
       ['precio_usd', 'Sí', 'Número ≥ 0. Punto o coma decimal.', '1.20'],
       ['costo_usd', 'No', 'Número ≥ 0. Vacío = sin costo registrado.', '0.85'],
-      ['stock', 'No', 'Número ≥ 0. Vacío = 0. Al actualizar, es la existencia final deseada.', '40'],
+      ['stock', 'No', 'Número ≥ 0. Vacío = 0. Al actualizar, es la existencia FINAL deseada: reemplaza la actual, no se suma. En una fila de variante es el stock de esa variante (entero).', '40'],
       ['categoria', 'No', 'Texto. Si no existe, se crea sola.', 'Víveres'],
       ['tipo_producto', 'No', 'simple | combo | fabricable — por defecto: simple', 'simple'],
       ['modo_venta', 'No', 'unidad | peso | servicio — por defecto: unidad', 'peso'],
@@ -67,6 +80,8 @@ export async function GET() {
       ['precio_mayorista_kg_usd', 'No', 'Número ≥ 0 — precio al mayor por kilo', '0.95'],
       ['ubicacion', 'No', 'Texto, máx 120', 'Pasillo 2, Estante A'],
       ['notas', 'No', 'Texto libre', 'Producto de temporada'],
+      ['variante_tipo', 'No', 'talla | color | personalizado — por defecto: talla. Solo si la fila es una variante.', 'talla'],
+      ['variante_valor', 'No', 'Texto, máx 50 — la talla o el color de esa fila. Vacío = producto sin variantes.', 'M'],
       [],
       ['Cómo llenar la plantilla'],
       ['1. Borra la fila de ejemplo (la que dice EJEMPLO en la columna "id").'],
@@ -80,6 +95,16 @@ export async function GET() {
       ['1. Descarga tu catálogo con el botón "Exportar" — ya viene con los IDs.'],
       ['2. Edita lo que necesites en Excel sin borrar la columna "id".'],
       ['3. Súbelo de vuelta: las filas con ID se actualizan, no se duplican.'],
+      [],
+      ['Conciliar inventario (productos con tallas o colores)'],
+      ['1. Exporta: cada variante sale en su propia fila, con el mismo nombre e id del producto.'],
+      ['2. Edita SOLO la columna "stock" de las filas que quieras corregir.'],
+      ['3. Para agregar una talla nueva, copia una fila del producto y cambia variante_valor y stock.'],
+      ['4. El stock del archivo REEMPLAZA al actual. Nunca se suma.'],
+      ['5. Las variantes que no aparezcan en el archivo no se tocan ni se borran.'],
+      ['6. Precio, categoría y demás datos del producto se toman de la primera fila de cada producto.'],
+      ['7. Antes de aplicar verás qué se crea, qué cambia (valor actual → nuevo) y qué queda igual.'],
+      ['8. Sin id, el producto se busca por nombre exacto: si existe se actualiza, si no se crea.'],
     ]
     const wsGuide = XLSX.utils.aoa_to_sheet(guide)
     wsGuide['!cols'] = [{ wch: 30 }, { wch: 12 }, { wch: 66 }, { wch: 22 }]

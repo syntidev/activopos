@@ -13,7 +13,15 @@ export async function GET() {
     const [products, stockAgg] = await Promise.all([
       db.product.findMany({
         where:   { active: true }, // business_id inyectado por el tenant layer
-        include: { category: { select: { name: true } } },
+        include: {
+          category: { select: { name: true } },
+          // ProductVariant no tiene business_id: se aísla vía el producto ya scopeado.
+          variants: {
+            where:   { is_active: true },
+            orderBy: [{ sort_order: 'asc' }, { id: 'asc' }],
+            select:  { tipo: true, valor: true, stock: true },
+          },
+        },
         orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
       }),
       db.inventoryEntry.groupBy({
@@ -34,13 +42,14 @@ export async function GET() {
       'id', 'nombre', 'codigo_barras', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
       'tipo_producto', 'modo_venta', 'unidad',
       'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
+      'variante_tipo', 'variante_valor',
     ]
 
-    const rows = products.map(p => {
+    const rows = products.flatMap(p => {
       // import mapea precio_usd → price_per_unit_usd; emitimos el precio efectivo
       // para que un producto por peso también pase la validación al reimportar.
       const precio = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
-      return [
+      const base = [
         // El id hace que reimportar este archivo ACTUALICE en vez de duplicar.
         p.id,
         p.name,
@@ -61,13 +70,25 @@ export async function GET() {
         p.location ?? '',
         p.notes ?? '',
       ]
+      // Producto con variantes: UNA fila por talla/color, repitiendo los datos del
+      // producto; `stock` pasa a ser el de esa variante (ProductVariant.stock es la
+      // fuente autoritativa -- el neto del padre no cuenta). Es el formato que el
+      // import agrupa por producto y concilia variante por variante.
+      if (p.has_variants && p.variants.length > 0) {
+        return p.variants.map(v => {
+          const row: (string | number)[] = [...base, v.tipo, v.valor]
+          row[6] = v.stock
+          return row
+        })
+      }
+      return [[...base, '', '']]
     })
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
     ws['!cols'] = [
       { wch:  6 }, { wch: 25 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
       { wch:  8 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 20 },
-      { wch: 24 }, { wch: 22 }, { wch: 24 },
+      { wch: 24 }, { wch: 22 }, { wch: 24 }, { wch: 14 }, { wch: 16 },
     ]
 
     const wb = XLSX.utils.book_new()

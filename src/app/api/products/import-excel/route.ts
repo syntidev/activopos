@@ -4,15 +4,13 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import type { SessionPayload } from '@/lib/auth'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import * as XLSX from 'xlsx'
-
-// Supported product types
-const VALID_PRODUCT_TYPES = ['simple', 'combo', 'fabricable'] as const
-type ProductTypeLiteral = typeof VALID_PRODUCT_TYPES[number]
-
-// Modos de venta del schema (enum SaleMode). La plantilla documenta los 3 de uso
-// común (unit/weight/service); los otros 3 se aceptan porque son válidos en DB.
-const VALID_SALE_MODES = ['unit', 'weight', 'service', 'length', 'volume', 'package'] as const
-type SaleModeLiteral = typeof VALID_SALE_MODES[number]
+import { revalidateCatalogCache } from '@/lib/catalog'
+import {
+  VALID_PRODUCT_TYPES, VALID_SALE_MODES, VARIANT_TIPOS, planImport, summarizePlan,
+} from '@/lib/product-import-plan'
+import type {
+  ImportRow, RowError, ExistingProduct, ProductTypeLiteral, SaleModeLiteral, VariantTipo,
+} from '@/lib/product-import-plan'
 
 const toNum = (v: unknown): number | null => {
   if (typeof v === 'number') return isNaN(v) ? null : v
@@ -36,34 +34,10 @@ const toNum = (v: unknown): number | null => {
 const toString = (v: unknown): string =>
   String(v ?? '').trim()
 
-interface RowValidation {
-  row:          number
-  id:           number | null
-  name:         string
-  barcode:      string | null
-  sku:          string | null
-  price_usd:    number
-  cost_usd:     number | null
-  stock:        number
-  category:     string | null
-  product_type: ProductTypeLiteral
-  sale_mode:    SaleModeLiteral
-  unit_label:   string
-  wholesale_price_usd:        number | null
-  wholesale_price_per_kg_usd: number | null
-  location:     string | null
-  notes:        string | null
-}
-
-interface RowError {
-  row:     number
-  message: string
-}
-
 function validateRow(
   raw: Record<string, unknown>,
   rowNum: number
-): { valid: RowValidation } | { error: RowError } {
+): { valid: ImportRow } | { error: RowError } {
   // id vacío → alta. id con valor → actualización de un producto existente.
   const idRaw = raw['id'] ?? raw['ID']
   const id = toString(idRaw) !== '' ? toNum(idRaw) : null
@@ -152,11 +126,30 @@ function validateRow(
   const notesRaw = toString(raw['notas'] ?? raw['notes'] ?? raw['Notas'] ?? '')
   const notes = notesRaw || null
 
+  // Variante: el mismo producto en varias filas, una por talla/color. `stock`
+  // de una fila de variante es el de ESA variante (ProductVariant.stock es Int).
+  const variantValor = toString(raw['variante_valor'] ?? '') || null
+  const variantTipoRaw = toString(raw['variante_tipo'] ?? '').toLowerCase()
+  if (variantValor === null && variantTipoRaw !== '') {
+    return { error: { row: rowNum, message: '"variante_tipo" sin "variante_valor" — escribe la talla/color o borra el tipo' } }
+  }
+  if (variantValor !== null && variantValor.length > 50) {
+    return { error: { row: rowNum, message: '"variante_valor" supera 50 caracteres' } }
+  }
+  const variantTipo = variantValor === null ? null : (variantTipoRaw || 'talla')
+  if (variantTipo !== null && !VARIANT_TIPOS.includes(variantTipo as VariantTipo)) {
+    return { error: { row: rowNum, message: `"variante_tipo" inválido — usa: ${VARIANT_TIPOS.join(', ')}` } }
+  }
+  if (variantValor !== null && !Number.isInteger(stock)) {
+    return { error: { row: rowNum, message: '"stock" de una variante debe ser un entero' } }
+  }
+
   return {
     valid: {
       row: rowNum, id, name, barcode, sku, price_usd: price, cost_usd: cost, stock, category,
       product_type, sale_mode, unit_label,
       wholesale_price_usd, wholesale_price_per_kg_usd, location, notes,
+      variant_tipo: variantTipo as VariantTipo | null, variant_valor: variantValor,
     },
   }
 }
@@ -210,7 +203,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Validate all rows first
-  const validRows: RowValidation[] = []
+  const validRows: ImportRow[] = []
   const errors: RowError[] = []
 
   for (let i = 0; i < rows.length; i++) {
@@ -222,176 +215,187 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Snapshot del negocio sobre el que se calcula el plan: productos con su
+  // categoría y variantes activas, más el stock neto del padre. El plan es la
+  // única fuente de verdad: el dry-run lo muestra y la aplicación lo ejecuta.
+  const [products, stockAgg] = await Promise.all([
+    db.product.findMany({ // business_id inyectado por el tenant layer
+      select: {
+        id: true, name: true, barcode: true, sku: true, product_type: true, sale_mode: true,
+        base_unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true,
+        cost_per_unit_usd: true, wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
+        location: true, notes: true, active: true, has_variants: true,
+        category: { select: { name: true } },
+        variants: { where: { is_active: true }, select: { id: true, tipo: true, valor: true, stock: true } },
+      },
+    }),
+    db.inventoryEntry.groupBy({
+      by:   ['product_id'],
+      _sum: { quantity: true, waste: true },
+    }),
+  ])
+  const netStock = new Map(
+    stockAgg.map(s => [s.product_id, Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0)]),
+  )
+  const num = (v: { toString(): string } | null): number | null => (v === null ? null : Number(v))
+  const existing: ExistingProduct[] = products.map(p => ({
+    id: p.id, name: p.name, barcode: p.barcode, sku: p.sku,
+    category: p.category?.name ?? null,
+    product_type: p.product_type, sale_mode: p.sale_mode, unit_label: p.base_unit_label,
+    // Mismo precio efectivo que emite el export.
+    price_usd: Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0),
+    cost_usd: num(p.cost_per_unit_usd),
+    wholesale_price_usd: num(p.wholesale_price_usd),
+    wholesale_price_per_kg_usd: num(p.wholesale_price_per_kg_usd),
+    location: p.location, notes: p.notes, active: p.active, has_variants: p.has_variants,
+    net_stock: netStock.get(p.id) ?? 0,
+    variants: p.variants,
+  }))
+  const barcodeOwners = new Map<string, number>()
+  for (const p of existing) if (p.barcode) barcodeOwners.set(p.barcode, p.id)
+
+  const plan = planImport(validRows, existing, barcodeOwners)
+  const rowErrors: RowError[] = [...errors, ...plan.errors].sort((a, b) => a.row - b.row)
+
   if (dryRun) {
+    const summary = summarizePlan(plan)
     return NextResponse.json({
-      ok:      true,
-      dry_run: true,
-      valid:   validRows.length,
-      created: validRows.filter(r => r.id === null).length,
-      updated: validRows.filter(r => r.id !== null).length,
-      errors,
+      ok:        true,
+      dry_run:   true,
+      valid:     summary.created.length + summary.updated.length,
+      created:   summary.created.length,
+      updated:   summary.updated.length,
+      unchanged: summary.unchanged.length,
+      errors:    rowErrors,
+      plan:      summary,
     })
-  }
-
-  // Dueño actual de cada barcode del archivo — una sola query en vez de N.
-  const fileBarcodes = validRows.map(r => r.barcode).filter((b): b is string => b !== null)
-  const barcodeOwner = new Map<string, number>()
-  if (fileBarcodes.length > 0) {
-    const owned = await db.product.findMany({
-      where:  { barcode: { in: fileBarcodes } }, // business_id inyectado por el tenant layer
-      select: { id: true, barcode: true },
-    })
-    for (const p of owned) if (p.barcode) barcodeOwner.set(p.barcode, p.id)
-  }
-
-  // Stock neto actual de los productos a actualizar, para calcular el delta.
-  const updateIds = validRows.map(r => r.id).filter((id): id is number => id !== null)
-  const stockMap = new Map<number, number>()
-  if (updateIds.length > 0) {
-    const agg = await db.inventoryEntry.groupBy({
-      by:    ['product_id'],
-      where: { product_id: { in: updateIds } }, // business_id inyectado por el tenant layer
-      _sum:  { quantity: true, waste: true },
-    })
-    for (const s of agg) {
-      stockMap.set(s.product_id, Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0))
-    }
   }
 
   const categoryCache = new Map<string, number>()
-  const seenBarcodes  = new Set<string>()
+  const resolveCategory = async (name: string | null): Promise<number | null> => {
+    if (!name) return null
+    const cached = categoryCache.get(name)
+    if (cached !== undefined) return cached
+    const found = await db.category.findFirst({
+      where:  { name }, // business_id inyectado por el tenant layer
+      select: { id: true },
+    })
+    const id = found
+      ? found.id
+      : (await db.category.create({ data: { business_id: session.businessId, name } })).id // business_id explícito (tipo de create)
+    categoryCache.set(name, id)
+    return id
+  }
+
+  // Campos a nivel producto que comparten alta y actualización.
+  const productData = (r: ImportRow, categoryId: number | null) => ({
+    name:               r.name,
+    barcode:            r.barcode,
+    sku:                r.sku,
+    category_id:        categoryId,
+    product_type:       r.product_type,
+    sale_mode:          r.sale_mode,
+    unit_label:         r.unit_label,
+    base_unit_label:    r.unit_label,
+    price_per_unit_usd: r.price_usd,
+    cost_per_unit_usd:  r.cost_usd,
+    wholesale_price_usd:        r.wholesale_price_usd,
+    wholesale_price_per_kg_usd: r.wholesale_price_per_kg_usd,
+    location:                   r.location,
+    notes:                      r.notes,
+  })
+
   let created = 0
   let updated = 0
-  const rowErrors: RowError[] = [...errors]
+  let unchanged = 0
 
-  for (const row of validRows) {
-    // Barcode duplicado — dentro del archivo o contra otro producto del tenant.
-    if (row.barcode) {
-      if (seenBarcodes.has(row.barcode)) {
-        rowErrors.push({ row: row.row, message: `Código de barras duplicado dentro del archivo: ${row.barcode}` })
-        continue
-      }
-      const owner = barcodeOwner.get(row.barcode)
-      if (owner !== undefined && owner !== row.id) {
-        rowErrors.push({ row: row.row, message: `Código de barras duplicado: ${row.barcode} ya pertenece a otro producto` })
-        continue
-      }
-      seenBarcodes.add(row.barcode)
-    }
-
-    // Resolve category
-    let categoryId: number | null = null
-    if (row.category) {
-      if (categoryCache.has(row.category)) {
-        categoryId = categoryCache.get(row.category)!
-      } else {
-        const existing = await db.category.findFirst({
-          where: { name: row.category }, // business_id inyectado por el tenant layer
-          select: { id: true },
-        })
-        if (existing) {
-          categoryId = existing.id
-        } else {
-          const newCat = await db.category.create({
-            data: { business_id: session.businessId, name: row.category }, // business_id explícito (tipo de create)
-          })
-          categoryId = newCat.id
-        }
-        categoryCache.set(row.category, categoryId)
-      }
-    }
-
-    // Campos que comparten alta y actualización.
-    const productData = {
-      name:               row.name,
-      barcode:            row.barcode,
-      sku:                row.sku,
-      category_id:        categoryId,
-      product_type:       row.product_type,
-      sale_mode:          row.sale_mode,
-      unit_label:         row.unit_label,
-      base_unit_label:    row.unit_label,
-      price_per_unit_usd: row.price_usd,
-      cost_per_unit_usd:  row.cost_usd,
-      wholesale_price_usd:        row.wholesale_price_usd,
-      wholesale_price_per_kg_usd: row.wholesale_price_per_kg_usd,
-      location:                   row.location,
-      notes:                      row.notes,
-    }
+  for (const p of plan.products) {
+    if (p.kind === 'same') { unchanged++; continue }
 
     try {
-      if (row.id === null) {
-        await prisma.$transaction(async tx => {
+      const categoryId = await resolveCategory(p.source.category)
+      await prisma.$transaction(async tx => {
+        let productId = p.product_id
+        if (p.kind === 'create') {
           const product = await tx.product.create({
             data: {
               business_id: session.businessId,
               // El prospecto que importa su catálogo espera verlo en el catálogo
               // público. El default false del schema aplica al alta manual.
               show_in_catalog: true,
-              ...productData,
+              has_variants:    p.variants.length > 0,
+              ...productData(p.source, categoryId),
             },
           })
-
-          if (row.stock > 0) {
-            await tx.inventoryEntry.create({
-              data: {
-                business_id:       session.businessId,
-                product_id:        product.id,
-                quantity:          row.stock,
-                cost_per_unit_usd: row.cost_usd ?? 0,
-                // DT Sprint 44.5: entry_type explícito. Carga inicial de import =
-                // 'adjustment' (valor válido del String entry_type, ver schema:
-                // purchase|adjustment|sale|return|reservation). Antes heredaba el
-                // default implícito.
-                entry_type:        'adjustment',
-                notes:             'Importación Excel',
-                created_by:        session.userId,
-              },
-            })
-          }
-        })
-        created++
-      } else {
-        // Ownership verificada con el cliente tenant ANTES de escribir con el
-        // cliente crudo dentro de la transacción.
-        const owned = await db.product.findFirst({
-          where:  { id: row.id }, // business_id inyectado por el tenant layer
-          select: { id: true },
-        })
-        if (!owned) {
-          rowErrors.push({ row: row.row, message: `Producto ID ${row.id} no encontrado en este negocio` })
-          continue
+          productId = product.id
+        } else if (p.changes.length > 0) {
+          await tx.product.update({ where: { id: productId as number }, data: productData(p.source, categoryId) })
         }
 
-        const productId = row.id
-        await prisma.$transaction(async tx => {
-          await tx.product.update({ where: { id: productId }, data: productData })
+        // Producto simple: el stock del Excel es el neto deseado, no un
+        // movimiento -- se asienta solo la diferencia contra el neto real.
+        // Sin esto, reimportar duplicaría el inventario en cada pasada.
+        if (p.stock && p.stock.delta !== 0) {
+          await tx.inventoryEntry.create({
+            data: {
+              business_id:       session.businessId,
+              product_id:        productId as number,
+              quantity:          p.stock.delta,
+              cost_per_unit_usd: p.source.cost_usd ?? 0,
+              // entry_type explícito: 'adjustment' es valor válido del String
+              // (purchase|adjustment|sale|return|reservation, ver schema).
+              entry_type:        'adjustment',
+              notes:             p.kind === 'create' ? 'Importación Excel' : 'Ajuste por importación Excel',
+              created_by:        session.userId,
+            },
+          })
+        }
 
-          // El stock del Excel es el neto deseado, no un movimiento: se asienta
-          // solo la diferencia contra el neto actual. Sin esto, reimportar
-          // duplicaría el inventario en cada pasada.
-          const delta = row.stock - (stockMap.get(productId) ?? 0)
+        // Variantes: ProductVariant.stock es la fuente autoritativa. Cada cambio
+        // se refleja además en inventory_entries del padre (mismo mecanismo dual
+        // que PATCH/POST /api/products/[id]/variants) para que el neto que lee el
+        // dashboard siga a la suma de tallas: delta > 0 entra como `quantity`,
+        // delta < 0 como `waste`.
+        for (let i = 0; i < p.variants.length; i++) {
+          const v = p.variants[i]
+          if (v.action === 'same') continue
+          const delta = v.new - (v.old ?? 0)
+          if (v.action === 'create') {
+            await tx.productVariant.create({
+              data: { product_id: productId as number, tipo: v.tipo, valor: v.valor, stock: v.new, sort_order: i },
+            })
+          } else {
+            await tx.productVariant.update({ where: { id: v.variant_id as number }, data: { stock: v.new } })
+          }
           if (delta !== 0) {
             await tx.inventoryEntry.create({
               data: {
-                business_id:       session.businessId,
-                product_id:        productId,
-                quantity:          delta,
-                cost_per_unit_usd: row.cost_usd ?? 0,
-                entry_type:        'adjustment',
-                notes:             'Ajuste por importación Excel',
-                created_by:        session.userId,
+                business_id: session.businessId,
+                product_id:  productId as number,
+                quantity:    delta > 0 ? delta : 0,
+                waste:       delta < 0 ? -delta : 0,
+                entry_type:  'adjustment',
+                notes:       `Importación Excel variante ${v.valor}`,
+                created_by:  session.userId,
               },
             })
           }
-        })
-        updated++
-      }
+        }
+      })
+      if (p.kind === 'create') created++
+      else updated++
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido'
-      rowErrors.push({ row: row.row, message: msg })
+      rowErrors.push({ row: p.source.row, message: msg })
     }
   }
 
-  return NextResponse.json({ ok: true, dry_run: false, created, updated, errors: rowErrors })
+  // El catálogo público cachea 60 s: sin esto el dueño vería el stock/alta
+  // nuevos recién al vencer el caché.
+  if (created + updated > 0) {
+    try { await revalidateCatalogCache(session.businessId) }
+    catch (err) { console.error('[import-excel] revalidateCatalogCache falló', { business_id: session.businessId, err }) }
+  }
+
+  return NextResponse.json({ ok: true, dry_run: false, created, updated, unchanged, errors: rowErrors })
 }

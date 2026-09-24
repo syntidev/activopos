@@ -264,6 +264,27 @@ NUNCA obligar al usuario a saber en qué campo está el dato, ni búsqueda de un
 
 ---
 
+## 🧱 CONVENCIÓN — GRID ADAPTABLE DE PRODUCTOS (regla sellada)
+
+Toda sección que muestre una lista de productos o categorías (catálogo, landing,
+detalle, y cualquier sección futura) usa `AdaptiveGrid`
+(`src/components/ui/AdaptiveGrid.tsx`). PROHIBIDO escribir CSS de grid suelto para
+productos: ni `grid-template-columns`, ni carrusel propio, ni lógica de "pocos productos"
+por sección.
+
+- Columnas efectivas = min(N, máximo del breakpoint) — con pocos productos las cards
+  se ensanchan para llenar la fila, con techo de 1.5× su ancho natural.
+- Si con el techo no llenan la fila, o la última fila está incompleta → se CENTRAN
+  (espacio simétrico, nunca un hueco a un lado).
+- Cada sección solo pasa `max={{ mobile, tablet, desktop }}` y un `className` de
+  contenedor (padding/márgenes). El layout de columnas vive SOLO en el componente.
+- ¿Se necesita otro comportamiento? Se cambia `AdaptiveGrid` (afecta a todo el sitio
+  a la vez), nunca se parcha una sección.
+- Única excepción: `CarteleraGrid` (composición fija 1+4 que solo se renderiza con
+  ≥5 productos, así que nunca deja huecos).
+
+---
+
 ## 🚩 CONVENCIÓN — MÓDULOS POR NEGOCIO (feature flag)
 
 Un módulo que no aplica a todos los tenants (ej. Reservas 200K, solo OnBike) NUNCA se muestra

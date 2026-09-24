@@ -1105,26 +1105,16 @@
   }
 }
 
+/* Layout de columnas: AdaptiveGrid (regla sellada). Acá solo el contenedor. */
 .productsGrid {
-  display:               grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:                   14px;
   padding:               0 16px 16px;
   max-width:             1600px;
   width:                 100%;
   margin:                0 auto;
 }
 
-@media (min-width: 768px) {
-  .productsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
 @media (min-width: 1024px) {
-  .productsGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap:     16px;
-    padding: 0 24px 24px;
-  }
+  .productsGrid { padding: 0 24px 24px; }
 }
 
 /* ── CATEGORY SECTION — vitrina apilada + scroll-spy ─────────── */
@@ -4599,28 +4589,12 @@ iframe.lsHeroMedia {
   font-size: var(--text-sm);
 }
 
-.lsCollectionScroll {
-  display:            flex;
-  gap:                var(--space-3);
-  overflow-x:         auto;
-  scroll-snap-type:   x proximity;
-  padding-bottom:     var(--space-2);
-  -webkit-overflow-scrolling: touch;
-}
-
 .lsCollectionCard {
-  flex:            0 0 auto;
-  width:           160px;
-  scroll-snap-align: start;
   display:         flex;
   flex-direction:  column;
   gap:             var(--space-2);
   color:           inherit;
   text-decoration: none;
-}
-
-@media (min-width: 768px) {
-  .lsCollectionCard { width: 200px; }
 }
 
 .lsCollectionImg,
@@ -5094,11 +5068,6 @@ iframe.lsHeroMedia {
   text-decoration: none;
 }
 
-.novedadesGrid {
-  display:               grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:                   14px;
-}
 
 .novedadesCard {
   display:         block;
@@ -5158,7 +5127,6 @@ iframe.lsHeroMedia {
   .novedadesHeader   { margin-bottom: var(--space-10); }
   .novedadesTitle    { font-size: 36px; }
   .novedadesLink     { font-size: 14px; }
-  .novedadesGrid     { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
   .novedadesMedia    { margin-bottom: 12px; }
   .novedadesCategory { font-size: 11px; letter-spacing: 0.06em; }
   .novedadesName     { margin: 4px 0; font-size: 15px; }
@@ -5204,19 +5172,13 @@ iframe.lsHeroMedia {
    disponibles. Cada columna es una LISTA compacta (foto chica+nombre+
    precio), no la card grande del resto del catálogo -- ver .compactRow. */
 
+/* Columnas: AdaptiveGrid (regla sellada). Acá solo el padding del contenedor. */
 .finalMixedGrid {
-  display:               grid;
-  grid-template-columns: 1fr;
-  gap:                   var(--space-6);
-  padding:               var(--space-4);
-}
-
-@media (min-width: 640px) {
-  .finalMixedGrid { grid-template-columns: repeat(2, 1fr); gap: var(--space-6) var(--space-5); }
+  padding: var(--space-4);
 }
 
 @media (min-width: 1024px) {
-  .finalMixedGrid { grid-template-columns: repeat(4, 1fr); padding: var(--space-6) var(--space-6); }
+  .finalMixedGrid { padding: var(--space-6) var(--space-6); }
 }
 
 .finalMixedCol {

@@ -10,6 +10,7 @@ import type {
 import { ImgWithFallback } from './ImgWithFallback'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { fmtUsd, fmtBs } from './catalogUtils'
+import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import styles from './catalogo.module.css'
 
 interface Props {
@@ -245,7 +246,7 @@ function CollectionGridSection({ config, slug }: { config: CollectionGridRenderC
   return (
     <section className={styles.lsCollection}>
       <h2 className={styles.lsCollectionHeading}>{config.collection_name}</h2>
-      <div className={styles.lsCollectionScroll}>
+      <AdaptiveGrid>
         {config.products.map(p => (
           <a key={p.id} href={`/catalogo-premium/${slug}/p/${p.id}`} className={styles.lsCollectionCard}>
             {p.image ? (
@@ -260,7 +261,7 @@ function CollectionGridSection({ config, slug }: { config: CollectionGridRenderC
             <span className={styles.lsCollectionName}>{p.name}</span>
           </a>
         ))}
-      </div>
+      </AdaptiveGrid>
     </section>
   )
 }
@@ -275,7 +276,7 @@ function ProductListSection({ config, slug }: { config: ProductListRender; slug:
     <section className={styles.lsCollection}>
       {config.titulo && <h2 className={styles.lsCollectionHeading}>{config.titulo}</h2>}
       {config.subtitulo && <p className={styles.lsCommunitySubheading}>{config.subtitulo}</p>}
-      <div className={styles.lsCollectionScroll}>
+      <AdaptiveGrid>
         {config.products.map(p => (
           <a key={p.id} href={`/catalogo-premium/${slug}/p/${p.id}`} className={styles.lsCollectionCard}>
             {p.image ? (
@@ -294,7 +295,7 @@ function ProductListSection({ config, slug }: { config: ProductListRender; slug:
             )}
           </a>
         ))}
-      </div>
+      </AdaptiveGrid>
     </section>
   )
 }
@@ -306,7 +307,7 @@ function CategoryListSection({ config, slug }: { config: CategoryListRender; slu
     <section className={styles.lsCollection}>
       {config.titulo && <h2 className={styles.lsCollectionHeading}>{config.titulo}</h2>}
       {config.subtitulo && <p className={styles.lsCommunitySubheading}>{config.subtitulo}</p>}
-      <div className={styles.brandScroll}>
+      <AdaptiveGrid max={{ mobile: 3, tablet: 4, desktop: 6 }} centerItems>
         {config.categories.map(c => (
           <a
             key={c.name}
@@ -321,7 +322,7 @@ function CategoryListSection({ config, slug }: { config: CategoryListRender; slu
             <span className={styles.brandCardName}>{c.name}</span>
           </a>
         ))}
-      </div>
+      </AdaptiveGrid>
     </section>
   )
 }

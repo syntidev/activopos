@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ImageOff } from 'lucide-react'
 import type { CatalogProduct } from './CatalogoGrid'
 import { ImgWithFallback } from './ImgWithFallback'
+import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import styles from './catalogo.module.css'
 
 interface NovedadesSectionProps {
@@ -27,7 +28,7 @@ export function NovedadesSection({ products, slug }: NovedadesSectionProps) {
         </Link>
       </div>
 
-      <div className={styles.novedadesGrid}>
+      <AdaptiveGrid>
         {products.map(p => (
           <Link
             key={p.id}
@@ -56,7 +57,7 @@ export function NovedadesSection({ products, slug }: NovedadesSectionProps) {
             )}
           </Link>
         ))}
-      </div>
+      </AdaptiveGrid>
     </section>
   )
 }

@@ -1,0 +1,34 @@
+/* AdaptiveGrid — ver criterio documentado en AdaptiveGrid.tsx.
+   --ag-gap se puede sobreescribir desde la clase de la sección (className). */
+
+.grid {
+  --ag-gap:  var(--space-3);
+  --ag-max:  var(--ag-m);
+  --ag-cols: min(var(--ag-n), var(--ag-max));
+  display:         flex;
+  flex-wrap:       wrap;
+  justify-content: center;
+  gap:             var(--ag-gap);
+  width:           100%;
+}
+
+@media (min-width: 640px) {
+  .grid { --ag-max: var(--ag-t); }
+}
+
+@media (min-width: 1024px) {
+  .grid { --ag-max: var(--ag-d); --ag-gap: var(--space-5); }
+}
+
+.cell {
+  /* Ancho = fila / columnas efectivas; techo = 1.5x el ancho natural (fila / máximo). */
+  flex:           0 0 calc((100% - (var(--ag-cols) - 1) * var(--ag-gap)) / var(--ag-cols));
+  max-width:      calc((100% - (var(--ag-max) - 1) * var(--ag-gap)) / var(--ag-max) * 1.5);
+  min-width:      0;
+  display:        flex;
+  flex-direction: column;
+}
+
+.cellCenter {
+  align-items: center;
+}

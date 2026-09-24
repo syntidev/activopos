@@ -17,6 +17,7 @@ import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './productoDetalle.module.css'
+import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 // Mismo header/panel de info que Home y /productos (CatalogoGrid.tsx) --
 // clases de catalogo.module.css, no duplicadas en productoDetalle.module.css.
 // Antes esta página tenía un "mini header" propio (solo logo+carrito), lo
@@ -701,7 +702,7 @@ export function ProductoDetalle({
               Ver todos →
             </Link>
           </div>
-          <div className={styles.relatedGrid}>
+          <AdaptiveGrid max={{ mobile: 2, tablet: 4, desktop: 4 }}>
             {relatedProducts.map(rp => (
               <Link
                 key={rp.id}
@@ -723,7 +724,7 @@ export function ProductoDetalle({
                 </p>
               </Link>
             ))}
-          </div>
+          </AdaptiveGrid>
         </section>
       )}
 

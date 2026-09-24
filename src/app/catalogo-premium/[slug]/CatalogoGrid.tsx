@@ -16,6 +16,7 @@ import { LandingSections } from './LandingSections'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { ImgWithFallback } from './ImgWithFallback'
 import { NovedadesSection } from './NovedadesSection'
+import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import { CarteleraGrid } from './CarteleraGrid'
 import type { CarteleraData } from './cartelera'
 import { MobileTabBar } from './MobileTabBar'
@@ -1454,7 +1455,7 @@ export function CatalogoGrid({
           // criterio real disponible (nuevo/destacado/categorías), lista
           // vertical compacta (foto chica+nombre+precio, renderCompactRow),
           // no la card grande del resto del catálogo. ──
-          <div className={styles.finalMixedGrid}>
+          <AdaptiveGrid max={{ mobile: 1, tablet: 2, desktop: 4 }} className={styles.finalMixedGrid}>
             {finalGridColumns.map((col, i) => (
               <div key={i} className={styles.finalMixedCol}>
                 <h2 className={styles.finalMixedColTitle}>{col.title}</h2>
@@ -1463,7 +1464,7 @@ export function CatalogoGrid({
                 </div>
               </div>
             ))}
-          </div>
+          </AdaptiveGrid>
         ) : visible.length === 0 ? (
           <div className={styles.empty}>
             {query ? (
@@ -1478,9 +1479,9 @@ export function CatalogoGrid({
           </div>
         ) : (
           <>
-            <div className={styles.productsGrid} key={`${activeCategory ?? 'all'}|${activeSub ?? ''}`}>
+            <AdaptiveGrid className={styles.productsGrid} key={`${activeCategory ?? 'all'}|${activeSub ?? ''}`}>
               {paged.map((p, i) => renderProductCard(p, i))}
-            </div>
+            </AdaptiveGrid>
             {remaining > 0 && (
               <div className={styles.loadMoreWrap}>
                 <button

@@ -92,6 +92,17 @@
   flex-shrink:   0;
 }
 
+/* Teléfonos: un logo apaisado de 120px + el nombre + el cluster de iconos no
+   caben en ~375px y el nombre se comía el espacio. 88px es el mínimo que deja
+   ver completo "OnBike Margarita" a 375px (con 96px pierde ~3px y trunca);
+   nombres más largos siguen truncando con elipsis. Desde 480px vuelve el tope
+   de siempre. */
+@media (max-width: 479px) {
+  .headerLogoImg {
+    max-width: 88px;
+  }
+}
+
 .headerLogoInitials {
   width:           56px;
   height:          56px;

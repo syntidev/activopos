@@ -3,7 +3,13 @@
    Light mode siempre. --biz-color del tenant. Sin sidebar. */
 
 .page {
-  max-width:      1100px;
+  /* min(1100px, 100%) a propósito: .root es un flex en columna y `margin: 0 auto`
+     desactiva el stretch del hijo, que pasa a medir fit-content con piso en su
+     min-content. En móvil el header + breadcrumb (nowrap) empujaban ese piso a
+     ~401px en un viewport de 369: toda la ficha quedaba 32px más ancha que la
+     pantalla (carrito, "Siguiente" y "Comprar ahora" cortados). El tope al 100%
+     lo acota al viewport; en escritorio el fit-content queda como estaba. */
+  max-width:      min(1100px, 100%);
   margin:         0 auto;
   min-height:     100dvh;
   background:     #FFFFFF;
@@ -60,7 +66,11 @@
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  gap:             var(--space-2);
+  /* Si "Volver al catálogo › Categoría" + "Anterior | Siguiente" no caben en
+     una línea, la navegación adyacente baja a una segunda línea (a la derecha,
+     ver .adjacentNav) en vez de solaparse o ensanchar la página. */
+  flex-wrap:       wrap;
+  gap:             var(--space-1) var(--space-2);
   padding:         var(--space-3) var(--space-4);
   font-size:       var(--text-sm);
 }
@@ -79,6 +89,8 @@
   align-items: center;
   gap:         var(--space-2);
   flex-shrink: 0;
+  /* Pegada a la derecha tanto en la misma línea como cuando baja. */
+  margin-left: auto;
 }
 
 .adjacentLink {

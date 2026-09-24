@@ -8,6 +8,13 @@ export type SectionType = typeof SECTION_TYPES[number]
 
 const trimmed = (max: number) => z.string().trim().min(1).max(max)
 
+// Cajas fijas del layout de catalogo-premium que un product_list puede
+// "adoptar" en vez de renderizarse como bloque nuevo -- ver comentario en
+// el schema product_list más abajo. Un solo dueño por slot: el admin
+// (TabLanding.tsx) deshabilita el slot ya tomado por otra sección.
+export const PRODUCT_LIST_SLOTS = ['novedades', 'columna_1', 'columna_2', 'columna_3', 'columna_4'] as const
+export type ProductListSlot = typeof PRODUCT_LIST_SLOTS[number]
+
 // image_url: solo assets propios (mismo patrón que logo_path en
 // config/business/route.ts) — nunca una URL externa, cierra el vector de
 // stored-XSS/hotlinking que un string sin validar de esquema dejaba abierto.
@@ -100,6 +107,11 @@ export const CONFIG_SCHEMAS = {
   // collection_id (nunca ambos) + cantidad_maxima -- el renderer resuelve
   // los productos reales server-side (mismo patrón que collection_grid ya
   // usa), acá solo se valida y guarda la referencia.
+  // slot: cuando está presente, esta sección NO se renderiza como bloque
+  // nuevo -- reemplaza el contenido de una caja YA EXISTENTE del layout fijo
+  // (Novedades o una de las 4 columnas finales), sin tocar su diseño. Sin
+  // slot (default), sigue siendo un bloque editorial independiente, mismo
+  // comportamiento de siempre.
   product_list: z.object({
     modo:            z.enum(['manual', 'automatico']),
     product_ids:     z.array(z.number().int().positive()).max(20).optional(),
@@ -108,6 +120,7 @@ export const CONFIG_SCHEMAS = {
     cantidad_maxima: z.number().int().min(1).max(20).optional(),
     titulo:          trimmed(120).optional(),
     subtitulo:       trimmed(200).optional(),
+    slot:            z.enum(PRODUCT_LIST_SLOTS).optional(),
   }).strict().refine(d => {
     if (d.modo === 'manual') return !!d.product_ids?.length
     return (d.category_id != null) !== (d.collection_id != null)

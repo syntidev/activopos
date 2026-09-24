@@ -244,6 +244,27 @@ export function CatalogoGrid({
       .slice(0, 8)
   , [products])
 
+  // Hidratación local de overrides por slot (ver landing-sections.ts): el
+  // config ya resolvió IDs válidos server-side (page.tsx), acá solo se
+  // mapean contra `products` (ya en scope) para recuperar el CatalogProduct
+  // completo -- NovedadesSection/renderCompactRow necesitan la forma
+  // completa (badge, stock, variantes), no el shape reducido de config.
+  const productByIdLocal = useMemo(() => new Map(products.map(p => [p.id, p])), [products])
+  const slotSections = useMemo(() => {
+    const map = new Map<string, Extract<RenderableLandingSection, { type: 'product_list' }>>()
+    for (const s of landingSections) {
+      if (s.type === 'product_list' && s.config.slot && !map.has(s.config.slot)) map.set(s.config.slot, s)
+    }
+    return map
+  }, [landingSections])
+  const resolveSlotItems = (slot: string, max: number): CatalogProduct[] => {
+    const section = slotSections.get(slot)
+    if (!section) return []
+    return section.config.products
+      .flatMap(p => { const full = productByIdLocal.get(p.id); return full && !full.outOfStock ? [full] : [] })
+      .slice(0, max)
+  }
+
   // Novedades: primero los marcados 'nuevo'; se completa con los ingresos más
   // recientes (id descendente como proxy: CatalogProduct no trae created_at).
   // Solo productos con stock; sin ninguno, la sección no se renderiza.
@@ -251,14 +272,21 @@ export function CatalogoGrid({
   // desktop / 2 col mobile, y 4 es múltiplo de ambas -- evita la última fila
   // incompleta (ej. 6 items en grid de 4 dejaba 2 columnas vacías) sin
   // depender de que siempre haya exactamente NOVEDADES_COUNT disponibles.
+  // Override 'novedades' (admin) reemplaza la selección automática cuando
+  // produce al menos una fila completa; si no, cae al cálculo de siempre
+  // -- la sección nunca queda vacía por un override mal configurado.
   const novedades = useMemo(() => {
+    const overrideItems = resolveSlotItems('novedades', NOVEDADES_COUNT)
+    const overrideRows   = Math.floor(overrideItems.length / 4) * 4
+    if (overrideRows > 0) return overrideItems.slice(0, overrideRows)
+
     const inStock = products.filter(p => !p.outOfStock)
     const flagged = inStock.filter(p => p.badge === 'nuevo')
     const recent  = inStock.filter(p => p.badge !== 'nuevo').sort((a, b) => b.id - a.id)
     const available = [...flagged, ...recent].slice(0, NOVEDADES_COUNT)
     const fullRows = Math.floor(available.length / 4) * 4
     return available.slice(0, fullRows)
-  }, [products])
+  }, [products, slotSections])
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -409,8 +437,10 @@ export function CatalogoGrid({
     landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'collection_grid' }> => s.type === 'collection_grid')
   , [landingSections])
 
+  // product_list con slot no es un bloque nuevo -- ya se consumió arriba
+  // (novedades/columnas), excluido acá para no duplicarlo en pantalla.
   const listSections = useMemo(() =>
-    landingSections.filter(s => s.type === 'product_list' || s.type === 'category_list')
+    landingSections.filter(s => (s.type === 'product_list' && !s.config.slot) || s.type === 'category_list')
   , [landingSections])
 
   // Primera categoría no vacía, mismo orden que el admin definió en
@@ -437,8 +467,20 @@ export function CatalogoGrid({
       if (cols.some(c => c.title === s.name)) continue
       cols.push({ title: s.name, items: s.items.slice(0, 6) })
     }
-    return cols.slice(0, 4)
-  }, [nuevosIngresos, products, sections])
+    const base = cols.slice(0, 4)
+    // Override por columna (admin) -- reemplaza SOLO esa posición, las otras
+    // 3 siguen con el cálculo automático de siempre. Sin overrides guardados,
+    // `base` sale intacto (zero-diff visual).
+    return (['columna_1', 'columna_2', 'columna_3', 'columna_4'] as const)
+      .map((slot, i) => {
+        const section = slotSections.get(slot)
+        if (!section) return base[i]
+        const items = resolveSlotItems(slot, 6)
+        if (items.length === 0) return base[i]
+        return { title: section.config.titulo ?? base[i]?.title ?? 'Sección', items }
+      })
+      .filter((c): c is { title: string; items: CatalogProduct[] } => Boolean(c))
+  }, [nuevosIngresos, products, sections, slotSections])
 
   const catSectionRefs = useRef<Map<string, HTMLElement>>(new Map())
 
@@ -1413,8 +1455,8 @@ export function CatalogoGrid({
           // vertical compacta (foto chica+nombre+precio, renderCompactRow),
           // no la card grande del resto del catálogo. ──
           <div className={styles.finalMixedGrid}>
-            {finalGridColumns.map(col => (
-              <div key={col.title} className={styles.finalMixedCol}>
+            {finalGridColumns.map((col, i) => (
+              <div key={i} className={styles.finalMixedCol}>
                 <h2 className={styles.finalMixedColTitle}>{col.title}</h2>
                 <div className={styles.finalMixedList}>
                   {col.items.map(p => renderCompactRow(p))}

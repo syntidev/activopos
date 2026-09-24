@@ -9,11 +9,20 @@ import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
-import { SECTION_TYPES } from '@/lib/landing-sections'
+import { SECTION_TYPES, PRODUCT_LIST_SLOTS } from '@/lib/landing-sections'
 import type {
   SectionType, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig, CollectionGridConfig,
   AnnouncementPopupConfig, SlideConfig, CommunityItemConfig, ProductListConfig, CategoryListConfig,
+  ProductListSlot,
 } from '@/lib/landing-sections'
+
+const SLOT_LABELS: Record<ProductListSlot, string> = {
+  novedades:  'Novedades',
+  columna_1:  'Columna final 1',
+  columna_2:  'Columna final 2',
+  columna_3:  'Columna final 3',
+  columna_4:  'Columna final 4',
+}
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -280,6 +289,13 @@ export function TabLanding({ businessId: _b }: Props) {
           isFirst={i === 0}
           isLast={i === sections.length - 1}
           busy={busyId === s.id}
+          // Un slot, un dueño -- excluye el propio para no auto-bloquearse al reeditar.
+          usedSlots={new Set(
+            sections
+              .filter(o => o.id !== s.id && o.type === 'product_list')
+              .map(o => (o.config as ProductListConfig).slot)
+              .filter((slot): slot is ProductListSlot => Boolean(slot)),
+          )}
           onMoveUp={() => move(s.id, -1)}
           onMoveDown={() => move(s.id, 1)}
           onToggleVisible={() => toggleVisible(s)}
@@ -326,6 +342,7 @@ interface SectionCardProps {
   isFirst:         boolean
   isLast:          boolean
   busy:            boolean
+  usedSlots:       Set<ProductListSlot>
   onMoveUp:        () => void
   onMoveDown:      () => void
   onToggleVisible: () => void
@@ -335,7 +352,7 @@ interface SectionCardProps {
 }
 
 function SectionCard({
-  section, isFirst, isLast, busy,
+  section, isFirst, isLast, busy, usedSlots,
   onMoveUp, onMoveDown, onToggleVisible, onDelete, onConfigChange, onSave,
 }: SectionCardProps) {
   return (
@@ -371,7 +388,7 @@ function SectionCard({
       {section.type === 'story'              && <StoryForm              config={section.config as unknown as StoryConfig} onChange={onConfigChange} />}
       {section.type === 'collection_grid'    && <CollectionGridForm     config={section.config as unknown as CollectionGridConfig} onChange={onConfigChange} />}
       {section.type === 'announcement_popup' && <AnnouncementPopupForm  config={section.config as unknown as AnnouncementPopupConfig} onChange={onConfigChange} />}
-      {section.type === 'product_list'        && <ProductListForm        config={section.config as unknown as ProductListConfig} onChange={onConfigChange} />}
+      {section.type === 'product_list'        && <ProductListForm        config={section.config as unknown as ProductListConfig} usedSlots={usedSlots} onChange={onConfigChange} />}
       {section.type === 'category_list'       && <CategoryListForm       config={section.config as unknown as CategoryListConfig} onChange={onConfigChange} />}
 
       <div className={styles.saveRow}>
@@ -696,7 +713,9 @@ function TitleFields({ titulo, subtitulo, onChange }: {
   )
 }
 
-function ProductListForm({ config, onChange }: { config: ProductListConfig; onChange: (c: ProductListConfig) => void }) {
+function ProductListForm({ config, usedSlots, onChange }: {
+  config: ProductListConfig; usedSlots: Set<ProductListSlot>; onChange: (c: ProductListConfig) => void
+}) {
   const products    = useOptions('/api/products', 'products')
   const categories  = useOptions('/api/categories', 'categories')
   const collections = useOptions('/api/collections', 'collections')
@@ -715,6 +734,26 @@ function ProductListForm({ config, onChange }: { config: ProductListConfig; onCh
 
   return (
     <div className={styles.formFields}>
+      <div className={styles.fieldGroup}>
+        <label className={styles.label} htmlFor={`${uid}-slot`}>Dónde se muestra</label>
+        <select
+          id={`${uid}-slot`}
+          className={styles.select}
+          value={config.slot ?? ''}
+          onChange={e => onChange({ ...config, slot: (e.target.value || undefined) as ProductListSlot | undefined })}
+        >
+          <option value="">Sección nueva (bloque independiente)</option>
+          {PRODUCT_LIST_SLOTS.map(slot => (
+            <option key={slot} value={slot} disabled={usedSlots.has(slot)}>
+              {SLOT_LABELS[slot]}{usedSlots.has(slot) ? ' (ya en uso)' : ''}
+            </option>
+          ))}
+        </select>
+        <p className={styles.pageSubtitle}>
+          Una sección ya existente del catálogo (Novedades o una de las 4 columnas finales) reemplaza SU contenido por
+          este, sin cambiar cómo se ve. "Sección nueva" la agrega como bloque adicional.
+        </p>
+      </div>
       <TitleFields titulo={config.titulo} subtitulo={config.subtitulo} onChange={p => onChange({ ...config, ...p })} />
       <div className={styles.segmentGrid}>
         {(['manual', 'automatico'] as const).map(m => (

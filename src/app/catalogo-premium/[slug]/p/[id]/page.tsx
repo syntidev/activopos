@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!business || !isCatalogLive(business)) return { title: 'Producto no encontrado' }
 
   const product = await prisma.product.findFirst({
-    where: { id: productId, business_id: business.id, active: true, show_in_catalog: true },
+    where: { id: productId, business_id: business.id, active: true, ...CATALOG_WHERE_FILTER },
     select: { name: true, description: true, images: true },
   })
   if (!product) return { title: 'Producto no encontrado' }
@@ -71,7 +71,6 @@ export default async function ProductoPage({ params }: PageProps) {
         id:               productId,
         business_id:      business.id,
         active:           true,
-        show_in_catalog:  true,
         available_in_pos: true,
         ...CATALOG_WHERE_FILTER,
       },
@@ -98,7 +97,6 @@ export default async function ProductoPage({ params }: PageProps) {
   const adjacentWhere = {
     business_id:       business.id,
     active:            true,
-    show_in_catalog:   true,
     available_in_pos:  true,
     category_id:       product.category_id,
     ...CATALOG_WHERE_FILTER,
@@ -138,7 +136,6 @@ export default async function ProductoPage({ params }: PageProps) {
     where: {
       business_id:       business.id,
       active:            true,
-      show_in_catalog:   true,
       available_in_pos:  true,
       category_id:       product.category_id,
       id:                { not: productId },

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
-import { isCatalogLive } from '@/lib/catalog'
+import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { normalizePhone } from '@/lib/utils'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { currencyVisibility, fmtBs } from '@/app/catalogo/[slug]/catalogUtils'
@@ -187,7 +187,7 @@ export async function POST(
       id:              { in: uniqueProductIds },
       business_id:     business.id,
       active:          true,
-      show_in_catalog: true,
+      ...CATALOG_WHERE_FILTER,
     },
     select: {
       id:                 true,
@@ -280,7 +280,14 @@ export async function POST(
       stockAgg.map(s => [s.product_id, Number(s._sum.quantity ?? 0) - Number(s._sum.waste ?? 0)]),
     )
 
+    // Solo para ítems SIN variante: su stock vive en inventory_entries. Un ítem
+    // CON variante ya se validó arriba contra product_variants.stock, que es su
+    // única fuente autoritativa -- volver a medirlo por el agregado del padre
+    // (que se queda en 0) rechazaba con 409 "Stock insuficiente" todo pedido de
+    // un producto con tallas, aunque las tallas tuvieran unidades. Misma regla
+    // que effectiveStock() en lib/catalog.ts.
     for (const item of resolvedItems) {
+      if (item.variant_id !== null) continue
       const available = stockMap.get(item.product_id) ?? 0
       if (available < item.qty) {
         throw new Error(`STOCK_INSUFICIENTE:${item.product_name}`)

@@ -9,7 +9,7 @@ import { CatalogFooter } from './CatalogFooter'
 import { getCartelera } from './cartelera'
 import { CONFIG_SCHEMAS, isSectionType } from '@/lib/landing-sections'
 import type { RenderableLandingSection, CollectionGridProduct } from '@/lib/landing-sections'
-import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive } from '@/lib/catalog'
 import styles from './catalogo.module.css'
 
 interface PageProps {
@@ -61,7 +61,7 @@ async function resolveCollectionGridSections(
             select: {
               id: true, name: true, images: true,
               price_per_unit_usd: true, price_per_kg_usd: true,
-              active: true, show_in_catalog: true,
+              active: true, catalog_visibility: true,
             },
           },
         },
@@ -72,7 +72,7 @@ async function resolveCollectionGridSections(
   const byId = new Map(collections.map(c => {
     const products: CollectionGridProduct[] = c.products
       .map(pc => pc.product)
-      .filter(p => p.active && p.show_in_catalog)
+      .filter(p => p.active && p.catalog_visibility !== 'hidden')
       .map(p => {
         const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
         return {
@@ -183,7 +183,6 @@ export default async function CatalogoPage({ params }: PageProps) {
       where: {
         business_id:        business.id,
         active:             true,
-        show_in_catalog:    true,
         available_in_pos:   true,
         ...CATALOG_WHERE_FILTER,
       },
@@ -289,12 +288,8 @@ export default async function CatalogoPage({ params }: PageProps) {
       priceBs,
       priceDivisa:  p.precio_divisa !== null ? Number(p.precio_divisa) : null,
       isService:    p.sale_mode === 'service',
-      stockQty:     p.sale_mode === 'service' ? null : (netQty ?? null),
-      outOfStock:   p.sale_mode !== 'service' && (
-        (p.has_variants && p.unit_type === 'unit')
-          ? !p.variants.some(v => v.stock > 0)
-          : (netQty ?? 0) <= 0
-      ),
+      stockQty:     p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
+      outOfStock:   isOutOfStock({ sale_mode: p.sale_mode, has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
       badge:            p.badge ?? null,
       subcategory:      p.subcategory ?? null,
       isFeatured:       p.is_featured,
@@ -304,6 +299,8 @@ export default async function CatalogoPage({ params }: PageProps) {
         availability: p.availability ?? 'in_stock',
         net_stock:    netQty ?? null,
         min_stock:    p.min_stock !== null ? Number(p.min_stock) : null,
+        has_variants: p.has_variants,
+        variants:     p.variants,
       }),
       variants: p.variants.map(v => ({
         id:              v.id,

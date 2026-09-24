@@ -20,21 +20,65 @@ export function isCatalogLive(business: {
   return true
 }
 
+// Un producto es UN producto, tenga variantes o no. Su stock real vive en UN
+// solo lugar según su forma: con variantes activas, en product_variants; sin
+// ellas, en inventory_entries. `net_stock` (la suma de inventory_entries del
+// padre) NO es autoritativo para un producto con variantes -- se queda en 0
+// mientras sus tallas tienen unidades reales, y el catálogo lo pinta agotado
+// (incidente 2026-09-24: Franelas 200K, 0 en inventory_entries, 60-80
+// unidades reales repartidas en 6-8 tallas).
+//
+// Toda decisión de disponibilidad del catálogo pasa por acá. Nunca leer
+// `net_stock` suelto para decidir si un producto está agotado.
+export function effectiveStock(product: {
+  has_variants?: boolean
+  variants?:     { stock: number }[] | null
+  net_stock?:    number | null
+}): number {
+  if (product.has_variants && product.variants?.length) {
+    return product.variants.reduce((sum, v) => sum + v.stock, 0)
+  }
+  return product.net_stock ?? 0
+}
+
+export function isOutOfStock(product: {
+  sale_mode:     string
+  has_variants?: boolean
+  variants?:     { stock: number }[] | null
+  net_stock?:    number | null
+}): boolean {
+  if (product.sale_mode === 'service') return false
+  return effectiveStock(product) <= 0
+}
+
 export function computeAvailability(product: {
-  sale_mode:    string
-  availability: string
-  net_stock?:   number | null
-  min_stock?:   number | null
+  sale_mode:     string
+  availability:  string
+  net_stock?:    number | null
+  min_stock?:    number | null
+  has_variants?: boolean
+  variants?:     { stock: number }[] | null
 }): Availability {
   if (product.availability === 'discontinued') return 'discontinued'
   if (product.sale_mode === 'service')         return 'in_stock'
-  const net = product.net_stock ?? 0
+  const net = effectiveStock(product)
   const min = product.min_stock ?? 0
   if (net <= 0)   return 'out_of_stock'
   if (net <= min) return 'low_stock'
   return 'in_stock'
 }
 
+// Única autoridad sobre "¿este producto se ve en el catálogo público?".
+//
+// `show_in_catalog` era un SEGUNDO flag para la MISMA decisión, y toda la UI
+// de admin lo escribe derivado (`show_in_catalog: catalogVisibility !== 'hidden'`,
+// ver productos/[id]/editar/page.tsx:228, productos/nuevo/page.tsx:75,
+// productos/page.tsx:324). Un producto creado FUERA de esa UI (script, import,
+// seed) se quedaba con el default `false` del schema mientras el toggle del
+// admin mostraba "Visible": el dueño lo veía visible, el catálogo lo filtraba
+// oculto, y no había forma de notarlo desde el panel. Se elimina de toda
+// decisión pública -- la columna sigue en DB (la lee el admin), pero ya no
+// decide nada acá.
 export const CATALOG_WHERE_FILTER = {
   catalog_visibility: { not: 'hidden' as const },
 } as const

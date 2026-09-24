@@ -47,7 +47,7 @@ export async function getCartelera(businessId: number, rate: number): Promise<Ca
             select: {
               id: true, name: true, images: true, badge: true, sort_order: true,
               price_per_unit_usd: true, price_per_kg_usd: true,
-              active: true, show_in_catalog: true, catalog_visibility: true,
+              active: true, catalog_visibility: true,
               category: { select: { name: true } },
             },
           },
@@ -59,7 +59,7 @@ export async function getCartelera(businessId: number, rate: number): Promise<Ca
 
   const products = collection.products
     .map(pc => pc.product)
-    .filter(p => p.active && p.show_in_catalog && p.catalog_visibility !== 'hidden')
+    .filter(p => p.active && p.catalog_visibility !== 'hidden')
     .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
     .slice(0, CARTELERA_SIZE)
     .map((p): CarteleraProduct => {

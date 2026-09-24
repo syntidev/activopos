@@ -6,7 +6,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from '../CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from '../CatalogoGrid'
 import { CatalogFooter } from '../CatalogFooter'
-import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive } from '@/lib/catalog'
 import styles from '../catalogo.module.css'
 
 interface PageProps {
@@ -73,7 +73,6 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       where: {
         business_id:      business.id,
         active:           true,
-        show_in_catalog:  true,
         available_in_pos: true,
         ...CATALOG_WHERE_FILTER,
       },
@@ -127,12 +126,8 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       priceUsd,
       priceBs,
       isService:         p.sale_mode === 'service',
-      stockQty:          p.sale_mode === 'service' ? null : (netQty ?? null),
-      outOfStock:        p.sale_mode !== 'service' && (
-        (p.has_variants && p.unit_type === 'unit')
-          ? !p.variants.some(v => v.stock > 0)
-          : (netQty ?? 0) <= 0
-      ),
+      stockQty:          p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
+      outOfStock:        isOutOfStock({ sale_mode: p.sale_mode, has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
       badge:             p.badge ?? null,
       subcategory:       p.subcategory ?? null,
       isFeatured:        p.is_featured,
@@ -142,6 +137,8 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         availability: p.availability ?? 'in_stock',
         net_stock:    netQty ?? null,
         min_stock:    p.min_stock !== null ? Number(p.min_stock) : null,
+        has_variants: p.has_variants,
+        variants:     p.variants,
       }),
       variants: p.variants.map(v => ({
         id:              v.id,

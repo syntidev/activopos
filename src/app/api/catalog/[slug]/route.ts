@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
-import { CATALOG_WHERE_FILTER, computeAvailability, isCatalogLive } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive } from '@/lib/catalog'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -44,11 +44,12 @@ function getCachedCatalogData(slug: string) {
         where: {
           business_id:        business.id,
           active:             true,
-          show_in_catalog:    true,
           available_in_pos:   true,
           ...CATALOG_WHERE_FILTER,
         },
         select: {
+          has_variants:       true,
+          variants:           { where: { is_active: true }, select: { stock: true } },
           id:                 true,
           name:               true,
           description:        true,
@@ -149,13 +150,15 @@ export async function GET(
         badge:              p.badge ?? 'none',
         subcategory:        p.subcategory ?? null,
         is_featured:        p.is_featured,
-        stockQty:           isService ? null : (netQty ?? null),
-        outOfStock:         !isService && (netQty ?? 0) <= 0,
+        stockQty:           isService ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
+        outOfStock:         isOutOfStock({ sale_mode: p.sale_mode, has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
         availability:       computeAvailability({
           sale_mode:    p.sale_mode,
           availability: p.availability ?? 'in_stock',
           net_stock:    netQty ?? null,
           min_stock:    p.min_stock !== null ? Number(p.min_stock) : null,
+          has_variants: p.has_variants,
+          variants:     p.variants,
         }),
         catalog_visibility: p.catalog_visibility,
       }

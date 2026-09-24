@@ -22,7 +22,7 @@ import type { CarteleraData } from './cartelera'
 import { MobileTabBar } from './MobileTabBar'
 import { FilterPanel } from './FilterPanel'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
-import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, getInitials } from './catalogUtils'
+import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, getInitials, fmtBs } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
 
@@ -792,7 +792,7 @@ export function CatalogoGrid({
                 )}
                 {showBs && p.priceBs && (
                   <span className={styles.priceBs}>
-                    Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                    {fmtBs(p.priceBs)}
                   </span>
                 )}
               </>
@@ -876,7 +876,7 @@ export function CatalogoGrid({
             )}
             {showBs && p.priceBs && (
               <span className={styles.compactPriceBs}>
-                Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                {fmtBs(p.priceBs)}
               </span>
             )}
           </span>
@@ -1650,7 +1650,7 @@ export function CatalogoGrid({
                     )}
                     {showBs && selP.priceBs && (
                       <span className={styles.modalPriceBs}>
-                        Bs.&nbsp;{selP.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                        {fmtBs(selP.priceBs)}
                       </span>
                     )}
                   </>

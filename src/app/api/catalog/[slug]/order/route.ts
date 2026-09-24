@@ -92,7 +92,7 @@ function buildWaMessage(
 
   const itemLines = resolvedItems
     .map(i => {
-      const unit = showUsd ? `$${i.price_usd.toFixed(2)}` : fmtBs(i.price_usd * rate)
+      const unit = `$${i.price_usd.toFixed(2)} / ${fmtBs(i.price_usd * rate)}`
       return `- ${i.product_name} x${i.qty} — ${unit} c/u`
     })
     .join('\n')

@@ -358,7 +358,7 @@ export function ProductoDetalle({
               onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
             >
               <Zap size={18} aria-hidden="true" />
-              Pedir ahora · {showUsd ? fmtUsd(effectivePrice * qty) : fmtBs(effectivePrice * qty * rate)}
+              Pedir ahora · {fmtUsd(effectivePrice * qty)} · {fmtBs(effectivePrice * qty * rate)}
             </button>
             <button
               type="button"
@@ -406,7 +406,7 @@ export function ProductoDetalle({
                 </div>
                 <p className={styles.relatedName}>{rp.name}</p>
                 <p className={styles.relatedPrice}>
-                  {showUsd ? fmtUsd(rp.priceUsd) : fmtBs(rp.priceUsd * rate)}
+                  {fmtUsd(rp.priceUsd)}<br />{fmtBs(rp.priceUsd * rate)}
                 </p>
               </Link>
             ))}

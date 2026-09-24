@@ -156,6 +156,8 @@ Bloque 7: Lanzamiento                ⏳ 20% (falta demo cliente, primeros pagos
 - `pdf-report.ts` y `pdf-reports.ts` coexisten en `src/lib/` — nombre casi idéntico, no auditado si hay duplicación real.
 - Desnormalización `business_id` en tablas hijas (`SaleItem`, `SalePayment`, etc.) — defensa en profundidad IDOR pendiente de evaluar.
 - Compras a proveedores no generan deuda en CxP — módulos desconectados.
+- `/catalogo/[slug]` (catálogo no premium) sigue con CSS de grid propio por sección — migrar a `AdaptiveGrid` (regla sellada en CLAUDE.md, ya aplicada en `/catalogo-premium`). Pospuesto por Carlos 2026-09-24.
+- `catalog_default_currency` quedó sin efecto visible (`currencyVisibility` devuelve siempre $ y Bs por la regla monetaria sellada, 2026-09-24). La columna y su UI de configuración siguen existiendo — reactivar o eliminar el ajuste es una decisión nueva a discutir aparte.
 
 ---
 

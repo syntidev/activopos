@@ -11,7 +11,7 @@ import {
 import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
-import { capitalize, currencyVisibility } from './catalogUtils'
+import { capitalize, currencyVisibility, fmtBs } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
 
@@ -553,7 +553,7 @@ export function CatalogoGrid({
                 )}
                 {showBs && p.priceBs && (
                   <span className={styles.priceBs}>
-                    Bs.&nbsp;{p.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                    {fmtBs(p.priceBs)}
                   </span>
                 )}
               </>
@@ -1220,7 +1220,7 @@ export function CatalogoGrid({
                     )}
                     {showBs && selP.priceBs && (
                       <span className={styles.modalPriceBs}>
-                        Bs.&nbsp;{selP.priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+                        {fmtBs(selP.priceBs)}
                       </span>
                     )}
                   </>

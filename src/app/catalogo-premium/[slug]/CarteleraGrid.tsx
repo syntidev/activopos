@@ -3,6 +3,7 @@ import { ImageOff } from 'lucide-react'
 import type { CarteleraData, CarteleraProduct } from './cartelera'
 import { ImgWithFallback } from './ImgWithFallback'
 import styles from './catalogo.module.css'
+import { fmtBs } from './catalogUtils'
 
 interface CarteleraGridProps {
   data: CarteleraData
@@ -36,7 +37,7 @@ function CarteleraTile({ product, slug, isBig }: { product: CarteleraProduct; sl
           <div className={styles.carteleraPrice}>
             ${product.priceUsd.toLocaleString('en-US', PRICE_FORMAT)}
             {product.priceBs !== null ? (
-              <span className={styles.carteleraPriceBs}> · Bs. {product.priceBs.toLocaleString('en-US', PRICE_FORMAT)}</span>
+              <span className={styles.carteleraPriceBs}> · {fmtBs(product.priceBs)}</span>
             ) : null}
           </div>
         ) : (

@@ -10,17 +10,14 @@ export function fmtBs(n: number): string {
 
 export type CatalogCurrency = 'usd' | 'bs' | 'both'
 
-/* Qué monedas ve el visitante del catálogo. Devuelve flags y no un string
-   armado porque cada superficie maqueta USD y Bs en elementos separados con
-   su propia clase CSS — un string ya formateado obligaría a reescribir el
-   markup de las tres pantallas.
-
-   Un valor desconocido en la columna cae a solo USD en vez de esconder todo:
-   ante datos corruptos, un precio visible es mejor que ninguno. */
-export function currencyVisibility(c: string): { showUsd: boolean; showBs: boolean } {
-  if (c === 'bs')   return { showUsd: false, showBs: true }
-  if (c === 'both') return { showUsd: true,  showBs: true }
-  return { showUsd: true, showBs: false }
+/* REGLA SELLADA (CLAUDE.md, Monetario): todo precio del catálogo muestra USD
+   Y Bs simultáneamente, sin toggle. Por eso esto devuelve siempre ambos y
+   catalog_default_currency queda SIN efecto visible (decisión de Carlos,
+   2026-09-24). Reactivar un ajuste de moneda es una decisión nueva que se
+   discute aparte -- no se vuelve a leer el parámetro por accidente.
+   Se conserva la firma para no tocar las superficies que lo consumen. */
+export function currencyVisibility(_c: string): { showUsd: boolean; showBs: boolean } {
+  return { showUsd: true, showBs: true }
 }
 
 export function capitalize(s: string): string {

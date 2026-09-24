@@ -4,6 +4,7 @@ import type { CatalogProduct } from './CatalogoGrid'
 import { ImgWithFallback } from './ImgWithFallback'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import styles from './catalogo.module.css'
+import { fmtBs } from './catalogUtils'
 
 interface NovedadesSectionProps {
   products: CatalogProduct[]
@@ -49,7 +50,7 @@ export function NovedadesSection({ products, slug }: NovedadesSectionProps) {
               <>
                 <div className={styles.novedadesPrice}>${p.priceUsd.toLocaleString('en-US', PRICE_FORMAT)}</div>
                 {p.priceBs !== null ? (
-                  <div className={styles.novedadesPriceBs}>Bs. {p.priceBs.toLocaleString('en-US', PRICE_FORMAT)}</div>
+                  <div className={styles.novedadesPriceBs}>{fmtBs(p.priceBs)}</div>
                 ) : null}
               </>
             ) : (

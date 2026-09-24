@@ -466,8 +466,16 @@ npm run build 2>&1 | tail -10       # Compiled successfully
 # (o PM2 lo reinicia) en la ventana entre "rm -rf .next" y que termine el
 # build, next start falla con "Could not find a production build" y PM2
 # reintenta en loop cerrado (crash-loop confirmado: 220+ ocurrencias en logs
-# historicos, causa de un pico de 401 restarts acumulados). Detener primero
-# elimina la ventana de crash por completo.
+# historicos, causa de un pico de 401 restarts acumulados).
+# CRITICO 2: `pm2 stop` SOLO NO BASTA. El cron */5 del VPS
+# (/root/scripts/activopos-healthcheck.sh) reinicia activopos si la web no da
+# 200 -- con la app parada durante el build la reiniciaba y volvía el
+# crash-loop (+165 y +351 restarts en los deploys del 2026-09-24). Desde
+# 2026-09-24 el script se salta el restart mientras exista el lock
+# /var/lock/activopos-deploy.lock (se ignora si tiene más de 30 min, por si un
+# deploy abortado lo deja olvidado). El lock se crea ANTES de `pm2 stop` y se
+# borra DESPUÉS de `pm2 restart`. Respaldo del script anterior:
+# /root/scripts/activopos-healthcheck.sh.bak-20260924
 cd /var/www/activopos
 git pull origin main
 npx prisma generate
@@ -482,11 +490,13 @@ npx prisma generate
 # Regla: `db push` en el VPS deja drift sin migración. Todo cambio de schema nuevo
 # lleva su migración versionada (prisma migrate dev en local) ANTES de desplegar.
 npx prisma migrate deploy
+touch /var/lock/activopos-deploy.lock   # pausa el healthcheck durante el build
 pm2 stop activopos
 rm -rf .next
 npm run build
 pm2 restart activopos --update-env
 pm2 save
+rm -f /var/lock/activopos-deploy.lock   # SIEMPRE, también si el build falló
 curl -s http://localhost:3003/api/rates/bcv   # Verificar que BCV responde
 
 # PENDIENTE DE DEPLOY (2026-07-19, commit a1de809) — requiere autorizacion de Carlos

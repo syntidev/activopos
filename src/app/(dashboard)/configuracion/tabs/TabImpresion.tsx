@@ -1,11 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Printer, Eye, Building2 } from 'lucide-react'
+import { Printer, Eye, Building2, PlugZap } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { Input }    from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
+import { connectQz, listPrinters, QZ_DOWNLOAD_URL } from '@/lib/qz-tray'
+import type { QzStatus } from '@/lib/qz-tray'
+import { printTestTicketThermal } from '@/lib/thermal-print'
+import { DEFAULT_THERMAL_SETTINGS, loadThermalSettings, saveThermalSettings } from '@/lib/thermal-settings'
 import type { TicketConfig } from '@/types'
+import type { ThermalPaper, ThermalSettings } from '@/types/thermal'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -18,13 +23,16 @@ type ToggleField = {
 }[keyof TicketConfig]
 
 interface ToggleRowProps {
-  label:    string
-  hint:     string
-  checked:  boolean
-  onToggle: () => void
+  label:      string
+  hint:       string
+  checked:    boolean
+  onToggle:   () => void
+  // Por defecto el aria-label es "Mostrar/Ocultar <label>" (filas de visibilidad).
+  // Un interruptor que activa una función necesita otro verbo.
+  ariaLabel?: string
 }
 
-function ToggleRow({ label, hint, checked, onToggle }: ToggleRowProps) {
+function ToggleRow({ label, hint, checked, onToggle, ariaLabel }: ToggleRowProps) {
   return (
     <div className={styles.toggleRow}>
       <div>
@@ -36,7 +44,7 @@ function ToggleRow({ label, hint, checked, onToggle }: ToggleRowProps) {
         className={`${styles.toggleBtn} ${checked ? styles.toggleBtnOn : ''}`}
         onClick={onToggle}
         aria-pressed={checked}
-        aria-label={`${checked ? 'Ocultar' : 'Mostrar'} ${label.toLowerCase()}`}
+        aria-label={ariaLabel ?? `${checked ? 'Ocultar' : 'Mostrar'} ${label.toLowerCase()}`}
       >
         <span className={`${styles.toggleKnob} ${checked ? styles.toggleKnobOn : ''}`} />
       </button>
@@ -83,6 +91,74 @@ export function TabImpresion({ businessId: _businessId }: Props) {
   }, [toast])
 
   useEffect(() => { void fetchConfig() }, [fetchConfig])
+
+  /* ── Impresión térmica (QZ Tray) ── config POR EQUIPO en localStorage: la
+     impresora está conectada a esta máquina, no al negocio. Se guarda al
+     instante (no depende del botón "Guardar cambios" de más abajo). */
+  const [thermal, setThermal]       = useState<ThermalSettings>(DEFAULT_THERMAL_SETTINGS)
+  const [qzStatus, setQzStatus]     = useState<QzStatus | null>(null)
+  const [printers, setPrinters]     = useState<string[]>([])
+  const [scanning, setScanning]     = useState(false)
+  const [testing, setTesting]       = useState(false)
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null)
+  const [businessName, setBusinessName] = useState('')
+
+  useEffect(() => {
+    setThermal(loadThermalSettings())
+    fetch('/api/config/business')
+      .then(r => r.json())
+      .then((j: { business?: { name?: string } }) => { if (j.business?.name) setBusinessName(j.business.name) })
+      .catch(() => {})
+  }, [])
+
+  const updateThermal = (patch: Partial<ThermalSettings>) => {
+    const next = { ...thermal, ...patch }
+    setThermal(next)
+    if (!saveThermalSettings(next)) {
+      toast('El navegador bloquea el almacenamiento: la configuración de impresión no se pudo guardar en este equipo.', 'error')
+    }
+  }
+
+  const scanPrinters = async () => {
+    setScanning(true)
+    setTestResult(null)
+    const status = await connectQz()
+    setQzStatus(status)
+    if (status.state === 'connected') {
+      const found = await listPrinters()
+      if (found.ok) {
+        setPrinters(found.value)
+        if (found.value.length === 0) toast('QZ Tray no encontró impresoras instaladas en Windows.', 'warning')
+      } else {
+        toast(found.message, 'error')
+      }
+    }
+    setScanning(false)
+  }
+
+  const handleToggleThermal = () => {
+    const enabled = !thermal.enabled
+    updateThermal({ enabled })
+    if (enabled && !qzStatus) void scanPrinters()
+  }
+
+  const handleTestPrint = async () => {
+    setTesting(true)
+    setTestResult(null)
+    const result = await printTestTicketThermal(thermal, businessName)
+    setTestResult(
+      result.state === 'printed'
+        ? { ok: true, text: `Enviado a «${result.printer}». Revisa la impresora: ¿salió el papel?` }
+        : { ok: false, text: result.state === 'error' ? result.message : 'No se envió nada a la impresora.' },
+    )
+    setTesting(false)
+  }
+
+  // Una impresora guardada que QZ no lista ahora (apagada, otro equipo) se
+  // conserva visible en el selector en vez de desaparecer en silencio.
+  const printerOptions = thermal.printer && !printers.includes(thermal.printer)
+    ? [thermal.printer, ...printers]
+    : printers
 
   const toggle = (field: ToggleField) =>
     setConfig(p => ({ ...p, [field]: !p[field] }))
@@ -289,6 +365,93 @@ export function TabImpresion({ businessId: _businessId }: Props) {
             Guardar cambios
           </Button>
         </div>
+      </div>
+
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>
+          <PlugZap size={16} aria-hidden="true" />
+          Impresión térmica (QZ Tray)
+        </h3>
+        <p className={styles.toggleHint}>
+          Se configura en cada equipo que tenga impresora y se guarda al instante, sin el botón de arriba.
+        </p>
+
+        <ToggleRow
+          label="Impresión térmica automática (QZ Tray)"
+          hint="Imprime el ticket al cobrar, sin el diálogo de Windows. Solo en este equipo."
+          checked={thermal.enabled}
+          onToggle={handleToggleThermal}
+          ariaLabel={`${thermal.enabled ? 'Desactivar' : 'Activar'} la impresión térmica automática en este equipo`}
+        />
+
+        {qzStatus === null && (
+          <p className={styles.toggleHint}>
+            Pulsa «Buscar impresoras» para conectar con QZ Tray en este equipo.
+          </p>
+        )}
+        {qzStatus?.state === 'connected' && (
+          <p className={qzStatus.signed ? styles.statusOk : styles.statusWarn} role="status">
+            QZ Tray conectado (versión {qzStatus.version}).{' '}
+            {qzStatus.signed
+              ? 'Firma digital activa: imprime sin avisos.'
+              : 'Sin firma digital: QZ Tray pedirá confirmación al imprimir.'}
+          </p>
+        )}
+        {qzStatus?.state === 'unavailable' && (
+          <p className={styles.errorMsg} role="alert">
+            {qzStatus.message}{' '}
+            <a href={QZ_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className={styles.statusLink}>
+              Descargar QZ Tray
+            </a>
+          </p>
+        )}
+
+        <div className={`${styles.fieldGroup} ${styles.mt4}`}>
+          <label className={styles.label} htmlFor="thermal-printer">Impresora</label>
+          <div className={styles.printerRow}>
+            <select
+              id="thermal-printer"
+              className={styles.select}
+              value={thermal.printer ?? ''}
+              onChange={(e) => updateThermal({ printer: e.target.value || null })}
+            >
+              <option value="">
+                {printerOptions.length > 0 ? 'Elige una impresora' : 'Pulsa «Buscar impresoras»'}
+              </option>
+              {printerOptions.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            <Button variant="secondary" onClick={scanPrinters} loading={scanning}>
+              Buscar impresoras
+            </Button>
+          </div>
+        </div>
+
+        <div className={`${styles.fieldGroup} ${styles.mt4}`}>
+          <label className={styles.label} htmlFor="thermal-paper">Ancho del papel</label>
+          <select
+            id="thermal-paper"
+            className={styles.select}
+            value={thermal.paper}
+            onChange={(e) => updateThermal({ paper: e.target.value as ThermalPaper })}
+          >
+            <option value="58mm">58 mm (32 caracteres por línea)</option>
+            <option value="80mm">80 mm (48 caracteres por línea)</option>
+          </select>
+        </div>
+
+        <div className={styles.saveRow}>
+          <Button variant="primary" onClick={handleTestPrint} loading={testing} disabled={!thermal.printer}>
+            Imprimir ticket de prueba
+          </Button>
+        </div>
+
+        {testResult && (
+          <p className={testResult.ok ? styles.statusOk : styles.errorMsg} role="status">
+            {testResult.text}
+          </p>
+        )}
       </div>
     </div>
   )

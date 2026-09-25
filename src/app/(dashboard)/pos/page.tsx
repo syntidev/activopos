@@ -12,6 +12,7 @@ import { TicketPanel } from './TicketPanel'
 import { DraftTabs } from '@/components/pos/DraftTabs'
 import { CajaAperturaScreen } from '@/components/pos/CajaAperturaScreen'
 import { CobroModal } from '@/components/pos/CobroModal'
+import { printSaleThermal } from '@/lib/thermal-print'
 import { ScannerModal } from '@/components/pos/ScannerModal'
 import { ClienteModal } from '@/components/pos/ClienteModal'
 import { CotizacionModal } from '@/components/pos/CotizacionModal'
@@ -267,6 +268,14 @@ function POSView() {
         paymentMethods={pos.paymentMethods}
         onConfirm={async (payments) => {
           const result = await pos.procesarPago(payments)
+          // Impresión térmica automática (QZ Tray, config por equipo). Sin await
+          // y sin lanzar: una falla de impresión nunca debe demorar ni afectar
+          // una venta ya cobrada, solo avisar. Apagada en este equipo = no hace nada.
+          if (result.status === 'paid') {
+            void printSaleThermal(result.id).then(printed => {
+              if (printed.state === 'error') toast(`No se pudo imprimir el ticket: ${printed.message}`, 'warning')
+            })
+          }
           await handlePaymentComplete()
           return result
         }}

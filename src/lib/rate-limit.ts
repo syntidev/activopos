@@ -49,6 +49,15 @@ export const reservaPublicLimiter = new RateLimiterMemory({
   duration: 3600, // en 1 hora
 })
 
+// Firma de mensajes de QZ Tray (/api/qz/sign): con sesión, se limita por USUARIO,
+// no por IP -- varios cajeros comparten la IP del local. QZ firma una llamada por
+// operación (conectar, listar, imprimir), así que 120/min sobra para un POS real
+// y frena a quien use el endpoint como oráculo de firmas.
+export const qzSignLimiter = new RateLimiterMemory({
+  points:   120,  // 120 firmas por usuario
+  duration: 60,   // por minuto
+})
+
 // Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
 // antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
 export const getClientIp = (req: Request): string =>

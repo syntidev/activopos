@@ -1032,6 +1032,45 @@
   margin: 0;
 }
 
+/* ── Impresión térmica (QZ Tray): estado de la conexión y fila de impresora ──
+   Mismo molde que .errorMsg; solo cambian los tokens de color. */
+.statusOk,
+.statusWarn {
+  font-size: var(--text-sm);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin: 0;
+}
+
+.statusOk {
+  color: var(--color-success-text);
+  background-color: var(--color-success-subtle);
+  border: 1px solid var(--color-success-border);
+}
+
+.statusWarn {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-subtle);
+  border: 1px solid var(--color-warning-border);
+}
+
+.statusLink {
+  color: var(--color-brand);
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+}
+
+.printerRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.printerRow > select {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Add method / user modal form ── */
 .modalForm {
   display: flex;

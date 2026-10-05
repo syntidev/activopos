@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, Upload, Tag } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
+import { ImageField } from '@/components/ui/ImageField'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -22,16 +23,6 @@ interface BrandRow {
 const EMPTY_ROW = (order: number): BrandRow => ({
   id: -Date.now(), name: '', image_url: null, search_term: '', order, visible: true, isNew: true,
 })
-
-async function uploadBrandImage(file: File): Promise<string | null> {
-  const fd = new FormData()
-  fd.append('file', file)
-  fd.append('type', 'brand')
-  const res = await fetch('/api/upload/image', { method: 'POST', body: fd })
-  if (!res.ok) return null
-  const { thumb } = await res.json() as { thumb: string }
-  return thumb
-}
 
 export function TabBrands({ businessId: _b }: Props) {
   const { toast } = useToast()
@@ -119,7 +110,7 @@ export function TabBrands({ businessId: _b }: Props) {
     }
   }
 
-  function updateField(id: number, field: 'name' | 'search_term' | 'image_url', value: string) {
+  function updateField(id: number, field: 'name' | 'search_term', value: string) {
     setBrands(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b))
   }
 
@@ -190,7 +181,7 @@ export function TabBrands({ businessId: _b }: Props) {
           onDelete={() => deleteBrand(b)}
           onNameChange={(v) => updateField(b.id, 'name', v)}
           onSearchTermChange={(v) => updateField(b.id, 'search_term', v)}
-          onImageChange={(v) => updateField(b.id, 'image_url', v)}
+          onImageChange={(v) => setBrands(prev => prev.map(x => x.id === b.id ? { ...x, image_url: v } : x))}
           onSave={() => save(b)}
         />
       ))}
@@ -213,7 +204,7 @@ interface BrandCardProps {
   onDelete:           () => void
   onNameChange:       (v: string) => void
   onSearchTermChange: (v: string) => void
-  onImageChange:      (v: string) => void
+  onImageChange:      (v: string | null) => void
   onSave:             () => void
 }
 
@@ -221,21 +212,6 @@ function BrandCard({
   brand, isFirst, isLast, busy,
   onMoveUp, onMoveDown, onToggleVisible, onDelete, onNameChange, onSearchTermChange, onImageChange, onSave,
 }: BrandCardProps) {
-  const [uploading, setUploading] = useState(false)
-  const [dragging, setDragging]   = useState(false)
-  const inputId = `brand-file-${brand.id}`
-
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) return
-    setUploading(true)
-    try {
-      const url = await uploadBrandImage(file)
-      if (url) onImageChange(url)
-    } finally {
-      setUploading(false)
-    }
-  }
-
   return (
     <div className={styles.formCard}>
       <div className={styles.landingCardHeader}>
@@ -269,36 +245,18 @@ function BrandCard({
           placeholder="Igual al nombre si no hay variantes de escritura"
           maxLength={60}
         />
-        <div className={styles.fieldGroup}>
-          <label className={styles.label}>Imagen (opcional — sin foto se muestra la inicial)</label>
-          <div className={styles.logoArea}>
-            <div className={styles.logoPreview}>
-              {brand.image_url ? <img src={brand.image_url} alt="" width={80} height={80} /> : (brand.name.charAt(0).toUpperCase() || '?')}
-            </div>
-            <div
-              className={`${styles.logoDropZone} ${dragging ? styles.logoDropZoneActive : ''}`}
-              role="button"
-              tabIndex={0}
-              aria-label="Subir imagen de marca"
-              onClick={() => document.getElementById(inputId)?.click()}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') document.getElementById(inputId)?.click() }}
-              onDragOver={e => { e.preventDefault(); setDragging(true) }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) void handleFile(f) }}
-            >
-              <Upload size={20} aria-hidden="true" />
-              <p className={styles.logoDropText}>{uploading ? 'Subiendo...' : brand.image_url ? 'Cambiar imagen' : 'Arrastra o haz clic para subir'}</p>
-              <p className={styles.logoDropHint}>PNG, JPG hasta 5 MB</p>
-            </div>
-            <input
-              id={inputId}
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) void handleFile(f) }}
-            />
-          </div>
-        </div>
+        <ImageField
+          label="Imagen (opcional — sin foto se muestra la inicial)"
+          labelClassName={styles.label}
+          value={brand.image_url}
+          onChange={onImageChange}
+          uploadType="brand"
+          resultField="thumb"
+          removable
+          layout="inline"
+          boxClassName={styles.logoPreview}
+          emptyContent={brand.name.charAt(0).toUpperCase() || '?'}
+        />
       </div>
 
       <div className={styles.saveRow}>

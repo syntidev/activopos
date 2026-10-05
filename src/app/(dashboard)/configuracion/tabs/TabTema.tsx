@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, type CSSProperties } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 import { useTheme } from 'next-themes'
 import { Moon, Sun, Check, ImageUp } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import { ImageField } from '@/components/ui/ImageField'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -39,23 +40,9 @@ export function TabTema({ businessId: _b }: Props) {
   const [saving, setSaving] = useState(false)
   const [selectedColor, setSelectedColor] = useState<string>(DEFAULT_COLOR)
 
-  const coverRef = useRef<HTMLInputElement>(null)
-  const [coverPath, setCoverPath]         = useState<string | null>(null)
-  const [coverPreview, setCoverPreview]   = useState<string | null>(null)
-  const [uploadingCover, setUploadingCover] = useState(false)
-  const [coverDragging, setCoverDragging] = useState(false)
-
-  const coverRef2 = useRef<HTMLInputElement>(null)
-  const [coverPath2, setCoverPath2]         = useState<string | null>(null)
-  const [coverPreview2, setCoverPreview2]   = useState<string | null>(null)
-  const [uploadingCover2, setUploadingCover2] = useState(false)
-  const [coverDragging2, setCoverDragging2] = useState(false)
-
-  const coverRef3 = useRef<HTMLInputElement>(null)
-  const [coverPath3, setCoverPath3]         = useState<string | null>(null)
-  const [coverPreview3, setCoverPreview3]   = useState<string | null>(null)
-  const [uploadingCover3, setUploadingCover3] = useState(false)
-  const [coverDragging3, setCoverDragging3] = useState(false)
+  const [coverPath, setCoverPath]   = useState<string | null>(null)
+  const [coverPath2, setCoverPath2] = useState<string | null>(null)
+  const [coverPath3, setCoverPath3] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -90,75 +77,23 @@ export function TabTema({ businessId: _b }: Props) {
     return () => { active = false }
   }, [])
 
-  /* Sube y guarda una portada de banner (1/2/3) — misma lógica exacta para
-     los 3 slots, parametrizada por campo y setters en vez de triplicada. */
-  const uploadCover = async (
-    file: File,
+  /* Guarda una portada de banner (1/2/3) al instante, al subir y al quitar
+     (null): mismo comportamiento "Se guarda al instante" de esta pestaña.
+     ImageField sube el archivo y muestra el error si esto rechaza. */
+  const saveCover = async (
     field: 'catalog_cover_path' | 'catalog_cover_path_2' | 'catalog_cover_path_3',
-    currentPreview: string | null,
+    url: string | null,
     setPath: (v: string | null) => void,
-    setPreview: (v: string | null) => void,
-    setUploading: (v: boolean) => void,
   ) => {
-    if (!file.type.startsWith('image/')) { toast('Solo se aceptan imágenes PNG, JPG o WebP.', 'error'); return }
-    if (file.size > 5 * 1024 * 1024)    { toast('La portada no puede superar 5 MB.', 'error');          return }
-
-    const prev = currentPreview
-    const reader = new FileReader()
-    reader.onload = (e) => setPreview(e.target?.result as string)
-    reader.readAsDataURL(file)
-
-    setUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('type', 'catalog_cover')
-      const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: fd })
-      if (!uploadRes.ok) { toast('Error al subir la portada.', 'error'); setPreview(prev); return }
-      const { url } = await uploadRes.json() as { url: string }
-
-      const patchRes = await fetch('/api/config/business', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ [field]: url }),
-      })
-      if (!patchRes.ok) { toast('Error al guardar la portada.', 'error'); setPreview(prev); return }
-      setPath(url)
-      toast('Portada del catálogo guardada.', 'success')
-    } catch {
-      toast('Error de conexión al subir la portada.', 'error')
-      setPreview(prev)
-    } finally {
-      setUploading(false)
-    }
+    const res = await fetch('/api/config/business', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ [field]: url }),
+    })
+    if (!res.ok) throw new Error(url ? 'No se pudo guardar la portada.' : 'No se pudo quitar la imagen.')
+    setPath(url)
+    toast(url ? 'Portada del catálogo guardada.' : 'Imagen del banner quitada.', 'success')
   }
-
-  const handleCoverSelect  = (file: File) => uploadCover(file, 'catalog_cover_path',   coverPreview,  setCoverPath,  setCoverPreview,  setUploadingCover)
-  const handleCoverSelect2 = (file: File) => uploadCover(file, 'catalog_cover_path_2', coverPreview2, setCoverPath2, setCoverPreview2, setUploadingCover2)
-  const handleCoverSelect3 = (file: File) => uploadCover(file, 'catalog_cover_path_3', coverPreview3, setCoverPath3, setCoverPreview3, setUploadingCover3)
-
-  const handleCoverDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setCoverDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleCoverSelect(file)
-  }
-  const handleCoverDrop2 = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setCoverDragging2(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleCoverSelect2(file)
-  }
-  const handleCoverDrop3 = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setCoverDragging3(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleCoverSelect3(file)
-  }
-
-  const displayCover  = coverPreview  ?? coverPath
-  const displayCover2 = coverPreview2 ?? coverPath2
-  const displayCover3 = coverPreview3 ?? coverPath3
 
   const selectTheme = (mode: ThemeMode) => {
     setTheme(mode)
@@ -265,122 +200,67 @@ export function TabTema({ businessId: _b }: Props) {
           Imagen del banner superior de tu catálogo. Se guarda al instante.
         </p>
 
-        <div
-          className={`${styles.coverDropZone} ${coverDragging ? styles.logoDropZoneActive : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-label="Subir portada del catálogo"
-          onClick={() => !uploadingCover && coverRef.current?.click()}
-          onKeyDown={(e) => { if (!uploadingCover && (e.key === 'Enter' || e.key === ' ')) coverRef.current?.click() }}
-          onDragOver={(e) => { e.preventDefault(); setCoverDragging(true) }}
-          onDragLeave={() => setCoverDragging(false)}
-          onDrop={handleCoverDrop}
-        >
-          {displayCover ? (
-            <img src={displayCover} alt="Portada del catálogo" className={styles.coverPreview} />
-          ) : (
+        <ImageField
+          label="Portada del catálogo"
+          hideLabel
+          value={coverPath}
+          onChange={v => saveCover('catalog_cover_path', v, setCoverPath)}
+          uploadType="catalog_cover"
+          removable
+          boxClassName={styles.coverDropZone}
+          imgClassName={styles.coverPreview}
+          alt="Portada del catálogo"
+          emptyContent={
             <div className={styles.coverEmpty}>
               <ImageUp size={22} aria-hidden="true" />
               <p className={styles.logoDropText}>Arrastra o haz clic para subir</p>
             </div>
-          )}
-          {uploadingCover && <div className={styles.coverUploading}>Subiendo…</div>}
-        </div>
-        {displayCover && (
-          <p className={styles.logoDropText} style={{ marginTop: 8 }}>
-            {uploadingCover ? 'Subiendo…' : 'Haz clic sobre la imagen para cambiarla'}
-          </p>
-        )}
+          }
+        />
 
         <p className={styles.logoDropHint}>
           Recomendado: horizontal (paisaje), ~1200 × 480 px. Máx 1200 px de ancho, 5 MB. JPG, PNG o WebP.
           Se muestra a 200–280 px de alto y se recorta a lo ancho (object-fit: cover), así que centra lo importante.
         </p>
 
-        <input
-          ref={coverRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          className={styles.logoFileInput}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverSelect(f) }}
-          aria-hidden="true"
-          tabIndex={-1}
-        />
-
         {/* Banner 2 (opcional) */}
         <h3 className={styles.formCardTitle} style={{ marginTop: 'var(--space-4)' }}>Banner 2</h3>
-        <div
-          className={`${styles.coverDropZone} ${coverDragging2 ? styles.logoDropZoneActive : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-label="Subir banner 2 del catálogo"
-          onClick={() => !uploadingCover2 && coverRef2.current?.click()}
-          onKeyDown={(e) => { if (!uploadingCover2 && (e.key === 'Enter' || e.key === ' ')) coverRef2.current?.click() }}
-          onDragOver={(e) => { e.preventDefault(); setCoverDragging2(true) }}
-          onDragLeave={() => setCoverDragging2(false)}
-          onDrop={handleCoverDrop2}
-        >
-          {displayCover2 ? (
-            <img src={displayCover2} alt="Banner 2 del catálogo" className={styles.coverPreview} />
-          ) : (
+        <ImageField
+          label="Banner 2 del catálogo"
+          hideLabel
+          value={coverPath2}
+          onChange={v => saveCover('catalog_cover_path_2', v, setCoverPath2)}
+          uploadType="catalog_cover"
+          removable
+          boxClassName={styles.coverDropZone}
+          imgClassName={styles.coverPreview}
+          alt="Banner 2 del catálogo"
+          emptyContent={
             <div className={styles.coverEmpty}>
               <ImageUp size={22} aria-hidden="true" />
               <p className={styles.logoDropText}>Arrastra o haz clic para subir</p>
             </div>
-          )}
-          {uploadingCover2 && <div className={styles.coverUploading}>Subiendo…</div>}
-        </div>
-        {displayCover2 && (
-          <p className={styles.logoDropText} style={{ marginTop: 8 }}>
-            {uploadingCover2 ? 'Subiendo…' : 'Haz clic sobre la imagen para cambiarla'}
-          </p>
-        )}
-        <input
-          ref={coverRef2}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          className={styles.logoFileInput}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverSelect2(f) }}
-          aria-hidden="true"
-          tabIndex={-1}
+          }
         />
 
         {/* Banner 3 (opcional) */}
         <h3 className={styles.formCardTitle} style={{ marginTop: 'var(--space-4)' }}>Banner 3</h3>
-        <div
-          className={`${styles.coverDropZone} ${coverDragging3 ? styles.logoDropZoneActive : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-label="Subir banner 3 del catálogo"
-          onClick={() => !uploadingCover3 && coverRef3.current?.click()}
-          onKeyDown={(e) => { if (!uploadingCover3 && (e.key === 'Enter' || e.key === ' ')) coverRef3.current?.click() }}
-          onDragOver={(e) => { e.preventDefault(); setCoverDragging3(true) }}
-          onDragLeave={() => setCoverDragging3(false)}
-          onDrop={handleCoverDrop3}
-        >
-          {displayCover3 ? (
-            <img src={displayCover3} alt="Banner 3 del catálogo" className={styles.coverPreview} />
-          ) : (
+        <ImageField
+          label="Banner 3 del catálogo"
+          hideLabel
+          value={coverPath3}
+          onChange={v => saveCover('catalog_cover_path_3', v, setCoverPath3)}
+          uploadType="catalog_cover"
+          removable
+          boxClassName={styles.coverDropZone}
+          imgClassName={styles.coverPreview}
+          alt="Banner 3 del catálogo"
+          emptyContent={
             <div className={styles.coverEmpty}>
               <ImageUp size={22} aria-hidden="true" />
               <p className={styles.logoDropText}>Arrastra o haz clic para subir</p>
             </div>
-          )}
-          {uploadingCover3 && <div className={styles.coverUploading}>Subiendo…</div>}
-        </div>
-        {displayCover3 && (
-          <p className={styles.logoDropText} style={{ marginTop: 8 }}>
-            {uploadingCover3 ? 'Subiendo…' : 'Haz clic sobre la imagen para cambiarla'}
-          </p>
-        )}
-        <input
-          ref={coverRef3}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          className={styles.logoFileInput}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCoverSelect3(f) }}
-          aria-hidden="true"
-          tabIndex={-1}
+          }
         />
 
         <p className={styles.logoDropHint} style={{ marginTop: 'var(--space-3)' }}>

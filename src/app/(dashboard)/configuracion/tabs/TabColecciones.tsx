@@ -5,7 +5,7 @@ import { Plus, Trash2, Layers, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
-import { ImageField } from './TabLanding'
+import { ImageField } from '@/components/ui/ImageField'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -243,7 +243,7 @@ export function TabColecciones({ businessId: _b }: Props) {
               onChange={e => setDraft(d => ({ ...d, year: e.target.value }))}
               placeholder="2027"
             />
-            <ImageField label="Imagen de portada" value={draft.cover_path} onChange={v => setDraft(d => ({ ...d, cover_path: v }))} />
+            <ImageField label="Imagen de portada" value={draft.cover_path || null} onChange={v => setDraft(d => ({ ...d, cover_path: v ?? '' }))} uploadType="landing" compress removable boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
           </div>
           <div className={styles.saveRow}>
             <Button variant="secondary" onClick={() => setShowForm(false)} disabled={busy}>Cancelar</Button>

@@ -2,13 +2,14 @@
 
 import { useEffect, useId, useState } from 'react'
 import {
-  Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, ImageUp, LayoutTemplate,
+  Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, LayoutTemplate,
   Image as ImageIcon, GalleryHorizontal, Users, BookOpen, LayoutGrid, Megaphone, ShoppingBag, Tags,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
+import { ImageField } from '@/components/ui/ImageField'
 import { SECTION_TYPES, PRODUCT_LIST_SLOTS } from '@/lib/landing-sections'
 import type {
   SectionType, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig, CollectionGridConfig,
@@ -84,55 +85,6 @@ const DEFAULT_CONFIG: Record<SectionType, Record<string, unknown>> = {
   announcement_popup: { image_url: '', heading: '', delay_ms: 2500 } satisfies AnnouncementPopupConfig,
   product_list:     { modo: 'manual', product_ids: [] } satisfies ProductListConfig,
   category_list:    { category_ids: [] } satisfies CategoryListConfig,
-}
-
-/* Compresión client-side (Canvas -> WebP) — mismo patrón que ProductModal.tsx,
-   no reinventado: archivos chicos se suben tal cual (el backend ya genera webp). */
-const COMPRESS_THRESHOLD_KB = 800
-const COMPRESS_MAX_DIM      = 1600
-const COMPRESS_QUALITY      = 0.85
-
-async function compressImage(file: File): Promise<File> {
-  if (file.size <= COMPRESS_THRESHOLD_KB * 1024) return file
-  return new Promise<File>((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { width, height } = img
-      if (width > COMPRESS_MAX_DIM || height > COMPRESS_MAX_DIM) {
-        if (width > height) { height = Math.round(height * (COMPRESS_MAX_DIM / width)); width = COMPRESS_MAX_DIM }
-        else { width = Math.round(width * (COMPRESS_MAX_DIM / height)); height = COMPRESS_MAX_DIM }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { resolve(file); return }
-      ctx.drawImage(img, 0, 0, width, height)
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { resolve(file); return }
-          resolve(new File([blob], file.name.replace(/\.\w+$/, '.webp'), { type: 'image/webp', lastModified: file.lastModified }))
-        },
-        'image/webp',
-        COMPRESS_QUALITY,
-      )
-    }
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
-    img.src = url
-  })
-}
-
-async function uploadLandingImage(file: File): Promise<string | null> {
-  const compressed = await compressImage(file)
-  const fd = new FormData()
-  fd.append('file', compressed)
-  fd.append('type', 'landing')
-  const res = await fetch('/api/upload/image', { method: 'POST', body: fd })
-  if (!res.ok) return null
-  const { url } = await res.json() as { url: string }
-  return url
 }
 
 export function TabLanding({ businessId: _b }: Props) {
@@ -427,60 +379,6 @@ function SectionCard({
   )
 }
 
-/* ── Campo de imagen reutilizable — mismo patrón de TabTema (dropzone + upload) ── */
-
-export function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
-  const [uploading, setUploading] = useState(false)
-  const [dragging, setDragging]   = useState(false)
-  const inputId = `ls-file-${label.replace(/\s+/g, '-')}`
-
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) return
-    setUploading(true)
-    try {
-      const url = await uploadLandingImage(file)
-      if (url) onChange(url)
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  return (
-    <div className={styles.fieldGroup}>
-      <label className={styles.label}>{label}</label>
-      <div
-        className={`${styles.imageFieldDropZone} ${dragging ? styles.logoDropZoneActive : ''}`}
-        role="button"
-        tabIndex={0}
-        aria-label={label}
-        onClick={() => document.getElementById(inputId)?.click()}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') document.getElementById(inputId)?.click() }}
-        onDragOver={e => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) void handleFile(f) }}
-      >
-        {value ? (
-          <img src={value} alt="" className={styles.imageFieldPreview} />
-        ) : (
-          <div className={styles.imageFieldEmpty}>
-            <ImageUp size={20} aria-hidden="true" />
-            <p className={styles.logoDropText}>Arrastra o haz clic</p>
-          </div>
-        )}
-        {uploading && <div className={styles.imageFieldUploading}>Subiendo…</div>}
-      </div>
-      <input
-        id={inputId}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        className={styles.logoFileInput}
-        onChange={e => { const f = e.target.files?.[0]; if (f) void handleFile(f) }}
-        aria-hidden="true"
-        tabIndex={-1}
-      />
-    </div>
-  )
-}
 
 /* ── Formularios por tipo — solo campos, sin builder visual ────────────── */
 
@@ -492,7 +390,7 @@ function HeroForm({ config, onChange }: { config: HeroConfig; onChange: (c: Hero
       <Input label="Subtítulo" value={config.subtitle} onChange={e => set('subtitle')(e.target.value)} maxLength={200} />
       <Input label="Texto del botón" value={config.cta_text} onChange={e => set('cta_text')(e.target.value)} maxLength={40} />
       <Input label="Link del botón" value={config.cta_link} onChange={e => set('cta_link')(e.target.value)} placeholder="/catalogo-premium/mi-slug/productos" maxLength={500} />
-      <ImageField label="Imagen de fondo" value={config.image_url} onChange={v => set('image_url')(v)} />
+      <ImageField label="Imagen de fondo" value={config.image_url} onChange={v => set('image_url')(v ?? '')} uploadType="landing" compress boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
       <Input
         label="Video (opcional)"
         value={config.video_url ?? ''}
@@ -552,7 +450,7 @@ function EventSliderForm({ config, onChange }: { config: EventSliderConfig; onCh
                 <option value="dark">Oscuro (fondo claro)</option>
               </select>
             </div>
-            <ImageField label={`Imagen slide ${i + 1}`} value={slide.image_url} onChange={v => setSlide(i, { image_url: v })} />
+            <ImageField label={`Imagen slide ${i + 1}`} value={slide.image_url} onChange={v => setSlide(i, { image_url: v ?? '' })} uploadType="landing" compress boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
           </div>
         </div>
       ))}
@@ -596,7 +494,7 @@ function CommunityForm({ config, onChange }: { config: CommunityConfig; onChange
             </button>
           </div>
           <div className={styles.formFields}>
-            <ImageField label={`Foto ${i + 1}`} value={item.image_url} onChange={v => setItem(i, { image_url: v })} />
+            <ImageField label={`Foto ${i + 1}`} value={item.image_url} onChange={v => setItem(i, { image_url: v ?? '' })} uploadType="landing" compress boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
             <Input label="Producto etiquetado" value={item.product_tag} onChange={e => setItem(i, { product_tag: e.target.value })} maxLength={80} />
           </div>
         </div>
@@ -657,7 +555,7 @@ function StoryForm({ config, onChange }: { config: StoryConfig; onChange: (c: St
           rows={6}
         />
       </div>
-      <ImageField label="Foto" value={config.image_url} onChange={v => onChange({ ...config, image_url: v })} />
+      <ImageField label="Foto" value={config.image_url} onChange={v => onChange({ ...config, image_url: v ?? '' })} uploadType="landing" compress boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
     </div>
   )
 }
@@ -665,7 +563,7 @@ function StoryForm({ config, onChange }: { config: StoryConfig; onChange: (c: St
 function AnnouncementPopupForm({ config, onChange }: { config: AnnouncementPopupConfig; onChange: (c: AnnouncementPopupConfig) => void }) {
   return (
     <div className={styles.formFields}>
-      <ImageField label="Imagen (obligatoria)" value={config.image_url} onChange={v => onChange({ ...config, image_url: v })} />
+      <ImageField label="Imagen (obligatoria)" value={config.image_url} onChange={v => onChange({ ...config, image_url: v ?? '' })} uploadType="landing" compress boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
       <Input label="Encabezado" value={config.heading} onChange={e => onChange({ ...config, heading: e.target.value })} maxLength={80} />
       <Input
         label="Texto del botón (opcional)"

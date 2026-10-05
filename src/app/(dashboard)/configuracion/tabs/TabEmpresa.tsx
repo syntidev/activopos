@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Building2, Upload, Store } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { Input }    from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
+import { ImageField } from '@/components/ui/ImageField'
 import type { BusinessConfig } from '@/types'
 import styles from '../configuracion.module.css'
 
@@ -41,15 +42,11 @@ const EMPTY_FORM: EmpresaForm = {
 
 export function TabEmpresa({ businessId: _businessId }: Props) {
   const { toast } = useToast()
-  const fileRef   = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading]         = useState(true)
   const [saving, setSaving]           = useState(false)
-  const [uploading, setUploading]     = useState(false)
   const [form, setForm]               = useState<EmpresaForm>(EMPTY_FORM)
   const [logoPath, setLogoPath]       = useState<string | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const [isDragging, setIsDragging]   = useState(false)
 
   const fetchConfig = useCallback(async () => {
     setLoading(true)
@@ -126,49 +123,18 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
     }
   }
 
-  const handleFileSelect = async (file: File) => {
-    if (!file.type.startsWith('image/')) { toast('Solo se aceptan imágenes PNG, JPG o WebP.', 'error'); return }
-    if (file.size > 2 * 1024 * 1024)    { toast('El archivo no puede superar 2 MB.', 'error');          return }
-
-    const prevPreview = logoPreview
-
-    const reader = new FileReader()
-    reader.onload = (e) => setLogoPreview(e.target?.result as string)
-    reader.readAsDataURL(file)
-
-    setUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('type', 'logo')
-      const uploadRes = await fetch('/api/upload/image', { method: 'POST', body: fd })
-      if (!uploadRes.ok) { toast('Error al subir la imagen.', 'error'); setLogoPreview(prevPreview); return }
-      const { url } = await uploadRes.json() as { url: string }
-
-      const patchRes = await fetch('/api/config/business', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ logo_path: url }),
-      })
-      if (!patchRes.ok) { toast('Error al guardar el logo.', 'error'); setLogoPreview(prevPreview); return }
-      setLogoPath(url)
-      toast('Logo guardado correctamente.', 'success')
-    } catch {
-      toast('Error de conexión al subir el logo.', 'error')
-      setLogoPreview(prevPreview)
-    } finally {
-      setUploading(false)
-    }
+  // El logo se guarda al instante, tanto al subir como al quitar (comportamiento
+  // previo al subir); ImageField muestra el error si esto rechaza.
+  const saveLogo = async (url: string | null) => {
+    const res = await fetch('/api/config/business', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ logo_path: url }),
+    })
+    if (!res.ok) throw new Error(url ? 'No se pudo guardar el logo.' : 'No se pudo quitar el logo.')
+    setLogoPath(url)
+    toast(url ? 'Logo guardado correctamente.' : 'Logo quitado.', 'success')
   }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(false)
-    const file = e.dataTransfer.files[0]
-    if (file) handleFileSelect(file)
-  }
-
-  const displayLogo = logoPreview ?? logoPath
 
   if (loading) {
     return (
@@ -194,39 +160,17 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         </h3>
 
         <div className={styles.logoArea}>
-          <div className={styles.logoPreview}>
-            {displayLogo
-              ? <img src={displayLogo} alt="Logo del negocio" />
-              : (form.name.slice(0, 2).toUpperCase() || 'AP')
-            }
-          </div>
-
-          <div
-            className={`${styles.logoDropZone} ${isDragging ? styles.logoDropZoneActive : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-label="Subir logo"
-            onClick={() => !uploading && fileRef.current?.click()}
-            onKeyDown={(e) => { if (!uploading && (e.key === 'Enter' || e.key === ' ')) fileRef.current?.click() }}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true)  }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-          >
-            <Upload size={20} aria-hidden="true" />
-            <p className={styles.logoDropText}>
-              {uploading ? 'Subiendo...' : logoPreview ? 'Cambiar imagen' : 'Arrastra o haz clic para subir'}
-            </p>
-            <p className={styles.logoDropHint}>PNG, JPG hasta 2 MB</p>
-          </div>
-
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className={styles.logoFileInput}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }}
-            aria-hidden="true"
-            tabIndex={-1}
+          <ImageField
+            label="Logo del negocio"
+            hideLabel
+            value={logoPath}
+            onChange={saveLogo}
+            uploadType="logo"
+            removable
+            layout="inline"
+            boxClassName={styles.logoPreview}
+            alt="Logo del negocio"
+            emptyContent={form.name.slice(0, 2).toUpperCase() || 'AP'}
           />
         </div>
       </div>

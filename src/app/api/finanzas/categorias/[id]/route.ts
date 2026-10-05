@@ -29,9 +29,13 @@ export async function PATCH(
 
     const body = patchSchema.parse(await req.json())
 
-    // Protect system "Otros" from deactivation
-    if (body.active === false && existing.is_system && existing.name === 'Otros') {
-      return NextResponse.json({ error: 'La categoría "Otros" no puede desactivarse' }, { status: 409 })
+    // P2 2026-10-05 (auditoría CLI-C): solo protegía "Otros" por nombre exacto,
+    // además de is_system -- las otras categorías de sistema (is_system=true,
+    // name distinto de "Otros") se podían desactivar por API directa. is_system
+    // ya es la marca real de "categoría de sistema" (no hay otro campo para
+    // esto) -- se usa sola, sin el nombre extra.
+    if (body.active === false && existing.is_system) {
+      return NextResponse.json({ error: `La categoría "${existing.name}" es del sistema y no puede desactivarse` }, { status: 409 })
     }
 
     const updated = await db.expenseCategory.update({

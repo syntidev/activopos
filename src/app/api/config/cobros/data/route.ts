@@ -2,36 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
-
-// Schema nested — coincide exactamente con CobrosFormData en TabCobros.tsx
-const PagoMovilSchema = z.object({
-  banco:                z.string().max(10).default(''),
-  telefono:             z.string().max(16).default(''),
-  usa_whatsapp_negocio: z.boolean().default(false),
-  titular:              z.string().max(80).default(''),
-  tipo_doc:             z.string().max(2).default('V'),
-  documento:            z.string().max(12).default(''),
-})
-
-const SimplePaySchema = z.object({
-  contacto: z.string().max(120).default(''),
-  titular:  z.string().max(80).default(''),
-})
-
-const UsdtSchema = z.object({
-  wallet:  z.string().max(100).default(''),
-  red:     z.string().max(10).default('TRC20'),
-  titular: z.string().max(80).default(''),
-})
-
-const CobroDataSchema = z.object({
-  pago_movil: PagoMovilSchema.optional(),
-  zelle:      SimplePaySchema.optional(),
-  zinli:      SimplePaySchema.optional(),
-  paypal:     SimplePaySchema.optional(),
-  binance:    SimplePaySchema.optional(),
-  usdt:       UsdtSchema.optional(),
-})
+import { CobroDataSchema } from '@/lib/cobro-data'
 
 const EMPTY_COBROS = {
   pago_movil: { banco: '', telefono: '', usa_whatsapp_negocio: false, titular: '', tipo_doc: 'V', documento: '' },

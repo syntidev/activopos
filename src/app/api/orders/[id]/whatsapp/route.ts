@@ -2,37 +2,62 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getActiveRate, formatBs, formatUsd } from '@/lib/bcv'
 import { normalizePhone } from '@/lib/utils'
+import { CobroDataSchema } from '@/lib/cobro-data'
+import type { CobroData } from '@/lib/cobro-data'
 
-interface CobroData {
-  pago_movil_banco?:    string
-  pago_movil_telefono?: string
-  pago_movil_titular?:  string
-  pago_movil_cedula?:   string
-  zelle_contacto?:      string
-  zelle_titular?:       string
-  binance_id?:          string
-  zinli_correo?:        string
-}
-
-const buildPaymentLines = (cobro: CobroData | null): string[] => {
-  if (!cobro) return []
+// Bug real 2026-10-05: esto declaraba su PROPIA interfaz CobroData con claves
+// PLANAS (pago_movil_telefono, zelle_contacto, binance_id, zinli_correo) que
+// nunca existieron en lo que realmente guarda TabCobros.tsx / PATCH
+// /api/config/cobros/data -- la forma real es ANIDADA (pago_movil.telefono,
+// zelle.contacto...). El bloque de pago del mensaje nunca se ejecutaba, y
+// PayPal/USDT ni siquiera estaban declarados. CobroDataSchema (importado) es
+// la única fuente de verdad de esta forma -- la valida PATCH al guardar.
+// safeParse en vez de asumir el shape: cobro_data es Json? nullable en Prisma,
+// y un negocio que nunca tocó la pestaña Cobros puede tener null o un resto
+// del formato plano legacy -- en cualquiera de los dos casos, sin líneas de
+// pago (mismo comportamiento de "degradar sin romper" que ya tenía esta ruta).
+const buildPaymentLines = (cobroRaw: unknown): string[] => {
+  const parsed = CobroDataSchema.safeParse(cobroRaw)
+  if (!parsed.success) return []
+  const cobro: CobroData = parsed.data
 
   const lines: string[] = []
 
-  if (cobro.pago_movil_telefono) {
-    if (cobro.pago_movil_banco)   lines.push(`• Banco: ${cobro.pago_movil_banco}`)
-    lines.push(`• Pago Móvil: ${cobro.pago_movil_telefono}`)
-    if (cobro.pago_movil_titular) lines.push(`• Titular: ${cobro.pago_movil_titular}`)
-    if (cobro.pago_movil_cedula)  lines.push(`• Cédula: ${cobro.pago_movil_cedula}`)
+  const pm = cobro.pago_movil
+  if (pm?.telefono) {
+    if (pm.banco)     lines.push(`• Banco: ${pm.banco}`)
+    lines.push(`• Pago Móvil: ${pm.telefono}`)
+    if (pm.titular)   lines.push(`• Titular: ${pm.titular}`)
+    if (pm.documento) lines.push(`• Cédula: ${pm.tipo_doc}-${pm.documento}`)
   }
 
-  if (cobro.zelle_contacto) {
-    lines.push(`• Zelle: ${cobro.zelle_contacto}`)
-    if (cobro.zelle_titular) lines.push(`• Titular: ${cobro.zelle_titular}`)
+  if (cobro.zelle?.contacto) {
+    lines.push(`• Zelle: ${cobro.zelle.contacto}`)
+    if (cobro.zelle.titular) lines.push(`• Titular: ${cobro.zelle.titular}`)
   }
 
-  if (cobro.binance_id)   lines.push(`• Binance ID: ${cobro.binance_id}`)
-  if (cobro.zinli_correo) lines.push(`• Zinli: ${cobro.zinli_correo}`)
+  if (cobro.zinli?.contacto) {
+    lines.push(`• Zinli: ${cobro.zinli.contacto}`)
+    if (cobro.zinli.titular) lines.push(`• Titular: ${cobro.zinli.titular}`)
+  }
+
+  if (cobro.paypal?.contacto) {
+    lines.push(`• PayPal: ${cobro.paypal.contacto}`)
+    if (cobro.paypal.titular) lines.push(`• Titular: ${cobro.paypal.titular}`)
+  }
+
+  // Shape de Binance cambió de raíz: la interfaz plana vieja tenía un solo
+  // binance_id (campo que nunca existió en los datos reales). Lo real guardado
+  // es {contacto, titular} -- mismo molde que Zelle/Zinli/PayPal.
+  if (cobro.binance?.contacto) {
+    lines.push(`• Binance: ${cobro.binance.contacto}`)
+    if (cobro.binance.titular) lines.push(`• Titular: ${cobro.binance.titular}`)
+  }
+
+  if (cobro.usdt?.wallet) {
+    lines.push(`• USDT (${cobro.usdt.red || 'TRC20'}): ${cobro.usdt.wallet}`)
+    if (cobro.usdt.titular) lines.push(`• Titular: ${cobro.usdt.titular}`)
+  }
 
   return lines
 }
@@ -65,8 +90,7 @@ export async function GET(
     const clientName = order.client_name ?? 'Cliente'
     const bizName    = biz?.name ?? 'nuestro negocio'
     const totalUsd   = Number(order.total_usd)
-    const cobro      = (biz?.cobro_data ?? null) as CobroData | null
-    const payLines   = buildPaymentLines(cobro)
+    const payLines   = buildPaymentLines(biz?.cobro_data ?? null)
 
     const itemLines = order.items.map(item => {
       const qty   = Number(item.quantity)

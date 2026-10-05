@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
+import { PLAN_LIMITS, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
+import { planDenied } from '@/lib/plan-guard'
 
 const ALLOWED_MODULES = [
   'pos', 'inventory', 'caja', 'pedidos', 'catalog',
@@ -18,6 +19,22 @@ const modulesSchema = z.object({
   modules: z.array(z.enum(ALLOWED_MODULES)).min(1),
 })
 
+// P1 seguridad 2026-10-05 (auditoría CLI-C): catalog/finanzas/analytics/suppliers
+// solo tenían gate de plan en el cliente (TabModulos.tsx requiresPlan), nunca
+// server-side -- un admin en plan gratis podía activarlos llamando esta API
+// directo. Mismo patrón que /api/config/theme (checkPlanLimit + planDenied),
+// pero SIN llamar checkPlanLimit dentro de un loop (N+1 que .doc/AGENTS.md
+// prohíbe explícitamente): se lee el negocio UNA vez acá y se evalúan los 4
+// flags de PLAN_LIMITS ya resueltos, en vez de 4 llamadas que cada una vuelve
+// a consultar la DB.
+const GATED_MODULES = ['catalog', 'finanzas', 'analytics', 'suppliers'] as const
+const GATE_MESSAGE: Record<typeof GATED_MODULES[number], string> = {
+  catalog:   `El catálogo digital requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
+  finanzas:  `El módulo de finanzas requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
+  analytics: `Pulso del Negocio requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
+  suppliers: `El módulo de proveedores requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
+}
+
 /* ── PATCH /api/config/business/modules — update enabled modules ── */
 
 export async function PATCH(req: NextRequest) {
@@ -27,6 +44,29 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = modulesSchema.parse(await req.json())
+
+    const current = await prisma.business.findUnique({
+      where:  { id: session.businessId },
+      select: { modules_enabled: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true },
+    })
+    if (!current) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
+
+    // Solo gatea la ACTIVACIÓN: un módulo que ya estaba encendido (tenant
+    // grandfathered, o bajó de plan después) nunca se apaga por este chequeo --
+    // desactivar siempre se permite, sin importar el plan.
+    const currentlyEnabled = new Set((current.modules_enabled ?? '').split(',').filter(Boolean))
+    const newlyActivated = GATED_MODULES.filter(m => body.modules.includes(m) && !currentlyEnabled.has(m))
+
+    if (newlyActivated.length > 0) {
+      if (!current.subscription_active) return planDenied('Tu suscripción está suspendida. Contacta a soporte.')
+      if (current.subscription_expires_at && new Date() > current.subscription_expires_at) {
+        return planDenied('Tu plan expiró. Renueva para continuar.')
+      }
+      const plan   = (current.catalog_plan as PlanTier | null) ?? 'gratis'
+      const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.gratis
+      const blocked = newlyActivated.find(m => !limits[m])
+      if (blocked) return planDenied(GATE_MESSAGE[blocked])
+    }
 
     // Always include core modules — merge silently, never return error for missing core
     const modules = Array.from(new Set([...CORE_MODULES, ...body.modules]))

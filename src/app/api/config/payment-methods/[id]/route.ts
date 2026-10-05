@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
+import { PmType } from '@prisma/client'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 type RouteContext = { params: { id: string } }
 
-// P1 silencio 2026-10-05 (auditoría CLI-C, investigado, NO corregido a propósito):
-// este schema no acepta "type" (PmType: cash|transfer|zelle|binance|card|other).
-// El form de edición en TabPagos.tsx SÍ lo manda en el PATCH -- Zod (sin .strict())
-// lo descarta en silencio, el update queda sin cambiarlo, y el toast dice
-// "actualizado" como si hubiera funcionado.
-// NO se agrega acá porque type se consume con JOIN EN VIVO contra el método ya
-// guardado (nunca un snapshot por venta/pago), en datos financieros reales:
+// P1 silencio 2026-10-05 (auditoría CLI-C) -- decisión de Carlos 2026-10-05:
+// type de un método EXISTENTE no se cambia. Se consume con JOIN EN VIVO contra
+// el método ya guardado (nunca un snapshot por venta/pago), en datos
+// financieros reales:
 //   - cash/status/route.ts:49 y cash/history/route.ts:63 -- filtran
 //     payment_method.type === 'cash' para calcular el efectivo real de la caja
 //     (cashVentasBs). Cambiar el type de un método YA USADO reclasificaría
@@ -19,10 +17,14 @@ type RouteContext = { params: { id: string } }
 //     -- agrupan ventas históricas por payment_method.type.
 //   - CobroModal.tsx (REFERENCE_TYPES) -- decide si el POS exige número de
 //     referencia según el type actual del método.
-// Cambiar el type de un método con pagos ya registrados reescribe la lectura de
-// TODO lo anterior. Reportado a Carlos -- no es decisión de este sprint.
+// Antes este schema ni siquiera aceptaba "type": Zod (sin .strict()) lo
+// descartaba en silencio y el toast decía "actualizado" sin haber cambiado
+// nada. Ahora SÍ se acepta, para poder comparar contra el valor guardado y
+// responder 400 explícito si de verdad intenta cambiarlo -- mismo type (o
+// campo ausente) sigue funcionando exactamente igual que hoy.
 const PatchSchema = z.object({
   name: z.string().min(1).max(60).optional(),
+  type: z.nativeEnum(PmType).optional(),
   is_active: z.boolean().optional(),
   sort_order: z.number().int().min(0).optional(),
 })
@@ -41,6 +43,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       where: { id }, // business_id inyectado por el tenant layer
     })
     if (!existing) return NextResponse.json({ error: 'Método no encontrado' }, { status: 404 })
+
+    if (data.type !== undefined && data.type !== existing.type) {
+      return NextResponse.json(
+        { error: 'El tipo de un método existente no se puede cambiar. Crea uno nuevo y desactiva este.' },
+        { status: 400 },
+      )
+    }
 
     const method = await db.paymentMethod.update({
       where: { id }, // business_id inyectado por el tenant layer

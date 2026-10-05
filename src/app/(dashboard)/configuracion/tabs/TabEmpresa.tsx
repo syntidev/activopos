@@ -67,8 +67,7 @@ export function TabEmpresa({ businessId: _businessId }: Props) {
         state:      b.state      ?? '',
         phone:      b.phone      ?? '',
         email:      b.email      ?? '',
-        // el formulario no puede pre-poblarse; el guardado sí funciona vía PATCH.
-        quotation_footer: '',
+        quotation_footer: b.quotation_footer ?? '',
         pos_mode: b.pos_mode ?? 'ticket',
         catalog_title:        b.catalog_title ?? '',
         catalog_desc:         b.catalog_desc ?? '',

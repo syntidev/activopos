@@ -394,7 +394,8 @@ export function TabCobros({ businessId: _businessId }: Props) {
       const res = await fetch(`/api/config/payment-methods/${editMethodData.id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ name: editMethodData.name.trim(), type: editMethodData.type }),
+        // Sin "type": el servidor no lo acepta (join en vivo en cierres/reportes).
+        body:    JSON.stringify({ name: editMethodData.name.trim() }),
       })
       if (!res.ok) { setMethodError('Error al actualizar.'); return }
       setMethods(prev => prev.map(m => m.id === editMethodData.id ? { ...m, ...editMethodData } : m))
@@ -1135,24 +1136,14 @@ export function TabCobros({ businessId: _businessId }: Props) {
               onChange={e => setEditMethodData(p => p ? { ...p, name: e.target.value } : p)}
               maxLength={60}
             />
-            <div className={styles.fieldGroup}>
-              <label className={styles.label} htmlFor="edit-method-type">Tipo</label>
-              <select
-                id="edit-method-type"
-                className={styles.select}
-                value={editMethodData.type}
-                onChange={e => setEditMethodData(p => p ? { ...p, type: e.target.value } : p)}
-              >
-                <option value="cash">Efectivo</option>
-                <option value="movil">Pago Móvil</option>
-                <option value="biopago">BioPago</option>
-                <option value="transfer">Transferencia</option>
-                <option value="zelle">Zelle</option>
-                <option value="binance">Binance</option>
-                <option value="card">Tarjeta</option>
-                <option value="other">Otro</option>
-              </select>
-            </div>
+            <Input
+              id="edit-method-type"
+              label="Tipo"
+              value={(TYPE_CONFIG[editMethodData.type] ?? TYPE_CONFIG.other).label}
+              disabled
+              readOnly
+              hint="El tipo no se puede cambiar en un método ya creado. Si necesitas otro tipo, crea un método nuevo y desactiva este."
+            />
             {methodError && <p className={styles.errorMsg} role="alert">{methodError}</p>}
           </div>
         )}

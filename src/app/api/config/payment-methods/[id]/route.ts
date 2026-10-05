@@ -4,6 +4,23 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 type RouteContext = { params: { id: string } }
 
+// P1 silencio 2026-10-05 (auditoría CLI-C, investigado, NO corregido a propósito):
+// este schema no acepta "type" (PmType: cash|transfer|zelle|binance|card|other).
+// El form de edición en TabPagos.tsx SÍ lo manda en el PATCH -- Zod (sin .strict())
+// lo descarta en silencio, el update queda sin cambiarlo, y el toast dice
+// "actualizado" como si hubiera funcionado.
+// NO se agrega acá porque type se consume con JOIN EN VIVO contra el método ya
+// guardado (nunca un snapshot por venta/pago), en datos financieros reales:
+//   - cash/status/route.ts:49 y cash/history/route.ts:63 -- filtran
+//     payment_method.type === 'cash' para calcular el efectivo real de la caja
+//     (cashVentasBs). Cambiar el type de un método YA USADO reclasificaría
+//     retroactivamente cierres de caja pasados.
+//   - dashboard/charts/route.ts, analytics/summary/route.ts, reports/daily/route.ts
+//     -- agrupan ventas históricas por payment_method.type.
+//   - CobroModal.tsx (REFERENCE_TYPES) -- decide si el POS exige número de
+//     referencia según el type actual del método.
+// Cambiar el type de un método con pagos ya registrados reescribe la lectura de
+// TODO lo anterior. Reportado a Carlos -- no es decisión de este sprint.
 const PatchSchema = z.object({
   name: z.string().min(1).max(60).optional(),
   is_active: z.boolean().optional(),

@@ -212,6 +212,11 @@ model Business {
   // NO vive en modules_enabled: esa lista la reescribe el tenant desde
   // Configuración > Módulos (PATCH) y ahí se perdería o el tenant se lo autoactivaría.
   reservas_enabled             Boolean   @default(false)
+  // Config editable del microsite /kit-200k (texto de evento, SEO, badge,
+  // activo, link en header) -- mismo patrón que cobro_data: un solo blob
+  // JSON por negocio, sin tabla aparte. Shape real en src/lib/kit-config.ts
+  // (KitConfigSchema). null = negocio sin este módulo configurado todavía.
+  kit200k_config               Json?
   notifications_last_read      DateTime?
   ai_tokens_used_month         Int       @default(0)
   ai_tokens_limit_month        Int       @default(100)

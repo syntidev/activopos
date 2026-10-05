@@ -237,6 +237,34 @@ git log --oneline -3
 
 ---
 
+## INTEGRACIÓN ENTRE LAS 3 CARPETAS (activopos, activopos-b, activopos-c)
+
+Las carpetas `activopos-b` y `activopos-c` son worktrees en ramas secundarias
+(`work-b`, `work-c`). Desde ellas, `git push origin main` empuja la rama LOCAL
+`main` y NO sube el commit: el push correcto es `git push origin HEAD:main`.
+El `git push origin main` del bloque de arriba vale solo para la carpeta principal.
+
+```bash
+# INICIO de cada sprint
+.\syncfolder.bat            # sincroniza las 3 carpetas
+git status                  # debe estar limpio
+
+# CIERRE (solo si el trabajo está probado)
+git add [archivos específicos]
+git commit -m "tipo(scope): descripción ... 🤖 Agente: CLI-X | Sprint: N | Fecha: YYYY-MM-DD"
+git fetch origin
+git rebase origin/main      # conflicto -> PARAR y reportar a Carlos
+# si el rebase trajo commits de otro CLI -> repetir el build (EXIT real) antes de empujar
+git push origin HEAD:main
+git fetch origin ; git log --oneline -5   # confirmar HEAD == origin/main
+```
+
+**NUNCA `git push origin main` desde una rama secundaria. NUNCA `--force`.**
+**Conflicto en el rebase → no resolver a ciegas: parar y reportar a Carlos.**
+**Al cerrar, avisar: "main avanzó a <hash>; los demás CLIs deben correr .\syncfolder.bat".**
+
+---
+
 ## PROTOCOLO DE DEPLOY VPS
 
 ```bash

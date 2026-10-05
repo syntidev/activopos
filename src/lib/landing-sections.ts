@@ -7,6 +7,9 @@ export const SECTION_TYPES = ['hero', 'event_slider', 'community', 'story', 'col
 export type SectionType = typeof SECTION_TYPES[number]
 
 const trimmed = (max: number) => z.string().trim().min(1).max(max)
+// Igual que trimmed(), pero sin min(1) -- para texto que el dueño puede dejar
+// vacío a propósito (ej. un banner solo-imagen, sin título ni subtítulo).
+const optionalText = (max: number) => z.string().trim().max(max)
 
 // Cajas fijas del layout de catalogo-premium que un product_list puede
 // "adoptar" en vez de renderizarse como bloque nuevo -- ver comentario en
@@ -43,8 +46,13 @@ const httpUrl = (max: number) =>
   }, 'URL inválida: debe ser http(s)')
 
 const SlideSchema = z.object({
-  title:     trimmed(120),
-  subtitle:  trimmed(200),
+  // Bug real 2026-10-05 (tenant OnBike): el dueño agregó un slide solo-imagen,
+  // borró título/subtítulo y el guardado quedaba rechazado por min(1) -- la UI
+  // solo avisaba "Error al guardar." genérico (ver TabLanding.tsx patchSection),
+  // así que el fallo parecía silencioso. Opcionales a propósito: cta_text/
+  // cta_link/image_url siguen requeridos, un slide siempre necesita imagen y CTA.
+  title:     optionalText(120),
+  subtitle:  optionalText(200),
   cta_text:  trimmed(40),
   cta_link:  linkUrl(500),
   image_url: imagePath(),

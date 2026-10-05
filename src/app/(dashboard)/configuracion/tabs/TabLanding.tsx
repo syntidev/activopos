@@ -61,6 +61,14 @@ const TYPE_ICONS: Record<SectionType, LucideIcon> = {
 // Tipos que admiten varias secciones a la vez; el resto sigue siendo uno por landing.
 const REPEATABLE_TYPES: SectionType[] = ['product_list', 'category_list']
 
+// Un 400 trae el detalle real de Zod (issues[0].message, ej. "cta_link: Link
+// inválido..."); solo cae al fallback genérico si el body no es el JSON
+// esperado. Compartido entre PATCH (sección existente) y POST (sección nueva)
+// -- antes cada uno tenía su propia copia y divergieron (ver patchSection).
+function extractErrorMessage(data: { error?: string; issues?: { message: string }[] } | null, fallback: string): string {
+  return data?.issues?.[0]?.message ?? data?.error ?? fallback
+}
+
 const EMPTY_SLIDE: SlideConfig = { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' }
 const EMPTY_ITEM: CommunityItemConfig = { image_url: '', product_tag: '' }
 
@@ -177,7 +185,17 @@ export function TabLanding({ businessId: _b }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
     })
-    if (!res.ok) { toast('Error al guardar.', 'error'); return false }
+    if (!res.ok) {
+      // Bug real 2026-10-05: esto mostraba "Error al guardar." genérico sin
+      // decir QUÉ campo falló. Una sección existente (el 99% de los guardados
+      // reales -- editar algo que ya existe) pasa SIEMPRE por acá, nunca por
+      // el POST de abajo, así que el 400 con el detalle de Zod se perdía y el
+      // dueño no tenía forma de saber qué corregir. Mismo extractErrorMessage
+      // que usa saveConfig() para una sección nueva.
+      const data = await res.json().catch(() => null) as { error?: string; issues?: { message: string }[] } | null
+      toast(extractErrorMessage(data, 'Error al guardar.'), 'error')
+      return false
+    }
     return true
   }
 
@@ -246,7 +264,7 @@ export function TabLanding({ businessId: _b }: Props) {
         })
         if (!res.ok) {
           const data = await res.json().catch(() => null) as { error?: string; issues?: { message: string }[] } | null
-          toast(data?.issues?.[0]?.message ?? data?.error ?? 'Revisa los campos requeridos.', 'error')
+          toast(extractErrorMessage(data, 'Revisa los campos requeridos.'), 'error')
           return
         }
         const data = await res.json() as { section: SectionRow }

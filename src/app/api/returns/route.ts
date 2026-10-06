@@ -6,12 +6,21 @@ import { prisma } from '@/lib/prisma'
 const ItemSchema = z.object({
   product_id: z.number().int().positive(),
   qty:        z.number().positive(),
+  // Línea EXACTA que se devuelve. Opcional en el request para no romper a quien
+  // ya llama sin él: si falta, el servidor la resuelve SOLO cuando el producto
+  // aparece en una sola línea de la venta; si hay varias, responde 422 en vez de
+  // elegir una (de eso depende el costo con que se revierte el COGS).
+  sale_item_id: z.number().int().positive().optional(),
 })
 
 const PostSchema = z.object({
   sale_id:        z.number().int().positive(),
   reason:         z.string().min(3).max(500),
   restores_stock: z.boolean().optional().default(true),
+  // Método por el que SALE el dinero del reembolso. Obligatorio: sin él no se
+  // puede saber si el reembolso afecta el efectivo esperado de la caja
+  // (estándar contable 2026-10-06).
+  refund_payment_method_id: z.number().int().positive(),
   items:          z.array(ItemSchema).min(1).max(50),
 })
 
@@ -77,7 +86,14 @@ export async function POST(req: NextRequest) {
     // Verify sale belongs to this business (fuera del $transaction) → tenant layer
     const sale = await db.sale.findFirst({
       where:   { id: body.sale_id }, // business_id inyectado
-      include: { items: { select: { product_id: true, quantity: true, price_per_unit_usd: true } } },
+      include: {
+        items: {
+          select: {
+            id: true, product_id: true, variant_id: true, quantity: true,
+            price_per_unit_usd: true, cost_per_unit_usd: true,
+          },
+        },
+      },
     })
     if (!sale) {
       return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
@@ -89,22 +105,85 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Venta no encontrada o no pagada' }, { status: 404 })
     }
 
-    // Build price map from server — never trust client-supplied prices
-    const priceMap = new Map<number, number>()
-    for (const si of sale.items) priceMap.set(si.product_id, Number(si.price_per_unit_usd))
+    // El método de reembolso tiene que ser del MISMO negocio: si no, un id de
+    // otro tenant marcaría el reembolso como efectivo (o no) usando su tabla.
+    const refundMethod = await db.paymentMethod.findFirst({
+      where:  { id: body.refund_payment_method_id }, // business_id inyectado
+      select: { id: true },
+    })
+    if (!refundMethod) {
+      return NextResponse.json({ error: 'Método de reembolso no encontrado' }, { status: 422 })
+    }
 
-    // Validate: no devolver más de lo vendido
+    // Resolución de LÍNEA por ítem. El costo con que se revierte el COGS sale
+    // SIEMPRE del SaleItem en el servidor -- nunca del cliente.
+    const itemsById = new Map(sale.items.map(si => [si.id, si]))
+    const linesByProduct = new Map<number, typeof sale.items>()
+    for (const si of sale.items) {
+      const list = linesByProduct.get(si.product_id) ?? []
+      list.push(si)
+      linesByProduct.set(si.product_id, list)
+    }
+
+    const resolved: { product_id: number; qty: number; sale_item_id: number; price_usd: number; cost_per_unit_usd: number | null }[] = []
+    for (const item of body.items) {
+      let line = item.sale_item_id ? itemsById.get(item.sale_item_id) : undefined
+      if (item.sale_item_id && !line) {
+        return NextResponse.json(
+          { error: 'La línea indicada no pertenece a esta venta', sale_item_id: item.sale_item_id },
+          { status: 422 },
+        )
+      }
+      if (line && line.product_id !== item.product_id) {
+        return NextResponse.json(
+          { error: 'La línea indicada no corresponde a ese producto', sale_item_id: item.sale_item_id },
+          { status: 422 },
+        )
+      }
+      if (!line) {
+        const candidates = linesByProduct.get(item.product_id) ?? []
+        if (candidates.length === 0) {
+          return NextResponse.json({ error: 'Producto no está en esta venta', product_id: item.product_id }, { status: 422 })
+        }
+        if (candidates.length > 1) {
+          // Varias líneas del mismo producto (variantes / precio con override):
+          // el costo a revertir sería ambiguo. Se exige la línea en vez de elegir.
+          return NextResponse.json({
+            error:        'Este producto está en varias líneas de la venta: indica sale_item_id',
+            product_id:   item.product_id,
+            sale_item_ids: candidates.map(c => ({ sale_item_id: c.id, variant_id: c.variant_id, qty: Number(c.quantity) })),
+          }, { status: 422 })
+        }
+        line = candidates[0]
+      }
+      resolved.push({
+        product_id:        item.product_id,
+        qty:               item.qty,
+        sale_item_id:      line.id,
+        price_usd:         Number(line.price_per_unit_usd),
+        cost_per_unit_usd: line.cost_per_unit_usd === null ? null : Number(line.cost_per_unit_usd),
+      })
+    }
+
+    // Validate: no devolver más de lo vendido.
+    // SUMA todas las líneas del producto: antes el Map se sobrescribía y, con el
+    // mismo producto en 2 líneas, solo contaba la última como vendida.
     const soldMap = new Map<number, number>()
-    for (const si of sale.items) soldMap.set(si.product_id, Number(si.quantity))
+    for (const si of sale.items) soldMap.set(si.product_id, (soldMap.get(si.product_id) ?? 0) + Number(si.quantity))
+    const soldByLine = new Map(sale.items.map(si => [si.id, Number(si.quantity)]))
 
     // ReturnItem no tiene business_id — se filtra por la relación return.business_id
     const existingReturns = await db.returnItem.findMany({
       where: { return: { sale_id: body.sale_id, business_id: bid, status: 'approved' } },
-      select: { product_id: true, qty: true },
+      select: { product_id: true, qty: true, sale_item_id: true },
     })
     const returnedMap = new Map<number, number>()
+    const returnedByLine = new Map<number, number>()
     for (const ri of existingReturns) {
       returnedMap.set(ri.product_id, (returnedMap.get(ri.product_id) ?? 0) + Number(ri.qty))
+      if (ri.sale_item_id !== null) {
+        returnedByLine.set(ri.sale_item_id, (returnedByLine.get(ri.sale_item_id) ?? 0) + Number(ri.qty))
+      }
     }
 
     for (const item of body.items) {
@@ -117,6 +196,22 @@ export async function POST(req: NextRequest) {
           vendido:    sold,
           ya_devuelto: returned,
           solicitado: item.qty,
+        }, { status: 422 })
+      }
+    }
+
+    // Tope por LÍNEA: no se puede devolver de una línea más de lo que esa línea
+    // vendió (lo de arriba solo acota el total del producto).
+    const requestedByLine = new Map<number, number>()
+    for (const r of resolved) requestedByLine.set(r.sale_item_id, (requestedByLine.get(r.sale_item_id) ?? 0) + r.qty)
+    for (const [lineId, qty] of Array.from(requestedByLine)) {
+      const disponible = (soldByLine.get(lineId) ?? 0) - (returnedByLine.get(lineId) ?? 0)
+      if (qty > disponible + 0.001) {
+        return NextResponse.json({
+          error:        'Cantidad a devolver supera lo vendido en esa línea',
+          sale_item_id: lineId,
+          disponible,
+          solicitado:   qty,
         }, { status: 422 })
       }
     }
@@ -138,7 +233,9 @@ export async function POST(req: NextRequest) {
 
     const rate     = Number(sale.rate_used)
     const r2       = (x: number) => Math.round(x * 100) / 100
-    const totalUsd = r2(body.items.reduce((s, i) => s + i.qty * (priceMap.get(i.product_id) ?? 0), 0))
+    // Por LÍNEA, no por producto: dos líneas del mismo producto pueden tener
+    // precios distintos (override), y el total debe usar el de cada línea.
+    const totalUsd = r2(resolved.reduce((s, r) => s + r.qty * r.price_usd, 0))
 
     // $transaction en prisma base: business_id manual adentro
     const result = await prisma.$transaction(async tx => {
@@ -161,17 +258,19 @@ export async function POST(req: NextRequest) {
           total_usd:      totalUsd,
           total_bs:       r2(totalUsd * rate),
           rate_used:      rate,
+          refund_payment_method_id: body.refund_payment_method_id,
           created_by:     session.userId,
           items: {
-            create: body.items.map(i => {
-              const unitPrice = priceMap.get(i.product_id) ?? 0
-              return {
-                product_id: i.product_id,
-                qty:        i.qty,
-                price_usd:  unitPrice,
-                total_usd:  r2(i.qty * unitPrice),
-              }
-            }),
+            // precio Y costo salen del SaleItem resuelto en el servidor, nunca
+            // del cliente. El costo queda como snapshot para revertir COGS.
+            create: resolved.map(r => ({
+              product_id:        r.product_id,
+              qty:               r.qty,
+              price_usd:         r.price_usd,
+              total_usd:         r2(r.qty * r.price_usd),
+              sale_item_id:      r.sale_item_id,
+              cost_per_unit_usd: r.cost_per_unit_usd,
+            })),
           },
         },
         include: { items: true },

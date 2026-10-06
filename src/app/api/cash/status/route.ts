@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, cashRefundTotals, returnedTotalsBySaleDate } from '@/lib/sales-returns'
 
 export async function GET() {
   try {
@@ -12,11 +13,13 @@ export async function GET() {
 
     if (!register) return NextResponse.json({ isOpen: false })
 
-    const [sales, movements, abonosAgg] = await Promise.all([
+    const [sales, movements, abonosAgg, refunds, returnedInPeriod] = await Promise.all([
       db.sale.findMany({
         where: {
           // business_id inyectado por el tenant layer
-          status: 'paid',
+          // partial_return incluido: antes una devolución de 1 unidad sacaba la
+          // venta ENTERA del efectivo esperado (ver lib/sales-returns.ts).
+          status: { in: [...REALIZED_SALE_STATUSES] },
           sold_at: { gte: register.opened_at },
         },
         include: {
@@ -37,19 +40,27 @@ export async function GET() {
         _sum: { amount_usd: true, amount_bs: true },
         _count: { _all: true },
       }),
+      // Reembolsos pagados durante este turno (se asumen en efectivo).
+      cashRefundTotals(session.businessId, register.opened_at),
+      // Devuelto de ventas de ESTE turno — para el total de ventas neto.
+      returnedTotalsBySaleDate(session.businessId, register.opened_at),
     ])
 
-    const totalVentasBs = sales.reduce((acc, s) => acc + Number(s.total_bs), 0)
-    const totalVentasUsd = sales.reduce((acc, s) => acc + Number(s.total_usd), 0)
+    const totalVentasBs = sales.reduce((acc, s) => acc + Number(s.total_bs), 0) - returnedInPeriod.bs
+    const totalVentasUsd = sales.reduce((acc, s) => acc + Number(s.total_usd), 0) - returnedInPeriod.usd
 
-    const cashVentasBs = sales.reduce(
-      (acc, s) =>
-        acc +
-        s.payments
-          .filter(p => p.payment_method.type === 'cash')
-          .reduce((a, p) => a + Number(p.amount_bs), 0),
-      0
-    )
+    // Efectivo cobrado del turno, menos lo reembolsado en el turno. Los pagos
+    // originales de una venta con devolución parcial siguen contando completos
+    // (ese dinero entró al cajón); solo se descuenta el monto devuelto.
+    const cashVentasBs =
+      sales.reduce(
+        (acc, s) =>
+          acc +
+          s.payments
+            .filter(p => p.payment_method.type === 'cash')
+            .reduce((a, p) => a + Number(p.amount_bs), 0),
+        0
+      ) - refunds.bs
 
     const movIn = movements
       .filter(m => m.type === 'in')

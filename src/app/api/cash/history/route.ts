@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, approvedReturnsInRange } from '@/lib/sales-returns'
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     const toDate = to ? new Date(`${to}T23:59:59`) : new Date()
 
-    const [registers, salesInPeriod] = await Promise.all([
+    const [registers, salesInPeriod, returnsInPeriod] = await Promise.all([
       db.cashRegister.findMany({
         where: {
           // business_id inyectado por el tenant layer
@@ -34,7 +35,9 @@ export async function GET(req: NextRequest) {
       db.sale.findMany({
         where: {
           // business_id inyectado por el tenant layer
-          status: 'paid',
+          // partial_return incluido: antes una devolución de 1 unidad sacaba la
+          // venta ENTERA del turno (ver lib/sales-returns.ts).
+          status: { in: [...REALIZED_SALE_STATUSES] },
           sold_at: { gte: fromDate, lte: toDate },
         },
         include: {
@@ -43,6 +46,7 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
+      approvedReturnsInRange(session.businessId, fromDate, toDate),
     ])
 
     const history = registers.map(reg => {
@@ -53,17 +57,33 @@ export async function GET(req: NextRequest) {
           (!reg.closed_at || s.sold_at <= reg.closed_at)
       )
 
-      const totalVentasBs = regSales.reduce((acc, s) => acc + Number(s.total_bs), 0)
-      const totalVentasUsd = regSales.reduce((acc, s) => acc + Number(s.total_usd), 0)
+      const inThisRegister = (d: Date | null) =>
+        !!d && d >= reg.opened_at && (!reg.closed_at || d <= reg.closed_at)
 
-      const cashVentasBs = regSales.reduce(
-        (acc, s) =>
-          acc +
-          s.payments
-            .filter(p => p.payment_method.type === 'cash')
-            .reduce((a, p) => a + Number(p.amount_bs), 0),
-        0
-      )
+      // Devuelto de ventas DE ESTE turno -> ventas netas del turno.
+      const returnedOfRegSales = returnsInPeriod
+        .filter(r => inThisRegister(r.sold_at))
+        .reduce((a, r) => ({ usd: a.usd + r.total_usd, bs: a.bs + r.total_bs }), { usd: 0, bs: 0 })
+
+      // Reembolsado DURANTE este turno (puede ser de una venta de otro turno):
+      // es cuando el dinero salió del cajón. Se asume efectivo (decisión
+      // 2026-10-06, ver lib/sales-returns.ts).
+      const refundedInRegister = returnsInPeriod
+        .filter(r => inThisRegister(r.refunded_at))
+        .reduce((a, r) => a + r.total_bs, 0)
+
+      const totalVentasBs = regSales.reduce((acc, s) => acc + Number(s.total_bs), 0) - returnedOfRegSales.bs
+      const totalVentasUsd = regSales.reduce((acc, s) => acc + Number(s.total_usd), 0) - returnedOfRegSales.usd
+
+      const cashVentasBs =
+        regSales.reduce(
+          (acc, s) =>
+            acc +
+            s.payments
+              .filter(p => p.payment_method.type === 'cash')
+              .reduce((a, p) => a + Number(p.amount_bs), 0),
+          0
+        ) - refundedInRegister
 
       const movIn = reg.movements
         .filter(m => m.type === 'in')

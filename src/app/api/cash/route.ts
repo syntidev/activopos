@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, cashRefundTotals } from '@/lib/sales-returns'
 
 export async function GET() {
   try {
@@ -18,13 +19,15 @@ export async function GET() {
       })
     }
 
-    const [cashPayments, movements] = await Promise.all([
+    const [cashPayments, movements, refunds] = await Promise.all([
       // SalePayment no tiene business_id — aislado por la relación sale.business_id
       db.salePayment.findMany({
         where: {
           sale: {
             business_id: session.businessId,
-            status:      'paid',
+            // partial_return incluido: el pago original de una venta con
+            // devolución parcial sí entró al cajón (ver lib/sales-returns.ts).
+            status:      { in: [...REALIZED_SALE_STATUSES] },
             sold_at:     { gte: register.opened_at },
           },
           payment_method: { type: 'cash' },
@@ -35,9 +38,10 @@ export async function GET() {
         where:  { cash_register_id: register.id }, // business_id inyectado
         select: { type: true, amount_bs: true },
       }),
+      cashRefundTotals(session.businessId, register.opened_at),
     ])
 
-    const cashIn  = cashPayments.reduce((acc, p) => acc + Number(p.amount_bs), 0)
+    const cashIn  = cashPayments.reduce((acc, p) => acc + Number(p.amount_bs), 0) - refunds.bs
     const movIn   = movements.filter(m => m.type === 'in' ).reduce((a, m) => a + Number(m.amount_bs), 0)
     const movOut  = movements.filter(m => m.type === 'out').reduce((a, m) => a + Number(m.amount_bs), 0)
     const current = Number(register.opening_amount_bs) + cashIn + movIn - movOut

@@ -64,7 +64,8 @@ async function main(): Promise<void> {
     return await res.json() as T
   }
 
-  const created: { sales: number[]; returns: number[]; registers: number[] } = { sales: [], returns: [], registers: [] }
+  const created: { sales: number[]; returns: number[]; registers: number[]; products: number[]; variants: number[] } =
+    { sales: [], returns: [], registers: [], products: [], variants: [] }
 
   /** Venta de `qty` x `price` cobrada en efectivo. `duplicateLines` parte el mismo producto en 2 líneas con costos distintos. */
   const mkSale = async (ticket: string, soldAt: Date, qty: number, price: number, opts?: { duplicateLines?: boolean }) => {
@@ -364,6 +365,95 @@ async function main(): Promise<void> {
     check('e6 guarda la línea devuelta', riRow?.sale_item_id, saleDup.items[0].id)
     check('e6 guarda el costo de ESA línea (4, no 6)', Number(riRow?.cost_per_unit_usd ?? 0), 4)
 
+    // ── Escenario 10: devolver una línea con VARIANTE restaura su stock ──
+    // El stock de una talla vive en product_variants.stock, no en el agregado
+    // de inventory_entries del padre (que en un producto con tallas se queda en
+    // 0). Si la devolución no lo restaura, la talla queda corta para siempre y
+    // el catálogo la pinta agotada.
+    const prodVar = await prisma.product.create({
+      data: { business_id: BID, name: 'Test Consistencia Variante', price_per_unit_usd: 10, cost_per_unit_usd: 4, active: true, has_variants: true },
+      select: { id: true },
+    })
+    created.products.push(prodVar.id)
+    const talla = await prisma.productVariant.create({
+      data: { product_id: prodVar.id, tipo: 'talla', valor: 'M', stock: 10 },
+      select: { id: true, stock: true },
+    })
+    created.variants.push(talla.id)
+    const saleVar = await prisma.sale.create({
+      data: {
+        business_id: BID, cashier_id: ctx.userId, ticket_number: 'T-CONS-VAR', status: 'paid',
+        total_usd: 20, total_bs: 20 * RATE, rate_used: RATE, sold_at: today,
+        items: {
+          create: [{
+            product_id: prodVar.id, product_name: 'Test Consistencia Variante', sale_mode: 'unit', unit_label: 'und',
+            quantity: 2, price_per_unit_usd: 10, cost_per_unit_usd: 4, subtotal_usd: 20, subtotal_bs: 20 * RATE,
+            rate_used: RATE, variant_id: talla.id,
+          }],
+        },
+        payments: { create: [{ payment_method_id: ctx.cashMethodId, amount_bs: 20 * RATE, amount_usd: 20, rate_used: RATE }] },
+      },
+      select: { id: true, items: { select: { id: true } } },
+    })
+    created.sales.push(saleVar.id)
+    const stockVarAntes = (await prisma.productVariant.findUnique({ where: { id: talla.id }, select: { stock: true } }))!.stock
+    const retVar = await doReturn(
+      saleVar.id,
+      [{ product_id: prodVar.id, qty: 1, sale_item_id: saleVar.items[0].id }],
+      ctx.cashMethodId,
+      { restoresStock: true },
+    )
+    const stockVarDespues = (await prisma.productVariant.findUnique({ where: { id: talla.id }, select: { stock: true } }))!.stock
+    check('e10 devolución de línea con variante aceptada', retVar.status, 201)
+    check('e10 restaura product_variants.stock (+1)', stockVarDespues - stockVarAntes, 1)
+
+    // ── Escenario 11: devolución legacy AMBIGUA no borra el ingreso ──
+    // Una devolución previa al estándar (sin sale_item_id) de un producto que
+    // está en 2 líneas deja esas líneas sin devolvible determinable. Al devolver
+    // OTRA línea, la venta NO puede quedar 'returned' (estado excluido del
+    // estándar): se perdería el ingreso de lo que nunca se devolvió.
+    const prodB = await prisma.product.create({
+      data: { business_id: BID, name: 'Test Consistencia B', price_per_unit_usd: 10, cost_per_unit_usd: 4, active: true },
+      select: { id: true },
+    })
+    created.products.push(prodB.id)
+    const baseAmb = await snapshot(today, tomorrow)
+    const line = (productId: number, cost: number) => ({
+      product_id: productId, product_name: 'Test Consistencia', sale_mode: 'unit', unit_label: 'und',
+      quantity: 1, price_per_unit_usd: 10, cost_per_unit_usd: cost, subtotal_usd: 10, subtotal_bs: 10 * RATE, rate_used: RATE,
+    })
+    const saleAmb = await prisma.sale.create({
+      data: {
+        business_id: BID, cashier_id: ctx.userId, ticket_number: 'T-CONS-AMB', status: 'paid',
+        total_usd: 30, total_bs: 30 * RATE, rate_used: RATE, sold_at: today,
+        // ctx.productId en DOS líneas (costos distintos) + prodB en una.
+        items: { create: [line(ctx.productId, 4), line(ctx.productId, 6), line(prodB.id, 4)] },
+        payments: { create: [{ payment_method_id: ctx.cashMethodId, amount_bs: 30 * RATE, amount_usd: 30, rate_used: RATE }] },
+      },
+      select: { id: true, items: { select: { id: true, product_id: true }, orderBy: { id: 'asc' } } },
+    })
+    created.sales.push(saleAmb.id)
+    // Devolución legacy: aprobada, de 1 unidad del producto duplicado, SIN línea.
+    const legacy = await prisma.return.create({
+      data: {
+        business_id: BID, sale_id: saleAmb.id, reason: 'legacy previa al estandar', status: 'approved',
+        total_usd: 10, total_bs: 10 * RATE, rate_used: RATE, restores_stock: false, created_by: ctx.userId,
+        items: { create: [{ product_id: ctx.productId, qty: 1, price_usd: 10, total_usd: 10 }] },
+      },
+      select: { id: true },
+    })
+    created.returns.push(legacy.id)
+    await prisma.sale.update({ where: { id: saleAmb.id }, data: { status: 'partial_return' } })
+
+    const lineB = saleAmb.items.find(i => i.product_id === prodB.id)!
+    const retAmb = await doReturn(saleAmb.id, [{ product_id: prodB.id, qty: 1, sale_item_id: lineB.id }], ctx.cashMethodId)
+    const stAmb  = await prisma.sale.findUnique({ where: { id: saleAmb.id }, select: { status: true } })
+    const nowAmb = await snapshot(today, tomorrow)
+    check('e11 devolución de la otra línea aceptada', retAmb.status, 201)
+    check('e11 la venta sigue partial_return (no returned)', stAmb?.status, 'partial_return')
+    // 30 vendidos - 10 legacy - 10 de esta devolución = 10 que NO se devolvió.
+    check('e11 el ingreso no devuelto sigue contando', r2(nowAmb.dailyTotal - baseAmb.dailyTotal), 10)
+
     // ── Falta el método de reembolso -> 4xx ──
     const saleSinMetodo = await mkSale('T-CONS-NOM', today, 4, 10)
     const resSinMetodo = await fetch(`${BASE}/api/returns`, {
@@ -389,6 +479,14 @@ async function main(): Promise<void> {
     }
     if (created.registers.length) {
       await prisma.cashRegister.deleteMany({ where: { id: { in: created.registers } } })
+    }
+    // Variantes antes que productos (FK), productos al final.
+    if (created.variants.length) {
+      await prisma.productVariant.deleteMany({ where: { id: { in: created.variants } } })
+    }
+    if (created.products.length) {
+      await prisma.inventoryEntry.deleteMany({ where: { business_id: BID, product_id: { in: created.products } } })
+      await prisma.product.deleteMany({ where: { id: { in: created.products } } })
     }
   }
 

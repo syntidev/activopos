@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
       linesByProduct.set(si.product_id, list)
     }
 
-    const resolved: { product_id: number; qty: number; sale_item_id: number; price_usd: number; cost_per_unit_usd: number | null }[] = []
+    const resolved: { product_id: number; qty: number; sale_item_id: number; variant_id: number | null; price_usd: number; cost_per_unit_usd: number | null }[] = []
     for (const item of body.items) {
       let line = item.sale_item_id ? itemsById.get(item.sale_item_id) : undefined
       if (item.sale_item_id && !line) {
@@ -172,6 +172,7 @@ export async function POST(req: NextRequest) {
         product_id:        item.product_id,
         qty:               item.qty,
         sale_item_id:      line.id,
+        variant_id:        line.variant_id,
         price_usd:         Number(line.price_per_unit_usd),
         cost_per_unit_usd: line.cost_per_unit_usd === null ? null : Number(line.cost_per_unit_usd),
       })
@@ -307,6 +308,20 @@ export async function POST(req: NextRequest) {
             created_by:  session.userId,
           })),
         })
+
+        // Stock de variante: vive en ProductVariant.stock, NO en el agregado de
+        // inventory_entries del padre (que en un producto con tallas se queda en
+        // 0 -- ver effectiveStock() en lib/catalog.ts). La venta descontó los
+        // dos, así que la devolución tiene que restaurar los dos; con solo la
+        // entrada de arriba la talla quedaba corta para siempre y el catálogo la
+        // pintaba agotada. Mismo criterio que la anulación en sales/[id]/void.
+        for (const r of resolved) {
+          if (r.variant_id === null) continue
+          await tx.productVariant.update({
+            where: { id: r.variant_id },
+            data:  { stock: { increment: r.qty } },
+          })
+        }
       }
 
       // Estado final: `returned` solo si tras ESTA devolución no queda nada

@@ -408,17 +408,6 @@ export function TabCobros({ businessId: _businessId }: Props) {
     }
   }
 
-  const handleDeleteMethod = async (method: PaymentMethodRecord) => {
-    try {
-      const res = await fetch(`/api/config/payment-methods/${method.id}`, { method: 'DELETE' })
-      if (!res.ok) { toast('Error al eliminar el método.', 'error'); return }
-      setMethods(prev => prev.filter(m => m.id !== method.id))
-      toast('Método eliminado.', 'success')
-    } catch {
-      toast('Error de conexión.', 'error')
-    }
-  }
-
   /* ─────────────────────────────────────────────
      SECTION 2 HANDLERS
   ───────────────────────────────────────────── */
@@ -629,14 +618,6 @@ export function TabCobros({ businessId: _businessId }: Props) {
                       aria-label={`Editar ${method.name}`}
                     >
                       <Pencil size={14} strokeWidth={2} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-                      onClick={() => void handleDeleteMethod(method)}
-                      aria-label={`Eliminar ${method.name}`}
-                    >
-                      <X size={14} strokeWidth={2.5} aria-hidden="true" />
                     </button>
                   </div>
                 </div>

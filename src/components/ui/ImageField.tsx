@@ -107,6 +107,8 @@ export function ImageField({
   const [error, setError]               = useState('')
   const [dragging, setDragging]         = useState(false)
   const [localPreview, setLocalPreview] = useState<string | null>(null)
+  // Quitar en dos pasos: el primer clic solo pide confirmación inline.
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
 
   const src = localPreview ?? value
 
@@ -114,6 +116,7 @@ export function ImageField({
 
   const handleFile = async (file: File) => {
     setError('')
+    setConfirmingRemove(false)
     if (!ACCEPTED_TYPES.includes(file.type)) {
       setError('Formato no permitido: usa una imagen JPG, PNG o WebP.')
       return
@@ -198,17 +201,41 @@ export function ImageField({
             >
               {src ? 'Cambiar imagen' : 'Subir imagen'}
             </Button>
-            {removable && value && (
+            {removable && value && !confirmingRemove && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => void handleRemove()}
+                onClick={() => setConfirmingRemove(true)}
                 disabled={busy}
                 aria-label={`Quitar imagen: ${label}`}
               >
                 Quitar
               </Button>
+            )}
+            {removable && value && confirmingRemove && (
+              <>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  onClick={() => { setConfirmingRemove(false); void handleRemove() }}
+                  disabled={busy}
+                  aria-label={`Confirmar quitar imagen: ${label}`}
+                >
+                  Sí, quitar
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmingRemove(false)}
+                  disabled={busy}
+                  aria-label={`Cancelar quitar imagen: ${label}`}
+                >
+                  Cancelar
+                </Button>
+              </>
             )}
           </div>
           <p className={styles.hint}>{HINT}</p>

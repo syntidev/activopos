@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { netCogs, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 
@@ -61,23 +62,33 @@ export async function GET(req: NextRequest) {
 
     const bid = session.businessId
 
-    const [ventasRow, opexAgg] = await Promise.all([
-      // SaleItem no tiene business_id (tabla hija) — el tenant layer no lo aísla, se filtra a mano
-      // ingresos_costeados/productos_sin_costo: productos con costo desconocido
-      // (cost_unknown) quedan fuera del % de margen bruto — no se mezclan como
-      // utilidad ficticia de costo $0.
-      prisma.$queryRaw<{ ingresos: string | null; cogs: string | null; ingresos_costeados: string | null; productos_sin_costo: string | number }[]>`
+    const [ventasNetas, cogsNeto, ventasRow, opexAgg] = await Promise.all([
+      // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
+      netSales(bid, from, toExclusive),
+      netCogs(bid, from, toExclusive),
+      // SaleItem no tiene business_id (tabla hija) — se filtra a mano.
+      // ingresos_costeados: ingreso de líneas CON costo conocido, NETO de lo
+      // devuelto de esas líneas. Es el denominador del margen bruto: el ingreso
+      // de productos sin costo queda fuera para no mezclar utilidad ficticia
+      // de costo $0.
+      prisma.$queryRaw<{ ingresos_costeados: string | null }[]>`
         SELECT
-          SUM(si.subtotal_usd) AS ingresos,
-          SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.quantity * si.cost_per_unit_usd ELSE 0 END) AS cogs,
-          SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd ELSE 0 END) AS ingresos_costeados,
-          COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS productos_sin_costo
-        FROM sale_items si
-        JOIN sales s ON s.id = si.sale_id
-        WHERE s.business_id = ${bid}
-          AND s.status IN ('paid', 'partial_return')
-          AND s.sold_at >= ${from}
-          AND s.sold_at <  ${toExclusive}`,
+          (SELECT IFNULL(SUM(si.subtotal_usd), 0)
+             FROM sale_items si JOIN sales s ON s.id = si.sale_id
+            WHERE s.business_id = ${bid} AND s.status IN ('paid','partial_return')
+              AND si.cost_per_unit_usd IS NOT NULL
+              AND s.sold_at >= ${from} AND s.sold_at < ${toExclusive})
+          -
+          (SELECT IFNULL(SUM(ri.total_usd), 0)
+             FROM return_items ri
+             JOIN returns r ON r.id = ri.return_id
+             JOIN sales s   ON s.id = r.sale_id
+             JOIN sale_items si2 ON si2.sale_id = s.id AND si2.product_id = ri.product_id
+            WHERE r.business_id = ${bid} AND r.status = 'approved'
+              AND s.status IN ('paid','partial_return')
+              AND si2.cost_per_unit_usd IS NOT NULL
+              AND s.sold_at >= ${from} AND s.sold_at < ${toExclusive})
+          AS ingresos_costeados`,
 
       // OPEX excluye categoria='proveedor': una compra de inventario a crédito es
       // COGS al vender (via SaleItem), NO gasto operativo. Contarla aquí duplicaría
@@ -88,10 +99,11 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    const ingresos          = parseFloat(String(ventasRow[0]?.ingresos          ?? '0')) || 0
-    const cogs              = parseFloat(String(ventasRow[0]?.cogs             ?? '0')) || 0
+    // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
+    const ingresos          = ventasNetas.net.usd
+    const cogs              = cogsNeto.netUsd
     const ingresosCosteados = parseFloat(String(ventasRow[0]?.ingresos_costeados ?? '0')) || 0
-    const productosSinCosto = parseInt(String(ventasRow[0]?.productos_sin_costo ?? '0'), 10) || 0
+    const productosSinCosto = cogsNeto.productsWithoutCostCount
     const opex     = Number(opexAgg._sum.monto_usd ?? 0)
 
     const utilidad_bruta = ingresos - cogs

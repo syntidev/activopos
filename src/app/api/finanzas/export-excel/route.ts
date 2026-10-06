@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 
 const dateStr   = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido')
@@ -40,9 +41,11 @@ export async function GET(req: NextRequest) {
     const from = new Date(`${fromStr}T00:00:00`)
     const to   = new Date(`${toStr}T23:59:59.999`)
 
-    const [ventas, gastos] = await Promise.all([
+    const [ventas, gastos, ventasNetas] = await Promise.all([
       db.sale.findMany({
-        where: { status: 'paid', sold_at: { gte: from, lte: to } }, // business_id inyectado
+        // partial_return incluido (antes la venta desaparecía del export). Las
+        // filas van en bruto y la devolución se declara aparte en el resumen.
+        where: { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: from, lte: to } }, // business_id inyectado
         include: { payments: { include: { payment_method: { select: { name: true } } } } },
         orderBy: { sold_at: 'asc' },
       }),
@@ -50,9 +53,13 @@ export async function GET(req: NextRequest) {
         where: { fecha: { gte: from, lte: to } }, // business_id inyectado
         orderBy: { fecha: 'asc' },
       }),
+      // `to` es inclusivo; la fuente única usa fin exclusivo.
+      netSales(session.businessId, from, new Date(to.getTime() + 1)),
     ])
 
-    const totalVentas = ventas.reduce((s, v) => s + Number(v.total_usd), 0)
+    const totalVentasBruto = ventas.reduce((s, v) => s + Number(v.total_usd), 0)
+    const devueltoUsd      = ventasNetas.returned.usd
+    const totalVentas      = ventasNetas.net.usd
     const totalGastos = gastos.reduce((s, g) => s + Number(g.monto_usd), 0)
     const utilidadNeta = totalVentas - totalGastos
     const margen = totalVentas > 0 ? (utilidadNeta / totalVentas) * 100 : 0
@@ -87,6 +94,8 @@ export async function GET(req: NextRequest) {
     // Hoja 3 — Resumen
     const wsResumen = XLSX.utils.json_to_sheet([
       { 'Concepto': 'Período',         'Valor USD': `${fromStr} → ${toStr}` },
+      { 'Concepto': 'Ventas Brutas',   'Valor USD': totalVentasBruto.toFixed(2) },
+      { 'Concepto': 'Devoluciones',    'Valor USD': (-devueltoUsd).toFixed(2) },
       { 'Concepto': 'Ingresos',        'Valor USD': totalVentas.toFixed(2) },
       { 'Concepto': 'Gastos',          'Valor USD': totalGastos.toFixed(2) },
       { 'Concepto': 'Utilidad Neta',   'Valor USD': utilidadNeta.toFixed(2) },

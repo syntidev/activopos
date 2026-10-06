@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { parsePeriodFromParams, MONTH_NAMES } from '@/lib/finanzas'
 
@@ -20,9 +21,14 @@ export async function GET(req: NextRequest) {
     const from = new Date(year, month - 1, 1)
     const to   = new Date(year, month, 1)
 
-    const [ventas, gastos, cxcSales] = await Promise.all([
+    const [ventas, gastos, cxcSales, ventasNetas] = await Promise.all([
       db.sale.findMany({
-        where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
+        // partial_return incluido: antes la venta con devolución parcial
+        // DESAPARECÍA del export completo. Las filas van en bruto (una por
+        // venta) y la devolución se declara como línea aparte en el resumen,
+        // para que las filas sigan reconciliando con el total neto sin agregar
+        // columnas nuevas (eso sería cambio de contrato del archivo).
+        where: { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: from, lt: to } }, // business_id inyectado
         include: { payments: { include: { payment_method: true } } },
         orderBy: { sold_at: 'asc' },
       }),
@@ -38,6 +44,8 @@ export async function GET(req: NextRequest) {
         },
         orderBy: { created_at: 'asc' },
       }),
+      // Total neto -- fuente única (src/lib/sales-returns.ts).
+      netSales(session.businessId, from, to),
     ])
 
     const periodLabel = `${MONTH_NAMES[month - 1]} ${year}`
@@ -84,13 +92,18 @@ export async function GET(req: NextRequest) {
     )
 
     // Hoja 4 — Resumen
-    const totalVentas  = ventas.reduce((s, v) => s + Number(v.total_usd), 0)
+    // Total NETO desde la fuente única (src/lib/sales-returns.ts).
+    const totalVentasBruto = ventas.reduce((s, v) => s + Number(v.total_usd), 0)
+    const devueltoUsd      = ventasNetas.returned.usd
+    const totalVentas      = ventasNetas.net.usd
     const totalGastos  = gastos.reduce((s, g) => s + Number(g.monto_usd), 0)
     const totalCxC     = cxcSales.reduce((s, v) => s + Number(v.total_usd), 0)
     const utilidadBruta = totalVentas - totalGastos
 
     const wsResumen = XLSX.utils.json_to_sheet([
       { 'Concepto': 'Período',         'Valor USD': periodLabel },
+      { 'Concepto': 'Ventas Brutas',   'Valor USD': totalVentasBruto.toFixed(2) },
+      { 'Concepto': 'Devoluciones',    'Valor USD': (-devueltoUsd).toFixed(2) },
       { 'Concepto': 'Total Ventas',    'Valor USD': totalVentas.toFixed(2) },
       { 'Concepto': 'Total Gastos',    'Valor USD': totalGastos.toFixed(2) },
       { 'Concepto': 'Utilidad Bruta',  'Valor USD': utilidadBruta.toFixed(2) },

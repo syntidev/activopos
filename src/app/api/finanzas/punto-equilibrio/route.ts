@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { netCogs, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
@@ -17,29 +18,32 @@ export async function GET(req: NextRequest) {
   const bid  = session.businessId
   const now  = new Date()
 
-  const [ventasAgg, costoRow, gastosAgg] = await Promise.all([
-    db.sale.aggregate({
-      where: { status: { in: ['paid', 'partial_return'] }, sold_at: { gte: from, lt: to } }, // business_id inyectado
-      _sum:  { total_usd: true },
-      _count: { id: true },
-    }),
+  const [ventasNetas, cogsNeto, costoRow, gastosAgg] = await Promise.all([
+    // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts). El
+    // break-even se calcula sobre ingreso neto de devoluciones.
+    netSales(bid, from, to),
+    netCogs(bid, from, to),
 
-    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
-    // COGS desde si.cost_per_unit_usd (costo capturado en la venta), fuente única (GAP-2).
-    // ingresos_costeados/productos_sin_costo: productos con costo desconocido
-    // (cost_unknown) quedan fuera del margen de contribución — el break-even
-    // se calcula sobre costo real medido, no sobre utilidad ficticia de costo $0.
-    prisma.$queryRaw<{ costo: string | null; ingresos_costeados: string | null; productos_sin_costo: string | number }[]>`
+    // ingresos_costeados: ingreso de líneas CON costo conocido, NETO de lo
+    // devuelto de esas líneas -- denominador del margen de contribución.
+    prisma.$queryRaw<{ ingresos_costeados: string | null }[]>`
       SELECT
-        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.quantity * si.cost_per_unit_usd ELSE 0 END) AS costo,
-        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd ELSE 0 END) AS ingresos_costeados,
-        COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS productos_sin_costo
-      FROM sale_items si
-      JOIN sales s ON s.id = si.sale_id
-      WHERE s.business_id = ${bid}
-        AND s.status IN ('paid', 'partial_return')
-        AND s.sold_at >= ${from}
-        AND s.sold_at <  ${to}`,
+        (SELECT IFNULL(SUM(si.subtotal_usd), 0)
+           FROM sale_items si JOIN sales s ON s.id = si.sale_id
+          WHERE s.business_id = ${bid} AND s.status IN ('paid','partial_return')
+            AND si.cost_per_unit_usd IS NOT NULL
+            AND s.sold_at >= ${from} AND s.sold_at < ${to})
+        -
+        (SELECT IFNULL(SUM(ri.total_usd), 0)
+           FROM return_items ri
+           JOIN returns r ON r.id = ri.return_id
+           JOIN sales s   ON s.id = r.sale_id
+           JOIN sale_items si2 ON si2.sale_id = s.id AND si2.product_id = ri.product_id
+          WHERE r.business_id = ${bid} AND r.status = 'approved'
+            AND s.status IN ('paid','partial_return')
+            AND si2.cost_per_unit_usd IS NOT NULL
+            AND s.sold_at >= ${from} AND s.sold_at < ${to})
+        AS ingresos_costeados`,
 
     // Costos fijos excluyen categoria='proveedor' — esas compras ya cuentan como
     // costo variable vía COGS; contarlas aquí las duplicaría en el break-even (GAP-2).
@@ -49,10 +53,10 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  const ventasUsd         = Number(ventasAgg._sum.total_usd ?? 0)
-  const costoVariable     = parseFloat(String(costoRow[0]?.costo ?? '0')) || 0
+  const ventasUsd         = ventasNetas.net.usd
+  const costoVariable     = cogsNeto.netUsd
   const ingresosCosteados = parseFloat(String(costoRow[0]?.ingresos_costeados ?? '0')) || 0
-  const productosSinCosto = parseInt(String(costoRow[0]?.productos_sin_costo ?? '0'), 10) || 0
+  const productosSinCosto = cogsNeto.productsWithoutCostCount
   const gastosFijos   = Number(gastosAgg._sum.monto_usd ?? 0)
   const r2            = (x: number) => Math.round(x * 100) / 100
   const periodLabel   = `${MONTH_NAMES[month - 1]} ${year}`

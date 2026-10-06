@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { HelpButton } from '@/components/help/HelpButton'
+import type { PaymentMethodRecord } from '@/types'
 import styles from './devoluciones.module.css'
 
 /* ── Types ── */
@@ -29,6 +30,7 @@ interface Sale {
   sold_at: string
   total_usd: number | string
   total_bs: number | string
+  rate_used: number | string
   items: SaleItem[]
   client: { id: number; name: string; phone: string | null } | null
   cashier: { id: number; name: string } | null
@@ -46,6 +48,20 @@ interface ReturnRecord {
 }
 
 type Step = 'search' | 'select' | 'done'
+
+interface ReturnErrorBody {
+  error?:      string
+  issues?:     Array<{ path?: (string | number)[]; message: string }>
+  disponible?: number
+}
+
+// Mensaje real del servidor: 400 trae issues de Zod; 422 trae error (+ disponible).
+function returnErrorMessage(data: ReturnErrorBody | null): string {
+  const issue = data?.issues?.[0]
+  if (issue) return issue.path?.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message
+  if (!data?.error) return 'Error al registrar devolución'
+  return typeof data.disponible === 'number' ? `${data.error} (disponible: ${data.disponible})` : data.error
+}
 
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
@@ -68,12 +84,18 @@ function DevolucionesContent() {
   const [searchErr, setSearchErr]   = useState('')
   const [foundSale, setFoundSale]   = useState<Sale | null>(null)
 
-  // Select step
+  // Select step — checked/returnQty van por LÍNEA de venta (SaleItem.id), no por
+  // producto: un mismo producto puede estar en varias líneas con costo distinto.
   const [checked, setChecked]       = useState<Set<number>>(new Set())
   const [returnQty, setReturnQty]   = useState<Map<number, string>>(new Map())
   const [reason, setReason]         = useState('')
   const [restoresStock, setRestores] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  // Método por el que SALE el reembolso. Sin valor por defecto: el método real
+  // define si baja el efectivo esperado de la caja (estándar contable).
+  const [refundMethods, setRefundMethods] = useState<PaymentMethodRecord[] | null>(null)
+  const [methodsError, setMethodsError]   = useState('')
+  const [refundMethodId, setRefundMethodId] = useState('')
 
   // History
   const [history, setHistory]       = useState<ReturnRecord[]>([])
@@ -92,6 +114,20 @@ function DevolucionesContent() {
   }, [])
 
   useEffect(() => { fetchHistory() }, [fetchHistory])
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/config/payment-methods')
+      .then(async r => {
+        const d = await r.json().catch(() => null) as { methods?: PaymentMethodRecord[]; error?: string } | null
+        if (!r.ok || !d?.methods) throw new Error(d?.error ?? 'No se pudieron cargar los métodos de cobro.')
+        if (active) setRefundMethods(d.methods.filter(m => m.is_active))
+      })
+      .catch((err: unknown) => {
+        if (active) setMethodsError(err instanceof Error ? err.message : 'No se pudieron cargar los métodos de cobro.')
+      })
+    return () => { active = false }
+  }, [])
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -119,17 +155,17 @@ function DevolucionesContent() {
     }
   }
 
-  function toggleItem(productId: number, qty: number | string) {
+  function toggleItem(saleItemId: number, qty: number | string) {
     const soldQty = Number(qty)
     setChecked(prev => {
       const next = new Set(prev)
-      if (next.has(productId)) {
-        next.delete(productId)
+      if (next.has(saleItemId)) {
+        next.delete(saleItemId)
       } else {
-        next.add(productId)
+        next.add(saleItemId)
         setReturnQty(m => {
           const nm = new Map(m)
-          if (!nm.has(productId)) nm.set(productId, String(soldQty))
+          if (!nm.has(saleItemId)) nm.set(saleItemId, String(soldQty))
           return nm
         })
       }
@@ -137,22 +173,24 @@ function DevolucionesContent() {
     })
   }
 
-  function setQty(productId: number, val: string) {
-    setReturnQty(prev => new Map(prev).set(productId, val))
+  function setQty(saleItemId: number, val: string) {
+    setReturnQty(prev => new Map(prev).set(saleItemId, val))
   }
 
-  const checkedItems = foundSale?.items.filter(it => checked.has(it.product_id)) ?? []
-  const canSubmit    = checkedItems.length > 0 && reason.trim().length >= 3 &&
+  const checkedItems = foundSale?.items.filter(it => checked.has(it.id)) ?? []
+  const canSubmit    = checkedItems.length > 0 && reason.trim().length >= 3 && refundMethodId !== '' &&
     checkedItems.every(it => {
-      const q = parseFloat(returnQty.get(it.product_id) ?? '0')
+      const q = parseFloat(returnQty.get(it.id) ?? '0')
       return q > 0 && q <= Number(it.quantity)
     })
 
   const returnTotal = checkedItems.reduce((s, it) => {
-    const q    = parseFloat(returnQty.get(it.product_id) ?? '0') || 0
+    const q    = parseFloat(returnQty.get(it.id) ?? '0') || 0
     const p    = Number(it.price_per_unit_usd) || 0
     return s + q * p
   }, 0)
+  // Misma tasa con que el servidor calcula total_bs: la de la venta original.
+  const returnTotalBs = returnTotal * (Number(foundSale?.rate_used) || 0)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -166,20 +204,22 @@ function DevolucionesContent() {
           sale_id:        foundSale.id,
           reason:         reason.trim(),
           restores_stock: restoresStock,
+          refund_payment_method_id: Number(refundMethodId),
           items: checkedItems.map(it => ({
-            product_id: it.product_id,
-            qty:        parseFloat(returnQty.get(it.product_id) ?? '1'),
-            price_usd:  Number(it.price_per_unit_usd) || 0,
+            product_id:   it.product_id,
+            qty:          parseFloat(returnQty.get(it.id) ?? '1'),
+            sale_item_id: it.id,
           })),
         }),
       })
-      const data = await res.json() as { ok?: boolean; return?: ReturnRecord; error?: string }
-      if (res.ok && data.return) {
-        setHistory(prev => [data.return!, ...prev])
+      const data = await res.json().catch(() => null) as ({ ok?: boolean; return?: ReturnRecord } & ReturnErrorBody) | null
+      if (res.ok && data?.return) {
+        const created = data.return
+        setHistory(prev => [created, ...prev])
         setStep('done')
         toast('Devolución registrada — stock actualizado', 'success')
       } else {
-        toast(data.error ?? 'Error al registrar devolución', 'error')
+        toast(returnErrorMessage(data), 'error')
       }
     } catch {
       toast('Error de conexión', 'error')
@@ -196,6 +236,7 @@ function DevolucionesContent() {
     setReturnQty(new Map())
     setReason('')
     setRestores(true)
+    setRefundMethodId('')
     setSearchErr('')
   }
 
@@ -295,19 +336,19 @@ function DevolucionesContent() {
 
               <div className={styles.itemsSelect}>
                 {foundSale.items.map(it => {
-                  const isChecked = checked.has(it.product_id)
+                  const isChecked = checked.has(it.id)
                   const soldQty   = Number(it.quantity)
-                  const qtyVal    = returnQty.get(it.product_id) ?? String(soldQty)
+                  const qtyVal    = returnQty.get(it.id) ?? String(soldQty)
                   const maxQty    = soldQty
                   return (
-                    <div key={it.product_id}
+                    <div key={it.id}
                       className={`${styles.selectRow} ${isChecked ? styles.selectRowActive : ''}`}>
                       <label className={styles.checkLabel}>
                         <input
                           type="checkbox"
                           className={styles.checkbox}
                           checked={isChecked}
-                          onChange={() => toggleItem(it.product_id, it.quantity)}
+                          onChange={() => toggleItem(it.id, it.quantity)}
                           aria-label={`Devolver ${it.product_name}`}
                         />
                         <span className={styles.itemProductName}>{it.product_name}</span>
@@ -320,7 +361,7 @@ function DevolucionesContent() {
                             type="number"
                             className={styles.returnQtyInput}
                             value={qtyVal}
-                            onChange={e => setQty(it.product_id, e.target.value)}
+                            onChange={e => setQty(it.id, e.target.value)}
                             min="0.001"
                             max={maxQty}
                             step="any"
@@ -336,7 +377,10 @@ function DevolucionesContent() {
               {checkedItems.length > 0 && (
                 <div className={styles.returnSummary}>
                   <span>Total a devolver:</span>
-                  <strong>${returnTotal.toFixed(2)}</strong>
+                  <span className={styles.summaryAmounts}>
+                    <span className={styles.usd}>${returnTotal.toFixed(2)}</span>
+                    <span className={styles.bs}>Bs.&nbsp;{returnTotalBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </span>
                 </div>
               )}
 
@@ -356,6 +400,28 @@ function DevolucionesContent() {
                 />
                 {reason.length > 0 && reason.length < 3 && (
                   <p className={styles.fieldHint}>Mínimo 3 caracteres</p>
+                )}
+              </div>
+
+              <div className={styles.reasonField}>
+                <label htmlFor="dev-refund-method" className={styles.label}>
+                  Método de reembolso *
+                </label>
+                <select
+                  id="dev-refund-method"
+                  className={styles.selectInput}
+                  value={refundMethodId}
+                  onChange={e => setRefundMethodId(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>Selecciona cómo se devuelve el dinero</option>
+                  {(refundMethods ?? []).map(m => (
+                    <option key={m.id} value={String(m.id)}>{m.name}</option>
+                  ))}
+                </select>
+                {methodsError && <p className={styles.fieldHint}>{methodsError}</p>}
+                {!methodsError && refundMethods?.length === 0 && (
+                  <p className={styles.fieldHint}>No hay métodos de cobro activos. Actívalos en Configuración &gt; Medios de Cobro.</p>
                 )}
               </div>
 

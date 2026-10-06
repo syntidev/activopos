@@ -537,6 +537,45 @@ npx prisma studio
 
 ---
 
+## 💰 ESTÁNDAR CONTABLE — SELLADO (2026-10-06)
+
+Las 5 reglas que gobiernan todo número de dinero del sistema. Aprobadas por Carlos.
+
+1. **Ventas netas = ventas brutas − devoluciones aprobadas.** El ingreso se imputa
+   a la **fecha de la venta**, aunque la devolución se procese después.
+2. **COGS sale de `SaleItem.cost_per_unit_usd`** y se revierte con el costo
+   guardado en `ReturnItem.cost_per_unit_usd` (snapshot al devolver). Nunca con el
+   costo actual del producto.
+3. **El reembolso se registra cuando sale el dinero, con su método real**
+   (`Return.refund_payment_method_id`). **Solo el efectivo** (`PaymentMethod.type
+   = 'cash'`) afecta el efectivo esperado de la caja.
+4. **`partial_return` sigue visible** en todos los reportes y en finanzas (regla
+   sellada Sprint 64-76). **`returned`** (devolución total) se excluye: de esa
+   venta no quedó nada.
+5. **Fuente única: `src/lib/sales-returns.ts`.** Todo total monetario sale de ahí
+   (`netSales`, `netCogs`, `marginPct`, `netByProduct`, `netByCategory`,
+   `returnedBySeries`, `cashRefundTotals`). **Ningún endpoint replica filtros de
+   `status` para ingreso o costo**, ni rehace estas restas a mano.
+
+**Devoluciones:** `/api/returns` exige `refund_payment_method_id` y resuelve la
+línea devuelta (`sale_item_id`). Si el producto está en varias líneas de la venta
+y no se indica la línea → **422**, nunca se elige una (de esa línea depende el
+costo con que se revierte el COGS).
+
+---
+
+## 🎯 DEFINITION OF DONE — OBLIGATORIO
+
+- **Todo cambio que toque dinero pasa `npm run test:consistency`** (DB real,
+  escenarios con devoluciones; falla con código ≠ 0 si algo difiere), más
+  `npx tsc --noEmit` en 0 y `npm run build` con **EXIT_REAL numérico**.
+- **Una función no está terminada hasta estar cableada en TODAS sus capas:**
+  DB → API → UI → POS/catálogo → recibos → reportes → exportaciones. Si falta
+  una capa, no está hecha: se declara explícitamente qué quedó pendiente.
+- **El reporte del CLI abre con `git rev-parse --short HEAD` y `origin/main`.**
+
+---
+
 ## ✅ CHECKLIST PRE-COMMIT — OBLIGATORIO
 
 Antes de cualquier commit, verificar cada punto. Si uno falla → no commitear.

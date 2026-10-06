@@ -198,10 +198,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // El reembolso se asume en efectivo (decisión 2026-10-06, Return no guarda
-  // método): se descuenta del bucket de tipo 'cash' para que la suma por método
-  // siga cuadrando con el total neto. Si ese día no hubo ningún método de tipo
-  // cash, no se inventa bucket: queda la diferencia y se ve en el total.
+  // Lo devuelto se descuenta del bucket de tipo 'cash' para que la suma por
+  // método siga cuadrando con el total neto. Nota: este desglose agrupa los
+  // PAGOS de la venta, que no distinguen por cuál método se reembolsó; el
+  // método real del reembolso (Return.refund_payment_method_id) sí se respeta
+  // en el efectivo esperado de la caja. Si ese día no hubo ningún método de
+  // tipo cash, no se inventa bucket: la diferencia queda visible en el total.
   if (ventas.returned.usd > 0) {
     const cashBucket = Array.from(pmMap.values()).find(m => m.type === 'cash')
     if (cashBucket) {

@@ -1,0 +1,11 @@
+{
+  "//": "ts-node necesita CommonJS; el tsconfig raíz usa ESNext para Next.js. Se pasa con --project para no depender del quoting de la shell: en Windows npm rompe --compiler-options '{...}'.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "jsx": "preserve"
+  },
+  "include": ["./**/*.ts", "../src/**/*.ts"]
+}

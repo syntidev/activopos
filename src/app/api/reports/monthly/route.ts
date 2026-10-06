@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { REALIZED_SALE_STATUSES, returnedTotalsBySaleDate } from '@/lib/sales-returns'
+import { REALIZED_SALE_STATUSES, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 
 const periodSchema = z.string().regex(/^\d{4}-\d{2}$/)
 
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   const monthStart    = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
   const monthEnd      = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
 
-  const [salesAgg, dailyRaw, weeklyRaw, returnedTotals, returnedDailyRaw, returnedWeeklyRaw, report] = await Promise.all([
+  const [salesAgg, dailyRaw, weeklyRaw, ventas, devueltoPorDia, devueltoPorSemana, report] = await Promise.all([
     db.sale.aggregate({
       where: {
         // business_id inyectado por el tenant layer
@@ -73,28 +73,10 @@ export async function GET(req: NextRequest) {
       ORDER BY week ASC
     `,
 
-    returnedTotalsBySaleDate(session.businessId, monthStart, monthEnd),
-
-    // Devuelto con el MISMO GROUP BY que cada serie (DATE_FORMAT / WEEK(.,1)),
-    // para restar por clave idéntica sin recalcular fechas en JS.
-    prisma.$queryRaw<{ day: string; devuelto_usd: string | number }[]>`
-      SELECT DATE_FORMAT(s.sold_at, '%Y-%m-%d') AS day, SUM(r.total_usd) AS devuelto_usd
-      FROM returns r JOIN sales s ON s.id = r.sale_id
-      WHERE r.business_id = ${session.businessId}
-        AND r.status = 'approved'
-        AND s.status IN ('paid','partial_return')
-        AND s.sold_at >= ${monthStart} AND s.sold_at < ${monthEnd}
-      GROUP BY day
-    `,
-    prisma.$queryRaw<{ week: number; devuelto_usd: string | number }[]>`
-      SELECT WEEK(s.sold_at, 1) AS week, SUM(r.total_usd) AS devuelto_usd
-      FROM returns r JOIN sales s ON s.id = r.sale_id
-      WHERE r.business_id = ${session.businessId}
-        AND r.status = 'approved'
-        AND s.status IN ('paid','partial_return')
-        AND s.sold_at >= ${monthStart} AND s.sold_at < ${monthEnd}
-      GROUP BY WEEK(s.sold_at, 1)
-    `,
+    // Totales y series de devoluciones -- fuente única (src/lib/sales-returns.ts).
+    netSales(session.businessId, monthStart, monthEnd),
+    returnedUsdBySeries(session.businessId, 'day',  monthStart, monthEnd),
+    returnedUsdBySeries(session.businessId, 'week', monthStart, monthEnd),
 
     prisma.monthlyReport.findUnique({
       where: {
@@ -112,9 +94,6 @@ export async function GET(req: NextRequest) {
       },
     }),
   ])
-
-  const devueltoPorDia    = new Map(returnedDailyRaw.map(r => [String(r.day), Number(r.devuelto_usd)]))
-  const devueltoPorSemana = new Map(returnedWeeklyRaw.map(r => [Number(r.week), Number(r.devuelto_usd)]))
 
   const days = dailyRaw.map(d => ({
     day:       d.day,
@@ -138,15 +117,15 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok:          true,
     period:      periodParam,
-    sales_count: salesAgg._count.id,
-    total_usd:   Number(salesAgg._sum.total_usd ?? 0) - returnedTotals.usd,
-    total_bs:    Number(salesAgg._sum.total_bs  ?? 0) - returnedTotals.bs,
+    sales_count: ventas.salesCount,
+    total_usd:   ventas.net.usd,
+    total_bs:    ventas.net.bs,
     best_day:    days.length ? bestDay  : null,
     worst_day:   days.length ? worstDay : null,
     by_day:      days,
     by_week:     weeklyRaw.map(w => ({
       week:      Number(w.week),
-      total_usd: Number(w.total_usd) - (devueltoPorSemana.get(Number(w.week)) ?? 0),
+      total_usd: Number(w.total_usd) - (devueltoPorSemana.get(String(w.week)) ?? 0),
       count:     parseInt(String(w.count), 10),
     })),
     report_status:  report?.status ?? null,

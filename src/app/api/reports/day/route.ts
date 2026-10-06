@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, marginPct, netByCategory, netCogs, netSales } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -36,26 +37,17 @@ export async function GET(req: NextRequest) {
   const dayEnd   = new Date(Date.UTC(year, month - 1, dayNum + 1, 0, 0, 0, 0))
   const bid      = session.businessId
 
-  const [paidAgg, creditAgg, costRow, byCategoryRaw, paymentMethodsRaw, registers, salesForRegs] =
+  const [ventas, cogs, netoCat, creditAgg, byCategoryRaw, paymentMethodsRaw, registers, salesForRegs, ventasPorRegistro] =
     await Promise.all([
-      db.sale.aggregate({
-        where: { status: 'paid', sold_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
-        _sum:  { total_usd: true, total_bs: true },
-      }),
+      // Ingreso, COGS y desglose netos -- fuente única (src/lib/sales-returns.ts).
+      netSales(session.businessId, dayStart, dayEnd),
+      netCogs(session.businessId, dayStart, dayEnd),
+      netByCategory(session.businessId, dayStart, dayEnd),
 
       db.sale.aggregate({
         where: { status: 'credit', created_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
         _sum:  { total_usd: true },
       }),
-
-      prisma.$queryRaw<CostRow[]>`
-        SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS costo_usd
-        FROM sale_items si
-        JOIN sales s ON s.id = si.sale_id
-        WHERE s.business_id = ${bid}
-          AND s.status = 'paid'
-          AND s.sold_at >= ${dayStart}
-          AND s.sold_at < ${dayEnd}`,
 
       prisma.$queryRaw<CategoryRow[]>`
         SELECT COALESCE(c.name, 'Sin categoría')                    AS category,
@@ -66,7 +58,7 @@ export async function GET(req: NextRequest) {
         LEFT JOIN products p ON p.id = si.product_id
         LEFT JOIN categories c ON c.id = p.category_id
         WHERE s.business_id = ${bid}
-          AND s.status = 'paid'
+          AND s.status IN ('paid','partial_return')
           AND s.sold_at >= ${dayStart}
           AND s.sold_at < ${dayEnd}
         GROUP BY COALESCE(c.name, 'Sin categoría')
@@ -94,22 +86,31 @@ export async function GET(req: NextRequest) {
       }),
 
       db.sale.findMany({
-        where:  { status: 'paid', sold_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
-        select: { sold_at: true, total_usd: true },
+        where:  { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: dayStart, lt: dayEnd } }, // business_id inyectado
+        select: { id: true, sold_at: true, total_usd: true },
+      }),
+
+      // Devuelto por venta, para netear el total de cada turno sin recalcular nada.
+      db.return.groupBy({
+        by:    ['sale_id'],
+        where: {
+          status: 'approved',
+          sale:   { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: dayStart, lt: dayEnd } },
+        },
+        _sum: { total_usd: true },
       }),
     ])
 
-  const cobrado_usd     = Number(paidAgg._sum.total_usd ?? 0)
-  const total_bs        = Number(paidAgg._sum.total_bs  ?? 0)
+  const cobrado_usd     = ventas.net.usd
+  const total_bs        = ventas.net.bs
   const credito_usd     = Number(creditAgg._sum.total_usd ?? 0)
   const total_usd       = cobrado_usd + credito_usd
-  const costo_invertido = parseFloat(String(costRow[0]?.costo_usd ?? '0')) || 0
+  const costo_invertido = cogs.netUsd
   const utilidad_usd    = cobrado_usd - costo_invertido
-  const margen_pct      = cobrado_usd > 0
-    ? Math.round((utilidad_usd / cobrado_usd) * 10000) / 100
-    : 0
+  const margen_pct      = marginPct(cobrado_usd, costo_invertido)
 
   const r2 = (x: number) => Math.round(x * 100) / 100
+  const devueltoPorVenta = new Map(ventasPorRegistro.map(g => [g.sale_id, Number(g._sum.total_usd ?? 0)]))
 
   return NextResponse.json({
     ok:   true,
@@ -124,15 +125,16 @@ export async function GET(req: NextRequest) {
       margen_pct,
     },
     by_category: byCategoryRaw.map(c => {
-      const vendido = Number(c.vendido_usd)
-      const costo   = Number(c.costo_usd)
+      const n       = netoCat.get(c.category ?? 'Sin categoría')
+      const vendido = n?.netUsd  ?? Number(c.vendido_usd)
+      const costo   = n?.netCogs ?? Number(c.costo_usd)
       const util    = vendido - costo
       return {
         category:     c.category,
-        vendido_usd:  vendido,
+        vendido_usd:  r2(vendido),
         costo_usd:    r2(costo),
         utilidad_usd: r2(util),
-        margen_pct:   vendido > 0 ? Math.round((util / vendido) * 10000) / 100 : 0,
+        margen_pct:   marginPct(vendido, costo),
       }
     }),
     payment_methods: paymentMethodsRaw.map(m => ({
@@ -144,11 +146,14 @@ export async function GET(req: NextRequest) {
       const regSales = salesForRegs.filter(
         s => s.sold_at && s.sold_at >= reg.opened_at && (!reg.closed_at || s.sold_at <= reg.closed_at)
       )
+      const devueltoDeEsasVentas = regSales.reduce(
+        (a, s) => a + Number(devueltoPorVenta.get(s.id) ?? 0), 0,
+      )
       return {
         opened_at:   reg.opened_at.toISOString(),
         closed_at:   reg.closed_at ? reg.closed_at.toISOString() : null,
         sales_count: regSales.length,
-        total_usd:   r2(regSales.reduce((a, s) => a + Number(s.total_usd), 0)),
+        total_usd:   r2(regSales.reduce((a, s) => a + Number(s.total_usd), 0) - devueltoDeEsasVentas),
       }
     }),
   })

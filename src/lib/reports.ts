@@ -1,6 +1,6 @@
 import { prisma } from './prisma'
 import { getActiveRate } from './bcv'
-import { returnedTotalsBySaleDate } from './sales-returns'
+import { netSales, returnedUsdBySeries } from './sales-returns'
 import { mkdir, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
@@ -29,7 +29,7 @@ export async function generateMonthlyPDF(
   const monthStart    = new Date(year, month - 1, 1)
   const monthEnd      = new Date(year, month, 1)
 
-  const [business, salesAgg, dailyRaw, returnedRaw, returnedTotals, { rate }] = await Promise.all([
+  const [business, salesAgg, dailyRaw, devueltoPorDia, ventas, { rate }] = await Promise.all([
     prisma.business.findUniqueOrThrow({
       where:  { id: businessId },
       select: { name: true, phone: true, city: true },
@@ -56,32 +56,18 @@ export async function generateMonthlyPDF(
       GROUP BY day
       ORDER BY day ASC
     `,
-    // Devuelto por día de la VENTA, con el MISMO DATE_FORMAT que la serie de
-    // arriba: así la resta usa exactamente la misma clave de agrupación (no se
-    // recalcula el día en JS, que asumiría que el TZ de Node y el de MySQL coinciden).
-    prisma.$queryRaw<{ day: string; devuelto_usd: string | number }[]>`
-      SELECT DATE_FORMAT(s.sold_at, '%Y-%m-%d') AS day,
-             SUM(r.total_usd) AS devuelto_usd
-      FROM returns r
-      JOIN sales s ON s.id = r.sale_id
-      WHERE r.business_id = ${businessId}
-        AND r.status = 'approved'
-        AND s.status IN ('paid','partial_return')
-        AND s.sold_at >= ${monthStart}
-        AND s.sold_at < ${monthEnd}
-      GROUP BY day
-    `,
-    returnedTotalsBySaleDate(businessId, monthStart, monthEnd),
+    // Devuelto por día y totales netos -- fuente única (src/lib/sales-returns.ts).
+    returnedUsdBySeries(businessId, 'day', monthStart, monthEnd),
+    netSales(businessId, monthStart, monthEnd),
     getActiveRate(businessId),
   ])
 
   const { jsPDF } = await import('jspdf') as typeof import('jspdf')
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
 
-  const totalUsd    = Number(salesAgg._sum.total_usd ?? 0) - returnedTotals.usd
-  const totalBs     = Number(salesAgg._sum.total_bs  ?? 0) - returnedTotals.bs
-  const devueltoPorDia = new Map(returnedRaw.map(r => [String(r.day), Number(r.devuelto_usd)]))
-  const salesCount  = salesAgg._count.id
+  const totalUsd    = ventas.net.usd
+  const totalBs     = ventas.net.bs
+  const salesCount  = ventas.salesCount
   const monthNames  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
   const monthName   = monthNames[month - 1] ?? period
 

@@ -66,10 +66,10 @@ export async function GET(req: NextRequest) {
         .reduce((a, r) => ({ usd: a.usd + r.total_usd, bs: a.bs + r.total_bs }), { usd: 0, bs: 0 })
 
       // Reembolsado DURANTE este turno (puede ser de una venta de otro turno):
-      // es cuando el dinero salió del cajón. Se asume efectivo (decisión
-      // 2026-10-06, ver lib/sales-returns.ts).
+      // es cuando el dinero salió del cajón. Solo cuentan los reembolsos EN
+      // EFECTIVO (estándar contable 2026-10-06, ver lib/sales-returns.ts).
       const refundedInRegister = returnsInPeriod
-        .filter(r => inThisRegister(r.refunded_at))
+        .filter(r => r.is_cash && inThisRegister(r.refunded_at))
         .reduce((a, r) => a + r.total_bs, 0)
 
       const totalVentasBs = regSales.reduce((acc, s) => acc + Number(s.total_bs), 0) - returnedOfRegSales.bs

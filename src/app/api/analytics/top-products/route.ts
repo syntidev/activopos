@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { returnedByProduct } from '@/lib/sales-returns'
+import { netByProduct } from '@/lib/sales-returns'
 
 type ProductRow = {
   product_id:    number
@@ -77,19 +77,18 @@ export async function GET(req: NextRequest) {
       GROUP BY si.product_id`,
   ])
 
-  // Devuelto por producto en cada ventana (exacto: ReturnItem.total_usd/qty).
-  // El costo de la unidad devuelta NO se netea acá -- este endpoint no expone
-  // COGS ni margen, y ReturnItem no guarda costo (ver lib/sales-returns.ts).
-  const [returnedNow, returnedPrev] = await Promise.all([
-    returnedByProduct(bid, from, to),
-    returnedByProduct(bid, prevFrom, prevTo),
+  // Neto por producto en cada ventana -- fuente única (src/lib/sales-returns.ts).
+  // La tendencia compara netos contra netos.
+  const [netNow, netPrev] = await Promise.all([
+    netByProduct(bid, from, to),
+    netByProduct(bid, prevFrom, prevTo),
   ])
 
   const r2       = (x: number) => Math.round(x * 100) / 100
-  const netUsdOf = (pid: number, gross: number) => gross - (returnedNow.get(pid)?.usd ?? 0)
-  const netQtyOf = (pid: number, gross: number) => gross - (returnedNow.get(pid)?.qty ?? 0)
+  const netUsdOf = (pid: number, gross: number) => netNow.get(pid)?.netUsd ?? gross
+  const netQtyOf = (pid: number, gross: number) => netNow.get(pid)?.netQty ?? gross
   const totalUsd = currentRaw.reduce((s, p) => s + netUsdOf(Number(p.product_id), Number(p.total_usd)), 0)
-  const prevMap  = new Map(prevRaw.map(p => [Number(p.product_id), Number(p.qty_sold) - (returnedPrev.get(Number(p.product_id))?.qty ?? 0)]))
+  const prevMap  = new Map(prevRaw.map(p => [Number(p.product_id), netPrev.get(Number(p.product_id))?.netQty ?? Number(p.qty_sold)]))
 
   const products = currentRaw.map(p => {
     const pid     = Number(p.product_id)

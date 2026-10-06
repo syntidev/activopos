@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { REALIZED_SALE_STATUSES, cashRefundTotals, returnedTotalsBySaleDate } from '@/lib/sales-returns'
+import { REALIZED_SALE_STATUSES, cashRefundTotals, netSales } from '@/lib/sales-returns'
 
 export async function GET() {
   try {
@@ -13,24 +13,29 @@ export async function GET() {
 
     if (!register) return NextResponse.json({ isOpen: false })
 
-    const [sales, movements, abonosAgg, refunds, returnedInPeriod] = await Promise.all([
-      db.sale.findMany({
+    const [ventas, payments, movements, abonosAgg, refunds] = await Promise.all([
+      // Ventas netas del turno -- fuente única (src/lib/sales-returns.ts).
+      netSales(session.businessId, register.opened_at),
+
+      // Pagos en efectivo del turno. Se piden aparte porque el efectivo
+      // esperado depende del MÉTODO de cada pago, no del total de la venta.
+      // SalePayment no tiene business_id — aislado por la relación sale.
+      db.salePayment.findMany({
         where: {
-          // business_id inyectado por el tenant layer
-          // partial_return incluido: antes una devolución de 1 unidad sacaba la
-          // venta ENTERA del efectivo esperado (ver lib/sales-returns.ts).
-          status: { in: [...REALIZED_SALE_STATUSES] },
-          sold_at: { gte: register.opened_at },
-        },
-        include: {
-          payments: {
-            include: { payment_method: { select: { type: true } } },
+          sale: {
+            business_id: session.businessId,
+            status:      { in: [...REALIZED_SALE_STATUSES] },
+            sold_at:     { gte: register.opened_at },
           },
+          payment_method: { type: 'cash' },
         },
+        select: { amount_bs: true },
       }),
+
       db.cashMovement.findMany({
         where: { cash_register_id: register.id }, // business_id inyectado
       }),
+
       // SaleAbono no tiene business_id — aislado por la relación sale.business_id
       db.saleAbono.aggregate({
         where: {
@@ -40,27 +45,13 @@ export async function GET() {
         _sum: { amount_usd: true, amount_bs: true },
         _count: { _all: true },
       }),
-      // Reembolsos pagados durante este turno (se asumen en efectivo).
+
+      // Reembolsos EN EFECTIVO pagados durante este turno.
       cashRefundTotals(session.businessId, register.opened_at),
-      // Devuelto de ventas de ESTE turno — para el total de ventas neto.
-      returnedTotalsBySaleDate(session.businessId, register.opened_at),
     ])
 
-    const totalVentasBs = sales.reduce((acc, s) => acc + Number(s.total_bs), 0) - returnedInPeriod.bs
-    const totalVentasUsd = sales.reduce((acc, s) => acc + Number(s.total_usd), 0) - returnedInPeriod.usd
-
-    // Efectivo cobrado del turno, menos lo reembolsado en el turno. Los pagos
-    // originales de una venta con devolución parcial siguen contando completos
-    // (ese dinero entró al cajón); solo se descuenta el monto devuelto.
     const cashVentasBs =
-      sales.reduce(
-        (acc, s) =>
-          acc +
-          s.payments
-            .filter(p => p.payment_method.type === 'cash')
-            .reduce((a, p) => a + Number(p.amount_bs), 0),
-        0
-      ) - refunds.bs
+      payments.reduce((a, p) => a + Number(p.amount_bs), 0) - refunds.bs
 
     const movIn = movements
       .filter(m => m.type === 'in')
@@ -84,9 +75,9 @@ export async function GET() {
         rateAtOpen: Number(register.rate_at_open),
       },
       turnoStats: {
-        salesCount: sales.length,
-        totalVentasBs,
-        totalVentasUsd,
+        salesCount: ventas.salesCount,
+        totalVentasBs: ventas.net.bs,
+        totalVentasUsd: ventas.net.usd,
         cashVentasBs,
         movIn,
         movOut,

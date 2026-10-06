@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { aiChatLimiter } from '@/lib/rate-limit'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { callBlogLlm, ProviderError } from '@/lib/blog/llm'
-import { REALIZED_SALE_STATUSES, returnedTotalsBySaleDate } from '@/lib/sales-returns'
+import { netSales } from '@/lib/sales-returns'
 
 const chatSchema = z.object({
   message: z.string().min(1).max(2000),
@@ -48,19 +48,13 @@ export async function POST(req: NextRequest) {
   const todayStart    = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const tomorrowStart = new Date(todayStart.getTime() + 86_400_000)
 
-  const [business, todaySales, returnedToday, pendingOrders, overdueCredit, lowStockProducts] = await Promise.all([
+  const [business, ventasHoy, pendingOrders, overdueCredit, lowStockProducts] = await Promise.all([
     prisma.business.findUnique({
       where:  { id: bid },
       select: { name: true },
     }),
-    prisma.sale.aggregate({
-      // partial_return incluido y neteado abajo con returnedToday: antes una
-      // devolución parcial borraba la venta entera del resumen (ver lib/sales-returns.ts).
-      where: { business_id: bid, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: todayStart, lt: tomorrowStart } },
-      _sum:   { total_usd: true },
-      _count: { id: true },
-    }),
-    returnedTotalsBySaleDate(bid, todayStart, tomorrowStart),
+    // Ventas netas del día -- fuente única (src/lib/sales-returns.ts).
+    netSales(bid, todayStart, tomorrowStart),
     prisma.order.count({
       where: { business_id: bid, status: { notIn: ['delivered', 'cancelled'] } },
     }),
@@ -79,14 +73,14 @@ export async function POST(req: NextRequest) {
       ORDER BY net_qty ASC LIMIT 5`,
   ])
 
-  const totalUsd      = Number(todaySales._sum.total_usd ?? 0) - returnedToday.usd
+  const totalUsd      = ventasHoy.net.usd
   const businessName  = business?.name ?? 'tu negocio'
   const lowStockList  = lowStockProducts.length > 0
     ? lowStockProducts.map(p => `${p.name} (${Number(p.net_qty ?? 0)} uds.)`).join(', ')
     : null
 
   const context = [
-    `Ventas hoy: ${todaySales._count.id} ventas por $${totalUsd.toFixed(2)} USD`,
+    `Ventas hoy: ${ventasHoy.salesCount} ventas por $${totalUsd.toFixed(2)} USD`,
     pendingOrders > 0
       ? `Pedidos activos en cocina/sala: ${pendingOrders}`
       : 'Sin pedidos activos',

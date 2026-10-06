@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { netByProduct, netSales, returnedBySeries } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 
 type ChartPeriod = '7d' | '30d' | '12m'
@@ -17,7 +18,7 @@ const MONTHS_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','
 
 type DailyRow  = { date_label: string; total_usd: string; total_bs: string; profit: string | null; tx_count: string | number }
 type MethodRow = { type: string; name: string; total_usd: string }
-type TopRow    = { product_name: string; qty: string | number; total_usd: string | number }
+type TopRow    = { product_id: number; product_name: string; qty: string | number; total_usd: string | number }
 type LowRow    = { cnt: string | number }
 type RateRow   = { rate: string | number }
 
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
   const fromIso = from.toISOString().slice(0, 19).replace('T', ' ')
   const toIso   = tomorrowStart.toISOString().slice(0, 19).replace('T', ' ')
 
-  const [salesRows, methodRows, topRows, lowStockRow, opsToday, creditosAbiertos, cxcSales, rateRows] =
+  const [salesRows, methodRows, topRows, lowStockRow, opsToday, creditosAbiertos, cxcSales, rateRows, devueltoSerie, netoProd] =
     await Promise.all([
 
       // Subquery interna agrupa por s.id — evita only_full_group_by en MariaDB
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
           FROM sales s
           LEFT JOIN sale_items si ON si.sale_id = s.id
           WHERE s.business_id = ${bid}
-            AND s.status      = 'paid'
+            AND s.status      IN ('paid','partial_return')
             AND s.sold_at    >= '${fromIso}'
             AND s.sold_at     < '${toIso}'
           GROUP BY s.id, s.sold_at, s.total_usd, s.total_bs
@@ -92,6 +93,7 @@ export async function GET(req: NextRequest) {
         JOIN payment_methods pm ON pm.id = sp.payment_method_id
         JOIN sales s            ON s.id  = sp.sale_id
         WHERE s.business_id = ${bid}
+          AND s.status      IN ('paid','partial_return')
           AND s.sold_at    >= '${fromIso}'
           AND s.sold_at     < '${toIso}'
         GROUP BY pm.type, pm.name
@@ -99,11 +101,11 @@ export async function GET(req: NextRequest) {
       `),
 
       prisma.$queryRawUnsafe<TopRow[]>(`
-        SELECT si.product_name, SUM(si.quantity) AS qty, SUM(si.subtotal_usd) AS total_usd
+        SELECT si.product_id, si.product_name, SUM(si.quantity) AS qty, SUM(si.subtotal_usd) AS total_usd
         FROM sale_items si
         JOIN sales s ON s.id = si.sale_id
         WHERE s.business_id = ${bid}
-          AND s.status      = 'paid'
+          AND s.status      IN ('paid','partial_return')
           AND s.sold_at    >= '${fromIso}'
           AND s.sold_at     < '${toIso}'
         GROUP BY si.product_id, si.product_name
@@ -126,11 +128,8 @@ export async function GET(req: NextRequest) {
           AND COALESCE(inv.net_qty, 0) <= p.min_stock
       `),
 
-      db.sale.aggregate({
-        where:  { status: 'paid', sold_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
-        _sum:   { total_usd: true },
-        _count: { id: true },
-      }),
+      // Ventas netas de hoy -- fuente única (src/lib/sales-returns.ts).
+      netSales(bid, todayStart, tomorrowStart),
 
       db.sale.count({ where: { status: 'credit' } }), // business_id inyectado
 
@@ -146,6 +145,11 @@ export async function GET(req: NextRequest) {
       }),
 
       prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
+
+      // Devuelto por bucket (con la MISMA expresión de agrupación) y neto por
+      // producto -- fuente única (src/lib/sales-returns.ts).
+      returnedBySeries(bid, period === '12m' ? 'month' : 'day', from, tomorrowStart),
+      netByProduct(bid, from, tomorrowStart),
     ])
 
   const formatLabel = (label: string): string => {
@@ -181,35 +185,52 @@ export async function GET(req: NextRequest) {
     ok: true,
     period,
     bcvRate,
-    ventas_linea: salesRows.map(r => ({
-      date:     formatLabel(r.date_label),
-      usd:      parseFloat(String(r.total_usd)) || 0,
-      bs:       parseFloat(String(r.total_bs))  || 0,
-      tx_count: parseInt(String(r.tx_count ?? 0)) || 0,
-    })),
+    ventas_linea: salesRows.map(r => {
+      const back = devueltoSerie.get(String(r.date_label))
+      const usd  = (parseFloat(String(r.total_usd)) || 0) - (back?.usd ?? 0)
+      // Bs del devuelto: se convierte con la MISMA proporción del bucket para no
+      // necesitar otra agregación en Bs (la tasa de la venta ya está aplicada).
+      const grossUsd = parseFloat(String(r.total_usd)) || 0
+      const grossBs  = parseFloat(String(r.total_bs))  || 0
+      const ratioBs  = grossUsd > 0 ? grossBs / grossUsd : 0
+      return {
+        date:     formatLabel(r.date_label),
+        usd:      Math.round(usd * 100) / 100,
+        bs:       Math.round(usd * ratioBs * 100) / 100,
+        tx_count: parseInt(String(r.tx_count ?? 0)) || 0,
+      }
+    }),
     // Utilidad es dato financiero — cashier no tiene acceso (mismo criterio que
     // /api/finanzas/* y api/sales/route.ts). Se omite el campo en vez de bloquear
     // el endpoint: el cajero sigue necesitando ventas/metodos/top para escritorio.
     ...(session.role === 'cashier' ? {} : {
-      utilidad_barras: salesRows.map(r => ({
-        date: formatLabel(r.date_label),
-        usd:  parseFloat(String(r.profit)) || 0,
-      })),
+      utilidad_barras: salesRows.map(r => {
+        const back = devueltoSerie.get(String(r.date_label))
+        // Utilidad neta del bucket: utilidad bruta − (ingreso devuelto − COGS devuelto).
+        const neta = (parseFloat(String(r.profit)) || 0) - ((back?.usd ?? 0) - (back?.cogs ?? 0))
+        return { date: formatLabel(r.date_label), usd: Math.round(neta * 100) / 100 }
+      }),
     }),
     metodos_pie: methodRows.map(m => ({
       name:  m.name,
       value: parseFloat(String(m.total_usd)) || 0,
       color: METHOD_COLORS[m.type] ?? METHOD_COLORS['other'],
     })),
-    top_products: topRows.map(r => ({
-      name:      r.product_name,
-      qty:       parseFloat(String(r.qty)) || 0,
-      total_usd: parseFloat(String(r.total_usd)) || 0,
-    })),
+    top_products: topRows
+      .map(r => {
+        const n = netoProd.get(Number(r.product_id))
+        return {
+          name:      r.product_name,
+          qty:       n?.netQty ?? (parseFloat(String(r.qty)) || 0),
+          total_usd: n?.netUsd ?? (parseFloat(String(r.total_usd)) || 0),
+        }
+      })
+      .filter(r => r.qty > 0 || r.total_usd > 0)
+      .sort((a, b) => b.total_usd - a.total_usd),
     low_stock_count: parseInt(String(lowStockRow[0]?.cnt ?? 0)) || 0,
     ops: {
-      sales_hoy:         Number(opsToday._sum.total_usd ?? 0),
-      sales_count_hoy:   opsToday._count.id,
+      sales_hoy:         opsToday.net.usd,
+      sales_count_hoy:   opsToday.salesCount,
       creditos_abiertos: creditosAbiertos,
     },
     cxc_pendientes: cxcPendientes,

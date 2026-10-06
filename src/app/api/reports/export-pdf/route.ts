@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { netByProduct, netCogs, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 
@@ -33,6 +34,7 @@ function esc(s: string): string {
 }
 
 interface TopProductRow {
+  product_id: number
   name:      string
   quantity:  string | number
   total_usd: string | number
@@ -60,36 +62,28 @@ export async function GET(req: NextRequest) {
   const from = new Date(`${fromStr}T00:00:00Z`)
   const to   = new Date(`${toStr}T23:59:59.999Z`)
 
-  const [salesAgg, profitRows, topProductsRaw, gastos, business] = await Promise.all([
-    db.sale.aggregate({
-      where: { status: 'paid', sold_at: { gte: from, lte: to } }, // business_id inyectado
-      _sum:   { total_usd: true, total_bs: true },
-      _count: { id: true },
-    }),
+  // `to` viene inclusivo (23:59:59.999); la fuente única usa fin exclusivo.
+  const toExclusive = new Date(to.getTime() + 1)
 
-    // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
-    // Costo histórico desde si.cost_per_unit_usd (capturado al vender), no el
-    // costo actual del producto — mismo patrón que day/range (GAP-R1).
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS profit
-      FROM sale_items si
-      JOIN sales s ON s.id = si.sale_id
-      WHERE s.business_id = ${bid}
-        AND s.status = 'paid'
-        AND s.sold_at >= ${from}
-        AND s.sold_at <= ${to}`,
+  const [ventas, cogs, netoProd, topProductsRaw, gastos, business] = await Promise.all([
+    // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
+    netSales(bid, from, toExclusive),
+    netCogs(bid, from, toExclusive),
+    netByProduct(bid, from, toExclusive),
 
+    // product_id además del nombre: es la clave con la que se netea por producto.
     prisma.$queryRaw<TopProductRow[]>`
-      SELECT si.product_name AS name,
+      SELECT si.product_id        AS product_id,
+             si.product_name      AS name,
              SUM(si.quantity)     AS quantity,
              SUM(si.subtotal_usd) AS total_usd
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
       WHERE s.business_id = ${bid}
-        AND s.status = 'paid'
+        AND s.status IN ('paid','partial_return')
         AND s.sold_at >= ${from}
         AND s.sold_at <= ${to}
-      GROUP BY si.product_name
+      GROUP BY si.product_id, si.product_name
       ORDER BY total_usd DESC
       LIMIT 10`,
 
@@ -108,21 +102,33 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  const totalIngresos = Number(salesAgg._sum.total_usd ?? 0)
+  const totalIngresos = ventas.net.usd
   const totalGastos   = Number(gastos._sum.monto_usd ?? 0)
   const utilidad      = totalIngresos - totalGastos
   const margen        = totalIngresos > 0 ? (utilidad / totalIngresos) * 100 : 0
-  const profitBruto   = parseFloat(profitRows[0]?.profit ?? '0') || 0
-  const salesCount    = salesAgg._count.id
+  // Utilidad bruta neta: ingreso neto − COGS neto.
+  const profitBruto   = Math.round((ventas.net.usd - cogs.netUsd) * 100) / 100
+  const salesCount    = ventas.salesCount
 
-  const topProductsHtml = topProductsRaw.map((p, i) =>
-    `<tr>
+  const topProductsHtml = topProductsRaw
+    .map(p => {
+      const n = netoProd.get(Number(p.product_id))
+      return {
+        name:      p.name,
+        quantity:  n?.netQty ?? Number(p.quantity),
+        total_usd: n?.netUsd ?? Number(p.total_usd),
+      }
+    })
+    .filter(p => p.quantity > 0 || p.total_usd > 0)
+    .sort((a, b) => b.total_usd - a.total_usd)
+    .map((p, i) =>
+      `<tr>
       <td>${i + 1}</td>
       <td>${esc(p.name)}</td>
-      <td>${Number(p.quantity).toFixed(1)}</td>
-      <td>$${Number(p.total_usd).toFixed(2)}</td>
+      <td>${p.quantity.toFixed(1)}</td>
+      <td>$${p.total_usd.toFixed(2)}</td>
     </tr>`
-  ).join('')
+    ).join('')
 
   const logoHtml = business?.logo_path
     ? `<img src="${esc(business.logo_path)}" alt="Logo" style="height:40px;object-fit:contain;display:block;margin:0 auto 8px">`

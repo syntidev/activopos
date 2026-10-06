@@ -3,7 +3,7 @@ import { Sun, Moon } from 'lucide-react'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateTuDiaNarrative, type TuDiaData } from '@/lib/tudia-narrative'
-import { REALIZED_SALE_STATUSES, returnedByProduct, returnedTotalsBySaleDate } from '@/lib/sales-returns'
+import { netByProduct, netSales } from '@/lib/sales-returns'
 import styles from './tu-dia.module.css'
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -27,21 +27,10 @@ async function getTuDiaData(businessId: number): Promise<TuDiaData> {
   const monthStart  = new Date(now.getFullYear(), now.getMonth(), 1)
   const bid         = businessId
 
-  const [salesHoy, returnedHoy, salesAyer, returnedAyer, topRows, returnedByProd, cxcAgg, cxcVenceRows, productCount] = await Promise.all([
-    // Ventas de hoy (cantidad + monto). partial_return incluido y neteado con
-    // returnedHoy: antes una devolución parcial borraba la venta entera.
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: todayStart, lt: tomorrow } },
-      _sum:   { total_usd: true },
-      _count: { id: true },
-    }),
-    returnedTotalsBySaleDate(bid, todayStart, tomorrow),
-    // Ventas de ayer (para calcular tendencia)
-    prisma.sale.aggregate({
-      where: { business_id: bid, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: yesterday, lt: todayStart } },
-      _sum:  { total_usd: true },
-    }),
-    returnedTotalsBySaleDate(bid, yesterday, todayStart),
+  const [ventasHoy, ventasAyer, topRows, netoPorProducto, cxcAgg, cxcVenceRows, productCount] = await Promise.all([
+    // Ventas netas de hoy y de ayer -- fuente única (src/lib/sales-returns.ts).
+    netSales(bid, todayStart, tomorrow),
+    netSales(bid, yesterday, todayStart),
     // Producto más vendido este mes (por unidades NETAS). Se traen 10 y el
     // ranking se decide después de restar lo devuelto: devolver puede cambiar
     // cuál quedó primero.
@@ -57,7 +46,7 @@ async function getTuDiaData(businessId: number): Promise<TuDiaData> {
       ORDER  BY qty DESC
       LIMIT  10
     `,
-    returnedByProduct(bid, monthStart),
+    netByProduct(bid, monthStart),
     // CxC total pendiente
     prisma.sale.aggregate({
       where:  { business_id: bid, status: 'credit' },
@@ -87,12 +76,13 @@ async function getTuDiaData(businessId: number): Promise<TuDiaData> {
     }),
   ])
 
-  const salesCount  = salesHoy._count.id
-  const totalUsd    = Number(salesHoy._sum.total_usd  ?? 0) - returnedHoy.usd
-  const ayerUsd     = Number(salesAyer._sum.total_usd ?? 0) - returnedAyer.usd
+  const salesCount  = ventasHoy.salesCount
+  const totalUsd    = ventasHoy.net.usd
+  const ayerUsd     = ventasAyer.net.usd
   const trend       = ayerUsd > 0 ? ((totalUsd - ayerUsd) / ayerUsd) * 100 : 0
+  // El ranking se decide sobre unidades NETAS: devolver puede cambiar cuál quedó primero.
   const topProduct  = topRows
-    .map(r => ({ name: r.name, qty: Number(r.qty) - (returnedByProd.get(Number(r.product_id))?.qty ?? 0) }))
+    .map(r => ({ name: r.name, qty: netoPorProducto.get(Number(r.product_id))?.netQty ?? Number(r.qty) }))
     .filter(r => r.qty > 0)
     .sort((a, b) => b.qty - a.qty)[0]?.name ?? null
   const cxcUsd      = Number(cxcAgg._sum.total_usd ?? 0)

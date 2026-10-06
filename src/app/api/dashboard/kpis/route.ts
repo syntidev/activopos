@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { netByProduct, netCogs, netSales } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 import { calcTrend, getGreeting } from '@/lib/dashboard'
 
@@ -31,7 +32,7 @@ function getPeriodBounds(period: Period): PeriodBounds {
 type ProfitRow  = { profit: string | null }
 type BigIntable = string | bigint
 type MethodRow  = { method_name: string; total_usd: string; total_bs: string; cnt: BigIntable }
-type ProductRow = { name: string; qty: string; total_usd: string }
+type ProductRow = { product_id: number; name: string; qty: string; total_usd: string }
 type CxcRow     = { client_name: string | null; total_usd: string; created_at: Date }
 type StockRow   = { cnt: BigIntable }
 type RateRow    = { rate: string | number }
@@ -57,56 +58,28 @@ export async function GET(req: NextRequest) {
 
   const { from: pFrom, to: pTo } = getPeriodBounds(period)
 
-  // business_id inyectado por el tenant layer en cada db.sale.* que use estos filtros
-  const paidToday     = { status: 'paid' as const, sold_at: { gte: todayStart,     lt: tomorrowStart  } }
-  const paidYesterday = { status: 'paid' as const, sold_at: { gte: yesterdayStart, lt: todayStart      } }
-  const paidMonth     = { status: 'paid' as const, sold_at: { gte: monthStart                         } }
-  const paidPrevMonth = { status: 'paid' as const, sold_at: { gte: prevMonthStart, lt: monthStart      } }
-  const paidPeriod    = { status: 'paid' as const, sold_at: { gte: pFrom,          lt: pTo             } }
-
   const [
-    todayAgg, yesterdayAgg, monthAgg, prevMonthAgg, periodAgg,
-    todayCount, monthCount, periodCount,
-    todayP, yesterdayP, monthP, prevMonthP, periodP,
+    vtHoy, vtAyer, vtMes, vtMesAnt, vtPeriodo,
+    cgHoy, cgAyer, cgMes, cgMesAnt, cgPeriodo,
+    netoProdMes,
     cancellations, creditToday,
     methodsRows, topProductsRows, cxcRows, stockRows,
     rateRows, creditAggToday, ordenesCount,
   ] = await Promise.all([
-    // Revenue aggregates
-    db.sale.aggregate({ where: paidToday,     _sum: { total_usd: true, total_bs: true } }),
-    db.sale.aggregate({ where: paidYesterday, _sum: { total_usd: true, total_bs: true } }),
-    db.sale.aggregate({ where: paidMonth,     _sum: { total_usd: true, total_bs: true } }),
-    db.sale.aggregate({ where: paidPrevMonth, _sum: { total_usd: true, total_bs: true } }),
-    db.sale.aggregate({ where: paidPeriod,    _sum: { total_usd: true, total_bs: true } }),
-    // Counts
-    db.sale.count({ where: paidToday }),
-    db.sale.count({ where: paidMonth }),
-    db.sale.count({ where: paidPeriod }),
-    // Profit (revenue − COGS) via raw SQL
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id
-      WHERE s.business_id=${bid} AND s.status='paid'
-        AND s.sold_at>=${todayStart} AND s.sold_at<${tomorrowStart}`,
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id
-      WHERE s.business_id=${bid} AND s.status='paid'
-        AND s.sold_at>=${yesterdayStart} AND s.sold_at<${todayStart}`,
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id
-      WHERE s.business_id=${bid} AND s.status='paid' AND s.sold_at>=${monthStart}`,
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id
-      WHERE s.business_id=${bid} AND s.status='paid'
-        AND s.sold_at>=${prevMonthStart} AND s.sold_at<${monthStart}`,
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd,0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id=si.sale_id
-      WHERE s.business_id=${bid} AND s.status='paid'
-        AND s.sold_at>=${pFrom} AND s.sold_at<${pTo}`,
+    // Ingreso neto y COGS neto por ventana -- fuente única (src/lib/sales-returns.ts).
+    // Reemplaza 5 aggregates + 3 counts + 5 raws de utilidad que replicaban el
+    // filtro de status y dejaban fuera las ventas con devolución parcial.
+    netSales(bid, todayStart, tomorrowStart),
+    netSales(bid, yesterdayStart, todayStart),
+    netSales(bid, monthStart),
+    netSales(bid, prevMonthStart, monthStart),
+    netSales(bid, pFrom, pTo),
+    netCogs(bid, todayStart, tomorrowStart),
+    netCogs(bid, yesterdayStart, todayStart),
+    netCogs(bid, monthStart),
+    netCogs(bid, prevMonthStart, monthStart),
+    netCogs(bid, pFrom, pTo),
+    netByProduct(bid, monthStart),
     // Operativo
     db.sale.aggregate({
       where: { status: 'cancelled', updated_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
@@ -123,13 +96,14 @@ export async function GET(req: NextRequest) {
       FROM sale_payments sp
       JOIN payment_methods pm ON pm.id=sp.payment_method_id
       JOIN sales s ON s.id=sp.sale_id
-      WHERE s.business_id=${bid} AND s.sold_at>=${todayStart} AND s.sold_at<${tomorrowStart}
+      WHERE s.business_id=${bid} AND s.status IN ('paid','partial_return')
+        AND s.sold_at>=${todayStart} AND s.sold_at<${tomorrowStart}
       GROUP BY pm.id, pm.name ORDER BY total_usd DESC`,
     // Top 10 products this month
     prisma.$queryRaw<ProductRow[]>`
-      SELECT p.name, SUM(si.quantity) AS qty, SUM(si.subtotal_usd) AS total_usd
+      SELECT si.product_id, p.name, SUM(si.quantity) AS qty, SUM(si.subtotal_usd) AS total_usd
       FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id
-      WHERE s.business_id=${bid} AND s.status='paid' AND s.sold_at>=${monthStart}
+      WHERE s.business_id=${bid} AND s.status IN ('paid','partial_return') AND s.sold_at>=${monthStart}
       GROUP BY si.product_id, p.name ORDER BY total_usd DESC LIMIT 10`,
     // CxC alerts: oldest pending credit sales
     prisma.$queryRaw<CxcRow[]>`
@@ -162,22 +136,26 @@ export async function GET(req: NextRequest) {
   const rate = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
   const nowMs = now.getTime()
 
-  const n  = (v: unknown) => Number(v ?? 0)
-  const p0 = (rows: ProfitRow[]) => parseFloat(rows[0]?.profit ?? '0') || 0
   const r2 = (x: number) => Math.round(x * 100) / 100
 
-  const vHoy   = n(todayAgg._sum.total_usd);    const vHoyBs  = n(todayAgg._sum.total_bs)
-  const vAyer  = n(yesterdayAgg._sum.total_usd)
-  const vMes   = n(monthAgg._sum.total_usd);     const vMesBs  = n(monthAgg._sum.total_bs)
-  const vMesA  = n(prevMonthAgg._sum.total_usd)
-  const vPer   = n(periodAgg._sum.total_usd);    const vPerBs  = n(periodAgg._sum.total_bs)
+  const vHoy   = vtHoy.net.usd;      const vHoyBs = vtHoy.net.bs
+  const vAyer  = vtAyer.net.usd
+  const vMes   = vtMes.net.usd;      const vMesBs = vtMes.net.bs
+  const vMesA  = vtMesAnt.net.usd
+  const vPer   = vtPeriodo.net.usd;  const vPerBs = vtPeriodo.net.bs
 
-  const uHoy   = p0(todayP);    const uAyer  = p0(yesterdayP)
-  const uMes   = p0(monthP);    const uMesA  = p0(prevMonthP)
-  const uPer   = p0(periodP)
+  const todayCount  = vtHoy.salesCount
+  const monthCount  = vtMes.salesCount
+  const periodCount = vtPeriodo.salesCount
 
-  const creditoHoy       = Number(creditAggToday._sum.total_usd ?? 0)
-  const costoInvertidoHoy = Math.max(0, vHoy - uHoy)
+  // Utilidad = ingreso neto − COGS neto (el costo de lo devuelto se revierte
+  // con el snapshot de ReturnItem).
+  const uHoy   = r2(vHoy  - cgHoy.netUsd);   const uAyer = r2(vAyer - cgAyer.netUsd)
+  const uMes   = r2(vMes  - cgMes.netUsd);   const uMesA = r2(vMesA - cgMesAnt.netUsd)
+  const uPer   = r2(vPer  - cgPeriodo.netUsd)
+
+  const creditoHoy        = Number(creditAggToday._sum.total_usd ?? 0)
+  const costoInvertidoHoy = cgHoy.netUsd
 
   // Utilidad y costo son datos financieros — cashier no tiene acceso (mismo
   // criterio que /api/finanzas/* y api/sales/route.ts). Se omiten los campos en
@@ -231,8 +209,8 @@ export async function GET(req: NextRequest) {
     },
     operativo: {
       total_ventas_hoy:   todayCount,
-      devoluciones_hoy:   n(cancellations._count.id),
-      devoluciones_usd:   n(cancellations._sum.total_usd),
+      devoluciones_hoy:   Number(cancellations._count.id ?? 0),
+      devoluciones_usd:   Number(cancellations._sum.total_usd ?? 0),
       ventas_credito_hoy: creditToday,
       stock_bajo:         Number(stockRows[0]?.cnt ?? 0),
     },
@@ -247,16 +225,25 @@ export async function GET(req: NextRequest) {
         dias_vencido: Math.max(0, Math.floor((nowMs - vencimientoMs) / 86_400_000)),
       }
     }),
-    top_productos: topProductsRows.map((p, i) => {
-      const tusd = parseFloat(String(p.total_usd))
-      return {
+    // Netos por producto: el ranking se arma tras restar lo devuelto.
+    top_productos: topProductsRows
+      .map(p => {
+        const netoP = netoProdMes.get(Number(p.product_id))
+        return {
+          name:      p.name,
+          qty:       netoP?.netQty ?? parseFloat(String(p.qty)),
+          total_usd: netoP?.netUsd ?? parseFloat(String(p.total_usd)),
+        }
+      })
+      .filter(p => p.qty > 0 || p.total_usd > 0)
+      .sort((a, b) => b.total_usd - a.total_usd)
+      .map((p, i) => ({
         name:      p.name,
-        qty:       parseFloat(String(p.qty)),
-        total_usd: tusd,
-        total_bs:  r2(tusd * rate),
+        qty:       p.qty,
+        total_usd: r2(p.total_usd),
+        total_bs:  r2(p.total_usd * rate),
         rank:      i + 1,
-      }
-    }),
+      })),
     ventas_por_metodo: methodsRows.map(m => ({
       method_name: m.method_name,
       total_usd:   parseFloat(String(m.total_usd)),

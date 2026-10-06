@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, marginPct, netByProduct, netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 
-type DailyRow = { date: string; total_usd: string | number }
+// daykey: misma expresión de agrupación que la fuente única, para restar lo
+// devuelto por clave idéntica. No se expone: el campo público sigue siendo `date`.
+type DailyRow = { date: string; daykey: string; total_usd: string | number }
 type HourRow  = { hour: string | number; avg_usd: string | number }
 type CostRow  = { costo: string | null; productos_sin_costo: string | number }
 
@@ -34,66 +37,45 @@ export async function GET(req: NextRequest) {
     const prevFrom = new Date(from.getTime() - days * 86_400_000)
     const prevTo   = from
 
-    const [salesAgg, itemsAgg, payments, dailyRaw, hourlyRaw, prevAgg, costosRow, gastosOpAgg] = await Promise.all([
-      db.sale.aggregate({
-        where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
-        _sum:   { total_usd: true, total_bs: true },
-        _count: { id: true },
-      }),
-
-      // SaleItem no tiene business_id — aislado por la relación sale.business_id
-      db.saleItem.aggregate({
-        where: { sale: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } } },
-        _sum: { quantity: true },
-      }),
+    const [ventas, cogs, netoProd, payments, dailyRaw, devueltoPorDia, hourlyRaw, prevVentas, gastosOpAgg] = await Promise.all([
+      // Ingreso, COGS y neto por producto -- fuente única (src/lib/sales-returns.ts).
+      netSales(bid, from, to),
+      netCogs(bid, from, to),
+      netByProduct(bid, from, to),
 
       // SalePayment no tiene business_id — aislado por la relación sale.business_id
       db.salePayment.findMany({
-        where: { sale: { business_id: bid, status: 'paid', sold_at: { gte: from, lt: to } } },
+        where: { sale: { business_id: bid, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: from, lt: to } } },
         include: { payment_method: { select: { id: true, name: true, type: true } } },
       }),
 
       // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
       prisma.$queryRaw<DailyRow[]>`
-      SELECT DATE(sold_at) AS date, SUM(total_usd) AS total_usd
+      SELECT DATE(sold_at) AS date,
+             DATE_FORMAT(sold_at, '%Y-%m-%d') AS daykey,
+             SUM(total_usd) AS total_usd
       FROM sales
       WHERE business_id = ${bid}
-        AND status = 'paid'
+        AND status IN ('paid','partial_return')
         AND sold_at >= ${from}
         AND sold_at <  ${to}
-      GROUP BY DATE(sold_at)
+      GROUP BY DATE(sold_at), DATE_FORMAT(sold_at, '%Y-%m-%d')
       ORDER BY total_usd DESC`,
+
+      returnedUsdBySeries(bid, 'day', from, to),
 
     prisma.$queryRaw<HourRow[]>`
       SELECT HOUR(sold_at) AS hour, AVG(total_usd) AS avg_usd
       FROM sales
       WHERE business_id = ${bid}
-        AND status = 'paid'
+        AND status IN ('paid','partial_return')
         AND sold_at >= ${from}
         AND sold_at <  ${to}
       GROUP BY HOUR(sold_at)
       ORDER BY avg_usd DESC
       LIMIT 1`,
 
-      db.sale.aggregate({
-        where: { status: 'paid', sold_at: { gte: prevFrom, lt: prevTo } }, // business_id inyectado
-        _sum:   { total_usd: true },
-        _count: { id: true },
-      }),
-
-      // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
-      // Costo histórico desde si.cost_per_unit_usd (capturado al vender), no el
-      // costo actual del producto — mismo patrón que finanzas/pyl (GAP-A1).
-      prisma.$queryRaw<CostRow[]>`
-      SELECT
-        SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.quantity * si.cost_per_unit_usd ELSE 0 END) AS costo,
-        COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS productos_sin_costo
-      FROM sale_items si
-      JOIN sales s ON s.id = si.sale_id
-      WHERE s.business_id = ${bid}
-        AND s.status = 'paid'
-        AND s.sold_at >= ${from}
-        AND s.sold_at <  ${to}`,
+      netSales(bid, prevFrom, prevTo),
 
       // categoria='proveedor' excluida: esa compra de inventario ya cuenta como
       // costo variable vía SaleItem al venderse — contarla aquí la duplicaría
@@ -107,13 +89,12 @@ export async function GET(req: NextRequest) {
 
   const r2 = (x: number) => Math.round(x * 100) / 100
 
-  const totalUsd      = Number(salesAgg._sum.total_usd ?? 0)
-  const totalBs       = Number(salesAgg._sum.total_bs  ?? 0)
-  const count         = salesAgg._count.id
-  const prevUsd       = Number(prevAgg._sum.total_usd ?? 0)
-  const itemsSold     = Number(itemsAgg._sum.quantity  ?? 0)
-  const costoVentas   = Number(costosRow[0]?.costo ?? 0)
-  const productosSinCosto = parseInt(String(costosRow[0]?.productos_sin_costo ?? '0'), 10) || 0
+  const totalUsd      = ventas.net.usd
+  const totalBs       = ventas.net.bs
+  const count         = ventas.salesCount
+  const prevUsd       = prevVentas.net.usd
+  const itemsSold     = Array.from(netoProd.values()).reduce((a, v) => a + v.netQty, 0)
+  const costoVentas   = cogs.netUsd
   const gastosOp      = Number(gastosOpAgg._sum.monto_usd ?? 0)
   const utilidadBruta = r2(totalUsd - costoVentas)
   const utilidadNeta  = r2(totalUsd - costoVentas - gastosOp)
@@ -139,6 +120,13 @@ export async function GET(req: NextRequest) {
       })
     }
   }
+  // El reembolso en efectivo se descuenta del bucket cash para que la suma por
+  // método siga cuadrando con el ingreso neto (estándar 2026-10-06).
+  if (ventas.returned.usd > 0) {
+    const cashBucket = Array.from(pmMap.values()).find(v => v.type === 'cash')
+    if (cashBucket) cashBucket.total_usd -= ventas.returned.usd
+  }
+
   const totalPorMetodo = Array.from(pmMap.values()).reduce((s, v) => s + v.total_usd, 0)
   const porMetodo = Array.from(pmMap.values())
     .map(v => ({
@@ -149,9 +137,16 @@ export async function GET(req: NextRequest) {
     }))
     .sort((a, b) => b.total_usd - a.total_usd)
 
-  // dailyRaw ordenado DESC: [0]=mejor, [last]=peor
-  const mejorDia = dailyRaw[0] ?? null
-  const peorDia  = dailyRaw.length > 1 ? dailyRaw[dailyRaw.length - 1] : null
+  // El ranking de mejor/peor día se recalcula sobre montos NETOS: una
+  // devolución puede cambiar cuál fue el mejor día.
+  const diasNetos = dailyRaw
+    .map(d => ({
+      date:      String(d.date),
+      total_usd: r2(Number(d.total_usd) - (devueltoPorDia.get(String(d.daykey)) ?? 0)),
+    }))
+    .sort((a, b) => b.total_usd - a.total_usd)
+  const mejorDia = diasNetos[0] ?? null
+  const peorDia  = diasNetos.length > 1 ? diasNetos[diasNetos.length - 1] : null
 
   return NextResponse.json({
     ok: true,
@@ -174,10 +169,10 @@ export async function GET(req: NextRequest) {
       tendencia,
     },
     mejor_dia: mejorDia
-      ? { date: String(mejorDia.date), total_usd: r2(Number(mejorDia.total_usd)) }
+      ? { date: mejorDia.date, total_usd: mejorDia.total_usd }
       : null,
     peor_dia: peorDia
-      ? { date: String(peorDia.date), total_usd: r2(Number(peorDia.total_usd)) }
+      ? { date: peorDia.date, total_usd: peorDia.total_usd }
       : null,
     mejor_hora: hourlyRaw[0]
       ? { hour: Number(hourlyRaw[0].hour), avg_usd: r2(Number(hourlyRaw[0].avg_usd)) }
@@ -187,7 +182,7 @@ export async function GET(req: NextRequest) {
       gastos_operativos_usd: r2(gastosOp),
       utilidad_bruta_usd:    utilidadBruta,
       utilidad_neta_usd:     utilidadNeta,
-      productos_sin_costo:   productosSinCosto,
+      productos_sin_costo:   cogs.productsWithoutCostCount,
     },
     por_metodo:     porMetodo,
     dias_activos:   dailyRaw.length,

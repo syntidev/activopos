@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido')
@@ -24,8 +25,10 @@ const rangeSchema = z.object({
   }
 })
 
-type DayRow    = { date: string; sales: string | number; total_usd: string | number }
-type ProfitRow = { profit: string | null }
+// daykey: misma expresión que usa la fuente única para agrupar por día, para
+// restar lo devuelto con la clave idéntica. NO se expone en la respuesta: el
+// campo público sigue siendo `date` con el mismo formato de antes.
+type DayRow = { date: string; daykey: string; sales: string | number; total_usd: string | number }
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,50 +46,44 @@ export async function GET(req: NextRequest) {
     const from = new Date(`${fromStr}T00:00:00Z`)
     const to   = new Date(`${toStr}T23:59:59.999Z`)
 
-    const [salesAgg, profitRows, byDayRows] = await Promise.all([
-      db.sale.aggregate({
-        where: { status: 'paid', sold_at: { gte: from, lte: to } }, // business_id inyectado
-        _sum:   { total_usd: true, total_bs: true },
-        _count: { id: true },
-      }),
+    // `to` viene inclusivo (23:59:59.999); la fuente única usa fin exclusivo.
+    const toExclusive = new Date(to.getTime() + 1)
 
-      // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio.
-      // Costo histórico desde si.cost_per_unit_usd (capturado al vender), no el
-      // costo actual del producto — mismo patrón que finanzas/pyl (GAP-R1).
-      prisma.$queryRaw<ProfitRow[]>`
-        SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS profit
-        FROM sale_items si
-        JOIN sales s ON s.id = si.sale_id
-        WHERE s.business_id = ${bid}
-          AND s.status = 'paid'
-          AND s.sold_at >= ${from}
-          AND s.sold_at <= ${to}`,
+    const [ventas, cogs, byDayRows, devueltoPorDia] = await Promise.all([
+      // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
+      netSales(bid, from, toExclusive),
+      netCogs(bid, from, toExclusive),
 
       prisma.$queryRaw<DayRow[]>`
         SELECT DATE(sold_at) AS date,
+               DATE_FORMAT(sold_at, '%Y-%m-%d') AS daykey,
                COUNT(*)      AS sales,
                SUM(total_usd) AS total_usd
         FROM sales
         WHERE business_id = ${bid}
-          AND status = 'paid'
+          AND status IN ('paid','partial_return')
           AND sold_at >= ${from}
           AND sold_at <= ${to}
-        GROUP BY DATE(sold_at)
+        GROUP BY DATE(sold_at), DATE_FORMAT(sold_at, '%Y-%m-%d')
         ORDER BY date ASC`,
+
+      returnedUsdBySeries(bid, 'day', from, toExclusive),
     ])
 
     return NextResponse.json({
       ok:          true,
       from:        fromStr,
       to:          toStr,
-      sales_count: salesAgg._count.id,
-      total_usd:   Number(salesAgg._sum.total_usd ?? 0),
-      total_bs:    Number(salesAgg._sum.total_bs  ?? 0),
-      profit_usd:  parseFloat(profitRows[0]?.profit ?? '0') || 0,
+      sales_count: ventas.salesCount,
+      total_usd:   ventas.net.usd,
+      total_bs:    ventas.net.bs,
+      // Utilidad neta: ingreso neto − COGS neto (el costo de lo devuelto se
+      // revierte con el snapshot de ReturnItem).
+      profit_usd:  Math.round((ventas.net.usd - cogs.netUsd) * 100) / 100,
       by_day: byDayRows.map(r => ({
         date:        String(r.date),
         sales_count: Number(r.sales),
-        total_usd:   Number(r.total_usd),
+        total_usd:   Math.round((Number(r.total_usd) - (devueltoPorDia.get(String(r.daykey)) ?? 0)) * 100) / 100,
       })),
     })
   } catch (e) {

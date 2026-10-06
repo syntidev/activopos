@@ -1,4 +1,5 @@
 import { prisma } from './prisma'
+import { netCogs, netSales } from './sales-returns'
 
 export interface KpiData {
   ventas_hoy:   { value_usd: number; trend_pct: number }
@@ -38,7 +39,6 @@ export async function getKpiData(businessId: number): Promise<KpiData> {
   const monthStart     = new Date(now.getFullYear(), now.getMonth(), 1)
   const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
 
-  type ProfitRow = { profit: string | null }
   type RateRow   = { rate: string | number }
 
   const [
@@ -46,59 +46,30 @@ export async function getKpiData(businessId: number): Promise<KpiData> {
     todayP, yesterdayP, monthP, prevMonthP,
     rateRows,
   ] = await Promise.all([
-    prisma.sale.aggregate({
-      where: { business_id: businessId, status: 'paid', sold_at: { gte: todayStart, lt: tomorrowStart } },
-      _sum: { total_usd: true },
-    }),
-    prisma.sale.aggregate({
-      where: { business_id: businessId, status: 'paid', sold_at: { gte: yesterdayStart, lt: todayStart } },
-      _sum: { total_usd: true },
-    }),
-    prisma.sale.aggregate({
-      where: { business_id: businessId, status: 'paid', sold_at: { gte: monthStart } },
-      _sum: { total_usd: true },
-    }),
-    prisma.sale.aggregate({
-      where: { business_id: businessId, status: 'paid', sold_at: { gte: prevMonthStart, lt: monthStart } },
-      _sum: { total_usd: true },
-    }),
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
-      WHERE s.business_id = ${businessId} AND s.status = 'paid'
-        AND s.sold_at >= ${todayStart} AND s.sold_at < ${tomorrowStart}
-    `,
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
-      WHERE s.business_id = ${businessId} AND s.status = 'paid'
-        AND s.sold_at >= ${yesterdayStart} AND s.sold_at < ${todayStart}
-    `,
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
-      WHERE s.business_id = ${businessId} AND s.status = 'paid'
-        AND s.sold_at >= ${monthStart}
-    `,
-    prisma.$queryRaw<ProfitRow[]>`
-      SELECT SUM(si.subtotal_usd - si.quantity * IFNULL(p.cost_per_unit_usd, 0)) AS profit
-      FROM sale_items si JOIN sales s ON s.id = si.sale_id JOIN products p ON p.id = si.product_id
-      WHERE s.business_id = ${businessId} AND s.status = 'paid'
-        AND s.sold_at >= ${prevMonthStart} AND s.sold_at < ${monthStart}
-    `,
+    // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
+    netSales(businessId, todayStart, tomorrowStart),
+    netSales(businessId, yesterdayStart, todayStart),
+    netSales(businessId, monthStart),
+    netSales(businessId, prevMonthStart, monthStart),
+    netCogs(businessId, todayStart, tomorrowStart),
+    netCogs(businessId, yesterdayStart, todayStart),
+    netCogs(businessId, monthStart),
+    netCogs(businessId, prevMonthStart, monthStart),
     prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
   ])
 
   const bcvRate = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
 
-  const vHoy    = Number(todayAgg._sum.total_usd ?? 0)
-  const vAyer   = Number(yesterdayAgg._sum.total_usd ?? 0)
-  const vMes    = Number(monthAgg._sum.total_usd ?? 0)
-  const vMesAnt = Number(prevMonthAgg._sum.total_usd ?? 0)
-  const uHoy    = parseFloat(todayP[0]?.profit    ?? '0') || 0
-  const uAyer   = parseFloat(yesterdayP[0]?.profit ?? '0') || 0
-  const uMes    = parseFloat(monthP[0]?.profit     ?? '0') || 0
-  const uMesAnt = parseFloat(prevMonthP[0]?.profit ?? '0') || 0
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const vHoy    = todayAgg.net.usd
+  const vAyer   = yesterdayAgg.net.usd
+  const vMes    = monthAgg.net.usd
+  const vMesAnt = prevMonthAgg.net.usd
+  // Utilidad = ingreso neto − COGS neto.
+  const uHoy    = r2(vHoy    - todayP.netUsd)
+  const uAyer   = r2(vAyer   - yesterdayP.netUsd)
+  const uMes    = r2(vMes    - monthP.netUsd)
+  const uMesAnt = r2(vMesAnt - prevMonthP.netUsd)
 
   return {
     ventas_hoy:   { value_usd: vHoy,  trend_pct: calcTrend(vHoy,  vAyer)   },

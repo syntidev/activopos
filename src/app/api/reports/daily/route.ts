@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
-import { REALIZED_SALE_STATUSES, returnedByCategory, returnedByProduct, returnedTotalsBySaleDate } from '@/lib/sales-returns'
+import { REALIZED_SALE_STATUSES, netByCategory, netByProduct, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
@@ -56,10 +56,10 @@ export async function GET(req: NextRequest) {
     hourlyRaw,
     cashRegister,
     rateRows,
-    returnedTotals,
-    returnedProd,
-    returnedCat,
-    returnedHourlyRaw,
+    ventas,
+    netoProd,
+    netoCat,
+    devueltoPorHoraMap,
   ] = await Promise.all([
     db.sale.aggregate({
       where: {
@@ -168,19 +168,11 @@ export async function GET(req: NextRequest) {
 
     prisma.$queryRaw<RateRow[]>`SELECT rate FROM dollar_rates ORDER BY created_at DESC LIMIT 1`,
 
-    returnedTotalsBySaleDate(session.businessId, dayStart, dayEnd),
-    returnedByProduct(session.businessId, dayStart, dayEnd),
-    returnedByCategory(session.businessId, dayStart, dayEnd),
-    // Devuelto por HORA de la venta, con el MISMO HOUR(sold_at) de la serie.
-    prisma.$queryRaw<{ hour: number; devuelto_usd: string | number }[]>`
-      SELECT HOUR(s.sold_at) AS hour, SUM(r.total_usd) AS devuelto_usd
-      FROM returns r JOIN sales s ON s.id = r.sale_id
-      WHERE r.business_id = ${session.businessId}
-        AND r.status = 'approved'
-        AND s.status IN ('paid','partial_return')
-        AND s.sold_at >= ${dayStart} AND s.sold_at < ${dayEnd}
-      GROUP BY HOUR(s.sold_at)
-    `,
+    // Todo lo monetario sale de la fuente única (src/lib/sales-returns.ts).
+    netSales(session.businessId, dayStart, dayEnd),
+    netByProduct(session.businessId, dayStart, dayEnd),
+    netByCategory(session.businessId, dayStart, dayEnd),
+    returnedUsdBySeries(session.businessId, 'hour', dayStart, dayEnd),
   ])
 
   const pmMap = new Map<
@@ -210,15 +202,13 @@ export async function GET(req: NextRequest) {
   // método): se descuenta del bucket de tipo 'cash' para que la suma por método
   // siga cuadrando con el total neto. Si ese día no hubo ningún método de tipo
   // cash, no se inventa bucket: queda la diferencia y se ve en el total.
-  if (returnedTotals.usd > 0) {
+  if (ventas.returned.usd > 0) {
     const cashBucket = Array.from(pmMap.values()).find(m => m.type === 'cash')
     if (cashBucket) {
-      cashBucket.totalUsd -= returnedTotals.usd
-      cashBucket.totalBs  -= returnedTotals.bs
+      cashBucket.totalUsd -= ventas.returned.usd
+      cashBucket.totalBs  -= ventas.returned.bs
     }
   }
-
-  const devueltoPorHora = new Map(returnedHourlyRaw.map(h => [Number(h.hour), Number(h.devuelto_usd)]))
 
   const rate = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
   const r2   = (x: number) => Math.round(x * 100) / 100
@@ -227,37 +217,37 @@ export async function GET(req: NextRequest) {
     ok:         true,
     date:       dateStr,
     rate,
-    sales_count: salesAgg._count.id,
-    items_sold:  Number(itemsAgg._sum.quantity ?? 0) - Array.from(returnedProd.values()).reduce((a, v) => a + v.qty, 0),
-    total_usd:   r2(Number(salesAgg._sum.total_usd ?? 0) - returnedTotals.usd),
-    total_bs:    r2(Number(salesAgg._sum.total_bs ?? 0) - returnedTotals.bs),
+    sales_count: ventas.salesCount,
+    items_sold:  Array.from(netoProd.values()).reduce((a, v) => a + v.netQty, 0),
+    total_usd:   ventas.net.usd,
+    total_bs:    ventas.net.bs,
     by_payment_method: Array.from(pmMap.values()),
     by_category: byCategoryRaw.map(c => {
-      const key  = c.category ?? 'Sin categoría'
-      const back = returnedCat.get(key) ?? { usd: 0, qty: 0 }
-      const net  = Number(c.total_usd) - back.usd
+      const key = c.category ?? 'Sin categoría'
+      const n   = netoCat.get(key)
+      const net = n?.netUsd ?? Number(c.total_usd)
       return {
         category:  c.category,
         total_usd: r2(net),
         total_bs:  r2(net * rate),
-        qty:       Number(c.qty) - back.qty,
+        qty:       n?.netQty ?? Number(c.qty),
       }
     }),
     hourly_sales: hourlyRaw.map(h => ({
       hour:      Number(h.hour),
-      total_usd: r2(Number(h.total_usd) - (devueltoPorHora.get(Number(h.hour)) ?? 0)),
+      total_usd: r2(Number(h.total_usd) - (devueltoPorHoraMap.get(String(h.hour)) ?? 0)),
       count:     parseInt(String(h.count), 10),
     })),
     top_products: topProductsRaw.map(p => {
       const pid  = Number(p.product_id)
-      const back = returnedProd.get(pid) ?? { usd: 0, qty: 0 }
-      const tusd = Number(p.total_usd) - back.usd
+      const n    = netoProd.get(pid)
+      const tusd = n?.netUsd ?? Number(p.total_usd)
       return {
         product_id: pid,
         name:       p.product_name,
         sku:        p.sku ?? null,
         category:   p.category ?? null,
-        quantity:   Number(p.quantity) - back.qty,
+        quantity:   n?.netQty ?? Number(p.quantity),
         total_usd:  r2(tusd),
         total_bs:   r2(tusd * rate),
       }

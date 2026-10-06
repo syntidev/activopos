@@ -246,9 +246,23 @@ function DevolucionesContent() {
           }),
         }),
       })
-      const data = await res.json().catch(() => null) as ({ ok?: boolean; return?: ReturnRecord } & ReturnErrorBody) | null
+      const data = await res.json().catch(() => null) as ({
+        ok?: boolean
+        // El POST devuelve la venta FUERA de `return` (el Return creado no trae
+        // la relación): { ok, sale: {id, ticket_number}, return: {...} }.
+        sale?: { id: number; ticket_number: string }
+        return?: ReturnRecord
+      } & ReturnErrorBody) | null
       if (res.ok && data?.return) {
-        const created = data.return
+        // Fila optimista completa. Sin esto, el Return del POST no trae ni la
+        // venta ni el método, y la fila recién agregada mostraba "—" en Ticket
+        // original y en Método hasta recargar la pantalla.
+        const method = (refundMethods ?? []).find(m => m.id === Number(refundMethodId)) ?? null
+        const created: ReturnRecord = {
+          ...data.return,
+          sale: data.return.sale ?? data.sale ?? { id: foundSale.id, ticket_number: foundSale.ticket_number },
+          refund_payment_method: data.return.refund_payment_method ?? method,
+        }
         setHistory(prev => [created, ...prev])
         setStep('done')
         toast('Devolución registrada — stock actualizado', 'success')

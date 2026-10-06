@@ -23,8 +23,8 @@ function messageOf(err: unknown, fallback: string): string {
 interface FotoModalProps {
   reserva: ReservaDTO | null
   onClose: () => void
-  /** Recibe la URL de la foto ya subida; debe lanzar Error si el PATCH falla. */
-  onConfirm: (fotoUrl: string) => Promise<void>
+  /** Recibe la URL de la foto ya subida, o null para quitarla; debe lanzar Error si el PATCH falla. */
+  onConfirm: (fotoUrl: string | null) => Promise<void>
 }
 
 export function FotoModal({ reserva, onClose, onConfirm }: FotoModalProps) {
@@ -76,6 +76,18 @@ export function FotoModal({ reserva, onClose, onConfirm }: FotoModalProps) {
     }
   }
 
+  // Quita la foto guardada (entregado_foto = null). No borra el archivo del disco.
+  const remove = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await onConfirm(null)
+    } catch (err) {
+      setError(messageOf(err, 'No se pudo quitar la foto'))
+      setBusy(false)
+    }
+  }
+
   return (
     <Modal
       open={reserva !== null}
@@ -84,6 +96,9 @@ export function FotoModal({ reserva, onClose, onConfirm }: FotoModalProps) {
       size="sm"
       footer={
         <>
+          {reserva?.entregado_foto && !file ? (
+            <Button variant="danger" onClick={() => void remove()} disabled={busy}>Quitar foto</Button>
+          ) : null}
           <Button variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
           <Button variant="success" onClick={confirm} disabled={!file} loading={busy}>
             Guardar foto

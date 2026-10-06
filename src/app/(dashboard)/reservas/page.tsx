@@ -25,7 +25,7 @@ interface CollectionOption {
 interface PatchBody {
   armado?: boolean
   entregado?: boolean
-  entregado_foto?: string
+  entregado_foto?: string | null
   pagado?: boolean
   pagado_monto?: number
   pagado_metodo?: string
@@ -155,11 +155,11 @@ function ReservasContent() {
   }
 
   /* Foto opcional: botón aparte, antes, durante o después de marcar Entregado (o nunca). */
-  const confirmFoto = async (fotoUrl: string) => {
+  const confirmFoto = async (fotoUrl: string | null) => {
     if (!fotoTarget) return
     const updated = await patchReserva(fotoTarget.id, { entregado_foto: fotoUrl })
     setFotoTarget(null)
-    toast(`Foto guardada en ${updated.ticket_number}`, 'success')
+    toast(fotoUrl ? `Foto guardada en ${updated.ticket_number}` : `Foto quitada de ${updated.ticket_number}`, 'success')
   }
 
   const confirmPago = async (monto: number, metodo: string) => {

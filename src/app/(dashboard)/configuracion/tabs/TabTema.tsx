@@ -264,7 +264,9 @@ export function TabTema({ businessId: _b }: Props) {
         />
 
         <p className={styles.logoDropHint} style={{ marginTop: 'var(--space-3)' }}>
-          Sube hasta 3 imágenes para el slider del catálogo. La primera es obligatoria, las otras son opcionales.
+          Sube hasta 3 imágenes para el slider del catálogo; con 2 o más, rotan cada 5 segundos. Todas son opcionales y
+          puedes quitarlas: sin ninguna, se muestra un banner con el nombre y la descripción de tu negocio. Si configuraste
+          un Hero en Landing, el Hero ocupa este lugar.
         </p>
       </div>
       </div>

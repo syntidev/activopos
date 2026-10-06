@@ -27,6 +27,13 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
     update({ logoFile: file, logoPreviewUrl: URL.createObjectURL(file) })
   }
 
+  // Solo estado local: no se envía nada hasta terminar el wizard.
+  function handleLogoRemove() {
+    if (data.logoPreviewUrl) URL.revokeObjectURL(data.logoPreviewUrl)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    update({ logoFile: null, logoPreviewUrl: null })
+  }
+
   const isValid =
     data.businessName.trim().length >= 2 &&
     data.city.trim().length > 0 &&
@@ -66,6 +73,11 @@ export default function Step2Negocio({ data, update, onNext }: StepProps) {
           onChange={handleLogoPick}
         />
         <span className={styles.logoHint}>Subir logo (opcional)</span>
+        {data.logoPreviewUrl && (
+          <Button type="button" variant="ghost" size="sm" onClick={handleLogoRemove} aria-label="Quitar logo">
+            Quitar
+          </Button>
+        )}
       </div>
 
       <Input

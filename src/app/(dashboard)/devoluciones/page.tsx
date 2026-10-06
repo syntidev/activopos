@@ -21,6 +21,12 @@ interface SaleItem {
   price_per_unit_usd: number | string | null
   sale_mode: string
   base_unit_label?: string
+  // Contrato de devoluciones (CLI-A). Opcionales: si el backend aún no los
+  // manda, la línea se comporta como antes (devolvible = vendido).
+  sale_item_id?:   number
+  qty_sold?:       number | string
+  qty_returned?:   number | string
+  qty_returnable?: number | string
 }
 
 interface Sale {
@@ -43,8 +49,26 @@ interface ReturnRecord {
   total_usd: number
   total_bs: number
   created_at: string
-  sale: { id: number; ticket_number: string; sold_at: string } | null
+  sale: { id: number; ticket_number: string; sold_at?: string } | null
+  refund_payment_method?: { id: number; name: string; type: string } | null
   items: Array<{ product_id: number; qty: number; price_usd: number; total_usd: number }>
+}
+
+/** Cantidades de una línea; sin los campos nuevos, devolvible = vendido (comportamiento previo). */
+function lineQty(it: SaleItem): { lineId: number; sold: number; returned: number | null; returnable: number } {
+  const sold = it.qty_sold !== undefined ? Number(it.qty_sold) : Number(it.quantity)
+  return {
+    lineId:     it.sale_item_id ?? it.id,
+    sold,
+    returned:   it.qty_returned !== undefined ? Number(it.qty_returned) : null,
+    returnable: it.qty_returnable !== undefined ? Number(it.qty_returnable) : sold,
+  }
+}
+
+/** paid siempre; partial_return solo si el backend ya informa qty_returnable por línea. */
+function isReturnableSale(s: Sale): boolean {
+  if (s.status === 'paid') return true
+  return s.status === 'partial_return' && s.items.every(it => it.qty_returnable !== undefined)
 }
 
 type Step = 'search' | 'select' | 'done'
@@ -136,17 +160,24 @@ function DevolucionesContent() {
     setSearching(true)
     setSearchErr('')
     try {
-      const r = await fetch(`/api/sales?status=paid&ticket=${encodeURIComponent(q)}&limit=1`)
+      // Sin filtro de status: la venta puede estar paid o partial_return
+      // (isReturnableSale decide); el ticket es casi único, 10 basta.
+      const r = await fetch(`/api/sales?ticket=${encodeURIComponent(q)}&limit=10`)
       if (!r.ok) throw new Error('API error')
       const d = await r.json() as { sales?: Sale[] }
-      const match = (d.sales ?? [])[0] ?? null
+      const sales = d.sales ?? []
+      const match = sales.find(isReturnableSale) ?? null
       if (match) {
         setFoundSale(match)
         setChecked(new Set())
         setReturnQty(new Map())
         setStep('select')
+      } else if (sales.some(s => s.status === 'returned')) {
+        setSearchErr(`La venta "${q}" ya fue devuelta por completo.`)
+      } else if (sales.some(s => s.status === 'partial_return')) {
+        setSearchErr(`La venta "${q}" ya tiene una devolución parcial y todavía no admite otra.`)
       } else {
-        setSearchErr(`No se encontró la venta "${q}". Verifica el número de ticket.`)
+        setSearchErr(`No se encontró una venta pagada con el ticket "${q}". Verifica el número.`)
       }
     } catch {
       setSearchErr('Error al buscar. Intenta de nuevo.')
@@ -155,8 +186,7 @@ function DevolucionesContent() {
     }
   }
 
-  function toggleItem(saleItemId: number, qty: number | string) {
-    const soldQty = Number(qty)
+  function toggleItem(saleItemId: number, returnable: number) {
     setChecked(prev => {
       const next = new Set(prev)
       if (next.has(saleItemId)) {
@@ -165,7 +195,7 @@ function DevolucionesContent() {
         next.add(saleItemId)
         setReturnQty(m => {
           const nm = new Map(m)
-          if (!nm.has(saleItemId)) nm.set(saleItemId, String(soldQty))
+          if (!nm.has(saleItemId)) nm.set(saleItemId, String(returnable))
           return nm
         })
       }
@@ -177,15 +207,16 @@ function DevolucionesContent() {
     setReturnQty(prev => new Map(prev).set(saleItemId, val))
   }
 
-  const checkedItems = foundSale?.items.filter(it => checked.has(it.id)) ?? []
+  const checkedItems = foundSale?.items.filter(it => checked.has(lineQty(it).lineId)) ?? []
   const canSubmit    = checkedItems.length > 0 && reason.trim().length >= 3 && refundMethodId !== '' &&
     checkedItems.every(it => {
-      const q = parseFloat(returnQty.get(it.id) ?? '0')
-      return q > 0 && q <= Number(it.quantity)
+      const { lineId, returnable } = lineQty(it)
+      const q = parseFloat(returnQty.get(lineId) ?? '0')
+      return q > 0 && q <= returnable
     })
 
   const returnTotal = checkedItems.reduce((s, it) => {
-    const q    = parseFloat(returnQty.get(it.id) ?? '0') || 0
+    const q    = parseFloat(returnQty.get(lineQty(it).lineId) ?? '0') || 0
     const p    = Number(it.price_per_unit_usd) || 0
     return s + q * p
   }, 0)
@@ -205,11 +236,14 @@ function DevolucionesContent() {
           reason:         reason.trim(),
           restores_stock: restoresStock,
           refund_payment_method_id: Number(refundMethodId),
-          items: checkedItems.map(it => ({
-            product_id:   it.product_id,
-            qty:          parseFloat(returnQty.get(it.id) ?? '1'),
-            sale_item_id: it.id,
-          })),
+          items: checkedItems.map(it => {
+            const { lineId } = lineQty(it)
+            return {
+              product_id:   it.product_id,
+              qty:          parseFloat(returnQty.get(lineId) ?? '1'),
+              sale_item_id: lineId,
+            }
+          }),
         }),
       })
       const data = await res.json().catch(() => null) as ({ ok?: boolean; return?: ReturnRecord } & ReturnErrorBody) | null
@@ -336,23 +370,27 @@ function DevolucionesContent() {
 
               <div className={styles.itemsSelect}>
                 {foundSale.items.map(it => {
-                  const isChecked = checked.has(it.id)
-                  const soldQty   = Number(it.quantity)
-                  const qtyVal    = returnQty.get(it.id) ?? String(soldQty)
-                  const maxQty    = soldQty
+                  const { lineId, sold, returned, returnable } = lineQty(it)
+                  const isChecked = checked.has(lineId)
+                  const qtyVal    = returnQty.get(lineId) ?? String(returnable)
+                  const maxQty    = returnable
+                  const nothingLeft = returnable <= 0
                   return (
-                    <div key={it.id}
-                      className={`${styles.selectRow} ${isChecked ? styles.selectRowActive : ''}`}>
+                    <div key={lineId}
+                      className={`${styles.selectRow} ${isChecked ? styles.selectRowActive : ''} ${nothingLeft ? styles.selectRowDisabled : ''}`}>
                       <label className={styles.checkLabel}>
                         <input
                           type="checkbox"
                           className={styles.checkbox}
                           checked={isChecked}
-                          onChange={() => toggleItem(it.id, it.quantity)}
+                          disabled={nothingLeft}
+                          onChange={() => toggleItem(lineId, returnable)}
                           aria-label={`Devolver ${it.product_name}`}
                         />
                         <span className={styles.itemProductName}>{it.product_name}</span>
-                        <span className={styles.itemQtySold}>vendido: {soldQty}</span>
+                        <span className={styles.itemQtySold}>
+                          {returned === null ? `vendido: ${sold}` : `devuelto ${returned} de ${sold}`}
+                        </span>
                       </label>
                       {isChecked && (
                         <div className={styles.returnQtyWrap}>
@@ -361,7 +399,7 @@ function DevolucionesContent() {
                             type="number"
                             className={styles.returnQtyInput}
                             value={qtyVal}
-                            onChange={e => setQty(it.id, e.target.value)}
+                            onChange={e => setQty(lineId, e.target.value)}
                             min="0.001"
                             max={maxQty}
                             step="any"
@@ -489,6 +527,7 @@ function DevolucionesContent() {
                 <tr>
                   <th className={styles.th}>Ticket original</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Motivo</th>
+                  <th className={`${styles.th} ${styles.thHidden}`}>Método</th>
                   <th className={styles.th}>Estado</th>
                   <th className={`${styles.th} ${styles.thNum}`}>Total</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Hace</th>
@@ -504,6 +543,9 @@ function DevolucionesContent() {
                     </td>
                     <td className={`${styles.td} ${styles.tdHidden}`} data-label="Motivo">
                       <span className={styles.reasonText}>{r.reason}</span>
+                    </td>
+                    <td className={`${styles.td} ${styles.tdHidden}`} data-label="Método">
+                      <span className={styles.reasonText}>{r.refund_payment_method?.name ?? '—'}</span>
                     </td>
                     <td className={styles.td} data-label="Estado">
                       <span className={`${styles.statusChip} ${r.status === 'approved' ? styles.statusApproved : r.status === 'rejected' ? styles.statusRejected : styles.statusPending}`}>

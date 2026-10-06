@@ -210,6 +210,11 @@
 
 .selectRowActive { background: rgba(var(--brand-rgb), 0.05); }
 
+/* Línea sin nada devolvible (todo devuelto antes). */
+.selectRowDisabled .checkLabel { cursor: not-allowed; }
+.selectRowDisabled .itemProductName,
+.selectRowDisabled .itemQtySold { color: var(--color-text-disabled); }
+
 .checkLabel {
   display: flex;
   align-items: center;

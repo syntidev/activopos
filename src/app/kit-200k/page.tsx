@@ -78,13 +78,17 @@ export default async function Kit200KPage() {
   })
   if (!business) notFound()
 
+  // Interruptor "Kit activo" (Configuración > Kit 200K). Config NULL o inválida
+  // = EMPTY_KIT_CONFIG (activo false) => 404 también: sembrar
+  // scripts/seed-kit200k-config.ts antes de desplegar.
+  const config = parseKitConfig(business.kit200k_config)
+  if (!config.activo) notFound()
+
   const kit = await prisma.product.findFirst({
     where:  { business_id: business.id, product_type: 'combo', active: true },
     select: { id: true, images: true },
   })
   if (!kit) notFound()
-
-  const config = parseKitConfig(business.kit200k_config)
 
   // Componentes reales del combo (Maillot/Medalla/Media hoy), mismo origen que
   // api/public/kit-200k/[slug]. La franela incluida en el kit NO es componente.

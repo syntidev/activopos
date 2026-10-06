@@ -115,11 +115,11 @@ export async function netCogs(businessId: number, from: Date, to?: Date): Promis
       SELECT
         SUM(CASE
               WHEN ri.cost_per_unit_usd IS NOT NULL THEN ri.qty * ri.cost_per_unit_usd
-              WHEN lines.n = 1 THEN ri.qty * IFNULL(lines.unit_cost, 0)
+              WHEN ln.n = 1 THEN ri.qty * IFNULL(ln.unit_cost, 0)
               ELSE 0
             END) AS reverted,
         SUM(CASE
-              WHEN ri.cost_per_unit_usd IS NULL AND IFNULL(lines.n, 0) <> 1 THEN ri.total_usd
+              WHEN ri.cost_per_unit_usd IS NULL AND IFNULL(ln.n, 0) <> 1 THEN ri.total_usd
               ELSE 0
             END) AS unresolved
       FROM return_items ri
@@ -129,7 +129,7 @@ export async function netCogs(businessId: number, from: Date, to?: Date): Promis
         SELECT si.sale_id, si.product_id, COUNT(*) AS n, MIN(si.cost_per_unit_usd) AS unit_cost
         FROM sale_items si
         GROUP BY si.sale_id, si.product_id
-      ) lines ON lines.sale_id = s.id AND lines.product_id = ri.product_id
+      ) ln ON ln.sale_id = s.id AND ln.product_id = ri.product_id
       WHERE r.business_id = ${businessId}
         AND r.status = 'approved'
         AND s.status IN ${REALIZED_SQL}
@@ -193,7 +193,7 @@ async function dimensionRows(
              SUM(ri.qty)       AS qty,
              SUM(CASE
                    WHEN ri.cost_per_unit_usd IS NOT NULL THEN ri.qty * ri.cost_per_unit_usd
-                   WHEN lines.n = 1 THEN ri.qty * IFNULL(lines.unit_cost, 0)
+                   WHEN ln.n = 1 THEN ri.qty * IFNULL(ln.unit_cost, 0)
                    ELSE 0
                  END) AS cogs
       FROM return_items ri
@@ -205,7 +205,7 @@ async function dimensionRows(
         SELECT si.sale_id, si.product_id, COUNT(*) AS n, MIN(si.cost_per_unit_usd) AS unit_cost
         FROM sale_items si
         GROUP BY si.sale_id, si.product_id
-      ) lines ON lines.sale_id = s.id AND lines.product_id = ri.product_id
+      ) ln ON ln.sale_id = s.id AND ln.product_id = ri.product_id
       WHERE r.business_id = ${businessId}
         AND r.status = 'approved'
         AND s.status IN ${REALIZED_SQL}
@@ -289,7 +289,7 @@ export async function returnedBySeries(
            SUM(ri.total_usd) AS usd,
            SUM(CASE
                  WHEN ri.cost_per_unit_usd IS NOT NULL THEN ri.qty * ri.cost_per_unit_usd
-                 WHEN lines.n = 1 THEN ri.qty * IFNULL(lines.unit_cost, 0)
+                 WHEN ln.n = 1 THEN ri.qty * IFNULL(ln.unit_cost, 0)
                  ELSE 0
                END) AS cogs
     FROM return_items ri
@@ -299,7 +299,7 @@ export async function returnedBySeries(
       SELECT si.sale_id, si.product_id, COUNT(*) AS n, MIN(si.cost_per_unit_usd) AS unit_cost
       FROM sale_items si
       GROUP BY si.sale_id, si.product_id
-    ) lines ON lines.sale_id = s.id AND lines.product_id = ri.product_id
+    ) ln ON ln.sale_id = s.id AND ln.product_id = ri.product_id
     WHERE r.business_id = ${businessId}
       AND r.status = 'approved'
       AND s.status IN ${REALIZED_SQL}

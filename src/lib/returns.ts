@@ -90,7 +90,16 @@ export function computeReturnableLines(
   })
 }
 
-/** true si ya no queda nada devolvible: la venta pasa a `returned`. */
+/**
+ * true si ya no queda nada devolvible: la venta pasa a `returned`.
+ *
+ * Una línea ambigua NO cuenta como devuelta. Su `qty_returnable` es 0 porque no
+ * se puede probar cuánto le queda, no porque se haya devuelto: darla por
+ * devuelta marcaba la venta entera como `returned`, y el estándar contable
+ * excluye ese estado, así que el ingreso de lo que NUNCA se devolvió
+ * desaparecía de ventas netas, finanzas y caja. Con una línea ambigua la venta
+ * se queda en `partial_return`, que sí sigue visible (regla 4).
+ */
 export function isFullyReturned(lines: ReturnableLine[]): boolean {
-  return lines.every(l => l.qty_returnable <= 0.001)
+  return lines.every(l => !l.ambiguous_legacy_return && l.qty_returnable <= 0.001)
 }

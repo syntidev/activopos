@@ -75,12 +75,22 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     }
 
     const prefix = ticketPrefixFromSlug(kit.collections[0]?.collection.slug)
-    // Medalla Finalista es fija por kit (Corrección 2: Maillot+Franela+Medias+
-    // Medalla, sin toggle ni condición) -- se agrega acá, no la manda el
-    // cliente. sharedExtras (franelas sueltas de Damas/Caballeros/Niños) SÍ
-    // son elección del cliente y son del PEDIDO, no de un kit -- van solo en
-    // la primera Reserva del grupo.
-    const MEDALLA_EXTRA = { nombre: 'Medalla Finalista', cantidad: 1, talla: null }
+    // La medalla es fija por kit (Corrección 2: Maillot+Franela+Medias+Medalla,
+    // sin toggle ni condición) -- se agrega acá, no la manda el cliente. Antes
+    // el nombre era un string fabricado ('Medalla Finalista') que ni siquiera
+    // coincidía con el producto real ya linkeado al combo (ProductComponent).
+    // Ahora sale de ese componente real -- localizado por palabra clave
+    // estable ('Medalla', sin año) entre los componentes del kit, mismo
+    // criterio que la Franela de showroom. Si el kit no tiene un componente
+    // así (ej. kit sin medalla ese año), no se fabrica nada: el extra queda
+    // fuera en vez de mostrar un nombre inventado.
+    const medallaComponent = await prisma.productComponent.findFirst({
+      where:  { parent_id: kit.id, component: { name: { contains: 'Medalla' } } },
+      select: { component: { select: { name: true } } },
+    })
+    const medallaExtras = medallaComponent
+      ? [{ nombre: medallaComponent.component.name, cantidad: 1, talla: null }]
+      : []
     const sharedExtras = data.extras
       ? data.extras.map(e => ({
           nombre:     e.nombre,
@@ -120,7 +130,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
                   kit_id:             kit.id,
                   componentes_tallas: kitConfig.componentes_tallas,
                   cantidad:           1,
-                  extras:             kitIdx === 0 ? [MEDALLA_EXTRA, ...sharedExtras] : [MEDALLA_EXTRA],
+                  extras:             kitIdx === 0 ? [...medallaExtras, ...sharedExtras] : medallaExtras,
                 },
                 include: RESERVA_INCLUDE,
               })
@@ -149,7 +159,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       ticketNumber: row.ticket_number,
       resumen: [
         ...Object.entries(data.kits[i].componentes_tallas).map(([nombre, talla]) => ({ nombre, cantidad: 1, talla })),
-        MEDALLA_EXTRA,
+        ...medallaExtras,
         ...(i === 0 ? sharedExtras : []),
       ],
     }))

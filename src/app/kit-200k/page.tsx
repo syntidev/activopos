@@ -61,21 +61,33 @@ export default async function Kit200KPage() {
   // 200K con el mecanismo combo/product existente). Si alguna no existe (aún
   // no seedeada / desactivada), esa card del showroom queda sin product_id
   // real y Kit200KForm deshabilita su "Agregar" en vez de mandar un string suelto.
+  //
+  // Hardcode anterior matchaba el nombre COMPLETO con año ("Franela 200K 2027
+  // Damas") -- se rompía cada año. Dato real que sobrevive al cambio de año
+  // (confirmado contra DB): están en la misma colección del Kit (slug "200k",
+  // sin año) y, a diferencia de Maillot/Media/Medalla, NINGUNA es
+  // ProductComponent de un combo -- son "sueltas", no parte del bundle. Eso
+  // ya aísla las 3 franelas sin año en el filtro; el nombre solo decide a
+  // CUÁL de las 3 corresponde cada card (Damas/Caballeros/Niños) -- no hay
+  // campo de género/edad en Product, así que esa palabra (estable, sin año)
+  // es la única señal que queda para ese mapeo puntual.
   const franelaProducts = await prisma.product.findMany({
     where: {
-      business_id: business.id,
-      active:      true,
-      name:        { in: ['Franela 200K 2027 Damas', 'Franela 200K 2027 Caballeros', 'Franela 200K 2027 Niños'] },
+      business_id:  business.id,
+      active:       true,
+      product_type: { not: 'combo' },
+      usedIn:       { none: {} },
+      collections:  { some: { collection: { slug: '200k' } } },
     },
     select: { id: true, name: true, variants: { where: { is_active: true }, select: { id: true, valor: true } } },
   })
-  const findFranela = (name: string) => {
-    const p = franelaProducts.find(fp => fp.name === name)
+  const findFranela = (genero: string) => {
+    const p = franelaProducts.find(fp => fp.name.includes(genero))
     return p ? { productId: p.id, variants: p.variants } : null
   }
-  const franelaDamas       = findFranela('Franela 200K 2027 Damas')
-  const franelaCaballeros  = findFranela('Franela 200K 2027 Caballeros')
-  const franelaNinos       = findFranela('Franela 200K 2027 Niños')
+  const franelaDamas       = findFranela('Damas')
+  const franelaCaballeros  = findFranela('Caballeros')
+  const franelaNinos       = findFranela('Niños')
 
   if (!business.reservas_enabled) {
     return (

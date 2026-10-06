@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { REALIZED_SALE_STATUSES, returnedTotalsBySaleDate } from '@/lib/sales-returns'
 
 const periodSchema = z.string().regex(/^\d{4}-\d{2}$/)
 
@@ -34,11 +35,12 @@ export async function GET(req: NextRequest) {
   const monthStart    = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
   const monthEnd      = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
 
-  const [salesAgg, dailyRaw, weeklyRaw, report] = await Promise.all([
+  const [salesAgg, dailyRaw, weeklyRaw, returnedTotals, returnedDailyRaw, returnedWeeklyRaw, report] = await Promise.all([
     db.sale.aggregate({
       where: {
         // business_id inyectado por el tenant layer
-        status:      'paid',
+        // partial_return incluido y neteado con returnedTotals (ver lib/sales-returns.ts).
+        status:      { in: [...REALIZED_SALE_STATUSES] },
         sold_at:     { gte: monthStart, lt: monthEnd },
       },
       _sum:   { total_usd: true, total_bs: true },
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest) {
              COUNT(*)       AS count
       FROM sales
       WHERE business_id = ${session.businessId}
-        AND status = 'paid'
+        AND status IN ('paid','partial_return')
         AND sold_at >= ${monthStart}
         AND sold_at < ${monthEnd}
       GROUP BY day
@@ -64,11 +66,34 @@ export async function GET(req: NextRequest) {
              COUNT(*)          AS count
       FROM sales
       WHERE business_id = ${session.businessId}
-        AND status = 'paid'
+        AND status IN ('paid','partial_return')
         AND sold_at >= ${monthStart}
         AND sold_at < ${monthEnd}
       GROUP BY WEEK(sold_at, 1)
       ORDER BY week ASC
+    `,
+
+    returnedTotalsBySaleDate(session.businessId, monthStart, monthEnd),
+
+    // Devuelto con el MISMO GROUP BY que cada serie (DATE_FORMAT / WEEK(.,1)),
+    // para restar por clave idéntica sin recalcular fechas en JS.
+    prisma.$queryRaw<{ day: string; devuelto_usd: string | number }[]>`
+      SELECT DATE_FORMAT(s.sold_at, '%Y-%m-%d') AS day, SUM(r.total_usd) AS devuelto_usd
+      FROM returns r JOIN sales s ON s.id = r.sale_id
+      WHERE r.business_id = ${session.businessId}
+        AND r.status = 'approved'
+        AND s.status IN ('paid','partial_return')
+        AND s.sold_at >= ${monthStart} AND s.sold_at < ${monthEnd}
+      GROUP BY day
+    `,
+    prisma.$queryRaw<{ week: number; devuelto_usd: string | number }[]>`
+      SELECT WEEK(s.sold_at, 1) AS week, SUM(r.total_usd) AS devuelto_usd
+      FROM returns r JOIN sales s ON s.id = r.sale_id
+      WHERE r.business_id = ${session.businessId}
+        AND r.status = 'approved'
+        AND s.status IN ('paid','partial_return')
+        AND s.sold_at >= ${monthStart} AND s.sold_at < ${monthEnd}
+      GROUP BY WEEK(s.sold_at, 1)
     `,
 
     prisma.monthlyReport.findUnique({
@@ -88,9 +113,12 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
+  const devueltoPorDia    = new Map(returnedDailyRaw.map(r => [String(r.day), Number(r.devuelto_usd)]))
+  const devueltoPorSemana = new Map(returnedWeeklyRaw.map(r => [Number(r.week), Number(r.devuelto_usd)]))
+
   const days = dailyRaw.map(d => ({
     day:       d.day,
-    total_usd: Number(d.total_usd),
+    total_usd: Number(d.total_usd) - (devueltoPorDia.get(String(d.day)) ?? 0),
     count:     parseInt(String(d.count), 10),
   }))
 
@@ -111,14 +139,14 @@ export async function GET(req: NextRequest) {
     ok:          true,
     period:      periodParam,
     sales_count: salesAgg._count.id,
-    total_usd:   Number(salesAgg._sum.total_usd ?? 0),
-    total_bs:    Number(salesAgg._sum.total_bs  ?? 0),
+    total_usd:   Number(salesAgg._sum.total_usd ?? 0) - returnedTotals.usd,
+    total_bs:    Number(salesAgg._sum.total_bs  ?? 0) - returnedTotals.bs,
     best_day:    days.length ? bestDay  : null,
     worst_day:   days.length ? worstDay : null,
     by_day:      days,
     by_week:     weeklyRaw.map(w => ({
       week:      Number(w.week),
-      total_usd: Number(w.total_usd),
+      total_usd: Number(w.total_usd) - (devueltoPorSemana.get(Number(w.week)) ?? 0),
       count:     parseInt(String(w.count), 10),
     })),
     report_status:  report?.status ?? null,

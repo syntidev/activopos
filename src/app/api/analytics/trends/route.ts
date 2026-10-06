@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES, returnedTotalsBySaleDate } from '@/lib/sales-returns'
 
 const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
@@ -68,21 +69,28 @@ export async function GET(req: NextRequest) {
       periodType === 'quarter' ? buildQuarterRanges(8)  :
                                  buildMonthRanges(12)
 
-    const results = await Promise.all(
-      ranges.map(({ from, to }) =>
-        db.sale.aggregate({
-          where: { status: 'paid', sold_at: { gte: from, lt: to } }, // business_id inyectado
-          _sum:   { total_usd: true },
-          _count: { id: true },
-        })
-      )
-    )
+    // partial_return incluido y neteado con lo devuelto de cada rango: antes una
+    // devolución parcial borraba la venta entera de la serie (ver lib/sales-returns.ts).
+    // Un aggregate + un sum de devoluciones por rango, en paralelo -- mismo
+    // patrón que ya usaba este endpoint (12 rangos fijos, no un N+1 abierto).
+    const [results, returned] = await Promise.all([
+      Promise.all(
+        ranges.map(({ from, to }) =>
+          db.sale.aggregate({
+            where: { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: from, lt: to } }, // business_id inyectado
+            _sum:   { total_usd: true },
+            _count: { id: true },
+          })
+        )
+      ),
+      Promise.all(ranges.map(({ from, to }) => returnedTotalsBySaleDate(session.businessId, from, to))),
+    ])
 
     const r2 = (x: number) => Math.round(x * 100) / 100
 
     const data = ranges.map(({ from, to, label }, i) => {
       const agg   = results[i]
-      const total = Number(agg._sum.total_usd ?? 0)
+      const total = Number(agg._sum.total_usd ?? 0) - returned[i].usd
       const count = agg._count.id
       return {
         label,

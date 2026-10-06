@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { REALIZED_SALE_STATUSES } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -59,7 +60,11 @@ export async function GET(req: NextRequest) {
     const sales = await db.sale.findMany({
       where: {
         // business_id inyectado por el tenant layer
-        status: 'paid',
+        // partial_return incluido: antes una venta con devolución parcial
+        // DESAPARECÍA del export. Las líneas van en bruto (una por sale_item) y
+        // la columna 'Estado' muestra partial_return -- netear por línea exigiría
+        // columnas nuevas (cambio de contrato), ver reporte del sprint.
+        status: { in: [...REALIZED_SALE_STATUSES] },
         sold_at: { gte: rangeStart, lt: rangeEnd },
       },
       include: {

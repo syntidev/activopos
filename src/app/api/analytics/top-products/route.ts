@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { returnedByProduct } from '@/lib/sales-returns'
 
 type ProductRow = {
   product_id:    number
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN products p ON p.id = si.product_id
       LEFT JOIN categories c ON c.id = p.category_id
       WHERE s.business_id = ${bid}
-        AND s.status = 'paid'
+        AND s.status IN ('paid','partial_return')
         AND s.sold_at >= ${from}
         AND s.sold_at <  ${to}
       GROUP BY si.product_id, si.product_name, p.sku, c.name
@@ -70,26 +71,37 @@ export async function GET(req: NextRequest) {
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
       WHERE s.business_id = ${bid}
-        AND s.status = 'paid'
+        AND s.status IN ('paid','partial_return')
         AND s.sold_at >= ${prevFrom}
         AND s.sold_at <  ${prevTo}
       GROUP BY si.product_id`,
   ])
 
+  // Devuelto por producto en cada ventana (exacto: ReturnItem.total_usd/qty).
+  // El costo de la unidad devuelta NO se netea acá -- este endpoint no expone
+  // COGS ni margen, y ReturnItem no guarda costo (ver lib/sales-returns.ts).
+  const [returnedNow, returnedPrev] = await Promise.all([
+    returnedByProduct(bid, from, to),
+    returnedByProduct(bid, prevFrom, prevTo),
+  ])
+
   const r2       = (x: number) => Math.round(x * 100) / 100
-  const totalUsd = currentRaw.reduce((s, p) => s + Number(p.total_usd), 0)
-  const prevMap  = new Map(prevRaw.map(p => [Number(p.product_id), Number(p.qty_sold)]))
+  const netUsdOf = (pid: number, gross: number) => gross - (returnedNow.get(pid)?.usd ?? 0)
+  const netQtyOf = (pid: number, gross: number) => gross - (returnedNow.get(pid)?.qty ?? 0)
+  const totalUsd = currentRaw.reduce((s, p) => s + netUsdOf(Number(p.product_id), Number(p.total_usd)), 0)
+  const prevMap  = new Map(prevRaw.map(p => [Number(p.product_id), Number(p.qty_sold) - (returnedPrev.get(Number(p.product_id))?.qty ?? 0)]))
 
   const products = currentRaw.map(p => {
-    const qtyNow  = Number(p.qty_sold)
-    const qtyPrev = prevMap.get(Number(p.product_id)) ?? 0
+    const pid     = Number(p.product_id)
+    const qtyNow  = netQtyOf(pid, Number(p.qty_sold))
+    const qtyPrev = prevMap.get(pid) ?? 0
     const diffPct = qtyPrev > 0 ? ((qtyNow - qtyPrev) / qtyPrev) * 100 : 0
     const trend: 'up' | 'down' | 'stable' =
       qtyPrev === 0 ? 'stable' : Math.abs(diffPct) < 5 ? 'stable' : diffPct > 0 ? 'up' : 'down'
-    const tUsd = Number(p.total_usd)
+    const tUsd = netUsdOf(pid, Number(p.total_usd))
 
     return {
-      id:            Number(p.product_id),
+      id:            pid,
       name:          p.product_name,
       sku:           p.sku ?? null,
       category_name: p.category_name ?? null,

@@ -3,6 +3,7 @@ import { Sun, Moon } from 'lucide-react'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateTuDiaNarrative, type TuDiaData } from '@/lib/tudia-narrative'
+import { REALIZED_SALE_STATUSES, returnedByProduct, returnedTotalsBySaleDate } from '@/lib/sales-returns'
 import styles from './tu-dia.module.css'
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ function formatDate(d: Date): string {
 
 // ── Data fetching ─────────────────────────────────────────────────
 
-type TopRow = { name: string; qty: string }
+type TopRow = { product_id: number; name: string; qty: string }
 
 async function getTuDiaData(businessId: number): Promise<TuDiaData> {
   const now         = new Date()
@@ -26,31 +27,37 @@ async function getTuDiaData(businessId: number): Promise<TuDiaData> {
   const monthStart  = new Date(now.getFullYear(), now.getMonth(), 1)
   const bid         = businessId
 
-  const [salesHoy, salesAyer, topRows, cxcAgg, cxcVenceRows, productCount] = await Promise.all([
-    // Ventas de hoy (cantidad + monto)
+  const [salesHoy, returnedHoy, salesAyer, returnedAyer, topRows, returnedByProd, cxcAgg, cxcVenceRows, productCount] = await Promise.all([
+    // Ventas de hoy (cantidad + monto). partial_return incluido y neteado con
+    // returnedHoy: antes una devolución parcial borraba la venta entera.
     prisma.sale.aggregate({
-      where: { business_id: bid, status: 'paid', sold_at: { gte: todayStart, lt: tomorrow } },
+      where: { business_id: bid, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: todayStart, lt: tomorrow } },
       _sum:   { total_usd: true },
       _count: { id: true },
     }),
+    returnedTotalsBySaleDate(bid, todayStart, tomorrow),
     // Ventas de ayer (para calcular tendencia)
     prisma.sale.aggregate({
-      where: { business_id: bid, status: 'paid', sold_at: { gte: yesterday, lt: todayStart } },
+      where: { business_id: bid, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: yesterday, lt: todayStart } },
       _sum:  { total_usd: true },
     }),
-    // Producto más vendido este mes (por unidades)
+    returnedTotalsBySaleDate(bid, yesterday, todayStart),
+    // Producto más vendido este mes (por unidades NETAS). Se traen 10 y el
+    // ranking se decide después de restar lo devuelto: devolver puede cambiar
+    // cuál quedó primero.
     prisma.$queryRaw<TopRow[]>`
-      SELECT p.name, SUM(si.quantity) AS qty
+      SELECT si.product_id, p.name, SUM(si.quantity) AS qty
       FROM   sale_items si
       JOIN   sales s    ON s.id  = si.sale_id
       JOIN   products p ON p.id  = si.product_id
       WHERE  s.business_id = ${bid}
-        AND  s.status = 'paid'
+        AND  s.status IN ('paid','partial_return')
         AND  s.sold_at >= ${monthStart}
       GROUP  BY si.product_id, p.name
       ORDER  BY qty DESC
-      LIMIT  1
+      LIMIT  10
     `,
+    returnedByProduct(bid, monthStart),
     // CxC total pendiente
     prisma.sale.aggregate({
       where:  { business_id: bid, status: 'credit' },
@@ -81,10 +88,13 @@ async function getTuDiaData(businessId: number): Promise<TuDiaData> {
   ])
 
   const salesCount  = salesHoy._count.id
-  const totalUsd    = Number(salesHoy._sum.total_usd  ?? 0)
-  const ayerUsd     = Number(salesAyer._sum.total_usd ?? 0)
+  const totalUsd    = Number(salesHoy._sum.total_usd  ?? 0) - returnedHoy.usd
+  const ayerUsd     = Number(salesAyer._sum.total_usd ?? 0) - returnedAyer.usd
   const trend       = ayerUsd > 0 ? ((totalUsd - ayerUsd) / ayerUsd) * 100 : 0
-  const topProduct  = topRows[0]?.name ?? null
+  const topProduct  = topRows
+    .map(r => ({ name: r.name, qty: Number(r.qty) - (returnedByProd.get(Number(r.product_id))?.qty ?? 0) }))
+    .filter(r => r.qty > 0)
+    .sort((a, b) => b.qty - a.qty)[0]?.name ?? null
   const cxcUsd      = Number(cxcAgg._sum.total_usd ?? 0)
   const cxcVenceUsd = parseFloat(String(cxcVenceRows[0]?.total_usd ?? '0')) || 0
 

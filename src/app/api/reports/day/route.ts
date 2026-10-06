@@ -78,6 +78,10 @@ export async function GET(req: NextRequest) {
         JOIN payment_methods pm ON pm.id = sp.payment_method_id
         JOIN sales s ON s.id = sp.sale_id
         WHERE s.business_id = ${bid}
+          -- Antes NO filtraba estado: sumaba pagos de ventas en cualquier
+          -- estado (quote/pending/cancelled incluidos). Ahora solo estados
+          -- realizados, igual que el resto del módulo (ver lib/sales-returns.ts).
+          AND s.status IN ('paid','partial_return')
           AND s.sold_at >= ${dayStart}
           AND s.sold_at < ${dayEnd}
         GROUP BY pm.id, pm.name

@@ -108,10 +108,11 @@ async function main(): Promise<void> {
     saleId: number,
     items: { product_id: number; qty: number; sale_item_id?: number }[],
     refundMethodId: number,
+    opts?: { restoresStock?: boolean },
   ) => {
     const res = await fetch(`${BASE}/api/returns`, {
       method: 'POST', headers,
-      body: JSON.stringify({ sale_id: saleId, reason: 'test:consistency', restores_stock: false, refund_payment_method_id: refundMethodId, items }),
+      body: JSON.stringify({ sale_id: saleId, reason: 'test:consistency', restores_stock: opts?.restoresStock ?? false, refund_payment_method_id: refundMethodId, items }),
     })
     const body = await res.json() as { return?: { id: number }; error?: string }
     if (body.return?.id) created.returns.push(body.return.id)
@@ -244,6 +245,99 @@ async function main(): Promise<void> {
     const caja4 = await api<{ turnoStats: { totalVentasUsd: number } }>('/api/cash/status')
     check('e4 venta sin devolución suma completa', caja4.turnoStats.totalVentasUsd, ventasAntes + 40)
 
+    // -- Igualdad entre superficies: todas deben moverse LO MISMO --
+    const agree = async (label: string) => {
+      const cj = await api<{ turnoStats: { totalVentasUsd: number } }>('/api/cash/status')
+      const sn = await snapshot(today, tomorrow)
+      const dd = (k: keyof typeof base) => r2(sn[k] - base[k])
+      check(`${label} caja == reports/daily`, cj.turnoStats.totalVentasUsd, dd('dailyTotal'))
+      check(`${label} reports/daily == reports/day`, dd('dailyTotal'), dd('dayCobrado'))
+      check(`${label} reports/daily == reports/range`, dd('dailyTotal'), dd('rangeTotal'))
+      check(`${label} reports/daily == reports/monthly`, dd('dailyTotal'), dd('monthlyTotal'))
+      check(`${label} reports/daily == dashboard/kpis`, dd('dailyTotal'), dd('kpisCobrado'))
+      check(`${label} reports/daily == dashboard/charts`, dd('dailyTotal'), dd('chartsHoy'))
+      check(`${label} reports/daily == analytics/summary`, dd('dailyTotal'), dd('sumVentas'))
+      checkNear(`${label} reports/daily == finanzas/resumen`, dd('dailyTotal'), dd('finVentas'))
+    }
+    await agree('e4')
+
+    // -- Escenario 7: DOS devoluciones parciales sobre la MISMA venta --
+    // (la primera en efectivo, la segunda no; la segunda completa -> returned)
+    const sale7 = await mkSale('T-CONS-2DEV', today, 4, 10)
+    const r7a = await doReturn(sale7.id, [{ product_id: ctx.productId, qty: 1 }], ctx.cashMethodId, { restoresStock: true })
+    check('e7 primera devolucion aceptada', r7a.status, 201)
+    const st7a = await prisma.sale.findUnique({ where: { id: sale7.id }, select: { status: true } })
+    check('e7 queda partial_return tras la primera', st7a?.status, 'partial_return')
+
+    // Contrato: el endpoint de busqueda expone lo devolvible POR LINEA.
+    // Tras devolver 1 de 4, la linea debe decir vendida 4, devuelta 1, devolvible 3.
+    const busqueda = await api<{
+      sales: { id: number; status: string; items: { sale_item_id: number; qty_sold: number; qty_returned: number; qty_returnable: number }[] }[]
+    }>(`/api/sales?status=paid,partial_return&ticket=T-CONS-2DEV&limit=1`)
+    const vendida = busqueda.sales[0]
+    const linea   = vendida?.items[0]
+    check('contrato busqueda: encuentra la venta partial_return', [vendida?.id, vendida?.status], [sale7.id, 'partial_return'])
+    check('contrato busqueda: linea con sale_item_id / vendida / devuelta / devolvible',
+      [linea?.sale_item_id === sale7.items[0].id, linea?.qty_sold, linea?.qty_returned, linea?.qty_returnable],
+      [true, 4, 1, 3])
+
+    // Contrato: GET /api/returns trae refund_payment_method {id, name, type}
+    const listado = await api<{
+      returns: { id: number; refund_payment_method: { id: number; name: string; type: string } | null }[]
+    }>('/api/returns?limit=5')
+    const miDev = listado.returns.find(r => r.id === (r7a.body as { return?: { id: number } }).return?.id)
+    check('contrato listado: refund_payment_method {id, name, type}',
+      [miDev?.refund_payment_method?.id, typeof miDev?.refund_payment_method?.name, miDev?.refund_payment_method?.type],
+      [ctx.cashMethodId, 'string', 'cash'])
+
+
+    // La venta YA es partial_return: la segunda devolucion debe ser aceptada.
+    const r7b = await doReturn(sale7.id, [{ product_id: ctx.productId, qty: 3 }], ctx.otherMethodId, { restoresStock: true })
+    check('e7 segunda devolucion sobre partial_return aceptada', r7b.status, 201)
+    const st7b = await prisma.sale.findUnique({ where: { id: sale7.id }, select: { status: true } })
+    check('e7 al completarse pasa a returned', st7b?.status, 'returned')
+
+    // Contrato: la respuesta del POST trae la venta {id, ticket_number}
+    const bodyWithSale = r7b.body as { sale?: { id: number; ticket_number: string } }
+    check('e7 POST devuelve sale {id, ticket_number}', [bodyWithSale.sale?.id, typeof bodyWithSale.sale?.ticket_number], [sale7.id, 'string'])
+
+    // Stock: UNA entrada de inventario por devolucion (qty 1 y qty 3)
+    const entradas7 = await prisma.inventoryEntry.findMany({
+      where:  { business_id: BID, product_id: ctx.productId, entry_type: 'return', notes: { in: created.returns.map(id => `DEVOLUCIÓN #${id}`) } },
+      select: { quantity: true, notes: true },
+    })
+    const qtys7 = entradas7.map(e => Number(e.quantity)).sort((a, b) => a - b)
+    check('e7 stock restaurado una vez por devolucion (1 y 3)', qtys7.slice(-2), [1, 3])
+
+    // Ya no queda nada devolvible -> 409
+    const r7c = await doReturn(sale7.id, [{ product_id: ctx.productId, qty: 1 }], ctx.cashMethodId)
+    check('e7 tercera devolucion rechazada (409)', r7c.status, 409)
+
+    // -- Escenario 8: sobredevolucion rechazada con 422 --
+    const sale8 = await mkSale('T-CONS-OVER', today, 4, 10)
+    const r8a = await doReturn(sale8.id, [{ product_id: ctx.productId, qty: 3 }], ctx.cashMethodId)
+    check('e8 primera devolucion de 3 aceptada', r8a.status, 201)
+    const r8b = await doReturn(sale8.id, [{ product_id: ctx.productId, qty: 2 }], ctx.cashMethodId)
+    check('e8 devolver 2 cuando solo queda 1 -> 422', r8b.status, 422)
+    const st8 = await prisma.sale.findUnique({ where: { id: sale8.id }, select: { status: true } })
+    check('e8 la venta sigue partial_return', st8?.status, 'partial_return')
+
+    // -- Escenario 9: dos devoluciones SIMULTANEAS no sobredevuelven --
+    const sale9 = await mkSale('T-CONS-RACE', today, 4, 10)
+    const [r9a, r9b] = await Promise.all([
+      doReturn(sale9.id, [{ product_id: ctx.productId, qty: 3 }], ctx.cashMethodId),
+      doReturn(sale9.id, [{ product_id: ctx.productId, qty: 3 }], ctx.cashMethodId),
+    ])
+    const codes9 = [r9a.status, r9b.status].sort((a, b) => a - b)
+    check('e9 solo una de las dos simultaneas pasa', [codes9[0], codes9[1] >= 400], [201, true])
+    const devuelto9 = await prisma.returnItem.aggregate({
+      where: { return: { sale_id: sale9.id, status: 'approved' } },
+      _sum:  { qty: true },
+    })
+    check('e9 no se sobredevolvio (3 de 4)', Number(devuelto9._sum.qty ?? 0), 3)
+
+    await agree('e9')
+
     // ── Escenario 5: venta de AYER devuelta HOY (doble anclaje) ──
     const efectivoAntes5 = (await api<{ turnoStats: { efectivoEsperado: number } }>('/api/cash/status')).turnoStats.efectivoEsperado
     const saleAyer = await mkSale('T-CONS-AYER', yesterday, 4, 10)
@@ -280,6 +374,11 @@ async function main(): Promise<void> {
   } finally {
     // ── Restaurar: borra SOLO lo que creó esta prueba ──
     if (created.returns.length) {
+      // Las entradas de inventario creadas por restores_stock se borran por su
+      // nota, que lleva el id de la devolucion.
+      await prisma.inventoryEntry.deleteMany({
+        where: { business_id: BID, entry_type: 'return', notes: { in: created.returns.map(id => `DEVOLUCIÓN #${id}`) } },
+      })
       await prisma.returnItem.deleteMany({ where: { return_id: { in: created.returns } } })
       await prisma.return.deleteMany({ where: { id: { in: created.returns } } })
     }

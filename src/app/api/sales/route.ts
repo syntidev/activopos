@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { createNotification } from '@/lib/notifications'
+import { computeReturnableLines, type ReturnableLine } from '@/lib/returns'
+import type { SaleStatus } from '@prisma/client'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 import { redactSaleForRole } from '@/lib/redact'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
@@ -82,7 +84,14 @@ export async function GET(req: NextRequest) {
           ],
         }
       : {}),
-    ...(status    ? { status: status as 'quote' | 'pending' | 'paid' | 'cancelled' | 'credit' } : {}),
+    // status admite lista: ?status=paid,partial_return -- la pantalla de
+    // devoluciones necesita ambos (una venta ya parcialmente devuelta sigue
+    // aceptando devoluciones). Un solo valor sigue funcionando igual que antes.
+    ...(status
+      ? status.includes(',')
+        ? { status: { in: status.split(',').map(x => x.trim()).filter(Boolean) as SaleStatus[] } }
+        : { status: status as SaleStatus }
+      : {}),
     ...dateFilter,
     ...(cashierId ? { cashier_id: parseInt(cashierId, 10) } : {}),
     ...(clientId  ? { client_id:  parseInt(clientId,  10) } : {}),
@@ -106,6 +115,49 @@ export async function GET(req: NextRequest) {
     db.sale.count({ where }),
   ])
 
+  // Devuelto por línea de estas ventas (una sola query, sin N+1). Alimenta
+  // qty_returned/qty_returnable de cada ítem: es lo que la pantalla de
+  // devoluciones necesita para saber qué puede ofrecer, calculado con la MISMA
+  // función que valida POST /api/returns (src/lib/returns.ts).
+  // ReturnItem no tiene business_id — se aísla por la relación return.
+  const returnedRows = sales.length > 0
+    ? await db.returnItem.findMany({
+        where: {
+          return: { sale_id: { in: sales.map(s => s.id) }, status: 'approved' },
+        },
+        select: { product_id: true, qty: true, sale_item_id: true, return: { select: { sale_id: true } } },
+      })
+    : []
+
+  const returnedBySale = new Map<number, { sale_item_id: number | null; product_id: number; qty: number }[]>()
+  for (const row of returnedRows) {
+    const list = returnedBySale.get(row.return.sale_id) ?? []
+    list.push({ sale_item_id: row.sale_item_id, product_id: row.product_id, qty: Number(row.qty) })
+    returnedBySale.set(row.return.sale_id, list)
+  }
+
+  const returnableBySale = new Map<number, Map<number, ReturnableLine>>()
+  for (const sale of sales) {
+    const lines = computeReturnableLines(
+      sale.items.map(i => ({ id: i.id, product_id: i.product_id, quantity: Number(i.quantity) })),
+      returnedBySale.get(sale.id) ?? [],
+    )
+    returnableBySale.set(sale.id, new Map(lines.map(l => [l.sale_item_id, l])))
+  }
+
+  /** Agrega los campos de devolución a cada ítem. Solo agrega: no quita ni renombra. */
+  const withReturnable = <T extends { id: number }>(saleId: number, item: T) => {
+    const l = returnableBySale.get(saleId)?.get(item.id)
+    return {
+      ...item,
+      sale_item_id:            item.id,
+      qty_sold:                l?.qty_sold       ?? 0,
+      qty_returned:            l?.qty_returned   ?? 0,
+      qty_returnable:          l?.qty_returnable ?? 0,
+      ambiguous_legacy_return: l?.ambiguous_legacy_return ?? false,
+    }
+  }
+
   // Costo y utilidad son datos financieros — cashier no tiene acceso (mismo
   // criterio que /api/finanzas/*), se despojan en vez de bloquear el endpoint
   // completo (cashier sí necesita el historial de ventas para POS/Caja).
@@ -114,7 +166,7 @@ export async function GET(req: NextRequest) {
   const salesWithUtilidad = sales.map(sale => {
     if (isCashier) {
       const { items, ...rest } = sale
-      return { ...rest, items: items.map(({ cost_per_unit_usd, ...item }) => item) }
+      return { ...rest, items: items.map(({ cost_per_unit_usd, ...item }) => withReturnable(sale.id, item)) }
     }
 
     const hasCostGap = sale.items.some(i => i.cost_per_unit_usd === null)
@@ -126,7 +178,7 @@ export async function GET(req: NextRequest) {
             0
           ) * 100
         ) / 100
-    return { ...sale, utilidad_usd }
+    return { ...sale, items: sale.items.map(item => withReturnable(sale.id, item)), utilidad_usd }
   })
 
   return NextResponse.json({ ok: true, sales: salesWithUtilidad, total, page, pages: Math.ceil(total / limit) })

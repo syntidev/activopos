@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import {
+  RETURNABLE_SALE_STATUSES,
+  computeReturnableLines,
+  isFullyReturned,
+  type ReturnableSaleStatus,
+} from '@/lib/returns'
 import { prisma } from '@/lib/prisma'
 
 const ItemSchema = z.object({
@@ -48,6 +54,10 @@ export async function GET(req: NextRequest) {
         include: {
           sale:  { select: { id: true, ticket_number: true, sold_at: true } },
           items: true,
+          // Método por el que salió el reembolso: la pantalla lo muestra y
+          // distingue si afectó el efectivo (type='cash'). null en devoluciones
+          // previas al estándar contable.
+          refund_payment_method: { select: { id: true, name: true, type: true } },
         },
       }),
       db.return.count({ where }),
@@ -101,7 +111,9 @@ export async function POST(req: NextRequest) {
     if (sale.status === 'returned') {
       return NextResponse.json({ error: 'Esta venta ya fue devuelta.' }, { status: 409 })
     }
-    if (sale.status !== 'paid') {
+    // partial_return SÍ acepta más devoluciones: lo que falte de cada línea.
+    // Cualquier otro estado (quote/pending/cancelled/credit/draft) no.
+    if (!RETURNABLE_SALE_STATUSES.includes(sale.status as ReturnableSaleStatus)) {
       return NextResponse.json({ error: 'Venta no encontrada o no pagada' }, { status: 404 })
     }
 
@@ -165,71 +177,56 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Validate: no devolver más de lo vendido.
-    // SUMA todas las líneas del producto: antes el Map se sobrescribía y, con el
-    // mismo producto en 2 líneas, solo contaba la última como vendida.
-    const soldMap = new Map<number, number>()
-    for (const si of sale.items) soldMap.set(si.product_id, (soldMap.get(si.product_id) ?? 0) + Number(si.quantity))
-    const soldByLine = new Map(sale.items.map(si => [si.id, Number(si.quantity)]))
-
+    // Devolvible por LÍNEA -- misma función que usa /api/sales para decidir qué
+    // ofrecer en la pantalla (src/lib/returns.ts). Esta validación es la
+    // temprana, "amable": el chequeo que de verdad manda se repite DENTRO de la
+    // $transaction con la fila bloqueada, para que dos devoluciones simultáneas
+    // no sobredevuelvan.
     // ReturnItem no tiene business_id — se filtra por la relación return.business_id
     const existingReturns = await db.returnItem.findMany({
-      where: { return: { sale_id: body.sale_id, business_id: bid, status: 'approved' } },
+      where:  { return: { sale_id: body.sale_id, business_id: bid, status: 'approved' } },
       select: { product_id: true, qty: true, sale_item_id: true },
     })
-    const returnedMap = new Map<number, number>()
-    const returnedByLine = new Map<number, number>()
-    for (const ri of existingReturns) {
-      returnedMap.set(ri.product_id, (returnedMap.get(ri.product_id) ?? 0) + Number(ri.qty))
-      if (ri.sale_item_id !== null) {
-        returnedByLine.set(ri.sale_item_id, (returnedByLine.get(ri.sale_item_id) ?? 0) + Number(ri.qty))
-      }
-    }
 
-    for (const item of body.items) {
-      const sold     = soldMap.get(item.product_id) ?? 0
-      const returned = returnedMap.get(item.product_id) ?? 0
-      if (item.qty > sold - returned) {
-        return NextResponse.json({
-          error:      'Cantidad a devolver supera lo vendido',
-          product_id: item.product_id,
-          vendido:    sold,
-          ya_devuelto: returned,
-          solicitado: item.qty,
-        }, { status: 422 })
-      }
-    }
+    const saleLines = sale.items.map(si => ({ id: si.id, product_id: si.product_id, quantity: Number(si.quantity) }))
+    const returnedRows = existingReturns.map(ri => ({
+      sale_item_id: ri.sale_item_id,
+      product_id:   ri.product_id,
+      qty:          Number(ri.qty),
+    }))
 
-    // Tope por LÍNEA: no se puede devolver de una línea más de lo que esa línea
-    // vendió (lo de arriba solo acota el total del producto).
     const requestedByLine = new Map<number, number>()
     for (const r of resolved) requestedByLine.set(r.sale_item_id, (requestedByLine.get(r.sale_item_id) ?? 0) + r.qty)
-    for (const [lineId, qty] of Array.from(requestedByLine)) {
-      const disponible = (soldByLine.get(lineId) ?? 0) - (returnedByLine.get(lineId) ?? 0)
-      if (qty > disponible + 0.001) {
-        return NextResponse.json({
-          error:        'Cantidad a devolver supera lo vendido en esa línea',
-          sale_item_id: lineId,
-          disponible,
-          solicitado:   qty,
-        }, { status: 422 })
+
+    /** Valida lo pedido contra lo devolvible. Devuelve el error listo, o null. */
+    const validateAgainst = (returned: typeof returnedRows) => {
+      const returnable = new Map(computeReturnableLines(saleLines, returned).map(l => [l.sale_item_id, l]))
+      for (const [lineId, qty] of Array.from(requestedByLine.entries())) {
+        const l = returnable.get(lineId)
+        if (!l) return { error: 'La línea indicada no pertenece a esta venta', sale_item_id: lineId }
+        if (l.ambiguous_legacy_return) {
+          return {
+            error:        'Hay una devolución anterior sin línea registrada para este producto y está en varias líneas: no se puede determinar qué queda devolvible',
+            sale_item_id: lineId,
+            product_id:   l.product_id,
+          }
+        }
+        if (qty > l.qty_returnable + 0.001) {
+          return {
+            error:          'Cantidad a devolver supera lo devolvible de esa línea',
+            sale_item_id:   lineId,
+            qty_sold:       l.qty_sold,
+            qty_returned:   l.qty_returned,
+            qty_returnable: l.qty_returnable,
+            solicitado:     qty,
+          }
+        }
       }
+      return null
     }
 
-    // Total vs parcial: TOTAL solo si, tras esta devolución, cada ítem vendido
-    // queda devuelto en su cantidad completa. Si queda algo sin devolver (un
-    // producto no incluido, o una cantidad parcial), la venta sigue visible
-    // en el P&L como partial_return.
-    const requestedMap = new Map<number, number>()
-    for (const i of body.items) {
-      requestedMap.set(i.product_id, (requestedMap.get(i.product_id) ?? 0) + i.qty)
-    }
-    let isFullReturn = true
-    for (const [productId, soldQty] of Array.from(soldMap)) {
-      const totalReturned = (returnedMap.get(productId) ?? 0) + (requestedMap.get(productId) ?? 0)
-      if (Math.abs(totalReturned - soldQty) > 0.001) { isFullReturn = false; break }
-    }
-    const newSaleStatus = isFullReturn ? 'returned' : 'partial_return'
+    const earlyError = validateAgainst(returnedRows)
+    if (earlyError) return NextResponse.json(earlyError, { status: 422 })
 
     const rate     = Number(sale.rate_used)
     const r2       = (x: number) => Math.round(x * 100) / 100
@@ -239,13 +236,33 @@ export async function POST(req: NextRequest) {
 
     // $transaction en prisma base: business_id manual adentro
     const result = await prisma.$transaction(async tx => {
-      // TOCTOU guard: atomically claim the sale for this return
-      const { count } = await tx.sale.updateMany({
-        where: { id: body.sale_id, business_id: bid, status: 'paid' },
-        data:  { status: newSaleStatus },
-      })
-      if (count === 0) {
+      // Bloquea la VENTA: serializa dos devoluciones simultáneas sobre la misma
+      // venta. Sin esto, ambas leerían el mismo "devolvible" y sobredevolverían.
+      const locked = await tx.$queryRaw<{ id: number; status: string }[]>`
+        SELECT id, status FROM sales
+        WHERE id = ${body.sale_id} AND business_id = ${bid}
+        FOR UPDATE`
+      const lockedStatus = locked[0]?.status
+      if (!lockedStatus) {
+        throw Object.assign(new Error('SALE_GONE'), { code: 'SALE_GONE' })
+      }
+      if (!RETURNABLE_SALE_STATUSES.includes(lockedStatus as ReturnableSaleStatus)) {
         throw Object.assign(new Error('ALREADY_RETURNED'), { code: 'ALREADY_RETURNED' })
+      }
+
+      // Relectura con la fila bloqueada: este es el chequeo que manda.
+      const freshReturns = await tx.returnItem.findMany({
+        where:  { return: { sale_id: body.sale_id, business_id: bid, status: 'approved' } },
+        select: { product_id: true, qty: true, sale_item_id: true },
+      })
+      const freshRows = freshReturns.map(ri => ({
+        sale_item_id: ri.sale_item_id,
+        product_id:   ri.product_id,
+        qty:          Number(ri.qty),
+      }))
+      const conflict = validateAgainst(freshRows)
+      if (conflict) {
+        throw Object.assign(new Error('OVER_RETURN'), { code: 'OVER_RETURN', detail: conflict })
       }
 
       const ret = await tx.return.create({
@@ -277,11 +294,13 @@ export async function POST(req: NextRequest) {
       })
 
       if (body.restores_stock) {
+        // Una entrada de inventario por línea devuelta, una sola vez por
+        // devolución (va dentro de la misma transacción que crea el Return).
         await tx.inventoryEntry.createMany({
-          data: body.items.map(i => ({
+          data: resolved.map(r => ({
             business_id: bid,
-            product_id:  i.product_id,
-            quantity:    i.qty,
+            product_id:  r.product_id,
+            quantity:    r.qty,
             waste:       0,
             entry_type:  'return',
             notes:       `DEVOLUCIÓN #${ret.id}`,
@@ -290,11 +309,27 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      // Estado final: `returned` solo si tras ESTA devolución no queda nada
+      // devolvible en ninguna línea; si queda algo, `partial_return`.
+      const afterRows = [
+        ...freshRows,
+        ...resolved.map(r => ({ sale_item_id: r.sale_item_id, product_id: r.product_id, qty: r.qty })),
+      ]
+      const newSaleStatus = isFullyReturned(computeReturnableLines(saleLines, afterRows))
+        ? 'returned'
+        : 'partial_return'
+
+      await tx.sale.update({
+        where: { id: body.sale_id },
+        data:  { status: newSaleStatus },
+      })
+
       return ret
     })
 
     return NextResponse.json({
       ok: true,
+      sale: { id: sale.id, ticket_number: sale.ticket_number },
       return: {
         ...result,
         total_usd: Number(result.total_usd),
@@ -314,6 +349,15 @@ export async function POST(req: NextRequest) {
     }
     if ((err as { code?: string }).code === 'ALREADY_RETURNED') {
       return NextResponse.json({ error: 'Esta venta ya fue devuelta.' }, { status: 409 })
+    }
+    if ((err as { code?: string }).code === 'SALE_GONE') {
+      return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
+    }
+    // Otra devolución entró primero y ya consumió lo devolvible (se detectó con
+    // la venta bloqueada dentro de la transacción).
+    if ((err as { code?: string }).code === 'OVER_RETURN') {
+      const detail = (err as { detail?: Record<string, unknown> }).detail ?? {}
+      return NextResponse.json(detail, { status: 422 })
     }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })

@@ -592,6 +592,7 @@ model PaymentMethod {
 
   business       Business       @relation(fields: [business_id], references: [id])
   sale_payments  SalePayment[]
+  refunds        Return[]
   sale_abonos    SaleAbono[]
   cash_movements CashMovement[]
 
@@ -666,9 +667,10 @@ model SaleItem {
   unit_price_override Decimal? @db.Decimal(10, 4)
   override_reason     String?  @db.VarChar(255)
 
-  sale    Sale            @relation(fields: [sale_id], references: [id])
-  product Product         @relation(fields: [product_id], references: [id])
-  variant ProductVariant? @relation(fields: [variant_id], references: [id])
+  sale         Sale            @relation(fields: [sale_id], references: [id])
+  product      Product         @relation(fields: [product_id], references: [id])
+  variant      ProductVariant? @relation(fields: [variant_id], references: [id])
+  return_items ReturnItem[]
 
   @@map("sale_items")
 }
@@ -988,13 +990,20 @@ model Return {
   total_bs       Decimal      @db.Decimal(12, 2)
   rate_used      Decimal      @db.Decimal(10, 4)
   restores_stock Boolean      @default(true)
+  // Método por el que SALIÓ el dinero del reembolso. Solo los de
+  // PaymentMethod.type='cash' afectan el efectivo esperado de la caja
+  // (estándar contable 2026-10-06). Nullable: devoluciones previas al estándar
+  // no lo registran -- esas se siguen asumiendo en efectivo, que era la
+  // decisión vigente cuando se crearon.
+  refund_payment_method_id Int?
   created_by     Int
   created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
 
-  business Business     @relation(fields: [business_id], references: [id])
-  sale     Sale         @relation(fields: [sale_id], references: [id])
-  items    ReturnItem[]
+  business              Business       @relation(fields: [business_id], references: [id])
+  sale                  Sale           @relation(fields: [sale_id], references: [id])
+  refund_payment_method PaymentMethod? @relation(fields: [refund_payment_method_id], references: [id])
+  items                 ReturnItem[]
 
   @@index([business_id])
   @@map("returns")
@@ -1007,9 +1016,21 @@ model ReturnItem {
   qty        Decimal @db.Decimal(10, 3)
   price_usd  Decimal @db.Decimal(10, 4)
   total_usd  Decimal @db.Decimal(10, 2)
+  // Línea EXACTA de la venta que se devuelve. Sin esto, (sale_id, product_id)
+  // no identifica la línea: sale_items no tiene @@unique de ese par y el mismo
+  // producto puede estar en 2 líneas (variantes, override de precio).
+  // Nullable: devoluciones creadas antes del estándar contable no lo tienen.
+  sale_item_id      Int?
+  // Snapshot del costo unitario de ESA línea al momento de devolver. Es lo que
+  // permite revertir COGS sin adivinar: el costo histórico de la venta no debe
+  // moverse si el producto se recotiza después (mismo criterio que
+  // SaleItem.cost_per_unit_usd). Nullable por lo mismo que sale_item_id.
+  cost_per_unit_usd Decimal? @db.Decimal(10, 4)
 
-  return Return @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  return    Return    @relation(fields: [return_id], references: [id], onDelete: Cascade)
+  sale_item SaleItem? @relation(fields: [sale_item_id], references: [id])
 
+  @@index([sale_item_id])
   @@map("return_items")
 }
 

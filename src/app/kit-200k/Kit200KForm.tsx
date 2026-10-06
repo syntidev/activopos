@@ -315,14 +315,6 @@ export function Kit200KForm({
               </div>
             </div>
           ))}
-          <div className={styles.compCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/franela.png" alt="Franela Oficial" className={styles.compImg} />
-            <div className={styles.compBody}>
-              <div className={styles.compName}>Franela Oficial</div>
-              <div className={styles.compSub}>Incluida en tu kit</div>
-            </div>
-          </div>
         </div>
 
         {kits.map((k, i) => (

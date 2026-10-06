@@ -722,3 +722,13 @@
     width: auto;
   }
 }
+
+/* Placeholder neutro cuando el producto no tiene imagen (se suma a la clase
+   de imagen de cada lugar: mismo tamaño). Nunca una imagen rota. */
+.imgPlaceholder {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--color-surface-2);
+  color:           var(--color-text-muted);
+}

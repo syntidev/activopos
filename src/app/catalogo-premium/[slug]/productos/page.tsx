@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+import { parseKitConfig } from '@/lib/kit-config'
 import { getSession } from '@/lib/auth'
 import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from '../CatalogoGrid'
@@ -53,6 +54,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       catalog_cover_path_3:    true,
       theme_color:             true,
       catalog_plan:            true,
+      kit200k_config:          true,
       catalog_template:        true,
       subscription_active:     true,
       subscription_expires_at: true,
@@ -203,6 +205,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         categoryColors={categoryColors}
         categoryImages={categoryImages}
         brands={brandRows}
+        showKitLink={(() => { const k = parseKitConfig(business.kit200k_config); return k.activo && k.mostrar_en_header })()}
         slug={params.slug}
         rate={rate}
         currency={business.catalog_default_currency}

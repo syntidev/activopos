@@ -31,3 +31,10 @@ export const EMPTY_KIT_CONFIG: KitConfig = {
   activo:            false,
   mostrar_en_header: false,
 }
+
+// Mismo criterio que las rutas (api/public/kit-200k, api/config/kit200k) para
+// páginas server que leen la columna directo: inválido o sin sembrar -> vacío.
+export function parseKitConfig(stored: unknown): KitConfig {
+  const parsed = KitConfigSchema.safeParse(stored)
+  return parsed.success ? parsed.data : EMPTY_KIT_CONFIG
+}

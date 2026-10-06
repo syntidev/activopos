@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { ImageOff } from 'lucide-react'
 import { CatalogHeader } from '../catalogo-premium/[slug]/CatalogHeader'
 import { CatalogFooter } from '../catalogo-premium/[slug]/CatalogFooter'
 import styles from './kit200k.module.css'
@@ -26,6 +27,27 @@ interface Extra {
 interface FranelaProduct {
   productId: number
   variants: { id: number; valor: string }[]
+  imagen:    string | null
+}
+
+interface KitComponente {
+  id:     number
+  nombre: string
+  imagen: string | null
+}
+
+/* Imagen real del producto o, si no tiene, un placeholder neutro del mismo
+   tamaño (misma clase): nunca una imagen rota. */
+function ImgOrPlaceholder({ src, alt, className }: { src: string | null; alt: string; className: string }) {
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} className={className} />
+  }
+  return (
+    <div className={`${className} ${styles.imgPlaceholder}`} role="img" aria-label={alt}>
+      <ImageOff size={28} strokeWidth={1.5} aria-hidden="true" />
+    </div>
+  )
 }
 
 interface KitConfig {
@@ -38,6 +60,10 @@ const DEFAULT_KIT: KitConfig = { maillotTalla: 'L', franelaTalla: 'S' }
 interface Props {
   slug:             string
   kitId:            number
+  kitImage:         string | null
+  badgeHero:        string
+  showKitLink:      boolean
+  componentes:      KitComponente[]
   businessName:     string
   businessLogo:     string | null
   businessCity:     string | null
@@ -91,7 +117,7 @@ function Stepper({ value, onChange, max = 20 }: { value: number; onChange: (v: n
 }
 
 export function Kit200KForm({
-  slug, kitId, businessName, businessLogo, businessCity,
+  slug, kitId, kitImage, badgeHero, showKitLink, componentes, businessName, businessLogo, businessCity,
   catalogDesc, rif, address, location, waPhone, phone, catalogInstagram, catalogHours,
   franelaDamas, franelaCaballeros, franelaNinos,
 }: Props) {
@@ -244,15 +270,15 @@ export function Kit200KForm({
         businessCity={businessCity}
         isScrolled={isScrolled}
         showIconCluster={false}
+        showKitLink={showKitLink}
       />
 
       {/* 1. Hero */}
       <div className={styles.hero}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/kit-200k/hero.jpg" alt="Kit Oficial 200K sobre maniquí" className={styles.heroImg} />
+        <ImgOrPlaceholder src={kitImage} alt="Kit Oficial 200K" className={styles.heroImg} />
         <div className={styles.heroScrim} aria-hidden="true" />
         <div className={styles.heroContent}>
-          <div className={styles.heroBadge}>GRAN FONDO VIRGEN DEL VALLE — 8 SEPTIEMBRE 2027</div>
+          {badgeHero && <div className={styles.heroBadge}>{badgeHero}</div>}
           <div className={`${styles.disp} ${styles.heroTitle}`}>Kit Oficial 200K</div>
           <div className={styles.heroDesc}>
             Maillot + Medias oficiales del evento. Reserva ahora — la fábrica
@@ -280,30 +306,15 @@ export function Kit200KForm({
         <div className={styles.sectionSubtitle}>Pagas al retirar — esto es tu reserva</div>
 
         <div className={styles.grid4}>
-          <div className={styles.compCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/maillot.png" alt="Maillot Oficial" className={styles.compImg} />
-            <div className={styles.compBody}>
-              <div className={styles.compName}>Maillot Oficial</div>
-              <div className={styles.compSub}>Tallas XS - 4XL</div>
+          {componentes.map(c => (
+            <div key={c.id} className={styles.compCard}>
+              <ImgOrPlaceholder src={c.imagen} alt={c.nombre} className={styles.compImg} />
+              <div className={styles.compBody}>
+                <div className={styles.compName}>{c.nombre}</div>
+                <div className={styles.compSub}>Incluido en tu kit</div>
+              </div>
             </div>
-          </div>
-          <div className={styles.compCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/medias.png" alt="Medias Oficiales" className={styles.compImg} />
-            <div className={styles.compBody}>
-              <div className={styles.compName}>Medias Oficiales</div>
-              <div className={styles.compSub}>Talla única</div>
-            </div>
-          </div>
-          <div className={styles.compCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/medalla.png" alt="Medalla Finalista" className={styles.compImg} />
-            <div className={styles.compBody}>
-              <div className={styles.compName}>Medalla Finalista</div>
-              <div className={styles.compSub}>Incluida en tu kit</div>
-            </div>
-          </div>
+          ))}
           <div className={styles.compCard}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/kit-200k/franela.png" alt="Franela Oficial" className={styles.compImg} />
@@ -367,8 +378,7 @@ export function Kit200KForm({
 
         <div className={styles.grid3}>
           <div className={styles.shopCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/franela.png" alt="Franela Damas" className={styles.shopImg} />
+            <ImgOrPlaceholder src={franelaDamas?.imagen ?? null} alt="Franela Damas" className={styles.shopImg} />
             <div className={styles.shopBody}>
               <div className={styles.shopName}>Franela Damas</div>
               <div className={styles.shopPrice}>$5.00 c/u</div>
@@ -389,8 +399,7 @@ export function Kit200KForm({
           </div>
 
           <div className={styles.shopCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/franela.png" alt="Franela Caballeros" className={styles.shopImg} />
+            <ImgOrPlaceholder src={franelaCaballeros?.imagen ?? null} alt="Franela Caballeros" className={styles.shopImg} />
             <div className={styles.shopBody}>
               <div className={styles.shopName}>Franela Caballeros</div>
               <div className={styles.shopPrice}>$5.00 c/u</div>
@@ -411,8 +420,7 @@ export function Kit200KForm({
           </div>
 
           <div className={styles.shopCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/kit-200k/franela.png" alt="Franela Niños" className={styles.shopImg} />
+            <ImgOrPlaceholder src={franelaNinos?.imagen ?? null} alt="Franela Niños" className={styles.shopImg} />
             <div className={styles.shopBody}>
               <div className={styles.shopName}>Franela Niños</div>
               <div className={styles.shopPrice}>$4.00 c/u</div>

@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+import { parseKitConfig } from '@/lib/kit-config'
 import { getSession } from '@/lib/auth'
 import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
@@ -125,6 +126,7 @@ async function getBusiness(slug: string) {
       catalog_cover_path: true,
       catalog_cover_path_2: true,
       catalog_cover_path_3: true,
+      kit200k_config:       true,
       theme_color:   true,
       catalog_plan:            true,
       catalog_template:        true,
@@ -411,6 +413,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         landingSections={renderSections}
         cartelera={cartelera}
         brands={brandRows}
+        showKitLink={(() => { const k = parseKitConfig(business.kit200k_config); return k.activo && k.mostrar_en_header })()}
         slug={params.slug}
         rate={rate}
         currency={business.catalog_default_currency}

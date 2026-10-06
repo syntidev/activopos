@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   Layers,
   Tag,
+  Ticket,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -30,8 +31,9 @@ import { TabPlan }            from './tabs/TabPlan'
 import { TabLanding }         from './tabs/TabLanding'
 import { TabColecciones }     from './tabs/TabColecciones'
 import { TabBrands }          from './tabs/TabBrands'
+import { TabKit200k }         from './tabs/TabKit200k'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -70,15 +72,20 @@ const CUENTA_TABS: Tab[] = [
 interface ConfiguracionViewProps {
   session: SessionUser
   landingSectionsEnabled: boolean
+  /** Kit 200K: mismo flag por negocio que /kit-200k (reservas_enabled). */
+  kitEnabled: boolean
 }
 
-export function ConfiguracionView({ session, landingSectionsEnabled }: ConfiguracionViewProps) {
+const KIT_TAB: Tab = { key: 'kit200k', label: 'Kit 200K', Icon: Ticket }
+
+export function ConfiguracionView({ session, landingSectionsEnabled, kitEnabled }: ConfiguracionViewProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('general')
 
   // Gate de plan resuelto server-side (page.tsx) — sin el flag, el grupo
   // completo de Catálogo Público ni aparece en el sidebar (no solo se
   // bloquea al guardar). Tema Visual queda fuera del gate (siempre visible).
-  const catalogoTabs = landingSectionsEnabled ? CATALOGO_TABS : CATALOGO_TABS.slice(0, 1)
+  const planTabs     = landingSectionsEnabled ? CATALOGO_TABS : CATALOGO_TABS.slice(0, 1)
+  const catalogoTabs = kitEnabled ? [...planTabs, KIT_TAB] : planTabs
 
   const GROUPS: { label: string; tabs: Tab[] }[] = [
     { label: 'Negocio',         tabs: NEGOCIO_TABS },
@@ -133,6 +140,7 @@ export function ConfiguracionView({ session, landingSectionsEnabled }: Configura
         {activeTab === 'landing'     && landingSectionsEnabled && <TabLanding     businessId={session.businessId} />}
         {activeTab === 'colecciones' && landingSectionsEnabled && <TabColecciones businessId={session.businessId} />}
         {activeTab === 'marcas'      && landingSectionsEnabled && <TabBrands      businessId={session.businessId} />}
+        {activeTab === 'kit200k'     && kitEnabled             && <TabKit200k     businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
         {activeTab === 'plan'           && <TabPlan     businessId={session.businessId} />}

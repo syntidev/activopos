@@ -56,6 +56,8 @@ const CYCLE_LABEL: Record<BillingCycleKey, string> = {
 }
 
 function buildProductJsonLd() {
+  // Fin del año en curso (la página es force-dynamic: se calcula en cada request).
+  const priceValidUntil = `${new Date().getFullYear()}-12-31`
   return TIERS.map(tier => ({
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -68,7 +70,7 @@ function buildProductJsonLd() {
           name: PLAN_DISPLAY[tier],
           price: '0.00',
           priceCurrency: 'USD',
-          priceValidUntil: '2027-12-31',
+          priceValidUntil,
           availability: 'https://schema.org/InStock',
           url: 'https://activopos.com/planes',
         }
@@ -77,7 +79,7 @@ function buildProductJsonLd() {
           name: `${PLAN_DISPLAY[tier]} — ${CYCLE_LABEL[cycle]}`,
           price: BILLING_CYCLES[tier][cycle].totalAmount.toFixed(2),
           priceCurrency: 'USD',
-          priceValidUntil: '2027-12-31',
+          priceValidUntil,
           availability: 'https://schema.org/InStock',
           url: 'https://activopos.com/planes',
         })),

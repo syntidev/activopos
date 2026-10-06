@@ -100,6 +100,8 @@ interface Props {
   /** Cartelera de campaña activa (grid premium 1+4); null/omitida = bloque de colección de siempre */
   cartelera?:         CarteleraData | null
   brands?:            CatalogBrand[]
+  /** Link "200K" del header: solo si la config del Kit está activa y pide mostrarse. */
+  showKitLink?:       boolean
 }
 
 export interface CatalogBrand {
@@ -178,6 +180,7 @@ export function CatalogoGrid({
   landingSections = [],
   cartelera = null,
   brands = [],
+  showKitLink = false,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
@@ -902,6 +905,7 @@ export function CatalogoGrid({
         isScrolled={isScrolled}
         onSearchClick={() => setSearchExpanded(true)}
         onInfoClick={() => setInfoOpen(true)}
+        showKitLink={showKitLink}
       />
 
       {/* ── H2: Navegación + búsqueda expandible (sticky) ──────── */}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { parseKitConfig } from '@/lib/kit-config'
 import { Kit200KForm } from './Kit200KForm'
 import styles from './kit200k.module.css'
 
@@ -16,17 +17,42 @@ const SLUG = 'onbike'
 // mientras dure esa condición, y revertir el nombre cuando se repone.
 // Decisión de Carlos tras retirar "Kit 200K Básico" (859, combo paralelo) --
 // quedó desactivado (active=false), no borrado, por si hace falta auditar.
-const KIT_NAME = 'Kit 200K Completo'
+// Por ese invariante el kit se resuelve como "el combo activo" (mismo criterio
+// que api/public/kit-200k/[slug]), sin depender de su nombre.
 
 // Sin esto Next la prerrenderiza estática al build (ruta fija, sin [slug]) y
 // el flag reservas_enabled / kit_id quedan congelados hasta el próximo
 // deploy -- esta página depende de estado de DB que cambia sin redeploy.
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'Kit Oficial 200K — Reserva | OnBike Margarita',
-  description: 'Reserva tu Kit Oficial 200K del Gran Fondo Virgen del Valle — Maillot y Medias oficiales del evento, franela incluida.',
-  robots: { index: true, follow: true },
+// SEO previo, usado mientras la config del Kit no tenga seo_title/seo_description.
+const FALLBACK_TITLE       = 'Kit Oficial 200K — Reserva | OnBike Margarita'
+const FALLBACK_DESCRIPTION = 'Reserva tu Kit Oficial 200K del Gran Fondo Virgen del Valle — Maillot y Medias oficiales del evento, franela incluida.'
+
+// Mismo criterio que api/public/kit-200k/[slug]: solo assets propios hacia afuera.
+const INTERNAL_IMAGE_RE = /^\/(uploads|storage\/tenants)\//
+function firstInternalImage(raw: string | null): string | null {
+  if (!raw) return null
+  try {
+    const list = JSON.parse(raw) as unknown
+    if (!Array.isArray(list)) return null
+    return list.find((src): src is string => typeof src === 'string' && INTERNAL_IMAGE_RE.test(src)) ?? null
+  } catch {
+    return null
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const business = await prisma.business.findFirst({
+    where:  { catalog_slug: SLUG, active: true },
+    select: { kit200k_config: true },
+  })
+  const config = parseKitConfig(business?.kit200k_config ?? null)
+  return {
+    title:       config.seo_title || FALLBACK_TITLE,
+    description: config.seo_description || FALLBACK_DESCRIPTION,
+    robots:      { index: true, follow: true },
+  }
 }
 
 export default async function Kit200KPage() {
@@ -47,15 +73,28 @@ export default async function Kit200KPage() {
       catalog_desc_enabled: true,
       catalog_instagram: true,
       catalog_hours:     true,
+      kit200k_config:    true,
     },
   })
   if (!business) notFound()
 
   const kit = await prisma.product.findFirst({
-    where:  { business_id: business.id, product_type: 'combo', active: true, name: KIT_NAME },
-    select: { id: true },
+    where:  { business_id: business.id, product_type: 'combo', active: true },
+    select: { id: true, images: true },
   })
   if (!kit) notFound()
+
+  const config = parseKitConfig(business.kit200k_config)
+
+  // Componentes reales del combo (Maillot/Medalla/Media hoy), mismo origen que
+  // api/public/kit-200k/[slug]. La franela incluida en el kit NO es componente.
+  const componentLinks = await prisma.productComponent.findMany({
+    where:   { parent_id: kit.id },
+    include: { component: { select: { id: true, name: true, active: true, images: true } } },
+  })
+  const componentes = componentLinks
+    .filter(l => l.component.active)
+    .map(l => ({ id: l.component.id, nombre: l.component.name, imagen: firstInternalImage(l.component.images) }))
 
   // Franelas sueltas del showroom -- productos reales (TAREA: ensamblar Kit
   // 200K con el mecanismo combo/product existente). Si alguna no existe (aún
@@ -79,11 +118,11 @@ export default async function Kit200KPage() {
       usedIn:       { none: {} },
       collections:  { some: { collection: { slug: '200k' } } },
     },
-    select: { id: true, name: true, variants: { where: { is_active: true }, select: { id: true, valor: true } } },
+    select: { id: true, name: true, images: true, variants: { where: { is_active: true }, select: { id: true, valor: true } } },
   })
   const findFranela = (genero: string) => {
     const p = franelaProducts.find(fp => fp.name.includes(genero))
-    return p ? { productId: p.id, variants: p.variants } : null
+    return p ? { productId: p.id, variants: p.variants, imagen: firstInternalImage(p.images) } : null
   }
   const franelaDamas       = findFranela('Damas')
   const franelaCaballeros  = findFranela('Caballeros')
@@ -106,6 +145,10 @@ export default async function Kit200KPage() {
     <Kit200KForm
       slug={SLUG}
       kitId={kit.id}
+      kitImage={firstInternalImage(kit.images)}
+      badgeHero={config.badge_hero}
+      showKitLink={config.activo && config.mostrar_en_header}
+      componentes={componentes}
       businessName={displayTitle}
       businessLogo={business.logo_path}
       businessCity={location || null}

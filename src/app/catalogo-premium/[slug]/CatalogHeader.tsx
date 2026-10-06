@@ -24,10 +24,12 @@ export interface CatalogHeaderProps {
   showIconCluster?: boolean
   onSearchClick?:  () => void
   onInfoClick?:    () => void
+  /** Link "200K" al microsite del Kit: solo si su config está activa y pide mostrarse. */
+  showKitLink?:    boolean
 }
 
 export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(function CatalogHeader(
-  { slug, businessName, businessLogo, businessCity, isScrolled, showIconCluster = true, onSearchClick, onInfoClick },
+  { slug, businessName, businessLogo, businessCity, isScrolled, showIconCluster = true, onSearchClick, onInfoClick, showKitLink = false },
   ref,
 ) {
   const initials = getInitials(businessName)
@@ -56,9 +58,7 @@ export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(functio
       <nav className={styles.headerNav} aria-label="Navegación principal">
         <Link href={`/catalogo-premium/${slug}`} className={styles.headerNavLink}>Inicio</Link>
         <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Tienda</Link>
-        {/* TEMPORAL — demo Gran Fondo 200K. Remover cuando no aplique el link
-            público (o cuando el evento termine). */}
-        <Link href="/kit-200k" className={styles.headerNavLink}>200K</Link>
+        {showKitLink && <Link href="/kit-200k" className={styles.headerNavLink}>200K</Link>}
         <Link
           href={`/catalogo-premium/${slug}#marcas`}
           className={styles.headerNavLink}

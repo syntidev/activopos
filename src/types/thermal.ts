@@ -1,6 +1,21 @@
 // Contrato de datos de la impresión térmica (QZ Tray + ESC/POS).
 
 export type ThermalPaper = '58mm' | '80mm'
+export type ThermalCodepage = 'cp858' | 'cp850'
+
+// Ajustes del NEGOCIO (business.settings.print). El ancho NO vive acá: sale de ticket_format.
+export interface PrintSettings {
+  header:          string
+  auto_print:      boolean
+  open_drawer:     boolean
+  codepage:        ThermalCodepage
+  show_logo:       boolean
+  show_catalog_qr: boolean
+}
+
+export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
+  header: '', auto_print: true, open_drawer: false, codepage: 'cp858', show_logo: false, show_catalog_qr: false,
+}
 
 // Config POR EQUIPO (localStorage): la impresora está físicamente en una
 // máquina, no en el negocio. Guardarla en la DB haría que el terminal B
@@ -45,7 +60,11 @@ export interface ThermalTicketData {
     address: string | null
     phone:   string | null
     footer:  string | null
+    logo_url:     string | null
+    catalog_slug: string | null
+    paper:        ThermalPaper | null
   }
+  print: PrintSettings
   flags: ThermalTicketFlags
   sale: {
     ticket_number: string

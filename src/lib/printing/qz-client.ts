@@ -1,17 +1,17 @@
-// Conexión con QZ Tray (puente entre el navegador y la impresora del equipo).
+// Único punto de contacto con QZ Tray (puente entre el navegador y la impresora del equipo).
 //
-// Solo corre en el navegador. La librería se carga con import() dinámico: el
-// paquete toca `window`/`WebSocket` al inicializarse y no debe evaluarse en el
-// render del servidor.
-//
-// Puertos y protocolo NO se fijan: qz-tray.js prueba solo (verificado en su
-// código, v2.3.0) WSS 8181/8282/8383/8484 en una página https y WS
-// 8182/8283/8384/8485 en http.
+// Solo corre en el navegador y SOLO bajo demanda (al imprimir o al abrir el
+// panel): nunca se conecta al arrancar la app. La librería se carga con
+// import() dinámico porque toca `window`/`WebSocket` al inicializarse y no debe
+// evaluarse en el servidor.
 //
 // Firma: si el servidor tiene QZ_CERTIFICATE + QZ_PRIVATE_KEY, cada mensaje se
 // firma en /api/qz/sign (la clave privada nunca llega al navegador) y QZ Tray
-// imprime sin diálogo. Si no, QZ funciona en modo sin firma y muestra su aviso
-// "Untrusted website" en el equipo del cajero.
+// imprime sin diálogo. Sin ellas QZ funciona en modo sin firma y muestra su
+// aviso "Untrusted website" una vez en el equipo del cajero.
+//
+// Nada acá lanza: si QZ no está, el resultado dice "no disponible" y quien
+// llama decide el respaldo.
 
 import type * as QzApi from 'qz-tray'
 
@@ -19,13 +19,26 @@ type Qz = typeof QzApi
 
 export const QZ_DOWNLOAD_URL = 'https://qz.io/download/'
 
-export type QzStatus =
-  | { state: 'connected'; version: string; signed: boolean }
-  | { state: 'unavailable'; reason: 'not-running' | 'denied'; message: string }
+export type QzState = 'no_instalado' | 'disponible' | 'conectado' | 'error'
+
+export interface QzInfo {
+  state:   QzState
+  version: string | null
+  /** true = el servidor firma los mensajes; null = aún no se consultó. */
+  signed:  boolean | null
+  secure:  boolean | null
+  port:    number | null
+  message: string
+}
 
 export type QzResult<T> = { ok: true; value: T } | { ok: false; message: string }
 
-// Trazas explícitas de cada paso (pedido del sprint: logs claros de qué pasa).
+/** Estado inicial, antes de intentar conectar: no se toca la red hasta que haga falta. */
+export const QZ_IDLE: QzInfo = {
+  state: 'disponible', version: null, signed: null, secure: null, port: null,
+  message: 'Aún no se ha comprobado la conexión con QZ Tray en este equipo.',
+}
+
 const qzLog = (step: string, detail?: unknown): void => {
   if (detail === undefined) console.info(`[QZ] ${step}`)
   else console.info(`[QZ] ${step}`, detail)
@@ -52,7 +65,7 @@ function configureSigning(qz: Qz): Promise<boolean> {
         // llega HTML con 200. Solo un PEM de certificado cuenta como "firma configurada".
         const certificate = res.ok && !res.redirected ? await res.text() : ''
         if (!certificate.startsWith('-----BEGIN CERTIFICATE-----')) {
-          qzLog('firma digital no disponible (no configurada en el servidor o sesión vencida): QZ Tray pedirá confirmación en este equipo (modo sin firma)')
+          qzLog('sin certificado en el servidor: modo sin firma')
           return false
         }
         qz.security.setCertificatePromise((resolve: (cert: string) => void) => resolve(certificate))
@@ -81,24 +94,25 @@ function configureSigning(qz: Qz): Promise<boolean> {
 const errorMessage = (e: unknown): string =>
   e instanceof Error && e.message ? e.message : typeof e === 'string' && e ? e : 'Error desconocido'
 
-/** Detecta QZ Tray en este equipo y abre la conexión. Nunca falla en silencio. */
-export async function connectQz(): Promise<QzStatus> {
-  qzLog('cargando la librería qz-tray...')
-  const qz = await loadQz()
-  const signed = await configureSigning(qz)
-
-  if (qz.websocket.isActive()) {
-    const version = await qz.api.getVersion()
-    qzLog(`ya conectado. QZ Tray v${version}`)
-    return { state: 'connected', version, signed }
-  }
-
-  qzLog('buscando QZ Tray en este equipo (WebSocket local)...')
+/** Detecta QZ Tray en este equipo y abre la conexión. Nunca lanza. */
+export async function connectQz(): Promise<QzInfo> {
   try {
-    await qz.websocket.connect({ retries: 1, delay: 1 })
+    const qz = await loadQz()
+    const signed = await configureSigning(qz)
+
+    if (!qz.websocket.isActive()) {
+      qzLog('buscando QZ Tray en este equipo (WebSocket local)...')
+      await qz.websocket.connect({ usingSecure: true, retries: 2, delay: 1 })
+    }
+
     const version = await qz.api.getVersion()
+    const conn    = await qz.websocket.getConnectionInfo()
     qzLog(`conectado. QZ Tray v${version} (${signed ? 'con firma' : 'sin firma'})`)
-    return { state: 'connected', version, signed }
+    return {
+      state: 'conectado', version, signed,
+      secure: conn.socket === 'wss', port: conn.port,
+      message: 'QZ Tray conectado.',
+    }
   } catch (e) {
     // qz-tray.js marca `denied` cuando el usuario rechaza el permiso de red
     // local del navegador (Local Network Access de Chrome).
@@ -106,11 +120,11 @@ export async function connectQz(): Promise<QzStatus> {
     qzLog(denied ? 'el navegador bloqueó el acceso a la red local' : 'QZ Tray no respondió', e)
     return denied
       ? {
-          state: 'unavailable', reason: 'denied',
+          state: 'error', version: null, signed: null, secure: null, port: null,
           message: 'El navegador bloqueó el acceso a este equipo. Permite el acceso a dispositivos de la red local para este sitio y vuelve a intentar.',
         }
       : {
-          state: 'unavailable', reason: 'not-running',
+          state: 'no_instalado', version: null, signed: null, secure: null, port: null,
           message: 'No se detectó QZ Tray en este equipo. Instálalo y ábrelo: su icono aparece junto al reloj de Windows.',
         }
   }
@@ -118,13 +132,12 @@ export async function connectQz(): Promise<QzStatus> {
 
 /** Impresoras que QZ Tray ve en este equipo (las mismas que Windows). */
 export async function listPrinters(): Promise<QzResult<string[]>> {
-  const status = await connectQz()
-  if (status.state !== 'connected') return { ok: false, message: status.message }
+  const info = await connectQz()
+  if (info.state !== 'conectado') return { ok: false, message: info.message }
   try {
-    qzLog('pidiendo la lista de impresoras...')
     const found = await (await loadQz()).printers.find()
     const printers = (Array.isArray(found) ? found : [found]).filter((p): p is string => typeof p === 'string' && p !== '')
-    qzLog(`${printers.length} impresora(s) detectada(s)`, printers)
+    qzLog(`${printers.length} impresora(s) detectada(s)`)
     return { ok: true, value: printers }
   } catch (e) {
     qzLog('falló la lista de impresoras', e)
@@ -132,16 +145,14 @@ export async function listPrinters(): Promise<QzResult<string[]>> {
   }
 }
 
-/** Envía un comando crudo (ESC/POS) a la impresora, sin diálogo de Windows. */
-export async function printRaw(printer: string, data: string): Promise<QzResult<null>> {
-  const status = await connectQz()
-  if (status.state !== 'connected') return { ok: false, message: status.message }
+/** Envía bytes ESC/POS crudos (base64) a la impresora, sin diálogo de Windows. */
+export async function printBytes(printer: string, base64: string): Promise<QzResult<null>> {
+  const info = await connectQz()
+  if (info.state !== 'conectado') return { ok: false, message: info.message }
   try {
     const qz = await loadQz()
-    qzLog(`enviando ${data.length} caracteres a "${printer}"...`)
-    // Un string dentro de `data` lo interpreta QZ como {type:'raw', format:'command', flavor:'plain'}.
-    await qz.print(qz.configs.create(printer), [data])
-    qzLog('QZ Tray aceptó el trabajo de impresión')
+    await qz.print(qz.configs.create(printer), [{ type: 'raw', format: 'command', flavor: 'base64', data: base64 }])
+    qzLog(`QZ Tray aceptó el trabajo para "${printer}"`)
     return { ok: true, value: null }
   } catch (e) {
     qzLog('falló el envío a la impresora', e)

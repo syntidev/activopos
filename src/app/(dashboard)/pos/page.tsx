@@ -272,8 +272,12 @@ function POSView() {
           // y sin lanzar: una falla de impresión nunca debe demorar ni afectar
           // una venta ya cobrada, solo avisar. Apagada en este equipo = no hace nada.
           if (result.status === 'paid') {
-            void printSaleThermal(result.id).then(printed => {
-              if (printed.state === 'error') toast(`No se pudo imprimir el ticket: ${printed.message}`, 'warning')
+            void printSaleThermal(result.id, { auto: true }).then(printed => {
+              if (printed.state === 'error') {
+                // Respaldo: el ticket HTML a 58/80mm que ya existe (se imprime solo desde el navegador).
+                toast(`${printed.message} Se abre el ticket para imprimirlo desde el navegador.`, 'warning')
+                window.open(`/api/sales/${result.id}/ticket`, '_blank')
+              }
             })
           }
           await handlePaymentComplete()

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { parsePrintSettings } from '@/lib/print-settings'
 import type { ThermalTicketData } from '@/types/thermal'
 
 type RouteContext = { params: { id: string } }
@@ -45,6 +46,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         where:  { id: session.businessId },
         select: {
           name: true, address: true, phone: true, rif: true, ticket_footer: true,
+          settings: true, logo_path: true, catalog_slug: true, ticket_format: true,
           ticket_show_description:    true,
           ticket_show_bs:             true,
           ticket_show_foreign:        true,
@@ -70,7 +72,12 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         address: business.address,
         phone:   business.phone,
         footer:  business.ticket_footer,
+        // logo_path solo acepta rutas /uploads/ (regla sellada); catalog_slug arma el QR en el cliente.
+        logo_url:     business.logo_path,
+        catalog_slug: business.catalog_slug,
+        paper:        business.ticket_format === '58mm' || business.ticket_format === '80mm' ? business.ticket_format : null,
       },
+      print: parsePrintSettings(business.settings),
       flags: {
         show_description:    business.ticket_show_description,
         show_bs:             business.ticket_show_bs,
@@ -107,7 +114,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       },
     }
 
-    return NextResponse.json({ ok: true, ticket })
+    return NextResponse.json({ ok: true, business_id: session.businessId, ticket })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
     throw e

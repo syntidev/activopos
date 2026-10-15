@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { createStockAdjustment } from '@/lib/stock-adjust'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -53,16 +54,12 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       if (body.stock !== undefined) {
         const delta = body.stock - oldStock
         if (delta !== 0) {
-          await tx.inventoryEntry.create({
-            data: {
-              business_id: session.businessId,
-              product_id:  productId,
-              quantity:    delta > 0 ? delta : 0,
-              waste:       delta < 0 ? Math.abs(delta) : 0,
-              entry_type:  'adjustment',
-              notes:       `Ajuste manual variante ${variantId}`,
-              created_by:  session.userId,
-            },
+          await createStockAdjustment(tx, {
+            businessId: session.businessId,
+            productId,
+            userId:     session.userId,
+            quantity:   delta,
+            notes:      `Ajuste manual variante ${variantId}`,
           })
         }
       }

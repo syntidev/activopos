@@ -1326,10 +1326,9 @@
   outline-offset: 2px;
 }
 
-/* Sin stock — desaturado y no interactivo */
+/* Sin stock — desaturado; sigue abriendo su ficha (la compra se bloquea ahí) */
 .productCardOutOfStock {
   opacity:        0.55;
-  pointer-events: none;
   filter:         grayscale(30%);
 }
 .productCardOutOfStock .productCardAccent { display: none; }

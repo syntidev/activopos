@@ -876,7 +876,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           <AccordionCard title="Inventario" defaultOpen>
             {!f.hasVariants && (
               <div className={m.formGroup}>
-                <label className={m.label} htmlFor="np-stock">Stock Inicial</label>
+                <label className={m.label} htmlFor="np-stock">{f.isEdit ? 'Existencia actual' : 'Stock Inicial'}</label>
                 <input
                   id="np-stock"
                   type="number"

@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
-import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
+import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER } from '@/lib/catalog'
+import { isFinancingBadgeKey } from '@/lib/financing-badges'
 import { ProductoDetalle } from '../../ProductoDetalle'
 import type { PaymentMethod } from '../../CatalogoGrid'
 import { CatalogFooter } from '../../CatalogFooter'
@@ -58,7 +59,7 @@ export default async function ProductoPage({ params }: PageProps) {
       catalog_plan: true, catalog_template: true, subscription_active: true, subscription_expires_at: true,
       city: true, state: true, catalog_desc: true, catalog_instagram: true,
       catalog_hours: true, legal_name: true, rif: true, address: true,
-      catalog_default_currency: true,
+      catalog_default_currency: true, settings: true,
     },
   })
   if (!business || !isCatalogLive(business)) notFound()
@@ -125,6 +126,22 @@ export default async function ProductoPage({ params }: PageProps) {
       orderBy: [{ sort_order: 'asc' }, { id: 'asc' }],
     }),
   ])
+
+  // Agotado + visible SÍ abre; solo se bloquea la compra (el API de pedido valida igual).
+  const stockAgg = await prisma.inventoryEntry.aggregate({
+    where: { business_id: business.id, product_id: product.id },
+    _sum:  { quantity: true, waste: true },
+  })
+  const outOfStock = isOutOfStock({
+    sale_mode:    product.sale_mode,
+    has_variants: product.has_variants,
+    variants:     product.variants,
+    net_stock:    Number(stockAgg._sum.quantity ?? 0) - Number(stockAgg._sum.waste ?? 0),
+  })
+
+  // Sello: producto marcado Y toggle del negocio activo; si falta uno, no se muestra nada.
+  const badgeSetting   = (business.settings as Record<string, unknown> | null)?.catalog_financing_badge
+  const financingBadge = product.financing_eligible && isFinancingBadgeKey(badgeSetting) ? badgeSetting : null
 
   const imgs      = parseImages(product.images)
   const priceUsd     = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
@@ -196,6 +213,8 @@ export default async function ProductoPage({ params }: PageProps) {
         prevProduct={prevRaw}
         nextProduct={nextRaw}
         businessLogo={business.logo_path}
+        outOfStock={outOfStock}
+        financingBadge={financingBadge}
         businessCity={location || null}
         businessDesc={business.catalog_desc ?? null}
         businessPhone={business.phone ?? ''}

@@ -478,7 +478,10 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         sku:          varFormSku.trim() || null,
         precio_extra: parseFloat(varFormExtra) || 0,
         price_usd:    null,
-        stock:        parseInt(varFormStock) || 0,
+        // Editando: solo si el usuario cambió la existencia (el valor cargado puede estar desfasado por ventas).
+        ...(!editingVar || (parseInt(varFormStock) || 0) !== editingVar.stock
+          ? { stock: parseInt(varFormStock) || 0 }
+          : {}),
       }
       const url    = editingVar
         ? `/api/products/${editProduct.id}/variants/${editingVar.id}`
@@ -562,6 +565,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         notes:    productNotes.trim(),
         // En edición la existencia puede ser decimal (peso): parseInt truncaría y generaría un delta falso.
         stockInitial:        hasVariants ? 0 : Math.max((isEdit ? parseFloat(stockInitial) : parseInt(stockInitial)) || 0, 0),
+        stockChanged:        !isEdit || stockInitial !== String(editProduct?.stock_quantity ?? 0),
         stockAlertThreshold: Math.max(parseInt(stockAlertThreshold) || 0, 0),
         isAvailable,
         catalogVisibility,

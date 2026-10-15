@@ -13,6 +13,7 @@ import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
+import { FINANCING_BADGES, type FinancingBadgeKey } from '@/lib/financing-badges'
 import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
@@ -66,6 +67,8 @@ interface Props {
   prevProduct:   AdjacentProduct | null
   nextProduct:   AdjacentProduct | null
   businessLogo:  string | null
+  outOfStock:    boolean
+  financingBadge: FinancingBadgeKey | null
   businessCity:      string | null
   businessDesc:      string | null
   businessPhone:     string
@@ -77,7 +80,7 @@ export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, priceDivisa, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
-  businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
+  outOfStock, financingBadge, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
 }: Props) {
   const router = useRouter()
   const { showUsd, showBs } = currencyVisibility(currency)
@@ -644,11 +647,25 @@ export function ProductoDetalle({
             <span>Recibimos bolívares a la tasa del dólar BCV</span>
           </div>
 
+          {financingBadge && (
+            <img
+              className={styles.financingBadge}
+              src={FINANCING_BADGES[financingBadge].src}
+              alt={FINANCING_BADGES[financingBadge].alt}
+              width={FINANCING_BADGES[financingBadge].width}
+              height={FINANCING_BADGES[financingBadge].height}
+              loading="lazy"
+            />
+          )}
+
+          {outOfStock && <div className={styles.outOfStockNote} role="status">Agotado</div>}
+
           {/* CTAs */}
           <div className={styles.ctas}>
             <button
               type="button"
               className={styles.btnAddCart}
+              disabled={outOfStock}
               onClick={() => { if (addCurrentToCart()) setCartOpen(true) }}
             >
               <ShoppingBag size={18} aria-hidden="true" />
@@ -669,6 +686,7 @@ export function ProductoDetalle({
             <button
               type="button"
               className={styles.btnPedir}
+              disabled={outOfStock}
               onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
             >
               <Zap size={18} aria-hidden="true" />

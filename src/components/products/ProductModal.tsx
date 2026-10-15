@@ -56,6 +56,8 @@ export interface ProductFormData {
   isFeatured: boolean
   isFixedPrice: boolean
   financingEligible?: boolean
+  /** Solo edición: true si el usuario modificó la existencia respecto a la cargada. */
+  stockChanged?: boolean
   productType: 'simple' | 'combo' | 'fabricable'
   unitType: 'unit' | 'weight' | 'volume' | 'length'
   unitLabel: string

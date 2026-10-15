@@ -240,7 +240,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         stock_alert_threshold: data.stockAlertThreshold,
         financing_eligible: data.financingEligible,
         // Servidor calcula delta vs. existencia actual y registra el ajuste.
-        ...(data.hasVariants || data.saleMode === 'service' ? {} : { stock_quantity: data.stockInitial }),
+        ...(data.hasVariants || data.saleMode === 'service' || !data.stockChanged ? {} : { stock_quantity: data.stockInitial }),
       }),
     })
     if (!res.ok) {

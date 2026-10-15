@@ -43,6 +43,7 @@ const patchSchema = z.object({
   availability:           z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).optional(),
   catalog_visibility:     z.enum(['visible', 'hidden', 'on_request']).optional(),
   stock_alert_threshold:  z.number().int().min(0).optional(),
+  financing_eligible:     z.boolean().optional(),
   // Existencia objetivo: el servidor calcula delta y lo registra como ajuste (nunca escribe stock directo).
   stock_quantity:         z.number().min(0).optional(),
 })

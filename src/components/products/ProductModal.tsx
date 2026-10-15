@@ -55,6 +55,7 @@ export interface ProductFormData {
   subcategory: string
   isFeatured: boolean
   isFixedPrice: boolean
+  financingEligible?: boolean
   productType: 'simple' | 'combo' | 'fabricable'
   unitType: 'unit' | 'weight' | 'volume' | 'length'
   unitLabel: string
@@ -98,6 +99,7 @@ export interface EditableProduct {
   unit_step?: number
   stock_alert_threshold?: number | null
   stock_quantity?: number
+  financing_eligible?: boolean
 }
 
 interface DbVariant {

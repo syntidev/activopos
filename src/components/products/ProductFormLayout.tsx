@@ -405,6 +405,26 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             </label>
           </div>
 
+          {/* Sello Cashea: solo si el negocio activó el sello en Configuración → Tema */}
+          {f.financingBadgeOn && (
+            <div className={c.fixedPriceRow}>
+              <div className={c.fixedPriceLabel}>
+                <span className={c.fixedPriceTitle}>Disponible con Cashea</span>
+                <span className={c.fixedPriceSub}>Muestra el sello Cashea en la ficha pública del producto</span>
+              </div>
+              <label className={c.toggle} aria-label="Disponible con Cashea">
+                <input
+                  type="checkbox"
+                  className={c.toggleInput}
+                  checked={f.financingEligible}
+                  onChange={(e) => f.setFinancingEligible(e.target.checked)}
+                />
+                <span className={c.toggleTrack} />
+                <span className={c.toggleThumb} />
+              </label>
+            </div>
+          )}
+
           {/* Toggle disponible */}
           <div className={c.fixedPriceRow}>
             <div className={c.fixedPriceLabel}>

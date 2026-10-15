@@ -380,6 +380,9 @@ model Product {
   // con ese método de pago. El catálogo público solo muestra precio_divisa
   // y price_per_unit_usd ("BCV/Full").
   precio_cashea              Decimal?          @db.Decimal(10, 2)
+  // Sello de financiamiento (hoy solo Cashea) en la ficha pública. Solo se muestra si
+  // además business.settings.catalog_financing_badge está activo. No es un precio.
+  financing_eligible         Boolean           @default(false)
   cost_per_unit_usd          Decimal?          @db.Decimal(10, 4)
   cost_unknown               Boolean           @default(false)
   wholesale_price_usd        Decimal?          @db.Decimal(10, 2)

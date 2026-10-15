@@ -405,6 +405,15 @@
   color:         var(--color-success-text);
 }
 
+/* Sello de financiamiento: alto fijo, ancho proporcional (asset oficial, no se redibuja). */
+.financingBadge {
+  display:    block;
+  height:     var(--space-8);
+  width:      auto;
+  max-width:  100%;
+  object-fit: contain;
+}
+
 .outOfStockNote {
   display:         flex;
   align-items:     center;

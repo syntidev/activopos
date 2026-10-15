@@ -9,6 +9,7 @@ import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
+import { FINANCING_BADGES, type FinancingBadgeKey } from '@/lib/financing-badges'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
 import styles from './productoDetalle.module.css'
 
@@ -38,12 +39,13 @@ interface Props {
   relatedProducts: RelatedProduct[]
   businessLogo:  string | null
   outOfStock:    boolean
+  financingBadge: FinancingBadgeKey | null
 }
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessName,
-  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock,
+  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financingBadge,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
@@ -342,6 +344,17 @@ export function ProductoDetalle({
             <span>💱</span>
             <span>Recibimos bolívares a la tasa del dólar BCV</span>
           </div>
+
+          {financingBadge && (
+            <img
+              className={styles.financingBadge}
+              src={FINANCING_BADGES[financingBadge].src}
+              alt={FINANCING_BADGES[financingBadge].alt}
+              width={FINANCING_BADGES[financingBadge].width}
+              height={FINANCING_BADGES[financingBadge].height}
+              loading="lazy"
+            />
+          )}
 
           {outOfStock && <div className={styles.outOfStockNote} role="status">Agotado</div>}
 

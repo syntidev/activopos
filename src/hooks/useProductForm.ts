@@ -145,6 +145,9 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [cost, setCost]               = useState('')
   const [costUnknown, setCostUnknownRaw] = useState(false)
   const [isFixedPrice, setIsFixedPrice] = useState(false)
+  const [financingEligible, setFinancingEligible] = useState(false)
+  // El checkbox "Disponible con Cashea" solo aparece si el negocio activó el sello (Config → Tema).
+  const [financingBadgeOn, setFinancingBadgeOn]   = useState(false)
   const [margin, setMargin]           = useState('30')
   const [price, setPrice]             = useState('')
   const [stockInitial, setStockInitial]               = useState('0')
@@ -233,6 +236,17 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const imgRef2 = useRef<HTMLInputElement>(null)
   const imgRefs = [imgRef0, imgRef1, imgRef2] as const
 
+  useEffect(() => {
+    let active = true
+    fetch('/api/config/catalog')
+      .then(res => (res.ok ? res.json() : null))
+      .then((data: { catalog?: { catalog_financing_badge?: string | null } } | null) => {
+        if (active) setFinancingBadgeOn(!!data?.catalog?.catalog_financing_badge)
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+
   /* ── Inicialización desde editProduct (o defaults en /nuevo) ── */
   useEffect(() => {
     if (!editProduct) return
@@ -277,6 +291,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setCostUnknownRaw(editProduct.cost_unknown ?? false)
     setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
     setStockInitial(String(editProduct.stock_quantity ?? 0))
+    setFinancingEligible(editProduct.financing_eligible ?? false)
 
     const c =editProduct.cost_per_unit_usd ?? 0
     const p = editProduct.price_per_unit_usd
@@ -568,6 +583,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         subcategory: subcategory.trim(),
         isFeatured,
         isFixedPrice,
+        financingEligible,
       })
     } catch {
       setErrors({ submit: 'Error al guardar. Intenta de nuevo.' })
@@ -594,7 +610,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     wholesalePricePerKgUsd, location, productNotes, images, isAvailable,
     catalogVisibility, availability, hasVariants, variants, combineVariants,
     dim1Values, dim2Values, combinations, badge, subcategory, isFeatured,
-    components,
+    components, financingEligible,
   })
   const initialSnapshotRef = useRef<string | null>(null)
   if (initialSnapshotRef.current === null && (!isEdit || populatedRef.current)) {
@@ -631,6 +647,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     availability, setAvailability,
     showCatalogUpgrade, setShowCatalogUpgrade, hasCatalogPlan,
     badge, setBadge, subcategory, setSubcategory, isFeatured, setIsFeatured,
+    financingEligible, setFinancingEligible, financingBadgeOn,
     // in-memory variants
     hasVariants, setHasVariants, variants,
     newVarName, setNewVarName, newVarExtra, setNewVarExtra,

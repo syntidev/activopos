@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER } from '@/lib/catalog'
+import { isFinancingBadgeKey } from '@/lib/financing-badges'
 import { ProductoDetalle } from '../../ProductoDetalle'
 import type { PaymentMethod } from '../../CatalogoGrid'
 import { CatalogFooter } from '../../CatalogFooter'
@@ -58,7 +59,7 @@ export default async function ProductoPage({ params }: PageProps) {
       catalog_plan: true, subscription_active: true, subscription_expires_at: true,
       city: true, state: true, catalog_desc: true, catalog_instagram: true,
       catalog_hours: true, legal_name: true, rif: true, address: true,
-      catalog_default_currency: true,
+      catalog_default_currency: true, settings: true,
     },
   })
   if (!business || !isCatalogLive(business)) notFound()
@@ -100,6 +101,10 @@ export default async function ProductoPage({ params }: PageProps) {
     variants:     product.variants,
     net_stock:    Number(stockAgg._sum.quantity ?? 0) - Number(stockAgg._sum.waste ?? 0),
   })
+
+  // Sello: producto marcado Y toggle del negocio activo; si falta uno, no se muestra nada.
+  const badgeSetting   = (business.settings as Record<string, unknown> | null)?.catalog_financing_badge
+  const financingBadge = product.financing_eligible && isFinancingBadgeKey(badgeSetting) ? badgeSetting : null
 
   const imgs     = parseImages(product.images)
   const priceUsd  = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
@@ -168,6 +173,7 @@ export default async function ProductoPage({ params }: PageProps) {
         relatedProducts={relatedProducts}
         businessLogo={business.logo_path}
         outOfStock={outOfStock}
+        financingBadge={financingBadge}
       />
       <CatalogFooter
         slug={params.slug}

@@ -40,12 +40,13 @@ interface Props {
   businessLogo:  string | null
   outOfStock:    boolean
   financingBadge: FinancingBadgeKey | null
+  stockHidden:    boolean
 }
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessName,
-  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financingBadge,
+  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financingBadge, stockHidden,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
@@ -71,7 +72,7 @@ export function ProductoDetalle({
 
   const availableStock = selectedVariant
     ? selectedVariant.stock
-    : Infinity
+    : (stockHidden ? 10 : Infinity)
 
   const variantGroups = useMemo(() => {
     const map = new Map<string, CatalogProductVariant[]>()

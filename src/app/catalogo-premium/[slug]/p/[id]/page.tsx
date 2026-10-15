@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
-import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER } from '@/lib/catalog'
+import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER , stockDisplayOf, maskVariantStock } from '@/lib/catalog'
 import { isFinancingBadgeKey } from '@/lib/financing-badges'
 import { ProductoDetalle } from '../../ProductoDetalle'
 import type { PaymentMethod } from '../../CatalogoGrid'
@@ -139,6 +139,10 @@ export default async function ProductoPage({ params }: PageProps) {
     net_stock:    Number(stockAgg._sum.quantity ?? 0) - Number(stockAgg._sum.waste ?? 0),
   })
 
+  const hideStock = stockDisplayOf(business.settings) === 'status'
+
+
+
   // Sello: producto marcado Y toggle del negocio activo; si falta uno, no se muestra nada.
   const badgeSetting   = (business.settings as Record<string, unknown> | null)?.catalog_financing_badge
   const financingBadge = product.financing_eligible && isFinancingBadgeKey(badgeSetting) ? badgeSetting : null
@@ -197,7 +201,7 @@ export default async function ProductoPage({ params }: PageProps) {
           id:              v.id,
           tipo:            v.tipo,
           valor:           v.valor,
-          stock:           v.stock,
+          stock:           maskVariantStock(v.stock, hideStock),
           precio_extra:    Number(v.precio_extra),
           combination_key: v.combination_key,
           variant_group:   v.variant_group,
@@ -215,6 +219,7 @@ export default async function ProductoPage({ params }: PageProps) {
         businessLogo={business.logo_path}
         outOfStock={outOfStock}
         financingBadge={financingBadge}
+        stockHidden={hideStock}
         businessCity={location || null}
         businessDesc={business.catalog_desc ?? null}
         businessPhone={business.phone ?? ''}

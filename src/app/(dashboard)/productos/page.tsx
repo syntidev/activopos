@@ -329,7 +329,8 @@ export default function ProductosPage() {
         is_featured:        data.isFeatured,
         is_fixed_price:     data.isFixedPrice,
         cost_unknown:       data.costUnknown,
-        ...(isEdit ? {} : {
+        // Edición: servidor calcula delta vs. existencia actual; solo se envía si el usuario la cambió.
+        ...(isEdit ? (data.hasVariants || data.saleMode === 'service' || !data.stockChanged ? {} : { stock_quantity: data.stockInitial }) : {
           stock_quantity: data.stockInitial,
           variants: data.hasVariants
             ? data.variants.map(v => ({
@@ -580,6 +581,7 @@ export default function ProductosPage() {
       unit_type:          product.unit_type,
       unit_label:         product.unit_label,
       unit_step:          product.unit_step,
+      stock_quantity:     product.stock_quantity,
     })
     setShowProductModal(true)
   }, [])

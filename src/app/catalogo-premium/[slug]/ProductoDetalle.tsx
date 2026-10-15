@@ -69,6 +69,7 @@ interface Props {
   businessLogo:  string | null
   outOfStock:    boolean
   financingBadge: FinancingBadgeKey | null
+  stockHidden:    boolean
   businessCity:      string | null
   businessDesc:      string | null
   businessPhone:     string
@@ -80,7 +81,7 @@ export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, priceDivisa, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
-  outOfStock, financingBadge, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
+  outOfStock, financingBadge, stockHidden, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
 }: Props) {
   const router = useRouter()
   const { showUsd, showBs } = currencyVisibility(currency)
@@ -148,7 +149,7 @@ export function ProductoDetalle({
 
   const availableStock = selectedVariant
     ? selectedVariant.stock
-    : Infinity
+    : (stockHidden ? 10 : Infinity)
 
   const variantGroups = useMemo(() => {
     const map = new Map<string, CatalogProductVariant[]>()

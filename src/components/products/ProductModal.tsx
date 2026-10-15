@@ -423,6 +423,7 @@ export function ProductModal({
       setSubcategory(editProduct.subcategory ?? '')
       setIsFeatured(editProduct.is_featured ?? false)
       setIsFixedPrice(editProduct.is_fixed_price ?? false)
+      setStockInitial(String(editProduct.stock_quantity ?? 0))
       setCostUnknown(editProduct.cost_unknown ?? false)
       setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
 
@@ -558,7 +559,10 @@ export function ProductModal({
         sku:          varFormSku.trim() || null,
         precio_extra: parseFloat(varFormExtra) || 0,
         price_usd:    null,
-        stock:        parseInt(varFormStock) || 0,
+        // Editando: solo si el usuario cambió la existencia (el valor cargado puede estar desfasado por ventas).
+        ...(!editingVar || (parseInt(varFormStock) || 0) !== editingVar.stock
+          ? { stock: parseInt(varFormStock) || 0 }
+          : {}),
       }
       const url    = editingVar
         ? `/api/products/${editProduct.id}/variants/${editingVar.id}`
@@ -644,7 +648,9 @@ export function ProductModal({
         wholesalePricePerKgUsd: wholesalePricePerKgUsd.trim() ? parseFloat(wholesalePricePerKgUsd) : null,
         location: location.trim(),
         notes:    productNotes.trim(),
-        stockInitial:         Math.max(parseInt(stockInitial) || 0, 0),
+        // En edición la existencia puede ser decimal (peso): parseInt truncaría y generaría un delta falso.
+        stockInitial:         Math.max((isEdit ? parseFloat(stockInitial) : parseInt(stockInitial)) || 0, 0),
+        stockChanged:         !isEdit || stockInitial !== String(editProduct?.stock_quantity ?? 0),
         stockAlertThreshold:  Math.max(parseInt(stockAlertThreshold) || 0, 0),
         isAvailable,
         catalogVisibility,
@@ -1386,12 +1392,12 @@ export function ProductModal({
                     />
                   </div>
 
-                  {/* ── Stock inicial (solo creación, sin variantes) ── */}
-                  {!isEdit && saleMode !== 'service' && !hasVariants && (
+                  {/* ── Stock inicial / existencia actual (sin variantes) ── */}
+                  {saleMode !== 'service' && !hasVariants && (
                     <>
                       <div className={mStyles.divider} />
                       <div className={mStyles.formGroup}>
-                        <label className={mStyles.label} htmlFor="pm-stock">Stock Inicial</label>
+                        <label className={mStyles.label} htmlFor="pm-stock">{isEdit ? 'Existencia actual' : 'Stock Inicial'}</label>
                         <input
                           id="pm-stock"
                           type="number"

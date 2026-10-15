@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
-import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf, maskVariantStock } from '@/lib/catalog'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -36,6 +36,7 @@ function getCachedCatalogData(slug: string) {
           catalog_plan:            true,
           subscription_active:     true,
           subscription_expires_at: true,
+          settings:                true,
         },
       })
       if (!business) return null
@@ -106,7 +107,8 @@ export async function GET(
   const { business, products } = cached
 
   // No filtrar campos de suscripción al público
-  const { catalog_plan, subscription_active, subscription_expires_at, ...publicBusiness } = business
+  // settings contiene config interna (delivery, etc.): nunca va al público.
+  const { catalog_plan, subscription_active, subscription_expires_at, settings: _settings, ...publicBusiness } = business
 
   const [rate, stockEntries] = await Promise.all([
     getActiveRate(business.id).then(r => r.rate),
@@ -134,6 +136,7 @@ export async function GET(
     products: products.map(p => {
       const imgs     = parseImages(p.images)
       const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
+      const hideStock = stockDisplayOf(business.settings) === 'status'
       const netQty   = stockMap.get(p.id)
       const isService = p.sale_mode === 'service'
       return {
@@ -150,7 +153,8 @@ export async function GET(
         badge:              p.badge ?? 'none',
         subcategory:        p.subcategory ?? null,
         is_featured:        p.is_featured,
-        stockQty:           isService ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
+        stockQty:           hideStock || isService ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
+        stockHidden:         hideStock,
         outOfStock:         isOutOfStock({ sale_mode: p.sale_mode, has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
         availability:       computeAvailability({
           sale_mode:    p.sale_mode,

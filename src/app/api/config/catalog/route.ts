@@ -3,10 +3,12 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { FINANCING_BADGES, isFinancingBadgeKey } from '@/lib/financing-badges'
+import { stockDisplayOf } from '@/lib/catalog'
 
 const financingSchema = z.object({
-  catalog_financing_badge: z.enum(Object.keys(FINANCING_BADGES) as [string, ...string[]]).nullable(),
-})
+  catalog_financing_badge: z.enum(Object.keys(FINANCING_BADGES) as [string, ...string[]]).nullable().optional(),
+  catalog_stock_display:   z.enum(['exact', 'status']).optional(),
+}).refine(d => d.catalog_financing_badge !== undefined || d.catalog_stock_display !== undefined, { message: 'Nada que guardar' })
 
 const upgradeSchema = z.object({
   action: z.literal('request_upgrade'),
@@ -33,6 +35,7 @@ export async function GET() {
       catalog_plan:            business.catalog_plan,
       catalog_slug:            business.catalog_slug,
       catalog_financing_badge: isFinancingBadgeKey(badge) ? badge : null,
+      catalog_stock_display:   stockDisplayOf(settings),
     },
   })
 }
@@ -55,10 +58,16 @@ export async function PATCH(req: NextRequest) {
 
     await prisma.business.update({
       where: { id: session.businessId },
-      data:  { settings: { ...existing, catalog_financing_badge: data.catalog_financing_badge } },
+      data:  {
+        settings: {
+          ...existing,
+          ...(data.catalog_financing_badge !== undefined ? { catalog_financing_badge: data.catalog_financing_badge } : {}),
+          ...(data.catalog_stock_display !== undefined ? { catalog_stock_display: data.catalog_stock_display } : {}),
+        },
+      },
     })
 
-    return NextResponse.json({ ok: true, catalog_financing_badge: data.catalog_financing_badge })
+    return NextResponse.json({ ok: true })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })

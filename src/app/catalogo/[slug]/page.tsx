@@ -6,7 +6,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import { CatalogFooter } from './CatalogFooter'
-import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf, maskVariantStock } from '@/lib/catalog'
 import styles from './catalogo.module.css'
 
 interface PageProps {
@@ -48,7 +48,7 @@ async function getBusiness(slug: string) {
       catalog_title: true,
       catalog_desc:  true,
       catalog_desc_enabled: true,
-      catalog_default_currency: true,
+      catalog_default_currency: true, settings: true,
       segment:       true,
       catalog_hours:     true,
       catalog_instagram: true,
@@ -149,6 +149,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     const imgs     = parseImages(p.images)
     const priceUsd = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
     const priceBs  = priceUsd > 0 ? priceUsd * rate : null
+    const hideStock = stockDisplayOf(business.settings) === 'status'
     const netQty   = stockMap.get(p.id)
     return {
       id:           p.id,
@@ -160,7 +161,8 @@ export default async function CatalogoPage({ params }: PageProps) {
       priceUsd,
       priceBs,
       isService:    p.sale_mode === 'service',
-      stockQty:     p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
+      stockQty:     hideStock || p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
+      stockHidden:   hideStock,
       outOfStock:   isOutOfStock({ sale_mode: p.sale_mode, has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
       badge:            p.badge ?? null,
       subcategory:      p.subcategory ?? null,
@@ -178,7 +180,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         id:              v.id,
         tipo:            v.tipo,
         valor:           v.valor,
-        stock:           v.stock,
+        stock:           maskVariantStock(v.stock, hideStock),
         precio_extra:    Number(v.precio_extra),
         combination_key: v.combination_key,
         variant_group:   v.variant_group,

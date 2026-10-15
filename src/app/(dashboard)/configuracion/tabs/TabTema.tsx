@@ -47,12 +47,15 @@ export function TabTema({ businessId: _b }: Props) {
   const [coverPath3, setCoverPath3] = useState<string | null>(null)
   const [financingOn, setFinancingOn] = useState(false)
   const [financingBusy, setFinancingBusy] = useState(false)
+  const [stockExact, setStockExact] = useState(true)
+  const [stockBusy, setStockBusy]   = useState(false)
 
   useEffect(() => {
     let active = true
     fetch('/api/config/catalog')
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { catalog?: { catalog_financing_badge?: string | null } } | null) => {
+      .then((data: { catalog?: { catalog_financing_badge?: string | null ; catalog_stock_display?: 'exact' | 'status' } } | null) => {
+        if (active) setStockExact(data?.catalog?.catalog_stock_display !== 'status')
         if (active) setFinancingOn(data?.catalog?.catalog_financing_badge === FINANCING_BADGE_KEY)
       })
       .catch(() => {})
@@ -127,6 +130,26 @@ export function TabTema({ businessId: _b }: Props) {
       toast('No se pudo guardar el sello de financiamiento.', 'error')
     } finally {
       setFinancingBusy(false)
+    }
+  }
+
+  /* Existencias en el catálogo: 'exact' (cantidad) o 'status' (solo Disponible / Pocas unidades / Agotado). Se guarda al instante. */
+  const toggleStockExact = async () => {
+    const next = !stockExact
+    setStockBusy(true)
+    try {
+      const res = await fetch('/api/config/catalog', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ catalog_stock_display: next ? 'exact' : 'status' }),
+      })
+      if (!res.ok) throw new Error()
+      setStockExact(next)
+      toast(next ? 'El catálogo muestra la cantidad exacta.' : 'El catálogo muestra solo el estado de existencias.', 'success')
+    } catch {
+      toast('No se pudo guardar el ajuste de existencias.', 'error')
+    } finally {
+      setStockBusy(false)
     }
   }
 
@@ -224,6 +247,28 @@ export function TabTema({ businessId: _b }: Props) {
             <span className={styles.colorSelectedSegment}>{activeColor.segment}</span>
           </p>
         )}
+      </div>
+
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>Existencias</h3>
+        <div className={styles.toggleRow}>
+          <div>
+            <p className={styles.toggleLabel}>Mostrar cantidad exacta de existencias en el catálogo</p>
+            <p className={styles.toggleHint}>
+              Apagado: el catálogo solo dice Disponible, Pocas unidades o Agotado y no envía la cantidad. Se guarda al instante.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={`${styles.toggleBtn} ${stockExact ? styles.toggleBtnOn : ''}`}
+            onClick={toggleStockExact}
+            disabled={stockBusy}
+            aria-pressed={stockExact}
+            aria-label={stockExact ? 'Ocultar cantidad exacta' : 'Mostrar cantidad exacta'}
+          >
+            <span className={`${styles.toggleKnob} ${stockExact ? styles.toggleKnobOn : ''}`} />
+          </button>
+        </div>
       </div>
 
       <div className={styles.formCard}>

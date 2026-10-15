@@ -28,6 +28,11 @@ import styles from './catalogo.module.css'
 
 /* ── Public interfaces ───────────────────────────────────────── */
 
+// Tope fijo de cantidad cuando el negocio oculta existencias (settings.catalog_stock_display='status');
+// el rechazo real lo hace el 409 del endpoint de pedido. Espejo de STATUS_QTY_CAP en lib/catalog.ts
+// (no se importa: ese módulo arrastra prisma al bundle cliente).
+const STATUS_QTY_CAP = 10
+
 export interface CatalogProductVariant {
   id:              number
   tipo:            string
@@ -54,6 +59,7 @@ export interface CatalogProduct {
   outOfStock:        boolean
   isService:         boolean
   stockQty:          number | null
+  stockHidden:       boolean
   badge:             string | null
   subcategory:       string | null
   isFeatured:        boolean
@@ -635,7 +641,7 @@ export function CatalogoGrid({
   // variante seleccionada (o no tiene variantes). null (servicios) = sin tope.
   const availableStock = selectedVariant
     ? selectedVariant.stock
-    : (selP?.stockQty ?? Infinity)
+    : (selP?.stockQty ?? (selP?.stockHidden ? STATUS_QTY_CAP : Infinity))
 
   // Si el stock disponible baja (cambio de variante) por debajo de la
   // cantidad ya elegida, la re-ajusta — evita overselling al cambiar de talla.
@@ -724,6 +730,8 @@ export function CatalogoGrid({
           ) : p.availability === 'low_stock' ? (
             <span className={styles.badgeLowStock}>Pocas unidades</span>
           ) : p.isService ? (
+            <span className={styles.badgeDisponible}>Disponible</span>
+          ) : p.stockHidden ? (
             <span className={styles.badgeDisponible}>Disponible</span>
           ) : p.stockQty !== null && p.stockQty > 0 ? (
             <span className={styles.badgeStock}>
@@ -1784,7 +1792,7 @@ export function CatalogoGrid({
                       </button>
                     </div>
                   </div>
-                  {availableStock > 0 && availableStock <= 10 && (
+                  {!selP?.stockHidden && availableStock > 0 && availableStock <= 10 && (
                     <span className={styles.modalQtyAvailable}>
                       {availableStock} disponible{availableStock === 1 ? '' : 's'}
                     </span>

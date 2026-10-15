@@ -276,8 +276,9 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setIsFixedPrice(editProduct.is_fixed_price ?? false)
     setCostUnknownRaw(editProduct.cost_unknown ?? false)
     setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
+    setStockInitial(String(editProduct.stock_quantity ?? 0))
 
-    const c = editProduct.cost_per_unit_usd ?? 0
+    const c =editProduct.cost_per_unit_usd ?? 0
     const p = editProduct.price_per_unit_usd
     if (c > 0) setCost(c.toFixed(2))
     setPrice(p.toFixed(2))
@@ -544,7 +545,8 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         wholesalePricePerKgUsd: wholesalePricePerKgUsd.trim() ? parseFloat(wholesalePricePerKgUsd) : null,
         location: location.trim(),
         notes:    productNotes.trim(),
-        stockInitial:        hasVariants ? 0 : Math.max(parseInt(stockInitial) || 0, 0),
+        // En edición la existencia puede ser decimal (peso): parseInt truncaría y generaría un delta falso.
+        stockInitial:        hasVariants ? 0 : Math.max((isEdit ? parseFloat(stockInitial) : parseInt(stockInitial)) || 0, 0),
         stockAlertThreshold: Math.max(parseInt(stockAlertThreshold) || 0, 0),
         isAvailable,
         catalogVisibility,

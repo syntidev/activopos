@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { createStockAdjustment } from '@/lib/stock-adjust'
 
 type Context = { params: { id: string } }
 
@@ -42,26 +43,14 @@ export async function POST(req: NextRequest, { params }: Context) {
 
     // $transaction en prisma base: business_id manual adentro
     const entry = await prisma.$transaction(async tx => {
-    const newEntry = await tx.inventoryEntry.create({
-      data: {
-        business_id:       session.businessId,
-        product_id:        productId,
-        quantity:          body.quantity,
-        waste:             0,
-        entry_type:        'adjustment',
-        cost_per_unit_usd: body.cost_per_unit ?? null,
-        supplier:          body.supplier?.trim() || null,
-        notes,
-        created_by:        session.userId,
-      },
-      select: {
-        id: true,
-        quantity: true,
-        waste: true,
-        cost_per_unit_usd: true,
-        notes: true,
-        entered_at: true,
-      },
+    const newEntry = await createStockAdjustment(tx, {
+      businessId:  session.businessId,
+      productId,
+      userId:      session.userId,
+      quantity:    body.quantity,
+      notes,
+      costPerUnit: body.cost_per_unit,
+      supplier:    body.supplier?.trim() || null,
     })
 
     if (body.cost_per_unit != null && body.cost_per_unit > 0) {

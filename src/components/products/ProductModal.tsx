@@ -97,6 +97,7 @@ export interface EditableProduct {
   unit_label?: string
   unit_step?: number
   stock_alert_threshold?: number | null
+  stock_quantity?: number
 }
 
 interface DbVariant {

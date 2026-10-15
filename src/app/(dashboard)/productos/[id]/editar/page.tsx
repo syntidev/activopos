@@ -46,6 +46,7 @@ interface ApiProductDetail {
   unit_label?: string
   unit_step?: number | string | null
   stock_alert_threshold?: number | null
+  stock?: { net_qty: number }
 }
 
 /* images llega como string JSON crudo desde la DB (GET hace ...product) */
@@ -89,6 +90,7 @@ function toEditable(p: ApiProductDetail): EditableProduct {
     unit_label:         p.unit_label,
     unit_step:          p.unit_step != null ? Number(p.unit_step) : undefined,
     stock_alert_threshold: p.stock_alert_threshold,
+    stock_quantity:     p.stock?.net_qty,
   }
 }
 
@@ -234,6 +236,8 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         is_fixed_price:     data.isFixedPrice,
         cost_unknown:       data.costUnknown,
         stock_alert_threshold: data.stockAlertThreshold,
+        // Servidor calcula delta vs. existencia actual y registra el ajuste.
+        ...(data.hasVariants || data.saleMode === 'service' ? {} : { stock_quantity: data.stockInitial }),
       }),
     })
     if (!res.ok) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getActiveRate } from '@/lib/bcv'
 import { revalidateCatalogCache } from '@/lib/catalog'
+import { prisma } from '@/lib/prisma'
+import { createStockAdjustment, getNetStock } from '@/lib/stock-adjust'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -41,6 +43,8 @@ const patchSchema = z.object({
   availability:           z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).optional(),
   catalog_visibility:     z.enum(['visible', 'hidden', 'on_request']).optional(),
   stock_alert_threshold:  z.number().int().min(0).optional(),
+  // Existencia objetivo: el servidor calcula delta y lo registra como ajuste (nunca escribe stock directo).
+  stock_quantity:         z.number().min(0).optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -113,7 +117,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const body = await req.json()
-    const { margin, is_active, ...data } = patchSchema.parse(body)
+    const { margin, is_active, stock_quantity, ...data } = patchSchema.parse(body)
     if (is_active !== undefined) data.active = is_active
 
     const existing = await db.product.findFirst({
@@ -145,6 +149,21 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       data: patchData,
       include: { category: true },
     })
+
+    // Con variantes el stock vive en cada variante (PATCH /variants/[variantId]).
+    if (stock_quantity !== undefined && !product.has_variants) {
+      const current = await getNetStock(prisma, session.businessId, id)
+      const delta   = stock_quantity - current
+      if (delta !== 0) {
+        await createStockAdjustment(prisma, {
+          businessId: session.businessId,
+          productId:  id,
+          userId:     session.userId,
+          quantity:   delta,
+          notes:      'Ajuste desde edición de producto',
+        })
+      }
+    }
 
     await revalidateCatalogCache(session.businessId)
 

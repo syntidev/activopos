@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
-import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
+import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { ProductoDetalle } from '../../ProductoDetalle'
 import type { PaymentMethod } from '../../CatalogoGrid'
 import { CatalogFooter } from '../../CatalogFooter'
@@ -89,7 +89,19 @@ export default async function ProductoPage({ params }: PageProps) {
   ])
   if (!product) notFound()
 
-  const imgs      = parseImages(product.images)
+  // Agotado + visible SÍ abre; solo se bloquea la compra (el API de pedido valida igual).
+  const stockAgg = await prisma.inventoryEntry.aggregate({
+    where: { business_id: business.id, product_id: product.id },
+    _sum:  { quantity: true, waste: true },
+  })
+  const outOfStock = isOutOfStock({
+    sale_mode:    product.sale_mode,
+    has_variants: product.has_variants,
+    variants:     product.variants,
+    net_stock:    Number(stockAgg._sum.quantity ?? 0) - Number(stockAgg._sum.waste ?? 0),
+  })
+
+  const imgs     = parseImages(product.images)
   const priceUsd  = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
   const priceBs   = priceUsd > 0 ? priceUsd * rate : null
   const location  = [business.city, business.state].filter(Boolean).join(', ')
@@ -155,6 +167,7 @@ export default async function ProductoPage({ params }: PageProps) {
         catalogUrl={`/catalogo/${params.slug}`}
         relatedProducts={relatedProducts}
         businessLogo={business.logo_path}
+        outOfStock={outOfStock}
       />
       <CatalogFooter
         slug={params.slug}

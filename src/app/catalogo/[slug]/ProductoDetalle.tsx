@@ -37,12 +37,13 @@ interface Props {
   catalogUrl:    string
   relatedProducts: RelatedProduct[]
   businessLogo:  string | null
+  outOfStock:    boolean
 }
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, categoryColor,
   priceUsd, priceBs, variants, businessName,
-  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo,
+  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
@@ -342,11 +343,14 @@ export function ProductoDetalle({
             <span>Recibimos bolívares a la tasa del dólar BCV</span>
           </div>
 
+          {outOfStock && <div className={styles.outOfStockNote} role="status">Agotado</div>}
+
           {/* CTAs */}
           <div className={styles.ctas}>
             <button
               type="button"
               className={styles.btnAddCart}
+              disabled={outOfStock}
               onClick={() => { if (addCurrentToCart()) setCartOpen(true) }}
             >
               <ShoppingBag size={18} aria-hidden="true" />
@@ -355,6 +359,7 @@ export function ProductoDetalle({
             <button
               type="button"
               className={styles.btnPedir}
+              disabled={outOfStock}
               onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
             >
               <Zap size={18} aria-hidden="true" />

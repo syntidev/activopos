@@ -1081,9 +1081,9 @@
 }
 
 /* Sin stock — desaturado y no interactivo */
+/* Agotado sigue abriendo su detalle; la compra se bloquea ahí. */
 .productCardOutOfStock {
   opacity:        0.55;
-  pointer-events: none;
   filter:         grayscale(30%);
 }
 .productCardOutOfStock .productCardAccent { display: none; }

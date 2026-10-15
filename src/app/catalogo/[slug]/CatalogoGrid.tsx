@@ -465,7 +465,7 @@ export function CatalogoGrid({
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/catalogo/${slug}/p/${p.id}`) }
         }}
-        tabIndex={isOut ? -1 : 0}
+        tabIndex={0}
         role="button"
         aria-label={`Ver detalle: ${p.name}`}
       >

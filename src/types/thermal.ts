@@ -83,4 +83,5 @@ export interface ThermalTicketData {
 export type ThermalPrintResult =
   | { state: 'skipped' }
   | { state: 'printed'; printer: string }
-  | { state: 'error'; message: string }
+  // `sent`: el trabajo pudo haber llegado a la impresora; no hay que ofrecer un segundo camino de impresión.
+  | { state: 'error'; message: string; sent: boolean }

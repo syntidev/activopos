@@ -9,7 +9,7 @@ import { loadLogoRaster } from '@/lib/printing/logo-raster'
 import { hasAnyThermalEnabled, loadThermalSettings } from '@/lib/thermal-settings'
 import type { PrintSettings, ThermalPaper, ThermalPrintResult, ThermalTicketData } from '@/types/thermal'
 
-const fail = (message: string): ThermalPrintResult => ({ state: 'error', message })
+const fail = (message: string, sent = false): ThermalPrintResult => ({ state: 'error', message, sent })
 
 // Ancho imprimible típico en puntos (203 dpi).
 const LOGO_WIDTH: Record<ThermalPaper, number> = { '58mm': 384, '80mm': 576 }
@@ -44,7 +44,7 @@ export async function printSaleThermal(saleId: number, opts: { auto?: boolean } 
       codepage: ticket.print.codepage, openDrawer: ticket.print.open_drawer, logo,
     })
     const result = await printBytes(settings.printer, toBase64(bytes))
-    return result.ok ? { state: 'printed', printer: settings.printer } : fail(result.message)
+    return result.ok ? { state: 'printed', printer: settings.printer } : fail(result.message, result.sent)
   } catch (e) {
     return fail(e instanceof Error && e.message ? e.message : 'Error inesperado al preparar el ticket.')
   }
@@ -68,5 +68,5 @@ export async function printTestTicketThermal(i: TestPrintInfo): Promise<ThermalP
     { codepage: i.print.codepage, openDrawer: false },
   )
   const result = await printBytes(i.printer, toBase64(bytes))
-  return result.ok ? { state: 'printed', printer: i.printer } : fail(result.message)
+  return result.ok ? { state: 'printed', printer: i.printer } : fail(result.message, result.sent)
 }

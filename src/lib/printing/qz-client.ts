@@ -146,16 +146,20 @@ export async function listPrinters(): Promise<QzResult<string[]>> {
 }
 
 /** Envía bytes ESC/POS crudos (base64) a la impresora, sin diálogo de Windows. */
-export async function printBytes(printer: string, base64: string): Promise<QzResult<null>> {
+// `sent: true` = el trabajo pudo haber llegado a la impresora antes del fallo: reintentar por otro
+// camino (ticket HTML) arriesga un ticket doble.
+export type QzPrintResult = { ok: true } | { ok: false; message: string; sent: boolean }
+
+export async function printBytes(printer: string, base64: string): Promise<QzPrintResult> {
   const info = await connectQz()
-  if (info.state !== 'conectado') return { ok: false, message: info.message }
+  if (info.state !== 'conectado') return { ok: false, message: info.message, sent: false }
   try {
     const qz = await loadQz()
     await qz.print(qz.configs.create(printer), [{ type: 'raw', format: 'command', flavor: 'base64', data: base64 }])
     qzLog(`QZ Tray aceptó el trabajo para "${printer}"`)
-    return { ok: true, value: null }
+    return { ok: true }
   } catch (e) {
     qzLog('falló el envío a la impresora', e)
-    return { ok: false, message: `No se pudo imprimir: ${errorMessage(e)}` }
+    return { ok: false, message: `No se pudo imprimir: ${errorMessage(e)}`, sent: true }
   }
 }

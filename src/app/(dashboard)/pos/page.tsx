@@ -274,9 +274,14 @@ function POSView() {
           if (result.status === 'paid') {
             void printSaleThermal(result.id, { auto: true }).then(printed => {
               if (printed.state === 'error') {
-                // Respaldo: el ticket HTML a 58/80mm que ya existe (se imprime solo desde el navegador).
-                toast(`${printed.message} Se abre el ticket para imprimirlo desde el navegador.`, 'warning')
-                window.open(`/api/sales/${result.id}/ticket`, '_blank')
+                // Respaldo (ticket HTML ya existente) SOLO si nada llegó a la impresora: si QZ ya recibió
+                // el trabajo, abrirlo imprimiría el ticket dos veces.
+                if (printed.sent) {
+                  toast(`${printed.message} Revisa la impresora antes de reimprimir.`, 'warning')
+                } else {
+                  toast(`${printed.message} Se abre el ticket para imprimirlo desde el navegador.`, 'warning')
+                  window.open(`/api/sales/${result.id}/ticket`, '_blank')
+                }
               }
             })
           }

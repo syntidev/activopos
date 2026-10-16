@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { loadLogo } from '@/lib/pdf-utils'
+import { saleClientName } from '@/lib/sale-client'
 
 type Context = { params: { id: string } }
 
@@ -94,12 +95,13 @@ export async function GET(_req: NextRequest, { params }: Context) {
 
     // Client
     y += 10
-    if (sale.client) {
+    const clientLabel = saleClientName(sale)
+    if (clientLabel) {
       doc.setFont('helvetica', 'bold')
       doc.text('Cliente:', 15, y)
       doc.setFont('helvetica', 'normal')
-      doc.text(sale.client.name, 35, y)
-      if (sale.client.phone) {
+      doc.text(clientLabel, 35, y)
+      if (sale.client?.phone) {
         y += 6
         doc.text(`Tel: ${sale.client.phone}`, 35, y)
       }

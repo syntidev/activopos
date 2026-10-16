@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
+import { saleClientName } from '@/lib/sale-client'
 
 const DAYS_VENCER = 7
 const DAYS_LEGACY = 30  // fallback for sales without due_date
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
         sale_id:       s.id,
         ticket_number: s.ticket_number,
         client_id:     s.client_id,
-        client_name:   s.client?.name ?? s.client_name ?? 'Sin nombre',
+        client_name:   saleClientName(s) ?? 'Sin nombre',
         client_phone:  s.client?.phone ?? null,
         created_at:    s.created_at.toISOString(),
         due_date:      deadline.toISOString().split('T')[0],

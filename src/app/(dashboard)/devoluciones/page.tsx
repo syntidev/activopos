@@ -10,6 +10,7 @@ import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { HelpButton } from '@/components/help/HelpButton'
 import type { PaymentMethodRecord } from '@/types'
 import styles from './devoluciones.module.css'
+import { saleClientName } from '@/lib/sale-client'
 
 /* ── Types ── */
 
@@ -39,6 +40,7 @@ interface Sale {
   rate_used: number | string
   items: SaleItem[]
   client: { id: number; name: string; phone: string | null } | null
+  client_name?: string | null
   cashier: { id: number; name: string } | null
 }
 
@@ -363,7 +365,7 @@ function DevolucionesContent() {
             <div className={styles.saleInfo}>
               <div className={styles.saleInfoLeft}>
                 <span className={styles.saleTicket}>{foundSale.ticket_number}</span>
-                {foundSale.client && <span className={styles.saleClient}>{foundSale.client.name}</span>}
+                {saleClientName(foundSale) && <span className={styles.saleClient}>{saleClientName(foundSale)}</span>}
               </div>
               <div className={styles.saleInfoRight}>
                 <span className={styles.saleTotal}>${Number(foundSale.total_usd).toFixed(2)}</span>

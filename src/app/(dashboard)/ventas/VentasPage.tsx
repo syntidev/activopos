@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './ventas.module.css'
 import { businessDateKey, shiftDateKey } from '@/lib/business-day'
+import { saleClientName } from '@/lib/sale-client'
 
 /* ── Types ── */
 
@@ -119,7 +120,7 @@ function fmtTime(d: string | null): string {
 }
 
 function clientName(s: SaleRow): string {
-  return s.client?.name ?? s.client_name ?? '—'
+  return saleClientName(s) ?? '—'
 }
 
 function primaryPayment(s: SaleRow): string {
@@ -604,7 +605,7 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                         <span>Cajero: <strong>{selected.cashier.name}</strong></span>
                       </div>
                     )}
-                    {(selected.client ?? selected.client_name) && (
+                    {saleClientName(selected) && (
                       <div className={styles.metaRow}>
                         <User size={12} aria-hidden="true" />
                         <span>Cliente: <strong>{clientName(selected)}</strong></span>

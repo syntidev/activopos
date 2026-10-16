@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netByProduct, netSales, returnedBySeries } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
+import { saleClientName } from '@/lib/sale-client'
 import {
   businessDateKey, businessDayStart, businessMonthKey, businessMonthRange, businessOffsetHours,
   businessToday, shiftDateKey,
@@ -140,7 +141,7 @@ export async function GET(req: NextRequest) {
       db.sale.findMany({
         where: { status: 'credit', client_id: { not: null } }, // business_id inyectado
         select: {
-          id: true, ticket_number: true, total_usd: true, created_at: true,
+          id: true, ticket_number: true, total_usd: true, created_at: true, client_name: true,
           client: { select: { name: true } },
           abonos: { select: { amount_usd: true } },
         },
@@ -176,7 +177,7 @@ export async function GET(req: NextRequest) {
     return {
       sale_id:       s.id,
       ticket_number: s.ticket_number,
-      client_name:   s.client?.name ?? 'Sin cliente',
+      client_name:   saleClientName(s) ?? 'Sin cliente',
       total_usd:     Number(s.total_usd),
       abonado_usd:   Math.round(abonado * 100) / 100,
       saldo_usd:     saldo,

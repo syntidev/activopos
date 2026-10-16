@@ -15,6 +15,7 @@ import { VentasPage } from '../ventas/VentasPage'
 import { HelpButton } from '@/components/help/HelpButton'
 import styles from './reportes.module.css'
 import { businessDateKey, businessMonthKey } from '@/lib/business-day'
+import { saleClientName } from '@/lib/sale-client'
 
 /* ── Types ── */
 
@@ -911,7 +912,7 @@ function ReportesInner({ isAdmin }: { isAdmin: boolean }) {
       const rows = json.sales.map(s => ({
         'Ticket':    s.ticket_number,
         'Fecha':     (s.sold_at ?? s.created_at).slice(0, 16).replace('T', ' '),
-        'Cliente':   s.client?.name ?? s.client_name ?? '',
+        'Cliente':   saleClientName(s) ?? '',
         'Total USD': s.total_usd,
         'Total Bs':  s.total_bs,
         'Método':    s.payments[0]?.payment_method?.name ?? '',

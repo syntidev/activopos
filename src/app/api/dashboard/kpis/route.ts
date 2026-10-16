@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
       GROUP BY si.product_id, p.name ORDER BY total_usd DESC LIMIT 10`,
     // CxC alerts: oldest pending credit sales
     prisma.$queryRaw<CxcRow[]>`
-      SELECT IFNULL(c.name, s.client_name) AS client_name, s.total_usd, s.created_at
+      SELECT COALESCE(NULLIF(TRIM(s.client_name), ''), c.name) AS client_name, s.total_usd, s.created_at
       FROM sales s LEFT JOIN clients c ON c.id=s.client_id
       WHERE s.business_id=${bid} AND s.status='credit'
       ORDER BY s.created_at ASC LIMIT 10`,

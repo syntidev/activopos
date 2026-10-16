@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
+import { checkCedula } from '@/lib/cedula'
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   phone: z.string().max(20).nullable().optional(),
   email: z.string().email().max(120).nullable().optional(),
-  cedula: z.string().max(15).nullable().optional(),
+  cedula: z.string().max(20).nullable().optional(),
   notes: z.string().nullable().optional(),
   price_tier: z.enum(['detal', 'mayorista']).optional(),
 })
@@ -99,7 +100,19 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
-    const client = await db.client.update({ where: { id }, data }) // business_id inyectado
+    // Cédula / RIF: solo se valida si CAMBIÓ respecto a lo guardado (clientes antiguos
+    // con texto libre siguen pudiendo editarse). Un valor nuevo se guarda normalizado.
+    let cedulaPatch: { cedula: string | null } | Record<string, never> = {}
+    if (data.cedula !== undefined && data.cedula !== existing.cedula) {
+      const cedulaCheck = checkCedula(data.cedula, null)
+      if (!cedulaCheck.ok) {
+        return NextResponse.json({ error: cedulaCheck.message, field: 'cedula' }, { status: 422 })
+      }
+      cedulaPatch = { cedula: cedulaCheck.value }
+    }
+    const { cedula: _ignored, ...rest } = data
+
+    const client = await db.client.update({ where: { id }, data: { ...rest, ...cedulaPatch } }) // business_id inyectado
     return NextResponse.json({ ok: true, client })
   } catch (err) {
     if (err instanceof TenantError) {

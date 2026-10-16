@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
+import { checkCedula } from '@/lib/cedula'
 
 const clientSchema = z.object({
   name: z.string().min(1).max(120),
   phone: z.string().max(20).nullable().optional(),
   email: z.string().email().max(120).nullable().optional(),
-  cedula: z.string().max(15).nullable().optional(),
+  cedula: z.string().max(20).nullable().optional(),
   notes: z.string().nullable().optional(),
 })
 
@@ -63,13 +64,19 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = clientSchema.parse(body)
 
+    // Cédula / RIF opcional: misma regla y mismo mensaje que el checkout (lib/cedula.ts).
+    const cedulaCheck = checkCedula(data.cedula, null)
+    if (!cedulaCheck.ok) {
+      return NextResponse.json({ error: cedulaCheck.message, field: 'cedula' }, { status: 422 })
+    }
+
     const client = await db.client.create({
       data: {
         business_id: session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
         name: data.name,
         phone: data.phone ?? null,
         email: data.email ?? null,
-        cedula: data.cedula ?? null,
+        cedula: cedulaCheck.value,
         notes: data.notes ?? null,
       },
     })

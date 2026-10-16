@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { REALIZED_SALE_STATUSES } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
+import { businessDateKey, businessDayRange, businessRange } from '@/lib/business-day'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
@@ -41,19 +42,18 @@ export async function GET(req: NextRequest) {
       if (!parsed.success) {
         return NextResponse.json({ error: 'Parámetros inválidos', issues: parsed.error.issues }, { status: 400 })
       }
-      const [fy, fm, fd] = parsed.data.from.split('-').map(Number)
-      const [ty, tm, td] = parsed.data.to.split('-').map(Number)
-      rangeStart   = new Date(fy, fm - 1, fd)
-      rangeEnd     = new Date(new Date(ty, tm - 1, td).getTime() + 86_400_000)
+      const range  = businessRange(parsed.data.from, parsed.data.to)
+      rangeStart   = range.start
+      rangeEnd     = range.end
       filenamePart = `${parsed.data.from}_a_${parsed.data.to}`
     } else {
-      const dateParam = sp.get('date') ?? new Date().toISOString().slice(0, 10)
+      const dateParam = sp.get('date') ?? businessDateKey()
       if (!dateSchema.safeParse(dateParam).success) {
         return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
       }
-      const [year, month, day] = dateParam.split('-').map(Number)
-      rangeStart   = new Date(year, month - 1, day)
-      rangeEnd     = new Date(rangeStart.getTime() + 86_400_000)
+      const range  = businessDayRange(dateParam)
+      rangeStart   = range.start
+      rangeEnd     = range.end
       filenamePart = dateParam
     }
 
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
         .join(', ')
 
       return sale.items.map(item => ({
-        'Fecha':       sale.sold_at?.toISOString().slice(0, 10) ?? filenamePart,
+        'Fecha':       sale.sold_at ? businessDateKey(sale.sold_at) : filenamePart,
         '# Ticket':    sale.ticket_number,
         'Producto':    item.product_name,
         'Cantidad':    Number(item.quantity),

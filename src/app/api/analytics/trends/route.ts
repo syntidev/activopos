@@ -1,55 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netSales } from '@/lib/sales-returns'
+import { businessDateKey, businessDayStart, businessMonthKey, businessMonthRange, shiftDateKey } from '@/lib/business-day'
 
 const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
 type PeriodType = 'week' | 'month' | 'quarter'
 type Range = { from: Date; to: Date; label: string }
 
-function getISOWeek(d: Date): number {
-  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+function getISOWeek(key: string): number {
+  const [y, m, d] = key.split('-').map(Number)
+  const tmp = new Date(Date.UTC(y, m - 1, d))
   const day = tmp.getUTCDay() || 7
   tmp.setUTCDate(tmp.getUTCDate() + 4 - day)
   const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1))
   return Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7)
 }
 
+// Todos los rangos se arman con claves de día en hora del negocio (America/Caracas).
+function keyRange(fromKey: string, toKey: string, label: string): Range {
+  return { from: businessDayStart(fromKey), to: businessDayStart(toKey), label }
+}
+
 function buildWeekRanges(n: number): Range[] {
-  const now     = new Date()
-  const dow     = now.getDay() === 0 ? 6 : now.getDay() - 1
-  const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow)
-  thisMonday.setHours(0, 0, 0, 0)
+  const today = businessDateKey()
+  const dow   = new Date(`${today}T00:00:00Z`).getUTCDay()
+  const thisMonday = shiftDateKey(today, -(dow === 0 ? 6 : dow - 1))
 
   return Array.from({ length: n }, (_, i) => {
-    const monday = new Date(thisMonday.getTime() - (n - 1 - i) * 7 * 86_400_000)
-    const sunday = new Date(monday.getTime() + 7 * 86_400_000)
-    return { from: monday, to: sunday, label: `Sem ${getISOWeek(monday)}` }
+    const monday = shiftDateKey(thisMonday, -(n - 1 - i) * 7)
+    return keyRange(monday, shiftDateKey(monday, 7), `Sem ${getISOWeek(monday)}`)
   })
 }
 
 function buildMonthRanges(n: number): Range[] {
-  const now = new Date()
   return Array.from({ length: n }, (_, i) => {
-    const monthsBack = n - 1 - i
-    const d    = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1)
-    const from = new Date(d.getFullYear(), d.getMonth(), 1)
-    const to   = new Date(d.getFullYear(), d.getMonth() + 1, 1)
-    return { from, to, label: `${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}` }
+    const key = businessMonthKey(new Date(), n - 1 - i)
+    const { start, end } = businessMonthRange(key)
+    const [y, m] = key.split('-').map(Number)
+    return { from: start, to: end, label: `${MONTH_SHORT[m - 1]} ${y}` }
   })
 }
 
 function buildQuarterRanges(n: number): Range[] {
-  const now      = new Date()
-  const currentQ = Math.floor(now.getMonth() / 3)
+  const [y0, m0] = businessDateKey().split('-').map(Number)
+  const currentQ = Math.floor((m0 - 1) / 3)
   return Array.from({ length: n }, (_, i) => {
     const offset = n - 1 - i
     let q    = currentQ - offset
-    let year = now.getFullYear()
+    let year = y0
     while (q < 0) { q += 4; year-- }
-    const from = new Date(year, q * 3, 1)
-    const to   = new Date(year, q * 3 + 3, 1)
-    return { from, to, label: `Q${q + 1} ${year}` }
+    const pad = (x: number) => String(x).padStart(2, '0')
+    const fromKey = `${year}-${pad(q * 3 + 1)}-01`
+    const toKey   = q === 3 ? `${year + 1}-01-01` : `${year}-${pad(q * 3 + 4)}-01`
+    return keyRange(fromKey, toKey, `Q${q + 1} ${year}`)
   })
 }
 
@@ -83,8 +87,8 @@ export async function GET(req: NextRequest) {
       const count = agg.salesCount
       return {
         label,
-        from:           from.toISOString().slice(0, 10),
-        to:             to.toISOString().slice(0, 10),
+        from:           businessDateKey(from),
+        to:             businessDateKey(to),
         total_usd:      r2(total),
         count,
         avg_ticket_usd: count > 0 ? r2(total / count) : 0,

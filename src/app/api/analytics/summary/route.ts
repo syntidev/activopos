@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { REALIZED_SALE_STATUSES, marginPct, netByProduct, netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
+import { businessDateKey, businessDayStart, businessMonthKey, businessMonthRange, businessOffsetHours } from '@/lib/business-day'
 
 // daykey: misma expresión de agrupación que la fuente única, para restar lo
 // devuelto por clave idéntica. No se expone: el campo público sigue siendo `date`.
@@ -9,10 +10,10 @@ type DailyRow = { date: string; daykey: string; total_usd: string | number }
 type HourRow  = { hour: string | number; avg_usd: string | number }
 type CostRow  = { costo: string | null; productos_sin_costo: string | number }
 
+// `str` = 'YYYY-MM-DD' en hora del negocio → instante UTC de su medianoche.
 function parseDate(str: string | null, fallback: Date): Date {
   if (!str || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return fallback
-  const [y, m, d] = str.split('-').map(Number)
-  return new Date(y, m - 1, d)
+  return businessDayStart(str)
 }
 
 export async function GET(req: NextRequest) {
@@ -22,9 +23,7 @@ export async function GET(req: NextRequest) {
 
     const sp  = req.nextUrl.searchParams
     const bid = session.businessId
-    const now = new Date()
-    const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1)
-    const defaultTo   = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    const { start: defaultFrom, end: defaultTo } = businessMonthRange(businessMonthKey())
 
     const from = parseDate(sp.get('from'), defaultFrom)
     const to   = parseDate(sp.get('to'),   defaultTo)
@@ -33,6 +32,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Rango de fechas inválido' }, { status: 400 })
     }
 
+    const offsetHours = businessOffsetHours()
+    // gastos.fecha es DATE (medianoche UTC del día): se compara con claves de día.
+    const gastoFrom = new Date(`${businessDateKey(from)}T00:00:00Z`)
+    const gastoTo   = new Date(`${businessDateKey(to)}T00:00:00Z`)
     const days     = Math.ceil((to.getTime() - from.getTime()) / 86_400_000)
     const prevFrom = new Date(from.getTime() - days * 86_400_000)
     const prevTo   = from
@@ -51,27 +54,27 @@ export async function GET(req: NextRequest) {
 
       // $queryRaw NO pasa por el tenant layer — business_id manual obligatorio
       prisma.$queryRaw<DailyRow[]>`
-      SELECT DATE(sold_at) AS date,
-             DATE_FORMAT(sold_at, '%Y-%m-%d') AS daykey,
+      SELECT DATE(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)) AS date,
+             DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d') AS daykey,
              SUM(total_usd) AS total_usd
       FROM sales
       WHERE business_id = ${bid}
         AND status IN ('paid','partial_return')
         AND sold_at >= ${from}
         AND sold_at <  ${to}
-      GROUP BY DATE(sold_at), DATE_FORMAT(sold_at, '%Y-%m-%d')
+      GROUP BY DATE(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)), DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d')
       ORDER BY total_usd DESC`,
 
       returnedUsdBySeries(bid, 'day', from, to),
 
     prisma.$queryRaw<HourRow[]>`
-      SELECT HOUR(sold_at) AS hour, AVG(total_usd) AS avg_usd
+      SELECT HOUR(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)) AS hour, AVG(total_usd) AS avg_usd
       FROM sales
       WHERE business_id = ${bid}
         AND status IN ('paid','partial_return')
         AND sold_at >= ${from}
         AND sold_at <  ${to}
-      GROUP BY HOUR(sold_at)
+      GROUP BY HOUR(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR))
       ORDER BY avg_usd DESC
       LIMIT 1`,
 
@@ -82,7 +85,7 @@ export async function GET(req: NextRequest) {
       // (mismo fix aplicado en finanzas/pyl, resumen, punto-equilibrio y
       // reports/export-pdf — GAP-GASTOS).
       db.gasto.aggregate({
-        where: { fecha: { gte: from, lt: to }, categoria: { not: 'proveedor' } }, // business_id inyectado
+        where: { fecha: { gte: gastoFrom, lt: gastoTo }, categoria: { not: 'proveedor' } }, // business_id inyectado
         _sum:  { monto_usd: true },
       }),
     ])
@@ -151,10 +154,10 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     period: {
-      from:  from.toISOString().slice(0, 10),
-      to:    to.toISOString().slice(0, 10),
+      from:  businessDateKey(from),
+      to:    businessDateKey(to),
       days,
-      label: `${from.toISOString().slice(0, 10)} → ${to.toISOString().slice(0, 10)}`,
+      label: `${businessDateKey(from)} → ${businessDateKey(to)}`,
     },
     ventas: {
       total_usd:      r2(totalUsd),

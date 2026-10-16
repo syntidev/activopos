@@ -3,17 +3,15 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netCogs, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
+import { businessDateKey, businessDayRange, businessDayStart, businessMonthKey, businessMonthRange, shiftDateKey } from '@/lib/business-day'
 
 const r2 = (n: number) => Math.round(n * 100) / 100
-const fmtDate = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const fmtDate = (d: Date) => businessDateKey(d)
 
-// 'new Date("YYYY-MM-DD")' parsea como UTC (spec ECMAScript) — en un servidor
-// en UTC-4 eso corre la fecha un día hacia atrás. Se parsea a mano como fecha LOCAL.
+// 'YYYY-MM-DD' → medianoche de ese día en hora del negocio (America/Caracas).
 function parseLocalDate(s: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s)
-  if (!m) return null
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null
+  const d = businessDayStart(s)
   return isNaN(d.getTime()) ? null : d
 }
 
@@ -32,18 +30,18 @@ export async function GET(req: NextRequest) {
     let toExclusive: Date
 
     if (periodParam) {
-      const now        = new Date()
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      toExclusive = new Date(todayStart.getTime() + 86_400_000) // hasta el final de hoy
+      const todayKey   = businessDateKey()
+      const { start: todayStart, end: todayEnd } = businessDayRange(todayKey)
+      toExclusive = todayEnd // hasta el final de hoy
 
       if (periodParam === 'hoy') {
         from = todayStart
       } else if (periodParam === '7dias') {
-        from = new Date(todayStart.getTime() - 6 * 86_400_000)
+        from = businessDayStart(shiftDateKey(todayKey, -6))
       } else if (periodParam === 'mes') {
-        from = new Date(now.getFullYear(), now.getMonth(), 1)
+        from = businessMonthRange(businessMonthKey()).start
       } else if (periodParam === 'anio') {
-        from = new Date(now.getFullYear(), 0, 1)
+        from = businessDayStart(`${todayKey.slice(0, 4)}-01-01`)
       } else {
         return NextResponse.json({ error: 'period inválido (hoy|7dias|mes|anio)' }, { status: 400 })
       }
@@ -61,6 +59,9 @@ export async function GET(req: NextRequest) {
     }
 
     const bid = session.businessId
+    // gastos.fecha es DATE (medianoche UTC): se compara con las claves de día.
+    const gastoFrom = new Date(`${businessDateKey(from)}T00:00:00Z`)
+    const gastoTo   = new Date(`${businessDateKey(toExclusive)}T00:00:00Z`)
 
     const [ventasNetas, cogsNeto, ventasRow, opexAgg] = await Promise.all([
       // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
       // COGS al vender (via SaleItem), NO gasto operativo. Contarla aquí duplicaría
       // el costo (GAP-2). Decisión de negocio: Compra ≠ Gasto.
       db.gasto.aggregate({
-        where: { fecha: { gte: from, lt: toExclusive }, categoria: { not: 'proveedor' } }, // business_id inyectado por el tenant layer
+        where: { fecha: { gte: gastoFrom, lt: gastoTo }, categoria: { not: 'proveedor' } }, // business_id inyectado por el tenant layer
         _sum:  { monto_usd: true },
       }),
     ])

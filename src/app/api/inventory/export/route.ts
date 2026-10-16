@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { fromBound, toBoundExclusive } from '@/lib/business-day'
 
 function safe(v: string): string {
   return /^[=+\-@\t\r]/.test(v) ? `'${v}` : v
@@ -47,13 +48,13 @@ export async function GET(req: NextRequest) {
 
     const { from: fromStr, to: toStr, type: typeFilter, product: productFilter } = parsed.data
 
-    const fromDate = fromStr ? new Date(`${fromStr}T00:00:00`) : null
-    const toDate   = toStr   ? new Date(`${toStr}T23:59:59.999`) : null
+    const fromDate = fromStr ? fromBound(fromStr) : null
+    const toDate   = toStr   ? toBoundExclusive(toStr) : null
 
     const entries = await db.inventoryEntry.findMany({
       where: {
         // business_id inyectado por el tenant layer
-        ...(fromDate && toDate ? { entered_at: { gte: fromDate, lte: toDate } } : {}),
+        ...(fromDate && toDate ? { entered_at: { gte: fromDate, lt: toDate } } : {}),
         ...(productFilter ? { product: { name: { contains: productFilter } } } : {}),
         ...(typeFilter === 'entry'  ? { quantity: { gt: 0 } } : {}),
         ...(typeFilter === 'adjust' ? { quantity: { lt: 0 } } : {}),

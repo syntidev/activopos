@@ -13,6 +13,7 @@ import { useScanner } from '@/hooks/useScanner'
 import { StockModal } from '@/components/products/StockModal'
 import { HelpButton } from '@/components/help/HelpButton'
 import styles from './inventario.module.css'
+import { businessDateKey } from '@/lib/business-day'
 
 /* ── Types ── */
 
@@ -691,12 +692,12 @@ function InventarioContent() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = businessDateKey()
 
   /* ── KPI computations ── */
   const kpiEntradoHoy = useMemo(() => {
     const todayEntradas = entries.filter(e =>
-      e.entered_at.slice(0, 10) === todayStr && getEntryType(e) === 'entrada'
+      businessDateKey(new Date(e.entered_at)) === todayStr && getEntryType(e) === 'entrada'
     )
     return {
       qty: todayEntradas.reduce((s, e) => s + e.quantity, 0),
@@ -716,7 +717,7 @@ function InventarioContent() {
   /* ── Panel today moves ── */
   const panelTodayMoves = useMemo(() => {
     if (!panelProduct) return []
-    return entries.filter(e => e.product.id === panelProduct.id && e.entered_at.slice(0, 10) === todayStr)
+    return entries.filter(e => e.product.id === panelProduct.id && businessDateKey(new Date(e.entered_at)) === todayStr)
   }, [entries, panelProduct, todayStr])
 
   const filtered = products.filter(p => {

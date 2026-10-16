@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import { businessOffsetHours } from './business-day'
 import { prisma } from './prisma'
 
 /**
@@ -278,11 +279,13 @@ export async function returnedBySeries(
   to?: Date,
 ): Promise<Map<string, ReturnedSeriesBucket>> {
   const to_ = to ?? null
+  // sold_at está en UTC: se agrupa en hora del negocio (ver lib/business-day.ts).
+  const local = Prisma.sql`DATE_ADD(s.sold_at, INTERVAL ${Prisma.raw(String(businessOffsetHours()))} HOUR)`
   const expr =
-    granularity === 'day'   ? Prisma.sql`DATE_FORMAT(s.sold_at, '%Y-%m-%d')` :
-    granularity === 'month' ? Prisma.sql`DATE_FORMAT(s.sold_at, '%Y-%m')` :
-    granularity === 'week'  ? Prisma.sql`WEEK(s.sold_at, 1)` :
-                              Prisma.sql`HOUR(s.sold_at)`
+    granularity === 'day'   ? Prisma.sql`DATE_FORMAT(${local}, '%Y-%m-%d')` :
+    granularity === 'month' ? Prisma.sql`DATE_FORMAT(${local}, '%Y-%m')` :
+    granularity === 'week'  ? Prisma.sql`WEEK(${local}, 1)` :
+                              Prisma.sql`HOUR(${local})`
 
   const rows = await prisma.$queryRaw<{ k: string | number; usd: string | null; cogs: string | null }[]>`
     SELECT ${expr} AS k,

@@ -4,6 +4,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netByProduct, netCogs, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
+import { businessRange } from '@/lib/business-day'
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido')
 
@@ -59,11 +60,11 @@ export async function GET(req: NextRequest) {
 
   const { from: fromStr, to: toStr } = parsed.data
   const bid  = session.businessId
-  const from = new Date(`${fromStr}T00:00:00Z`)
-  const to   = new Date(`${toStr}T23:59:59.999Z`)
-
-  // `to` viene inclusivo (23:59:59.999); la fuente única usa fin exclusivo.
-  const toExclusive = new Date(to.getTime() + 1)
+  // Días completos en hora del negocio (America/Caracas); fin exclusivo.
+  const { start: from, end: toExclusive } = businessRange(fromStr, toStr)
+  // gastos.fecha es DATE (medianoche UTC), inclusivo en ambos extremos.
+  const gastoFrom = new Date(`${fromStr}T00:00:00Z`)
+  const gastoTo   = new Date(`${toStr}T00:00:00Z`)
 
   const [ventas, cogs, netoProd, topProductsRaw, gastos, business] = await Promise.all([
     // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
       WHERE s.business_id = ${bid}
         AND s.status IN ('paid','partial_return')
         AND s.sold_at >= ${from}
-        AND s.sold_at <= ${to}
+        AND s.sold_at < ${toExclusive}
       GROUP BY si.product_id, si.product_name
       ORDER BY total_usd DESC
       LIMIT 10`,
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
     // costo variable vía SaleItem al venderse — contarla aquí la duplicaría
     // (mismo fix aplicado en finanzas/pyl, resumen y punto-equilibrio — GAP-R2).
     db.gasto.aggregate({
-      where: { fecha: { gte: from, lte: to }, categoria: { not: 'proveedor' } }, // business_id inyectado
+      where: { fecha: { gte: gastoFrom, lte: gastoTo }, categoria: { not: 'proveedor' } }, // business_id inyectado
       _sum: { monto_usd: true },
     }),
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { businessMonthKey, businessMonthRange, businessOffsetHours } from '@/lib/business-day'
 import { REALIZED_SALE_STATUSES, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 
 const periodSchema = z.string().regex(/^\d{4}-\d{2}$/)
@@ -25,15 +26,14 @@ export async function GET(req: NextRequest) {
 
     const periodParam =
     req.nextUrl.searchParams.get('period') ??
-    new Date().toISOString().slice(0, 7)
+    businessMonthKey()
 
   if (!periodSchema.safeParse(periodParam).success) {
     return NextResponse.json({ error: 'Período inválido (YYYY-MM)' }, { status: 400 })
   }
 
-  const [year, month] = periodParam.split('-').map(Number)
-  const monthStart    = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
-  const monthEnd      = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
+  const { start: monthStart, end: monthEnd } = businessMonthRange(periodParam)
+  const offsetHours = businessOffsetHours()
 
   const [salesAgg, dailyRaw, weeklyRaw, ventas, devueltoPorDia, devueltoPorSemana, report] = await Promise.all([
     db.sale.aggregate({
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     }),
 
     prisma.$queryRaw<DayRow[]>`
-      SELECT DATE_FORMAT(sold_at, '%Y-%m-%d') AS day,
+      SELECT DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d') AS day,
              SUM(total_usd) AS total_usd,
              COUNT(*)       AS count
       FROM sales
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     `,
 
     prisma.$queryRaw<WeekRow[]>`
-      SELECT WEEK(sold_at, 1) AS week,
+      SELECT WEEK(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), 1) AS week,
              SUM(total_usd)   AS total_usd,
              COUNT(*)          AS count
       FROM sales
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
         AND status IN ('paid','partial_return')
         AND sold_at >= ${monthStart}
         AND sold_at < ${monthEnd}
-      GROUP BY WEEK(sold_at, 1)
+      GROUP BY WEEK(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), 1)
       ORDER BY week ASC
     `,
 

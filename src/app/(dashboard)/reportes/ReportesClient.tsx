@@ -14,6 +14,7 @@ import { MonthlyReportBanner } from '@/components/reports/MonthlyReportBanner'
 import { VentasPage } from '../ventas/VentasPage'
 import { HelpButton } from '@/components/help/HelpButton'
 import styles from './reportes.module.css'
+import { businessDateKey, businessMonthKey } from '@/lib/business-day'
 
 /* ── Types ── */
 
@@ -55,13 +56,12 @@ const fmtUsd = (n: number) =>
 const fmtBs = (n: number) =>
   `Bs. ${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const todayStr = () => new Date().toISOString().slice(0, 10)
+const todayStr = () => businessDateKey()
 
 function prevMonthPeriod(): { period: string; label: string } {
-  const d = new Date()
-  d.setDate(1)
-  d.setMonth(d.getMonth() - 1)
-  return { period: d.toISOString().slice(0, 7), label: d.toLocaleDateString('es-VE', { month: 'long', year: 'numeric' }) }
+  const period = businessMonthKey(new Date(), 1)
+  const label  = new Date(`${period}-15T12:00:00Z`).toLocaleDateString('es-VE', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+  return { period, label }
 }
 
 function fmtDateTime(iso: string): string {
@@ -900,9 +900,8 @@ function ReportesInner({ isAdmin }: { isAdmin: boolean }) {
   const handleExportVentas = useCallback(async () => {
     setExportingVentas(true)
     try {
-      const d = new Date()
-      const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
       const to   = todayStr()
+      const from = `${to.slice(0, 7)}-01`
       const q = new URLSearchParams({
         from, to, use_created_at: '1', status: 'paid', limit: '2000', page: '1',
       })

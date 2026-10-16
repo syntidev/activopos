@@ -11,6 +11,7 @@ import type { SaleStatus } from '@prisma/client'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 import { redactSaleForRole } from '@/lib/redact'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { fromBound, toBoundExclusive } from '@/lib/business-day'
 
 const saleItemSchema = z.object({
   product_id:          z.number().int().positive(),
@@ -64,8 +65,9 @@ export async function GET(req: NextRequest) {
   const dateFilter = (from || to)
     ? {
         [useCreatedAt ? 'created_at' : 'sold_at']: {
-          ...(from ? { gte: new Date(from) } : {}),
-          ...(to   ? { lte: new Date(`${to}T23:59:59`) } : {}),
+          // Días completos en hora del negocio (America/Caracas).
+          ...(from ? { gte: fromBound(from) } : {}),
+          ...(to   ? { lt: toBoundExclusive(to) } : {}),
         },
       }
     : {}

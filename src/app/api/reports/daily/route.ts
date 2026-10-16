@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { businessDateKey, businessDayRange, businessOffsetHours } from '@/lib/business-day'
 import { REALIZED_SALE_STATUSES, netByCategory, netByProduct, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -37,15 +38,14 @@ export async function GET(req: NextRequest) {
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const dateStr =
-    req.nextUrl.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
+    req.nextUrl.searchParams.get('date') ?? businessDateKey()
 
   if (!dateSchema.safeParse(dateStr).success) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
   }
 
-  const [year, month, day] = dateStr.split('-').map(Number)
-  const dayStart = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
-  const dayEnd   = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0))
+  const { start: dayStart, end: dayEnd } = businessDayRange(dateStr)
+  const offsetHours = businessOffsetHours()
 
   const [
     salesAgg,
@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
     `,
 
     prisma.$queryRaw<HourRow[]>`
-      SELECT HOUR(sold_at) AS hour,
+      SELECT HOUR(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)) AS hour,
              SUM(total_usd) AS total_usd,
              COUNT(*) AS count
       FROM sales
@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
         AND status IN ('paid','partial_return')
         AND sold_at >= ${dayStart}
         AND sold_at < ${dayEnd}
-      GROUP BY HOUR(sold_at)
+      GROUP BY HOUR(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR))
       ORDER BY hour ASC
     `,
 

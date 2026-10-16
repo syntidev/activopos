@@ -20,6 +20,7 @@ import { CierreConfirmModal } from '@/components/cash/CierreConfirmModal'
 import type { PaymentMethod } from '@/components/cash/MovimientoModal'
 import { useCaja } from '@/context/CajaContext'
 import styles from './caja.module.css'
+import { businessDateKey } from '@/lib/business-day'
 
 /* ── Types ── */
 
@@ -186,7 +187,7 @@ function CajaContent() {
 
   const fetchDailyStats = useCallback(async () => {
     try {
-      const today = new Date().toISOString().slice(0, 10)
+      const today = businessDateKey()
       const res = await fetch(`/api/reports/daily?date=${today}`)
       if (res.ok) {
         const data = await res.json()

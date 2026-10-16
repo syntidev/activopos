@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
 import { sendPushToBusinessSubscribers } from '@/lib/push-notify'
+import { fromBound, toBoundExclusive } from '@/lib/business-day'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISOS — INTENCIONAL: Pedidos NO tiene guard de rol. cashier ve/crea/edita
@@ -66,8 +67,8 @@ export async function GET(req: NextRequest) {
       ...(query.from || query.to
         ? {
             created_at: {
-              ...(query.from && { gte: new Date(query.from) }),
-              ...(query.to && { lte: new Date(`${query.to}T23:59:59`) }),
+              ...(query.from && { gte: fromBound(query.from) }),
+              ...(query.to && { lt: toBoundExclusive(query.to) }),
             },
           }
         : {}),

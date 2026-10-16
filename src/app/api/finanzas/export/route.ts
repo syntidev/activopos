@@ -4,6 +4,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { REALIZED_SALE_STATUSES, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { parsePeriodFromParams, MONTH_NAMES } from '@/lib/finanzas'
+import { businessDateKey, businessMonthRange } from '@/lib/business-day'
 
 // Prevent CSV/XLSX formula injection — prefix dangerous leading chars with a literal apostrophe
 function safe(v: string): string {
@@ -18,8 +19,10 @@ export async function GET(req: NextRequest) {
     if (!planGate.allowed) return planDenied(planGate.reason)
 
     const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
-    const from = new Date(year, month - 1, 1)
-    const to   = new Date(year, month, 1)
+    const { start: from, end: to } = businessMonthRange(`${year}-${String(month).padStart(2, '0')}`)
+    // gastos.fecha es DATE (UTC puro): mes calendario sin desfase.
+    const gastoFrom = new Date(Date.UTC(year, month - 1, 1))
+    const gastoTo   = new Date(Date.UTC(year, month, 1))
 
     const [ventas, gastos, cxcSales, ventasNetas] = await Promise.all([
       db.sale.findMany({
@@ -33,7 +36,7 @@ export async function GET(req: NextRequest) {
         orderBy: { sold_at: 'asc' },
       }),
       db.gasto.findMany({
-        where: { fecha: { gte: from, lt: to } }, // business_id inyectado
+        where: { fecha: { gte: gastoFrom, lt: gastoTo } }, // business_id inyectado
         orderBy: { fecha: 'asc' },
       }),
       db.sale.findMany({
@@ -55,7 +58,7 @@ export async function GET(req: NextRequest) {
     const wsVentas = XLSX.utils.json_to_sheet(
       ventas.length > 0
         ? ventas.map(s => ({
-            'Fecha':       s.sold_at ? s.sold_at.toISOString().slice(0, 10) : '',
+            'Fecha':       s.sold_at ? businessDateKey(s.sold_at) : '',
             '# Ticket':    safe(s.ticket_number),
             'Cliente':     safe(s.client_name ?? ''),
             'Total USD':   Number(s.total_usd),
@@ -82,7 +85,7 @@ export async function GET(req: NextRequest) {
     const wsCxC = XLSX.utils.json_to_sheet(
       cxcSales.length > 0
         ? cxcSales.map(s => ({
-            'Fecha':     s.sold_at ? s.sold_at.toISOString().slice(0, 10) : '',
+            'Fecha':     s.sold_at ? businessDateKey(s.sold_at) : '',
             '# Ticket':  safe(s.ticket_number),
             'Cliente':   safe(s.client_name ?? ''),
             'Total USD': Number(s.total_usd),

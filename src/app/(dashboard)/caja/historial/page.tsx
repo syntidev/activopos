@@ -5,6 +5,7 @@ import { Filter, RefreshCw, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './historial.module.css'
+import { businessDateKey, shiftDateKey } from '@/lib/business-day'
 
 /* ── Types ── */
 
@@ -41,11 +42,7 @@ const fmtDatetime = (s: string | null) => {
   })
 }
 
-const daysAgo = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
-}
+const daysAgo = (n: number) => shiftDateKey(businessDateKey(), -n)
 
 /* ── Inner component ── */
 
@@ -53,7 +50,7 @@ function HistorialContent() {
   const { toast } = useToast()
 
   const [from, setFrom]     = useState(daysAgo(30))
-  const [to, setTo]         = useState(new Date().toISOString().slice(0, 10))
+  const [to, setTo]         = useState(businessDateKey())
   const [data, setData]     = useState<HistorialEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [fetched, setFetched] = useState(false)

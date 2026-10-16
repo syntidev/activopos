@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { REALIZED_SALE_STATUSES, marginPct, netByCategory, netCogs, netSales } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
+import { businessDateKey, businessDayRange } from '@/lib/business-day'
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
@@ -27,14 +28,12 @@ export async function GET(req: NextRequest) {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-    const dateStr = req.nextUrl.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
+    const dateStr = req.nextUrl.searchParams.get('date') ?? businessDateKey()
   if (!dateSchema.safeParse(dateStr).success) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
   }
 
-  const [year, month, dayNum] = dateStr.split('-').map(Number) as [number, number, number]
-  const dayStart = new Date(Date.UTC(year, month - 1, dayNum, 0, 0, 0, 0))
-  const dayEnd   = new Date(Date.UTC(year, month - 1, dayNum + 1, 0, 0, 0, 0))
+  const { start: dayStart, end: dayEnd } = businessDayRange(dateStr)
   const bid      = session.businessId
 
   const [ventas, cogs, netoCat, creditAgg, byCategoryRaw, paymentMethodsRaw, registers, salesForRegs, ventasPorRegistro] =

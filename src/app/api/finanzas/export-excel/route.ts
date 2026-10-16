@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { REALIZED_SALE_STATUSES, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
+import { businessDateKey, businessRange } from '@/lib/business-day'
 
 const dateStr   = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido')
 const rangeSchema = z.object({ from: dateStr, to: dateStr }).superRefine((data, ctx) => {
@@ -38,23 +39,25 @@ export async function GET(req: NextRequest) {
     }
 
     const { from: fromStr, to: toStr } = parsed.data
-    const from = new Date(`${fromStr}T00:00:00`)
-    const to   = new Date(`${toStr}T23:59:59.999`)
+    // Ventas: días completos en hora del negocio, fin exclusivo. Gastos: `fecha`
+    // es DATE (medianoche UTC), inclusivo en ambos extremos.
+    const { start: from, end: toExclusive } = businessRange(fromStr, toStr)
+    const gastoFrom = new Date(`${fromStr}T00:00:00Z`)
+    const gastoTo   = new Date(`${toStr}T00:00:00Z`)
 
     const [ventas, gastos, ventasNetas] = await Promise.all([
       db.sale.findMany({
         // partial_return incluido (antes la venta desaparecía del export). Las
         // filas van en bruto y la devolución se declara aparte en el resumen.
-        where: { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: from, lte: to } }, // business_id inyectado
+        where: { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: { gte: from, lt: toExclusive } }, // business_id inyectado
         include: { payments: { include: { payment_method: { select: { name: true } } } } },
         orderBy: { sold_at: 'asc' },
       }),
       db.gasto.findMany({
-        where: { fecha: { gte: from, lte: to } }, // business_id inyectado
+        where: { fecha: { gte: gastoFrom, lte: gastoTo } }, // business_id inyectado
         orderBy: { fecha: 'asc' },
       }),
-      // `to` es inclusivo; la fuente única usa fin exclusivo.
-      netSales(session.businessId, from, new Date(to.getTime() + 1)),
+      netSales(session.businessId, from, toExclusive),
     ])
 
     const totalVentasBruto = ventas.reduce((s, v) => s + Number(v.total_usd), 0)
@@ -68,7 +71,7 @@ export async function GET(req: NextRequest) {
     const wsVentas = XLSX.utils.json_to_sheet(
       ventas.length > 0
         ? ventas.map(s => ({
-            'Fecha':      s.sold_at ? s.sold_at.toISOString().slice(0, 10) : '',
+            'Fecha':      s.sold_at ? businessDateKey(s.sold_at) : '',
             '# Ticket':   safe(s.ticket_number),
             'Cliente':    safe(s.client_name ?? ''),
             'Total USD':  Number(s.total_usd),

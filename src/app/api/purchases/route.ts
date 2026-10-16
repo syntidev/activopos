@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { fromBound, toBoundExclusive } from '@/lib/business-day'
 
 const itemSchema = z.object({
   product_id: z.number().int().positive(),
@@ -33,8 +34,8 @@ export async function GET(req: NextRequest) {
         ...(supplierId ? { supplier_id: parseInt(supplierId, 10) } : {}),
         ...((from || to) ? {
           created_at: {
-            ...(from ? { gte: new Date(from) } : {}),
-            ...(to ? { lte: new Date(`${to}T23:59:59.999`) } : {}),
+            ...(from ? { gte: fromBound(from) } : {}),
+            ...(to ? { lt: toBoundExclusive(to) } : {}),
           },
         } : {}),
       },

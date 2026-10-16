@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { netByProduct } from '@/lib/sales-returns'
+import { businessDateKey, businessDayStart, businessMonthKey, businessMonthRange } from '@/lib/business-day'
 
 type ProductRow = {
   product_id:    number
@@ -17,10 +18,10 @@ type PrevRow = {
   qty_sold:   string | number
 }
 
+// `str` = 'YYYY-MM-DD' en hora del negocio → instante UTC de su medianoche.
 function parseDate(str: string | null, fallback: Date): Date {
   if (!str || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return fallback
-  const [y, m, d] = str.split('-').map(Number)
-  return new Date(y, m - 1, d)
+  return businessDayStart(str)
 }
 
 export async function GET(req: NextRequest) {
@@ -30,9 +31,7 @@ export async function GET(req: NextRequest) {
 
   const sp  = req.nextUrl.searchParams
   const bid = session.businessId
-  const now = new Date()
-  const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1)
-  const defaultTo   = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const { start: defaultFrom, end: defaultTo } = businessMonthRange(businessMonthKey())
 
   const from  = parseDate(sp.get('from'), defaultFrom)
   const to    = parseDate(sp.get('to'),   defaultTo)
@@ -115,8 +114,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     period: {
-      from: from.toISOString().slice(0, 10),
-      to:   to.toISOString().slice(0, 10),
+      from: businessDateKey(from),
+      to:   businessDateKey(to),
     },
     products,
     total_period_usd: r2(totalUsd),

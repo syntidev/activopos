@@ -5,6 +5,7 @@ import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
+import { businessMonthRange } from '@/lib/business-day'
 
 type InvRow = {
   valor_costo: string | null
@@ -47,8 +48,10 @@ export async function GET(req: NextRequest) {
     if (!planGate.allowed) return planDenied(planGate.reason)
 
     const { year, month } = parsePeriodFromParams(req.nextUrl.searchParams)
-  const from     = new Date(year, month - 1, 1)
-  const to       = new Date(year, month, 1)
+  // Ventas/abonos/pagos: mes en hora del negocio. Gastos: `fecha` es DATE (UTC puro).
+  const { start: from, end: to } = businessMonthRange(`${year}-${String(month).padStart(2, '0')}`)
+  const gastoFrom = new Date(Date.UTC(year, month - 1, 1))
+  const gastoTo   = new Date(Date.UTC(year, month, 1))
   const bid      = session.businessId
   const now      = new Date()
   const vencer7  = new Date(now.getTime() + 7 * 86_400_000)
@@ -120,7 +123,7 @@ export async function GET(req: NextRequest) {
     // Gastos operativos incurridos en el período (pagados o no), EXCLUYENDO
     // categoria='proveedor' — esas compras son COGS al vender, no OPEX (GAP-2).
     db.gasto.aggregate({
-      where: { fecha: { gte: from, lt: to }, categoria: { not: 'proveedor' } }, // business_id inyectado
+      where: { fecha: { gte: gastoFrom, lt: gastoTo }, categoria: { not: 'proveedor' } }, // business_id inyectado
       _sum:  { monto_usd: true },
     }),
 

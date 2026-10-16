@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { returnedUsdBySeries } from '@/lib/sales-returns'
+import { businessMonthKey, businessMonthRange, businessOffsetHours } from '@/lib/business-day'
 
 const monthSchema = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/)
 
@@ -22,29 +23,33 @@ export async function GET(req: NextRequest) {
   const planGate = await checkPlanLimit('access_finanzas')
   if (!planGate.allowed) return planDenied(planGate.reason)
 
-  const monthStr = req.nextUrl.searchParams.get('month') ?? new Date().toISOString().slice(0, 7)
+  const monthStr = req.nextUrl.searchParams.get('month') ?? businessMonthKey()
   if (!monthSchema.safeParse(monthStr).success) {
     return NextResponse.json({ error: 'Formato inválido. Use YYYY-MM' }, { status: 400 })
   }
 
   const [year, month] = monthStr.split('-').map(Number) as [number, number]
-  const monthStart = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
-  const monthEnd   = new Date(Date.UTC(year, month,     1, 0, 0, 0, 0))
+  // Ventas: mes en hora del negocio. Gastos: `fecha` es DATE (sin hora), se
+  // compara contra el mes calendario en UTC puro.
+  const { start: monthStart, end: monthEnd } = businessMonthRange(monthStr)
+  const gastoStart = new Date(Date.UTC(year, month - 1, 1))
+  const gastoEnd   = new Date(Date.UTC(year, month, 1))
+  const offsetHours = businessOffsetHours()
   const bid        = session.businessId
 
   const [salesRows, devueltoPorDia, gastosRows] = await Promise.all([
     // daykey: misma expresión de agrupación que la fuente única, para restar lo
     // devuelto por clave idéntica (el campo público sigue siendo `date`).
     prisma.$queryRaw<SalesRow[]>`
-      SELECT DATE(sold_at) AS date,
-             DATE_FORMAT(sold_at, '%Y-%m-%d') AS daykey,
+      SELECT DATE(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)) AS date,
+             DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d') AS daykey,
              SUM(total_usd) AS ingresos_usd
       FROM sales
       WHERE business_id = ${bid}
         AND status IN ('paid','partial_return')
         AND sold_at >= ${monthStart}
         AND sold_at < ${monthEnd}
-      GROUP BY DATE(sold_at), DATE_FORMAT(sold_at, '%Y-%m-%d')
+      GROUP BY DATE(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)), DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d')
       ORDER BY date ASC`,
 
     returnedUsdBySeries(bid, 'day', monthStart, monthEnd),
@@ -53,8 +58,8 @@ export async function GET(req: NextRequest) {
       SELECT fecha AS date, SUM(monto_usd) AS gastos_usd
       FROM gastos
       WHERE business_id = ${bid}
-        AND fecha >= ${monthStart}
-        AND fecha < ${monthEnd}
+        AND fecha >= ${gastoStart}
+        AND fecha < ${gastoEnd}
       GROUP BY fecha
       ORDER BY fecha ASC`,
   ])

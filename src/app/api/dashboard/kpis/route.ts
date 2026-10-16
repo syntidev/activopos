@@ -3,25 +3,26 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netByProduct, netCogs, netSales } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 import { calcTrend, getGreeting } from '@/lib/dashboard'
+import { businessDateKey, businessDayStart, businessHour, businessMonthKey, businessMonthRange, businessToday, shiftDateKey } from '@/lib/business-day'
 
 type Period = 'today' | '7d' | '30d' | '12m'
 
 interface PeriodBounds { from: Date; to: Date }
 
 function getPeriodBounds(period: Period): PeriodBounds {
-  const now = new Date()
-  const todayStart    = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const tomorrowStart = new Date(todayStart.getTime() + 86_400_000)
+  // Hora del negocio (America/Caracas), ver lib/business-day.ts.
+  const { start: todayStart, end: tomorrowStart } = businessToday()
+  const todayKey = businessDateKey()
 
   switch (period) {
     case '7d': {
-      return { from: new Date(todayStart.getTime() - 6 * 86_400_000), to: tomorrowStart }
+      return { from: businessDayStart(shiftDateKey(todayKey, -6)), to: tomorrowStart }
     }
     case '30d': {
-      return { from: new Date(todayStart.getTime() - 29 * 86_400_000), to: tomorrowStart }
+      return { from: businessDayStart(shiftDateKey(todayKey, -29)), to: tomorrowStart }
     }
     case '12m': {
-      return { from: new Date(now.getFullYear() - 1, now.getMonth(), 1), to: tomorrowStart }
+      return { from: businessMonthRange(businessMonthKey(new Date(), 12)).start, to: tomorrowStart }
     }
     default: {
       return { from: todayStart, to: tomorrowStart }
@@ -48,13 +49,10 @@ export async function GET(req: NextRequest) {
     : 'today'
 
   const bid = session.businessId
-  const now = new Date()
-
-  const todayStart     = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const tomorrowStart  = new Date(todayStart.getTime() + 86_400_000)
-  const yesterdayStart = new Date(todayStart.getTime() - 86_400_000)
-  const monthStart     = new Date(now.getFullYear(), now.getMonth(), 1)
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const { start: todayStart, end: tomorrowStart } = businessToday()
+  const yesterdayStart = businessDayStart(shiftDateKey(businessDateKey(), -1))
+  const monthStart     = businessMonthRange(businessMonthKey()).start
+  const prevMonthStart = businessMonthRange(businessMonthKey(new Date(), 1)).start
 
   const { from: pFrom, to: pTo } = getPeriodBounds(period)
 
@@ -134,6 +132,7 @@ export async function GET(req: NextRequest) {
   ])
 
   const rate = parseFloat(String(rateRows[0]?.rate ?? '36.50')) || 36.50
+  const now   = new Date()
   const nowMs = now.getTime()
 
   const r2 = (x: number) => Math.round(x * 100) / 100
@@ -164,7 +163,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok:       true,
-    greeting: getGreeting(now.getHours()),
+    greeting: getGreeting(businessHour(now)),
     kpis: {
       cobrado_usd:        vHoy,
       credito_usd:        creditoHoy,

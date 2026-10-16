@@ -13,6 +13,7 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './ventas.module.css'
+import { businessDateKey, shiftDateKey } from '@/lib/business-day'
 
 /* ── Types ── */
 
@@ -88,21 +89,13 @@ const PERIOD_LABELS: Record<Period, string> = {
   custom: 'Personalizado',
 }
 
-function todayStr() { return new Date().toISOString().slice(0, 10) }
+function todayStr() { return businessDateKey() }
 
 function periodDates(p: Period): { from: string; to: string } {
   const today = todayStr()
   if (p === 'today') return { from: today, to: today }
-  if (p === '7d') {
-    const d = new Date()
-    d.setDate(d.getDate() - 6)
-    return { from: d.toISOString().slice(0, 10), to: today }
-  }
-  if (p === 'month') {
-    const d = new Date()
-    d.setDate(1)
-    return { from: d.toISOString().slice(0, 10), to: today }
-  }
+  if (p === '7d') return { from: shiftDateKey(today, -6), to: today }
+  if (p === 'month') return { from: `${today.slice(0, 7)}-01`, to: today }
   return { from: '', to: '' }
 }
 

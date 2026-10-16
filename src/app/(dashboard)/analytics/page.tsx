@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import type { SummaryData, TopProductsData, TrendsData, PeriodType } from '@/types/analytics'
 import styles from './analytics.module.css'
+import { businessDateKey, businessMonthKey, shiftDateKey } from '@/lib/business-day'
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -31,25 +32,25 @@ function fmtHour(h: number): string {
 }
 
 function getPeriodRange(period: PeriodType): { from: string; to: string } {
-  const now  = new Date()
-  const yyyy = now.getFullYear()
-  const mm   = now.getMonth()
+  const today = businessDateKey()
 
   if (period === 'week') {
-    const dow  = now.getDay() === 0 ? 6 : now.getDay() - 1
-    const from = new Date(yyyy, mm, now.getDate() - dow)
-    const to   = new Date(from.getTime() + 7 * 86_400_000)
-    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
+    const dow  = new Date(`${today}T00:00:00Z`).getUTCDay()
+    const from = shiftDateKey(today, -(dow === 0 ? 6 : dow - 1))
+    return { from, to: shiftDateKey(from, 7) }
   }
   if (period === 'quarter') {
-    const q    = Math.floor(mm / 3)
-    const from = new Date(yyyy, q * 3, 1)
-    const to   = new Date(yyyy, q * 3 + 3, 1)
-    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
+    const [yyyy, mm] = today.split('-').map(Number)
+    const q    = Math.floor((mm - 1) / 3)
+    const pad  = (x: number) => String(x).padStart(2, '0')
+    return {
+      from: `${yyyy}-${pad(q * 3 + 1)}-01`,
+      to:   q === 3 ? `${yyyy + 1}-01-01` : `${yyyy}-${pad(q * 3 + 4)}-01`,
+    }
   }
   return {
-    from: new Date(yyyy, mm, 1).toISOString().slice(0, 10),
-    to:   new Date(yyyy, mm + 1, 1).toISOString().slice(0, 10),
+    from: `${businessMonthKey()}-01`,
+    to:   `${businessMonthKey(new Date(), -1)}-01`,
   }
 }
 

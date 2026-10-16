@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
+import { businessOffsetHours, businessRange } from '@/lib/business-day'
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD requerido')
 
@@ -43,11 +44,9 @@ export async function GET(req: NextRequest) {
 
     const { from: fromStr, to: toStr } = parsed.data
     const bid  = session.businessId
-    const from = new Date(`${fromStr}T00:00:00Z`)
-    const to   = new Date(`${toStr}T23:59:59.999Z`)
-
-    // `to` viene inclusivo (23:59:59.999); la fuente única usa fin exclusivo.
-    const toExclusive = new Date(to.getTime() + 1)
+    // Días completos en hora del negocio (America/Caracas); fin exclusivo.
+    const { start: from, end: toExclusive } = businessRange(fromStr, toStr)
+    const offsetHours = businessOffsetHours()
 
     const [ventas, cogs, byDayRows, devueltoPorDia] = await Promise.all([
       // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts).
@@ -55,16 +54,16 @@ export async function GET(req: NextRequest) {
       netCogs(bid, from, toExclusive),
 
       prisma.$queryRaw<DayRow[]>`
-        SELECT DATE(sold_at) AS date,
-               DATE_FORMAT(sold_at, '%Y-%m-%d') AS daykey,
+        SELECT DATE(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)) AS date,
+               DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d') AS daykey,
                COUNT(*)      AS sales,
                SUM(total_usd) AS total_usd
         FROM sales
         WHERE business_id = ${bid}
           AND status IN ('paid','partial_return')
           AND sold_at >= ${from}
-          AND sold_at <= ${to}
-        GROUP BY DATE(sold_at), DATE_FORMAT(sold_at, '%Y-%m-%d')
+          AND sold_at < ${toExclusive}
+        GROUP BY DATE(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR)), DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d')
         ORDER BY date ASC`,
 
       returnedUsdBySeries(bid, 'day', from, toExclusive),

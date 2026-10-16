@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { getActiveRate } from './bcv'
 import { netSales, returnedUsdBySeries } from './sales-returns'
+import { businessMonthRange, businessOffsetHours } from './business-day'
 import { mkdir, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
@@ -26,8 +27,8 @@ export async function generateMonthlyPDF(
   period: string
 ): Promise<GenerateResult> {
   const [year, month] = period.split('-').map(Number)
-  const monthStart    = new Date(year, month - 1, 1)
-  const monthEnd      = new Date(year, month, 1)
+  const { start: monthStart, end: monthEnd } = businessMonthRange(period)
+  const offsetHours   = businessOffsetHours()
 
   const [business, salesAgg, dailyRaw, devueltoPorDia, ventas, { rate }] = await Promise.all([
     prisma.business.findUniqueOrThrow({
@@ -45,7 +46,7 @@ export async function generateMonthlyPDF(
       _count: { id: true },
     }),
     prisma.$queryRaw<{ day: string; total_usd: string | number; count: string | number }[]>`
-      SELECT DATE_FORMAT(sold_at, '%Y-%m-%d') AS day,
+      SELECT DATE_FORMAT(DATE_ADD(sold_at, INTERVAL ${offsetHours} HOUR), '%Y-%m-%d') AS day,
              SUM(total_usd) AS total_usd,
              COUNT(*)       AS count
       FROM sales

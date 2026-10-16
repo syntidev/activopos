@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { netCogs, netSales } from './sales-returns'
+import { businessDateKey, businessDayStart, businessMonthKey, businessMonthRange, shiftDateKey } from './business-day'
 
 export interface KpiData {
   ventas_hoy:   { value_usd: number; trend_pct: number }
@@ -32,12 +33,13 @@ export function fmtBs(usd: number, rate: number): string {
 }
 
 export async function getKpiData(businessId: number): Promise<KpiData> {
-  const now            = new Date()
-  const todayStart     = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const tomorrowStart  = new Date(todayStart.getTime() + 86_400_000)
-  const yesterdayStart = new Date(todayStart.getTime() - 86_400_000)
-  const monthStart     = new Date(now.getFullYear(), now.getMonth(), 1)
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  // Hora del negocio (America/Caracas), ver business-day.ts.
+  const todayKey       = businessDateKey()
+  const todayStart     = businessDayStart(todayKey)
+  const tomorrowStart  = businessDayStart(shiftDateKey(todayKey, 1))
+  const yesterdayStart = businessDayStart(shiftDateKey(todayKey, -1))
+  const monthStart     = businessMonthRange(businessMonthKey()).start
+  const prevMonthStart = businessMonthRange(businessMonthKey(new Date(), 1)).start
 
   type RateRow   = { rate: string | number }
 

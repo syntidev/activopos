@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Modal, Button, Input, useToast } from '@/components/ui'
 import styles from './GastoModal.module.css'
+import { businessDateKey } from '@/lib/business-day'
 
 interface ExpenseCat {
   id:        number
@@ -69,7 +70,7 @@ export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: 
       setConcepto('')
       setMonto('')
       setNotas('')
-      setFecha(new Date().toISOString().slice(0, 10))
+      setFecha(businessDateKey())
       setTipo('variable')
       setRecurrente(false)
       setDueDate('')
@@ -85,7 +86,7 @@ export function GastoModal({ open, onClose, mode, month, editData, onSuccess }: 
       setDueDate(hasDueDate ? String(editData.due_date!).slice(0, 10) : '')
       if (editData.category_id) setCatId(editData.category_id)
     } else {
-      setFecha(new Date().toISOString().slice(0, 10))
+      setFecha(businessDateKey())
     }
   }, [open, editData])
 

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netByProduct, netSales, returnedBySeries } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
+import {
+  businessDateKey, businessDayStart, businessMonthKey, businessMonthRange, businessOffsetHours,
+  businessToday, shiftDateKey,
+} from '@/lib/business-day'
 
 type ChartPeriod = '7d' | '30d' | '12m'
 
@@ -33,25 +37,25 @@ export async function GET(req: NextRequest) {
     : '7d'
 
   const bid = session.businessId
-  const now = new Date()
-  const todayStart    = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const tomorrowStart = new Date(todayStart.getTime() + 86_400_000)
+  // Todo en hora del negocio (America/Caracas); sold_at está en UTC.
+  const { start: todayStart, end: tomorrowStart } = businessToday()
+  const localSold = `DATE_ADD(sold_at, INTERVAL ${businessOffsetHours()} HOUR)`
 
   let from: Date
   let dateExpr: string
   let groupExpr: string
 
   if (period === '12m') {
-    from      = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1)
-    dateExpr  = "DATE_FORMAT(sold_at, '%Y-%m')"
-    groupExpr = "DATE_FORMAT(sold_at, '%Y-%m')"
+    from      = businessMonthRange(businessMonthKey(new Date(), 11)).start
+    dateExpr  = `DATE_FORMAT(${localSold}, '%Y-%m')`
+    groupExpr = dateExpr
   } else {
     const days = period === '30d' ? 29 : 6
-    from      = new Date(todayStart.getTime() - days * 86_400_000)
+    from      = businessDayStart(shiftDateKey(businessDateKey(), -days))
     // DATE_FORMAT fuerza retorno string desde mysql2; DATE(sold_at) devuelve
     // un objeto Date de JS que rompe label.split() en formatLabel.
-    dateExpr  = "DATE_FORMAT(sold_at, '%Y-%m-%d')"
-    groupExpr = "DATE_FORMAT(sold_at, '%Y-%m-%d')"
+    dateExpr  = `DATE_FORMAT(${localSold}, '%Y-%m-%d')`
+    groupExpr = dateExpr
   }
 
   const fromIso = from.toISOString().slice(0, 19).replace('T', ' ')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { REALIZED_SALE_STATUSES, approvedReturnsInRange } from '@/lib/sales-returns'
+import { fromBound, toBoundExclusive } from '@/lib/business-day'
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,9 +16,9 @@ export async function GET(req: NextRequest) {
     const to = params.get('to')
 
     const fromDate = from
-      ? new Date(from)
+      ? fromBound(from)
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    const toDate = to ? new Date(`${to}T23:59:59`) : new Date()
+    const toDate = to ? toBoundExclusive(to) : new Date()
 
     const [registers, salesInPeriod, returnsInPeriod] = await Promise.all([
       db.cashRegister.findMany({
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
           // partial_return incluido: antes una devolución de 1 unidad sacaba la
           // venta ENTERA del turno (ver lib/sales-returns.ts).
           status: { in: [...REALIZED_SALE_STATUSES] },
-          sold_at: { gte: fromDate, lte: toDate },
+          sold_at: { gte: fromDate, lt: toDate },
         },
         include: {
           payments: {

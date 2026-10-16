@@ -9,7 +9,8 @@ const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
 const categorySchema = z.object({
   name:                 z.string().min(1).max(80),
   color:                z.string().regex(HEX_COLOR).nullable().optional(),
-  sort_order:           z.number().int().default(0),
+  // Opcional: sin valor, el servidor asigna MAX(sort_order)+1 del negocio (al final).
+  sort_order:           z.number().int().optional(),
   requires_preparation: z.boolean().optional(),
 })
 
@@ -43,8 +44,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = categorySchema.parse(body)
 
+    let sortOrder = data.sort_order
+    if (sortOrder === undefined) {
+      const last = await prisma.category.aggregate({
+        where: { business_id: session.businessId },
+        _max:  { sort_order: true },
+      })
+      sortOrder = (last._max.sort_order ?? -1) + 1
+    }
+
     const category = await prisma.category.create({
-      data: { business_id: session.businessId, ...data },
+      data: { business_id: session.businessId, ...data, sort_order: sortOrder },
     })
 
     return NextResponse.json({ ok: true, category }, { status: 201 })

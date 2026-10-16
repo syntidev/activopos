@@ -19,6 +19,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
 import { CobrarPedidoModal } from './CobrarPedidoModal'
+import { ShippingActions } from '@/components/comprobante/ShippingActions'
 import { OrderDetalleModal, type OrderDetail } from './OrderDetalleModal'
 import styles from './pedidos.module.css'
 
@@ -39,6 +40,8 @@ interface Order {
   status: string
   client_name: string | null
   client_phone: string | null
+  client_cedula?: string | null
+  delivery_type?: string | null
   total_usd: number | string
   total_bs: number | string
   rate_used: number | string
@@ -176,6 +179,10 @@ function OrderCard({
           <MessageCircle size={13} aria-hidden="true" />
         </button>
       </div>
+
+      {order.delivery_type === 'delivery' && (
+        <ShippingActions orderId={order.id} knownDelivery />
+      )}
 
       <div className={styles.orderActionsCobro}>
         <button
@@ -417,12 +424,12 @@ function PedidosContent() {
 
   // Devuelve el id de la venta: el modal pasa al paso Comprobante y se cierra
   // solo cuando el cajero pulsa "Listo".
-  const handleCobrarConfirm = async (paymentMethodId: number, reference: string): Promise<number> => {
+  const handleCobrarConfirm = async (paymentMethodId: number, reference: string, cedula: string | null): Promise<number> => {
     if (!cobrarOrder) throw new Error('No hay pedido seleccionado')
     const res = await fetch(`/api/orders/${cobrarOrder.id}/cobrar`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ payment_method_id: paymentMethodId, reference: reference || undefined }),
+      body:    JSON.stringify({ payment_method_id: paymentMethodId, reference: reference || undefined, cedula: cedula || undefined }),
     })
     const data = await res.json() as { ok?: boolean; sale_id?: number; error?: string }
     if (!res.ok || typeof data.sale_id !== 'number') {

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, CreditCard, Copy, Check, CheckCircle2 } from 'lucide-react'
 import { ComprobanteActions } from '@/components/comprobante/ComprobanteActions'
+import { ShippingActions } from '@/components/comprobante/ShippingActions'
+import { checkCedula } from '@/lib/cedula'
 import type { CobrarPedidoData } from '@/types/pedidos'
 import styles from './CobrarPedidoModal.module.css'
 
@@ -12,6 +14,7 @@ interface PaymentMethod {
   name: string
   type: string
   is_active: boolean
+  is_financing?: boolean
 }
 
 interface CobrarPedidoModalProps {
@@ -19,7 +22,7 @@ interface CobrarPedidoModalProps {
   order: CobrarPedidoData | null
   onClose: () => void
   /** Cobra el pedido y devuelve el id de la venta creada. Lanza si falla. */
-  onConfirm: (paymentMethodId: number, reference: string) => Promise<number>
+  onConfirm: (paymentMethodId: number, reference: string, cedula: string | null) => Promise<number>
 }
 
 const REFERENCE_TYPES = new Set(['pago_movil', 'zelle', 'transfer', 'binance', 'binance_usdt'])
@@ -40,6 +43,8 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
   const [error, setError]         = useState<string | null>(null)
   const [saleId, setSaleId]       = useState<number | null>(null)
   const [copied, setCopied]       = useState(false)
+  const [cedula, setCedula]       = useState('')
+  const [cedulaCopied, setCedulaCopied] = useState(false)
 
   useEffect(() => {
     if (!open) {
@@ -49,8 +54,10 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
       setError(null)
       setSaleId(null)
       setCopied(false)
+      setCedula('')
       return
     }
+    setCedula(order?.client_cedula ?? '')
     setLoadingPm(true)
     fetch('/api/payment-methods')
       .then(r => r.json() as Promise<{ methods?: PaymentMethod[] }>)
@@ -68,6 +75,12 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
   const needsRef = cashea || (selectedMethod ? REFERENCE_TYPES.has(selectedMethod.type) : false)
   const refLabel = cashea ? 'N° de orden Cashea' : 'Referencia'
 
+  // Cédula: obligatoria con financiadora (campo is_financing) o si el pedido es envío.
+  const isDelivery  = order?.delivery_type === 'delivery'
+  const financing   = selectedMethod?.is_financing ? selectedMethod : undefined
+  const cedulaCheck = checkCedula(cedula, financing?.name ?? null, isDelivery)
+  const cedulaRequired = !!financing || isDelivery
+
   const totalUsd = Number(order?.total_usd ?? 0)
   const totalBs  = Number(order?.total_bs ?? 0)
   const rate     = Number(order?.rate_used ?? 0)
@@ -84,12 +97,23 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
     }
   }
 
+  const handleCopyCedula = async () => {
+    try {
+      await navigator.clipboard.writeText(cedula.trim())
+      setCedulaCopied(true)
+      window.setTimeout(() => setCedulaCopied(false), 1800)
+    } catch {
+      setError('No se pudo copiar la cédula. Selecciónala y cópiala a mano.')
+    }
+  }
+
   const handleConfirm = async () => {
     if (!selected) return
+    if (cedulaRequired && !cedulaCheck.ok) { setError(cedulaCheck.message); return }
     setLoading(true)
     setError(null)
     try {
-      setSaleId(await onConfirm(selected, reference.trim()))
+      setSaleId(await onConfirm(selected, reference.trim(), cedulaCheck.ok ? cedulaCheck.value : null))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cobrar el pedido.')
     } finally {
@@ -156,6 +180,36 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     {order.client_name ?? 'Sin nombre'}
                     {order.client_phone ? ` · ${order.client_phone}` : ''}
                   </p>
+                )}
+                {!done && (
+                  <div className={styles.cedulaRow}>
+                    <label className={styles.label} htmlFor="cobrar-cedula">
+                      Cédula{cedulaRequired ? <span className={styles.required}> *</span> : <span className={styles.optional}> (opcional)</span>}
+                    </label>
+                    <div className={styles.cedulaInputRow}>
+                      <input
+                        id="cobrar-cedula"
+                        type="text"
+                        autoComplete="off"
+                        className={styles.input}
+                        placeholder="V-12345678"
+                        value={cedula}
+                        onChange={e => { setCedula(e.target.value); setError(null) }}
+                        maxLength={20}
+                        aria-required={cedulaRequired}
+                      />
+                      <button
+                        type="button"
+                        className={styles.copyBtn}
+                        onClick={handleCopyCedula}
+                        disabled={!cedula.trim()}
+                        aria-label="Copiar cédula"
+                      >
+                        {cedulaCopied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
+                        {cedulaCopied ? 'Copiada' : 'Copiar'}
+                      </button>
+                    </div>
+                  </div>
                 )}
                 <ul className={styles.lines}>
                   {items.map((it, i) => (
@@ -225,6 +279,7 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                 <section className={styles.card} aria-label="Comprobante">
                   <p className={styles.label}>Comprobante de venta</p>
                   <ComprobanteActions saleId={saleId} />
+                  <ShippingActions saleId={saleId} />
                 </section>
               )}
             </div>
@@ -241,7 +296,7 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     type="button"
                     className={styles.confirmBtn}
                     onClick={handleConfirm}
-                    disabled={loading || !selected || loadingPm}
+                    disabled={loading || !selected || loadingPm || (cedulaRequired && !cedulaCheck.ok)}
                   >
                     {loading ? <span className={styles.spinner} aria-hidden="true" /> : null}
                     {loading ? 'Procesando...' : 'Confirmar cobro'}

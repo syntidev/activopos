@@ -13,5 +13,7 @@ export interface CobrarPedidoData {
   total_usd:    number | string
   total_bs:     number | string
   rate_used:    number | string
+  client_cedula?: string | null
+  delivery_type?: string | null
   items:        CobrarPedidoItem[]
 }

@@ -4,10 +4,11 @@
 // venta ya cobrada.
 
 import { printBytes } from '@/lib/printing/qz-client'
-import { encodeTicket, layoutSaleTicket, layoutTestTicket, toBase64 } from '@/lib/printing/escpos'
+import { encodeTicket, layoutSaleTicket, layoutShippingLabel, layoutTestTicket, toBase64 } from '@/lib/printing/escpos'
 import { loadLogoRaster } from '@/lib/printing/logo-raster'
 import { hasAnyThermalEnabled, loadThermalSettings } from '@/lib/thermal-settings'
-import type { PrintSettings, ThermalPaper, ThermalPrintResult, ThermalTicketData } from '@/types/thermal'
+import type { ShippingLabelInfo } from '@/lib/printing/escpos'
+import type { PrintSettings, ThermalCodepage, ThermalPaper, ThermalPrintResult, ThermalTicketData } from '@/types/thermal'
 
 const fail = (message: string, sent = false): ThermalPrintResult => ({ state: 'error', message, sent })
 
@@ -47,6 +48,24 @@ export async function printSaleThermal(saleId: number, opts: { auto?: boolean } 
     return result.ok ? { state: 'printed', printer: settings.printer } : fail(result.message, result.sent)
   } catch (e) {
     return fail(e instanceof Error && e.message ? e.message : 'Error inesperado al preparar el ticket.')
+  }
+}
+
+/**
+ * Imprime la etiqueta de envío (58 mm por defecto del equipo) por el mismo camino
+ * QZ. `skipped` si la impresión térmica está apagada en este equipo.
+ */
+export async function printShippingLabelThermal(info: ShippingLabelInfo, businessId: number, codepage: ThermalCodepage): Promise<ThermalPrintResult> {
+  if (!hasAnyThermalEnabled()) return { state: 'skipped' }
+  try {
+    const settings = loadThermalSettings(businessId)
+    if (!settings.enabled) return { state: 'skipped' }
+    if (!settings.printer) return fail('No hay una impresora elegida en Configuración → Impresión.')
+    const bytes = encodeTicket(layoutShippingLabel(info, settings.paper), { codepage, openDrawer: false })
+    const result = await printBytes(settings.printer, toBase64(bytes))
+    return result.ok ? { state: 'printed', printer: settings.printer } : fail(result.message, result.sent)
+  } catch (e) {
+    return fail(e instanceof Error && e.message ? e.message : 'Error inesperado al preparar la etiqueta.')
   }
 }
 

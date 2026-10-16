@@ -6,6 +6,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { checkCedula } from '@/lib/cedula'
+import { validateShipping } from '@/lib/shipping'
 
 type Context = { params: { id: string } }
 
@@ -58,7 +59,17 @@ export async function POST(req: NextRequest, { params }: Context) {
 
       // Cédula: obligatoria (V/E natural) si el método es financiadora. Snapshot
       // en la venta y el pedido; Client.cedula solo si estaba nula.
-      const cedulaCheck = checkCedula(body.cedula ?? order.client_cedula, pm.is_financing ? pm.name : null)
+      const isDelivery = order.delivery_type === 'delivery'
+      if (isDelivery) {
+        const shippingError = validateShipping({
+          recipient: order.recipient_name || order.client_name,
+          cedula:    body.cedula ?? order.client_cedula,
+          phone:     order.client_phone,
+          address:   order.delivery_address,
+        })
+        if (shippingError) throw new Error(`CEDULA_REQUIRED:${shippingError}`)
+      }
+      const cedulaCheck = checkCedula(body.cedula ?? order.client_cedula, pm.is_financing ? pm.name : null, isDelivery)
       if (!cedulaCheck.ok) throw new Error(`CEDULA_REQUIRED:${cedulaCheck.message}`)
       const clientCedula = cedulaCheck.value
 

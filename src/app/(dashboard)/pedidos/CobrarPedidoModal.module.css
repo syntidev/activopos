@@ -363,3 +363,9 @@
   .spinner  { animation: none; }
   .confirmBtn, .cancelBtn, .methodBtn, .input, .closeBtn { transition: none; }
 }
+
+/* ── Cédula ── */
+.cedulaRow { margin-top: var(--space-3); }
+.cedulaInputRow { display: flex; gap: var(--space-2); align-items: center; }
+.cedulaInputRow .input { flex: 1; min-width: 0; }
+.required { color: var(--color-danger-text); }

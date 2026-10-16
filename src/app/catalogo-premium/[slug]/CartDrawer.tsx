@@ -7,6 +7,7 @@ import { useCart } from './CartContext'
 import { fmtUsd, fmtBs, isValidVePhone, currencyVisibility } from './catalogUtils'
 import type { PaymentMethod } from './CatalogoGrid'
 import { checkCedula } from '@/lib/cedula'
+import { validateShipping } from '@/lib/shipping'
 import styles from './catalogo.module.css'
 
 interface DeliveryZone {
@@ -161,7 +162,14 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
     if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
     if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
     if (deliveryType === 'delivery' && hasZones && zoneIdx < 0) return
-    const cedulaCheck = checkCedula(cCedula, financingMethod?.name ?? null)
+    const isDelivery = deliveryType === 'delivery'
+    if (isDelivery) {
+      const shippingError = validateShipping({
+        recipient: recipientName || cName, cedula: cCedula, phone: cPhone, address: deliveryAddress,
+      })
+      if (shippingError) { setCedulaError(shippingError); return }
+    }
+    const cedulaCheck = checkCedula(cCedula, financingMethod?.name ?? null, isDelivery)
     if (!cedulaCheck.ok) { setCedulaError(cedulaCheck.message); return }
     setCedulaError(null)
     setSubmitting(true)
@@ -505,7 +513,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                       />
                     </div>
 
-                    {hasZones ? (
+                    {hasZones && (
                       <div className={styles.checkoutFieldGroup}>
                         <label className={styles.checkoutLabel} htmlFor="co-zone">
                           Zona de entrega <span className={styles.checkoutRequired}>*</span>
@@ -523,10 +531,12 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                           ))}
                         </select>
                       </div>
-                    ) : (
+                    )}
+
+                    {(
                       <div className={styles.checkoutFieldGroup}>
                         <label className={styles.checkoutLabel} htmlFor="co-address">
-                          Dirección completa
+                          Estado, ciudad y dirección completa u oficina de destino <span className={styles.checkoutRequired}>*</span>
                         </label>
                         <input
                           id="co-address"
@@ -534,7 +544,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                           className={styles.checkoutInput}
                           value={deliveryAddress}
                           onChange={e => setDeliveryAddress(e.target.value)}
-                          placeholder="Calle, edificio, referencia"
+                          placeholder="Estado, ciudad, calle, edificio u oficina"
                           disabled={submitting}
                         />
                         <button
@@ -609,7 +619,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                   </div>
                 )}
 
-                {financingMethod && (
+                {(financingMethod || deliveryType === 'delivery') && (
                   <div className={styles.checkoutFieldGroup}>
                     <label className={styles.checkoutLabel} htmlFor="co-cedula">
                       Cédula <span className={styles.checkoutRequired}>*</span>
@@ -627,7 +637,9 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                       disabled={submitting}
                     />
                     <span className={cedulaError ? styles.checkoutFieldError : styles.checkoutOptional}>
-                      {cedulaError ?? `${financingMethod.name} necesita tu cédula para crear el enlace de pago.`}
+                      {cedulaError ?? (financingMethod
+                        ? `${financingMethod.name} necesita tu cédula para crear el enlace de pago.`
+                        : 'La cédula es obligatoria para envíos.')}
                     </span>
                   </div>
                 )}

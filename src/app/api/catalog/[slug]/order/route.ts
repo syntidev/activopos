@@ -6,6 +6,7 @@ import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
 import { checkCedula } from '@/lib/cedula'
+import { validateShipping } from '@/lib/shipping'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
@@ -123,7 +124,21 @@ export async function POST(
     where:  { business_id: business.id, is_active: true, name: body.payment_method },
     select: { name: true, is_financing: true },
   })
-  const cedulaCheck = checkCedula(body.customer_cedula, chosenMethod?.is_financing ? chosenMethod.name : null)
+  // Todo envío sale por encomienda nacional: nombre y apellido, cédula, teléfono y
+  // dirección completa son obligatorios (regla de servidor, no solo del carrito).
+  const isDelivery = body.delivery_type === 'delivery'
+  if (isDelivery) {
+    const shippingError = validateShipping({
+      recipient: body.recipient_name || body.customer_name,
+      cedula:    body.customer_cedula,
+      phone:     body.customer_phone,
+      address:   body.delivery_address,
+    })
+    if (shippingError) {
+      return NextResponse.json({ error: shippingError, field: 'delivery' }, { status: 422 })
+    }
+  }
+  const cedulaCheck = checkCedula(body.customer_cedula, chosenMethod?.is_financing ? chosenMethod.name : null, isDelivery)
   if (!cedulaCheck.ok) {
     return NextResponse.json({ error: cedulaCheck.message, field: 'customer_cedula' }, { status: 422 })
   }

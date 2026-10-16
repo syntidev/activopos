@@ -206,6 +206,43 @@ export function layoutTestTicket(i: TestTicketInfo): PrintLine[] {
   return L
 }
 
+/** Etiqueta de envío: datos del destinatario, SIN precios ni totales. */
+export interface ShippingLabelInfo {
+  businessName: string
+  orderNumber:  string
+  recipient:    string
+  cedula:       string
+  phone:        string
+  address:      string
+  notes:        string
+  packages:     number
+}
+
+export function layoutShippingLabel(i: ShippingLabelInfo, paper: ThermalPaper): PrintLine[] {
+  const cols = colsForPaper(paper)
+  const L: PrintLine[] = []
+  const field = (label: string, value: string): void => {
+    for (const l of wrap(`${label} ${sanitize(value)}`, cols)) L.push(txt(l))
+  }
+
+  for (const line of wrap(sanitize(i.businessName || 'ActivoPOS').toUpperCase(), cols)) L.push(txt(line, true, 'center'))
+  L.push(txt('-'.repeat(cols)))
+  L.push(txt('DATOS DE ENVIO', true, 'center'))
+  L.push(txt('-'.repeat(cols)))
+  field('Orden:', i.orderNumber)
+  field('Destinatario:', i.recipient)
+  field('C.I.:', i.cedula)
+  field('Tel:', i.phone)
+  L.push(txt('Direccion:'))
+  for (const part of i.address.split(String.fromCharCode(10))) {
+    for (const l of wrap(sanitize(part), cols)) L.push(txt(l))
+  }
+  if (i.notes.trim()) field('Notas:', i.notes.trim())
+  L.push(txt('-'.repeat(cols)))
+  L.push(txt(`Bultos: ${i.packages}`, true))
+  return L
+}
+
 /** Vista previa en texto plano, al ancho real del papel. */
 export function renderPreview(lines: PrintLine[], paper: ThermalPaper): string {
   const cols = colsForPaper(paper)

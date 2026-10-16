@@ -12,6 +12,7 @@ import { ClienteFormModal }      from './ClienteFormModal'
 import { ClienteHistorialModal } from './ClienteHistorialModal'
 import type { ClientRecord } from '@/types'
 import styles from './ClientesView.module.css'
+import { maskCedula } from '@/lib/cedula'
 
 interface ClientesViewProps {
   initialClients: ClientRecord[]
@@ -238,7 +239,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
                     onClick={() => setHistorialId(client.id)}
                   >
                     <td className={`${styles.td} ${styles.tdHidden}`} data-label="Cédula / RIF">
-                      <span className={styles.cedula}>{client.cedula ?? '—'}</span>
+                      <span className={styles.cedula}>{client.cedula ? (maskCedula(client.cedula) ?? `****${client.cedula.slice(-4)}`) : '—'}</span>
                     </td>
                     <td className={styles.td} data-label="Nombre">
                       <span className={styles.name}>{client.name}</span>

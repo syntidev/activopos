@@ -16,6 +16,7 @@ import styles from './ventas.module.css'
 import { businessDateKey, shiftDateKey } from '@/lib/business-day'
 import { saleClientName } from '@/lib/sale-client'
 import { ComprobanteActions } from '@/components/comprobante/ComprobanteActions'
+import { ShippingActions } from '@/components/comprobante/ShippingActions'
 
 /* ── Types ── */
 
@@ -698,6 +699,7 @@ function VentasContent({ isAdmin }: VentasContentProps) {
                   {/* Actions */}
                   <div className={styles.actionsSection}>
                     <ComprobanteActions saleId={selected.id} />
+                    <ShippingActions saleId={selected.id} />
 
                     {isAdmin && selected.status !== 'cancelled' && !voidOpen && (
                       <button

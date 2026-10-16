@@ -70,6 +70,8 @@ export function ClienteFormModal({
     setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
+  const cedulaChanged = form.cedula.trim() !== (client?.cedula ?? '').trim()
+
   const validate = (): boolean => {
     const next: FieldErrors = {}
     if (form.name.trim().length < 2) next.name = 'El nombre debe tener al menos 2 caracteres.'
@@ -77,8 +79,9 @@ export function ClienteFormModal({
       next.email = 'Correo electrónico no válido.'
     }
     // Misma regla y mismo mensaje que el checkout (src/lib/cedula.ts); opcional.
+    // Solo se exige formato si la cédula cambió: clientes antiguos con texto libre siguen editables.
     const cedulaCheck = checkCedula(form.cedula, null)
-    if (!cedulaCheck.ok) next.cedula = cedulaCheck.message
+    if (cedulaChanged && !cedulaCheck.ok) next.cedula = cedulaCheck.message
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -90,7 +93,10 @@ export function ClienteFormModal({
 
     const payload = {
       name:   form.name.trim(),
-      cedula: normalizeCedula(form.cedula) ?? undefined,
+      // Sin cambio: se reenvía tal cual (el servidor no la revalida). Cambiada: normalizada; vaciada en edición: null.
+      cedula: !cedulaChanged
+        ? (client?.cedula ?? undefined)
+        : (normalizeCedula(form.cedula) ?? (isEdit ? null : undefined)),
       phone:  form.phone.trim()   || undefined,
       email:  form.email.trim()   || undefined,
       notes:  form.notes.trim()   || undefined,

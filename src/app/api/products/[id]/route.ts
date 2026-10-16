@@ -5,6 +5,7 @@ import { revalidateCatalogCache } from '@/lib/catalog'
 import { prisma } from '@/lib/prisma'
 import { createStockAdjustment, getNetStock } from '@/lib/stock-adjust'
 import { z } from 'zod'
+import { cleanSubcategory } from '@/lib/subcategory'
 
 const patchSchema = z.object({
   name:               z.string().min(1).max(120).optional(),
@@ -33,7 +34,8 @@ const patchSchema = z.object({
   has_variants:       z.boolean().optional(),
   images:             z.array(z.string()).nullable().optional(),
   badge:              z.enum(['none', 'popular', 'nuevo', 'promo', 'recomendado']).nullable().optional(),
-  subcategory:        z.string().max(60).nullable().optional(),
+  subcategory:        z.string().max(60).nullable().optional()
+    .transform(v => (v == null ? v : cleanSubcategory(v) || null)),
   is_featured:        z.boolean().optional(),
   is_fixed_price:     z.boolean().optional(),
   cost_unknown:       z.boolean().optional(),

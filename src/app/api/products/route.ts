@@ -4,6 +4,7 @@ import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { getActiveRate } from '@/lib/bcv'
 import { revalidateCatalogCache } from '@/lib/catalog'
 import { z } from 'zod'
+import { cleanSubcategory } from '@/lib/subcategory'
 
 const productSchema = z.object({
   name:               z.string().min(1).max(120),
@@ -36,7 +37,8 @@ const productSchema = z.object({
   availability:       z.enum(['in_stock', 'low_stock', 'out_of_stock', 'discontinued']).default('in_stock'),
   is_favorite:        z.boolean().default(false),
   badge:              z.enum(['none', 'popular', 'nuevo', 'promo', 'recomendado']).default('none'),
-  subcategory:        z.string().max(60).nullable().optional(),
+  subcategory:        z.string().max(60).nullable().optional()
+    .transform(v => (v == null ? v : cleanSubcategory(v) || null)),
   is_featured:        z.boolean().default(false),
   is_fixed_price:     z.boolean().default(false),
   financing_eligible: z.boolean().default(false),

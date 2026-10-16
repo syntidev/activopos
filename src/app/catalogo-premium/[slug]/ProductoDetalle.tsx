@@ -18,6 +18,7 @@ import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import { productosHref } from '@/lib/subcategory'
+import { availabilityWaUrl } from '@/lib/availability-message'
 import styles from './productoDetalle.module.css'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 // Mismo header/panel de info que Home y /productos (CatalogoGrid.tsx) --
@@ -138,7 +139,15 @@ export function ProductoDetalle({
     return () => { document.body.style.overflow = '' }
   }, [cartOpen, checkoutOpen])
 
+  const [pageUrl, setPageUrl] = useState('')
+  useEffect(() => { setPageUrl(window.location.href) }, [])
+
   const selectedVariant  = variants.find(v => v.id === selectedVariantId) ?? null
+  // Agotado: el producto entero, o la variante elegida. Se recalcula con las existencias de cada carga.
+  const soldOutNow = selectedVariant ? selectedVariant.soldOut : outOfStock
+  const consultUrl = availabilityWaUrl(
+    businessPhone, name, selectedVariant ? (selectedVariant.combination_key ?? selectedVariant.valor) : null, pageUrl,
+  )
   // precio_bcv (normal): base de la conversión a Bs, siempre -- sin importar
   // si hay precio_divisa. Se muestra tachado cuando precio_divisa existe.
   const effectivePrice   = priceUsd + (selectedVariant?.precio_extra ?? 0)
@@ -541,7 +550,6 @@ export function ProductoDetalle({
                               type="button"
                               className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
                               onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
-                              disabled={soldOut}
                               aria-pressed={active}
                               aria-label={`${combinedDim2Label}: ${label}${soldOut ? ' — agotado' : ''}`}
                             >
@@ -594,7 +602,6 @@ export function ProductoDetalle({
                               type="button"
                               className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
                               onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
-                              disabled={soldOut}
                               aria-pressed={active}
                               aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
                             >
@@ -625,6 +632,7 @@ export function ProductoDetalle({
           )}
 
           {/* Qty */}
+          {!soldOutNow && (
           <div className={styles.qtyRow}>
             <span className={styles.qtyLabel}>Cantidad</span>
             <div className={styles.qtyControl}>
@@ -649,6 +657,7 @@ export function ProductoDetalle({
               </button>
             </div>
           </div>
+          )}
 
           {/* Info BCV */}
           <div className={styles.bcvNote}>
@@ -667,9 +676,23 @@ export function ProductoDetalle({
             />
           )}
 
-          {outOfStock && <div className={styles.outOfStockNote} role="status">Agotado</div>}
+          {soldOutNow && <div className={styles.outOfStockNote} role="status">Agotado</div>}
+
+          {/* Agotado: consulta por WhatsApp en lugar de comprar (sin teléfono, solo el aviso) */}
+          {soldOutNow && consultUrl && (
+            <a
+              href={consultUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.btnConsult}
+            >
+              <MessageCircle size={18} aria-hidden="true" />
+              Consultar disponibilidad por WhatsApp
+            </a>
+          )}
 
           {/* CTAs */}
+          {!soldOutNow && (
           <div className={styles.ctas}>
             <button
               type="button"
@@ -710,6 +733,7 @@ export function ProductoDetalle({
               <Share2 size={18} aria-hidden="true" />
             </button>
           </div>
+          )}
 
           {description && (
             <div className={styles.productDescSection}>

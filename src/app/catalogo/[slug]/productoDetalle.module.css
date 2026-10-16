@@ -317,7 +317,6 @@
 }
 .variantChipDisabled {
   opacity:        0.4;
-  pointer-events: none;
   text-decoration: line-through;
 }
 
@@ -479,6 +478,25 @@
   transition:      background 150ms ease;
 }
 .btnAddCart:hover { background: var(--color-surface-2); }
+
+/* Agotado: consulta por WhatsApp a todo el ancho */
+.btnConsult {
+  width:           100%;
+  min-height:      var(--touch-comfy);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             var(--space-2);
+  padding:         0 var(--space-4);
+  border-radius:   var(--radius-lg);
+  background:      var(--whatsapp);
+  color:           var(--whatsapp-on);
+  font-size:       var(--text-base);
+  font-weight:     var(--weight-semibold);
+  text-decoration: none;
+  transition:      background 150ms ease;
+}
+.btnConsult:hover { background: var(--whatsapp-hover); }
 
 .btnShare {
   width:           52px;

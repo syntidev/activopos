@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, type CSSProperties } from 'react'
-import { ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag, Ruler } from 'lucide-react'
+import { ArrowLeft, Share2, Plus, Minus, Zap, ShoppingBag, Ruler, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
 import { useCart } from './CartContext'
@@ -12,6 +12,7 @@ import { hasSizeGuide } from '@/lib/size-guide'
 import { FINANCING_BADGES, type FinancingBadgeKey } from '@/lib/financing-badges'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
 import { productosHref } from '@/lib/subcategory'
+import { availabilityWaUrl } from '@/lib/availability-message'
 import styles from './productoDetalle.module.css'
 
 interface RelatedProduct {
@@ -43,12 +44,13 @@ interface Props {
   outOfStock:    boolean
   financingBadge: FinancingBadgeKey | null
   stockHidden:    boolean
+  businessPhone:  string
 }
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, subcategory, categoryColor,
   priceUsd, priceBs, variants, businessName,
-  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financingBadge, stockHidden,
+  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financingBadge, stockHidden, businessPhone,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
@@ -66,7 +68,15 @@ export function ProductoDetalle({
     return () => { document.body.style.overflow = '' }
   }, [cartOpen, checkoutOpen])
 
+  const [pageUrl, setPageUrl] = useState('')
+  useEffect(() => { setPageUrl(window.location.href) }, [])
+
   const selectedVariant  = variants.find(v => v.id === selectedVariantId) ?? null
+  // Agotado: el producto entero, o la variante elegida. Se recalcula con las existencias de cada carga.
+  const soldOutNow = selectedVariant ? selectedVariant.soldOut : outOfStock
+  const consultUrl = availabilityWaUrl(
+    businessPhone, name, selectedVariant ? (selectedVariant.combination_key ?? selectedVariant.valor) : null, pageUrl,
+  )
   const effectivePrice   = priceUsd + (selectedVariant?.precio_extra ?? 0)
   const effectivePriceBs = priceBs !== null
     ? effectivePrice * rate
@@ -266,7 +276,6 @@ export function ProductoDetalle({
                               type="button"
                               className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
                               onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
-                              disabled={soldOut}
                               aria-pressed={active}
                               aria-label={`${combinedDim2Label}: ${label}${soldOut ? ' — agotado' : ''}`}
                             >
@@ -293,7 +302,6 @@ export function ProductoDetalle({
                             type="button"
                             className={`${styles.variantChip} ${active ? styles.variantChipActive : ''} ${soldOut ? styles.variantChipDisabled : ''}`}
                             onClick={() => { setSelectedVariantId(v.id); setVariantError(false) }}
-                            disabled={soldOut}
                             aria-pressed={active}
                             aria-label={`${capitalize(g.tipo)}: ${v.valor}${soldOut ? ' — agotado' : ''}`}
                           >
@@ -323,6 +331,7 @@ export function ProductoDetalle({
           )}
 
           {/* Qty */}
+          {!soldOutNow && (
           <div className={styles.qtyRow}>
             <span className={styles.qtyLabel}>Cantidad</span>
             <div className={styles.qtyControl}>
@@ -347,6 +356,7 @@ export function ProductoDetalle({
               </button>
             </div>
           </div>
+          )}
 
           {/* Info BCV */}
           <div className={styles.bcvNote}>
@@ -365,9 +375,23 @@ export function ProductoDetalle({
             />
           )}
 
-          {outOfStock && <div className={styles.outOfStockNote} role="status">Agotado</div>}
+          {soldOutNow && <div className={styles.outOfStockNote} role="status">Agotado</div>}
+
+          {/* Agotado: consulta por WhatsApp en lugar de comprar (sin teléfono, solo el aviso) */}
+          {soldOutNow && consultUrl && (
+            <a
+              href={consultUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.btnConsult}
+            >
+              <MessageCircle size={18} aria-hidden="true" />
+              Consultar disponibilidad por WhatsApp
+            </a>
+          )}
 
           {/* CTAs */}
+          {!soldOutNow && (
           <div className={styles.ctas}>
             <button
               type="button"
@@ -396,6 +420,7 @@ export function ProductoDetalle({
               <Share2 size={18} aria-hidden="true" />
             </button>
           </div>
+          )}
 
           {description && (
             <div className={styles.productDescSection}>

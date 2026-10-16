@@ -180,6 +180,7 @@ export default async function ProductoPage({ params }: PageProps) {
         outOfStock={outOfStock}
         financingBadge={financingBadge}
         stockHidden={hideStock}
+        businessPhone={business.phone ?? ''}
       />
       <CatalogFooter
         slug={params.slug}

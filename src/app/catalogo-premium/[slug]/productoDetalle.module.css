@@ -271,6 +271,7 @@
 /* Pill con color propio -- mismo patrón --badge-color + color-mix que el badge
    de categoría en CatalogoGrid.tsx (ver categoryBadgeColor() en catalogUtils.ts). */
 .categoryBadge {
+  text-decoration: none;
   display:        inline-flex;
   align-self:     flex-start;
   font-size:      var(--text-2xs);
@@ -417,18 +418,6 @@
 }
 
 /* Qty */
-.qtyRow {
-  display:     flex;
-  align-items: center;
-  gap:         var(--space-4);
-}
-
-.qtyLabel {
-  font-size:   var(--text-sm);
-  font-weight: var(--weight-medium);
-  color:       var(--color-text-primary);
-}
-
 .qtyControl {
   display:     flex;
   align-items: center;
@@ -439,8 +428,8 @@
 }
 
 .qtyBtn {
-  width:           32px;
-  height:          32px;
+  width:           var(--touch-min);
+  height:          var(--touch-min);
   border:          none;
   background:      none;
   cursor:          pointer;
@@ -460,26 +449,6 @@
   font-size:   var(--text-base);
   font-weight: var(--weight-semibold);
   color:       var(--color-text-primary);
-}
-
-/* BCV note */
-.bcvNote {
-  display:       flex;
-  align-items:   center;
-  gap:           var(--space-2);
-  background:    var(--color-success-subtle);
-  border:        1px solid var(--color-success-border);
-  border-radius: var(--radius-md);
-  padding:       var(--space-3) var(--space-4);
-  font-size:     var(--text-sm);
-  color:         var(--color-success-text);
-}
-
-/* CTAs */
-.ctas {
-  display:     flex;
-  align-items: stretch;
-  gap:         var(--space-3);
 }
 
 /* Sello de financiamiento: alto fijo, ancho proporcional (asset oficial, no se redibuja). */
@@ -513,9 +482,7 @@
 /* Base común de los 4 controles de la fila: mismo alto (token de touch),
    mismo radio, ícono y texto centrados en una sola línea. */
 .btnPedir,
-.btnAddCart,
-.btnWhatsapp,
-.btnShare {
+.btnAddCart {
   height:          var(--touch-comfy);
   display:         inline-flex;
   align-items:     center;
@@ -538,14 +505,6 @@
   padding:   0 var(--space-4);
 }
 
-/* Botones de solo ícono: cuadrados, mismo alto que los de texto. */
-.btnWhatsapp,
-.btnShare {
-  flex:        0 0 auto;
-  width:       var(--touch-comfy);
-  padding:     0;
-}
-
 .btnPedir {
   border:     none;
   background: var(--biz-color, var(--onbike-blue));
@@ -561,14 +520,6 @@
   color:      var(--biz-color, var(--onbike-blue));
 }
 .btnAddCart:hover { background: var(--color-surface-2); }
-
-.btnWhatsapp {
-  border:     none;
-  background: var(--whatsapp);
-  color:      var(--color-white);
-}
-.btnWhatsapp:hover  { background: color-mix(in srgb, var(--whatsapp) 85%, black); }
-.btnWhatsapp:active { transform: scale(0.96); }
 
 /* Agotado: consulta por WhatsApp a todo el ancho */
 .btnConsult {
@@ -589,19 +540,6 @@
 }
 .btnConsult:hover { background: var(--whatsapp-hover); }
 
-.btnShare {
-  border:     1.5px solid var(--color-border-subtle);
-  background: var(--color-white);
-  color:      var(--color-text-secondary);
-}
-.btnShare:hover { background: var(--color-surface-2); }
-
-/* Móvil: la acción principal va sola arriba a todo el ancho; debajo,
-   Agregar al carrito + botones de ícono. Así ningún texto se parte. */
-@media (max-width: 639px) {
-  .ctas      { flex-wrap: wrap; }
-  .btnPedir  { order: -1; flex-basis: 100%; }
-}
 
 /* Productos relacionados */
 .relatedSection {
@@ -686,4 +624,51 @@
   font-size:   var(--text-sm);
   font-weight: var(--weight-bold);
   color:       var(--color-text-primary);
+}
+
+/* Línea compacta: tasa BCV + sello de financiamiento */
+.infoLine {
+  display:     flex;
+  flex-wrap:   wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap:         var(--space-2) var(--space-3);
+}
+
+.statusOk {
+  margin:      0;
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-success-text);
+}
+
+/* Cantidad + Agregar al carrito en una fila */
+.buyRow {
+  display:     flex;
+  align-items: stretch;
+  gap:         var(--space-3);
+}
+
+/* Comprar ahora: principal, ancho completo (la columna es flex vertical) */
+.info > .btnPedir {
+  flex:  none;
+  width: 100%;
+}
+
+.dudasLink {
+  align-self:      flex-start;
+  display:         inline-flex;
+  align-items:     center;
+  min-height:      var(--touch-min);
+  font-size:       var(--text-sm);
+  font-weight:     var(--weight-medium);
+  color:           var(--biz-color, var(--color-brand));
+  text-decoration: none;
+}
+.dudasLink:hover { text-decoration: underline; }
+
+/* Tasa BCV: texto plano, sin recuadro */
+.bcvNote {
+  font-size: var(--text-sm);
+  color:     var(--color-text-secondary);
 }

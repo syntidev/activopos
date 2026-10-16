@@ -12,7 +12,7 @@ import { hasSizeGuide } from '@/lib/size-guide'
 import { FINANCING_BADGES, type FinancingBadgeKey } from '@/lib/financing-badges'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
 import { productosHref } from '@/lib/subcategory'
-import { availabilityWaUrl } from '@/lib/availability-message'
+import { availabilityWaUrl, questionWaUrl } from '@/lib/availability-message'
 import styles from './productoDetalle.module.css'
 
 interface RelatedProduct {
@@ -74,6 +74,7 @@ export function ProductoDetalle({
   const selectedVariant  = variants.find(v => v.id === selectedVariantId) ?? null
   // Agotado: el producto entero, o la variante elegida. Se recalcula con las existencias de cada carga.
   const soldOutNow = selectedVariant ? selectedVariant.soldOut : outOfStock
+  const questionUrl = questionWaUrl(businessPhone, name, pageUrl)
   const consultUrl = availabilityWaUrl(
     businessPhone, name, selectedVariant ? (selectedVariant.combination_key ?? selectedVariant.valor) : null, pageUrl,
   )
@@ -221,12 +222,13 @@ export function ProductoDetalle({
         {/* Info */}
         <div className={styles.info}>
           {categoryName && (
-            <span
+            <Link
+              href={productosHref(catalogUrl, categoryName, subcategory)}
               className={styles.categoryBadge}
               style={categoryColor ? ({ color: categoryColor } as CSSProperties) : undefined}
             >
-              {categoryName.toUpperCase()}
-            </span>
+              {(subcategory ?? categoryName).toUpperCase()}
+            </Link>
           )}
 
           <h1 className={styles.productName}>{name}</h1>
@@ -239,6 +241,22 @@ export function ProductoDetalle({
               <span className={styles.priceBs}>{fmtBs(effectivePriceBs)}</span>
             )}
           </div>
+
+          {(showBs || financingBadge) && (
+            <div className={styles.infoLine}>
+              {showBs && <span className={styles.bcvNote}>Recibimos bolívares a tasa BCV</span>}
+              {financingBadge && (
+                <img
+                  className={styles.financingBadge}
+                  src={FINANCING_BADGES[financingBadge].src}
+                  alt={FINANCING_BADGES[financingBadge].alt}
+                  width={FINANCING_BADGES[financingBadge].width}
+                  height={FINANCING_BADGES[financingBadge].height}
+                  loading="lazy"
+                />
+              )}
+            </div>
+          )}
 
           {/* Variantes */}
           {variantGroups.length > 0 && (
@@ -330,52 +348,10 @@ export function ProductoDetalle({
             </div>
           )}
 
-          {/* Qty */}
-          {!soldOutNow && (
-          <div className={styles.qtyRow}>
-            <span className={styles.qtyLabel}>Cantidad</span>
-            <div className={styles.qtyControl}>
-              <button
-                type="button"
-                className={styles.qtyBtn}
-                onClick={() => setQty(q => Math.max(1, q - 1))}
-                disabled={qty <= 1}
-                aria-label="Reducir cantidad"
-              >
-                <Minus size={14} />
-              </button>
-              <span className={styles.qtyValue}>{qty}</span>
-              <button
-                type="button"
-                className={styles.qtyBtn}
-                onClick={() => setQty(q => Math.min(availableStock, q + 1))}
-                disabled={qty >= availableStock}
-                aria-label="Aumentar cantidad"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-          </div>
-          )}
-
-          {/* Info BCV */}
-          <div className={styles.bcvNote}>
-            <span>💱</span>
-            <span>Recibimos bolívares a la tasa del dólar BCV</span>
-          </div>
-
-          {financingBadge && (
-            <img
-              className={styles.financingBadge}
-              src={FINANCING_BADGES[financingBadge].src}
-              alt={FINANCING_BADGES[financingBadge].alt}
-              width={FINANCING_BADGES[financingBadge].width}
-              height={FINANCING_BADGES[financingBadge].height}
-              loading="lazy"
-            />
-          )}
-
-          {soldOutNow && <div className={styles.outOfStockNote} role="status">Agotado</div>}
+          {/* Estado */}
+          {soldOutNow
+            ? <div className={styles.outOfStockNote} role="status">Agotado</div>
+            : <p className={styles.statusOk} role="status">Disponible</p>}
 
           {/* Agotado: consulta por WhatsApp en lugar de comprar (sin teléfono, solo el aviso) */}
           {soldOutNow && consultUrl && (
@@ -390,36 +366,53 @@ export function ProductoDetalle({
             </a>
           )}
 
-          {/* CTAs */}
           {!soldOutNow && (
-          <div className={styles.ctas}>
-            <button
-              type="button"
-              className={styles.btnAddCart}
-              disabled={outOfStock}
-              onClick={() => { if (addCurrentToCart()) setCartOpen(true) }}
-            >
-              <ShoppingBag size={18} aria-hidden="true" />
-              Agregar al carrito
-            </button>
-            <button
-              type="button"
-              className={styles.btnPedir}
-              disabled={outOfStock}
-              onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
-            >
-              <Zap size={18} aria-hidden="true" />
-              Pedir ahora · {fmtUsd(effectivePrice * qty)} · {fmtBs(effectivePrice * qty * rate)}
-            </button>
-            <button
-              type="button"
-              className={styles.btnShare}
-              onClick={() => navigator.share?.({ title: name, url: window.location.href }).catch(() => {})}
-              aria-label="Compartir"
-            >
-              <Share2 size={18} aria-hidden="true" />
-            </button>
-          </div>
+            <>
+              <div className={styles.buyRow}>
+                <div className={styles.qtyControl}>
+                  <button
+                    type="button"
+                    className={styles.qtyBtn}
+                    onClick={() => setQty(q => Math.max(1, q - 1))}
+                    disabled={qty <= 1}
+                    aria-label="Reducir cantidad"
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <span className={styles.qtyValue} aria-label="Cantidad">{qty}</span>
+                  <button
+                    type="button"
+                    className={styles.qtyBtn}
+                    onClick={() => setQty(q => Math.min(availableStock, q + 1))}
+                    disabled={qty >= availableStock}
+                    aria-label="Aumentar cantidad"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className={styles.btnAddCart}
+                  onClick={() => { if (addCurrentToCart()) setCartOpen(true) }}
+                >
+                  <ShoppingBag size={18} aria-hidden="true" />
+                  Agregar al carrito
+                </button>
+              </div>
+              <button
+                type="button"
+                className={styles.btnPedir}
+                onClick={() => { if (addCurrentToCart()) setCheckoutOpen(true) }}
+              >
+                <Zap size={18} aria-hidden="true" />
+                Comprar ahora
+              </button>
+              {questionUrl && (
+                <a href={questionUrl} target="_blank" rel="noopener noreferrer" className={styles.dudasLink}>
+                  ¿Dudas? Escríbenos por WhatsApp
+                </a>
+              )}
+            </>
           )}
 
           {description && (

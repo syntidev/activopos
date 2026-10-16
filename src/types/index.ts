@@ -115,6 +115,7 @@ export interface PaymentMethodRecord {
   name:        string
   type:        string
   is_active:   boolean
+  is_financing?: boolean
   sort_order:  number
 }
 

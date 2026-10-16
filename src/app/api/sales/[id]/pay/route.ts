@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
+import { checkCedula } from '@/lib/cedula'
 
 class InsufficientStockError extends Error {}
 
@@ -17,6 +18,7 @@ const paySchema = z.object({
       })
     )
     .min(1),
+  client_cedula: z.string().max(20).optional(),
 })
 
 export async function PATCH(
@@ -68,6 +70,18 @@ export async function PATCH(
       return NextResponse.json({ error: 'Método de pago no válido para este negocio' }, { status: 403 })
     }
 
+    // Cédula: obligatoria (V/E natural) si algún método es financiadora; si no, la
+    // que ya traía la venta (cotización/borrador) o la nueva opcional.
+    const financing = await prisma.paymentMethod.findFirst({
+      where:  { id: { in: paymentMethodIds }, business_id: session.businessId, is_financing: true },
+      select: { name: true },
+    })
+    const cedulaCheck = checkCedula(body.client_cedula ?? sale.client_cedula, financing?.name ?? null)
+    if (!cedulaCheck.ok) {
+      return NextResponse.json({ error: cedulaCheck.message, field: 'client_cedula' }, { status: 422 })
+    }
+    const clientCedula = cedulaCheck.value
+
     const { rate }     = await getActiveRate(session.businessId)
     const totalBs      = Number(sale.total_bs)
     const totalUsd     = Number(sale.total_usd)
@@ -96,6 +110,7 @@ export async function PATCH(
           rate_used:          rate,
           monto_recibido_usd: montoRecibidoUsd,
           vuelto_usd:         vueltoUsd,
+          client_cedula:      clientCedula,
           payments: {
             create: body.payments.map(p => ({
               payment_method_id: p.payment_method_id,
@@ -115,6 +130,14 @@ export async function PATCH(
           },
         },
       })
+
+      // Client.cedula solo si estaba nula; nunca se pisa una existente.
+      if (clientCedula && sale.client_id !== null) {
+        await tx.client.updateMany({
+          where: { id: sale.client_id, business_id: session.businessId, cedula: null },
+          data:  { cedula: clientCedula },
+        })
+      }
 
       const inventoryDeductions: {
         business_id: number

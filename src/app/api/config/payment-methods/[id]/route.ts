@@ -26,6 +26,8 @@ const PatchSchema = z.object({
   name: z.string().min(1).max(60).optional(),
   type: z.nativeEnum(PmType).optional(),
   is_active: z.boolean().optional(),
+  // Marca de financiadora (exige cédula al cobrar). Solo admin: cashier ya no pasa el guard.
+  is_financing: z.boolean().optional(),
   sort_order: z.number().int().min(0).optional(),
 })
 

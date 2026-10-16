@@ -8,7 +8,7 @@ export async function GET() {
     const methods = await db.paymentMethod.findMany({
       where: { is_active: true }, // business_id inyectado por el tenant layer
       orderBy: { sort_order: 'asc' },
-      select: { id: true, name: true, type: true, sort_order: true, is_active: true },
+      select: { id: true, name: true, type: true, sort_order: true, is_active: true, is_financing: true },
     })
 
     return NextResponse.json({ ok: true, methods })

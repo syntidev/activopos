@@ -12,6 +12,7 @@ import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib
 import { redactSaleForRole } from '@/lib/redact'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { fromBound, toBoundExclusive } from '@/lib/business-day'
+import { checkCedula } from '@/lib/cedula'
 
 const saleItemSchema = z.object({
   product_id:          z.number().int().positive(),
@@ -36,6 +37,8 @@ const saleSchema = z.object({
   items:             z.array(saleItemSchema).min(1),
   client_id:         z.number().int().positive().optional(),
   client_name:       z.string().max(120).optional(),
+  // Cédula declarada en esta venta; se valida abajo contra is_financing del método elegido.
+  client_cedula:     z.string().max(20).optional(),
   status:            z.enum(['quote', 'pending', 'paid', 'credit']),
   origin:            z.enum(['pos', 'quote', 'credit']),
   notes:             z.string().optional(),
@@ -233,6 +236,20 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Cédula: obligatoria (V/E natural) si algún método de pago es financiadora.
+    const payMethodIds = (body.payments ?? []).map(p => p.payment_method_id)
+    const financing = payMethodIds.length > 0
+      ? await prisma.paymentMethod.findFirst({
+          where:  { id: { in: payMethodIds }, business_id: session.businessId, is_financing: true },
+          select: { name: true },
+        })
+      : null
+    const cedulaCheck = checkCedula(body.client_cedula, financing?.name ?? null)
+    if (!cedulaCheck.ok) {
+      return NextResponse.json({ error: cedulaCheck.message, field: 'client_cedula' }, { status: 422 })
+    }
+    const clientCedula = cedulaCheck.value
 
     if (body.origin === 'credit' && !body.client_id && !body.client_name?.trim()) {
       return NextResponse.json(
@@ -459,6 +476,7 @@ export async function POST(req: NextRequest) {
           rate_used:          rate,
           client_id:          clientId,
           client_name:        body.client_name,
+          client_cedula:      clientCedula,
           notes:              body.notes,
           monto_recibido_usd: montoRecibidoUsd,
           vuelto_usd:         vueltoUsd,
@@ -491,6 +509,15 @@ export async function POST(req: NextRequest) {
           client: { select: { id: true, name: true } },
         },
       })
+
+      // Client.cedula solo se llena si estaba nula: nunca se pisa una existente
+      // (dos personas pueden compartir teléfono; la cédula propia vive en la venta).
+      if (clientCedula && clientId !== null) {
+        await tx.client.updateMany({
+          where: { id: clientId, business_id: session.businessId, cedula: null },
+          data:  { cedula: clientCedula },
+        })
+      }
 
       // FIX 7: collect all deducted product IDs (simple + combo components) for stock alerts
       const componentAlertIds: number[] = []

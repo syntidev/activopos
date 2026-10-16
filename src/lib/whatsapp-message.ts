@@ -26,6 +26,8 @@ export interface WaMessageInput {
   orderNumber:     string
   clientName?:     string | null
   clientPhone?:    string | null
+  /** Solo se imprime al negocio (audience 'business'); nunca en el mensaje al cliente. */
+  clientCedula?:   string | null
   lines:           WaLine[]
   deliveryFeeUsd?: number
   totalUsd:        number
@@ -74,6 +76,7 @@ export function buildWhatsAppMessage(m: WaMessageInput): string {
   if (m.audience === 'business') {
     if (name) lines.push(`Cliente: ${name}`)
     if (clean(m.clientPhone)) lines.push(`WhatsApp: ${clean(m.clientPhone)}`)
+    if (clean(m.clientCedula)) lines.push(`Cédula: ${clean(m.clientCedula)}`)
     if (clean(m.sector)) lines.push(`Sector: ${clean(m.sector)}`)
   }
 

@@ -5,12 +5,15 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { checkCedula } from '@/lib/cedula'
 
 type Context = { params: { id: string } }
 
 const cobrarSchema = z.object({
   payment_method_id: z.number().int().positive(),
   reference:         z.string().max(100).optional(),
+  // Cédula declarada/corregida al cobrar; si falta se usa la del pedido.
+  cedula:            z.string().max(20).optional(),
 })
 
 // PERMISOS — INTENCIONAL: sin guard de rol. cashier cobra pedidos como admin (es la
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest, { params }: Context) {
     // Validar método de pago (fuera del $transaction) → tenant layer
     const pm = await db.paymentMethod.findFirst({
       where: { id: body.payment_method_id, is_active: true }, // business_id inyectado
-      select: { id: true },
+      select: { id: true, name: true, is_financing: true },
     })
     if (!pm) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
@@ -52,6 +55,12 @@ export async function POST(req: NextRequest, { params }: Context) {
       if (!order)                                          throw new Error('ORDER_NOT_FOUND')
       if (order.sale_id !== null)                          throw new Error('ALREADY_COBRADO')
       if (['delivered', 'cancelled'].includes(order.status)) throw new Error('ORDER_TERMINAL')
+
+      // Cédula: obligatoria (V/E natural) si el método es financiadora. Snapshot
+      // en la venta y el pedido; Client.cedula solo si estaba nula.
+      const cedulaCheck = checkCedula(body.cedula ?? order.client_cedula, pm.is_financing ? pm.name : null)
+      if (!cedulaCheck.ok) throw new Error(`CEDULA_REQUIRED:${cedulaCheck.message}`)
+      const clientCedula = cedulaCheck.value
 
       const productIds = Array.from(new Set(order.items.map(i => i.product_id)))
       const products   = await tx.product.findMany({
@@ -147,6 +156,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           client_id:     order.client_id,
           client_name:   order.client_name,
           client_phone:  order.client_phone,
+          client_cedula: clientCedula,
           notes:         order.notes,
           sold_at:       new Date(),
           items:         { create: saleItems },
@@ -228,8 +238,15 @@ export async function POST(req: NextRequest, { params }: Context) {
 
       await tx.order.update({
         where: { id: orderId },
-        data:  { sale_id: newSale.id, status: 'delivered' },
+        data:  { sale_id: newSale.id, status: 'delivered', client_cedula: clientCedula },
       })
+
+      if (clientCedula && order.client_id !== null) {
+        await tx.client.updateMany({
+          where: { id: order.client_id, business_id: session.businessId, cedula: null },
+          data:  { cedula: clientCedula },
+        })
+      }
 
       return { saleId: newSale.id }
     })
@@ -240,6 +257,9 @@ export async function POST(req: NextRequest, { params }: Context) {
       return NextResponse.json({ error: err.message }, { status: err.status })
     }
     if (err instanceof Error) {
+      if (err.message.startsWith('CEDULA_REQUIRED:')) {
+        return NextResponse.json({ error: err.message.slice('CEDULA_REQUIRED:'.length), field: 'cedula' }, { status: 422 })
+      }
       if (err.message === 'ORDER_NOT_FOUND')   return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
       if (err.message === 'ALREADY_COBRADO')   return NextResponse.json({ error: 'Este pedido ya fue cobrado' }, { status: 409 })
       if (err.message === 'ORDER_TERMINAL')    return NextResponse.json({ error: 'El pedido ya está entregado o cancelado' }, { status: 422 })

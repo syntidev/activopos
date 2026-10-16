@@ -6,6 +6,7 @@ import { X, MessageCircle, ShoppingBag, Plus, Minus, CheckCircle, Loader2, MapPi
 import { useCart } from './CartContext'
 import { fmtUsd, fmtBs, isValidVePhone, currencyVisibility } from './catalogUtils'
 import type { PaymentMethod } from './CatalogoGrid'
+import { checkCedula } from '@/lib/cedula'
 import styles from './catalogo.module.css'
 
 interface DeliveryZone {
@@ -60,6 +61,10 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
   const [phoneError,     setPhoneError]     = useState(false)
   const [cRef,           setCRef]           = useState('')
   const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
+  const [cCedula,        setCCedula]        = useState('')
+  const [cedulaError,    setCedulaError]    = useState<string | null>(null)
+  // Financiadora = campo is_financing del método elegido (nunca el nombre).
+  const financingMethod = paymentMethods.find(pm => pm.name === cPayment && pm.is_financing) ?? null
   const [checkoutStep,    setCheckoutStep]    = useState<1 | 2 | 3>(1)
   const [deliveryType,    setDeliveryType]    = useState<'pickup' | 'delivery'>('pickup')
   const [recipientName,   setRecipientName]   = useState('')
@@ -156,6 +161,9 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
     if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
     if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
     if (deliveryType === 'delivery' && hasZones && zoneIdx < 0) return
+    const cedulaCheck = checkCedula(cCedula, financingMethod?.name ?? null)
+    if (!cedulaCheck.ok) { setCedulaError(cedulaCheck.message); return }
+    setCedulaError(null)
     setSubmitting(true)
     setCheckoutError(null)
     try {
@@ -177,6 +185,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           customer_phone:     cPhone.trim(),
           customer_reference: referenceWithZone,
           payment_method:     cPayment,
+          customer_cedula:    cedulaCheck.value,
           delivery_type:      deliveryType,
           recipient_name:     recipientName.trim() || null,
           delivery_address:   deliveryAddress.trim() || null,
@@ -199,7 +208,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           setSubmitted(false)
           setCheckoutOpen(false)
           setCartOpen(false)
-          setCName(''); setCPhone(''); setCRef('')
+          setCName(''); setCPhone(''); setCRef(''); setCCedula(''); setCedulaError(null)
           setCPayment(paymentMethods[0]?.name ?? '')
           setZoneIdx(-1)
           setCheckoutStep(1); setDeliveryType('pickup'); setRecipientName(''); setDeliveryAddress('')
@@ -591,12 +600,35 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                         key={pm.id}
                         type="button"
                         className={`${styles.paymentCard} ${cPayment === pm.name ? styles.paymentCardActive : ''}`}
-                        onClick={() => setCPayment(pm.name)}
+                        onClick={() => { setCPayment(pm.name); setCedulaError(null) }}
                         disabled={submitting}
                       >
                         <p className={styles.paymentCardName}>{pm.name}</p>
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {financingMethod && (
+                  <div className={styles.checkoutFieldGroup}>
+                    <label className={styles.checkoutLabel} htmlFor="co-cedula">
+                      Cédula <span className={styles.checkoutRequired}>*</span>
+                    </label>
+                    <input
+                      id="co-cedula"
+                      type="text"
+                      inputMode="text"
+                      autoComplete="off"
+                      className={`${styles.checkoutInput} ${cedulaError ? styles.checkoutInputError : ''}`}
+                      value={cCedula}
+                      onChange={e => { setCCedula(e.target.value); if (cedulaError) setCedulaError(null) }}
+                      placeholder="V-12345678"
+                      aria-invalid={cedulaError !== null}
+                      disabled={submitting}
+                    />
+                    <span className={cedulaError ? styles.checkoutFieldError : styles.checkoutOptional}>
+                      {cedulaError ?? `${financingMethod.name} necesita tu cédula para crear el enlace de pago.`}
+                    </span>
                   </div>
                 )}
 

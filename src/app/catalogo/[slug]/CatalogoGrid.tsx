@@ -58,6 +58,8 @@ export interface PaymentMethod {
   id:   number
   name: string
   type: string
+  /** Financiadora: el carrito exige cédula (V/E) cuando se elige. */
+  is_financing: boolean
 }
 
 /* ── Internal types ──────────────────────────────────────────── */

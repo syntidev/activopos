@@ -5,6 +5,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
+import { checkCedula } from '@/lib/cedula'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
@@ -22,6 +23,8 @@ const BodySchema = z.object({
   customer_phone:     z.string().min(7).max(20).trim(),
   customer_reference: z.string().min(1).max(200).trim(),
   payment_method:     z.string().min(1).max(60).trim(),
+  // Obligatoria solo si el método elegido es financiadora (se valida abajo, en el servidor).
+  customer_cedula:    z.string().max(20).trim().nullable().optional(),
   notes:              z.string().max(500).trim().optional(),
   delivery_type:      z.enum(['pickup', 'delivery']).default('pickup'),
   // .nullable() además de .optional(): CartDrawer manda `null` explícito
@@ -113,6 +116,18 @@ export async function POST(
   if (!business || !isCatalogLive(business)) {
     return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
   }
+
+  // El método llega como texto: se resuelve por coincidencia exacta con los
+  // métodos ACTIVOS de este negocio y se lee is_financing (nunca por nombre).
+  const chosenMethod = await prisma.paymentMethod.findFirst({
+    where:  { business_id: business.id, is_active: true, name: body.payment_method },
+    select: { name: true, is_financing: true },
+  })
+  const cedulaCheck = checkCedula(body.customer_cedula, chosenMethod?.is_financing ? chosenMethod.name : null)
+  if (!cedulaCheck.ok) {
+    return NextResponse.json({ error: cedulaCheck.message, field: 'customer_cedula' }, { status: 422 })
+  }
+  const clientCedula = cedulaCheck.value
 
   // Fetch canonical products from DB — never trust client-supplied prices or names
   const uniqueProductIds = Array.from(new Set(body.items.map(i => i.product_id)))
@@ -243,12 +258,20 @@ export async function POST(
 
     if (existing) {
       clientId = existing.id
+      // Client.cedula solo si estaba nula: dos personas pueden compartir teléfono.
+      if (clientCedula) {
+        await tx.client.updateMany({
+          where: { id: existing.id, business_id: business.id, cedula: null },
+          data:  { cedula: clientCedula },
+        })
+      }
     } else {
       const created = await tx.client.create({
         data: {
           business_id: business.id,
           name:        body.customer_name,
           phone:       body.customer_phone,
+          cedula:      clientCedula,
         },
         select: { id: true },
       })
@@ -270,6 +293,7 @@ export async function POST(
         client_name:    body.customer_name,
         client_phone:   body.customer_phone,
         client_address: body.customer_reference,
+        client_cedula:  clientCedula,
         delivery_type:    body.delivery_type,
         recipient_name:   body.recipient_name ?? null,
         delivery_address: body.delivery_address ?? null,
@@ -328,6 +352,7 @@ export async function POST(
     orderNumber:  order.order_number,
     clientName:   body.customer_name,
     clientPhone:  body.customer_phone,
+    clientCedula,
     sector:       body.customer_reference,
     lines:        resolvedItems.map(i => ({
       name:         i.product_name,

@@ -395,7 +395,7 @@ export function TabCobros({ businessId: _businessId }: Props) {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         // Sin "type": el servidor no lo acepta (join en vivo en cierres/reportes).
-        body:    JSON.stringify({ name: editMethodData.name.trim() }),
+        body:    JSON.stringify({ name: editMethodData.name.trim(), is_financing: !!editMethodData.is_financing }),
       })
       if (!res.ok) { setMethodError('Error al actualizar.'); return }
       setMethods(prev => prev.map(m => m.id === editMethodData.id ? { ...m, ...editMethodData } : m))
@@ -1125,6 +1125,18 @@ export function TabCobros({ businessId: _businessId }: Props) {
               readOnly
               hint="El tipo no se puede cambiar en un método ya creado. Si necesitas otro tipo, crea un método nuevo y desactiva este."
             />
+            <div className={styles.toggleRow}>
+              <span className={styles.toggleRowLabel}>Financiadora (exige cédula del cliente)</span>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${editMethodData.is_financing ? styles.toggleBtnOn : ''}`}
+                onClick={() => setEditMethodData(p => p ? { ...p, is_financing: !p.is_financing } : p)}
+                aria-pressed={!!editMethodData.is_financing}
+                aria-label="Financiadora"
+              >
+                <span className={`${styles.toggleKnob} ${editMethodData.is_financing ? styles.toggleKnobOn : ''}`} />
+              </button>
+            </div>
             {methodError && <p className={styles.errorMsg} role="alert">{methodError}</p>}
           </div>
         )}

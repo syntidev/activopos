@@ -205,7 +205,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     }),
     prisma.paymentMethod.findMany({
       where:   { business_id: business.id, is_active: true },
-      select:  { id: true, name: true, type: true },
+      select:  { id: true, name: true, type: true, is_financing: true },
       orderBy: { sort_order: 'asc' },
     }),
     prisma.category.findMany({

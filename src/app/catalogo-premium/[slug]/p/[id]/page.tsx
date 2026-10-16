@@ -86,7 +86,7 @@ export default async function ProductoPage({ params }: PageProps) {
     getActiveRate(business.id).then(r => r.rate),
     prisma.paymentMethod.findMany({
       where:   { business_id: business.id, is_active: true },
-      select:  { id: true, name: true, type: true },
+      select:  { id: true, name: true, type: true, is_financing: true },
       orderBy: { sort_order: 'asc' },
     }),
   ])

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
+import { subcategoryKey } from '@/lib/subcategory'
 import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER , stockDisplayOf } from '@/lib/catalog'
 import { isFinancingBadgeKey } from '@/lib/financing-badges'
 import { ProductoDetalle } from '../../ProductoDetalle'
@@ -47,6 +48,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
   }
 }
+
+const RELATED_MAX = 4
 
 export default async function ProductoPage({ params }: PageProps) {
   const productId = parseInt(params.id, 10)
@@ -129,11 +132,17 @@ export default async function ProductoPage({ params }: PageProps) {
       images:             true,
       price_per_unit_usd: true,
       price_per_kg_usd:   true,
+      subcategory:        true,
     },
-    take:    4,
     orderBy: { is_featured: 'desc' },
   })
-  const relatedProducts = relatedRaw.map(rp => ({
+  // Primero la misma subcategoría (por clave normalizada), luego el resto de la categoría; máximo 4.
+  const subKey = product.subcategory ? subcategoryKey(product.subcategory) : null
+  const isSameSub = (sub: string | null): boolean => subKey !== null && sub !== null && subcategoryKey(sub) === subKey
+  const relatedProducts = [...relatedRaw]
+    .sort((a, b) => Number(isSameSub(b.subcategory)) - Number(isSameSub(a.subcategory)))
+    .slice(0, RELATED_MAX)
+    .map(rp => ({
     id:       rp.id,
     name:     rp.name,
     image:    parseImages(rp.images)[0] ?? null,

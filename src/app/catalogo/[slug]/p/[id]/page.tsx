@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
-import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER , stockDisplayOf, maskVariantStock } from '@/lib/catalog'
+import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER , stockDisplayOf } from '@/lib/catalog'
 import { isFinancingBadgeKey } from '@/lib/financing-badges'
 import { ProductoDetalle } from '../../ProductoDetalle'
 import type { PaymentMethod } from '../../CatalogoGrid'
@@ -162,7 +162,8 @@ export default async function ProductoPage({ params }: PageProps) {
           id:              v.id,
           tipo:            v.tipo,
           valor:           v.valor,
-          stock:           maskVariantStock(v.stock, hideStock),
+          stock:           hideStock ? null : v.stock,
+          soldOut:         v.stock <= 0,
           precio_extra:    Number(v.precio_extra),
           combination_key: v.combination_key,
           variant_group:   v.variant_group,

@@ -101,8 +101,3 @@ export function stockDisplayOf(settings: unknown): 'exact' | 'status' {
   const v = (settings as Record<string, unknown> | null)?.catalog_stock_display
   return v === 'status' ? 'status' : 'exact'
 }
-
-// En modo 'status' una variante con stock llega como STATUS_QTY_CAP (tope fijo), agotada como 0.
-export function maskVariantStock(stock: number, hidden: boolean): number {
-  return hidden ? (stock > 0 ? STATUS_QTY_CAP : 0) : stock
-}

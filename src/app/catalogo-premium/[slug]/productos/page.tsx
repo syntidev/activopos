@@ -7,7 +7,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from '../CatalogoGrid'
 import type { CatalogProduct, PaymentMethod } from '../CatalogoGrid'
 import { CatalogFooter } from '../CatalogFooter'
-import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf, maskVariantStock } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf } from '@/lib/catalog'
 import styles from '../catalogo.module.css'
 
 interface PageProps {
@@ -163,7 +163,8 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         id:              v.id,
         tipo:            v.tipo,
         valor:           v.valor,
-        stock:           maskVariantStock(v.stock, hideStock),
+        stock:           hideStock ? null : v.stock,
+        soldOut:         v.stock <= 0,
         precio_extra:    Number(v.precio_extra),
         combination_key: v.combination_key,
         variant_group:   v.variant_group,

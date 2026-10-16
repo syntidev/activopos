@@ -38,7 +38,8 @@ export interface CatalogProductVariant {
   id:              number
   tipo:            string
   valor:           string
-  stock:           number
+  stock:           number | null
+  soldOut:         boolean
   precio_extra:    number
   combination_key: string | null
   variant_group:   string | null
@@ -655,7 +656,7 @@ export function CatalogoGrid({
   // Cap de cantidad: stock de la variante elegida, o del producto si no hay
   // variante seleccionada (o no tiene variantes). null (servicios) = sin tope.
   const availableStock = selectedVariant
-    ? selectedVariant.stock
+    ? (selectedVariant.stock ?? STATUS_QTY_CAP)
     : (selP?.stockQty ?? (selP?.stockHidden ? STATUS_QTY_CAP : Infinity))
 
   // Si el stock disponible baja (cambio de variante) por debajo de la
@@ -1715,7 +1716,7 @@ export function CatalogoGrid({
                           <span className={styles.variantGroupLabel}>{capitalize(combinedDim2Label)}</span>
                           <div className={styles.variantChips}>
                             {combinedDim2Options.map(v => {
-                              const soldOut = v.stock <= 0
+                              const soldOut = v.soldOut
                               const active  = selectedVariantId === v.id
                               const label   = v.combination_key!.slice(selectedDim1.length + 1)
                               return (
@@ -1753,7 +1754,7 @@ export function CatalogoGrid({
                         <span className={styles.variantGroupLabel}>{capitalize(g.tipo)}</span>
                         <div className={styles.variantChips}>
                           {g.options.map(v => {
-                            const soldOut = v.stock <= 0
+                            const soldOut = v.soldOut
                             const active  = selectedVariantId === v.id
                             return (
                               <button

@@ -150,7 +150,7 @@ export function ProductoDetalle({
   const effectivePriceFinal = (priceDivisa ?? priceUsd) + (selectedVariant?.precio_extra ?? 0)
 
   const availableStock = selectedVariant
-    ? selectedVariant.stock
+    ? (selectedVariant.stock ?? 10)
     : (stockHidden ? 10 : Infinity)
 
   const variantGroups = useMemo(() => {
@@ -532,7 +532,7 @@ export function ProductoDetalle({
                       <span className={styles.variantLabel}>{capitalize(combinedDim2Label)}</span>
                       <div className={styles.variantChips}>
                         {combinedDim2Options.map(v => {
-                          const soldOut = v.stock <= 0
+                          const soldOut = v.soldOut
                           const active  = selectedVariantId === v.id
                           const label   = v.combination_key!.slice(selectedDim1.length + 1)
                           return (
@@ -586,7 +586,7 @@ export function ProductoDetalle({
                               </button>
                             )
                           }
-                          const soldOut = v.stock <= 0
+                          const soldOut = v.soldOut
                           const active  = selectedVariantId === v.id
                           return (
                             <button

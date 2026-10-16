@@ -11,6 +11,7 @@ import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
 import { FINANCING_BADGES, type FinancingBadgeKey } from '@/lib/financing-badges'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
+import { productosHref } from '@/lib/subcategory'
 import styles from './productoDetalle.module.css'
 
 interface RelatedProduct {
@@ -26,6 +27,7 @@ interface Props {
   description:   string | null
   images:        string[]
   categoryName:  string | null
+  subcategory:   string | null
   categoryColor: string | null
   priceUsd:      number
   priceBs:       number | null
@@ -44,7 +46,7 @@ interface Props {
 }
 
 export function ProductoDetalle({
-  productId, name, description, images, categoryName, categoryColor,
+  productId, name, description, images, categoryName, subcategory, categoryColor,
   priceUsd, priceBs, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financingBadge, stockHidden,
 }: Props) {
@@ -149,7 +151,13 @@ export function ProductoDetalle({
         {categoryName && (
           <>
             <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
-            <span className={styles.breadcrumbCat}>{categoryName}</span>
+            <Link href={productosHref(catalogUrl, categoryName)} className={styles.breadcrumbCat}>{categoryName}</Link>
+            {subcategory && (
+              <>
+                <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
+                <Link href={productosHref(catalogUrl, categoryName, subcategory)} className={styles.breadcrumbCat}>{subcategory}</Link>
+              </>
+            )}
           </>
         )}
       </nav>

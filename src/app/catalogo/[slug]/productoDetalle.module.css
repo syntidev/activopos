@@ -77,9 +77,11 @@
 .breadcrumbSep { color: var(--color-text-muted); }
 
 .breadcrumbCat {
-  color:       var(--color-text-secondary);
-  font-weight: var(--weight-medium);
+  color:           var(--color-text-secondary);
+  font-weight:     var(--weight-medium);
+  text-decoration: none;
 }
+.breadcrumbCat:hover { text-decoration: underline; }
 
 /* Layout — mobile: columna / desktop: 2 columnas */
 .layout {

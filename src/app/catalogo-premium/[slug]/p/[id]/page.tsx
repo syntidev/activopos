@@ -193,6 +193,7 @@ export default async function ProductoPage({ params }: PageProps) {
         description={product.description}
         images={imgs}
         categoryName={product.category?.name ?? null}
+        subcategory={product.subcategory ?? null}
         categoryColor={product.category?.color ?? null}
         priceUsd={priceUsd}
         priceBs={priceBs}

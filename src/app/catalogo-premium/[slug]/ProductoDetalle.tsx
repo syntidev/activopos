@@ -17,6 +17,7 @@ import { FINANCING_BADGES, type FinancingBadgeKey } from '@/lib/financing-badges
 import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
+import { productosHref } from '@/lib/subcategory'
 import styles from './productoDetalle.module.css'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 // Mismo header/panel de info que Home y /productos (CatalogoGrid.tsx) --
@@ -52,6 +53,7 @@ interface Props {
   description:   string | null
   images:        string[]
   categoryName:  string | null
+  subcategory:   string | null
   categoryColor: string | null
   priceUsd:      number
   priceBs:       number | null
@@ -78,7 +80,7 @@ interface Props {
 }
 
 export function ProductoDetalle({
-  productId, name, description, images, categoryName, categoryColor,
+  productId, name, description, images, categoryName, subcategory, categoryColor,
   priceUsd, priceBs, priceDivisa, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   outOfStock, financingBadge, stockHidden, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
@@ -391,7 +393,13 @@ export function ProductoDetalle({
           {categoryName && (
             <>
               <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
-              <span className={styles.breadcrumbCat}>{categoryName}</span>
+              <Link href={productosHref(catalogUrl, categoryName)} className={styles.breadcrumbCat}>{categoryName}</Link>
+              {subcategory && (
+                <>
+                  <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
+                  <Link href={productosHref(catalogUrl, categoryName, subcategory)} className={styles.breadcrumbCat}>{subcategory}</Link>
+                </>
+              )}
             </>
           )}
         </div>

@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import {
   Search, X, ChevronUp, ChevronDown, ArrowUpDown,
   Receipt, User, Package, CreditCard, Hash,
-  Printer, Trash2, ChevronLeft, ChevronRight, Loader2,
+  Trash2, ChevronLeft, ChevronRight, Loader2,
   AlertTriangle, Calendar,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -15,6 +15,7 @@ import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './ventas.module.css'
 import { businessDateKey, shiftDateKey } from '@/lib/business-day'
 import { saleClientName } from '@/lib/sale-client'
+import { ComprobanteActions } from '@/components/comprobante/ComprobanteActions'
 
 /* ── Types ── */
 
@@ -696,14 +697,7 @@ function VentasContent({ isAdmin }: VentasContentProps) {
 
                   {/* Actions */}
                   <div className={styles.actionsSection}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<Printer size={14} aria-hidden="true" />}
-                      onClick={() => window.open(`/api/sales/${selected.id}/ticket`, '_blank')}
-                    >
-                      Reimprimir ticket
-                    </Button>
+                    <ComprobanteActions saleId={selected.id} />
 
                     {isAdmin && selected.status !== 'cancelled' && !voidOpen && (
                       <button

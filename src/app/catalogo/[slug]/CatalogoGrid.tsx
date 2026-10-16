@@ -12,6 +12,7 @@ import { useCart } from './CartContext'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { capitalize, currencyVisibility, fmtBs } from './catalogUtils'
+import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { normalizePhone } from '@/lib/utils'
 import styles from './catalogo.module.css'
 
@@ -163,9 +164,10 @@ export function CatalogoGrid({
   // Valores de la URL (?categoria=&sub=): si no existen en el catálogo se ignoran.
   const startCategory = initialCategory && (initialCategory === FEATURED_KEY || categories.includes(initialCategory))
     ? initialCategory : null
-  const startSub = startCategory && initialSub
-    && products.some(p => p.categoryName === startCategory && p.subcategory === initialSub)
-    ? initialSub : null
+  const initialSubKey = initialSub ? subcategoryKey(initialSub) : null
+  const startSub = startCategory && initialSubKey
+    && products.some(p => p.categoryName === startCategory && p.subcategory && subcategoryKey(p.subcategory) === initialSubKey)
+    ? initialSubKey : null
   const [activeCategory, setActiveCategory] = useState<string | null>(startCategory)
   const [activeSub,      setActiveSub]      = useState<string | null>(startSub)
   const [query,          setQuery]          = useState('')
@@ -230,13 +232,10 @@ export function CatalogoGrid({
     ? activeCategory
     : spyCategory
 
+  // activeSub guarda la CLAVE normalizada; el chip muestra la escritura más frecuente.
   const subcategoriesForActive = useMemo(() => {
     if (!subcatContext) return []
-    const subs = new Set<string>()
-    for (const p of products) {
-      if (p.categoryName === subcatContext && p.subcategory) subs.add(p.subcategory)
-    }
-    return Array.from(subs).sort()
+    return subcategoryChips(products.filter(p => p.categoryName === subcatContext).map(p => p.subcategory))
   }, [products, subcatContext])
 
   // Reset de sub al cambiar de categoría; no en el montaje (conserva ?sub= inicial).
@@ -273,7 +272,7 @@ export function CatalogoGrid({
     }
     if (activeCategory === FEATURED_KEY) return products.filter(p => p.isFeatured)
     const byCat = activeCategory ? products.filter(p => p.categoryName === activeCategory) : products
-    return activeSub ? byCat.filter(p => p.subcategory === activeSub) : byCat
+    return activeSub ? byCat.filter(p => p.subcategory != null && subcategoryKey(p.subcategory) === activeSub) : byCat
   }, [products, query, activeCategory, activeSub])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
@@ -1004,18 +1003,18 @@ export function CatalogoGrid({
             <button
               type="button"
               className={`${styles.subcatPill} ${activeSub === null ? styles.subcatPillActive : ''}`}
-              onClick={() => { setActiveCategory(null); setActiveSub(null) }}
+              onClick={() => setActiveSub(null)}
             >
               Todas
             </button>
             {subcategoriesForActive.map(sub => (
               <button
-                key={sub}
+                key={sub.key}
                 type="button"
-                className={`${styles.subcatPill} ${activeSub === sub ? styles.subcatPillActive : ''}`}
-                onClick={() => { if (subcatContext) { setActiveCategory(subcatContext); setActiveSub(sub) } }}
+                className={`${styles.subcatPill} ${activeSub === sub.key ? styles.subcatPillActive : ''}`}
+                onClick={() => { if (subcatContext) { setActiveCategory(subcatContext); setActiveSub(sub.key) } }}
               >
-                {sub}
+                {sub.label}
               </button>
             ))}
           </div>

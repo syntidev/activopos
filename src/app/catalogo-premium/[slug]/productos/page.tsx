@@ -12,7 +12,7 @@ import styles from '../catalogo.module.css'
 
 interface PageProps {
   params: { slug: string }
-  searchParams: { categoria?: string; buscar?: string }
+  searchParams: { categoria?: string; sub?: string; buscar?: string }
 }
 
 function parseImages(raw: string | null): string[] {
@@ -232,6 +232,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         businessAddress={business.address ?? null}
         catalogMode="productos"
         initialCategory={searchParams.categoria ?? null}
+        initialSub={searchParams.sub ?? null}
         initialQuery={searchParams.buscar ?? null}
       />
       <CatalogFooter

@@ -88,6 +88,7 @@ interface Props {
   businessAddress?:   string | null | undefined
   catalogMode?:       'home' | 'productos'
   initialCategory?:   string | null
+  initialSub?:        string | null
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -153,13 +154,20 @@ export function CatalogoGrid({
   businessInstagram,
   catalogMode = 'home',
   initialCategory = null,
+  initialSub = null,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
   const { cart, cartOpen, setCartOpen, checkoutOpen, addToCart: addItemToCart } = useCart()
 
-  const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory)
-  const [activeSub,      setActiveSub]      = useState<string | null>(null)
+  // Valores de la URL (?categoria=&sub=): si no existen en el catálogo se ignoran.
+  const startCategory = initialCategory && (initialCategory === FEATURED_KEY || categories.includes(initialCategory))
+    ? initialCategory : null
+  const startSub = startCategory && initialSub
+    && products.some(p => p.categoryName === startCategory && p.subcategory === initialSub)
+    ? initialSub : null
+  const [activeCategory, setActiveCategory] = useState<string | null>(startCategory)
+  const [activeSub,      setActiveSub]      = useState<string | null>(startSub)
   const [query,          setQuery]          = useState('')
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
   const [modalQty,       setModalQty]       = useState(1)
@@ -231,7 +239,13 @@ export function CatalogoGrid({
     return Array.from(subs).sort()
   }, [products, subcatContext])
 
-  useEffect(() => { setActiveSub(null) }, [activeCategory])
+  // Reset de sub al cambiar de categoría; no en el montaje (conserva ?sub= inicial).
+  const prevCategory = useRef(activeCategory)
+  useEffect(() => {
+    if (prevCategory.current === activeCategory) return
+    prevCategory.current = activeCategory
+    setActiveSub(null)
+  }, [activeCategory])
 
   // Auto-avance del slider del hero — pausa si solo hay 0-1 imagen
   useEffect(() => {

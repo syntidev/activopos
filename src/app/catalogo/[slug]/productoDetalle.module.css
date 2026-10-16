@@ -610,3 +610,11 @@
   font-size: var(--text-sm);
   color:     var(--color-text-secondary);
 }
+
+/* Etiqueta enlazada: área táctil de 44px sin cambiar el espaciado visual */
+.categoryBadge { position: relative; }
+.categoryBadge::after {
+  content:  "";
+  position: absolute;
+  inset:    calc((var(--touch-min) - 100%) / -2) 0;
+}

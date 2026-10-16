@@ -22,6 +22,8 @@ import {
   X,
   Pencil,
   ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronRight,
   ArrowLeftRight,
   Download,
@@ -488,32 +490,45 @@ export default function ProductosPage() {
     }
   }, [selectedCategory, fetchCategories, toast])
 
-  // Reordena categorías: mueve una posición y persiste sort_order = índice en todas.
+  // Reordena categorías: una sola llamada en lote (sort_order = índice) con
+  // actualización optimista; si falla, se refresca desde el servidor.
   // El catálogo y estos tabs leen sort_order, así que el orden se refleja en la portada.
-  const moveCategory = useCallback(async (index: number, dir: 'left' | 'right') => {
-    const j = dir === 'left' ? index - 1 : index + 1
-    if (j < 0 || j >= categories.length || reordering) return
+  const applyCategoryOrder = useCallback(async (next: Category[]) => {
+    if (reordering) return
+    setCategories(next) // optimista
+    setReordering(true)
+    try {
+      const res = await fetch('/api/categories/reorder', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ ids: next.map(c => c.id) }),
+      })
+      if (!res.ok) toast('No se pudo guardar el orden de las categorías', 'error')
+    } catch {
+      toast('No se pudo guardar el orden de las categorías', 'error')
+    } finally {
+      await fetchCategories()
+      setReordering(false)
+    }
+  }, [reordering, fetchCategories, toast])
 
+  const moveCategory = useCallback((index: number, dir: 'left' | 'right') => {
+    const j = dir === 'left' ? index - 1 : index + 1
+    if (j < 0 || j >= categories.length) return
     const next = [...categories]
     const tmp = next[index]
     next[index] = next[j]
     next[j] = tmp
-    setCategories(next) // optimista
+    void applyCategoryOrder(next)
+  }, [categories, applyCategoryOrder])
 
-    setReordering(true)
-    try {
-      await Promise.all(next.map((c, i) =>
-        fetch(`/api/categories/${c.id}`, {
-          method:  'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ sort_order: i }),
-        }),
-      ))
-      await fetchCategories()
-    } finally {
-      setReordering(false)
-    }
-  }, [categories, reordering, fetchCategories])
+  const moveCategoryToEdge = useCallback((index: number, edge: 'start' | 'end') => {
+    const next = [...categories]
+    const [moved] = next.splice(index, 1)
+    if (edge === 'start') next.unshift(moved)
+    else next.push(moved)
+    void applyCategoryOrder(next)
+  }, [categories, applyCategoryOrder])
 
   const handleSaveStock = useCallback(async (
     productId: number,
@@ -767,6 +782,16 @@ export default function ProductosPage() {
                   <button
                     type="button"
                     className={styles.catEditBtn}
+                    onClick={() => moveCategoryToEdge(i, 'start')}
+                    disabled={i === 0 || reordering}
+                    aria-label={`Mover ${cat.name} al inicio`}
+                    title="Al inicio"
+                  >
+                    <ChevronsLeft size={12} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.catEditBtn}
                     onClick={() => moveCategory(i, 'left')}
                     disabled={i === 0 || reordering}
                     aria-label={`Mover ${cat.name} a la izquierda`}
@@ -781,6 +806,16 @@ export default function ProductosPage() {
                     aria-label={`Mover ${cat.name} a la derecha`}
                   >
                     <ChevronRight size={12} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.catEditBtn}
+                    onClick={() => moveCategoryToEdge(i, 'end')}
+                    disabled={i === categories.length - 1 || reordering}
+                    aria-label={`Mover ${cat.name} al final`}
+                    title="Al final"
+                  >
+                    <ChevronsRight size={12} aria-hidden="true" />
                   </button>
                 </>
               ) : (

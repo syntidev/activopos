@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { checkCedula, normalizeCedula } from '@/lib/cedula'
 import { Modal }  from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input }  from '@/components/ui/Input'
@@ -29,6 +30,7 @@ const EMPTY: FormState = { name: '', cedula: '', phone: '', email: '', notes: ''
 interface FieldErrors {
   name?:   string
   email?:  string
+  cedula?: string
 }
 
 export function ClienteFormModal({
@@ -74,6 +76,9 @@ export function ClienteFormModal({
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       next.email = 'Correo electrónico no válido.'
     }
+    // Misma regla y mismo mensaje que el checkout (src/lib/cedula.ts); opcional.
+    const cedulaCheck = checkCedula(form.cedula, null)
+    if (!cedulaCheck.ok) next.cedula = cedulaCheck.message
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -85,7 +90,7 @@ export function ClienteFormModal({
 
     const payload = {
       name:   form.name.trim(),
-      cedula: form.cedula.trim()  || undefined,
+      cedula: normalizeCedula(form.cedula) ?? undefined,
       phone:  form.phone.trim()   || undefined,
       email:  form.email.trim()   || undefined,
       notes:  form.notes.trim()   || undefined,
@@ -158,6 +163,7 @@ export function ClienteFormModal({
           placeholder="V-12345678 o J-123456789"
           value={form.cedula}
           onChange={set('cedula')}
+          error={errors.cedula}
           inputMode="numeric"
           hint="Opcional"
         />

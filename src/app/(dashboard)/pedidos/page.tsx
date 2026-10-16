@@ -66,6 +66,13 @@ const STATUS_NEXT: Partial<Record<string, OrderStatus>> = {
 const fmtUsd = (n: number | string) =>
   `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
+// Unidades reales del pedido (suma de cantidades), no la cantidad de líneas.
+function fmtUnits(items: { quantity: number | string }[]): string {
+  const total = items.reduce((acc, i) => acc + Number(i.quantity), 0)
+  const shown = Number.isInteger(total) ? String(total) : String(Math.round(total * 1000) / 1000)
+  return `${shown} ${total === 1 ? 'ud' : 'uds'}`
+}
+
 function timeAgo(dateStr: string): string {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000
   if (diff < 60)   return `${Math.floor(diff)}s`
@@ -144,7 +151,7 @@ function OrderCard({
         </span>
         <span className={styles.orderItems}>
           <Package size={11} aria-hidden="true" />
-          {order.items.length} {order.items.length === 1 ? 'ítem' : 'ítems'}
+          {fmtUnits(order.items)}
         </span>
       </div>
 
@@ -408,22 +415,22 @@ function PedidosContent() {
     setCobrarOrder(order)
   }
 
-  const handleCobrarConfirm = async (paymentMethodId: number, reference: string) => {
-    if (!cobrarOrder) return
+  // Devuelve el id de la venta: el modal pasa al paso Comprobante y se cierra
+  // solo cuando el cajero pulsa "Listo".
+  const handleCobrarConfirm = async (paymentMethodId: number, reference: string): Promise<number> => {
+    if (!cobrarOrder) throw new Error('No hay pedido seleccionado')
     const res = await fetch(`/api/orders/${cobrarOrder.id}/cobrar`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ payment_method_id: paymentMethodId, reference: reference || undefined }),
     })
-    if (res.ok) {
-      setOrders(prev => prev.filter(o => o.id !== cobrarOrder.id))
-      setCobrarOrder(null)
-      toast(`Pedido ${cobrarOrder.order_number} cobrado`, 'success')
-    } else {
-      const data = await res.json() as { error?: string }
-      toast(data.error ?? 'Error al cobrar el pedido', 'error')
-      throw new Error(data.error ?? 'cobrar failed')
+    const data = await res.json() as { ok?: boolean; sale_id?: number; error?: string }
+    if (!res.ok || typeof data.sale_id !== 'number') {
+      throw new Error(data.error ?? 'Error al cobrar el pedido')
     }
+    setOrders(prev => prev.filter(o => o.id !== cobrarOrder.id))
+    toast(`Pedido ${cobrarOrder.order_number} cobrado`, 'success')
+    return data.sale_id
   }
 
   const handleCancelarOrder = async (order: Order) => {
@@ -572,10 +579,7 @@ function PedidosContent() {
       {/* Modal: Cobrar Pedido */}
       <CobrarPedidoModal
         open={cobrarOrder !== null}
-        orderId={cobrarOrder?.id ?? 0}
-        orderNumber={cobrarOrder?.order_number ?? ''}
-        totalUsd={Number(cobrarOrder?.total_usd ?? 0)}
-        totalBs={Number(cobrarOrder?.total_bs ?? 0)}
+        order={cobrarOrder}
         onClose={() => setCobrarOrder(null)}
         onConfirm={handleCobrarConfirm}
       />

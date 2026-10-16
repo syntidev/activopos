@@ -18,7 +18,10 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   width: 100%;
-  max-width: 400px;
+  max-width: 480px;
+  max-height: calc(100dvh - var(--space-8));
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
@@ -81,16 +84,98 @@
 .closeBtn:hover { background: var(--color-surface-2); color: var(--color-text-primary); }
 .closeBtn:disabled { opacity: 0.5; cursor: default; }
 
+/* ── Body / cards ── */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface-2);
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+}
+
+.orderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.orderNumber {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight, 0);
+  user-select: all;
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-min);
+  padding: 0 var(--space-3);
+  background: var(--color-surface-2);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.copyBtn:hover { background: var(--color-brand-subtle); color: var(--color-brand-hover); }
+
+.client {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.lines {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.lineName { min-width: 0; overflow-wrap: anywhere; }
+.lineQty { color: var(--color-text-muted); }
+.lineAmount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 /* ── Total block ── */
 
 .totalBlock {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-1);
-  padding: var(--space-5) var(--space-5) var(--space-4);
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   background: var(--color-brand-subtle);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
 }
 
 .totalUsd {
@@ -102,25 +187,27 @@
 }
 
 .totalBs {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Section ── */
-
-.section {
-  padding: var(--space-4) var(--space-5) 0;
+.rate {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 
-.label {
-  display: block;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  margin: 0 0 var(--space-2);
+.refField { margin-top: var(--space-4); }
+
+.error {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger-text);
+}
+
+.iconWrapDone {
+  background: var(--success-soft);
+  color: var(--success-text);
 }
 
 /* ── Methods ── */
@@ -215,7 +302,6 @@
   display: flex;
   gap: var(--space-3);
   padding: var(--space-4) var(--space-5) var(--space-5);
-  margin-top: var(--space-4);
   border-top: 1px solid var(--color-border-subtle);
 }
 
@@ -262,8 +348,9 @@
 .spinner {
   width: 15px;
   height: 15px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border: 2px solid var(--cta-on);
+  opacity: 0.85;
+  border-top-color: var(--cta-on);
   border-radius: 50%;
   animation: spin 0.65s linear infinite;
   flex-shrink: 0;

@@ -4,9 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
-import { normalizePhone } from '@/lib/utils'
+import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
-import { currencyVisibility, fmtBs } from '@/app/catalogo/[slug]/catalogUtils'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -67,70 +66,6 @@ async function generateOrderNumber(businessId: number, prefix: string, tx: TxCli
   }
 
   return `${prefix}-${nextNum.toString().padStart(5, '0')}`
-}
-
-function buildWaMessage(
-  order_number:       string,
-  customer_name:      string,
-  customer_phone:     string,
-  customer_reference: string,
-  payment_method:     string,
-  resolvedItems:      ResolvedItem[],
-  totalUsd:           number,
-  totalBs:            number,
-  delivery_type:      'pickup' | 'delivery',
-  recipient_name:     string | null | undefined,
-  delivery_address:   string | null | undefined,
-  currency:           string,
-  rate:               number,
-): string {
-  /* fmtBs viene de catalogUtils y acota a 2 decimales por arriba y por abajo.
-     Un helper local aquí ya se comió un bug: copiado del formato del total,
-     que solo fijaba minimumFractionDigits. El total server-side ya llega
-     redondeado, pero price_usd * rate por ítem no, y salían 3 decimales. */
-  const { showUsd, showBs } = currencyVisibility(currency)
-
-  const itemLines = resolvedItems
-    .map(i => {
-      const unit = `$${i.price_usd.toFixed(2)} / ${fmtBs(i.price_usd * rate)}`
-      return `- ${i.product_name} x${i.qty} — ${unit} c/u`
-    })
-    .join('\n')
-
-  const entregaLabel = delivery_type === 'delivery' ? '🚚 Envío a domicilio' : '🏪 Retiro en tienda'
-
-  const lines: string[] = [
-    `🛍️ *Nuevo pedido #${order_number}*`,
-    '',
-    `👤 *Cliente:* ${customer_name}`,
-    `📱 *WhatsApp:* ${customer_phone}`,
-  ]
-
-  if (customer_reference && customer_reference !== 'Sin especificar') {
-    lines.push(`📍 *Sector:* ${customer_reference}`)
-  }
-
-  lines.push('')
-  lines.push(`*Productos:*`)
-  lines.push(itemLines)
-  lines.push('')
-  // La línea "al cambio BCV" desaparece entera cuando no se muestran ambas:
-  // sin un monto en divisas al lado, no hay nada que estar "al cambio" de.
-  lines.push(`💰 *Total: ${showUsd ? `$${totalUsd.toFixed(2)}` : fmtBs(totalBs)}*`)
-  if (showUsd && showBs) {
-    lines.push(`   ${fmtBs(totalBs)} al cambio BCV`)
-  }
-  lines.push('')
-  lines.push(`💳 *Pago:* ${payment_method}`)
-  lines.push(`📦 *Entrega:* ${entregaLabel}`)
-
-  if (delivery_type === 'delivery') {
-    if (recipient_name) lines.push(`   Recibe: ${recipient_name}`)
-    if (delivery_address) lines.push(`   Dirección: ${delivery_address}`)
-    lines.push(`   ⚠️ El costo de envío puede variar según tu zona. Te contactamos para coordinarlo.`)
-  }
-
-  return lines.join('\n')
 }
 
 export async function POST(
@@ -387,26 +322,30 @@ export async function POST(
     throw err
   }
 
-  const bizPhone = business.phone?.replace(/\D/g, '') ?? ''
-  const waMessage = buildWaMessage(
-    order.order_number,
-    body.customer_name,
-    body.customer_phone,
-    body.customer_reference,
-    body.payment_method,
-    resolvedItems,
-    Number(order.total_usd),
-    Number(order.total_bs),
-    body.delivery_type,
-    body.recipient_name,
-    body.delivery_address,
-    business.catalog_default_currency,
+  const waMessage = buildWhatsAppMessage({
+    kind:         'pedido',
+    audience:     'business',
+    orderNumber:  order.order_number,
+    clientName:   body.customer_name,
+    clientPhone:  body.customer_phone,
+    sector:       body.customer_reference,
+    lines:        resolvedItems.map(i => ({
+      name:         i.product_name,
+      qty:          i.qty,
+      subtotalUsd:  i.subtotal_usd,
+      variantLabel: i.variant_label,
+    })),
+    totalUsd:     Number(order.total_usd),
     rate,
-  )
+    paymentMethod: body.payment_method,
+    fulfillment:  body.delivery_type === 'delivery'
+      ? { type: 'delivery', recipient: body.recipient_name, address: body.delivery_address }
+      : { type: 'pickup' },
+    notes:        body.notes,
+  })
 
-  const whatsapp_url = bizPhone
-    ? `https://wa.me/${normalizePhone(bizPhone)}?text=${encodeURIComponent(waMessage)}`
-    : null
+  // null si el negocio no tiene un WhatsApp válido: el carrito ya avisa en ese caso.
+  const whatsapp_url = whatsappUrl(business.phone, waMessage)
 
   return NextResponse.json(
     {

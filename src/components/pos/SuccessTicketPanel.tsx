@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Printer, MessageCircle, ArrowRight, X } from 'lucide-react'
 import styles from './SuccessTicketPanel.module.css'
+import { buildWhatsAppMessage, whatsappPickChatUrl } from '@/lib/whatsapp-message'
 
 type PosMode = 'ticket' | 'invoice'
 
@@ -32,56 +33,24 @@ interface Props {
 }
 
 function buildWhatsappMessage(sale: SaleSummary, businessName: string): string {
-  const now   = new Date()
-  const fecha = now.toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })
-  const hora  = now.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+  const isCredit = sale.status === 'credit'
+  const due = sale.due_date
+    ? new Date(sale.due_date + 'T00:00:00').toLocaleDateString('es-VE', {
+        day: '2-digit', month: 'short', year: 'numeric',
+      })
+    : null
 
-  const itemLines = sale.items
-    .map(i => {
-      const label   = `${i.name} x${i.qty}`
-      const subtotal = `$${(i.qty * i.price_usd).toFixed(2)}`
-      return `${label}   ${subtotal}`
-    })
-    .join('\n')
-
-  const totalUsd = sale.total_usd.toFixed(2)
-  const totalBs  = sale.total_bs.toLocaleString('es-VE', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  return buildWhatsAppMessage({
+    kind:          'comprobante',
+    audience:      'client',
+    businessName,
+    orderNumber:   sale.ticket_number,
+    lines:         sale.items.map(i => ({ name: i.name, qty: i.qty, subtotalUsd: i.qty * i.price_usd })),
+    totalUsd:      sale.total_usd,
+    rate:          sale.rate,
+    paymentMethod: isCredit ? 'Crédito' : sale.payment_method,
+    notes:         isCredit ? `Crédito registrado${due ? `, vence ${due}` : ''}. Saldo pendiente: $${sale.total_usd.toFixed(2)}.` : null,
   })
-  const rate = Math.round(sale.rate).toLocaleString('es-VE')
-
-  if (sale.status === 'credit') {
-    const due = sale.due_date
-      ? new Date(sale.due_date + 'T00:00:00').toLocaleDateString('es-VE', {
-          day: '2-digit', month: 'short', year: 'numeric',
-        })
-      : '—'
-    return (
-      `💳 *Crédito registrado — ${sale.ticket_number}*\n` +
-      `📅 ${fecha}\n\n` +
-      `${itemLines}\n` +
-      `─────────────────────\n` +
-      `*Total: $${totalUsd}*\n` +
-      `*Vence: ${due}*\n` +
-      `Saldo pendiente: $${totalUsd}\n\n` +
-      `Puede abonar contactándonos.`
-    )
-  }
-
-  const header = businessName
-    ? `🧾 *${businessName} — Ticket ${sale.ticket_number}*`
-    : `🧾 *Ticket ${sale.ticket_number}*`
-
-  return (
-    `${header}\n` +
-    `📅 ${fecha} · ${hora}\n\n` +
-    `${itemLines}\n` +
-    `─────────────────────\n` +
-    `*TOTAL: $${totalUsd}*\n` +
-    `*Bs. ${totalBs}* · Tasa BCV: ${rate}\n\n` +
-    `💳 ${sale.payment_method}\n\n` +
-    `¡Gracias por su compra!`
-  )
 }
 
 export function SuccessTicketPanel({ sale, businessName, onClose }: Props) {
@@ -98,7 +67,7 @@ export function SuccessTicketPanel({ sale, businessName, onClose }: Props) {
 
   const handleWhatsApp = () => {
     const msg = buildWhatsappMessage(sale, businessName)
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank')
+    window.open(whatsappPickChatUrl(msg), '_blank')
   }
 
   const handlePrint = () => {

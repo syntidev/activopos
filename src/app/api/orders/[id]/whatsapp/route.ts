@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { getActiveRate, formatBs, formatUsd } from '@/lib/bcv'
-import { normalizePhone } from '@/lib/utils'
+import { getActiveRate } from '@/lib/bcv'
+import { buildWhatsAppMessage, whatsappPickChatUrl, whatsappUrl } from '@/lib/whatsapp-message'
 import { CobroDataSchema } from '@/lib/cobro-data'
 import type { CobroData } from '@/lib/cobro-data'
 
@@ -25,38 +25,38 @@ const buildPaymentLines = (cobroRaw: unknown): string[] => {
 
   const pm = cobro.pago_movil
   if (pm?.telefono) {
-    if (pm.banco)     lines.push(`• Banco: ${pm.banco}`)
-    lines.push(`• Pago Móvil: ${pm.telefono}`)
-    if (pm.titular)   lines.push(`• Titular: ${pm.titular}`)
-    if (pm.documento) lines.push(`• Cédula: ${pm.tipo_doc}-${pm.documento}`)
+    if (pm.banco)     lines.push(`- Banco: ${pm.banco}`)
+    lines.push(`- Pago Móvil: ${pm.telefono}`)
+    if (pm.titular)   lines.push(`- Titular: ${pm.titular}`)
+    if (pm.documento) lines.push(`- Cédula: ${pm.tipo_doc}-${pm.documento}`)
   }
 
   if (cobro.zelle?.contacto) {
-    lines.push(`• Zelle: ${cobro.zelle.contacto}`)
-    if (cobro.zelle.titular) lines.push(`• Titular: ${cobro.zelle.titular}`)
+    lines.push(`- Zelle: ${cobro.zelle.contacto}`)
+    if (cobro.zelle.titular) lines.push(`- Titular: ${cobro.zelle.titular}`)
   }
 
   if (cobro.zinli?.contacto) {
-    lines.push(`• Zinli: ${cobro.zinli.contacto}`)
-    if (cobro.zinli.titular) lines.push(`• Titular: ${cobro.zinli.titular}`)
+    lines.push(`- Zinli: ${cobro.zinli.contacto}`)
+    if (cobro.zinli.titular) lines.push(`- Titular: ${cobro.zinli.titular}`)
   }
 
   if (cobro.paypal?.contacto) {
-    lines.push(`• PayPal: ${cobro.paypal.contacto}`)
-    if (cobro.paypal.titular) lines.push(`• Titular: ${cobro.paypal.titular}`)
+    lines.push(`- PayPal: ${cobro.paypal.contacto}`)
+    if (cobro.paypal.titular) lines.push(`- Titular: ${cobro.paypal.titular}`)
   }
 
   // Shape de Binance cambió de raíz: la interfaz plana vieja tenía un solo
   // binance_id (campo que nunca existió en los datos reales). Lo real guardado
   // es {contacto, titular} -- mismo molde que Zelle/Zinli/PayPal.
   if (cobro.binance?.contacto) {
-    lines.push(`• Binance: ${cobro.binance.contacto}`)
-    if (cobro.binance.titular) lines.push(`• Titular: ${cobro.binance.titular}`)
+    lines.push(`- Binance: ${cobro.binance.contacto}`)
+    if (cobro.binance.titular) lines.push(`- Titular: ${cobro.binance.titular}`)
   }
 
   if (cobro.usdt?.wallet) {
-    lines.push(`• USDT (${cobro.usdt.red || 'TRC20'}): ${cobro.usdt.wallet}`)
-    if (cobro.usdt.titular) lines.push(`• Titular: ${cobro.usdt.titular}`)
+    lines.push(`- USDT (${cobro.usdt.red || 'TRC20'}): ${cobro.usdt.wallet}`)
+    if (cobro.usdt.titular) lines.push(`- Titular: ${cobro.usdt.titular}`)
   }
 
   return lines
@@ -87,54 +87,41 @@ export async function GET(
 
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
 
-    const clientName = order.client_name ?? 'Cliente'
-    const bizName    = biz?.name ?? 'nuestro negocio'
-    const totalUsd   = Number(order.total_usd)
-    const payLines   = buildPaymentLines(biz?.cobro_data ?? null)
+    // El método de pago elegido en el catálogo viaja en la primera línea de notes.
+    const METHOD_RE = /^Método de pago:\s*(.+)$/m
+    const rawNotes  = order.notes ?? ''
+    const method    = METHOD_RE.exec(rawNotes)?.[1]?.trim() ?? null
+    const notes     = rawNotes.replace(METHOD_RE, '').trim()
 
-    const itemLines = order.items.map(item => {
-      const qty   = Number(item.quantity)
-      const label = item.variant_label ? ` (${item.variant_label})` : ''
-      return `• ${item.product_name}${label} × ${qty} — $${formatUsd(Number(item.subtotal_usd))}`
+    const isDelivery = order.delivery_type === 'delivery'
+    const mensaje = buildWhatsAppMessage({
+      kind:           'pedido',
+      audience:       'client',
+      businessName:   biz?.name ?? null,
+      orderNumber:    order.order_number,
+      clientName:     order.client_name,
+      lines:          order.items.map(item => ({
+        name:         item.product_name,
+        qty:          Number(item.quantity),
+        subtotalUsd:  Number(item.subtotal_usd),
+        variantLabel: item.variant_label,
+      })),
+      deliveryFeeUsd: Number(order.delivery_fee),
+      totalUsd:       Number(order.total_usd),
+      // La tasa del pedido manda: es la que vio el cliente al ordenar.
+      rate:           Number(order.rate_used) || rate,
+      paymentMethod:  method,
+      fulfillment:    isDelivery
+        ? { type: 'delivery', recipient: order.recipient_name, address: order.delivery_address }
+        : { type: 'pickup' },
+      // client_address guarda el sector/referencia, NO la dirección de entrega.
+      sector:         order.client_address,
+      notes,
+      paymentLines:   buildPaymentLines(biz?.cobro_data ?? null),
     })
 
-    const lines: string[] = [
-      `¡Hola ${clientName}! 👋`,
-      `Tu pedido en *${bizName}* está listo para procesar.`,
-      '',
-      `🛒 *ORDEN #${order.order_number}*`,
-      ...itemLines,
-    ]
-
-    if (Number(order.delivery_fee) > 0) {
-      lines.push(`🚚 Delivery: $${formatUsd(Number(order.delivery_fee))}`)
-    }
-
-    lines.push(
-      '',
-      `💰 *Total: $${formatUsd(totalUsd)}*`,
-      `   (Bs. ${formatBs(totalUsd, rate)} al cambio BCV)`,
-    )
-
-    if (payLines.length > 0) {
-      lines.push('', '📲 *Para confirmar, realiza el pago a:*', ...payLines)
-    }
-
-    if (order.client_address) {
-      lines.push('', `📍 *Dirección:* ${order.client_address}`)
-    }
-
-    if (order.notes) {
-      lines.push('', `📝 *Notas:* ${order.notes}`)
-    }
-
-    lines.push('', 'Envíanos el comprobante y procesamos', 'tu pedido de inmediato. ¡Gracias! 🙌')
-
-    const mensaje      = lines.join('\n')
-    const phone        = normalizePhone(order.client_phone ?? '')
-    const whatsapp_url = phone
-      ? `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}`
-      : `https://wa.me/?text=${encodeURIComponent(mensaje)}`
+    // Sin teléfono válido: wa.me sin destinatario para que el negocio elija el chat.
+    const whatsapp_url = whatsappUrl(order.client_phone, mensaje) ?? whatsappPickChatUrl(mensaje)
 
     return NextResponse.json({ ok: true, mensaje, whatsapp_url })
   } catch (e) {

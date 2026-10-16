@@ -215,7 +215,9 @@ export interface ShippingLabelInfo {
   phone:        string
   address:      string
   notes:        string
-  packages:     number
+  units:        number
+  /** Opcional, lo escribe el operador; vacío = sin línea. */
+  bundles?:     string
 }
 
 export function layoutShippingLabel(i: ShippingLabelInfo, paper: ThermalPaper): PrintLine[] {
@@ -239,7 +241,8 @@ export function layoutShippingLabel(i: ShippingLabelInfo, paper: ThermalPaper): 
   }
   if (i.notes.trim()) field('Notas:', i.notes.trim())
   L.push(txt('-'.repeat(cols)))
-  L.push(txt(`Bultos: ${i.packages}`, true))
+  L.push(txt(`Unidades: ${i.units}`, true))
+  if ((i.bundles ?? '').trim()) L.push(txt(`Bultos: ${sanitize((i.bundles ?? '').trim())}`, true))
   return L
 }
 

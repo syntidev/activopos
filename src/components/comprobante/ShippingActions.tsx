@@ -32,6 +32,8 @@ interface ShippingResponse {
 export function ShippingActions({ orderId, saleId, knownDelivery = false }: ShippingActionsProps) {
   const [visible, setVisible] = useState(knownDelivery)
   const [busy, setBusy]       = useState(false)
+  // Bultos: dato del momento de despachar, solo para esta impresión/copia (no se guarda).
+  const [bundles, setBundles] = useState('')
   const [status, setStatus]   = useState<{ ok: boolean; text: string } | null>(null)
 
   const query = orderId ? `order_id=${orderId}` : `sale_id=${saleId ?? 0}`
@@ -60,7 +62,7 @@ export function ShippingActions({ orderId, saleId, knownDelivery = false }: Ship
         setStatus({ ok: false, text: 'Este pedido no es un envío.' })
         return
       }
-      const out = await printShippingLabelThermal(r.data, r.business_id, r.codepage ?? 'cp858')
+      const out = await printShippingLabelThermal({ ...r.data, bundles }, r.business_id, r.codepage ?? 'cp858')
       if (out.state === 'printed') setStatus({ ok: true, text: `Etiqueta impresa en ${out.printer}.` })
       else if (out.state === 'skipped') setStatus({ ok: false, text: 'La impresión térmica está apagada en este equipo (Configuración → Impresión). Usa "Copiar datos de envío".' })
       else setStatus({ ok: false, text: out.sent ? `${out.message} Revisa la impresora antes de reintentar.` : out.message })
@@ -76,7 +78,7 @@ export function ShippingActions({ orderId, saleId, knownDelivery = false }: Ship
     try {
       const r = await load()
       if (!r.delivery || !r.data) { setStatus({ ok: false, text: 'Este pedido no es un envío.' }); return }
-      await navigator.clipboard.writeText(shippingCopyText(r.data))
+      await navigator.clipboard.writeText(shippingCopyText({ ...r.data, bundles }))
       setStatus({ ok: true, text: 'Datos de envío copiados.' })
     } catch (e) {
       setStatus({ ok: false, text: e instanceof Error ? e.message : 'No se pudo copiar.' })
@@ -87,6 +89,19 @@ export function ShippingActions({ orderId, saleId, knownDelivery = false }: Ship
 
   return (
     <div className={styles.root}>
+      <div className={styles.bundlesRow}>
+        <label className={styles.bundlesLabel} htmlFor={`bundles-${query}`}>Bultos (opcional)</label>
+        <input
+          id={`bundles-${query}`}
+          type="text"
+          inputMode="numeric"
+          className={styles.bundlesInput}
+          value={bundles}
+          onChange={e => setBundles(e.target.value.slice(0, 10))}
+          onClick={e => e.stopPropagation()}
+          placeholder="Ej. 2"
+        />
+      </div>
       <div className={styles.actions}>
         <Button
           variant="secondary"

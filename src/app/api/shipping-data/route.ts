@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       address:      (order.delivery_address ?? '').trim(),
       // "Método de pago: X" es dato interno de cobro: no va en la etiqueta.
       notes:        (order.notes ?? '').replace(/^Método de pago:.*$/m, '').trim(),
-      packages:     Math.max(1, Math.ceil(order.items.reduce((a, i) => a + Number(i.quantity), 0))),
+      units:        Math.max(1, Math.ceil(order.items.reduce((a, i) => a + Number(i.quantity), 0))),
     }
 
     return NextResponse.json({

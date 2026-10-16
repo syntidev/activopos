@@ -21,3 +21,18 @@
 
 .ok    { color: var(--success-text); }
 .error { color: var(--color-danger-text); }
+
+.bundlesRow { display: flex; align-items: center; gap: var(--space-2); }
+.bundlesLabel { font-size: var(--text-xs); color: var(--color-text-secondary); }
+.bundlesInput {
+  width: 72px;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-2);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+}
+.bundlesInput:focus { outline: none; border-color: var(--color-border-focus); }

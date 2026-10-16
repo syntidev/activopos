@@ -12,7 +12,10 @@ export interface ShippingData {
   phone:       string
   address:     string
   notes:       string
-  packages:    number
+  /** Suma de cantidades del pedido. */
+  units:       number
+  /** Lo escribe el operador al imprimir/copiar; no se guarda. Vacío = no se imprime. */
+  bundles?:    string
 }
 
 export const SHIPPING_ADDRESS_LABEL = 'Estado, ciudad y dirección completa u oficina de destino'
@@ -48,6 +51,7 @@ export function shippingCopyText(d: ShippingData): string {
     `Dirección: ${d.address}`,
     `Orden: ${d.orderNumber}`,
     ...(d.notes.trim() ? [`Notas: ${d.notes.trim()}`] : []),
-    `Bultos: ${d.packages}`,
+    `Unidades: ${d.units}`,
+    ...((d.bundles ?? '').trim() ? [`Bultos: ${(d.bundles ?? '').trim()}`] : []),
   ].join('\n')
 }

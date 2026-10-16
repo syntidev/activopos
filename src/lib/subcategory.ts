@@ -37,7 +37,7 @@ export function subcategoryChips(values: ReadonlyArray<string | null>): Subcateg
     spellings.set(key, counts)
   }
   const chips: SubcategoryChip[] = []
-  for (const [key, counts] of spellings) {
+  for (const [key, counts] of Array.from(spellings.entries())) {
     const [label] = Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))[0]
     chips.push({ key, label })

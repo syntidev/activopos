@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { REALIZED_SALE_STATUSES, marginPct, netByProduct, netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { businessDateKey, businessDayStart, businessMonthKey, businessMonthRange, businessOffsetHours } from '@/lib/business-day'
 
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Rango de fechas inválido' }, { status: 400 })
     }
 
-    const offsetHours = businessOffsetHours()
+    const offsetHours = Prisma.raw(String(businessOffsetHours())) // literal: con parámetro, GROUP BY no reconoce la expresión (only_full_group_by)
     // gastos.fecha es DATE (medianoche UTC del día): se compara con claves de día.
     const gastoFrom = new Date(`${businessDateKey(from)}T00:00:00Z`)
     const gastoTo   = new Date(`${businessDateKey(to)}T00:00:00Z`)

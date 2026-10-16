@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { businessDateKey, businessDayRange, businessOffsetHours } from '@/lib/business-day'
 import { REALIZED_SALE_STATUSES, netByCategory, netByProduct, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { start: dayStart, end: dayEnd } = businessDayRange(dateStr)
-  const offsetHours = businessOffsetHours()
+  const offsetHours = Prisma.raw(String(businessOffsetHours())) // literal: con parámetro, GROUP BY no reconoce la expresión (only_full_group_by)
 
   const [
     salesAgg,

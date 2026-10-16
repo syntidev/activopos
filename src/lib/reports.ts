@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 import { getActiveRate } from './bcv'
 import { netSales, returnedUsdBySeries } from './sales-returns'
@@ -28,7 +29,7 @@ export async function generateMonthlyPDF(
 ): Promise<GenerateResult> {
   const [year, month] = period.split('-').map(Number)
   const { start: monthStart, end: monthEnd } = businessMonthRange(period)
-  const offsetHours   = businessOffsetHours()
+  const offsetHours   = Prisma.raw(String(businessOffsetHours())) // literal: con parámetro, GROUP BY no reconoce la expresión (only_full_group_by)
 
   const [business, salesAgg, dailyRaw, devueltoPorDia, ventas, { rate }] = await Promise.all([
     prisma.business.findUniqueOrThrow({

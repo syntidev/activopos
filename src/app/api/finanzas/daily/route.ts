@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { returnedUsdBySeries } from '@/lib/sales-returns'
 import { businessMonthKey, businessMonthRange, businessOffsetHours } from '@/lib/business-day'
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   const { start: monthStart, end: monthEnd } = businessMonthRange(monthStr)
   const gastoStart = new Date(Date.UTC(year, month - 1, 1))
   const gastoEnd   = new Date(Date.UTC(year, month, 1))
-  const offsetHours = businessOffsetHours()
+  const offsetHours = Prisma.raw(String(businessOffsetHours())) // literal: con parámetro, GROUP BY no reconoce la expresión (only_full_group_by)
   const bid        = session.businessId
 
   const [salesRows, devueltoPorDia, gastosRows] = await Promise.all([

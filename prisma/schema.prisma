@@ -591,6 +591,9 @@ model PaymentMethod {
   name        String  @db.VarChar(60)
   type        PmType  @default(cash)
   is_active   Boolean @default(true)
+  // Financiadora (ej. Cashea): exige cédula de persona natural al cobrar. Lo
+  // marca el admin en Configuración; nunca se infiere del nombre.
+  is_financing Boolean @default(false)
   sort_order  Int     @default(0)
 
   business       Business       @relation(fields: [business_id], references: [id])
@@ -615,6 +618,8 @@ model Sale {
   client_id          Int?
   client_name        String?    @db.VarChar(120)
   client_phone       String?    @db.VarChar(20)
+  // Cédula declarada en ESTA venta (snapshot); Client.cedula solo se llena si estaba nula.
+  client_cedula      String?    @db.VarChar(20)
   // Origen del ticket cuando nace de una cotización convertida. Es el único
   // vínculo real Sale→Quotation: antes solo quedaba el texto en notes, que no
   // sirve para marcar la cotización como Cobrada al confirmar el pago.
@@ -876,6 +881,8 @@ model Order {
   client_name      String?     @db.VarChar(120)
   client_phone     String?     @db.VarChar(20)
   client_address   String?     @db.Text
+  // Cédula declarada en ESTE pedido (snapshot): dos clientes pueden compartir teléfono.
+  client_cedula    String?     @db.VarChar(20)
   delivery_type    String?     @default("pickup") @db.VarChar(20)
   recipient_name   String?     @db.VarChar(120)
   delivery_address String?     @db.Text

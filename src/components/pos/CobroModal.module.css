@@ -538,3 +538,19 @@
 @media (prefers-reduced-motion: reduce) {
   .successIcon { animation: none; }
 }
+
+/* ── Cédula (opcional / financiadora) ── */
+.cedulaToggle {
+  align-self: flex-start;
+  min-height: var(--touch-min);
+  padding: 0 var(--space-1);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cedulaToggle:hover { color: var(--color-text-primary); }
+.cedulaHint { font-size: var(--text-xs); color: var(--color-text-muted); }

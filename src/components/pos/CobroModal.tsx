@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { checkCedula } from '@/lib/cedula'
 import { CreditCard, Pencil } from 'lucide-react'
 import { Modal, Button, useToast } from '@/components/ui'
 import { CreditoModal } from './CreditoModal'
@@ -17,7 +18,9 @@ interface CobroModalProps {
   onClose: () => void
   totals: TicketTotals
   paymentMethods: PaymentMethod[]
-  onConfirm: (payments: PaymentInput[]) => Promise<SaleResult>
+  onConfirm: (payments: PaymentInput[], clientCedula?: string | null) => Promise<SaleResult>
+  /** Cédula del cliente elegido (precarga); lo corregido aquí es solo snapshot de esta venta. */
+  clientCedula?: string | null
   rate: number
   clientId?: number | null
   items: SaleItemForPanel[]
@@ -36,7 +39,7 @@ const isUsd = (type: string) =>
   USD_TYPES.has(type) || type.endsWith('_usd') || type.endsWith('_usdt')
 
 export function CobroModal({
-  open, onClose, totals, paymentMethods, onConfirm, rate, clientId,
+  open, onClose, totals, paymentMethods, onConfirm, rate, clientId, clientCedula,
   items, businessName,
 }: CobroModalProps) {
   const { toast } = useToast()
@@ -50,6 +53,12 @@ export function CobroModal({
   const [changeMode, setChangeMode]         = useState<'bs' | 'usd'>('bs')
   const [mixedEntries, setMixedEntries]     = useState<MixedEntry[]>([])
   const [saleResult, setSaleResult]         = useState<SaleResult | null>(null)
+  const [cedula, setCedula]                 = useState('')
+  const [showCedula, setShowCedula]         = useState(false)
+
+  useEffect(() => {
+    if (open) { setCedula(clientCedula ?? ''); setShowCedula(false) }
+  }, [open, clientCedula])
 
   /* ── BUG-01b: per-method rate ── */
   const [methodRate, setMethodRate]   = useState(rate)
@@ -86,12 +95,20 @@ export function CobroModal({
     e => REFERENCE_TYPES.has(e.method.type) && !e.reference.trim()
   )
 
+  /* ── Cédula: obligatoria solo con financiadora (campo is_financing del método) ── */
+  const financingMethod = isMixed
+    ? mixedEntries.find(e => parseFloat(e.amountBs) > 0 && e.method.is_financing)?.method
+    : (selectedMethod?.is_financing ? selectedMethod : undefined)
+  const cedulaCheck = checkCedula(cedula, financingMethod?.name ?? null)
+  // Opcional con cédula mal escrita: no se envía (nunca frena el ticket).
+  const cedulaToSend = cedulaCheck.ok ? cedulaCheck.value : null
+
   const singleRefRequired = !isMixed && selectedMethod != null && REFERENCE_TYPES.has(selectedMethod.type)
   const singleRefOk       = !singleRefRequired || reference.trim() !== ''
 
-  const canConfirm = isMixed
+  const canConfirm = (isMixed
     ? mixedOk && mixedRefOk
-    : !!selectedMethod && singleRefOk
+    : !!selectedMethod && singleRefOk) && (!financingMethod || cedulaCheck.ok)
 
   /* ── Handlers ── */
 
@@ -170,7 +187,7 @@ export function CobroModal({
 
     setLoading(true)
     try {
-      const result = await onConfirm(payments)
+      const result = await onConfirm(payments, cedulaToSend)
       setSaleResult(result)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Error al procesar el pago', 'error')
@@ -473,6 +490,37 @@ export function CobroModal({
                   : `Cubierto${Math.abs(mixedDiff) > 0.01 ? ` · Vuelto Bs. ${Math.abs(mixedDiff).toFixed(2)}` : ''}`}
               </div>
             </>
+          )}
+
+          {/* Cédula: obligatoria con financiadora; si no, opción discreta que nunca bloquea */}
+          {financingMethod || showCedula || cedula.trim() ? (
+            <div className={styles.referenceField}>
+              <label className={styles.fieldLabel} htmlFor="cobro-cedula">
+                Cédula{financingMethod
+                  ? <span className={styles.requiredMark} aria-hidden="true"> *</span>
+                  : ' (opcional)'}
+              </label>
+              <input
+                id="cobro-cedula"
+                type="text"
+                autoComplete="off"
+                className={`${styles.textInput} ${financingMethod && !cedulaCheck.ok ? styles.inputRequired : ''}`}
+                placeholder="V-12345678"
+                value={cedula}
+                onChange={(e) => setCedula(e.target.value)}
+                maxLength={20}
+                aria-required={!!financingMethod}
+              />
+              {!cedulaCheck.ok && (financingMethod || cedula.trim()) && (
+                <span className={styles.cedulaHint}>
+                  {financingMethod ? cedulaCheck.message : `${cedulaCheck.message} Si no se corrige, no se guardará.`}
+                </span>
+              )}
+            </div>
+          ) : (
+            <button type="button" className={styles.cedulaToggle} onClick={() => setShowCedula(true)}>
+              Agregar cédula (opcional)
+            </button>
           )}
         </div>
       </Modal>

@@ -33,8 +33,19 @@ export function financingCedulaMessage(methodName: string): string {
  * Valida y normaliza. `financingName` = nombre del método financiador elegido,
  * o null si no hay. Vacío sin financiadora = ok (null); con financiadora = error.
  */
-export function checkCedula(raw: string | null | undefined, financingName: string | null): CedulaCheck {
+export function checkCedula(
+  raw: string | null | undefined,
+  financingName: string | null,
+  deliveryRequired = false,
+): CedulaCheck {
   const hasValue = (raw ?? '').trim() !== ''
+  if (financingName === null && deliveryRequired) {
+    const n = normalizeCedula(raw)
+    if (!hasValue || !n || !GENERAL_RE.test(n)) {
+      return { ok: false, message: `La cédula es obligatoria para envíos. ${CEDULA_FORMAT_HINT}` }
+    }
+    return { ok: true, value: n }
+  }
   if (financingName !== null) {
     const n = normalizeCedula(raw)
     if (!hasValue || !n || !isNaturalCedula(n)) {

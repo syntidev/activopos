@@ -266,8 +266,8 @@ function POSView() {
         onClose={() => pos.setShowCobro(false)}
         totals={totals}
         paymentMethods={pos.paymentMethods}
-        onConfirm={async (payments) => {
-          const result = await pos.procesarPago(payments)
+        onConfirm={async (payments, cedula) => {
+          const result = await pos.procesarPago(payments, cedula)
           // Impresión térmica automática (QZ Tray, config por equipo). Sin await
           // y sin lanzar: una falla de impresión nunca debe demorar ni afectar
           // una venta ya cobrada, solo avisar. Apagada en este equipo = no hace nada.
@@ -290,6 +290,7 @@ function POSView() {
         }}
         rate={pos.rate}
         clientId={pos.ticket.client_id}
+        clientCedula={pos.ticket.client_cedula}
         items={pos.ticket.items.map(i => ({
           name:      i.product_name,
           qty:       i.quantity,

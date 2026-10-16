@@ -27,6 +27,8 @@ export interface PaymentMethod {
   id: number
   name: string
   type: string
+  /** Financiadora: exige cédula (V/E) antes de cobrar. */
+  is_financing?: boolean
 }
 
 const FALLBACK_RATE = 36.50
@@ -211,6 +213,7 @@ export function usePOS() {
       client_id:         client?.id ?? null,
       client_name:       client?.name ?? '',
       client_phone:      client?.phone ?? '',
+      client_cedula:     client?.cedula ?? '',
       client_price_tier: client?.price_tier,
     }))
   }, [])
@@ -228,7 +231,8 @@ export function usePOS() {
     origin: 'pos' | 'quote' | 'credit',
     payments?: PaymentInput[],
     options?: QuoteOptions,
-    creditTerms?: CreditTerms
+    creditTerms?: CreditTerms,
+    clientCedula?: string | null
   ): Promise<SaleResult> => {
     const totals           = calcularTotales(currentTicket)
     const items            = buildSalePayload(currentTicket, totals)
@@ -244,6 +248,7 @@ export function usePOS() {
         origin,
         client_id:    currentTicket.client_id ?? undefined,
         client_name:  currentTicket.client_name || undefined,
+        client_cedula: clientCedula || undefined,
         notes:        currentTicket.notes || options?.notes || undefined,
         iva_pct:      currentTicket.iva_pct || undefined,
         payments,
@@ -283,13 +288,13 @@ export function usePOS() {
     setTicket(prev => aplicarDescuentoGlobal(prev, discountPct))
   }
 
-  const procesarPago = async (payments: PaymentInput[]): Promise<SaleResult> => {
+  const procesarPago = async (payments: PaymentInput[], clientCedula?: string | null): Promise<SaleResult> => {
     let result: SaleResult
     if (pendingSaleId) {
       const res  = await fetch(`/api/sales/${pendingSaleId}/pay`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ payments }),
+        body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al procesar el pago')
@@ -301,7 +306,7 @@ export function usePOS() {
         total_bs:      Number(data.sale.total_bs),
       }
     } else {
-      result = await postSale(ticket, 'paid', 'pos', payments)
+      result = await postSale(ticket, 'paid', 'pos', payments, undefined, undefined, clientCedula)
     }
     setPendingSaleId(null)
     setTicket(limpiarTicket(rate, ivaPct))

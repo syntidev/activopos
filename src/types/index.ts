@@ -40,6 +40,8 @@ export interface PaymentMethod {
   id:   number
   name: string
   type: string
+  /** Financiadora: exige cédula (V/E) antes de cobrar. */
+  is_financing?: boolean
 }
 
 export interface ClientHistoryData extends ClientHistory {

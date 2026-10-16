@@ -73,6 +73,8 @@ export interface TicketState {
   client_id: number | null
   client_name: string
   client_phone: string
+  /** Cédula del cliente elegido (precarga del cobro); el cajero puede corregirla al cobrar. */
+  client_cedula?: string
   // Tier del cliente asociado — 'mayorista' aplica wholesale_price al agregar
   // ítems. undefined/'detal' = precio de detal (comportamiento por defecto).
   // ponytail: el componente POS (CLI-B) debe setear esto al seleccionar un

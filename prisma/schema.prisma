@@ -1420,3 +1420,26 @@ model SocialScenePreset {
 
   @@map("social_scene_presets")
 }
+
+// Captura de etiquetas Safetti con la cámara (solo negocios en LABEL_CAPTURE_BUSINESS_IDS).
+// Sin relación a Business ni a products a propósito: tabla de trabajo, no toca inventario.
+model LabelCapture {
+  id           Int      @id @default(autoincrement())
+  business_id  Int
+  ean          String   @db.VarChar(13)
+  ref          String   @db.VarChar(10)
+  model_name   String   @db.VarChar(120)
+  label_color  String   @db.VarChar(40)
+  garment      String   @db.VarChar(60)
+  size         String   @db.VarChar(20)
+  gender       String   @db.VarChar(10)
+  units        Int      @default(1)
+  color_actual String?  @db.VarChar(60)
+  status       String   @default("review") @db.VarChar(10)
+  notes        String?  @db.Text
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@unique([business_id, ean])
+  @@map("label_captures")
+}

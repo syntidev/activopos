@@ -58,6 +58,13 @@ export const qzSignLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+// Lectura de etiquetas con visión (/api/label-capture/ocr): con sesión, se limita por USUARIO.
+// Cada llamada cuesta una inferencia en NVIDIA; 30/min sobra para fotografiar a mano.
+export const labelOcrLimiter = new RateLimiterMemory({
+  points:   30,   // 30 lecturas por usuario
+  duration: 60,   // por minuto
+})
+
 // Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
 // antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
 export const getClientIp = (req: Request): string =>

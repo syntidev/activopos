@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { toShippingMethodDTO } from '@/lib/shipping-methods'
+import { SHIPPING_WRITE_ROLES, toShippingMethodDTO } from '@/lib/shipping-methods'
+import { logError } from '@/lib/safe-log'
 import { SHIPPING_KINDS } from '@/types/shipping'
 import type { ShippingKind } from '@/types/shipping'
 
-// PATCH/DELETE de un método de envío. Solo admin/super_admin. El `code` no se edita (es el
+// PATCH/DELETE de un método de envío. Solo 'admin' (SHIPPING_WRITE_ROLES). El `code` no se edita (es el
 // identificador estable del método): para otro código, se crea uno nuevo.
 
 const patchSchema = z.object({
@@ -25,7 +26,7 @@ const parseId = (raw: string): number | null => {
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
   try {
     const { session, db } = await getAuthenticatedTenant()
-    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    if (!SHIPPING_WRITE_ROLES.includes(session.role)) return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const id = parseId(params.id)
     if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -42,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: true, method: toShippingMethodDTO(updated) })
   } catch (err) {
     if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
-    console.error('shipping-methods PATCH error:', err)
+    logError('shipping-methods PATCH error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }
@@ -50,7 +51,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
   try {
     const { session, db } = await getAuthenticatedTenant()
-    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    if (!SHIPPING_WRITE_ROLES.includes(session.role)) return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const id = parseId(params.id)
     if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -70,7 +71,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ ok: true })
   } catch (err) {
     if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
-    console.error('shipping-methods DELETE error:', err)
+    logError('shipping-methods DELETE error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

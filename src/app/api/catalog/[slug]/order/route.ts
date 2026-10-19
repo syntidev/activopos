@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
-import { catalogLimiter, catalogOrderIpLimiter, catalogOrderPhoneLimiter, getClientIp } from '@/lib/rate-limit'
+import {
+  catalogLimiter, catalogOrderCedulaLimiter, catalogOrderIpLimiter, catalogOrderPhoneLimiter, getClientIp,
+} from '@/lib/rate-limit'
+import { logError } from '@/lib/safe-log'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
 import { checkCedula } from '@/lib/cedula'
 import { validateAddress, validateShipping } from '@/lib/shipping'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import {
-  checkCheckoutCedula, hasUsablePhone, normalizeClientPhone, phoneLookupVariants,
+  checkCheckoutCedula, hasUsablePhone, normalizeClientPhone, phoneLookupVariants, sameName,
 } from '@/lib/customer-identity'
-import { resolveWebClient } from '@/lib/web-client'
+import {
+  ensureWebCheckoutLocks, lockWebCheckout, resolveWebClient, WebCheckoutBusyError, webCheckoutKeys,
+} from '@/lib/web-client'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -44,6 +50,9 @@ const BodySchema = z.object({
   use_saved_address:  z.boolean().optional(),
   // Método de envío del negocio (GET /api/catalog/[slug]/shipping-methods). Solo aplica a delivery.
   shipping_method_id: z.number().int().positive().nullable().optional(),
+  // Oficina de destino: obligatoria SOLO si el método elegido tiene requires_branch. El servidor la antepone
+  // a la dirección ("Oficina: X | dirección"); en el resto de métodos se ignora.
+  branch_office:      z.string().max(120).trim().nullable().optional(),
 })
 
 /** Error de negocio dentro de la transacción: la deshace y responde con este status. */
@@ -57,6 +66,21 @@ const SAVED_ADDRESS_MESSAGE = 'No pudimos usar una dirección guardada. Escribe 
 // antes de leer la guardada.
 const ADDRESS_PLACEHOLDER = 'direccion guardada del cliente'
 const OPEN_ORDERS_LIMIT = 3
+const MIN_NAME_WORDS = 2     // "misma dirección": el nombre debe coincidir en al menos 2 palabras
+const MIN_BRANCH_CHARS = 3
+// La transacción espera el lock del cliente: tiempos explícitos (los de Prisma por defecto son 2 s / 5 s).
+const TX_MAX_WAIT_MS = 5000
+const TX_TIMEOUT_MS = 15000
+const BUSY_MESSAGE = 'Estamos recibiendo muchos pedidos. Reintenta en unos segundos.'
+// P2034 = deadlock/conflicto de escritura; P2028 = la transacción venció; P2024 = sin conexión libre en el pool.
+const CONTENTION_CODES: readonly string[] = ['P2034', 'P2028', 'P2024']
+
+interface ChosenMethod {
+  id:              number
+  label:           string
+  kind:            string
+  requires_branch: boolean
+}
 
 type TxClient = Omit<
   typeof prisma,
@@ -93,10 +117,18 @@ async function generateOrderNumber(businessId: number, prefix: string, tx: TxCli
   return `${prefix}-${nextNum.toString().padStart(5, '0')}`
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { slug: string } },
-): Promise<NextResponse> {
+type RouteContext = { params: { slug: string } }
+
+export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextResponse> {
+  try {
+    return await createOrder(req, ctx)
+  } catch (err) {
+    logError('catalog order error', err)
+    return NextResponse.json({ error: 'No se pudo crear el pedido. Intenta de nuevo.' }, { status: 500 })
+  }
+}
+
+async function createOrder(req: NextRequest, { params }: RouteContext): Promise<NextResponse> {
   const clientIp = getClientIp(req)
   try {
     await catalogLimiter.consume(clientIp)
@@ -156,6 +188,11 @@ export async function POST(
     return NextResponse.json({ error: idCheck.message, field: 'customer_cedula' }, { status: 422 })
   }
   const clientCedula = idCheck.value
+  try {
+    await catalogOrderCedulaLimiter.consume(`${parsedSlug.data}:${clientCedula}`)
+  } catch {
+    return NextResponse.json({ error: 'Demasiados intentos. Intenta más tarde.' }, { status: 429 })
+  }
   // Financiadora: además exige persona natural (V/E).
   if (chosenMethod?.is_financing) {
     const financingCheck = checkCedula(clientCedula, chosenMethod.name)
@@ -190,20 +227,32 @@ export async function POST(
   }
 
   // Método de envío: si el negocio configuró métodos activos, el envío debe elegir uno suyo.
-  let shippingMethodId: number | null = null
+  let shippingMethod: ChosenMethod | null = null
   if (isDelivery) {
-    const methods = await prisma.businessShippingMethod.findMany({
+    const methods: ChosenMethod[] = await prisma.businessShippingMethod.findMany({
       where:  { business_id: business.id, active: true },
-      select: { id: true },
+      select: { id: true, label: true, kind: true, requires_branch: true },
     })
     if (methods.length > 0) {
-      const chosen = methods.find(m => m.id === body.shipping_method_id)
-      if (!chosen) {
+      shippingMethod = methods.find(m => m.id === body.shipping_method_id) ?? null
+      if (!shippingMethod) {
         return NextResponse.json({ error: 'Elige un método de envío.', field: 'shipping_method_id' }, { status: 422 })
       }
-      shippingMethodId = chosen.id
+      // Un método de retiro en tienda no lleva dirección de envío (y todo envío exige una).
+      if (shippingMethod.kind === 'pickup') {
+        return NextResponse.json(
+          { error: 'Ese método es retiro en tienda: elige "Retirar en tienda" en lugar de envío.', field: 'shipping_method_id' },
+          { status: 422 },
+        )
+      }
+      if (shippingMethod.requires_branch && (body.branch_office ?? '').length < MIN_BRANCH_CHARS) {
+        return NextResponse.json({ error: 'Indica la oficina de destino.', field: 'branch_office' }, { status: 422 })
+      }
     }
   }
+  // La oficina solo cuenta si el método la pide; el servidor la antepone a la dirección.
+  const branchOffice = shippingMethod?.requires_branch ? (body.branch_office ?? '') : ''
+  const withBranch = (addr: string | null): string | null => (addr && branchOffice ? `Oficina: ${branchOffice} | ${addr}` : addr)
 
 
   // Fetch canonical products from DB — never trust client-supplied prices or names
@@ -252,11 +301,13 @@ export async function POST(
   let resolvedItems: ResolvedItem[] = []
   let order: { id: number; order_number: string; total_usd: unknown; total_bs: unknown }
   try {
+    const lockKeys = webCheckoutKeys(clientCedula, body.customer_phone)
+    await ensureWebCheckoutLocks(business.id, lockKeys)
     order = await prisma.$transaction(async (tx) => {
-    // Serializa los pedidos web del negocio ANTES de la primera lectura: el tope de pedidos abiertos y la
-    // creación de clientes se evalúan sobre lo ya confirmado (sin esto, pedidos simultáneos se pasan del
-    // tope). El conteo es de DB, así que vale entre procesos PM2 (los limiters en memoria no).
-    await tx.$queryRaw`SELECT id FROM businesses WHERE id = ${business.id} FOR UPDATE`
+    // Serializa los pedidos web del MISMO cliente (cédula o teléfono) ANTES de la primera lectura: el tope de
+    // pedidos abiertos y la creación del cliente se evalúan sobre lo ya confirmado. Es lock de DB, así que vale
+    // entre procesos PM2 (los limiters en memoria no) y NO toca la fila del negocio (no frena las ventas del POS).
+    await lockWebCheckout(tx, business.id, lockKeys)
     const openOrders = await tx.order.count({
       where: {
         business_id: business.id,
@@ -352,15 +403,18 @@ export async function POST(
       canCreate:  !useSaved,
     })
 
-    // "Misma dirección": sale del Client (por business_id), nunca del body. Solo se honra si la cédula
-    // tiene cliente, con dirección válida y el MISMO nombre; si no, 422 genérico idéntico en todos los casos.
-    let shipAddress: string | null = isDelivery ? (body.delivery_address ?? null) : null
+    // "Misma dirección": sale del Client (por business_id), nunca del body. Solo se honra si la cédula Y el
+    // teléfono son del MISMO cliente (igual que /saved-address), el nombre coincide en ≥ 2 palabras y la
+    // dirección es válida; si no, 422 genérico idéntico en todos los casos (no es un oráculo).
+    let shipAddress: string | null = isDelivery ? withBranch(body.delivery_address ?? null) : null
     if (useSaved) {
       const saved = client?.address ?? null
-      if (!client || client.nameMismatch || !saved || validateAddress(saved) !== null) {
+      const samePhone = !!client?.phone && normalizeClientPhone(client.phone) === clientPhone
+      const sameFullName = !!client && sameName(body.customer_name, client.name, MIN_NAME_WORDS)
+      if (!client || !samePhone || !sameFullName || !saved || validateAddress(saved) !== null) {
         throw new CheckoutError(422, SAVED_ADDRESS_MESSAGE, 'delivery_address')
       }
-      shipAddress = saved
+      shipAddress = withBranch(saved)
     }
     if (!client) throw new CheckoutError(422, SAVED_ADDRESS_MESSAGE, 'delivery_address')
     const clientId = client.id
@@ -389,7 +443,10 @@ export async function POST(
         ship_cedula:     isDelivery ? clientCedula : null,
         ship_telefono:   isDelivery ? clientPhone : null,
         ship_direccion:  isDelivery ? shipAddress : null,
-        ship_metodo_id:  isDelivery ? shippingMethodId : null,
+        ship_metodo_id:  isDelivery ? (shippingMethod?.id ?? null) : null,
+        // Congelado: si el negocio renombra o borra el método, el pedido conserva el que se eligió.
+        ship_metodo_label: isDelivery ? (shippingMethod?.label ?? null) : null,
+        ship_metodo_kind:  isDelivery ? (shippingMethod?.kind ?? null) : null,
         // La cédula ya existía con OTRO nombre: aviso para el negocio, nunca visible al público.
         cedula_alert:    client.nameMismatch,
         notes:          noteLines,
@@ -430,10 +487,15 @@ export async function POST(
     })
 
     return newOrder
-    })
+    }, { maxWait: TX_MAX_WAIT_MS, timeout: TX_TIMEOUT_MS })
   } catch (err) {
     if (err instanceof CheckoutError) {
       return NextResponse.json({ error: err.message, field: err.field }, { status: err.status })
+    }
+    if (err instanceof WebCheckoutBusyError ||
+        (err instanceof Prisma.PrismaClientKnownRequestError && CONTENTION_CODES.includes(err.code))) {
+      logError('catalog order contention', err)
+      return NextResponse.json({ error: BUSY_MESSAGE }, { status: 503, headers: { 'Retry-After': '2' } })
     }
     if (err instanceof Error && err.message.startsWith('STOCK_INSUFICIENTE:')) {
       return NextResponse.json(
@@ -441,7 +503,7 @@ export async function POST(
         { status: 409 },
       )
     }
-    console.error('catalog order error:', err)
+    logError('catalog order error', err)
     return NextResponse.json({ error: 'No se pudo crear el pedido. Intenta de nuevo.' }, { status: 500 })
   }
 
@@ -467,7 +529,9 @@ export async function POST(
           type: 'delivery',
           recipient: body.recipient_name,
           // Con "misma dirección" el texto guardado NO viaja en el enlace de WhatsApp (iría a quien conozca la cédula).
-          address: useSaved ? 'Misma dirección de pedidos anteriores' : body.delivery_address,
+          address: withBranch(useSaved ? 'Misma dirección de pedidos anteriores' : (body.delivery_address ?? null)),
+          // Solo en este mensaje al negocio; el ticket de envío (shippingCopyText) sigue con sus 4 datos.
+          method:  shippingMethod?.label ?? null,
         }
       : { type: 'pickup' },
     notes:        body.notes,

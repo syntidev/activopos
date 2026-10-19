@@ -68,6 +68,7 @@ const ADDRESS_PLACEHOLDER = 'direccion guardada del cliente'
 const OPEN_ORDERS_LIMIT = 3
 const MIN_NAME_WORDS = 2     // "misma dirección": el nombre debe coincidir en al menos 2 palabras
 const MIN_BRANCH_CHARS = 3
+const MAX_NUMBER_RETRIES = 8 // reintentos del número de pedido si otro lo tomó primero
 // La transacción espera el lock del cliente: tiempos explícitos (los de Prisma por defecto son 2 s / 5 s).
 const TX_MAX_WAIT_MS = 5000
 const TX_TIMEOUT_MS = 15000
@@ -97,6 +98,17 @@ interface ResolvedItem {
   variant_label: string | null
 }
 
+/** Número que sigue a `last` (o el primero). Mismo formato de siempre: PREFIJO-00001. */
+function bumpOrderNumber(prefix: string, last: string | null): string {
+  let nextNum = 1
+  if (last) {
+    const parts = last.split('-')
+    const n = parseInt(parts[parts.length - 1] ?? '0', 10)
+    nextNum = !isNaN(n) && n < 99999 ? n + 1 : 1
+  }
+  return `${prefix}-${nextNum.toString().padStart(5, '0')}`
+}
+
 async function generateOrderNumber(businessId: number, prefix: string, tx: TxClient): Promise<string> {
   const last = await tx.order.findFirst({
     where: {
@@ -106,15 +118,13 @@ async function generateOrderNumber(businessId: number, prefix: string, tx: TxCli
     orderBy: { id: 'desc' },
     select: { order_number: true },
   })
+  return bumpOrderNumber(prefix, last?.order_number ?? null)
+}
 
-  let nextNum = 1
-  if (last) {
-    const parts = last.order_number.split('-')
-    const n = parseInt(parts[parts.length - 1] ?? '0', 10)
-    nextNum = !isNaN(n) && n < 99999 ? n + 1 : 1
-  }
-
-  return `${prefix}-${nextNum.toString().padStart(5, '0')}`
+/** P2002 sobre (business_id, order_number): otro pedido (web o del POS) tomó ese número. */
+function isOrderNumberTaken(err: unknown): boolean {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' &&
+    `${JSON.stringify(err.meta ?? {})} ${err.message}`.includes('order_number')
 }
 
 type RouteContext = { params: { slug: string } }
@@ -188,11 +198,6 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     return NextResponse.json({ error: idCheck.message, field: 'customer_cedula' }, { status: 422 })
   }
   const clientCedula = idCheck.value
-  try {
-    await catalogOrderCedulaLimiter.consume(`${parsedSlug.data}:${clientCedula}`)
-  } catch {
-    return NextResponse.json({ error: 'Demasiados intentos. Intenta más tarde.' }, { status: 429 })
-  }
   // Financiadora: además exige persona natural (V/E).
   if (chosenMethod?.is_financing) {
     const financingCheck = checkCedula(clientCedula, chosenMethod.name)
@@ -205,11 +210,6 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     return NextResponse.json({ error: 'Indica un teléfono válido.', field: 'customer_phone' }, { status: 422 })
   }
   const clientPhone = normalizeClientPhone(body.customer_phone)
-  try {
-    await catalogOrderPhoneLimiter.consume(`${parsedSlug.data}:${clientPhone}`)
-  } catch {
-    return NextResponse.json({ error: 'Demasiados intentos. Intenta más tarde.' }, { status: 429 })
-  }
 
   // Todo envío sale por encomienda nacional: nombre y apellido, cédula, teléfono y dirección completa
   // son obligatorios (regla de servidor). Con "misma dirección" la dirección real se valida más
@@ -256,7 +256,8 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
 
 
   // Fetch canonical products from DB — never trust client-supplied prices or names
-  const uniqueProductIds = Array.from(new Set(body.items.map(i => i.product_id)))
+  // Ascendente: todos los pedidos piden los locks de producto en el MISMO orden ([1,2] y [2,1] no se cruzan).
+  const uniqueProductIds = Array.from(new Set(body.items.map(i => i.product_id))).sort((a, b) => a - b)
 
   const dbProducts = await prisma.product.findMany({
     where: {
@@ -308,6 +309,15 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     // pedidos abiertos y la creación del cliente se evalúan sobre lo ya confirmado. Es lock de DB, así que vale
     // entre procesos PM2 (los limiters en memoria no) y NO toca la fila del negocio (no frena las ventas del POS).
     await lockWebCheckout(tx, business.id, lockKeys)
+
+    // Row lock de producto, en orden ascendente (sin deadlock entre [1,2] y [2,1]): serializa pedidos
+    // concurrentes sobre el mismo producto (previene sobreventa). Va ANTES de la primera lectura
+    // consistente (el conteo de abajo): los locking reads no abren el snapshot de la transacción, así que
+    // stock, variantes y número de pedido se leen ya con lo que confirmó quien tenía el lock.
+    for (const productId of uniqueProductIds) {
+      await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`
+    }
+
     const openOrders = await tx.order.count({
       where: {
         business_id: business.id,
@@ -317,13 +327,6 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     })
     if (openOrders >= OPEN_ORDERS_LIMIT) {
       throw new CheckoutError(429, 'Tienes pedidos pendientes por confirmar. Espera a que el negocio los atienda.')
-    }
-
-    // Row lock: serializa pedidos concurrentes sobre el mismo producto (previene sobreventa).
-    // Va antes de generateOrderNumber para que su lectura también quede serializada
-    // cuando dos pedidos comparten producto.
-    for (const productId of uniqueProductIds) {
-      await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`
     }
 
     // Precio final por ítem: base del producto + precio_extra de la variante
@@ -362,7 +365,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     }
     resolvedItems = items
 
-    const order_number = await generateOrderNumber(business.id, business.ticket_prefix, tx)
+    let candidateNumber = await generateOrderNumber(business.id, business.ticket_prefix, tx)
 
     const stockAgg = await tx.inventoryEntry.groupBy({
       by:    ['product_id'],
@@ -424,7 +427,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
       body.notes ?? '',
     ].filter(Boolean).join('\n')
 
-    const newOrder = await tx.order.create({
+    const createWithNumber = (order_number: string) => tx.order.create({
       data: {
         business_id:    business.id,
         order_number,
@@ -474,6 +477,31 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
       },
     })
 
+    // Los puntos de cédula y teléfono se gastan AL FINAL, cuando el pedido ya pasó todas las validaciones
+    // (ítems, método, stock, tope, dirección guardada): un tercero no puede agotar los puntos de una víctima
+    // con pedidos inválidos.
+    try {
+      await catalogOrderCedulaLimiter.consume(`${parsedSlug.data}:${clientCedula}`)
+      await catalogOrderPhoneLimiter.consume(`${parsedSlug.data}:${clientPhone}`)
+    } catch {
+      throw new CheckoutError(429, 'Demasiados intentos. Intenta más tarde.')
+    }
+
+    // El número sale de una lectura previa: otro pedido (web o del POS) pudo tomarlo. En MySQL/MariaDB un
+    // error de unicidad deshace solo esa sentencia (la transacción sigue viva), así que se reintenta con el
+    // siguiente número; agotados los intentos → 503 "reintenta", nunca 500.
+    let newOrder: Awaited<ReturnType<typeof createWithNumber>> | null = null
+    for (let attempt = 0; newOrder === null; attempt++) {
+      try {
+        newOrder = await createWithNumber(candidateNumber)
+      } catch (err) {
+        if (!isOrderNumberTaken(err)) throw err
+        if (attempt >= MAX_NUMBER_RETRIES) throw new WebCheckoutBusyError()
+        candidateNumber = bumpOrderNumber(business.ticket_prefix, candidateNumber)
+      }
+    }
+    if (newOrder === null) throw new WebCheckoutBusyError()
+
     await tx.inventoryEntry.createMany({
       data: resolvedItems.map(item => ({
         business_id: business.id,
@@ -481,7 +509,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         quantity:    -Number(item.qty),
         waste:       0,
         entry_type:  'reservation',
-        notes:       `Reserva pedido catálogo #${order_number}`,
+        notes:       `Reserva pedido catálogo #${newOrder.order_number}`,
         created_by:  adminUser.id,
       })),
     })

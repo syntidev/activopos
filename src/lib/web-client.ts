@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { logError } from '@/lib/safe-log'
 import { normalizeClientPhone, phoneLookupVariants, sameName } from '@/lib/customer-identity'
 
 /**
@@ -90,16 +91,23 @@ export async function lockWebCheckout(tx: Tx, businessId: number, keys: string[]
   // valor por defecto enseguida (la conexión vuelve al pool y la usan las ventas del POS).
   await tx.$executeRaw`SET SESSION innodb_lock_wait_timeout = ${Prisma.raw(String(LOCK_WAIT_SECONDS))}`
   try {
+    // FORCE INDEX (PRIMARY): lock de registro exacto por (business_id, lock_key), sin recorrer otro índice.
     const rows = await tx.$queryRaw<{ lock_key: string }[]>`
-      SELECT lock_key FROM web_order_locks
+      SELECT lock_key FROM web_order_locks FORCE INDEX (PRIMARY)
        WHERE business_id = ${businessId} AND lock_key IN (${Prisma.join(keys)})
        ORDER BY lock_key FOR UPDATE`
     if (rows.length !== keys.length) throw new Error('web_order_locks: faltan filas de llave')
+    // Marca de uso: permite purgar con seguridad las llaves viejas (scripts/purge-web-order-locks.ts).
+    await tx.$executeRaw`
+      UPDATE web_order_locks SET touched_at = NOW(3)
+       WHERE business_id = ${businessId} AND lock_key IN (${Prisma.join(keys)})`
   } catch (err) {
     if (isLockWaitTimeout(err)) throw new WebCheckoutBusyError()
     throw err
   } finally {
-    await tx.$executeRaw`SET SESSION innodb_lock_wait_timeout = DEFAULT`.catch(() => undefined)
+    // Si el reset falla, la conexión vuelve al pool con la espera corta: se deja constancia en el log.
+    await tx.$executeRaw`SET SESSION innodb_lock_wait_timeout = DEFAULT`
+      .catch((err: unknown) => logError('web checkout: no se pudo restaurar innodb_lock_wait_timeout', err))
   }
 }
 

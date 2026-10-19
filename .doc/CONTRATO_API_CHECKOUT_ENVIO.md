@@ -64,7 +64,7 @@ El **ticket de envío** (`/api/shipping-data`, "Copiar datos", etiqueta 58 mm) N
 | 422 | `use_saved_address` sin dirección utilizable (ver §1.1) | `delivery_address` |
 | 409 | stock insuficiente | — |
 | 429 | demasiados intentos: por IP (10 pedidos/15 min), por teléfono (6/h), **por cédula (6/h, llave `slug:cédula`)**, o ya hay **3 pedidos `received`** de esa cédula o teléfono | — |
-| **503** | **el cliente ya tiene otro pedido en curso que no terminó a tiempo (espera máx. 5 s por su lock), deadlock o transacción vencida.** Cuerpo `{ "error": "Estamos recibiendo muchos pedidos. Reintenta en unos segundos." }` + cabecera `Retry-After: 2`. **No se creó nada: la UI debe ofrecer "Reintentar" con los mismos datos.** | — |
+| **503** | **el cliente ya tiene otro pedido en curso que no terminó a tiempo (espera máx. 5 s por su lock), deadlock, transacción vencida o número de pedido que otro tomó primero tras 8 reintentos.** Cuerpo `{ "error": "Estamos recibiendo muchos pedidos. Reintenta en unos segundos." }` + cabecera `Retry-After: 2`. **No se creó nada: la UI debe ofrecer "Reintentar" con los mismos datos.** | — |
 | 500 | error inesperado (siempre JSON) | — |
 
 Comportamiento que la UI NO verá (a propósito):

@@ -3,10 +3,10 @@
  * NO toca nada más: ni otros métodos, ni pedidos. Idempotente y NO destructivo: si el código 'mrw'
  * ya existe NO se modifica (el negocio pudo editarlo desde Configuración); si no, lo crea.
  *
- * Por defecto es SIMULACIÓN: solo escribe con --aplicar, y --aplicar exige --host-esperado.
+ * Por defecto es SIMULACIÓN: solo escribe con --aplicar, y --aplicar exige --host-esperado Y --db-esperada.
  *
  *   npx tsx scripts/seed-shipping-method-33.ts                                          (simulación, negocio 33)
- *   npx tsx scripts/seed-shipping-method-33.ts --aplicar --host-esperado 127.0.0.1      (escribe, solo si DB_HOST coincide)
+ *   npx tsx scripts/seed-shipping-method-33.ts --aplicar --host-esperado 127.0.0.1 --db-esperada activopos   (escribe, solo si DB_HOST y DB_NAME coinciden)
  *   npx tsx scripts/seed-shipping-method-33.ts --business-id 87                         (prueba local con otro negocio)
  *   npx tsx scripts/seed-shipping-method-33.ts --env-production                         (lee también .env.production)
  *
@@ -35,6 +35,8 @@ const bidIdx = args.indexOf('--business-id')
 const businessId = bidIdx >= 0 ? Number(args[bidIdx + 1]) : DEFAULT_BUSINESS_ID
 const hostIdx = args.indexOf('--host-esperado')
 const EXPECTED_HOST = hostIdx >= 0 ? (args[hostIdx + 1] ?? '') : ''
+const dbIdx = args.indexOf('--db-esperada')
+const EXPECTED_DB = dbIdx >= 0 ? (args[dbIdx + 1] ?? '') : ''
 const USE_ENV_PRODUCTION = args.includes('--env-production')
 
 function loadEnv(): string {
@@ -60,6 +62,9 @@ async function main(): Promise<void> {
   if (APPLY) {
     if (!EXPECTED_HOST) throw new Error('--aplicar exige --host-esperado <host> (el DB_HOST contra el que debe escribir)')
     if (dbHost !== EXPECTED_HOST) throw new Error(`DB_HOST es "${dbHost}" y se esperaba "${EXPECTED_HOST}"; se aborta sin escribir`)
+    if (!EXPECTED_DB) throw new Error('--aplicar exige también --db-esperada <nombre> (el DB_NAME contra el que debe escribir)')
+    const dbName = process.env.DB_NAME ?? ''
+    if (dbName !== EXPECTED_DB) throw new Error(`DB_NAME es "${dbName}" y se esperaba "${EXPECTED_DB}"; se aborta sin escribir`)
   }
   const { prisma } = await import('../src/lib/prisma')
   console.log(`MODO: ${APPLY ? 'APLICAR (escribe)' : 'SIMULACIÓN (no escribe nada)'} · negocio ${businessId} · DB ${process.env.DB_NAME ?? '?'} @ ${dbHost} · env: ${envFiles}`)

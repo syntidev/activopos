@@ -116,6 +116,7 @@ export async function GET(req: NextRequest) {
 const ORDER_400_ERRORS = [
   'Producto no encontrado',
   'Precio no configurado',
+  'Cliente no encontrado',
 ]
 
 export async function POST(req: NextRequest) {
@@ -130,6 +131,16 @@ export async function POST(req: NextRequest) {
     const { rate } = await getActiveRate(session.businessId)
 
     const order = await prisma.$transaction(async (tx) => {
+      // client_id llega del body: sin esta comprobación un pedido podía colgarse de un cliente de OTRO
+      // negocio (IDOR). Misma regla de siempre: el id solo vale si pertenece al business_id de la sesión.
+      if (data.client_id !== undefined) {
+        const ownClient = await tx.client.findFirst({
+          where:  { id: data.client_id, business_id: session.businessId },
+          select: { id: true },
+        })
+        if (!ownClient) throw new Error('Cliente no encontrado')
+      }
+
       // A5-1: prices from DB — anti price-tampering (never trust client-supplied prices)
       const productIds = Array.from(new Set(data.items.map((i) => i.product_id)))
       const products   = await tx.product.findMany({

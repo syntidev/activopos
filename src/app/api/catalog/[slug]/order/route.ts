@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
-import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
+import { catalogLimiter, catalogOrderIpLimiter, catalogOrderPhoneLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
 import { checkCedula } from '@/lib/cedula'
-import { validateShipping } from '@/lib/shipping'
+import { validateAddress, validateShipping } from '@/lib/shipping'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import {
+  checkCheckoutCedula, hasUsablePhone, normalizeClientPhone, phoneLookupVariants,
+} from '@/lib/customer-identity'
+import { resolveWebClient } from '@/lib/web-client'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -24,7 +28,8 @@ const BodySchema = z.object({
   customer_phone:     z.string().min(7).max(20).trim(),
   customer_reference: z.string().min(1).max(200).trim(),
   payment_method:     z.string().min(1).max(60).trim(),
-  // Obligatoria solo si el método elegido es financiadora (se valida abajo, en el servidor).
+  // OBLIGATORIA siempre (retiro y envío). Va nullable/optional en el schema solo para que la falta
+  // salga como 422 con field 'customer_cedula' (mensaje claro) y no como "Datos inválidos" genérico.
   customer_cedula:    z.string().max(20).trim().nullable().optional(),
   notes:              z.string().max(500).trim().optional(),
   delivery_type:      z.enum(['pickup', 'delivery']).default('pickup'),
@@ -35,7 +40,23 @@ const BodySchema = z.object({
   // Root cause confirmado con test aislado de Zod antes de tocar esto.
   recipient_name:     z.string().max(120).trim().nullable().optional(),
   delivery_address:   z.string().max(500).trim().nullable().optional(),
+  // "Misma dirección": el servidor la toma del Client identificado por cédula; la del body se ignora.
+  use_saved_address:  z.boolean().optional(),
+  // Método de envío del negocio (GET /api/catalog/[slug]/shipping-methods). Solo aplica a delivery.
+  shipping_method_id: z.number().int().positive().nullable().optional(),
 })
+
+/** Error de negocio dentro de la transacción: la deshace y responde con este status. */
+class CheckoutError extends Error {
+  constructor(readonly status: number, message: string, readonly field?: string) { super(message) }
+}
+
+// Mismo mensaje exista o no el cliente/la dirección: no es un oráculo de cédulas.
+const SAVED_ADDRESS_MESSAGE = 'No pudimos usar una dirección guardada. Escribe la dirección de envío.'
+// Dirección de relleno (≥ 15 caracteres, no "sin especificar") para validar solo nombre/cédula/teléfono
+// antes de leer la guardada.
+const ADDRESS_PLACEHOLDER = 'direccion guardada del cliente'
+const OPEN_ORDERS_LIMIT = 3
 
 type TxClient = Omit<
   typeof prisma,
@@ -76,8 +97,10 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { slug: string } },
 ): Promise<NextResponse> {
+  const clientIp = getClientIp(req)
   try {
-    await catalogLimiter.consume(getClientIp(req))
+    await catalogLimiter.consume(clientIp)
+    await catalogOrderIpLimiter.consume(clientIp)
   } catch {
     return NextResponse.json(
       { error: 'Demasiados intentos. Intenta más tarde.' },
@@ -124,25 +147,64 @@ export async function POST(
     where:  { business_id: business.id, is_active: true, name: body.payment_method },
     select: { name: true, is_financing: true },
   })
-  // Todo envío sale por encomienda nacional: nombre y apellido, cédula, teléfono y
-  // dirección completa son obligatorios (regla de servidor, no solo del carrito).
   const isDelivery = body.delivery_type === 'delivery'
+  const useSaved   = isDelivery && body.use_saved_address === true
+
+  // Cédula OBLIGATORIA siempre (retiro y envío): V/E/J/G, sin ceros. Es la llave del cliente.
+  const idCheck = checkCheckoutCedula(body.customer_cedula)
+  if (!idCheck.ok) {
+    return NextResponse.json({ error: idCheck.message, field: 'customer_cedula' }, { status: 422 })
+  }
+  const clientCedula = idCheck.value
+  // Financiadora: además exige persona natural (V/E).
+  if (chosenMethod?.is_financing) {
+    const financingCheck = checkCedula(clientCedula, chosenMethod.name)
+    if (!financingCheck.ok) {
+      return NextResponse.json({ error: financingCheck.message, field: 'customer_cedula' }, { status: 422 })
+    }
+  }
+
+  if (!hasUsablePhone(body.customer_phone)) {
+    return NextResponse.json({ error: 'Indica un teléfono válido.', field: 'customer_phone' }, { status: 422 })
+  }
+  const clientPhone = normalizeClientPhone(body.customer_phone)
+  try {
+    await catalogOrderPhoneLimiter.consume(`${parsedSlug.data}:${clientPhone}`)
+  } catch {
+    return NextResponse.json({ error: 'Demasiados intentos. Intenta más tarde.' }, { status: 429 })
+  }
+
+  // Todo envío sale por encomienda nacional: nombre y apellido, cédula, teléfono y dirección completa
+  // son obligatorios (regla de servidor). Con "misma dirección" la dirección real se valida más
+  // abajo, ya leída del Client; aquí solo nombre, cédula y teléfono.
   if (isDelivery) {
     const shippingError = validateShipping({
       recipient: body.recipient_name || body.customer_name,
-      cedula:    body.customer_cedula,
+      cedula:    clientCedula,
       phone:     body.customer_phone,
-      address:   body.delivery_address,
+      address:   useSaved ? ADDRESS_PLACEHOLDER : body.delivery_address,
     })
     if (shippingError) {
       return NextResponse.json({ error: shippingError, field: 'delivery' }, { status: 422 })
     }
   }
-  const cedulaCheck = checkCedula(body.customer_cedula, chosenMethod?.is_financing ? chosenMethod.name : null, isDelivery)
-  if (!cedulaCheck.ok) {
-    return NextResponse.json({ error: cedulaCheck.message, field: 'customer_cedula' }, { status: 422 })
+
+  // Método de envío: si el negocio configuró métodos activos, el envío debe elegir uno suyo.
+  let shippingMethodId: number | null = null
+  if (isDelivery) {
+    const methods = await prisma.businessShippingMethod.findMany({
+      where:  { business_id: business.id, active: true },
+      select: { id: true },
+    })
+    if (methods.length > 0) {
+      const chosen = methods.find(m => m.id === body.shipping_method_id)
+      if (!chosen) {
+        return NextResponse.json({ error: 'Elige un método de envío.', field: 'shipping_method_id' }, { status: 422 })
+      }
+      shippingMethodId = chosen.id
+    }
   }
-  const clientCedula = cedulaCheck.value
+
 
   // Fetch canonical products from DB — never trust client-supplied prices or names
   const uniqueProductIds = Array.from(new Set(body.items.map(i => i.product_id)))
@@ -191,6 +253,21 @@ export async function POST(
   let order: { id: number; order_number: string; total_usd: unknown; total_bs: unknown }
   try {
     order = await prisma.$transaction(async (tx) => {
+    // Serializa los pedidos web del negocio ANTES de la primera lectura: el tope de pedidos abiertos y la
+    // creación de clientes se evalúan sobre lo ya confirmado (sin esto, pedidos simultáneos se pasan del
+    // tope). El conteo es de DB, así que vale entre procesos PM2 (los limiters en memoria no).
+    await tx.$queryRaw`SELECT id FROM businesses WHERE id = ${business.id} FOR UPDATE`
+    const openOrders = await tx.order.count({
+      where: {
+        business_id: business.id,
+        status:      'received',
+        OR: [{ client_cedula: clientCedula }, { client_phone: { in: phoneLookupVariants(body.customer_phone) } }],
+      },
+    })
+    if (openOrders >= OPEN_ORDERS_LIMIT) {
+      throw new CheckoutError(429, 'Tienes pedidos pendientes por confirmar. Espera a que el negocio los atienda.')
+    }
+
     // Row lock: serializa pedidos concurrentes sobre el mismo producto (previene sobreventa).
     // Va antes de generateOrderNumber para que su lectura también quede serializada
     // cuando dos pedidos comparten producto.
@@ -264,34 +341,29 @@ export async function POST(
     ) / 100
     const totalBs = Math.round(totalUsd * rate * 100) / 100
 
-    // Upsert client by phone
-    let clientId: number | null = null
-    const existing = await tx.client.findFirst({
-      where: { business_id: business.id, phone: body.customer_phone },
-      select: { id: true },
+    // Cliente por CÉDULA normalizada (teléfono solo como respaldo). El Client conserva su nombre y su
+    // dirección: el pedido guarda lo tecleado y, si la cédula ya existía con otro nombre, va con alerta.
+    const client = await resolveWebClient(tx, {
+      businessId: business.id,
+      cedula:     clientCedula,
+      phone:      body.customer_phone,
+      name:       body.customer_name,
+      newAddress: isDelivery && !useSaved ? (body.delivery_address ?? null) : null,
+      canCreate:  !useSaved,
     })
 
-    if (existing) {
-      clientId = existing.id
-      // Client.cedula solo si estaba nula: dos personas pueden compartir teléfono.
-      if (clientCedula) {
-        await tx.client.updateMany({
-          where: { id: existing.id, business_id: business.id, cedula: null },
-          data:  { cedula: clientCedula },
-        })
+    // "Misma dirección": sale del Client (por business_id), nunca del body. Solo se honra si la cédula
+    // tiene cliente, con dirección válida y el MISMO nombre; si no, 422 genérico idéntico en todos los casos.
+    let shipAddress: string | null = isDelivery ? (body.delivery_address ?? null) : null
+    if (useSaved) {
+      const saved = client?.address ?? null
+      if (!client || client.nameMismatch || !saved || validateAddress(saved) !== null) {
+        throw new CheckoutError(422, SAVED_ADDRESS_MESSAGE, 'delivery_address')
       }
-    } else {
-      const created = await tx.client.create({
-        data: {
-          business_id: business.id,
-          name:        body.customer_name,
-          phone:       body.customer_phone,
-          cedula:      clientCedula,
-        },
-        select: { id: true },
-      })
-      clientId = created.id
+      shipAddress = saved
     }
+    if (!client) throw new CheckoutError(422, SAVED_ADDRESS_MESSAGE, 'delivery_address')
+    const clientId = client.id
 
     const noteLines = [
       `Método de pago: ${body.payment_method}`,
@@ -306,12 +378,20 @@ export async function POST(
         origin:         'catalog',
         client_id:      clientId,
         client_name:    body.customer_name,
-        client_phone:   body.customer_phone,
+        client_phone:   clientPhone,
         client_address: body.customer_reference,
         client_cedula:  clientCedula,
         delivery_type:    body.delivery_type,
-        recipient_name:   body.recipient_name ?? null,
-        delivery_address: body.delivery_address ?? null,
+        recipient_name:   isDelivery ? (body.recipient_name || body.customer_name) : (body.recipient_name ?? null),
+        delivery_address: shipAddress,
+        // Snapshot de envío: lo capturado en ESTE pedido (el Client puede cambiar después).
+        ship_nombre:     isDelivery ? (body.recipient_name || body.customer_name) : null,
+        ship_cedula:     isDelivery ? clientCedula : null,
+        ship_telefono:   isDelivery ? clientPhone : null,
+        ship_direccion:  isDelivery ? shipAddress : null,
+        ship_metodo_id:  isDelivery ? shippingMethodId : null,
+        // La cédula ya existía con OTRO nombre: aviso para el negocio, nunca visible al público.
+        cedula_alert:    client.nameMismatch,
         notes:          noteLines,
         total_usd:      totalUsd,
         total_bs:       totalBs,
@@ -352,13 +432,17 @@ export async function POST(
     return newOrder
     })
   } catch (err) {
+    if (err instanceof CheckoutError) {
+      return NextResponse.json({ error: err.message, field: err.field }, { status: err.status })
+    }
     if (err instanceof Error && err.message.startsWith('STOCK_INSUFICIENTE:')) {
       return NextResponse.json(
         { error: `Stock insuficiente: ${err.message.split(':')[1]}` },
         { status: 409 },
       )
     }
-    throw err
+    console.error('catalog order error:', err)
+    return NextResponse.json({ error: 'No se pudo crear el pedido. Intenta de nuevo.' }, { status: 500 })
   }
 
   const waMessage = buildWhatsAppMessage({
@@ -379,7 +463,12 @@ export async function POST(
     rate,
     paymentMethod: body.payment_method,
     fulfillment:  body.delivery_type === 'delivery'
-      ? { type: 'delivery', recipient: body.recipient_name, address: body.delivery_address }
+      ? {
+          type: 'delivery',
+          recipient: body.recipient_name,
+          // Con "misma dirección" el texto guardado NO viaja en el enlace de WhatsApp (iría a quien conozca la cédula).
+          address: useSaved ? 'Misma dirección de pedidos anteriores' : body.delivery_address,
+        }
       : { type: 'pickup' },
     notes:        body.notes,
   })

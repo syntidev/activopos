@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 import { checkCedula } from '@/lib/cedula'
+import { validateAddress } from '@/lib/shipping'
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
@@ -10,6 +11,10 @@ const patchSchema = z.object({
   cedula: z.string().max(20).nullable().optional(),
   notes: z.string().nullable().optional(),
   price_tier: z.enum(['detal', 'mayorista']).optional(),
+  // Dirección de envío guardada. null o vacío la borra.
+  address: z.string().trim().max(500).nullable().optional(),
+  // Marca que el negocio ya confirmó la identidad (solo admin).
+  verified: z.boolean().optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -94,6 +99,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (data.price_tier !== undefined && session.role === 'cashier') {
       return NextResponse.json({ error: 'Sin permiso para cambiar el tipo de precio' }, { status: 403 })
     }
+    // Confirmar la identidad de un cliente web es decisión del admin, no del mostrador.
+    if (data.verified !== undefined && session.role === 'cashier') {
+      return NextResponse.json({ error: 'Sin permiso para verificar clientes' }, { status: 403 })
+    }
 
     const existing = await db.client.findFirst({
       where: { id }, // business_id inyectado por el tenant layer
@@ -108,11 +117,25 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       if (!cedulaCheck.ok) {
         return NextResponse.json({ error: cedulaCheck.message, field: 'cedula' }, { status: 422 })
       }
+      // Unicidad por cédula a nivel de aplicación (la DB solo tiene un índice normal).
+      if (cedulaCheck.value) {
+        const dup = await db.client.findFirst({ where: { cedula: cedulaCheck.value, id: { not: id } }, select: { id: true } }) // business_id inyectado
+        if (dup) return NextResponse.json({ error: 'Ya existe otro cliente con esa cédula.', field: 'cedula' }, { status: 409 })
+      }
       cedulaPatch = { cedula: cedulaCheck.value }
     }
-    const { cedula: _ignored, ...rest } = data
 
-    const client = await db.client.update({ where: { id }, data: { ...rest, ...cedulaPatch } }) // business_id inyectado
+    // Dirección guardada: vacía = borrarla; con texto debe servir para un envío.
+    let addressPatch: { address: string | null } | Record<string, never> = {}
+    if (data.address !== undefined) {
+      const address = data.address?.trim() || null
+      const addressError = address ? validateAddress(address) : null
+      if (addressError) return NextResponse.json({ error: addressError, field: 'address' }, { status: 422 })
+      addressPatch = { address }
+    }
+    const { cedula: _ignored, address: _addr, ...rest } = data
+
+    const client = await db.client.update({ where: { id }, data: { ...rest, ...cedulaPatch, ...addressPatch } }) // business_id inyectado
     return NextResponse.json({ ok: true, client })
   } catch (err) {
     if (err instanceof TenantError) {

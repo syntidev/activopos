@@ -87,7 +87,3 @@ export async function lookupPublicTitle(code: string): Promise<TitleHit | null> 
   const i = titles.findIndex(Boolean)
   return i < 0 ? null : { title: titles[i], source: sources[i].source }
 }
-
-export async function lookupTitle(businessId: number, code: string): Promise<TitleHit | null> {
-  return (await lookupLabelCaptureTitle(businessId, code)) ?? (await lookupPublicTitle(code))
-}

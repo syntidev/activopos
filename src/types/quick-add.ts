@@ -31,6 +31,8 @@ export interface QuickAddExisting {
   stock: number
   price_usd: number | null
   wholesale_usd: number | null
+  /** Con variantes el stock vive en cada variante: Alta rápida no puede sumarle cantidad. */
+  has_variants: boolean
 }
 
 export interface QuickAddLookup {
@@ -62,6 +64,7 @@ export interface QuickAddProductResult {
   stock: number
   price_usd: number | null
   wholesale_usd: number | null
+  has_variants: boolean
 }
 
 /** Fila de la lista de la sesión (lo insertado o sumado desde esta pestaña). */

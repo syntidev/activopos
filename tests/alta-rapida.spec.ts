@@ -118,27 +118,6 @@ test('móvil 375: sin desborde horizontal', async ({ page }) => {
   await page.screenshot({ path: path.join(SHOTS, 'alta-375-form.png'), fullPage: true })
 })
 
-test('un código que ya usa una variante del negocio se rechaza con el mensaje y no crea nada', async ({ page }) => {
-  await login(page)
-  const VARIANT_CODE = `96${String(Date.now()).slice(-11)}`
-  sql(`INSERT INTO product_variants (product_id, tipo, valor, precio_extra, stock, is_active, sort_order, barcode) VALUES (${productId}, 'talla', 'ZZ', 0, 0, 1, 0, '${VARIANT_CODE}')`)
-  try {
-    await page.goto('/captura-etiquetas')
-    await page.getByRole('tab', { name: 'Alta rápida' }).click()
-    await page.getByPlaceholder('Escribir el código a mano').fill(VARIANT_CODE)
-    await page.getByRole('button', { name: 'Buscar' }).click()
-    await page.getByLabel('Título').fill('ZZ Choque con variante')
-    await page.getByLabel('Cantidad', { exact: true }).fill('1')
-    await page.locator('select').selectOption({ label: 'Accesorios' })
-    await page.getByLabel('Precio al público (USD)').fill('5')
-    await page.getByRole('button', { name: 'Guardar y siguiente' }).click()
-    await expect(page.getByText(/ya pertenece a la variante ZZ de/)).toBeVisible()
-    expect(sql(`SELECT COUNT(*) FROM products WHERE business_id=${BUSINESS_ID} AND (barcode='${VARIANT_CODE}' OR name='ZZ Choque con variante')`)).toBe('0')
-  } finally {
-    sql(`DELETE FROM product_variants WHERE barcode='${VARIANT_CODE}' AND product_id=${productId}`)
-  }
-})
-
 test('rate limit: /api/quick-add/context responde 429 antes de 31 llamadas por minuto', async ({ page }) => {
   await login(page)
   let limitedAt = 0

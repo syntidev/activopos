@@ -66,6 +66,7 @@ export function QuickAdd({ active }: { active: boolean }) {
   const [cameraOn, setCameraOn] = useState(false)
   const phaseRef = useRef<Phase>('idle')
   const lastDone = useRef('')
+  const codeRef = useRef('')
   const photoRef = useRef<HTMLInputElement>(null)
 
   const goTo = useCallback((next: Phase): void => {
@@ -86,6 +87,7 @@ export function QuickAdd({ active }: { active: boolean }) {
   /** Vuelve a "listo para el siguiente". Conserva categoría y subcategoría para la próxima carga. */
   function finish(message: string, remember = true): void {
     lastDone.current = remember ? code : ''
+    codeRef.current = ''
     goTo('idle')
     setCode('')
     setManual('')
@@ -105,6 +107,7 @@ export function QuickAdd({ active }: { active: boolean }) {
     setError('')
     setNotice('')
     setCode(next)
+    codeRef.current = next
     const r = await call<QuickAddLookup>(`/api/quick-add/lookup?code=${encodeURIComponent(next)}`)
     setBusy(false)
     if (r.ok && r.data.existing) {
@@ -117,6 +120,15 @@ export function QuickAdd({ active }: { active: boolean }) {
     const hit: TitleHit | null = r.ok ? r.data.title : null
     setValues(prev => ({ ...prev, title: hit?.title ?? '', titleSource: hit?.source ?? null }))
     goTo('form')
+    if (!hit) void completeTitle(next)
+  }
+
+  /** Bases públicas (tope de 2 s en el servidor): completan el título solo si responden Y el campo sigue vacío. */
+  async function completeTitle(forCode: string): Promise<void> {
+    const r = await call<{ title: TitleHit | null }>(`/api/quick-add/title?code=${encodeURIComponent(forCode)}`)
+    const hit = r.ok ? r.data.title : null
+    if (!hit || codeRef.current !== forCode) return
+    setValues(prev => (prev.title.trim() === '' ? { ...prev, title: hit.title, titleSource: hit.source } : prev))
   }
 
   function onCameraCode(raw: string): void {
@@ -256,7 +268,17 @@ export function QuickAdd({ active }: { active: boolean }) {
           {error && <p className={base.error} role="alert">{error}</p>}
           {notice && <p className={styles.notice} role="status">{notice}</p>}
 
-          {phase === 'existing' && existing && (
+          {phase === 'existing' && existing?.has_variants && (
+            <div className={styles.existing}>
+              <h2 className={base.sectionTitle}>{existing.name}</h2>
+              <p className={base.rowMeta} role="status">Este producto tiene variantes; edítalo en Productos</p>
+              <div className={base.sheetActions}>
+                <button type="button" className={base.secondaryButton} onClick={() => finish('Código descartado', false)}>Otro código</button>
+              </div>
+            </div>
+          )}
+
+          {phase === 'existing' && existing && !existing.has_variants && (
             <div className={styles.existing}>
               <h2 className={base.sectionTitle}>Ya existe: {existing.name}</h2>
               <p className={base.rowMeta}>{existing.barcode} · stock actual: {existing.stock}</p>

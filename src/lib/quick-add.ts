@@ -33,19 +33,25 @@ export function barcodeForms(code: string): string[] {
 /** Redondeo a 2 decimales (columnas Decimal(10,2)). */
 export const toMoney = (n: number): number => Math.round(n * 100) / 100
 
-/** Producto activo del negocio que usa ese código (o null). business_id siempre explícito. */
+/** Producto activo del negocio que usa ese código, propio o de una de sus variantes (o null). business_id siempre explícito. */
 export async function findByBarcode(businessId: number, code: string): Promise<QuickAddProductResult | null> {
   const p = await prisma.product.findFirst({
     where: { business_id: businessId, barcode: { in: barcodeForms(code) }, active: true },
     select: { id: true },
   })
-  return p ? productResult(businessId, p.id) : null
+  if (p) return productResult(businessId, p.id)
+  // El código puede ser de una variante: se devuelve su producto (con has_variants true).
+  const variant = await prisma.productVariant.findFirst({
+    where: { barcode: { in: barcodeForms(code) }, product: { business_id: businessId, active: true } },
+    select: { product_id: true },
+  })
+  return variant ? productResult(businessId, variant.product_id) : null
 }
 
 export async function productResult(businessId: number, productId: number): Promise<QuickAddProductResult | null> {
   const p = await prisma.product.findFirst({
     where: { id: productId, business_id: businessId },
-    select: { id: true, name: true, barcode: true, price_per_unit_usd: true, wholesale_price_usd: true },
+    select: { id: true, name: true, barcode: true, price_per_unit_usd: true, wholesale_price_usd: true, has_variants: true },
   })
   if (!p) return null
   const num = (v: { toString(): string } | null): number | null => (v === null ? null : Number(v))
@@ -56,6 +62,7 @@ export async function productResult(businessId: number, productId: number): Prom
     stock: await getNetStock(prisma, businessId, p.id),
     price_usd: num(p.price_per_unit_usd),
     wholesale_usd: num(p.wholesale_price_usd),
+    has_variants: p.has_variants,
   }
 }
 

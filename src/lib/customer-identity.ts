@@ -70,12 +70,14 @@ const foldName = (s: string): string[] =>
 /**
  * ¿Es la misma persona? Sin acentos ni mayúsculas, y el nombre más corto debe estar contenido en
  * el más largo ("Juan Pérez" = "juan carlos perez gomez"). Distinto nombre → alerta, no bloqueo.
+ * `minWords`: palabras mínimas que debe tener el nombre más corto ("Juan" solo no basta si se piden 2).
  */
-export function sameName(a: string, b: string): boolean {
+export function sameName(a: string, b: string, minWords = 1): boolean {
   const ta = foldName(a)
   const tb = foldName(b)
   if (ta.length === 0 || tb.length === 0) return false
   const [small, large] = ta.length <= tb.length ? [ta, tb] : [tb, ta]
+  if (small.length < minWords) return false
   const set = new Set(large)
   return small.every(t => set.has(t))
 }

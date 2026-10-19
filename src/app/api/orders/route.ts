@@ -7,6 +7,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
 import { sendPushToBusinessSubscribers } from '@/lib/push-notify'
 import { fromBound, toBoundExclusive } from '@/lib/business-day'
+import { logError } from '@/lib/safe-log'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISOS — INTENCIONAL: Pedidos NO tiene guard de rol. cashier ve/crea/edita
@@ -105,7 +106,7 @@ export async function GET(req: NextRequest) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Parámetros inválidos' }, { status: 400 })
     }
-    console.error('orders GET error:', err)
+    logError('orders GET error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }
@@ -124,7 +125,8 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   try {
-    const body = await req.json()
+    const body: unknown = await req.json().catch(() => undefined)
+    if (body === undefined) return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
     const data = createSchema.parse(body)
 
     // Fetch active rate (manual override del tenant o BCV) fuera de la transacción
@@ -228,7 +230,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && ORDER_400_ERRORS.some((e) => err.message.startsWith(e))) {
       return NextResponse.json({ error: err.message }, { status: 400 })
     }
-    console.error('orders POST error:', err)
+    logError('orders POST error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

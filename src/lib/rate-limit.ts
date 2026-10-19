@@ -30,6 +30,11 @@ export const catalogOrderPhoneLimiter = new RateLimiterMemory({
   duration: 3600, // en 1 hora
 })
 
+export const catalogOrderCedulaLimiter = new RateLimiterMemory({
+  points:   6,    // 6 pedidos por cédula (llave slug:cédula)
+  duration: 3600, // en 1 hora
+})
+
 // Consulta "¿hay dirección guardada?" (POST /api/catalog/[slug]/saved-address): anti-enumeración de cédulas.
 export const savedAddressIpLimiter = new RateLimiterMemory({
   points:   10,   // 10 consultas por IP
@@ -38,6 +43,12 @@ export const savedAddressIpLimiter = new RateLimiterMemory({
 
 export const savedAddressCedulaLimiter = new RateLimiterMemory({
   points:   5,    // 5 consultas por slug+cédula
+  duration: 3600, // en 1 hora
+})
+
+// Misma consulta, llave slug+teléfono: quien rota cédulas con un teléfono conocido también se frena.
+export const savedAddressPhoneLimiter = new RateLimiterMemory({
+  points:   5,    // 5 consultas por slug+teléfono
   duration: 3600, // en 1 hora
 })
 
@@ -95,10 +106,9 @@ export const quickAddLookupLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
-// Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
-// antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
+// cf-connecting-ip (Cloudflare lo fija) y, sin él, x-real-ip (Nginx lo fija con $remote_addr). NUNCA la
+// primera entrada de x-forwarded-for: es la que escribe el propio cliente y rotarla evade todos los límites.
 export const getClientIp = (req: Request): string =>
   req.headers.get('cf-connecting-ip')?.trim()
-  ?? req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  ?? req.headers.get('x-real-ip')?.trim()
-  ?? '127.0.0.1'
+  || req.headers.get('x-real-ip')?.trim()
+  || '127.0.0.1'

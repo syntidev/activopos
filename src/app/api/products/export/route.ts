@@ -15,11 +15,12 @@ export async function GET() {
         where:   { active: true }, // business_id inyectado por el tenant layer
         include: {
           category: { select: { name: true } },
+          brand:    { select: { name: true } },
           // ProductVariant no tiene business_id: se aísla vía el producto ya scopeado.
           variants: {
             where:   { is_active: true },
             orderBy: [{ sort_order: 'asc' }, { id: 'asc' }],
-            select:  { tipo: true, valor: true, stock: true },
+            select:  { tipo: true, valor: true, stock: true, sku: true, barcode: true },
           },
         },
         orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
@@ -43,6 +44,7 @@ export async function GET() {
       'tipo_producto', 'modo_venta', 'unidad',
       'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
       'variante_tipo', 'variante_valor',
+      'descripcion', 'marca', 'sku_variante', 'codigo_barras_variante',
     ]
 
     const rows = products.flatMap(p => {
@@ -74,14 +76,16 @@ export async function GET() {
       // producto; `stock` pasa a ser el de esa variante (ProductVariant.stock es la
       // fuente autoritativa -- el neto del padre no cuenta). Es el formato que el
       // import agrupa por producto y concilia variante por variante.
+      const description = p.description ?? ''
+      const brand = p.brand?.name ?? ''
       if (p.has_variants && p.variants.length > 0) {
         return p.variants.map(v => {
-          const row: (string | number)[] = [...base, v.tipo, v.valor]
+          const row: (string | number)[] = [...base, v.tipo, v.valor, description, brand, v.sku ?? '', v.barcode ?? '']
           row[6] = v.stock
           return row
         })
       }
-      return [[...base, '', '']]
+      return [[...base, '', '', description, brand, '', '']]
     })
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
@@ -89,6 +93,7 @@ export async function GET() {
       { wch:  6 }, { wch: 25 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
       { wch:  8 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 20 },
       { wch: 24 }, { wch: 22 }, { wch: 24 }, { wch: 14 }, { wch: 16 },
+      { wch: 36 }, { wch: 14 }, { wch: 18 }, { wch: 22 },
     ]
 
     const wb = XLSX.utils.book_new()

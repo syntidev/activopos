@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { toShippingMethodDTO } from '@/lib/shipping-methods'
+import { SHIPPING_WRITE_ROLES, toShippingMethodDTO } from '@/lib/shipping-methods'
+import { logError } from '@/lib/safe-log'
 import { SHIPPING_KINDS } from '@/types/shipping'
 import type { ShippingKind } from '@/types/shipping'
 
 // CRUD de métodos de envío del negocio (Configuración). Lectura: cualquier rol del negocio.
-// Escritura: solo admin/super_admin. business_id SIEMPRE de la sesión (capa de tenant).
+// Escritura: solo 'admin' (lista blanca SHIPPING_WRITE_ROLES). business_id SIEMPRE de la sesión (capa de tenant).
 
 const createSchema = z.object({
   code:            z.string().trim().toLowerCase().regex(/^[a-z0-9_-]{2,40}$/, 'code: 2-40 caracteres a-z, 0-9, _ o -'),
@@ -26,7 +27,7 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ ok: true, methods: rows.map(toShippingMethodDTO) })
   } catch (err) {
     if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
-    console.error('shipping-methods GET error:', err)
+    logError('shipping-methods GET error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }
@@ -34,7 +35,7 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const { session, db } = await getAuthenticatedTenant()
-    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    if (!SHIPPING_WRITE_ROLES.includes(session.role)) return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const parsed = createSchema.safeParse(await req.json().catch(() => null))
     if (!parsed.success) {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       return NextResponse.json({ error: 'Ya existe un método con ese código.', field: 'code' }, { status: 409 })
     }
-    console.error('shipping-methods POST error:', err)
+    logError('shipping-methods POST error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

@@ -15,7 +15,7 @@ export interface WaLine {
 
 export type WaFulfillment =
   | { type: 'pickup' }
-  | { type: 'delivery'; recipient?: string | null; address?: string | null }
+  | { type: 'delivery'; recipient?: string | null; address?: string | null; method?: string | null }
 
 export interface WaMessageInput {
   /** Encabezado: 'pedido' = "Pedido ORDEN", 'comprobante' = "Comprobante de venta ORDEN". */
@@ -105,6 +105,7 @@ export function buildWhatsAppMessage(m: WaMessageInput): string {
     if (m.audience === 'client' && clean(m.sector)) lines.push(`Sector: ${clean(m.sector)}`)
   } else if (f?.type === 'delivery') {
     lines.push('Entrega: envío a domicilio')
+    if (clean(f.method)) lines.push(`Método de envío: ${clean(f.method)}`)
     if (clean(f.recipient)) lines.push(`Recibe: ${clean(f.recipient)}`)
     if (clean(f.address)) lines.push(`Dirección: ${clean(f.address)}`)
     if (m.audience === 'client' && clean(m.sector)) lines.push(`Sector: ${clean(m.sector)}`)

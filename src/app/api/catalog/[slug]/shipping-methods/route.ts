@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
 import { isCatalogLive } from '@/lib/catalog'
+import { logError } from '@/lib/safe-log'
 import type { PublicShippingMethod, ShippingKind } from '@/types/shipping'
 
 // Lectura PÚBLICA de los métodos de envío activos del negocio (el carrito los muestra al elegir envío).
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     const methods: PublicShippingMethod[] = rows.map(r => ({ ...r, kind: r.kind as ShippingKind }))
     return NextResponse.json({ ok: true, methods })
   } catch (err) {
-    console.error('public shipping-methods error:', err)
+    logError('public shipping-methods error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

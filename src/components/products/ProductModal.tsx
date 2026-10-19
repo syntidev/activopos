@@ -199,6 +199,8 @@ const AVAIL_LABEL: Record<string, string> = {
 /* ── Client-side image compression (Canvas API, sin librerías) ── */
 const COMPRESS_THRESHOLD_KB = 800
 const COMPRESS_MAX_DIM      = 1600
+const MIN_IMAGE_SLOTS       = 6
+const EMPTY_IMAGES: Array<string | null> = Array.from({ length: MIN_IMAGE_SLOTS }, () => null)
 const COMPRESS_QUALITY      = 0.85
 
 async function compressImage(file: File): Promise<File> {
@@ -290,7 +292,7 @@ export function ProductModal({
   const [isSaving, setIsSaving]   = useState(false)
 
   /* ── Sprint 5+10: images, availability, catalog visibility, variants ── */
-  const [images, setImages]                     = useState<Array<string | null>>([null, null, null])
+  const [images, setImages]                     = useState<Array<string | null>>(EMPTY_IMAGES)
   const [uploadingSlot, setUploadingSlot]       = useState<number | null>(null)
   const [imgError, setImgError]                 = useState<string | null>(null)
   const [isAvailable, setIsAvailable]           = useState(true)
@@ -360,10 +362,7 @@ export function ProductModal({
   const unitType: 'unit' | 'weight' | 'volume' | 'length' =
     productKind === 'weight' ? measuredBy : 'unit'
 
-  const imgRef0 = useRef<HTMLInputElement>(null)
-  const imgRef1 = useRef<HTMLInputElement>(null)
-  const imgRef2 = useRef<HTMLInputElement>(null)
-  const imgRefs = [imgRef0, imgRef1, imgRef2] as const
+  const imgRefs = useRef<Array<HTMLInputElement | null>>([])
 
   /* ── Initialize / reset ── */
   useEffect(() => {
@@ -375,7 +374,7 @@ export function ProductModal({
       setMargin('30'); setPrice(''); setStockInitial('0'); setStockAlertThreshold('5'); setErrors({})
       setShowWholesale(false); setWholesalePriceUsd(''); setWholesalePricePerKgUsd('')
       setLocation(''); setProductNotes('')
-      setIsSaving(false); setImages([null, null, null]); setIsAvailable(true)
+      setIsSaving(false); setImages(EMPTY_IMAGES); setIsAvailable(true)
       setCatalogVisibility('hidden'); setAvailability('in_stock')
       setHasVariants(false); setVariants([])
       setNewVarName(''); setNewVarExtra('')
@@ -415,9 +414,9 @@ export function ProductModal({
       setHasVariants(editProduct.has_variants ?? false)
       setVariants(editProduct.variants ?? [])
 
-      const loadedImgs: Array<string | null> = [null, null, null]
-      editProduct.images?.forEach((url, i) => { if (i < 3) loadedImgs[i] = url })
-      setImages(loadedImgs)
+      // Carga TODAS las fotos (mínimo MIN_IMAGE_SLOTS slots): el PATCH reenvía lo que hay aquí, nunca recorta.
+      const urls = editProduct.images ?? []
+      setImages(Array.from({ length: Math.max(MIN_IMAGE_SLOTS, urls.length) }, (_, i) => urls[i] ?? null))
 
       setBadge(editProduct.badge ?? 'none')
       setSubcategory(editProduct.subcategory ?? '')
@@ -929,10 +928,10 @@ export function ProductModal({
                   <div className={mStyles.formGroup}>
                     <p className={mStyles.label}>Imágenes del Producto</p>
                     <div className={styles.imgGrid}>
-                      {([0, 1, 2] as const).map((slot) => (
+                      {images.map((_, slot) => (
                         <div key={slot} className={`${styles.imgSlot} ${images[slot] ? styles.imgSlotFilled : ''}`}>
                           <input
-                            ref={imgRefs[slot]}
+                            ref={(el) => { imgRefs.current[slot] = el }}
                             type="file"
                             accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                             className={styles.imgFileInput}
@@ -969,7 +968,7 @@ export function ProductModal({
                             <button
                               type="button"
                               className={styles.imgUploadBtn}
-                              onClick={() => imgRefs[slot].current?.click()}
+                              onClick={() => imgRefs.current[slot]?.click()}
                             >
                               <ImagePlus size={18} aria-hidden="true" />
                               <span>Foto {slot + 1}</span>

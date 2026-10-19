@@ -155,6 +155,14 @@ export function usePOS() {
 
   const addProduct = useCallback((product: ProductForPOS, qty = 1) => {
     if (product.has_variants) {
+      // Escaneo por EAN de variante: va directo esa talla (si hay stock); si no, el selector.
+      const hit = product.variants?.find(v => v.id === product.matched_variant_id)
+      if (hit && hit.stock > 0) {
+        setTicket(prev => agregarItemConVariante(prev, product, {
+          id: hit.id, name: hit.valor, price_extra_usd: Number(hit.precio_extra ?? 0),
+        }, qty))
+        return
+      }
       setPendingVariantProduct(product)
       setShowVariantSelector(true)
       return

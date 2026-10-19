@@ -12,7 +12,7 @@ export default async function ClientesPage() {
 
   return (
     <div className={`${styles.page} page-container`}>
-      <ClientesView initialClients={clients} />
+      <ClientesView initialClients={clients} isAdmin={!!session && session.role !== 'cashier'} />
       <HelpButton module="clientes" />
     </div>
   )

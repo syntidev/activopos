@@ -15,6 +15,7 @@ import {
   Layers,
   Tag,
   Ticket,
+  Truck,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -32,8 +33,9 @@ import { TabLanding }         from './tabs/TabLanding'
 import { TabColecciones }     from './tabs/TabColecciones'
 import { TabBrands }          from './tabs/TabBrands'
 import { TabKit200k }         from './tabs/TabKit200k'
+import { TabEnvios }          from './tabs/TabEnvios'
 
-type TabKey = 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'envios' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -46,6 +48,7 @@ const NEGOCIO_TABS: Tab[] = [
   { key: 'empresa',   label: 'Empresa',         Icon: Building2  },
   { key: 'impresion', label: 'Impresión',       Icon: Printer    },
   { key: 'cobros',    label: 'Medios de Cobro', Icon: CreditCard },
+  { key: 'envios',    label: 'Envíos',          Icon: Truck      },
 ]
 
 // Todo lo que forma la vitrina pública vive junto: texto+banners (Tema),
@@ -136,7 +139,8 @@ export function ConfiguracionView({ session, landingSectionsEnabled, kitEnabled 
         {activeTab === 'empresa'        && <TabEmpresa        businessId={session.businessId} />}
         {activeTab === 'impresion'      && <TabImpresion      businessId={session.businessId} />}
         {activeTab === 'cobros'         && <TabCobros         businessId={session.businessId} />}
-        {activeTab === 'tema'           && <TabTema           businessId={session.businessId} />}
+        {activeTab === 'envios'         && <TabEnvios         businessId={session.businessId} />}
+        {activeTab === 'tema'           && <TabTema          businessId={session.businessId} />}
         {activeTab === 'landing'     && landingSectionsEnabled && <TabLanding     businessId={session.businessId} />}
         {activeTab === 'colecciones' && landingSectionsEnabled && <TabColecciones businessId={session.businessId} />}
         {activeTab === 'marcas'      && landingSectionsEnabled && <TabBrands      businessId={session.businessId} />}

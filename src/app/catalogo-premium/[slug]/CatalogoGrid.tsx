@@ -53,6 +53,9 @@ export interface CatalogProduct {
   image:             string | null
   images:            string[]
   categoryName:      string | null
+  // Marca real del producto (products.brand_id); el filtro por marca usa el id, no el texto del nombre.
+  brandId:           number | null
+  brandName:         string | null
   priceUsd:          number
   priceBs:           number | null
   // Precio directo en $ para pago EN divisas -- ver Product.precio_divisa.
@@ -107,6 +110,8 @@ interface Props {
   initialCategory?:   string | null
   initialSub?:        string | null
   initialQuery?:      string | null
+  /** Marca preseleccionada (tile "Comprá por marca": ?marca=<id>). */
+  initialBrandId?:    number | null
   landingSections?:   RenderableLandingSection[]
   /** Cartelera de campaña activa (grid premium 1+4); null/omitida = bloque de colección de siempre */
   cartelera?:         CarteleraData | null
@@ -116,6 +121,7 @@ interface Props {
 }
 
 export interface CatalogBrand {
+  id:          number
   name:        string
   image_url:   string | null
   search_term: string
@@ -189,6 +195,7 @@ export function CatalogoGrid({
   initialCategory = null,
   initialSub = null,
   initialQuery = null,
+  initialBrandId = null,
   landingSections = [],
   cartelera = null,
   brands = [],
@@ -227,7 +234,9 @@ export function CatalogoGrid({
   // multi-select, independiente del sidebar (activeCategory, single-select).
   const [filterPanelOpen,   setFilterPanelOpen]   = useState(false)
   const [filterCategories,  setFilterCategories]  = useState<string[]>([])
-  const [filterBrands,      setFilterBrands]      = useState<string[]>([])
+  const [filterBrands,      setFilterBrands]      = useState<string[]>(
+    () => brands.filter(b => b.id === initialBrandId).map(b => b.name),
+  )
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -381,17 +390,10 @@ export function CatalogoGrid({
       result = result.filter(p => p.categoryName != null && filterCategories.includes(p.categoryName))
     }
 
-    // GAP-BRAND-FILTER: Product no tiene brand_id/relación real a Brand (ver
-    // schema.prisma) -- Brand es solo el tile de "Comprá por marca", nunca se
-    // ligó a productos concretos. Mismo criterio que esos tiles ya usan
-    // (?buscar=<marca>): coincidencia de texto contra el nombre del producto,
-    // no un filtro relacional preciso. Documentado, no es un filtro exacto.
+    // Marca real: products.brand_id. Un producto sin marca asignada no entra en un filtro de marca.
     if (filterBrands.length > 0) {
-      const terms = filterBrands.map(b => b.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''))
-      result = result.filter(p => {
-        const name = p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-        return terms.some(t => name.includes(t))
-      })
+      const ids = new Set(brands.filter(b => filterBrands.includes(b.name)).map(b => b.id))
+      result = result.filter(p => p.brandId != null && ids.has(p.brandId))
     }
 
     if (activePriceRange) {
@@ -399,7 +401,7 @@ export function CatalogoGrid({
     }
 
     return result
-  }, [products, query, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
+  }, [products, brands, query, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
   useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, activePriceRange, filterCategories, filterBrands])
@@ -1224,7 +1226,7 @@ export function CatalogoGrid({
             {brands.map(brand => (
               <Link
                 key={brand.name}
-                href={`/catalogo-premium/${slug}/productos?buscar=${encodeURIComponent(brand.search_term)}`}
+                href={`/catalogo-premium/${slug}/productos?marca=${brand.id}`}
                 className={styles.brandCard}
               >
                 <span className={styles.brandCardMedia}>

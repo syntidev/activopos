@@ -12,7 +12,7 @@ import styles from '../catalogo.module.css'
 
 interface PageProps {
   params: { slug: string }
-  searchParams: { categoria?: string; sub?: string; buscar?: string }
+  searchParams: { categoria?: string; sub?: string; buscar?: string; marca?: string }
 }
 
 function parseImages(raw: string | null): string[] {
@@ -83,6 +83,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       },
       include: {
         category: { select: { name: true, color: true, sort_order: true } },
+        brand:    { select: { name: true } },
         variants: {
           where:  { is_active: true },
           select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true, variant_group: true, sku: true },
@@ -109,7 +110,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
     // "Marca" del panel de filtros -- mismo query que ../page.tsx (home).
     prisma.brand.findMany({
       where:   { business_id: business.id, visible: true },
-      select:  { name: true, image_url: true, search_term: true },
+      select:  { id: true, name: true, image_url: true, search_term: true },
       orderBy: { order: 'asc' },
     }).catch((error: unknown) => {
       console.error('[catalogo-premium] brands falló en /productos, se renderiza sin marcas', { slug: params.slug, business_id: business.id, error })
@@ -139,6 +140,8 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       image:             imgs[0] ?? null,
       images:            imgs,
       categoryName:      p.category?.name ?? null,
+      brandId:           p.brand_id ?? null,
+      brandName:         p.brand?.name ?? null,
       priceUsd,
       priceBs,
       priceDivisa:       p.precio_divisa !== null ? Number(p.precio_divisa) : null,
@@ -235,6 +238,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         initialCategory={searchParams.categoria ?? null}
         initialSub={searchParams.sub ?? null}
         initialQuery={searchParams.buscar ?? null}
+        initialBrandId={/^\d{1,9}$/.test(searchParams.marca ?? '') ? Number(searchParams.marca) : null}
       />
       <CatalogFooter
         slug={params.slug}

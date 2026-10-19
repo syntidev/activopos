@@ -20,6 +20,8 @@ import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
 import { CobrarPedidoModal } from './CobrarPedidoModal'
 import { ShippingActions } from '@/components/comprobante/ShippingActions'
+import { ShippingEditor, CedulaAlertBadge, ShippingMethodTag } from '@/components/comprobante/ShippingEditor'
+import type { OrderShippingFields } from '@/types/pedidos'
 import { OrderDetalleModal, type OrderDetail } from './OrderDetalleModal'
 import styles from './pedidos.module.css'
 
@@ -34,13 +36,12 @@ interface OrderItem {
   subtotal_usd: number | string
 }
 
-interface Order {
+interface Order extends OrderShippingFields {
   id: number
   order_number: string
   status: string
   client_name: string | null
   client_phone: string | null
-  client_cedula?: string | null
   delivery_type?: string | null
   total_usd: number | string
   total_bs: number | string
@@ -180,8 +181,15 @@ function OrderCard({
         </button>
       </div>
 
+      <CedulaAlertBadge show={order.cedula_alert} />
+
       {order.delivery_type === 'delivery' && (
-        <ShippingActions orderId={order.id} knownDelivery />
+        <>
+          <ShippingMethodTag label={order.ship_metodo_label} />
+          {/* Dispatched = ya salió: la API responde 409, no se ofrece editar. */}
+          {order.status !== 'dispatched' && <ShippingEditor orderId={order.id} order={order} />}
+          <ShippingActions orderId={order.id} knownDelivery />
+        </>
       )}
 
       <div className={styles.orderActionsCobro}>

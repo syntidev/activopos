@@ -16,9 +16,11 @@ import { maskCedula } from '@/lib/cedula'
 
 interface ClientesViewProps {
   initialClients: ClientRecord[]
+  /** Solo admin puede marcar clientes como verificados. */
+  isAdmin: boolean
 }
 
-export function ClientesView({ initialClients }: ClientesViewProps) {
+export function ClientesView({ initialClients, isAdmin }: ClientesViewProps) {
   const { toast } = useToast()
 
   const [clients, setClients]         = useState<ClientRecord[]>(initialClients)
@@ -318,6 +320,7 @@ export function ClientesView({ initialClients }: ClientesViewProps) {
       <ClienteFormModal
         open={formOpen}
         client={editTarget}
+        isAdmin={isAdmin}
         onClose={() => { setFormOpen(false); setEditTarget(null) }}
         onCreated={handleCreated}
         onUpdated={handleUpdated}

@@ -190,6 +190,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       },
       include: {
         category: { select: { name: true, color: true, sort_order: true } },
+        brand:    { select: { name: true } },
         variants: {
           where:  { is_active: true },
           select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true, variant_group: true, sku: true },
@@ -231,7 +232,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     // Sections: server component sin sesión, /api/brands no aplica acá.
     prisma.brand.findMany({
       where:   { business_id: business.id, visible: true },
-      select:  { name: true, image_url: true, search_term: true },
+      select:  { id: true, name: true, image_url: true, search_term: true },
       orderBy: { order: 'asc' },
     }).catch((error: unknown) => {
       console.error('[catalogo-premium] brands falló, se renderiza sin marcas', { slug: params.slug, business_id: business.id, error })
@@ -288,6 +289,8 @@ export default async function CatalogoPage({ params }: PageProps) {
       image:        imgs[0] ?? null,
       images:       imgs,
       categoryName: p.category?.name ?? null,
+      brandId:      p.brand_id ?? null,
+      brandName:    p.brand?.name ?? null,
       priceUsd,
       priceBs,
       priceDivisa:  p.precio_divisa !== null ? Number(p.precio_divisa) : null,

@@ -5,7 +5,24 @@ export interface CobrarPedidoItem {
   subtotal_usd: number | string
 }
 
-export interface CobrarPedidoData {
+/** Datos de envío del pedido: snapshot ship_* (puede venir null) y los campos viejos de respaldo. */
+export interface OrderShippingFields {
+  client_name?:      string | null
+  client_phone?:     string | null
+  client_cedula?:    string | null
+  recipient_name?:   string | null
+  delivery_address?: string | null
+  ship_nombre?:      string | null
+  ship_cedula?:      string | null
+  ship_telefono?:    string | null
+  ship_direccion?:   string | null
+  /** Método elegido al crear el pedido, congelado en el pedido. */
+  ship_metodo_label?: string | null
+  /** true = la cédula coincide con un cliente registrado con otro nombre. */
+  cedula_alert?:     boolean
+}
+
+export interface CobrarPedidoData extends OrderShippingFields {
   id:           number
   order_number: string
   client_name:  string | null

@@ -206,18 +206,12 @@ export function layoutTestTicket(i: TestTicketInfo): PrintLine[] {
   return L
 }
 
-/** Etiqueta de envío: datos del destinatario, SIN precios ni totales. */
+/** Etiqueta de envío: SOLO nombre, cédula, teléfono y dirección. Sin orden, precios ni totales. */
 export interface ShippingLabelInfo {
-  businessName: string
-  orderNumber:  string
-  recipient:    string
-  cedula:       string
-  phone:        string
-  address:      string
-  notes:        string
-  units:        number
-  /** Opcional, lo escribe el operador; vacío = sin línea. */
-  bundles?:     string
+  recipient: string
+  cedula:    string
+  phone:     string
+  address:   string
 }
 
 export function layoutShippingLabel(i: ShippingLabelInfo, paper: ThermalPaper): PrintLine[] {
@@ -227,22 +221,13 @@ export function layoutShippingLabel(i: ShippingLabelInfo, paper: ThermalPaper): 
     for (const l of wrap(`${label} ${sanitize(value)}`, cols)) L.push(txt(l))
   }
 
-  for (const line of wrap(sanitize(i.businessName || 'ActivoPOS').toUpperCase(), cols)) L.push(txt(line, true, 'center'))
-  L.push(txt('-'.repeat(cols)))
-  L.push(txt('DATOS DE ENVIO', true, 'center'))
-  L.push(txt('-'.repeat(cols)))
-  field('Orden:', i.orderNumber)
-  field('Destinatario:', i.recipient)
+  field('Nombre:', i.recipient)
   field('C.I.:', i.cedula)
   field('Tel:', i.phone)
   L.push(txt('Direccion:'))
   for (const part of i.address.split(String.fromCharCode(10))) {
     for (const l of wrap(sanitize(part), cols)) L.push(txt(l))
   }
-  if (i.notes.trim()) field('Notas:', i.notes.trim())
-  L.push(txt('-'.repeat(cols)))
-  L.push(txt(`Unidades: ${i.units}`, true))
-  if ((i.bundles ?? '').trim()) L.push(txt(`Bultos: ${sanitize((i.bundles ?? '').trim())}`, true))
   return L
 }
 

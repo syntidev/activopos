@@ -286,10 +286,10 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
         {/* ── Card: Imágenes ── */}
         <AccordionCard title="Imágenes" defaultOpen hasError={!!f.imgError}>
           <div className={c.imgGrid}>
-            {([0, 1, 2] as const).map((slot) => (
+            {f.images.map((_, slot) => (
               <div key={slot} className={`${c.imgSlot} ${f.images[slot] ? c.imgSlotFilled : ''}`}>
                 <input
-                  ref={f.imgRefs[slot]}
+                  ref={(el) => { f.imgRefs.current[slot] = el }}
                   type="file"
                   accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
                   className={c.imgFileInput}
@@ -322,7 +322,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                   <button
                     type="button"
                     className={c.imgUploadBtn}
-                    onClick={() => f.imgRefs[slot].current?.click()}
+                    onClick={() => f.imgRefs.current[slot]?.click()}
                   >
                     <ImagePlus size={18} aria-hidden="true" />
                     <span>Foto {slot + 1}</span>

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, CreditCard, Copy, Check, CheckCircle2 } from 'lucide-react'
 import { ComprobanteActions } from '@/components/comprobante/ComprobanteActions'
 import { ShippingActions } from '@/components/comprobante/ShippingActions'
+import { ShippingEditor, CedulaAlertBadge, ShippingMethodTag } from '@/components/comprobante/ShippingEditor'
 import { checkCedula } from '@/lib/cedula'
 import type { CobrarPedidoData } from '@/types/pedidos'
 import styles from './CobrarPedidoModal.module.css'
@@ -181,6 +182,9 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     {order.client_phone ? ` · ${order.client_phone}` : ''}
                   </p>
                 )}
+                <CedulaAlertBadge show={order.cedula_alert} />
+                {isDelivery && <ShippingMethodTag label={order.ship_metodo_label} />}
+                {!done && isDelivery && <ShippingEditor orderId={order.id} order={order} />}
                 {!done && (
                   <div className={styles.cedulaRow}>
                     <label className={styles.label} htmlFor="cobrar-cedula">

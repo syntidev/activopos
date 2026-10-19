@@ -17,6 +17,8 @@ export async function getClientsWithBalance(businessId: number): Promise<ClientR
         email:      true,
         notes:      true,
         price_tier: true,
+        address:    true,
+        verified:   true,
         created_at: true,
       },
     }),

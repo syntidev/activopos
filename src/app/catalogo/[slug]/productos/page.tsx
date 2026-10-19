@@ -78,6 +78,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       },
       include: {
         category: { select: { name: true, color: true, sort_order: true } },
+        brand:    { select: { name: true } },
         variants: {
           where:  { is_active: true },
           select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true, variant_group: true, sku: true },
@@ -124,6 +125,8 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       image:             imgs[0] ?? null,
       images:            imgs,
       categoryName:      p.category?.name ?? null,
+      brandId:           p.brand_id ?? null,
+      brandName:         p.brand?.name ?? null,
       priceUsd,
       priceBs,
       isService:         p.sale_mode === 'service',

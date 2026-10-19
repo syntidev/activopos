@@ -76,3 +76,15 @@
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
 }
+
+.checkRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  min-height:  var(--touch-min);
+  font-size:   var(--text-sm);
+  color:       var(--color-text-primary);
+  cursor:      pointer;
+}
+
+.checkRow input { width: 20px; height: 20px; }

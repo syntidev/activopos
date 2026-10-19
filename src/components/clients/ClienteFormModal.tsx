@@ -11,6 +11,8 @@ import styles from './ClienteFormModal.module.css'
 interface ClienteFormModalProps {
   open:       boolean
   client:     ClientRecord | null
+  /** Solo admin ve y cambia "verificado" (el PATCH responde 403 al cajero). */
+  isAdmin:    boolean
   onClose:    () => void
   onCreated:  (c: ClientRecord) => void
   onUpdated:  (c: ClientRecord) => void
@@ -23,19 +25,29 @@ interface FormState {
   email:      string
   notes:      string
   price_tier: 'detal' | 'mayorista'
+  address:    string
+  verified:   boolean
 }
 
-const EMPTY: FormState = { name: '', cedula: '', phone: '', email: '', notes: '', price_tier: 'detal' }
+const EMPTY: FormState = { name: '', cedula: '', phone: '', email: '', notes: '', price_tier: 'detal', address: '', verified: false }
 
 interface FieldErrors {
-  name?:   string
-  email?:  string
-  cedula?: string
+  name?:    string
+  email?:   string
+  cedula?:  string
+  address?: string
+}
+
+interface ClientApiResponse {
+  error?:  string
+  field?:  string
+  client?: ClientRecord
 }
 
 export function ClienteFormModal({
   open,
   client,
+  isAdmin,
   onClose,
   onCreated,
   onUpdated,
@@ -57,6 +69,8 @@ export function ClienteFormModal({
         email:      client.email  ?? '',
         notes:      client.notes  ?? '',
         price_tier: client.price_tier ?? 'detal',
+        address:    client.address  ?? '',
+        verified:   client.verified ?? false,
       })
     } else {
       setForm(EMPTY)
@@ -65,10 +79,13 @@ export function ClienteFormModal({
     setServerError('')
   }, [client, open])
 
-  const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const set = (field: 'name' | 'cedula' | 'phone' | 'email' | 'notes' | 'address') => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
     setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
+
+  const addressChanged = form.address.trim() !== (client?.address ?? '').trim()
+  const verifiedChanged = form.verified !== (client?.verified ?? false)
 
   const cedulaChanged = form.cedula.trim() !== (client?.cedula ?? '').trim()
 
@@ -104,6 +121,12 @@ export function ClienteFormModal({
       // Enviarlo en creación no rompe nada (Zod lo ignora), pero mostrarlo como
       // si funcionara sería fachada — por eso el selector solo se ve en edición.
       ...(isEdit ? { price_tier: form.price_tier } : {}),
+      // Dirección: en edición solo si cambió (vaciada = null la borra); en alta solo si hay texto.
+      ...(isEdit
+        ? (addressChanged ? { address: form.address.trim() || null } : {})
+        : (form.address.trim() ? { address: form.address.trim() } : {})),
+      // "Verificado": solo admin y solo si cambió (el cajero recibiría 403).
+      ...(isEdit && isAdmin && verifiedChanged ? { verified: form.verified } : {}),
     }
 
     try {
@@ -115,10 +138,14 @@ export function ClienteFormModal({
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(payload),
       })
-      const body = await res.json() as { error?: string; client?: ClientRecord }
+      const body = await res.json().catch(() => ({})) as ClientApiResponse
 
       if (!res.ok) {
-        setServerError(body.error ?? 'Error al guardar.')
+        const message = body.error ?? 'Error al guardar.'
+        // 409 = cédula ya registrada en el negocio: se marca en el campo, no como error genérico.
+        if (res.status === 409) setErrors((prev) => ({ ...prev, cedula: message }))
+        else if (body.field === 'address') setErrors((prev) => ({ ...prev, address: message }))
+        else setServerError(message)
         return
       }
 
@@ -207,6 +234,36 @@ export function ClienteFormModal({
             rows={3}
           />
         </div>
+
+        <div className={styles.fieldGroup}>
+          <label className={styles.label} htmlFor="client-address">
+            Dirección de envío
+            <span className={styles.hint}>Opcional</span>
+          </label>
+          <textarea
+            id="client-address"
+            data-testid="client-address"
+            className={styles.textarea}
+            placeholder="Estado, ciudad y dirección completa u oficina de destino"
+            value={form.address}
+            onChange={set('address')}
+            rows={2}
+            aria-invalid={!!errors.address}
+          />
+          {errors.address && <p className={styles.serverError} role="alert">{errors.address}</p>}
+        </div>
+
+        {isEdit && isAdmin && (
+          <label className={styles.checkRow}>
+            <input
+              type="checkbox"
+              data-testid="client-verified"
+              checked={form.verified}
+              onChange={(e) => setForm((prev) => ({ ...prev, verified: e.target.checked }))}
+            />
+            Cliente verificado
+          </label>
+        )}
 
         {isEdit && (
           <div className={styles.fieldGroup}>

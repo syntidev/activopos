@@ -14,6 +14,10 @@ export interface ClientRecord {
   email: string | null
   notes: string | null
   price_tier: 'detal' | 'mayorista'
+  /** Dirección de envío guardada del cliente (la que usa "misma dirección guardada"). */
+  address?: string | null
+  /** Identidad confirmada por un admin. */
+  verified?: boolean | null
   created_at: Date
   pending_balance_usd: number
 }

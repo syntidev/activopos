@@ -3429,3 +3429,16 @@
   .productCardOutOfStock { filter: none; }
   .categoryTrack { scroll-behavior: auto; }
 }
+
+/* ── Checkout: "Enviar a la misma dirección guardada" ───── */
+.savedAddrRow {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-2);
+  min-height:  44px;
+  font-size:   var(--text-sm);
+  color:       var(--color-text);
+  cursor:      pointer;
+}
+
+.savedAddrRow input { width: 20px; height: 20px; accent-color: var(--biz-color, var(--color-brand)); }

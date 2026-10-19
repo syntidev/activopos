@@ -17,6 +17,9 @@ export interface ProductForPOS {
   image_path: string | null
   is_favorite: boolean
   has_variants?: boolean
+  /** Talla escaneada (EAN de variante): el POS la agrega directo sin abrir el selector. */
+  matched_variant_id?: number | null
+  variants?: Array<{ id: number; valor: string; precio_extra: number; stock: number }>
   stock: { net_qty: number }
 }
 

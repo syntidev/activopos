@@ -42,6 +42,9 @@ export interface CatalogProduct {
   image:             string | null
   images:            string[]
   categoryName:      string | null
+  // Marca real del producto (products.brand_id); el filtro por marca usa el id, no el texto del nombre.
+  brandId:           number | null
+  brandName:         string | null
   priceUsd:          number
   priceBs:           number | null
   outOfStock:        boolean

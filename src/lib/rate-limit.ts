@@ -100,6 +100,22 @@ export const labelOcrLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+// Alta rápida (/api/quick-add/lookup): cada consulta puede salir a bases públicas externas.
+export const quickAddLookupLimiter = new RateLimiterMemory({
+  points:   60,   // 60 consultas por usuario
+  duration: 60,   // por minuto
+})
+
+// Alta rápida: altas y correcciones (/api/quick-add/products*) y carga inicial (/api/quick-add/context).
+export const quickAddWriteLimiter = new RateLimiterMemory({
+  points:   120,  // 120 escrituras por usuario
+  duration: 60,   // por minuto
+})
+export const quickAddContextLimiter = new RateLimiterMemory({
+  points:   30,   // 30 cargas por usuario
+  duration: 60,   // por minuto
+})
+
 // cf-connecting-ip (Cloudflare lo fija) y, sin él, x-real-ip (Nginx lo fija con $remote_addr). NUNCA la
 // primera entrada de x-forwarded-for: es la que escribe el propio cliente y rotarla evade todos los límites.
 export const getClientIp = (req: Request): string =>

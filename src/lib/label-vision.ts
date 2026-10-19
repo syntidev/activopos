@@ -14,6 +14,8 @@ const IMAGE_MAX_SIDE = 1000
 const MODEL_NAME_MAX = 120
 const PROMPT =
   'Lee la etiqueta. Responde solo JSON: {ref, modelo, talla}. No inventes. Si no estás seguro de un dato, déjalo vacío.'
+const TITLE_PROMPT =
+  'Lee el nombre del producto impreso en la caja. Responde solo JSON: {titulo}. Copia únicamente el texto visible, sin inventar ni completar. Si no se lee con certeza, deja titulo vacío.'
 
 export class VisionError extends Error {}
 
@@ -45,7 +47,8 @@ function visionEndpoint(): { url: string; key: string } {
   return { url: `${u.origin}/v1/chat/completions`, key }
 }
 
-export async function readLabel(image: Buffer): Promise<LabelOcrResult> {
+/** Una pregunta de visión: imagen reducida + prompt → texto crudo del modelo. */
+async function askVision(image: Buffer, prompt: string): Promise<string> {
   const { url, key } = visionEndpoint()
   const jpeg = await sharp(image)
     .rotate()
@@ -66,7 +69,7 @@ export async function readLabel(image: Buffer): Promise<LabelOcrResult> {
           role: 'user',
           content: [
             { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${jpeg.toString('base64')}` } },
-            { type: 'text', text: PROMPT },
+            { type: 'text', text: prompt },
           ],
         }],
       }),
@@ -82,5 +85,15 @@ export async function readLabel(image: Buffer): Promise<LabelOcrResult> {
   const raw = json.choices?.[0]?.message?.content ?? ''
   // Respuesta cruda al log del servidor (sin clave) para medir el acierto de las primeras etiquetas.
   console.info('[label-capture] respuesta cruda del modelo:', JSON.stringify(raw))
-  return parseVisionReply(raw)
+  return raw
+}
+
+export async function readLabel(image: Buffer): Promise<LabelOcrResult> {
+  return parseVisionReply(await askVision(image, PROMPT))
+}
+
+/** Título impreso en la caja ('' = no se leyó con certeza). Nunca se deduce de un EAN. */
+export async function readBoxTitle(image: Buffer): Promise<string> {
+  const raw = await askVision(image, TITLE_PROMPT)
+  return field(raw, 'titulo').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, MODEL_NAME_MAX)
 }

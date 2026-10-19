@@ -12,8 +12,10 @@ import type {
   PendingLabel,
 } from '@/types/label-capture'
 import { EditSheet } from './EditSheet'
+import { QuickAdd } from './QuickAdd'
 import { scanLabel } from './scan'
 import styles from './captura.module.css'
+import tabStyles from './alta.module.css'
 
 const LOG_LIMIT = 30
 const EMPTY_OCR: LabelOcrResult = { ref: '', modelo: '', talla: '' }
@@ -35,7 +37,7 @@ function errorOf(data: unknown, fallback: string): string {
   return typeof msg === 'string' ? msg : fallback
 }
 
-export default function CapturaEtiquetasPage() {
+function SafettiCapture() {
   const [items, setItems] = useState<LabelCaptureDTO[]>([])
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -294,5 +296,26 @@ export default function CapturaEtiquetasPage() {
         />
       )}
     </div>
+  )
+}
+
+type Tab = 'safetti' | 'alta'
+
+/** Dos modos en la misma ruta. Ambos quedan montados (el modo Safetti conserva su estado al cambiar de pestaña). */
+export default function CapturaEtiquetasPage() {
+  const [tab, setTab] = useState<Tab>('safetti')
+  return (
+    <>
+      <div className={tabStyles.tabs} role="tablist" aria-label="Modo de captura">
+        <button type="button" role="tab" aria-selected={tab === 'safetti'} className={tab === 'safetti' ? tabStyles.tabActive : tabStyles.tab} onClick={() => setTab('safetti')}>
+          Etiquetas Safetti
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'alta'} className={tab === 'alta' ? tabStyles.tabActive : tabStyles.tab} onClick={() => setTab('alta')}>
+          Alta rápida
+        </button>
+      </div>
+      <div hidden={tab !== 'safetti'}><SafettiCapture /></div>
+      <div hidden={tab !== 'alta'}><QuickAdd active={tab === 'alta'} /></div>
+    </>
   )
 }

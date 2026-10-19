@@ -89,6 +89,12 @@ export const labelOcrLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+// Alta rápida (/api/quick-add/lookup): cada consulta puede salir a bases públicas externas.
+export const quickAddLookupLimiter = new RateLimiterMemory({
+  points:   60,   // 60 consultas por usuario
+  duration: 60,   // por minuto
+})
+
 // Preferir cf-connecting-ip (Cloudflare lo fija, no es spoofable por el cliente)
 // antes de x-forwarded-for (el cliente puede inyectar entradas adicionales)
 export const getClientIp = (req: Request): string =>

@@ -62,7 +62,7 @@ export function ShippingActions({ orderId, saleId, knownDelivery = false }: Ship
         setStatus({ ok: false, text: 'Este pedido no es un envío.' })
         return
       }
-      const out = await printShippingLabelThermal({ ...r.data, bundles }, r.business_id, r.codepage ?? 'cp858')
+      const out = await printShippingLabelThermal(r.data, r.business_id, r.codepage ?? 'cp858')
       if (out.state === 'printed') setStatus({ ok: true, text: `Etiqueta impresa en ${out.printer}.` })
       else if (out.state === 'skipped') setStatus({ ok: false, text: 'La impresión térmica está apagada en este equipo (Configuración → Impresión). Usa "Copiar datos de envío".' })
       else setStatus({ ok: false, text: out.sent ? `${out.message} Revisa la impresora antes de reintentar.` : out.message })

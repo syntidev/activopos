@@ -63,6 +63,8 @@ export const UNIDADES: Record<'weight' | 'volume' | 'length', Array<{ value: str
 /* ── Compresión de imágenes client-side (Canvas API, sin librerías) ── */
 const COMPRESS_THRESHOLD_KB = 800
 const COMPRESS_MAX_DIM      = 1600
+const MIN_IMAGE_SLOTS       = 6
+const EMPTY_IMAGES: Array<string | null> = Array.from({ length: MIN_IMAGE_SLOTS }, () => null)
 const COMPRESS_QUALITY      = 0.85
 
 // iOS entrega HEIC, a veces con type vacío. El servidor no tiene códec HEVC y lo
@@ -161,7 +163,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [isSaving, setIsSaving]       = useState(false)
 
   /* ── Imágenes, disponibilidad, visibilidad, variantes ── */
-  const [images, setImages]                 = useState<Array<string | null>>([null, null, null])
+  const [images, setImages]                 = useState<Array<string | null>>(EMPTY_IMAGES)
   const [uploadingSlot, setUploadingSlot]   = useState<number | null>(null)
   const [imgError, setImgError]             = useState<string | null>(null)
   const [isAvailable, setIsAvailable]       = useState(true)
@@ -231,10 +233,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const unitType: 'unit' | 'weight' | 'volume' | 'length' =
     productKind === 'weight' ? measuredBy : 'unit'
 
-  const imgRef0 = useRef<HTMLInputElement>(null)
-  const imgRef1 = useRef<HTMLInputElement>(null)
-  const imgRef2 = useRef<HTMLInputElement>(null)
-  const imgRefs = [imgRef0, imgRef1, imgRef2] as const
+  const imgRefs = useRef<Array<HTMLInputElement | null>>([])
 
   useEffect(() => {
     let active = true
@@ -280,9 +279,9 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setHasVariants(editProduct.has_variants ?? false)
     setVariants(editProduct.variants ?? [])
 
-    const loadedImgs: Array<string | null> = [null, null, null]
-    editProduct.images?.forEach((url, i) => { if (i < 3) loadedImgs[i] = url })
-    setImages(loadedImgs)
+    // Carga TODAS las fotos (mínimo MIN_IMAGE_SLOTS casillas): el PATCH reenvía lo que hay aquí, nunca recorta.
+    const urls = editProduct.images ?? []
+    setImages(Array.from({ length: Math.max(MIN_IMAGE_SLOTS, urls.length) }, (_, i) => urls[i] ?? null))
 
     setBadge(editProduct.badge ?? 'none')
     setSubcategory(editProduct.subcategory ?? '')

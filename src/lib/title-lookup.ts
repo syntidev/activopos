@@ -8,7 +8,8 @@ import type { TitleHit, TitleSource } from '@/types/quick-add'
  */
 
 const TITLE_MAX = 120
-const FETCH_TIMEOUT_MS = 5_000
+/** Las bases públicas casi nunca conocen estos productos: no deben demorar el formulario. */
+const FETCH_TIMEOUT_MS = 2_000
 const USER_AGENT = 'ActivoPOS/1.0 (hola@activopos.com)'
 /** Las bases públicas solo conocen GTIN de 8 a 14 dígitos. */
 const GTIN_RE = /^\d{8,14}$/
@@ -43,12 +44,8 @@ function factsLookup(host: string): (code: string) => Promise<string> {
   }
 }
 
-async function fromUpcItemDb(code: string): Promise<string> {
-  // Modo gratuito (trial, con tope diario). Con UPCITEMDB_USER_KEY usa el plan de pago.
-  const key = process.env.UPCITEMDB_USER_KEY
-  const path = key ? 'v1' : 'trial'
-  const headers: Record<string, string> = key ? { user_key: key, key_type: '3scale' } : {}
-  const json = (await getJson(`https://api.upcitemdb.com/prod/${path}/lookup?upc=${code}`, headers)) as
+async function fromUpcItemDb(code: string, key: string): Promise<string> {
+  const json = (await getJson(`https://api.upcitemdb.com/prod/v1/lookup?upc=${code}`, { user_key: key, key_type: '3scale' })) as
     | { items?: { title?: unknown }[] }
     | null
   return cleanTitle(json?.items?.[0]?.title)
@@ -64,12 +61,18 @@ async function fromLabelCaptures(businessId: number, code: string): Promise<stri
 
 type PublicSource = { source: TitleSource; fetch: (code: string) => Promise<string> }
 
-/** Orden de consulta de las bases públicas (la primera que conozca el código gana). */
-export const PUBLIC_SOURCES: readonly PublicSource[] = [
-  { source: 'open_products_facts', fetch: factsLookup('world.openproductsfacts.org') },
-  { source: 'open_food_facts', fetch: factsLookup('world.openfoodfacts.org') },
-  { source: 'upcitemdb', fetch: fromUpcItemDb },
-]
+/**
+ * Bases públicas, en orden de confianza. UPCitemdb solo entra con UPCITEMDB_USER_KEY: su modo gratuito
+ * exige una pausa de ~11 s entre consultas (6/min) y no es viable en un flujo continuo.
+ */
+export function publicSources(): readonly PublicSource[] {
+  const key = process.env.UPCITEMDB_USER_KEY
+  return [
+    { source: 'open_products_facts', fetch: factsLookup('world.openproductsfacts.org') },
+    { source: 'open_food_facts', fetch: factsLookup('world.openfoodfacts.org') },
+    ...(key ? [{ source: 'upcitemdb' as const, fetch: (code: string) => fromUpcItemDb(code, key) }] : []),
+  ]
+}
 
 export async function lookupLabelCaptureTitle(businessId: number, code: string): Promise<TitleHit | null> {
   const title = await fromLabelCaptures(businessId, code)
@@ -78,11 +81,11 @@ export async function lookupLabelCaptureTitle(businessId: number, code: string):
 
 export async function lookupPublicTitle(code: string): Promise<TitleHit | null> {
   if (!GTIN_RE.test(code)) return null
-  for (const { source, fetch: lookup } of PUBLIC_SOURCES) {
-    const title = await lookup(code)
-    if (title) return { title, source }
-  }
-  return null
+  // En paralelo (tope de 2 s en total); gana la primera de la lista que tenga título.
+  const sources = publicSources()
+  const titles = await Promise.all(sources.map(({ fetch: lookup }) => lookup(code)))
+  const i = titles.findIndex(Boolean)
+  return i < 0 ? null : { title: titles[i], source: sources[i].source }
 }
 
 export async function lookupTitle(businessId: number, code: string): Promise<TitleHit | null> {

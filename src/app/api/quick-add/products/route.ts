@@ -3,9 +3,10 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { revalidateCatalogCache } from '@/lib/catalog'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
-import { createSimpleProduct } from '@/lib/product-create'
+import { BarcodeConflictError, createSimpleProduct } from '@/lib/product-create'
 import { cleanSubcategory } from '@/lib/subcategory'
-import { CODE_RE, findByBarcode, productResult, requireQuickAdd, toMoney } from '@/lib/quick-add'
+import { CODE_RE, findByBarcode, productResult, quickAddRateLimited, requireQuickAdd, toMoney } from '@/lib/quick-add'
+import { quickAddWriteLimiter } from '@/lib/rate-limit'
 
 const MAX_QUANTITY = 100_000
 const MAX_PRICE = 1_000_000
@@ -28,6 +29,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   const session = await requireQuickAdd()
   if (session instanceof NextResponse) return session
   const businessId = session.businessId
+  const limited = await quickAddRateLimited(quickAddWriteLimiter, session.userId)
+  if (limited) return limited
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) {
@@ -68,6 +71,9 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     return NextResponse.json({ product: await productResult(businessId, productId) }, { status: 201 })
   } catch (err) {
+    if (err instanceof BarcodeConflictError) {
+      return NextResponse.json({ error: err.message, field: 'barcode' }, { status: 409 })
+    }
     console.error('quick-add create error:', err instanceof Error ? err.message : err)
     return NextResponse.json({ error: 'No se pudo guardar' }, { status: 500 })
   }

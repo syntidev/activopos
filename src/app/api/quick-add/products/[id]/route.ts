@@ -3,7 +3,8 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { revalidateCatalogCache } from '@/lib/catalog'
 import { createStockAdjustment, getNetStock } from '@/lib/stock-adjust'
-import { productResult, requireQuickAdd, toMoney } from '@/lib/quick-add'
+import { productResult, quickAddRateLimited, requireQuickAdd, toMoney } from '@/lib/quick-add'
+import { quickAddWriteLimiter } from '@/lib/rate-limit'
 
 const MAX_DELTA = 100_000
 const MAX_PRICE = 1_000_000
@@ -22,6 +23,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const session = await requireQuickAdd()
   if (session instanceof NextResponse) return session
   const businessId = session.businessId
+  const limited = await quickAddRateLimited(quickAddWriteLimiter, session.userId)
+  if (limited) return limited
 
   const id = Number((await params).id)
   const parsed = patchSchema.safeParse(await req.json().catch(() => null))

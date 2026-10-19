@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireLabelCapture } from '@/lib/label-capture'
 import { getNetStock } from '@/lib/stock-adjust'
 import { CODE_RE } from '@/lib/quick-add-shared'
+import type { RateLimiterMemory } from 'rate-limiter-flexible'
 import type { QuickAddProductResult } from '@/types/quick-add'
 
 /**
@@ -60,4 +61,14 @@ export async function productResult(businessId: number, productId: number): Prom
 
 export function badRequest(message: string): NextResponse {
   return NextResponse.json({ error: message }, { status: 400 })
+}
+
+/** Consume un punto del limiter por usuario; devuelve la respuesta 429 si se agotó, o null si puede seguir. */
+export async function quickAddRateLimited(limiter: RateLimiterMemory, userId: number): Promise<NextResponse | null> {
+  try {
+    await limiter.consume(String(userId))
+    return null
+  } catch {
+    return NextResponse.json({ error: 'Demasiadas solicitudes, espera un momento' }, { status: 429 })
+  }
 }

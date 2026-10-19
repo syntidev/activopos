@@ -63,9 +63,7 @@ export function QuickAddForm({ code, values, context, busy, canSave, onChange, o
       <div className={base.field}>
         <label className={base.label} htmlFor="qa-title">Título</label>
         <input id="qa-title" className={base.input} value={values.title} maxLength={120} onChange={e => onChange({ title: e.target.value, titleSource: values.titleSource })} />
-        <span className={styles.sourceNote}>
-          {values.titleSource ? `Fuente: ${TITLE_SOURCE_LABEL[values.titleSource]}` : 'Sin fuente: escríbelo o toma una foto del título de la caja'}
-        </span>
+        {values.titleSource && <span className={styles.sourceNote}>Fuente: {TITLE_SOURCE_LABEL[values.titleSource]}</span>}
         <input ref={photoRef} className={base.hiddenInput} type="file" accept="image/*" capture="environment" onChange={pickPhoto} />
         <button type="button" className={base.secondaryButton} disabled={busy} onClick={() => photoRef.current?.click()}>
           <Camera size={18} /> Foto del título

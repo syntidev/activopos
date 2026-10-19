@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { quickAddLookupLimiter } from '@/lib/rate-limit'
-import { CODE_RE, badRequest, findByBarcode, requireQuickAdd } from '@/lib/quick-add'
+import { CODE_RE, badRequest, findByBarcode, quickAddRateLimited, requireQuickAdd } from '@/lib/quick-add'
 import { lookupTitle } from '@/lib/title-lookup'
 import type { QuickAddLookup } from '@/types/quick-add'
 
@@ -12,11 +12,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const code = (req.nextUrl.searchParams.get('code') ?? '').trim()
   if (!CODE_RE.test(code)) return badRequest('Código inválido')
 
-  try {
-    await quickAddLookupLimiter.consume(String(session.userId))
-  } catch {
-    return NextResponse.json({ error: 'Demasiadas consultas, espera un momento' }, { status: 429 })
-  }
+  const limited = await quickAddRateLimited(quickAddLookupLimiter, session.userId)
+  if (limited) return limited
 
   const existing = await findByBarcode(session.businessId, code)
   const title = existing ? null : await lookupTitle(session.businessId, code)

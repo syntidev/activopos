@@ -1,4 +1,5 @@
 import type { prisma } from '@/lib/prisma'
+import { findBarcodeConflict } from '@/lib/product-barcodes'
 import { createStockAdjustment } from '@/lib/stock-adjust'
 
 type Client = Pick<typeof prisma, 'product' | 'inventoryEntry'>
@@ -25,7 +26,12 @@ export interface SimpleProductInput {
   notes: string
 }
 
+/** El código ya lo usa otro producto o variante del negocio (unicidad a nivel de aplicación). */
+export class BarcodeConflictError extends Error {}
+
 export async function createSimpleProduct(client: Client, input: SimpleProductInput): Promise<number> {
+  const conflict = await findBarcodeConflict(input.businessId, input.barcode)
+  if (conflict) throw new BarcodeConflictError(conflict)
   const product = await client.product.create({
     data: {
       business_id:         input.businessId,

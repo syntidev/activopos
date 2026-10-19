@@ -17,6 +17,30 @@ export const catalogLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+// Checkout público (POST /api/catalog/[slug]/order). Todos son RateLimiterMemory: por PROCESO, no
+// compartidos entre instancias PM2 (en cluster de N procesos el tope efectivo es hasta N veces mayor).
+// La defensa que SÍ es consistente entre procesos es la de DB: máx. 3 pedidos 'received' por cédula/teléfono.
+export const catalogOrderIpLimiter = new RateLimiterMemory({
+  points:   10,   // 10 pedidos por IP
+  duration: 900,  // en 15 minutos
+})
+
+export const catalogOrderPhoneLimiter = new RateLimiterMemory({
+  points:   6,    // 6 pedidos por teléfono (llave slug:teléfono)
+  duration: 3600, // en 1 hora
+})
+
+// Consulta "¿hay dirección guardada?" (POST /api/catalog/[slug]/saved-address): anti-enumeración de cédulas.
+export const savedAddressIpLimiter = new RateLimiterMemory({
+  points:   10,   // 10 consultas por IP
+  duration: 900,  // en 15 minutos
+})
+
+export const savedAddressCedulaLimiter = new RateLimiterMemory({
+  points:   5,    // 5 consultas por slug+cédula
+  duration: 3600, // en 1 hora
+})
+
 export const onboardingLimiter = new RateLimiterMemory({
   points:   3,    // 3 registros por IP
   duration: 3600, // en 1 hora

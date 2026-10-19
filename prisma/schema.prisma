@@ -258,6 +258,7 @@ model Business {
   collections          Collection[]
   brands               Brand[]
   reservas             Reserva[]
+  shipping_methods     BusinessShippingMethod[]
 
   @@map("businesses")
 }
@@ -574,6 +575,13 @@ model Client {
   notes       String?         @db.Text
   price_tier  ClientPriceTier @default(detal)
   is_active   Boolean         @default(true)
+  // Dónde nació el cliente: 'pos' (cajero) | 'web' (carrito público). Se valida en código.
+  origin      String?         @default("pos") @db.VarChar(10)
+  // Cédula/identidad confirmada por el negocio. Los clientes creados desde la web nacen sin verificar.
+  verified    Boolean?        @default(false)
+  // Dirección de envío guardada ("misma dirección" en el checkout). Solo la escribe el negocio o el
+  // primer pedido web del cliente; un pedido público posterior NUNCA la sobrescribe.
+  address     String?         @db.Text
   created_at  DateTime        @default(now())
   updated_at  DateTime        @updatedAt
 
@@ -582,6 +590,9 @@ model Client {
   orders     Order[]
   quotations Quotation[]
 
+  // Índice NORMAL (no único): en producción puede haber cédulas repetidas y el db push fallaría.
+  // La unicidad se valida en código.
+  @@index([business_id, cedula])
   @@map("clients")
 }
 
@@ -894,16 +905,51 @@ model Order {
   estimated_time   Int?
   sale_id          Int?        @unique
   send_to_kds      Boolean     @default(false)
+  // Snapshot de envío tal como se capturó en ESTE pedido (no cambia si luego se edita el cliente
+  // ni el método). El cliente del pedido es client_id (ya existía, nullable).
+  ship_nombre      String?     @db.VarChar(120)
+  ship_cedula      String?     @db.VarChar(20)
+  ship_telefono    String?     @db.VarChar(20)
+  ship_direccion   String?     @db.Text
+  ship_metodo_id   Int?
+  // true = la cédula del pedido coincide con la de un cliente que aún no está validado.
+  cedula_alert     Boolean?    @default(false)
   created_at       DateTime    @default(now())
   updated_at       DateTime    @updatedAt
 
-  business Business    @relation(fields: [business_id], references: [id])
-  client   Client?     @relation(fields: [client_id], references: [id])
-  sale     Sale?       @relation(fields: [sale_id], references: [id])
-  items    OrderItem[]
+  business      Business                @relation(fields: [business_id], references: [id])
+  client        Client?                 @relation(fields: [client_id], references: [id])
+  sale          Sale?                   @relation(fields: [sale_id], references: [id])
+  ship_metodo   BusinessShippingMethod? @relation(fields: [ship_metodo_id], references: [id])
+  items         OrderItem[]
 
   @@unique([business_id, order_number])
   @@map("orders")
+}
+
+// Métodos de envío configurables por negocio (retiro, delivery, encomienda...). Tabla nueva.
+model BusinessShippingMethod {
+  id              Int      @id @default(autoincrement())
+  business_id     Int
+  // Identificador estable dentro del negocio (ej. 'pickup', 'mrw', 'zoom'); lo usa el código, no la UI.
+  code            String   @db.VarChar(40)
+  label           String   @db.VarChar(120)
+  // 'pickup' | 'delivery' | 'carrier' | 'carrier_branch'. Se valida en código.
+  kind            String   @db.VarChar(20)
+  // true = el cliente debe indicar la oficina/sucursal de destino.
+  requires_branch Boolean  @default(false)
+  active          Boolean  @default(true)
+  sort_order      Int      @default(0)
+  instructions    String?  @db.Text
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  business Business @relation(fields: [business_id], references: [id])
+  orders   Order[]
+
+  @@unique([business_id, code])
+  @@index([business_id, active, sort_order])
+  @@map("business_shipping_methods")
 }
 
 model OrderItem {

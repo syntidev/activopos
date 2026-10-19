@@ -31,10 +31,11 @@ export async function GET(req: NextRequest) {
     const data: ShippingData = {
       orderNumber:  order.order_number,
       businessName: biz?.name ?? '',
-      recipient:    (order.recipient_name || order.client_name || '').trim(),
-      cedula:       order.client_cedula ?? '',
-      phone:        order.client_phone ?? '',
-      address:      (order.delivery_address ?? '').trim(),
+      // El snapshot de envío (ship_*) manda; los campos viejos solo cubren pedidos anteriores a él.
+      recipient:    (order.ship_nombre ?? order.recipient_name ?? order.client_name ?? '').trim(),
+      cedula:       order.ship_cedula ?? order.client_cedula ?? '',
+      phone:        order.ship_telefono ?? order.client_phone ?? '',
+      address:      (order.ship_direccion ?? order.delivery_address ?? '').trim(),
       // "Método de pago: X" es dato interno de cobro: no va en la etiqueta.
       notes:        (order.notes ?? '').replace(/^Método de pago:.*$/m, '').trim(),
       units:        Math.max(1, Math.ceil(order.items.reduce((a, i) => a + Number(i.quantity), 0))),

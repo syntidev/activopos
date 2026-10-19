@@ -5,6 +5,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { revalidateCatalogCache } from '@/lib/catalog'
 import { z } from 'zod'
 import { cleanSubcategory } from '@/lib/subcategory'
+import { findBarcodeConflict } from '@/lib/product-barcodes'
 
 const productSchema = z.object({
   name:               z.string().min(1).max(120),
@@ -43,6 +44,8 @@ const productSchema = z.object({
   is_fixed_price:     z.boolean().default(false),
   financing_eligible: z.boolean().default(false),
   sort_order:         z.number().int().default(0),
+  // Marca (tabla brands) del negocio; se valida que sea suya antes de guardar.
+  brand_id:           z.number().int().positive().nullable().optional(),
   variants:           z.array(z.object({
     tipo:          z.enum(['talla', 'color', 'personalizado']),
     valor:         z.string().min(1).max(50),
@@ -50,6 +53,7 @@ const productSchema = z.object({
     stock:         z.number().int().min(0).default(0),
     variant_group: z.string().max(30).nullable().optional(),
     sku:           z.string().max(50).nullable().optional(),
+    barcode:       z.string().trim().max(50).nullable().optional(),
   })).optional(),
   // Variantes combinadas (multi-dimensión). variant_dimensions define los ejes
   // (talla, color…); variant_combinations trae el producto cartesiano ya resuelto
@@ -120,6 +124,8 @@ export async function GET(req: NextRequest) {
                   { name:    { contains: search } },
                   { sku:     { contains: search } },
                   { barcode: { contains: search } },
+                  // Escaneo de una variante (EAN exacto) o búsqueda por su SKU.
+                  { variants: { some: { is_active: true, OR: [{ barcode: search }, { sku: { contains: search } }] } } },
                 ],
               }
             : {}),
@@ -175,6 +181,8 @@ export async function GET(req: NextRequest) {
           ...p,
           images:             parseImages(p.images),
           variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
+          // Si la búsqueda fue el EAN exacto de una variante: cuál es (el POS abre ESA talla directo).
+          matched_variant_id: search ? (p.variants.find(v => v.barcode === search)?.id ?? null) : null,
           price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
           price_per_kg_usd:   p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null,
           wholesale_price_usd:        p.wholesale_price_usd        != null ? Number(p.wholesale_price_usd)        : null,
@@ -233,7 +241,7 @@ export async function POST(req: NextRequest) {
     const combinedTipo = data.variant_dimensions?.map(d => d.tipo).join('+') ?? ''
     const variantRows: {
       tipo: string; valor: string; precio_extra: number; stock: number
-      combination_key: string | null; variant_group: string | null; sku: string | null
+      combination_key: string | null; variant_group: string | null; sku: string | null; barcode: string | null
     }[] =
       data.variant_combinations?.length
         ? data.variant_combinations.map(c => ({
@@ -244,6 +252,7 @@ export async function POST(req: NextRequest) {
             combination_key: c.combination_key,
             variant_group:   null,
             sku:             null,
+            barcode:         null,
           }))
         : (data.variants?.map(v => ({
             tipo:            v.tipo,
@@ -253,13 +262,31 @@ export async function POST(req: NextRequest) {
             combination_key: null,
             variant_group:   v.variant_group ?? null,
             sku:             v.sku ?? null,
+            barcode:         v.barcode?.trim() || null,
           })) ?? [])
+
+    // Barcodes de variante: únicos entre sí y frente al resto del negocio (productos y variantes).
+    const newBarcodes = variantRows.map(v => v.barcode).filter((b): b is string => b !== null)
+    if (new Set(newBarcodes).size !== newBarcodes.length) {
+      return NextResponse.json({ error: 'Hay códigos de barras repetidos entre las variantes.', field: 'barcode' }, { status: 409 })
+    }
+    for (const b of newBarcodes) {
+      const conflict = await findBarcodeConflict(session.businessId, b)
+      if (conflict) return NextResponse.json({ error: conflict, field: 'barcode' }, { status: 409 })
+    }
+
+    // Marca: debe ser de este negocio (el id llega del body).
+    if (data.brand_id) {
+      const brand = await db.brand.findFirst({ where: { id: data.brand_id }, select: { id: true } }) // business_id inyectado
+      if (!brand) return NextResponse.json({ error: 'Marca no encontrada', field: 'brand_id' }, { status: 422 })
+    }
 
     const product = await db.product.create({
       data: {
         business_id:        session.businessId, // explícito: el tipo de create lo exige; la capa re-inyecta igual valor
         name:               data.name,
         category_id:        data.category_id        ?? null,
+        brand_id:           data.brand_id           ?? null,
         barcode:            data.barcode            ?? null,
         sku:                data.sku                ?? null,
         description:        data.description        ?? null,
@@ -300,6 +327,7 @@ export async function POST(req: NextRequest) {
               combination_key: v.combination_key,
               variant_group:   v.variant_group,
               sku:             v.sku,
+              barcode:         v.barcode,
             })) }
           : undefined,
       },

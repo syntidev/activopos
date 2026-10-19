@@ -22,12 +22,19 @@ export async function GET(req: NextRequest) {
       | { name:    { contains: string } }
       | { barcode: string }
       | { sku:     { contains: string } }
+      | { variants: { some: { is_active: true; barcode?: string; sku?: { contains: string } } } }
 
     const orConditions: WhereOr[] = [
       { name: { contains: q } },
       { sku:  { contains: q } },
+      // SKU de variante ("11953H PULSE XL"): el producto aparece buscando por él.
+      { variants: { some: { is_active: true, sku: { contains: q } } } },
     ]
-    if (q.length >= 4) orConditions.push({ barcode: q })
+    if (q.length >= 4) {
+      orConditions.push({ barcode: q })
+      // EAN exacto de una VARIANTE: devuelve su producto y `matched_variant_id` (la talla escaneada).
+      orConditions.push({ variants: { some: { is_active: true, barcode: q } } })
+    }
 
     const [rawProducts, stockAgg, rate] = await Promise.all([
       db.product.findMany({
@@ -60,6 +67,8 @@ export async function GET(req: NextRequest) {
               valor:        true,
               precio_extra: true,
               stock:        true,
+              sku:          true,
+              barcode:      true,
               color_hex:    true,
               sort_order:   true,
             },
@@ -110,6 +119,8 @@ export async function GET(req: NextRequest) {
           images:             parseImages(p.images),
           has_variants:       p.has_variants,
           variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
+          // Variante cuyo EAN es exactamente lo buscado/escaneado; null si fue otra coincidencia.
+          matched_variant_id: p.variants.find(v => v.barcode !== null && v.barcode === q)?.id ?? null,
           is_favorite:        p.is_favorite,
           stock:              { net_qty },
           price_bs:           priceUsd ? Math.round(priceUsd * rate * 100) / 100 : null,

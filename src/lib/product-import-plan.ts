@@ -41,9 +41,16 @@ export interface ImportRow {
   wholesale_price_per_kg_usd: number | null
   location:     string | null
   notes:        string | null
+  // undefined = la columna NO viene en el archivo: el dato existente no se toca (los archivos viejos,
+  // sin estas columnas, no borran descripciones, marcas ni códigos de variante). null = viene vacía.
+  description:  string | null | undefined
+  brand:        string | null | undefined
   // Ambos null = producto simple; ambos con valor = fila de variante.
   variant_tipo:  VariantTipo | null
   variant_valor: string | null
+  // SKU y código de barras de ESA variante (el sku/codigo_barras normales son del producto).
+  variant_sku:     string | null | undefined
+  variant_barcode: string | null | undefined
 }
 
 export interface RowError {
@@ -66,12 +73,15 @@ export interface ExistingProduct {
   wholesale_price_per_kg_usd: number | null
   location:     string | null
   notes:        string | null
+  description:  string | null
+  // Nombre de la marca (tabla brands), o null si el producto no tiene.
+  brand:        string | null
   active:       boolean
   has_variants: boolean
   // Neto de inventory_entries del padre, SIN clamp (puede ser negativo).
   net_stock:    number
   // Solo variantes activas.
-  variants:     { id: number; tipo: string; valor: string; stock: number }[]
+  variants:     { id: number; tipo: string; valor: string; stock: number; sku: string | null; barcode: string | null }[]
 }
 
 type Scalar = string | number | null
@@ -90,6 +100,9 @@ export interface VariantPlan {
   old:        number | null
   new:        number
   row:        number
+  // undefined = la columna no vino: no se toca. null = vacía.
+  sku:        string | null | undefined
+  barcode:    string | null | undefined
 }
 
 export interface ProductPlan {
@@ -115,12 +128,12 @@ const norm = (s: string): string => s.trim().toLowerCase()
 function sameScalar(field: string, a: Scalar, b: Scalar): boolean {
   if (a === null || b === null) return a === b
   if (typeof a === 'number' && typeof b === 'number') return Math.round(a * 1e4) === Math.round(b * 1e4)
-  // La DB resuelve la categoría sin distinguir mayúsculas; el diff también.
-  return field === 'categoria' ? norm(String(a)) === norm(String(b)) : String(a) === String(b)
+  // La DB resuelve la categoría y la marca sin distinguir mayúsculas; el diff también.
+  return field === 'categoria' || field === 'marca' ? norm(String(a)) === norm(String(b)) : String(a) === String(b)
 }
 
 function diffProduct(ex: ExistingProduct, r: ImportRow): FieldChange[] {
-  const pairs: [string, Scalar, Scalar][] = [
+  const pairs: [string, Scalar, Scalar | undefined][] = [
     ['nombre',                  ex.name,                       r.name],
     ['codigo_barras',           ex.barcode,                    r.barcode],
     ['sku',                     ex.sku,                        r.sku],
@@ -134,8 +147,12 @@ function diffProduct(ex: ExistingProduct, r: ImportRow): FieldChange[] {
     ['precio_mayorista_kg_usd', ex.wholesale_price_per_kg_usd, r.wholesale_price_per_kg_usd],
     ['ubicacion',               ex.location,                   r.location],
     ['notas',                   ex.notes,                      r.notes],
+    ['descripcion',             ex.description,                r.description],
+    ['marca',                   ex.brand,                      r.brand],
   ]
   return pairs
+    // undefined = la columna no viene en el archivo: no hay nada que comparar ni cambiar.
+    .filter((p): p is [string, Scalar, Scalar] => p[2] !== undefined)
     .filter(([field, a, b]) => !sameScalar(field, a, b))
     .map(([field, a, b]) => ({ field, old: a, new: b }))
 }
@@ -150,6 +167,8 @@ export function planImport(
   existing: ExistingProduct[],
   // barcode -> id del producto dueño (de TODOS los productos del negocio).
   barcodeOwners: Map<string, number>,
+  // barcode -> id de la VARIANTE dueña (de TODAS las variantes de los productos del negocio).
+  variantBarcodeOwners: Map<string, number>,
 ): ImportPlan {
   const errors: RowError[] = []
 
@@ -234,6 +253,10 @@ export function planImport(
         errors.push({ row: source.row, message: `Código de barras duplicado: ${source.barcode} ya pertenece a otro producto` })
         continue
       }
+      if (variantBarcodeOwners.has(source.barcode)) {
+        errors.push({ row: source.row, message: `Código de barras duplicado: ${source.barcode} ya pertenece a una variante` })
+        continue
+      }
       seenBarcodes.add(source.barcode)
     }
 
@@ -250,12 +273,39 @@ export function planImport(
         }
         seenVariants.add(vk)
         const found = product?.variants.find(v => v.tipo === tipo && norm(v.valor) === norm(valor)) ?? null
+
+        // Barcode de la variante: único en el archivo y en el negocio (productos y variantes). Si choca,
+        // esa fila se rechaza con su motivo; las demás siguen.
+        const vb = r.variant_barcode
+        if (vb) {
+          const ownerVariant = variantBarcodeOwners.get(vb)
+          if (seenBarcodes.has(vb)) {
+            errors.push({ row: r.row, message: `Código de barras de variante duplicado dentro del archivo: ${vb}` })
+            continue
+          }
+          if (barcodeOwners.has(vb)) {
+            errors.push({ row: r.row, message: `Código de barras ${vb} ya pertenece a un producto` })
+            continue
+          }
+          if (ownerVariant !== undefined && ownerVariant !== found?.id) {
+            errors.push({ row: r.row, message: `Código de barras ${vb} ya pertenece a otra variante` })
+            continue
+          }
+          seenBarcodes.add(vb)
+        }
+
+        // sku/barcode de variante solo cuentan como cambio si la columna viene en el archivo.
+        const attrsChanged =
+          (r.variant_sku !== undefined && r.variant_sku !== (found?.sku ?? null)) ||
+          (r.variant_barcode !== undefined && r.variant_barcode !== (found?.barcode ?? null))
         variants.push({
           tipo, valor, row: r.row,
           variant_id: found?.id ?? null,
           old:        found?.stock ?? null,
           new:        r.stock,
-          action:     !found ? 'create' : found.stock === r.stock ? 'same' : 'update',
+          sku:        r.variant_sku,
+          barcode:    r.variant_barcode,
+          action:     !found ? 'create' : found.stock === r.stock && !attrsChanged ? 'same' : 'update',
         })
       }
     }
@@ -296,7 +346,7 @@ export function summarizePlan(plan: ImportPlan) {
   const updated   = plan.products.filter(p => p.kind === 'update')
   const unchanged = plan.products.filter(p => p.kind === 'same')
   const variantsOf = (p: ProductPlan) =>
-    p.variants.map(v => ({ tipo: v.tipo, valor: v.valor, action: v.action, old: v.old, new: v.new }))
+    p.variants.map(v => ({ tipo: v.tipo, valor: v.valor, action: v.action, old: v.old, new: v.new, sku: v.sku, barcode: v.barcode }))
   return {
     created: created.map(p => ({
       row: p.source.row, name: p.name,

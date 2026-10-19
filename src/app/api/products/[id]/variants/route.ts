@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { findBarcodeConflict } from '@/lib/product-barcodes'
 import { z } from 'zod'
 
 const variantSchema = z.object({
   tipo:          z.enum(['talla', 'color', 'personalizado']),
   valor:         z.string().min(1).max(50),
   sku:           z.string().max(50).nullable().optional(),
+  barcode:       z.string().trim().max(50).nullable().optional(),
   precio_extra:  z.number().min(0).default(0),
   stock:         z.number().int().min(0).default(0),
   color_hex:     z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
@@ -65,6 +67,13 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     const body = variantSchema.parse(await req.json())
 
+    // Un barcode lo usa UN producto o UNA variante del negocio (sin eso el POS no sabría cuál abrir).
+    const barcode = body.barcode?.trim() || null
+    if (barcode) {
+      const conflict = await findBarcodeConflict(session.businessId, barcode)
+      if (conflict) return NextResponse.json({ error: conflict, field: 'barcode' }, { status: 409 })
+    }
+
     // ProductVariant no tiene business_id — se aísla por product_id ya validado.
     // $transaction en prisma base: crea la variante y su InventoryEntry inicial
     // atómicamente (business_id manual — la extension tenant no propaga al tx).
@@ -75,6 +84,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           tipo:         body.tipo,
           valor:        body.valor,
           sku:          body.sku          ?? null,
+          barcode,
           precio_extra: body.precio_extra,
           stock:        body.stock,
           color_hex:    body.color_hex    ?? null,

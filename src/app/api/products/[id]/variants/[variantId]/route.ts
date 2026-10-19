@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { createStockAdjustment } from '@/lib/stock-adjust'
+import { findBarcodeConflict } from '@/lib/product-barcodes'
 import { z } from 'zod'
 
 const patchSchema = z.object({
   valor:         z.string().min(1).max(50).optional(),
   sku:           z.string().max(50).nullable().optional(),
+  barcode:       z.string().trim().max(50).nullable().optional(),
   precio_extra:  z.number().min(0).optional(),
   stock:         z.number().int().min(0).optional(),
   color_hex:     z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
@@ -43,12 +45,19 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const body     = patchSchema.parse(await req.json())
     const oldStock = existing.stock
 
+    // Barcode: vacío lo borra; uno nuevo no puede ser de otro producto/variante del negocio.
+    const barcode = body.barcode?.trim() || null
+    if (body.barcode !== undefined && barcode && barcode !== existing.barcode) {
+      const conflict = await findBarcodeConflict(session.businessId, barcode, { variantId })
+      if (conflict) return NextResponse.json({ error: conflict, field: 'barcode' }, { status: 409 })
+    }
+
     // $transaction en prisma base: update de la variante + InventoryEntry de ajuste
     // atómicos (business_id manual — la extension tenant no propaga al tx).
     const variant = await prisma.$transaction(async (tx) => {
       const v = await tx.productVariant.update({
         where: { id: variantId },
-        data:  body,
+        data:  { ...body, ...(body.barcode !== undefined && { barcode }) },
       })
       // Sincroniza net_inventory con el cambio manual de stock de la variante.
       if (body.stock !== undefined) {

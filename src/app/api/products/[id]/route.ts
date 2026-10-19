@@ -10,6 +10,8 @@ import { cleanSubcategory } from '@/lib/subcategory'
 const patchSchema = z.object({
   name:               z.string().min(1).max(120).optional(),
   category_id:        z.number().int().nullable().optional(),
+  // Marca (tabla brands) del negocio; null la quita. Se valida que sea suya antes de guardar.
+  brand_id:           z.number().int().positive().nullable().optional(),
   barcode:            z.string().max(50).nullable().optional(),
   sku:                z.string().max(50).nullable().optional(),
   description:        z.string().nullable().optional(),
@@ -127,6 +129,12 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       where: { id }, // business_id inyectado por el tenant layer
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+
+    // Marca: el id llega del body, así que debe pertenecer a este negocio.
+    if (data.brand_id) {
+      const brand = await db.brand.findFirst({ where: { id: data.brand_id }, select: { id: true } }) // business_id inyectado
+      if (!brand) return NextResponse.json({ error: 'Marca no encontrada', field: 'brand_id' }, { status: 422 })
+    }
 
     // service sale_mode always available in_stock
     if (data.sale_mode === 'service') {

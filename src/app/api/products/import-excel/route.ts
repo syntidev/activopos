@@ -34,9 +34,33 @@ const toNum = (v: unknown): number | null => {
 const toString = (v: unknown): string =>
   String(v ?? '').trim()
 
+// Qué columnas OPCIONALES trae el archivo (según su fila de encabezados). Una columna ausente no borra el
+// dato existente: los archivos viejos siguen subiendo sin pisar descripciones, marcas ni códigos de variante.
+interface ImportColumns {
+  description:    boolean
+  brand:          boolean
+  variantSku:     boolean
+  variantBarcode: boolean
+}
+
+function detectColumns(headerRow: unknown[]): ImportColumns {
+  const names = new Set(headerRow.map(h => toString(h).toLowerCase()))
+  const has = (...candidates: string[]): boolean => candidates.some(c => names.has(c))
+  return {
+    description:    has('descripcion', 'descripción', 'description'),
+    brand:          has('marca', 'brand'),
+    variantSku:     has('sku_variante'),
+    variantBarcode: has('codigo_barras_variante'),
+  }
+}
+
+const DESCRIPTION_MAX = 5000
+const BRAND_NAME_MAX  = 60 // brands.name es VarChar(60)
+
 function validateRow(
   raw: Record<string, unknown>,
-  rowNum: number
+  rowNum: number,
+  cols: ImportColumns,
 ): { valid: ImportRow } | { error: RowError } {
   // id vacío → alta. id con valor → actualización de un producto existente.
   const idRaw = raw['id'] ?? raw['ID']
@@ -144,12 +168,41 @@ function validateRow(
     return { error: { row: rowNum, message: '"stock" de una variante debe ser un entero' } }
   }
 
+  // Columnas opcionales nuevas: undefined cuando el archivo no las trae (no se toca el dato existente).
+  const descriptionRaw = toString(raw['descripcion'] ?? raw['descripción'] ?? raw['description'] ?? raw['Descripción'] ?? '')
+  const description = cols.description ? (descriptionRaw || null) : undefined
+  if (description && description.length > DESCRIPTION_MAX) {
+    return { error: { row: rowNum, message: `"descripcion" supera ${DESCRIPTION_MAX} caracteres` } }
+  }
+
+  const brandRaw = toString(raw['marca'] ?? raw['brand'] ?? raw['Marca'] ?? '')
+  const brand = cols.brand ? (brandRaw || null) : undefined
+  if (brand && brand.length > BRAND_NAME_MAX) {
+    return { error: { row: rowNum, message: `"marca" supera ${BRAND_NAME_MAX} caracteres` } }
+  }
+
+  const variantSkuRaw = toString(raw['sku_variante'] ?? '')
+  const variant_sku = cols.variantSku ? (variantSkuRaw || null) : undefined
+  if (variant_sku && variant_sku.length > 50) {
+    return { error: { row: rowNum, message: '"sku_variante" supera 50 caracteres' } }
+  }
+  const variantBarcodeRaw = toString(raw['codigo_barras_variante'] ?? '')
+  const variant_barcode = cols.variantBarcode ? (variantBarcodeRaw || null) : undefined
+  if (variant_barcode && variant_barcode.length > 50) {
+    return { error: { row: rowNum, message: '"codigo_barras_variante" supera 50 caracteres' } }
+  }
+  if ((variant_sku || variant_barcode) && variantValor === null) {
+    return { error: { row: rowNum, message: '"sku_variante" / "codigo_barras_variante" solo aplican a una fila de variante (con variante_valor)' } }
+  }
+
   return {
     valid: {
       row: rowNum, id, name, barcode, sku, price_usd: price, cost_usd: cost, stock, category,
       product_type, sale_mode, unit_label,
       wholesale_price_usd, wholesale_price_per_kg_usd, location, notes,
+      description, brand,
       variant_tipo: variantTipo as VariantTipo | null, variant_valor: variantValor,
+      variant_sku, variant_barcode,
     },
   }
 }
@@ -188,6 +241,7 @@ export async function POST(req: NextRequest) {
   const workbook = XLSX.read(buffer)
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
   const allRows = XLSX.utils.sheet_to_json(sheet) as Record<string, unknown>[]
+  const cols = detectColumns((XLSX.utils.sheet_to_json(sheet, { header: 1 })[0] ?? []) as unknown[])
 
   // La plantilla trae una fila de ejemplo marcada con id = EJEMPLO. Se descarta
   // antes de validar: si el usuario no la borra no queremos crearle un producto
@@ -207,13 +261,24 @@ export async function POST(req: NextRequest) {
   const errors: RowError[] = []
 
   for (let i = 0; i < rows.length; i++) {
-    const result = validateRow(rows[i], i + 2)
+    const result = validateRow(rows[i], i + 2, cols)
     if ('error' in result) {
       errors.push(result.error)
     } else {
       validRows.push(result.valid)
     }
   }
+
+  // Marca: se resuelve por nombre (sin distinguir mayúsculas) contra las marcas del negocio. NO se crean
+  // marcas solas: cada una es una ficha visible de "Comprá por marca" del catálogo; una desconocida
+  // rechaza la fila con su motivo.
+  const brandRows = cols.brand ? await db.brand.findMany({ select: { id: true, name: true } }) : [] // business_id inyectado
+  const brandIds = new Map(brandRows.map(b => [b.name.trim().toLowerCase(), b.id]))
+  const importRows = validRows.filter(r => {
+    if (!r.brand || brandIds.has(r.brand.toLowerCase())) return true
+    errors.push({ row: r.row, message: `La marca "${r.brand}" no existe en este negocio — créala en Configuración > Marcas o corrige el nombre` })
+    return false
+  })
 
   // Snapshot del negocio sobre el que se calcula el plan: productos con su
   // categoría y variantes activas, más el stock neto del padre. El plan es la
@@ -224,9 +289,10 @@ export async function POST(req: NextRequest) {
         id: true, name: true, barcode: true, sku: true, product_type: true, sale_mode: true,
         base_unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true,
         cost_per_unit_usd: true, wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
-        location: true, notes: true, active: true, has_variants: true,
+        location: true, notes: true, active: true, has_variants: true, description: true,
         category: { select: { name: true } },
-        variants: { where: { is_active: true }, select: { id: true, tipo: true, valor: true, stock: true } },
+        brand: { select: { name: true } },
+        variants: { where: { is_active: true }, select: { id: true, tipo: true, valor: true, stock: true, sku: true, barcode: true } },
       },
     }),
     db.inventoryEntry.groupBy({
@@ -248,13 +314,23 @@ export async function POST(req: NextRequest) {
     wholesale_price_usd: num(p.wholesale_price_usd),
     wholesale_price_per_kg_usd: num(p.wholesale_price_per_kg_usd),
     location: p.location, notes: p.notes, active: p.active, has_variants: p.has_variants,
+    description: p.description, brand: p.brand?.name ?? null,
     net_stock: netStock.get(p.id) ?? 0,
     variants: p.variants,
   }))
   const barcodeOwners = new Map<string, number>()
   for (const p of existing) if (p.barcode) barcodeOwners.set(p.barcode, p.id)
 
-  const plan = planImport(validRows, existing, barcodeOwners)
+  // Códigos de barras ya usados por variantes del negocio (ProductVariant no tiene business_id: se aísla
+  // por su producto, con el business_id de la sesión).
+  const variantBarcodeRows = await prisma.productVariant.findMany({
+    where:  { barcode: { not: null }, product: { business_id: session.businessId } },
+    select: { id: true, barcode: true },
+  })
+  const variantBarcodeOwners = new Map<string, number>()
+  for (const v of variantBarcodeRows) if (v.barcode) variantBarcodeOwners.set(v.barcode, v.id)
+
+  const plan = planImport(importRows, existing, barcodeOwners, variantBarcodeOwners)
   const rowErrors: RowError[] = [...errors, ...plan.errors].sort((a, b) => a.row - b.row)
 
   if (dryRun) {
@@ -303,6 +379,9 @@ export async function POST(req: NextRequest) {
     wholesale_price_per_kg_usd: r.wholesale_price_per_kg_usd,
     location:                   r.location,
     notes:                      r.notes,
+    // Columnas opcionales: solo se escriben si el archivo las trae (undefined = no tocar).
+    ...(r.description !== undefined && { description: r.description }),
+    ...(r.brand !== undefined && { brand_id: r.brand ? brandIds.get(r.brand.toLowerCase()) ?? null : null }),
   })
 
   let created = 0
@@ -362,10 +441,22 @@ export async function POST(req: NextRequest) {
           const delta = v.new - (v.old ?? 0)
           if (v.action === 'create') {
             await tx.productVariant.create({
-              data: { product_id: productId as number, tipo: v.tipo, valor: v.valor, stock: v.new, sort_order: i },
+              data: {
+                product_id: productId as number, tipo: v.tipo, valor: v.valor, stock: v.new, sort_order: i,
+                // sku/barcode de la variante: solo si el archivo trae esas columnas.
+                ...(v.sku !== undefined && { sku: v.sku }),
+                ...(v.barcode !== undefined && { barcode: v.barcode }),
+              },
             })
           } else {
-            await tx.productVariant.update({ where: { id: v.variant_id as number }, data: { stock: v.new } })
+            await tx.productVariant.update({
+              where: { id: v.variant_id as number },
+              data:  {
+                stock: v.new,
+                ...(v.sku !== undefined && { sku: v.sku }),
+                ...(v.barcode !== undefined && { barcode: v.barcode }),
+              },
+            })
           }
           if (delta !== 0) {
             await tx.inventoryEntry.create({

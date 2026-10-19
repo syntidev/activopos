@@ -16,6 +16,7 @@ export async function GET() {
       'tipo_producto', 'modo_venta', 'unidad',
       'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
       'variante_tipo', 'variante_valor',
+      'descripcion', 'marca', 'sku_variante', 'codigo_barras_variante',
     ]
 
     // Las filas de ejemplo van en la hoja "Productos" para que se vean al abrir
@@ -25,16 +26,19 @@ export async function GET() {
     const example = [
       'EJEMPLO', 'Arepa con Pollo', '', 'AREPA-001', 3.50, 1.50, 50, 'Alimentos',
       'simple', 'unidad', 'und', '', '', 'Mostrador', 'Producto estrella del negocio', '', '',
+      'Arepa rellena de pollo con queso', '', '', '',
     ]
     // Producto con variantes: una fila por talla/color, mismo nombre; el stock de
     // cada fila es el de esa variante.
     const exampleVariantS = [
       'EJEMPLO', 'Franela Deportiva', '', '', 12, 6, 10, 'Ropa',
       'simple', 'unidad', 'und', '', '', '', '', 'talla', 'S',
+      'Franela de entrenamiento', '', 'FRA-DEP-S', '7591234500011',
     ]
     const exampleVariantM = [
       'EJEMPLO', 'Franela Deportiva', '', '', 12, 6, 8, 'Ropa',
       'simple', 'unidad', 'und', '', '', '', '', 'talla', 'M',
+      'Franela de entrenamiento', '', 'FRA-DEP-M', '7591234500028',
     ]
     const ws = XLSX.utils.aoa_to_sheet([headers, example, exampleVariantS, exampleVariantM])
 
@@ -61,6 +65,10 @@ export async function GET() {
       { wch: 24 }, // notes
       { wch: 14 }, // variante_tipo
       { wch: 16 }, // variante_valor
+      { wch: 36 }, // descripcion
+      { wch: 14 }, // marca
+      { wch: 18 }, // sku_variante
+      { wch: 22 }, // codigo_barras_variante
     ]
 
     const guide = [
@@ -82,6 +90,10 @@ export async function GET() {
       ['notas', 'No', 'Texto libre', 'Producto de temporada'],
       ['variante_tipo', 'No', 'talla | color | personalizado — por defecto: talla. Solo si la fila es una variante.', 'talla'],
       ['variante_valor', 'No', 'Texto, máx 50 — la talla o el color de esa fila. Vacío = producto sin variantes.', 'M'],
+      ['descripcion', 'No', 'Texto, máx 5000 — descripción del producto (se toma de la primera fila del producto). Si la columna no viene en el archivo, no se toca la descripción actual.', 'Ref: 11953H'],
+      ['marca', 'No', 'Nombre de una marca que ya exista en Configuración > Marcas (no se crean solas). Si no existe, la fila se rechaza.', 'Safetti'],
+      ['sku_variante', 'No', 'Texto, máx 50 — el SKU de ESA variante (el "sku" de arriba es el del producto). Solo en filas de variante.', 'FRA-DEP-M'],
+      ['codigo_barras_variante', 'No', 'Texto, máx 50 — el código de barras de ESA variante; el POS lo encuentra al escanear y abre esa talla. No puede repetirse entre variantes ni productos.', '7591234500028'],
       [],
       ['Cómo llenar la plantilla'],
       ['1. Borra la fila de ejemplo (la que dice EJEMPLO en la columna "id").'],

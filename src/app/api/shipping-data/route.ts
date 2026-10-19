@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { parsePrintSettings } from '@/lib/print-settings'
+import { logError } from '@/lib/safe-log'
 import type { ShippingData } from '@/lib/shipping'
 
 // Datos de envío de un pedido (por order_id) o de la venta que lo cobró (por
@@ -50,6 +51,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
-    throw e
+    logError('shipping-data error', e)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

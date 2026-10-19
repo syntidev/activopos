@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { savedAddressCedulaLimiter, savedAddressIpLimiter, getClientIp } from '@/lib/rate-limit'
+import {
+  savedAddressCedulaLimiter, savedAddressIpLimiter, savedAddressPhoneLimiter, getClientIp,
+} from '@/lib/rate-limit'
 import { isCatalogLive } from '@/lib/catalog'
-import { checkCheckoutCedula, hasUsablePhone, phoneLookupVariants } from '@/lib/customer-identity'
+import { logError } from '@/lib/safe-log'
+import { checkCheckoutCedula, hasUsablePhone, normalizeClientPhone, phoneLookupVariants } from '@/lib/customer-identity'
 import { validateAddress } from '@/lib/shipping'
 import type { SavedAddressResponse } from '@/types/shipping'
 
@@ -17,7 +20,7 @@ import type { SavedAddressResponse } from '@/types/shipping'
  *    sin dirección, cédula desconocida o teléfono que no coincide dan exactamente { has_saved_address: false };
  *  - nunca devuelve la dirección, el nombre ni ningún otro dato;
  *  - tiempo de respuesta con piso fijo (la rama "existe" y la "no existe" no se distinguen por latencia);
- *  - limitada por IP y por slug+cédula (RateLimiterMemory: por proceso, ver rate-limit.ts).
+ *  - limitada por IP, por slug+cédula y por slug+teléfono (RateLimiterMemory: por proceso, ver rate-limit.ts).
  * El POST del pedido hace la comprobación definitiva (nombre y dirección válida): aquí "true" solo
  * significa "vale la pena ofrecer 'misma dirección'".
  */
@@ -52,6 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
   try {
     await savedAddressCedulaLimiter.consume(`${slug.data}:${cedula.value}`)
+    await savedAddressPhoneLimiter.consume(`${slug.data}:${normalizeClientPhone(parsed.data.customer_phone)}`)
   } catch {
     return NextResponse.json({ error: 'Demasiados intentos. Intenta más tarde.' }, { status: 429 })
   }
@@ -72,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     })
     return respond(startedAt, !!client && validateAddress(client.address) === null)
   } catch (err) {
-    console.error('saved-address error:', err)
+    logError('saved-address error', err)
     return respond(startedAt, false)
   }
 }

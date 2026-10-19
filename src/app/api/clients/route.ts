@@ -3,6 +3,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 import { checkCedula } from '@/lib/cedula'
 import { validateAddress } from '@/lib/shipping'
+import { logError } from '@/lib/safe-log'
 
 const clientSchema = z.object({
   name: z.string().min(1).max(120),
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
     })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
-    console.error('Clients list error:', e)
+    logError('Clients list error', e)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }
@@ -71,7 +72,8 @@ export async function POST(req: NextRequest) {
     const { session, db } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-    const body = await req.json()
+    const body: unknown = await req.json().catch(() => undefined)
+    if (body === undefined) return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
     const data = clientSchema.parse(body)
 
     // Cédula / RIF opcional: misma regla y mismo mensaje que el checkout (lib/cedula.ts).
@@ -111,7 +113,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
-    console.error('Client create error:', err)
+    logError('Client create error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

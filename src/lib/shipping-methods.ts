@@ -1,5 +1,8 @@
 import type { ShippingKind, ShippingMethodDTO } from '@/types/shipping'
 
+/** Roles que pueden crear, editar o borrar métodos de envío: lista blanca explícita (todo lo demás, 403). */
+export const SHIPPING_WRITE_ROLES: readonly string[] = ['admin']
+
 interface MethodRow {
   id: number
   code: string

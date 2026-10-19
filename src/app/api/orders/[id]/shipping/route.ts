@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { prisma } from '@/lib/prisma'
+import { getClientIp } from '@/lib/rate-limit'
+import { logError } from '@/lib/safe-log'
 import { checkCheckoutCedula, hasUsablePhone, normalizeClientPhone } from '@/lib/customer-identity'
 import { validateAddress, validateShipping } from '@/lib/shipping'
 
@@ -23,7 +26,7 @@ const fail = (error: string, field: string, status = 422): NextResponse =>
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }): Promise<NextResponse> {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
 
     const id = Number(params.id)
     if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
@@ -63,29 +66,53 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const shippingError = validateShipping({ recipient, cedula, phone, address })
     if (shippingError) return fail(shippingError, 'delivery')
 
-    if (body.ship_metodo_id !== undefined && body.ship_metodo_id !== null) {
-      const method = await db.businessShippingMethod.findFirst({ where: { id: body.ship_metodo_id }, select: { id: true } }) // business_id inyectado
-      if (!method) return fail('Método de envío inválido.', 'ship_metodo_id')
+    // Método: cambiarlo re-congela etiqueta y tipo en el pedido (quitarlo los deja en null).
+    let methodSnapshot: { ship_metodo_label: string | null; ship_metodo_kind: string | null } | null = null
+    if (body.ship_metodo_id !== undefined) {
+      if (body.ship_metodo_id === null) {
+        methodSnapshot = { ship_metodo_label: null, ship_metodo_kind: null }
+      } else {
+        const method = await db.businessShippingMethod.findFirst({ where: { id: body.ship_metodo_id }, select: { id: true, label: true, kind: true } }) // business_id inyectado
+        if (!method) return fail('Método de envío inválido.', 'ship_metodo_id')
+        methodSnapshot = { ship_metodo_label: method.label, ship_metodo_kind: method.kind }
+      }
     }
 
-    const updated = await db.order.update({
-      where: { id },
-      data: {
-        ...(body.ship_nombre    !== undefined && { ship_nombre: recipient, recipient_name: recipient }),
-        ...(body.ship_cedula    !== undefined && { ship_cedula: cedula }),
-        ...(body.ship_telefono  !== undefined && { ship_telefono: phone }),
-        ...(body.ship_direccion !== undefined && { ship_direccion: address, delivery_address: address }),
-        ...(body.ship_metodo_id !== undefined && { ship_metodo_id: body.ship_metodo_id }),
-      },
-      select: {
-        id: true, order_number: true, ship_nombre: true, ship_cedula: true, ship_telefono: true,
-        ship_direccion: true, ship_metodo_id: true,
-      },
+    // Rastro de auditoría: quién (user_id), cuándo (created_at) y QUÉ CAMPOS cambió; nunca los valores,
+    // que son datos personales del cliente. Mismo commit que el cambio. El pedido ya se verificó del negocio.
+    const changed = Object.keys(body)
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.order.update({
+        where: { id },
+        data: {
+          ...(body.ship_nombre    !== undefined && { ship_nombre: recipient, recipient_name: recipient }),
+          ...(body.ship_cedula    !== undefined && { ship_cedula: cedula }),
+          ...(body.ship_telefono  !== undefined && { ship_telefono: phone }),
+          ...(body.ship_direccion !== undefined && { ship_direccion: address, delivery_address: address }),
+          ...(body.ship_metodo_id !== undefined && { ship_metodo_id: body.ship_metodo_id, ...methodSnapshot }),
+        },
+        select: {
+          id: true, order_number: true, ship_nombre: true, ship_cedula: true, ship_telefono: true,
+          ship_direccion: true, ship_metodo_id: true, ship_metodo_label: true, ship_metodo_kind: true,
+        },
+      })
+      await tx.activityLog.create({
+        data: {
+          business_id: session.businessId,
+          user_id:     session.userId,
+          action:      'order_shipping_edited',
+          model_type:  'Order',
+          model_id:    id,
+          new_values:  { fields: changed },
+          ip_address:  getClientIp(req),
+        },
+      })
+      return row
     })
     return NextResponse.json({ ok: true, order: updated })
   } catch (err) {
     if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
-    console.error('order shipping PATCH error:', err)
+    logError('order shipping PATCH error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

@@ -3,6 +3,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
 import { checkCedula } from '@/lib/cedula'
 import { validateAddress } from '@/lib/shipping'
+import { logError } from '@/lib/safe-log'
 
 const patchSchema = z.object({
   name: z.string().min(1).max(120).optional(),
@@ -79,7 +80,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
-    throw e
+    logError('Client get error', e)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }
 
@@ -90,7 +92,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const id = parseId(params.id)
     if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
-    const body = await req.json()
+    const body: unknown = await req.json().catch(() => undefined)
+    if (body === undefined) return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
     const data = patchSchema.parse(body)
 
     // price_tier (detal/mayorista) reclasifica al cliente de forma permanente y cambia
@@ -108,6 +111,12 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       where: { id }, // business_id inyectado por el tenant layer
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+
+    // La dirección de un cliente ya verificado alimenta "misma dirección" del checkout: cambiarla
+    // equivale a redirigir sus envíos, así que solo el admin puede.
+    if (data.address !== undefined && existing.verified && session.role !== 'admin') {
+      return NextResponse.json({ error: 'Cliente verificado: solo el administrador puede cambiar su dirección.' }, { status: 403 })
+    }
 
     // Cédula / RIF: solo se valida si CAMBIÓ respecto a lo guardado (clientes antiguos
     // con texto libre siguen pudiendo editarse). Un valor nuevo se guarda normalizado.
@@ -144,7 +153,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
     }
-    console.error('Client patch error:', err)
+    logError('Client patch error', err)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }
@@ -176,6 +185,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
-    throw e
+    logError('Client delete error', e)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

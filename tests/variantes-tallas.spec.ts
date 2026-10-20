@@ -28,7 +28,9 @@ async function login(page: Page): Promise<void> {
 async function fillBasics(page: Page, name: string): Promise<void> {
   await page.goto('/productos/nuevo')
   await page.locator('#np-name').fill(name)
+  await page.getByRole('tab', { name: 'Precio' }).click()
   await page.locator('#np-cost').fill('10')
+  await page.getByRole('tab', { name: 'Inventario y variantes' }).click()
   await page.locator('label[aria-label="Este producto tiene tallas o colores"]').click()
 }
 
@@ -75,6 +77,7 @@ test('ropa: 3 tallas con stock y código de barras, guarda y recarga', async ({ 
   // recarga: la edición trae las tallas guardadas
   const id = sql(`SELECT id FROM products WHERE business_id=${BUSINESS_ID} AND name='${NAME_ROPA}'`)
   await page.goto(`/productos/${id}/editar`)
+  await page.getByRole('tab', { name: 'Inventario y variantes' }).click()
   await expect(rowOf(page, 'M').getByLabel('Código de barras')).toHaveValue(BC_M)
   await expect(page.getByText('Stock total: 9 und')).toBeVisible()
   expect(Number(sql(`SELECT SUM(quantity-waste) FROM inventory_entries WHERE product_id=${id}`))).toBe(9)

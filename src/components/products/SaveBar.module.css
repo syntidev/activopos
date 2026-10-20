@@ -1,6 +1,7 @@
 .bar {
   position: sticky;
-  bottom: 0;
+  /* Mismo motivo que la barra de pestañas: compensa el padding del scroller. */
+  bottom: calc(var(--space-6) * -1);
   z-index: var(--z-sticky);
   display: flex;
   justify-content: flex-end;
@@ -60,6 +61,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .spin { animation: none; }
+}
+
+@media (max-width: 1023px) {
+  .bar { bottom: calc(var(--space-4) * -1); }
 }
 
 @media (max-width: 639px) {

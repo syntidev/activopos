@@ -13,11 +13,8 @@
   gap: var(--space-6);
 }
 
-/* ── Header fijo ── */
+/* ── Header: ya no es sticky (tapaba contenido); la barra de pestañas es lo que queda fijo ── */
 .header {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -245,4 +242,19 @@
   .card { padding: var(--space-3) var(--space-3-5); gap: var(--space-4); }
   /* Botón cancelar oculto en móvil — el back del header cubre esa acción */
   .cancelHideMobile { display: none; }
+}
+
+/* ── Paneles de pestañas del formulario de producto ── */
+.panel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.panel[hidden] { display: none; }
+
+@media (min-width: 900px) {
+  .panel { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
 }

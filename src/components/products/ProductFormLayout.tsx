@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   X, Plus, ImagePlus, Loader2, Layers, Globe, Star,
   Box, Scale, Wrench, Boxes, Search, ScanBarcode,
@@ -10,6 +10,7 @@ import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProd
 import { categoryRequiresVariant } from '@/lib/variantPresets'
 import { VariantEditor } from './VariantEditor'
 import { AccordionCard } from './AccordionCard'
+import { ProductTabBar, tabButtonId, tabPanelId, type ProductTabId } from './ProductTabs'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import type { ModalCategory } from './ProductModal'
 import m from './modals.module.css'
@@ -66,14 +67,30 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
   // no confirmó si prefiere bloquear el guardado, así que por ahora solo
   // avisa. Cubre los dos casos reales encontrados: el toggle "Tiene
   // variantes" apagado, y encendido pero sin ninguna talla agregada todavía.
+  const [tab, setTab] = useState<ProductTabId>('basico')
+  const tabErrors: Record<ProductTabId, boolean> = {
+    basico:     !!f.errors.name,
+    precio:     !!(f.errors.cost || f.errors.margin || f.errors.price),
+    inventario: !!f.errors.variants,
+    imagenes:   !!f.imgError,
+    catalogo:   false,
+    avanzado:   false,
+  }
+  // Al intentar guardar con errores, salta a la primera pestaña que los tiene.
+  useEffect(() => {
+    const first = (Object.keys(tabErrors) as ProductTabId[]).find(id => tabErrors[id])
+    if (first && !tabErrors[tab]) setTab(first)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.errors])
+
   const selectedCategoryName = categories.find(cat => cat.id === f.categoryId)?.name ?? null
   const showSizeHint = categoryRequiresVariant(selectedCategoryName) && !f.hasVariants && f.rows.length === 0
 
   return (
     <>
-      {/* ══ Columna izquierda ══ */}
-      <div className={s.column}>
+      <ProductTabBar active={tab} onChange={setTab} errors={tabErrors} />
 
+      <div role="tabpanel" id={tabPanelId('basico')} aria-labelledby={tabButtonId('basico')} hidden={tab !== 'basico'} className={s.panel}>
         {/* ── Card: Información básica ── */}
         <AccordionCard title="Información básica" defaultOpen hasError={!!f.errors.name}>
           <div className={m.formGroup}>
@@ -284,6 +301,9 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           </div>
         </AccordionCard>
 
+      </div>
+
+      <div role="tabpanel" id={tabPanelId('imagenes')} aria-labelledby={tabButtonId('imagenes')} hidden={tab !== 'imagenes'} className={s.panel}>
         {/* ── Card: Imágenes ── */}
         <AccordionCard title="Imágenes" defaultOpen hasError={!!f.imgError}>
           <div className={c.imgGrid}>
@@ -335,6 +355,9 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           {f.imgError && <p className={m.errorMsg}>{f.imgError}</p>}
         </AccordionCard>
 
+      </div>
+
+      <div role="tabpanel" id={tabPanelId('catalogo')} aria-labelledby={tabButtonId('catalogo')} hidden={tab !== 'catalogo'} className={s.panel}>
         {/* ── Card: Catálogo ── */}
         <AccordionCard title="Catálogo" defaultOpen>
           <div className={m.formGroup}>
@@ -495,9 +518,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
         </AccordionCard>
       </div>
 
-      {/* ══ Columna derecha ══ */}
-      <div className={s.column}>
-
+      <div role="tabpanel" id={tabPanelId('precio')} aria-labelledby={tabButtonId('precio')} hidden={tab !== 'precio'} className={s.panel}>
         {/* ── Card: Precio (solo costo/margen/precio/utilidad) ── */}
         <AccordionCard
           title="Precio"
@@ -674,17 +695,26 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           </div>
 
           {/* Utilidad estimada */}
-          <div className={`${c.utilityCard} ${f.computed.utility < 0 ? c.utilityCardNegative : ''}`}>
-            <div className={c.utilityInfo}>
-              <span className={`${c.utilityLabel} ${f.computed.utility < 0 ? c.utilityLabelNegative : ''}`}>
-                Utilidad estimada
-              </span>
-              <span className={c.utilitySub}>por unidad</span>
+          {f.costUnknown ? (
+            <div className={c.utilityCard}>
+              <div className={c.utilityInfo}>
+                <span className={c.utilityLabel}>Sin costo cargado</span>
+                <span className={c.utilitySub}>No se puede calcular la utilidad</span>
+              </div>
             </div>
-            <span className={`${c.utilityAmount} ${f.computed.utility < 0 ? c.utilityAmountNegative : ''}`}>
-              {f.fmtUsd(f.computed.utility)}
-            </span>
-          </div>
+          ) : (
+            <div className={`${c.utilityCard} ${f.computed.utility < 0 ? c.utilityCardNegative : ''}`}>
+              <div className={c.utilityInfo}>
+                <span className={`${c.utilityLabel} ${f.computed.utility < 0 ? c.utilityLabelNegative : ''}`}>
+                  Utilidad estimada
+                </span>
+                <span className={c.utilitySub}>por unidad</span>
+              </div>
+              <span className={`${c.utilityAmount} ${f.computed.utility < 0 ? c.utilityAmountNegative : ''}`}>
+                {f.fmtUsd(f.computed.utility)}
+              </span>
+            </div>
+          )}
         </AccordionCard>
 
         {/* ── Card: Precio Mayorista — el toggle YA es el mecanismo de
@@ -821,7 +851,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                   </p>
                 </div>
 
-                {wholesaleValue > 0 && (
+                {wholesaleValue > 0 && !f.costUnknown && (
                   <div className={`${c.utilityCard} ${wholesaleUtility < 0 ? c.utilityCardNegative : ''}`}>
                     <div className={c.utilityInfo}>
                       <span className={`${c.utilityLabel} ${wholesaleUtility < 0 ? c.utilityLabelNegative : ''}`}>
@@ -839,38 +869,12 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           })()}
         </section>
 
-        {/* ── Card: Detalles internos — ubicación y notas, SIN toggle propio
-            (siempre visibles dentro del body una vez expandida la card;
-            son 2 campos simples, no necesitan ocultarse entre sí). ── */}
-        <AccordionCard title="Detalles internos" defaultOpen={false}>
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-location">
-              <MapPin size={13} className={c.toggleIcon} aria-hidden="true" />
-              Ubicación (opcional)
-            </label>
-            <input
-              id="np-location"
-              type="text"
-              className={m.input}
-              placeholder="Ej: Pasillo 3, Estante B"
-              value={f.location}
-              onChange={(e) => f.setLocation(e.target.value)}
-              maxLength={120}
-            />
-          </div>
+      </div>
 
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-notes">Notas (opcional)</label>
-            <textarea
-              id="np-notes"
-              className={m.textarea}
-              placeholder="Información interna del producto..."
-              value={f.productNotes}
-              onChange={(e) => f.setProductNotes(e.target.value)}
-              rows={2}
-            />
-          </div>
-        </AccordionCard>
+      <div role="tabpanel" id={tabPanelId('inventario')} aria-labelledby={tabButtonId('inventario')} hidden={tab !== 'inventario'} className={s.panel}>
+        {f.saleMode === 'service' && (
+          <p className={c.fixedPriceSub}>Un servicio no maneja inventario ni tallas.</p>
+        )}
 
         {/* ── Card: Inventario (stock + alerta — sin variantes) ── */}
         {f.saleMode !== 'service' && (
@@ -1107,8 +1111,44 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           </section>
         )}
 
-        {f.errors.submit && <p className={m.errorMsg}>{f.errors.submit}</p>}
       </div>
+
+      <div role="tabpanel" id={tabPanelId('avanzado')} aria-labelledby={tabButtonId('avanzado')} hidden={tab !== 'avanzado'} className={s.panel}>
+        {/* ── Card: Detalles internos — ubicación y notas, SIN toggle propio
+            (siempre visibles dentro del body una vez expandida la card;
+            son 2 campos simples, no necesitan ocultarse entre sí). ── */}
+        <AccordionCard title="Detalles internos" defaultOpen={false}>
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-location">
+              <MapPin size={13} className={c.toggleIcon} aria-hidden="true" />
+              Ubicación (opcional)
+            </label>
+            <input
+              id="np-location"
+              type="text"
+              className={m.input}
+              placeholder="Ej: Pasillo 3, Estante B"
+              value={f.location}
+              onChange={(e) => f.setLocation(e.target.value)}
+              maxLength={120}
+            />
+          </div>
+
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-notes">Notas (opcional)</label>
+            <textarea
+              id="np-notes"
+              className={m.textarea}
+              placeholder="Información interna del producto..."
+              value={f.productNotes}
+              onChange={(e) => f.setProductNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+        </AccordionCard>
+      </div>
+
+      {f.errors.submit && <p className={m.errorMsg}>{f.errors.submit}</p>}
 
       {/* ── Overlays (dependientes de f) ── */}
       <CatalogUpgradeModal

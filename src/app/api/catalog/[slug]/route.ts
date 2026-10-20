@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
+import { isFinancingEffective, readFinancingConfig, toPublicFinancing } from '@/lib/financing'
 import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf } from '@/lib/catalog'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
@@ -67,6 +68,7 @@ function getCachedCatalogData(slug: string) {
           availability:       true,
           catalog_visibility: true,
           brand_id:           true,
+          financing_excluded: true,
           brand: { select: { name: true } },
           category: { select: { name: true } },
         },
@@ -107,6 +109,8 @@ export async function GET(
   }
 
   const { business, products } = cached
+  // Financiamiento configurable por negocio; un producto aplica si está activado Y no está excluido.
+  const financingCfg = readFinancingConfig(business.settings, business.id)
 
   // No filtrar campos de suscripción al público
   // settings contiene config interna (delivery, etc.): nunca va al público.
@@ -134,6 +138,7 @@ export async function GET(
     business: {
       ...publicBusiness,
       catalog_title: publicBusiness.catalog_title ?? publicBusiness.name,
+      financing:     toPublicFinancing(financingCfg),
     },
     products: products.map(p => {
       const imgs     = parseImages(p.images)
@@ -153,6 +158,7 @@ export async function GET(
         base_unit_label: p.base_unit_label,
         category_name:      p.category?.name ?? null,
         brand_id:           p.brand_id,
+        financing_available: isFinancingEffective(financingCfg, p),
         brand_name:         p.brand?.name ?? null,
         badge:              p.badge ?? 'none',
         subcategory:        p.subcategory ?? null,

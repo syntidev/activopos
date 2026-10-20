@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { subcategoryKey } from '@/lib/subcategory'
 import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER , stockDisplayOf } from '@/lib/catalog'
-import { isFinancingBadgeKey } from '@/lib/financing-badges'
+import { legacyBadgeKey, readFinancingConfig } from '@/lib/financing'
 import { ProductoDetalle } from '../../ProductoDetalle'
 import type { PaymentMethod } from '../../CatalogoGrid'
 import { CatalogFooter } from '../../CatalogFooter'
@@ -109,8 +109,8 @@ export default async function ProductoPage({ params }: PageProps) {
 
 
   // Sello: producto marcado Y toggle del negocio activo; si falta uno, no se muestra nada.
-  const badgeSetting   = (business.settings as Record<string, unknown> | null)?.catalog_financing_badge
-  const financingBadge = product.financing_eligible && isFinancingBadgeKey(badgeSetting) ? badgeSetting : null
+  // Elegible = financiamiento activado en Configuración Y producto no excluido (por defecto todos entran).
+  const financingBadge = legacyBadgeKey(readFinancingConfig(business.settings, business.id), product)
 
   const imgs     = parseImages(product.images)
   const priceUsd  = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)

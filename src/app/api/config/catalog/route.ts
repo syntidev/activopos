@@ -3,12 +3,17 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { FINANCING_BADGES, isFinancingBadgeKey } from '@/lib/financing-badges'
-import { stockDisplayOf } from '@/lib/catalog'
+import { stockDisplayOf, revalidateCatalogCache } from '@/lib/catalog'
+import { CASHEA_PRESET, buildFinancingConfig, financingInputSchema, readFinancingConfig } from '@/lib/financing'
+import type { FinancingConfig } from '@/lib/financing'
 
 const financingSchema = z.object({
+  // Config de financiamiento completa (modo, nombre, frase, logo). Ver .doc/CONTRATO_FINANCIAMIENTO.md.
+  financing:               financingInputSchema.optional(),
+  // Interruptor viejo (solo Cashea): se sigue aceptando mientras la pantalla de Tema no migre a `financing`.
   catalog_financing_badge: z.enum(Object.keys(FINANCING_BADGES) as [string, ...string[]]).nullable().optional(),
   catalog_stock_display:   z.enum(['exact', 'status']).optional(),
-}).refine(d => d.catalog_financing_badge !== undefined || d.catalog_stock_display !== undefined, { message: 'Nada que guardar' })
+}).refine(d => d.financing !== undefined || d.catalog_financing_badge !== undefined || d.catalog_stock_display !== undefined, { message: 'Nada que guardar' })
 
 const upgradeSchema = z.object({
   action: z.literal('request_upgrade'),
@@ -35,6 +40,7 @@ export async function GET() {
       catalog_plan:            business.catalog_plan,
       catalog_slug:            business.catalog_slug,
       catalog_financing_badge: isFinancingBadgeKey(badge) ? badge : null,
+      financing:               readFinancingConfig(settings, session.businessId),
       catalog_stock_display:   stockDisplayOf(settings),
     },
   })
@@ -56,18 +62,33 @@ export async function PATCH(req: NextRequest) {
     })
     const existing = (business?.settings ?? {}) as Record<string, unknown>
 
+    let financing: FinancingConfig | undefined
+    if (data.financing) {
+      const built = buildFinancingConfig(data.financing, session.businessId)
+      if (!built.ok) return NextResponse.json({ error: built.error, field: built.field }, { status: 422 })
+      financing = built.config
+    } else if (data.catalog_financing_badge !== undefined) {
+      // Pantalla vieja (solo Cashea): se traduce a la config nueva sin perder lo ya configurado.
+      const current = readFinancingConfig(existing, session.businessId)
+      financing = data.catalog_financing_badge === null
+        ? { ...current, enabled: false }
+        : { enabled: true, mode: 'cashea', ...CASHEA_PRESET }
+    }
+
     await prisma.business.update({
       where: { id: session.businessId },
       data:  {
         settings: {
           ...existing,
-          ...(data.catalog_financing_badge !== undefined ? { catalog_financing_badge: data.catalog_financing_badge } : {}),
+          // catalog_financing_badge se mantiene sincronizado (solo 'cashea' activo) para lo que aún lo lea.
+          ...(financing ? { financing: { ...financing }, catalog_financing_badge: financing.enabled && financing.mode === 'cashea' ? 'cashea' : null } : {}),
           ...(data.catalog_stock_display !== undefined ? { catalog_stock_display: data.catalog_stock_display } : {}),
         },
       },
     })
+    await revalidateCatalogCache(session.businessId)
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, financing: financing ?? readFinancingConfig(existing, session.businessId) })
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })

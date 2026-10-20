@@ -10,7 +10,7 @@ import { usePlanGate } from '@/hooks/usePlanGate'
 import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ProductFormLayout } from '@/components/products/ProductFormLayout'
-import { SaveFab } from '@/components/products/SaveFab'
+import { SaveBar } from '@/components/products/SaveBar'
 import type { ProductFormData, ModalCategory, EditableProduct } from '@/components/products/ProductModal'
 import m from '@/components/products/modals.module.css'
 import s from '../../nuevo/NuevoProducto.module.css'
@@ -23,6 +23,7 @@ interface ApiProductDetail {
   name: string
   description: string | null
   barcode: string | null
+  sku?: string | null
   sale_mode: EditableProduct['sale_mode']
   category_id: number | null
   cost_per_unit_usd: number | null
@@ -68,6 +69,7 @@ function toEditable(p: ApiProductDetail): EditableProduct {
     name:               p.name,
     description:        p.description,
     barcode:            p.barcode,
+    sku:                p.sku,
     sale_mode:          p.sale_mode,
     category_id:        p.category_id,
     cost_per_unit_usd:  p.cost_per_unit_usd,
@@ -214,6 +216,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         name:               data.name,
         description:        data.description ?? null,
         barcode:            data.barcode || null,
+        sku:                data.sku || null,
         sale_mode:          data.saleMode,
         product_type:       data.productType,
         unit_type:          data.unitType,
@@ -275,20 +278,6 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
             <ArrowLeft size={18} aria-hidden="true" />
           </Link>
           <h1 className={s.title}>{editProduct ? `Editar: ${editProduct.name}` : 'Editar Producto'}</h1>
-        </div>
-        <div className={s.headerActions}>
-          <button
-            type="button"
-            className={`${m.btnSecondary} ${s.cancelHideMobile}`}
-            onClick={() => router.back()}
-            disabled={f.isSaving}
-          >
-            Cancelar
-          </button>
-          <button type="submit" form={FORM_ID} className={m.btnPrimary} disabled={f.isSaving || !editProduct}>
-            {f.isSaving && <span className={m.spinner} aria-hidden="true" />}
-            {f.isSaving ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
         </div>
       </header>
 
@@ -357,7 +346,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
       />
 
       {!loading && !loadError && (
-        <SaveFab formId={FORM_ID} isSaving={f.isSaving} disabled={!editProduct} />
+        <SaveBar formId={FORM_ID} isSaving={f.isSaving} onCancel={() => router.back()} saveLabel="Guardar cambios" disabled={!editProduct} />
       )}
 
       <UpgradeModal reason={upgradeReason} onClose={clearUpgrade} />

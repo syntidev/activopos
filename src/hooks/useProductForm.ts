@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useScanner } from '@/hooks/useScanner'
-import { suggestEquivalence } from '@/lib/size-guide'
+import type { VariantRow, SizeType } from '@/types/variantForm'
+import { sizeTypeForGroup } from '@/lib/variantPresets'
 import type {
   ProductFormData,
-  ProductVariantInput,
   EditableProduct,
 } from '@/components/products/ProductModal'
 
@@ -19,9 +19,11 @@ interface DbVariant {
   tipo: string
   valor: string
   sku: string | null
+  barcode: string | null
   precio_extra: number
   price_usd: number | null
   stock: number
+  variant_group: string | null
 }
 
 interface ComponentEntry {
@@ -137,6 +139,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [name, setName]               = useState('')
   const [description, setDescription] = useState('')
   const [barcode, setBarcode]         = useState('')
+  const [sku, setSku]                 = useState('')
   const [productKind, setProductKind] = useState<ProductKind>('simple')
   const [measuredBy, setMeasuredBy]   = useState<'weight' | 'volume' | 'length'>('weight')
   const [unitLabel, setUnitLabel]     = useState('kg')
@@ -171,10 +174,9 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [availability, setAvailability]     = useState<Availability>('in_stock')
   const [showCatalogUpgrade, setShowCatalogUpgrade] = useState(false)
   const [hasVariants, setHasVariants]       = useState(false)
-  const [variants, setVariants]             = useState<ProductVariantInput[]>([])
-  const [newVarName, setNewVarName]         = useState('')
-  const [newVarExtra, setNewVarExtra]       = useState('')
-  const [newVarStock, setNewVarStock]       = useState('0')
+  // Tabla de variantes (tallas/colores): una fila por variante, en alta y en edición.
+  const [rows, setRows]                     = useState<VariantRow[]>([])
+  const [sizeTypeId, setSizeTypeId]         = useState<string | null>(null)
 
   /* ── Variantes combinadas (2 dimensiones, ej. Talla + Color) ── */
   const [combineVariants, setCombineVariants] = useState(false)
@@ -186,36 +188,57 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [badge, setBadge]                   = useState('none')
   const [subcategory, setSubcategory]       = useState('')
   const [isFeatured, setIsFeatured]         = useState(false)
-  const [selectedPresetGroup, setSelectedPresetGroup] = useState<string | null>(null)
 
   /* ── Variantes en DB (solo productos existentes) ── */
-  const [dbVariants, setDbVariants]       = useState<DbVariant[]>([])
   const [loadingDbVars, setLoadingDbVars] = useState(false)
-  const [showVarForm, setShowVarForm]     = useState(false)
-  const [editingVar, setEditingVar]       = useState<DbVariant | null>(null)
-  const [varFormValor, setVarFormValor]   = useState('')
-  const [varFormTipo, setVarFormTipo]     = useState('personalizado')
-  const [varFormSku, setVarFormSku]       = useState('')
-  const [varFormExtra, setVarFormExtra]   = useState('')
-  const [varFormStock, setVarFormStock]   = useState('0')
-  const [varFormSaving, setVarFormSaving] = useState(false)
+  // Foto de lo guardado: la tabla se compara contra esto al guardar (alta / cambio / baja).
+  const savedRowsRef = useRef<VariantRow[]>([])
+  const rowSeq       = useRef(0)
+  const newKey       = () => `n${++rowSeq.current}`
 
-  const fetchDbVariants = useCallback(async (productId: number) => {
+  const fetchDbVariants = useCallback(async (productId: number, basePrice: number) => {
     setLoadingDbVars(true)
     try {
       const res = await fetch(`/api/products/${productId}/variants`)
-      const j = await res.json()
-      setDbVariants(j.variants ?? [])
+      const j = await res.json() as { variants?: DbVariant[] }
+      const loaded: VariantRow[] = (j.variants ?? []).map(v => ({
+        key:     `v${v.id}`,
+        id:      v.id,
+        valor:   v.valor,
+        tipo:    v.tipo === 'color' ? 'color' : v.tipo === 'talla' ? 'talla' : 'personalizado',
+        group:   v.variant_group,
+        stock:   String(v.stock),
+        barcode: v.barcode ?? '',
+        sku:     v.sku ?? '',
+        // Antes se guardaba "precio extra"; el precio propio equivalente es base + extra.
+        price:   v.price_usd != null ? String(v.price_usd) : v.precio_extra > 0 ? (basePrice + v.precio_extra).toFixed(2) : '',
+      }))
+      savedRowsRef.current = loaded
+      setRows(loaded)
+      if (loaded.length) setSizeTypeId(prev => prev ?? sizeTypeForGroup(loaded[0].group).id)
     } catch { /* non-critical */ }
     finally { setLoadingDbVars(false) }
   }, [])
 
   /* ── Escáner de barras ── */
   const [isScanning, setIsScanning] = useState(false)
+  // null = código del producto; si no, la clave de la fila de talla que pidió el escaneo.
+  const scanTargetRef = useRef<string | null>(null)
   const { videoContainerRef, permError } = useScanner({
     active: isScanning,
-    onResult: (code) => { setBarcode(code); setIsScanning(false) },
+    onResult: (code) => {
+      const target = scanTargetRef.current
+      if (target) {
+        updateRow(target, { barcode: code })
+        void checkBarcode(target, code)
+      } else {
+        setBarcode(code)
+      }
+      setIsScanning(false)
+    },
   })
+  useEffect(() => { if (!isScanning) scanTargetRef.current = null }, [isScanning])
+  const startRowScan = (key: string) => { scanTargetRef.current = key; setIsScanning(true) }
 
   /* ── Editor de componentes (combo) ── */
   const [components, setComponents]   = useState<ComponentEntry[]>([])
@@ -253,6 +276,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setName(editProduct.name)
     setDescription(editProduct.description ?? '')
     setBarcode(editProduct.barcode ?? '')
+    setSku(editProduct.sku ?? '')
 
     if (editProduct.product_type === 'combo' || editProduct.product_type === 'fabricable') {
       setProductKind('combo')
@@ -277,7 +301,6 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setCatalogVisibility(editProduct.catalog_visibility ?? 'hidden')
     setAvailability(editProduct.availability ?? 'in_stock')
     setHasVariants(editProduct.has_variants ?? false)
-    setVariants(editProduct.variants ?? [])
 
     // Carga TODAS las fotos (mínimo MIN_IMAGE_SLOTS casillas): el PATCH reenvía lo que hay aquí, nunca recorta.
     const urls = editProduct.images ?? []
@@ -314,8 +337,9 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   /* ── Cargar variantes DB al editar un producto simple/peso existente ── */
   useEffect(() => {
     if (editProduct?.id && (productKind === 'simple' || productKind === 'weight')) {
-      void fetchDbVariants(editProduct.id)
+      void fetchDbVariants(editProduct.id, editProduct.price_per_unit_usd ?? 0)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editProduct?.id, productKind, fetchDbVariants])
 
   /* ── Cálculo de precio en tiempo real ── */
@@ -352,6 +376,10 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     } else {
       if (!price.trim() || parseFloat(price) <= 0) errs.price = 'Ingresa el precio de venta'
     }
+    if (hasVariants && productKind !== 'combo' && !combineVariants) {
+      if (rows.length === 0) errs.variants = 'Toca al menos una talla, o apaga "Este producto tiene tallas".'
+      else if (rows.some(r => r.barcodeError)) errs.variants = 'Corrige los códigos de barras marcados en rojo.'
+    }
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -383,39 +411,54 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const removeImage = (slot: number) =>
     setImages(prev => { const n = [...prev]; n[slot] = null; return n })
 
-  /* ── Variantes (nuevas, en memoria) ── */
-  const addVariant = () => {
-    const n = newVarName.trim()
-    if (!n) return
-    setVariants(prev => [...prev, {
-      name: n,
-      price_extra_usd: parseFloat(newVarExtra) || 0,
-      stock: Math.max(parseInt(newVarStock) || 0, 0),
+  /* ── Tabla de variantes ── */
+  const updateRow = (key: string, patch: Partial<VariantRow>) =>
+    setRows(prev => prev.map(r => r.key === key
+      ? { ...r, ...patch, ...('barcode' in patch ? { barcodeError: undefined } : {}) }
+      : r))
+  const removeRow = (key: string) => setRows(prev => prev.filter(r => r.key !== key))
+
+  /** Paso 2: tocar una talla la agrega como fila. Si ya está, no hace nada. */
+  const addSize = (type: SizeType, valor: string) => {
+    const v = valor.trim()
+    if (!v) return false
+    if (rows.some(r => r.valor.toLowerCase() === v.toLowerCase())) return false
+    setRows(prev => [...prev, {
+      key: newKey(), valor: v, tipo: type.tipo, group: type.group,
+      stock: '0', barcode: '', sku: '', price: '',
     }])
-    setNewVarName(''); setNewVarExtra(''); setNewVarStock('0')
+    return true
   }
-  const removeVariant = (idx: number) =>
-    setVariants(prev => prev.filter((_, i) => i !== idx))
-  const addPreset = (n: string) => {
-    if (variants.some(v => v.name === n)) return
-    const tipo = selectedPresetGroup === 'colores' ? 'color' : 'talla'
-    // selectedPresetGroup guarda el id del preset (ej. 'zap-caballero', 'ropa-nino')
-    // — sin persistirlo en variant_group, `tipo` colapsa todo a 'talla'/'color'
-    // genérico y se pierde qué preset generó la variante (bug diagnosticado 17/09).
-    // sku: auto-sugerencia de equivalencia (EU↔US, talla↔P/M/G) desde la tabla
-    // de referencia — solo pre-rellena el campo, sigue editable (updateVariantSku),
-    // nunca forzada. null cuando el grupo no tiene tabla (colores, ropa-nino/nina).
-    const suggestedSku = selectedPresetGroup ? suggestEquivalence(selectedPresetGroup, n) : null
-    setVariants(prev => [...prev, {
-      name: n, price_extra_usd: 0, stock: 0, tipo,
-      variant_group: selectedPresetGroup,
-      sku: suggestedSku,
-    }])
+  /** "Mismo stock para todas". */
+  const setAllStock = (n: string) => setRows(prev => prev.map(r => ({ ...r, stock: n })))
+  const variantStockTotal = rows.reduce((t, r) => t + Math.max(parseInt(r.stock) || 0, 0), 0)
+
+  /** Error en línea: repetido en la lista, o ya usado por otro producto/talla del negocio. */
+  const checkBarcode = async (key: string, raw?: string) => {
+    const row  = rows.find(r => r.key === key)
+    const code = (raw ?? row?.barcode ?? '').trim()
+    const fail = (msg?: string) => setRows(prev => prev.map(r => r.key === key ? { ...r, barcodeError: msg } : r))
+    if (!code) { fail(); return }
+    if (rows.some(r => r.key !== key && r.barcode.trim() === code)) {
+      fail('Este código ya está en otra talla de esta lista.'); return
+    }
+    if (barcode.trim() === code) {
+      fail('Es el mismo código del producto. Cada talla necesita uno propio.'); return
+    }
+    try {
+      const res = await fetch(`/api/products?search=${encodeURIComponent(code)}`)
+      if (!res.ok) return
+      const j = await res.json() as {
+        products?: Array<{ id: number; name: string; barcode: string | null; variants: Array<{ id: number; valor: string; barcode: string | null }> }>
+      }
+      for (const p of j.products ?? []) {
+        if (p.barcode === code && p.id !== editProduct?.id) { fail(`Ese código ya pertenece al producto "${p.name}".`); return }
+        const v = p.variants.find(x => x.barcode === code && x.id !== row?.id)
+        if (v) { fail(`Ese código ya pertenece a la talla ${v.valor} de "${p.name}".`); return }
+      }
+      fail()
+    } catch { /* el servidor igual lo valida al guardar */ }
   }
-  const updateVariantStock = (idx: number, stock: number) =>
-    setVariants(prev => prev.map((v, i) => i === idx ? { ...v, stock: Math.max(stock || 0, 0) } : v))
-  const updateVariantSku = (idx: number, sku: string) =>
-    setVariants(prev => prev.map((v, i) => i === idx ? { ...v, sku } : v))
 
   /* ── Variantes combinadas: tallas × colores → producto cartesiano ── */
   const addDim1Value = () => {
@@ -456,54 +499,50 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const updateCombinationExtra = (key: string, value: string) =>
     setCombinations(prev => prev.map(c => c.key === key ? { ...c, extra: value } : c))
 
-  /* ── CRUD de variantes en DB ── */
-  const openVarForm = (v: DbVariant | null) => {
-    setEditingVar(v)
-    setVarFormValor(v?.valor ?? '')
-    setVarFormTipo(v?.tipo ?? 'personalizado')
-    setVarFormSku(v?.sku ?? '')
-    setVarFormExtra(v ? String(v.precio_extra) : '')
-    setVarFormStock(v ? String(v.stock) : '0')
-    setShowVarForm(true)
-  }
+  /* ── Edición: aplica la tabla contra la API de variantes (alta / cambio / baja) ── */
+  const syncVariants = async (): Promise<boolean> => {
+    if (!editProduct?.id) return true
+    const base = `/api/products/${editProduct.id}/variants`
+    const json = { 'Content-Type': 'application/json' }
+    const saved = new Map(savedRowsRef.current.map(r => [r.id, r]))
+    let ok = true
+    const fail = (key: string, msg: string, isBarcode: boolean) => {
+      ok = false
+      if (isBarcode) setRows(prev => prev.map(r => r.key === key ? { ...r, barcodeError: msg } : r))
+      else setErrors(e => ({ ...e, submit: msg }))
+    }
+    const send = async (key: string, url: string, method: string, body?: object) => {
+      const res = await fetch(url, { method, headers: json, body: body ? JSON.stringify(body) : undefined })
+      if (res.ok) return
+      const j = await res.json().catch(() => ({})) as { error?: string; field?: string }
+      fail(key, j.error ?? `Error ${res.status}`, j.field === 'barcode')
+    }
+    const priceNum = (r: VariantRow) => (r.price.trim() === '' ? null : Math.max(parseFloat(r.price) || 0, 0))
 
-  const handleSaveVar = async () => {
-    if (!editProduct?.id || !varFormValor.trim()) return
-    setVarFormSaving(true)
-    try {
-      const body = {
-        valor:        varFormValor.trim(),
-        tipo:         varFormTipo,
-        sku:          varFormSku.trim() || null,
-        precio_extra: parseFloat(varFormExtra) || 0,
-        price_usd:    null,
-        // Editando: solo si el usuario cambió la existencia (el valor cargado puede estar desfasado por ventas).
-        ...(!editingVar || (parseInt(varFormStock) || 0) !== editingVar.stock
-          ? { stock: parseInt(varFormStock) || 0 }
-          : {}),
+    for (const old of savedRowsRef.current) {
+      if (!rows.some(r => r.id === old.id)) await send(`v${old.id}`, `${base}/${old.id}`, 'DELETE')
+    }
+    for (const r of rows) {
+      const stock = Math.max(parseInt(r.stock) || 0, 0)
+      if (r.id === undefined) {
+        const price = priceNum(r)
+        await send(r.key, base, 'POST', {
+          tipo: r.tipo, valor: r.valor.trim(), sku: r.sku.trim() || null, barcode: r.barcode.trim() || null,
+          stock, price_usd: price, precio_extra: 0, variant_group: r.group,
+        })
+        continue
       }
-      const url    = editingVar
-        ? `/api/products/${editProduct.id}/variants/${editingVar.id}`
-        : `/api/products/${editProduct.id}/variants`
-      const method = editingVar ? 'PATCH' : 'POST'
-      const res    = await fetch(url, {
-        method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-      })
-      if (res.ok) {
-        await fetchDbVariants(editProduct.id)
-        setShowVarForm(false)
-        setEditingVar(null)
-      }
-    } catch { /* silent */ }
-    finally { setVarFormSaving(false) }
-  }
-
-  const handleDeleteVar = async (variantId: number) => {
-    if (!editProduct?.id) return
-    try {
-      await fetch(`/api/products/${editProduct.id}/variants/${variantId}`, { method: 'DELETE' })
-      await fetchDbVariants(editProduct.id)
-    } catch { /* silent */ }
+      const o = saved.get(r.id)
+      if (!o) continue
+      const patch: Record<string, unknown> = {}
+      if (r.valor.trim() !== o.valor)         patch.valor   = r.valor.trim()
+      if (r.sku.trim() !== o.sku)             patch.sku     = r.sku.trim() || null
+      if (r.barcode.trim() !== o.barcode)     patch.barcode = r.barcode.trim() || null
+      if (stock !== (parseInt(o.stock) || 0)) patch.stock   = stock
+      if (r.price.trim() !== o.price.trim())  { patch.price_usd = priceNum(r); patch.precio_extra = 0 }
+      if (Object.keys(patch).length) await send(r.key, `${base}/${r.id}`, 'PATCH', patch)
+    }
+    return ok
   }
 
   /* ── Búsqueda de componentes (combo) ── */
@@ -544,10 +583,15 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     if (!validate()) return
     setIsSaving(true)
     try {
+      if (isEdit && hasVariants && !combineVariants && !(await syncVariants())) {
+        setIsSaving(false)
+        return
+      }
       await onSave({
         name:            name.trim(),
         description:     description.trim() || null,
         barcode:         barcode.trim(),
+        sku:             sku.trim(),
         saleMode,
         productType,
         unitType,
@@ -571,7 +615,16 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         availability,
         hasVariants,
         images:   images.filter((u): u is string => u !== null),
-        variants: combineVariants ? [] : variants,
+        variants: combineVariants || isEdit ? [] : rows.map(r => ({
+          name:            r.valor.trim(),
+          price_extra_usd: 0,
+          stock:           Math.max(parseInt(r.stock) || 0, 0),
+          tipo:            r.tipo,
+          variant_group:   r.group,
+          sku:             r.sku.trim() || null,
+          barcode:         r.barcode.trim() || null,
+          price_usd:       r.price.trim() === '' ? null : Math.max(parseFloat(r.price) || 0, 0),
+        })),
         variantDimensions: combineVariants && combinations.length
           ? [{ tipo: 'talla', valores: dim1Values }, { tipo: 'color', valores: dim2Values }]
           : undefined,
@@ -607,11 +660,11 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
      dbVariants/varForm* quedan fuera: se guardan de inmediato contra la API
      (handleSaveVar/handleDeleteVar), no son parte de este submit. */
   const dirtySnapshot = JSON.stringify({
-    name, description, barcode, productKind, measuredBy, unitLabel, unitStep,
+    name, description, barcode, sku, productKind, measuredBy, unitLabel, unitStep,
     categoryId, costMode, bulkSize, cost, costUnknown, isFixedPrice, margin, price,
     stockInitial, stockAlertThreshold, showWholesale, wholesalePriceUsd,
     wholesalePricePerKgUsd, location, productNotes, images, isAvailable,
-    catalogVisibility, availability, hasVariants, variants, combineVariants,
+    catalogVisibility, availability, hasVariants, rows, combineVariants,
     dim1Values, dim2Values, combinations, badge, subcategory, isFeatured,
     components, financingEligible,
   })
@@ -626,7 +679,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     isEdit,
     isDirty,
     // core state
-    name, setName, description, setDescription, barcode, setBarcode,
+    name, setName, description, setDescription, barcode, setBarcode, sku, setSku,
     productKind, setProductKind, measuredBy, setMeasuredBy,
     unitLabel, setUnitLabel, unitStep, setUnitStep,
     categoryId, setCategoryId,
@@ -651,24 +704,14 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     showCatalogUpgrade, setShowCatalogUpgrade, hasCatalogPlan,
     badge, setBadge, subcategory, setSubcategory, isFeatured, setIsFeatured,
     financingEligible, setFinancingEligible, financingBadgeOn,
-    // in-memory variants
-    hasVariants, setHasVariants, variants,
-    newVarName, setNewVarName, newVarExtra, setNewVarExtra,
-    newVarStock, setNewVarStock,
-    selectedPresetGroup, setSelectedPresetGroup,
-    addVariant, removeVariant, addPreset, updateVariantStock, updateVariantSku,
+    // tabla de variantes
+    hasVariants, setHasVariants, rows, loadingDbVars, sizeTypeId, setSizeTypeId,
+    addSize, updateRow, removeRow, setAllStock, variantStockTotal, checkBarcode, startRowScan,
     // combined variants (2 dimensiones)
     combineVariants, setCombineVariants,
     dim1Values, dim1Input, setDim1Input, addDim1Value, removeDim1Value,
     dim2Values, dim2Input, setDim2Input, addDim2Value, removeDim2Value,
     combinations, generateCombinations, updateCombinationStock, updateCombinationExtra,
-    // DB variants
-    dbVariants, loadingDbVars, showVarForm, setShowVarForm,
-    editingVar, setEditingVar,
-    varFormValor, setVarFormValor, varFormTipo, setVarFormTipo,
-    varFormSku, setVarFormSku, varFormExtra, setVarFormExtra,
-    varFormStock, setVarFormStock, varFormSaving,
-    openVarForm, handleSaveVar, handleDeleteVar,
     // components (combo)
     components, compSearch, compResults, compQty, setCompQty, selectedComp, setSelectedComp,
     searchComponents, addComponent, removeComponent,

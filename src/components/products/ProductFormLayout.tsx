@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   X, Plus, ImagePlus, Loader2, Layers, Globe, Star,
-  Box, Scale, Wrench, Boxes, Search, ScanBarcode, Pencil, Trash2,
+  Box, Scale, Wrench, Boxes, Search, ScanBarcode,
   Warehouse, MapPin,
 } from 'lucide-react'
 import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProductForm'
-import { PRESET_GROUPS, SHOE_GROUP_IDS, categoryRequiresVariant } from '@/lib/variantPresets'
+import { categoryRequiresVariant } from '@/lib/variantPresets'
+import { VariantEditor } from './VariantEditor'
 import { AccordionCard } from './AccordionCard'
+import { ProductTabBar, tabButtonId, tabPanelId, type ProductTabId } from './ProductTabs'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import type { ModalCategory } from './ProductModal'
 import m from './modals.module.css'
@@ -65,14 +67,30 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
   // no confirmó si prefiere bloquear el guardado, así que por ahora solo
   // avisa. Cubre los dos casos reales encontrados: el toggle "Tiene
   // variantes" apagado, y encendido pero sin ninguna talla agregada todavía.
+  const [tab, setTab] = useState<ProductTabId>('basico')
+  const tabErrors: Record<ProductTabId, boolean> = {
+    basico:     !!f.errors.name,
+    precio:     !!(f.errors.cost || f.errors.margin || f.errors.price),
+    inventario: !!f.errors.variants,
+    imagenes:   !!f.imgError,
+    catalogo:   false,
+    avanzado:   false,
+  }
+  // Al intentar guardar con errores, salta a la primera pestaña que los tiene.
+  useEffect(() => {
+    const first = (Object.keys(tabErrors) as ProductTabId[]).find(id => tabErrors[id])
+    if (first && !tabErrors[tab]) setTab(first)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.errors])
+
   const selectedCategoryName = categories.find(cat => cat.id === f.categoryId)?.name ?? null
-  const showVariantWarning = categoryRequiresVariant(selectedCategoryName) && f.variants.length === 0
+  const showSizeHint = categoryRequiresVariant(selectedCategoryName) && !f.hasVariants && f.rows.length === 0
 
   return (
     <>
-      {/* ══ Columna izquierda ══ */}
-      <div className={s.column}>
+      <ProductTabBar active={tab} onChange={setTab} errors={tabErrors} />
 
+      <div role="tabpanel" id={tabPanelId('basico')} aria-labelledby={tabButtonId('basico')} hidden={tab !== 'basico'} className={s.panel}>
         {/* ── Card: Información básica ── */}
         <AccordionCard title="Información básica" defaultOpen hasError={!!f.errors.name}>
           <div className={m.formGroup}>
@@ -256,6 +274,22 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             </div>
           )}
 
+          {/* SKU / referencia */}
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-sku">SKU / Referencia</label>
+            <input
+              id="np-sku"
+              type="text"
+              className={m.input}
+              placeholder="Ej: CAM-0042"
+              value={f.sku}
+              onChange={(e) => f.setSku(e.target.value)}
+              maxLength={50}
+              aria-describedby="np-sku-help"
+            />
+            <p id="np-sku-help" className={c.fixedPriceSub}>Código interno o referencia del fabricante</p>
+          </div>
+
           {/* Código de barras */}
           <div className={m.formGroup}>
             <label className={m.label} htmlFor="np-barcode">Código de Barras</label>
@@ -265,10 +299,11 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                 type="text"
                 inputMode="text"
                 className={m.input}
-                placeholder="EAN-13, QR, SKU..."
+                placeholder="EAN-13, UPC o QR"
                 value={f.barcode}
                 onChange={(e) => f.setBarcode(e.target.value)}
                 maxLength={60}
+                aria-describedby={f.hasVariants ? 'np-barcode-help' : undefined}
               />
               <button
                 type="button"
@@ -280,9 +315,17 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                 <ScanBarcode size={16} aria-hidden="true" />
               </button>
             </div>
+            {f.hasVariants && (
+              <p id="np-barcode-help" className={c.fixedPriceSub}>
+                Este producto tiene tallas: el código de barras y el SKU de cada talla se escriben en la pestaña Inventario y variantes.
+              </p>
+            )}
           </div>
         </AccordionCard>
 
+      </div>
+
+      <div role="tabpanel" id={tabPanelId('imagenes')} aria-labelledby={tabButtonId('imagenes')} hidden={tab !== 'imagenes'} className={s.panel}>
         {/* ── Card: Imágenes ── */}
         <AccordionCard title="Imágenes" defaultOpen hasError={!!f.imgError}>
           <div className={c.imgGrid}>
@@ -334,6 +377,9 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           {f.imgError && <p className={m.errorMsg}>{f.imgError}</p>}
         </AccordionCard>
 
+      </div>
+
+      <div role="tabpanel" id={tabPanelId('catalogo')} aria-labelledby={tabButtonId('catalogo')} hidden={tab !== 'catalogo'} className={s.panel}>
         {/* ── Card: Catálogo ── */}
         <AccordionCard title="Catálogo" defaultOpen>
           <div className={m.formGroup}>
@@ -494,9 +540,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
         </AccordionCard>
       </div>
 
-      {/* ══ Columna derecha ══ */}
-      <div className={s.column}>
-
+      <div role="tabpanel" id={tabPanelId('precio')} aria-labelledby={tabButtonId('precio')} hidden={tab !== 'precio'} className={s.panel}>
         {/* ── Card: Precio (solo costo/margen/precio/utilidad) ── */}
         <AccordionCard
           title="Precio"
@@ -673,17 +717,26 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           </div>
 
           {/* Utilidad estimada */}
-          <div className={`${c.utilityCard} ${f.computed.utility < 0 ? c.utilityCardNegative : ''}`}>
-            <div className={c.utilityInfo}>
-              <span className={`${c.utilityLabel} ${f.computed.utility < 0 ? c.utilityLabelNegative : ''}`}>
-                Utilidad estimada
-              </span>
-              <span className={c.utilitySub}>por unidad</span>
+          {f.costUnknown ? (
+            <div className={c.utilityCard}>
+              <div className={c.utilityInfo}>
+                <span className={c.utilityLabel}>Sin costo cargado</span>
+                <span className={c.utilitySub}>No se puede calcular la utilidad</span>
+              </div>
             </div>
-            <span className={`${c.utilityAmount} ${f.computed.utility < 0 ? c.utilityAmountNegative : ''}`}>
-              {f.fmtUsd(f.computed.utility)}
-            </span>
-          </div>
+          ) : (
+            <div className={`${c.utilityCard} ${f.computed.utility < 0 ? c.utilityCardNegative : ''}`}>
+              <div className={c.utilityInfo}>
+                <span className={`${c.utilityLabel} ${f.computed.utility < 0 ? c.utilityLabelNegative : ''}`}>
+                  Utilidad estimada
+                </span>
+                <span className={c.utilitySub}>por unidad</span>
+              </div>
+              <span className={`${c.utilityAmount} ${f.computed.utility < 0 ? c.utilityAmountNegative : ''}`}>
+                {f.fmtUsd(f.computed.utility)}
+              </span>
+            </div>
+          )}
         </AccordionCard>
 
         {/* ── Card: Precio Mayorista — el toggle YA es el mecanismo de
@@ -820,7 +873,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                   </p>
                 </div>
 
-                {wholesaleValue > 0 && (
+                {wholesaleValue > 0 && !f.costUnknown && (
                   <div className={`${c.utilityCard} ${wholesaleUtility < 0 ? c.utilityCardNegative : ''}`}>
                     <div className={c.utilityInfo}>
                       <span className={`${c.utilityLabel} ${wholesaleUtility < 0 ? c.utilityLabelNegative : ''}`}>
@@ -838,38 +891,12 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
           })()}
         </section>
 
-        {/* ── Card: Detalles internos — ubicación y notas, SIN toggle propio
-            (siempre visibles dentro del body una vez expandida la card;
-            son 2 campos simples, no necesitan ocultarse entre sí). ── */}
-        <AccordionCard title="Detalles internos" defaultOpen={false}>
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-location">
-              <MapPin size={13} className={c.toggleIcon} aria-hidden="true" />
-              Ubicación (opcional)
-            </label>
-            <input
-              id="np-location"
-              type="text"
-              className={m.input}
-              placeholder="Ej: Pasillo 3, Estante B"
-              value={f.location}
-              onChange={(e) => f.setLocation(e.target.value)}
-              maxLength={120}
-            />
-          </div>
+      </div>
 
-          <div className={m.formGroup}>
-            <label className={m.label} htmlFor="np-notes">Notas (opcional)</label>
-            <textarea
-              id="np-notes"
-              className={m.textarea}
-              placeholder="Información interna del producto..."
-              value={f.productNotes}
-              onChange={(e) => f.setProductNotes(e.target.value)}
-              rows={2}
-            />
-          </div>
-        </AccordionCard>
+      <div role="tabpanel" id={tabPanelId('inventario')} aria-labelledby={tabButtonId('inventario')} hidden={tab !== 'inventario'} className={s.panel}>
+        {f.saleMode === 'service' && (
+          <p className={c.fixedPriceSub}>Un servicio no maneja inventario ni tallas.</p>
+        )}
 
         {/* ── Card: Inventario (stock + alerta — sin variantes) ── */}
         {f.saleMode !== 'service' && (
@@ -918,18 +945,17 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               <div className={c.fixedPriceLabel}>
                 <Layers size={14} className={c.toggleIcon} aria-hidden="true" />
                 <div>
-                  <span className={c.fixedPriceTitle}>Tiene variantes (tallas/colores)</span>
-                  <span className={c.fixedPriceSub}>El cajero elige variante antes de vender</span>
+                  <span className={c.fixedPriceTitle}>Este producto tiene tallas o colores</span>
+                  <span className={c.fixedPriceSub}>El cajero elige la talla o el color al vender.</span>
                 </div>
               </div>
-              <label className={c.toggle} aria-label="Tiene variantes">
+              <label className={c.toggle} aria-label="Este producto tiene tallas o colores">
                 <input
                   type="checkbox"
                   className={c.toggleInput}
                   checked={f.hasVariants}
                   onChange={(e) => {
                     f.setHasVariants(e.target.checked)
-                    if (!e.target.checked) f.setSelectedPresetGroup(null)
                   }}
                 />
                 <span className={c.toggleTrack} />
@@ -937,128 +963,19 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               </label>
             </div>
 
-            {showVariantWarning && (
-              <p className={s.variantStockWarning} role="alert">
-                &quot;{selectedCategoryName}&quot; suele necesitar talla — este producto se guardará sin ninguna variante.
-              </p>
-            )}
-
-            {f.hasVariants && f.isEdit && (
-              <div className={c.variantsSection}>
-                <div className={c.dbVariantsSection}>
-                  <div className={c.dbVarsHeader}>
-                    <p className={m.label}>Variantes guardadas</p>
-                    <button
-                      type="button"
-                      className={c.dbVarsAddBtn}
-                      onClick={() => f.openVarForm(null)}
-                    >
-                      <Plus size={13} aria-hidden="true" />
-                      Agregar
-                    </button>
-                  </div>
-
-                  {f.loadingDbVars ? (
-                    <div className={c.dbVarEmpty}>
-                      <Loader2 size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
-                      Cargando…
-                    </div>
-                  ) : f.dbVariants.length === 0 && !f.showVarForm ? (
-                    <p className={c.dbVarEmpty}>Sin variantes. Agrega la primera.</p>
-                  ) : (
-                    f.dbVariants.map(v => (
-                      <div key={v.id} className={c.dbVarRow}>
-                        <span className={c.dbVarName}>{v.valor}</span>
-                        <span className={c.dbVarPrice}>${(v.price_usd ?? v.precio_extra).toFixed(2)}</span>
-                        <span className={c.dbVarStock}>{v.stock} und</span>
-                        <button
-                          type="button"
-                          className={c.dbVarAction}
-                          onClick={() => f.openVarForm(v)}
-                          aria-label={`Editar variante ${v.valor}`}
-                        >
-                          <Pencil size={13} aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          className={`${c.dbVarAction} ${c.dbVarActionDelete}`}
-                          onClick={() => void f.handleDeleteVar(v.id)}
-                          aria-label={`Eliminar variante ${v.valor}`}
-                        >
-                          <Trash2 size={13} aria-hidden="true" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-
-                  {f.showVarForm && (
-                    <div className={c.dbVarForm}>
-                      <div className={c.dbVarFormRow}>
-                        <input
-                          type="text"
-                          className={m.input}
-                          placeholder="Nombre* (ej: Talla M, Rojo)"
-                          value={f.varFormValor}
-                          onChange={(e) => f.setVarFormValor(e.target.value)}
-                          maxLength={80}
-                          aria-label="Nombre de variante"
-                        />
-                        <input
-                          type="text"
-                          className={m.input}
-                          placeholder="SKU"
-                          value={f.varFormSku}
-                          onChange={(e) => f.setVarFormSku(e.target.value)}
-                          maxLength={60}
-                          aria-label="SKU"
-                          style={{ maxWidth: 110 }}
-                        />
-                      </div>
-                      <div className={c.dbVarFormRow}>
-                        <input
-                          type="number"
-                          className={m.input}
-                          placeholder="Precio extra $"
-                          value={f.varFormExtra}
-                          onChange={(e) => f.setVarFormExtra(e.target.value)}
-                          min="0"
-                          step="0.01"
-                          aria-label="Precio extra USD"
-                        />
-                        <input
-                          type="number"
-                          className={m.input}
-                          placeholder="Stock inicial"
-                          value={f.varFormStock}
-                          onChange={(e) => f.setVarFormStock(e.target.value)}
-                          min="0"
-                          step="1"
-                          aria-label="Stock inicial"
-                        />
-                      </div>
-                      <div className={c.dbVarFormActions}>
-                        <button
-                          type="button"
-                          className={c.dbVarCancelBtn}
-                          onClick={() => { f.setShowVarForm(false); f.setEditingVar(null) }}
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          className={c.dbVarSaveBtn}
-                          onClick={() => void f.handleSaveVar()}
-                          disabled={f.varFormSaving || !f.varFormValor.trim()}
-                        >
-                          {f.varFormSaving && <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} aria-hidden="true" />}
-                          {f.editingVar ? 'Actualizar' : 'Guardar variante'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+            {showSizeHint && (
+              <div className={c.sizeHint} role="note">
+                <p className={c.sizeHintText}>
+                  {selectedCategoryName ? `"${selectedCategoryName}"` : 'Esta categoría'} normalmente se vende por talla.
+                  Este producto todavía no tiene tallas.
+                </p>
+                <button type="button" className={c.sizeHintBtn} onClick={() => f.setHasVariants(true)}>
+                  Activar tallas
+                </button>
               </div>
             )}
+
+            {f.hasVariants && f.isEdit && <VariantEditor f={f} />}
 
             {f.hasVariants && !f.isEdit && (
               <div className={c.variantsSection}>
@@ -1209,138 +1126,51 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                     )}
                   </div>
                 ) : (
-                  <>
-                    <p className={c.sectionLabel}>Elige un tipo</p>
-                    <div className={c.presetGroupSelector}>
-                      {PRESET_GROUPS.map((g) => (
-                        <button
-                          key={g.id}
-                          type="button"
-                          className={`${c.presetGroupBtn} ${f.selectedPresetGroup === g.id ? c.presetGroupBtnActive : ''}`}
-                          onClick={() => f.setSelectedPresetGroup(prev => prev === g.id ? null : g.id)}
-                        >
-                          {g.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {f.selectedPresetGroup && (
-                      <div className={c.presetGroup}>
-                        {PRESET_GROUPS.find(g => g.id === f.selectedPresetGroup)?.values.map((v) => (
-                          <button
-                            key={v}
-                            type="button"
-                            className={`${c.presetBtn} ${f.variants.some(va => va.name === v) ? c.presetBtnActive : ''}`}
-                            onClick={() => f.addPreset(v)}
-                          >
-                            {v}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {f.variants.length > 0 && (
-                      <div className={c.variantList}>
-                        {f.variants.map((v, i) => (
-                          <div key={i} className={c.variantRow}>
-                            <span className={c.variantRowName}>{v.name}</span>
-                            {v.price_extra_usd > 0 && (
-                              <span className={c.variantRowExtra}>+${v.price_extra_usd.toFixed(2)}</span>
-                            )}
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              className={`${m.input} ${c.variantExtraInput} ${v.stock === 0 ? s.comboStockZero : ''}`}
-                              min={0}
-                              step={1}
-                              placeholder="Stock"
-                              value={v.stock}
-                              onChange={(e) => f.updateVariantStock(i, Number(e.target.value))}
-                              aria-label={`Stock de ${v.name}`}
-                            />
-                            {v.variant_group && (SHOE_GROUP_IDS as readonly string[]).includes(v.variant_group) && (
-                              <input
-                                type="text"
-                                className={`${m.input} ${c.variantExtraInput}`}
-                                placeholder="Equiv. (opcional)"
-                                value={v.sku ?? ''}
-                                onChange={(e) => f.updateVariantSku(i, e.target.value)}
-                                maxLength={20}
-                                aria-label={`Equivalencia de talla para ${v.name}`}
-                              />
-                            )}
-                            <button
-                              type="button"
-                              className={c.variantRemoveBtn}
-                              onClick={() => f.removeVariant(i)}
-                              aria-label={`Eliminar variante ${v.name}`}
-                            >
-                              <X size={13} aria-hidden="true" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className={c.variantAddRow}>
-                      <input
-                        type="text"
-                        className={`${m.input} ${c.variantNameInput}`}
-                        placeholder="Nombre personalizado (ej: Talla M, Rojo)"
-                        value={f.newVarName}
-                        onChange={(e) => f.setNewVarName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); f.addVariant() } }}
-                        maxLength={60}
-                      />
-                      <input
-                        type="number"
-                        className={`${m.input} ${c.variantExtraInput}`}
-                        placeholder="+$0.00"
-                        value={f.newVarExtra}
-                        onChange={(e) => f.setNewVarExtra(e.target.value)}
-                        min="0"
-                        step="0.01"
-                        aria-label="Precio extra USD"
-                      />
-                      <input
-                        type="number"
-                        className={`${m.input} ${c.variantExtraInput}`}
-                        placeholder="Unidades disponibles"
-                        value={f.newVarStock}
-                        onChange={(e) => f.setNewVarStock(e.target.value)}
-                        min="0"
-                        step="1"
-                        aria-label="Stock inicial de la variante"
-                      />
-                      <button
-                        type="button"
-                        className={c.variantAddBtn}
-                        onClick={f.addVariant}
-                        disabled={!f.newVarName.trim()}
-                        aria-label="Añadir variante"
-                      >
-                        <Plus size={15} aria-hidden="true" />
-                      </button>
-                    </div>
-
-                    <p className={s.variantStockHint}>
-                      El stock de cada variante es independiente.
-                    </p>
-
-                    {f.variants.some(v => v.stock === 0) && (
-                      <p className={s.variantStockWarning}>
-                        Hay variantes con stock en 0 — quedarán marcadas como agotadas.
-                      </p>
-                    )}
-                  </>
+                  <VariantEditor f={f} />
                 )}
               </div>
             )}
           </section>
         )}
 
-        {f.errors.submit && <p className={m.errorMsg}>{f.errors.submit}</p>}
       </div>
+
+      <div role="tabpanel" id={tabPanelId('avanzado')} aria-labelledby={tabButtonId('avanzado')} hidden={tab !== 'avanzado'} className={s.panel}>
+        {/* ── Card: Detalles internos — ubicación y notas, SIN toggle propio
+            (siempre visibles dentro del body una vez expandida la card;
+            son 2 campos simples, no necesitan ocultarse entre sí). ── */}
+        <AccordionCard title="Detalles internos" defaultOpen={false}>
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-location">
+              <MapPin size={13} className={c.toggleIcon} aria-hidden="true" />
+              Ubicación (opcional)
+            </label>
+            <input
+              id="np-location"
+              type="text"
+              className={m.input}
+              placeholder="Ej: Pasillo 3, Estante B"
+              value={f.location}
+              onChange={(e) => f.setLocation(e.target.value)}
+              maxLength={120}
+            />
+          </div>
+
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-notes">Notas (opcional)</label>
+            <textarea
+              id="np-notes"
+              className={m.textarea}
+              placeholder="Información interna del producto..."
+              value={f.productNotes}
+              onChange={(e) => f.setProductNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+        </AccordionCard>
+      </div>
+
+      {f.errors.submit && <p className={m.errorMsg}>{f.errors.submit}</p>}
 
       {/* ── Overlays (dependientes de f) ── */}
       <CatalogUpgradeModal

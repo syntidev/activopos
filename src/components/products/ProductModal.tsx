@@ -23,6 +23,10 @@ export interface ProductVariantInput {
   // Equivalencia de talla escrita a mano (ej. "US 8.5") — reutiliza el campo
   // sku de ProductVariant, solo se muestra junto a chips de preset de calzado.
   sku?: string | null
+  /** EAN/UPC propio de esta variante (el POS lo escanea y abre esa talla). */
+  barcode?: string | null
+  /** Precio propio en USD; null/ausente = usa el precio del producto. */
+  price_usd?: number | null
 }
 
 type CatalogVisibility = 'visible' | 'on_request' | 'hidden'
@@ -32,6 +36,8 @@ export interface ProductFormData {
   name: string
   description?: string | null
   barcode: string
+  /** SKU / referencia del producto; '' = sin SKU. Lo envían /nuevo y /editar (el modal rápido no lo usa). */
+  sku?: string
   saleMode: 'unit' | 'weight' | 'service'
   categoryId: number | null
   costPerUnitUsd: number
@@ -76,6 +82,8 @@ export interface EditableProduct {
   name: string
   description?: string | null
   barcode: string | null
+  /** SKU / referencia del producto (products.sku). */
+  sku?: string | null
   sale_mode: 'unit' | 'weight' | 'service'
   category_id: number | null
   cost_per_unit_usd: number | null

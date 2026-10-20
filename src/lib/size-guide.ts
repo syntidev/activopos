@@ -3,6 +3,9 @@
 // marca (Adidas EU42=US8.5, Mizuno EU42=US9): esta tabla es SUGERENCIA
 // editable, nunca valor forzado — ver suggestEquivalence().
 //
+// cm: tabla de conversión de calzado de Nike (nike.com/size-fit/mens-footwear):
+// EU40=US7=25cm, EU41=US8=26, EU42=US8.5=26.5, EU43=US9.5=27.5, EU44=US10=28.
+// Para las demás tallas no hay cm publicado coherente entre marcas -> no se muestra.
 // Rangos y fuente: EU39-51↔US6.5-16 (caballero), EU35-42↔US5-10.5 (dama),
 // EU28-38↔US kids equivalente (niño/niña, comparten tabla), y ropa
 // XS-4XL↔P/M/G/EG/EEG (mapeo simple 1:1 aproximado, caballero/dama comparten
@@ -12,6 +15,8 @@
 export interface SizeGuideEntry {
   local:      string
   equivalent: string
+  /** Largo de caja en cm (CM/JP de Nike). Solo donde hay fuente publicada; nunca se estima. */
+  cm?:        number
 }
 
 export interface SizeGuideDef {
@@ -22,11 +27,11 @@ export interface SizeGuideDef {
 
 const ZAP_CABALLERO: SizeGuideEntry[] = [
   { local: '39', equivalent: '6.5' },
-  { local: '40', equivalent: '7'   },
-  { local: '41', equivalent: '8'   },
-  { local: '42', equivalent: '8.5' },
-  { local: '43', equivalent: '9.5' },
-  { local: '44', equivalent: '10'  },
+  { local: '40', equivalent: '7', cm: 25 },
+  { local: '41', equivalent: '8', cm: 26 },
+  { local: '42', equivalent: '8.5', cm: 26.5 },
+  { local: '43', equivalent: '9.5', cm: 27.5 },
+  { local: '44', equivalent: '10', cm: 28 },
   { local: '45', equivalent: '11'  },
   { local: '46', equivalent: '12'  },
   { local: '47', equivalent: '13'  },
@@ -91,4 +96,10 @@ export function suggestEquivalence(category: string, valor: string): string | nu
   const guide = SIZE_GUIDES[category]
   if (!guide) return null
   return guide.entries.find(e => e.local === valor)?.equivalent ?? null
+}
+
+/** Equivalencia (US) y cm de una talla, o null si el grupo/talla no tiene dato publicado. */
+export function sizeInfo(category: string, valor: string): { equivalent: string; cm: number | null } | null {
+  const e = SIZE_GUIDES[category]?.entries.find(x => x.local === valor)
+  return e ? { equivalent: e.equivalent, cm: e.cm ?? null } : null
 }

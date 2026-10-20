@@ -10,9 +10,8 @@ import { usePlanGate } from '@/hooks/usePlanGate'
 import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ProductFormLayout } from '@/components/products/ProductFormLayout'
-import { SaveFab } from '@/components/products/SaveFab'
+import { SaveBar } from '@/components/products/SaveBar'
 import type { ProductFormData, ModalCategory } from '@/components/products/ProductModal'
-import m from '@/components/products/modals.module.css'
 import s from './NuevoProducto.module.css'
 
 const FORM_ID = 'nuevo-producto-form'
@@ -82,6 +81,7 @@ export default function NuevoProductoPage() {
               stock:         v.stock,
               variant_group: v.variant_group ?? null,
               sku:           v.sku ?? null,
+              barcode:       v.barcode ?? null,
             }))
           : undefined,
         variant_dimensions:   data.variantDimensions,
@@ -100,6 +100,20 @@ export default function NuevoProductoPage() {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err?.error ?? `Error ${res.status}`)
+    }
+    // El alta de producto no acepta precio propio por variante: se aplica con el endpoint de variantes.
+    const own = data.variants.filter(v => v.price_usd != null)
+    if (data.hasVariants && own.length) {
+      const created = await res.json() as { product?: { id: number; variants: Array<{ id: number; valor: string }> } }
+      const pid = created.product?.id
+      for (const v of own) {
+        const vid = created.product?.variants.find(x => x.valor === v.name)?.id
+        if (!pid || !vid) continue
+        await fetch(`/api/products/${pid}/variants/${vid}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price_usd: v.price_usd }),
+        })
+      }
     }
     router.push('/productos')
   }, [router, guardedFetch])
@@ -130,20 +144,6 @@ export default function NuevoProductoPage() {
           </Link>
           <h1 className={s.title}>Nuevo Producto</h1>
         </div>
-        <div className={s.headerActions}>
-          <button
-            type="button"
-            className={`${m.btnSecondary} ${s.cancelHideMobile}`}
-            onClick={() => router.back()}
-            disabled={f.isSaving}
-          >
-            Cancelar
-          </button>
-          <button type="submit" form={FORM_ID} className={m.btnPrimary} disabled={f.isSaving}>
-            {f.isSaving && <span className={m.spinner} aria-hidden="true" />}
-            {f.isSaving ? 'Guardando...' : 'Guardar Producto'}
-          </button>
-        </div>
       </header>
 
       <form id={FORM_ID} onSubmit={f.handleSubmit} noValidate className={s.grid}>
@@ -160,7 +160,7 @@ export default function NuevoProductoPage() {
         onSave={handleSaveCategory}
       />
 
-      <SaveFab formId={FORM_ID} isSaving={f.isSaving} />
+      <SaveBar formId={FORM_ID} isSaving={f.isSaving} onCancel={() => router.back()} saveLabel="Guardar producto" />
 
       <UpgradeModal reason={upgradeReason} onClose={clearUpgrade} />
     </div>

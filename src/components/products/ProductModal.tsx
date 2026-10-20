@@ -23,6 +23,10 @@ export interface ProductVariantInput {
   // Equivalencia de talla escrita a mano (ej. "US 8.5") — reutiliza el campo
   // sku de ProductVariant, solo se muestra junto a chips de preset de calzado.
   sku?: string | null
+  /** EAN/UPC propio de esta variante (el POS lo escanea y abre esa talla). */
+  barcode?: string | null
+  /** Precio propio en USD; null/ausente = usa el precio del producto. */
+  price_usd?: number | null
 }
 
 type CatalogVisibility = 'visible' | 'on_request' | 'hidden'

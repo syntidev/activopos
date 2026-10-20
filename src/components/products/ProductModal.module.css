@@ -80,12 +80,14 @@
 }
 
 .fixedPriceTitle {
+  display: block;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--color-text-primary);
 }
 
 .fixedPriceSub {
+  display: block;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
@@ -1210,3 +1212,38 @@
     transition: none;
   }
 }
+
+/* ── Aviso "esta categoría suele llevar talla" (solo si no hay tallas) ── */
+.sizeHint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  background: var(--warning-soft);
+  border: var(--ctl-border-w) solid var(--warning);
+  border-radius: var(--radius-md);
+}
+
+.sizeHintText {
+  flex: 1 1 14rem;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ctl-text);
+}
+
+.sizeHintBtn {
+  min-height: var(--touch-min);
+  padding: 0 var(--space-4);
+  background: var(--ctl-accent);
+  border: var(--ctl-border-w) solid var(--ctl-accent);
+  border-radius: var(--radius-md);
+  color: var(--ctl-on-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  box-shadow: var(--ctl-shadow-primary);
+}
+
+.sizeHintBtn:hover { background: var(--ctl-accent-hover); border-color: var(--ctl-accent-hover); }
+.sizeHintBtn:active { background: var(--ctl-accent-pressed); }

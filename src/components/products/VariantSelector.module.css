@@ -58,7 +58,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: var(--ctl-icon);
   flex-shrink: 0;
   transition: background-color var(--transition-fast);
 }
@@ -81,7 +81,7 @@
   min-height: 72px;
   padding: var(--space-2-5) var(--space-3);
   background: var(--color-surface-2);
-  border: 1.5px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
@@ -163,7 +163,7 @@
   min-height: var(--touch-min);
   padding: 0 var(--space-4);
   border-radius: var(--radius-full);
-  border: 1.5px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   background: var(--color-surface-2);
   color: var(--color-text-primary);
   font-size: var(--text-sm);

@@ -51,7 +51,7 @@
   min-height: var(--touch-min);
   border-radius: var(--radius-md);
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   width: 100%;
   background: transparent;
   border: none;
@@ -71,8 +71,8 @@
 }
 
 .configTabActive {
-  background-color: var(--color-brand-subtle);
-  color: var(--color-brand);
+  background: var(--ctl-accent-soft);
+  color: var(--ctl-accent);
 }
 
 .tabDivider {
@@ -175,12 +175,12 @@
   border: none;
   cursor: pointer;
   transition: background-color var(--transition-normal);
-  background-color: var(--color-surface-4);
+  background-color: var(--ctl-toggle-off);
   flex-shrink: 0;
 }
 
 .toggleBtnOn {
-  background-color: var(--color-brand);
+  background-color: var(--ctl-toggle-on);
 }
 
 .toggleKnob {
@@ -190,9 +190,9 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: white;
+  background: var(--ctl-toggle-thumb);
   transition: transform var(--transition-normal);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--ctl-shadow-control);
 }
 
 .toggleKnobOn {
@@ -211,7 +211,7 @@
   text-align: center;
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   background: var(--input-bg);
   color: var(--input-text);
@@ -228,7 +228,7 @@
 }
 
 .pinInput::placeholder {
-  color: var(--input-placeholder);
+  color: var(--ctl-placeholder);
 }
 
 /* ── Form layout ── */
@@ -391,7 +391,7 @@
 
 .logoDropZone {
   flex: 1;
-  border: 2px dashed var(--color-border);
+  border: 2px dashed var(--ctl-border);
   border-radius: var(--radius-md);
   padding: var(--space-6);
   display: flex;
@@ -430,7 +430,7 @@
 /* ── Portada del catálogo ── */
 .coverDropZone {
   position:      relative;
-  border:        2px dashed var(--color-border);
+  border:        2px dashed var(--ctl-border);
   border-radius: var(--radius-md);
   overflow:      hidden;
   cursor:        pointer;
@@ -479,7 +479,7 @@
   position:        relative;
   width:           140px;
   height:          140px;
-  border:          2px dashed var(--color-border);
+  border:          2px dashed var(--ctl-border);
   border-radius:   var(--radius-md);
   overflow:        hidden;
   cursor:          pointer;
@@ -551,7 +551,7 @@
   width: 100%;
   padding: var(--space-3) var(--space-4);
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   font-size: var(--text-sm);
@@ -803,7 +803,7 @@
   border-radius: var(--radius-md);
   border: none;
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   transition:
     background-color var(--transition-fast),
@@ -833,15 +833,15 @@
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-3);
-  border: 2px solid var(--color-border);
+  border: 2px solid var(--ctl-border);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .roleOptionActive {
-  border-color: var(--color-brand);
-  background: var(--color-brand-subtle);
+  border-color: var(--ctl-accent);
+  background: var(--ctl-accent-soft);
 }
 
 .roleOptionTitle {
@@ -918,8 +918,8 @@
 .posModeOption:hover { border-color: var(--color-brand); }
 
 .posModeOptionActive {
-  border-color: var(--color-brand);
-  background: var(--color-brand-subtle);
+  border-color: var(--ctl-accent);
+  background: var(--ctl-accent-soft);
 }
 
 .posModeOption span {
@@ -950,7 +950,7 @@
   width: 100%;
   padding: 0 calc(var(--space-3) + 20px) 0 var(--space-3);
   background-color: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   font-family: var(--font-sans);
@@ -979,7 +979,7 @@
   width: 100%;
   padding: var(--space-2-5) var(--space-3);
   background-color: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   font-family: var(--font-sans);
@@ -991,7 +991,7 @@
 }
 
 .textarea::placeholder {
-  color: var(--input-placeholder);
+  color: var(--ctl-placeholder);
 }
 
 .textarea:focus {
@@ -1230,8 +1230,8 @@
 }
 
 .segmentCardActive {
-  border-color: var(--color-brand);
-  background: var(--color-brand-subtle);
+  border-color: var(--ctl-accent);
+  background: var(--ctl-accent-soft);
 }
 
 .segmentCircle {
@@ -1374,7 +1374,7 @@
 }
 
 .optModuleCard {
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   background: var(--color-surface-2);
@@ -1547,7 +1547,7 @@
   height: var(--touch-comfy, 44px);
   padding: 0 calc(var(--space-3) + 36px) 0 var(--space-3);
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   font-family: var(--font-sans);
@@ -1562,7 +1562,7 @@
 }
 
 .pwInput::placeholder {
-  color: var(--input-placeholder);
+  color: var(--ctl-placeholder);
   letter-spacing: 0.2em;
 }
 
@@ -1576,7 +1576,7 @@
   min-height: var(--touch-min);
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: color var(--transition-fast), background var(--transition-fast);
@@ -1674,7 +1674,7 @@
   justify-content: center;
   width:           30px;
   height:          30px;
-  border:          1px solid var(--color-border);
+  border:          var(--ctl-border-w) solid var(--ctl-border);
   border-radius:   var(--radius-md);
   background:      var(--color-surface);
   color:           var(--color-text-secondary);

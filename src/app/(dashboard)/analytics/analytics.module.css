@@ -51,7 +51,7 @@
   font-size:     var(--text-sm);
   font-family:   inherit;
   font-weight:   var(--weight-medium);
-  color:         var(--color-text-muted);
+  color: var(--ctl-tab-text);
   background:    none;
   border:        none;
   cursor:        pointer;
@@ -62,9 +62,9 @@
 .periodTab:hover { color: var(--color-text-primary); }
 
 .periodTabActive {
-  background: var(--color-surface);
-  color:      var(--color-text-primary);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  background: var(--ctl-tab-active-bg);
+  color: var(--ctl-tab-active-text);
+  box-shadow: var(--ctl-shadow-control);
 }
 
 /* ── KPI grid ────────────────────────────────────────────── */

@@ -20,7 +20,7 @@
   width: 100%;
   padding: 0 calc(var(--space-3) + 20px) 0 var(--space-3);
   background-color: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   font-family: var(--font-sans);
@@ -54,7 +54,7 @@
   width: 100%;
   padding: var(--space-2-5) var(--space-3);
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   font-size: var(--text-sm);
@@ -82,20 +82,20 @@
   height: 36px;
   padding: 0 var(--space-3);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-family: var(--font-sans);
   font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .pillActive {
-  background: var(--color-brand-subtle);
-  border-color: var(--color-brand-border);
-  color: var(--color-brand);
+  background: var(--ctl-accent-soft);
+  border-color: var(--ctl-accent);
+  color: var(--ctl-accent);
   font-weight: var(--weight-semibold);
 }
 
@@ -120,14 +120,14 @@
   width: 40px;
   height: 22px;
   border-radius: var(--radius-full);
-  background: var(--color-border);
+  background: var(--ctl-toggle-off);
   border: none;
   cursor: pointer;
   transition: background var(--transition-fast);
   flex-shrink: 0;
 }
 
-.toggleBtnOn { background: var(--color-brand); }
+.toggleBtnOn { background: var(--ctl-toggle-on); }
 
 .toggleThumb {
   position: absolute;
@@ -136,7 +136,8 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--ctl-toggle-thumb);
+  box-shadow: var(--ctl-shadow-control);
   transition: transform var(--transition-fast);
   pointer-events: none;
 }

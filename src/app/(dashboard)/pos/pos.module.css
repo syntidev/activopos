@@ -87,7 +87,7 @@
   align-items: center;
   flex-shrink: 0;
   background: var(--color-surface-2);
-  border: var(--border-width-thin) solid var(--color-border);
+  border: var(--border-width-thin) solid var(--ctl-border);
   border-radius: var(--radius-md);
   padding: var(--space-0-5);
   gap: var(--space-0-5);
@@ -102,7 +102,7 @@
   background: none;
   border: none;
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   transition:
     color var(--transition-fast),
@@ -117,8 +117,8 @@
 }
 
 .viewToggleActive {
-  color: var(--color-brand) !important;
-  background: var(--color-brand-subtle) !important;
+  color: var(--ctl-accent) !important;
+  background: var(--ctl-accent-soft) !important;
 }
 
 /* ── Recientes ── */
@@ -159,7 +159,7 @@
   min-width: 80px;
   max-width: 140px;
   background: var(--color-surface-2);
-  border: var(--border-width-thin) solid var(--color-border);
+  border: var(--border-width-thin) solid var(--ctl-border);
   border-radius: var(--radius-full);
   cursor: pointer;
   transition:
@@ -227,7 +227,7 @@
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   font-size: var(--text-sm);
   font-family: var(--font-sans);
   cursor: pointer;
@@ -243,8 +243,8 @@
 }
 
 .categoryTabActive {
-  color: var(--color-brand);
-  border-bottom-color: var(--color-brand);
+  color: var(--ctl-accent);
+  border-bottom-color: var(--ctl-accent);
   font-weight: var(--weight-semibold);
 }
 
@@ -294,7 +294,7 @@
   height: var(--touch-comfy);
   padding: 0 var(--space-11) 0 var(--space-10);
   background: var(--input-bg);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-lg);
   color: var(--input-text);
   font-size: var(--text-base);
@@ -303,7 +303,7 @@
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.searchInput::placeholder { color: var(--input-placeholder); }
+.searchInput::placeholder { color: var(--ctl-placeholder); }
 
 .searchInput:focus {
   border-color: var(--input-border-focus);
@@ -337,7 +337,7 @@
   height: var(--touch-min);
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
@@ -426,7 +426,7 @@
   height: var(--touch-min);
   padding: 0 var(--space-3);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
@@ -584,7 +584,7 @@
   min-height: var(--touch-min);
   background: none;
   border: none;
-  color: var(--color-text-secondary);
+  color: var(--ctl-icon);
   cursor: pointer;
   transition: color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
 }
@@ -634,7 +634,7 @@
   min-height: var(--touch-min);
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: color var(--transition-fast), background var(--transition-fast), transform var(--duration-fast) var(--ease-out);
@@ -960,7 +960,7 @@
   background: none;
   border: none;
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   opacity: 1;
   transition:
@@ -1080,7 +1080,7 @@
   box-sizing: border-box;
 }
 
-.popoverReasonInput::placeholder { color: var(--input-placeholder); }
+.popoverReasonInput::placeholder { color: var(--ctl-placeholder); }
 
 .popoverReasonInput:focus {
   border-color: var(--input-border-focus);
@@ -1113,7 +1113,7 @@
   font-weight: var(--weight-bold);
   font-family: var(--font-sans);
   background: var(--input-bg);
-  border: 1.5px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   outline: none;

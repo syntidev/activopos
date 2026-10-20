@@ -811,6 +811,121 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
+   CONTROLES — borde, fondo, estados, foco, tabs, toggle, check
+   Objetivo WCAG 1.4.11 / 1.4.3 (>= 3:1 en bordes y pistas, >= 4.5:1 en texto).
+   Verificado por scripts/contrast-controls.mjs (tabla por tema).
+   Dentro de #dashboard-root, --border-input / --input-border / --input-placeholder apuntan a ellos
+   (fuera —admin, catálogos, registro, login— siguen con el valor de siempre).
+   Los módulos del dashboard consumen SOLO --ctl-*; los catálogos públicos no.
+══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="light"] {
+  --ctl-bg:              #FFFFFF;
+  --ctl-bg-hover:        #F3F6FB;
+  --ctl-bg-pressed:      #E6EBF3;
+  --ctl-bg-disabled:     #EEF1F6;
+  --ctl-border:          #6B7A90;
+  --ctl-border-hover:    #475569;
+  --ctl-border-strong:   #55657C;
+  --ctl-border-disabled: #C3CCD9;
+  --ctl-border-w:        1.5px;
+  --ctl-check-border-w:  2px;
+  --ctl-text:            var(--text-primary);
+  --ctl-text-disabled:   #8593A6;
+  --ctl-placeholder:     #64748B;
+  --ctl-icon:            #64748B;
+
+  --ctl-accent:          #0038BD;
+  --ctl-accent-hover:    #002FA0;
+  --ctl-accent-pressed:  #001D7A;
+  --ctl-accent-soft:     #DCE6FF;
+  --ctl-on-accent:       #FFFFFF;
+
+  --ctl-focus-ring:      var(--ctl-accent);
+  --ctl-focus-width:     2px;
+  --ctl-focus-offset:    2px;
+
+  --ctl-tab-text:        #475569;
+  --ctl-tab-text-hover:  var(--text-primary);
+  --ctl-tab-active-bg:   var(--ctl-accent);
+  --ctl-tab-active-text: var(--ctl-on-accent);
+  --ctl-tab-indicator:   var(--ctl-accent);
+  --ctl-tab-underline-text: var(--ctl-accent);
+
+  --ctl-toggle-off:      #6B7A90;
+  --ctl-toggle-on:       var(--ctl-accent);
+  --ctl-toggle-thumb:    #FFFFFF;
+
+  --ctl-check-border:    #6B7A90;
+  --ctl-check-on:        var(--ctl-accent);
+  --ctl-check-mark:      var(--ctl-on-accent);
+
+  --ctl-shadow-primary:  0 1px 2px rgba(15, 23, 42, 0.20), 0 2px 8px rgba(var(--brand-rgb), 0.25);
+  --ctl-shadow-control:  0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="dark"] {
+  --ctl-bg:              #1A2D47;
+  --ctl-bg-hover:        #223853;
+  --ctl-bg-pressed:      #2B4465;
+  --ctl-bg-disabled:     #16253B;
+  --ctl-border:          #8196B4;
+  --ctl-border-hover:    #A9B8CF;
+  --ctl-border-strong:   #97AACA;
+  --ctl-border-disabled: #34475F;
+  --ctl-text-disabled:   #6F819B;
+  --ctl-placeholder:     #A3B3CA;
+  --ctl-icon:            #A3B3CA;
+
+  --ctl-accent:          #6C8EFF;
+  --ctl-accent-hover:    #8FAAFF;
+  --ctl-accent-pressed:  #B0C3FF;
+  --ctl-accent-soft:     rgba(108, 142, 255, 0.18);
+  --ctl-on-accent:       #0D1B2E;
+
+  --ctl-tab-text:        #B4C2D6;
+  --ctl-tab-underline-text: var(--ctl-accent);
+
+  --ctl-toggle-off:      #8196B4;
+  --ctl-toggle-thumb:    #0D1B2E;
+  --ctl-check-border:    #8196B4;
+
+  --ctl-shadow-primary:  0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(var(--brand-rgb), 0.35);
+  --ctl-shadow-control:  0 1px 2px rgba(0, 0, 0, 0.30);
+}
+
+/* Alias de input v1: solo en el dashboard (Input, selects y buscadores heredan el borde fuerte). */
+#dashboard-root {
+  --border-input:      var(--ctl-border);
+  --input-border:      var(--ctl-border);
+  --input-placeholder: var(--ctl-placeholder);
+}
+
+/* Temas de color del cliente: acento fuerte (texto y relleno >= 4.5:1 sobre blanco). */
+#dashboard-root[data-color="azul-sereno"] { --ctl-accent: #1D4ED8; --ctl-accent-hover: #1E40AF; --ctl-accent-pressed: #1E3A8A; --ctl-accent-soft: #DBE7FF; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="amanecer"] { --ctl-accent: #B03A0B; --ctl-accent-hover: #9A3412; --ctl-accent-pressed: #7C2D12; --ctl-accent-soft: #FFE6D5; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="aguamarina"] { --ctl-accent: #047857; --ctl-accent-hover: #065F46; --ctl-accent-pressed: #064E3B; --ctl-accent-soft: #D5F5E8; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="medianoche"] { --ctl-accent: #4338CA; --ctl-accent-hover: #3730A3; --ctl-accent-pressed: #312E81; --ctl-accent-soft: #E3E5FF; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="tierra-dorada"] { --ctl-accent: #9A4A06; --ctl-accent-hover: #7C3A05; --ctl-accent-pressed: #612E04; --ctl-accent-soft: #FFEFC9; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="brasa-viva"] { --ctl-accent: #BE123C; --ctl-accent-hover: #9F1239; --ctl-accent-pressed: #881337; --ctl-accent-soft: #FFE0E6; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="cielo-abierto"] { --ctl-accent: #0369A1; --ctl-accent-hover: #075985; --ctl-accent-pressed: #0C4A6E; --ctl-accent-soft: #DAF0FF; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="menta-fresca"] { --ctl-accent: #047857; --ctl-accent-hover: #065F46; --ctl-accent-pressed: #064E3B; --ctl-accent-soft: #D5F5E8; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="champan"] { --ctl-accent: #92400E; --ctl-accent-hover: #78350F; --ctl-accent-pressed: #5F2A0B; --ctl-accent-soft: #F7ECCF; --ctl-on-accent: #FFFFFF; }
+#dashboard-root[data-color="jardin"] { --ctl-accent: #12753A; --ctl-accent-hover: #166534; --ctl-accent-pressed: #14532D; --ctl-accent-soft: #DCF7E4; --ctl-on-accent: #FFFFFF; }
+
+/* Sobre dark el acento es la tinta clara del tema y el texto sobre él es navy. */
+[data-theme="dark"] #dashboard-root[data-color="azul-sereno"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="amanecer"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="aguamarina"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="medianoche"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="tierra-dorada"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="brasa-viva"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="cielo-abierto"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="menta-fresca"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="champan"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+[data-theme="dark"] #dashboard-root[data-color="jardin"] { --ctl-accent: var(--brand); --ctl-accent-hover: var(--brand-dark); --ctl-accent-pressed: var(--brand-dark); --ctl-accent-soft: rgba(var(--brand-rgb), 0.18); --ctl-on-accent: #0D1B2E; }
+
+/* ══════════════════════════════════════════════════════════════
    TEMAS DE COLOR — 10 segmentos venezolanos
    Solo cambia --brand, --brand-dark y derivados
    Aplica SOLO dentro de #dashboard-root[data-color="X"]

@@ -106,3 +106,33 @@
   color: var(--color-text-muted);
   line-height: var(--leading-normal);
 }
+
+/* ══ Dashboard: borde y foco con --ctl-* (>= 3:1). Input también lo usan
+   catálogo premium, registro y admin, que NO cambian. ══ */
+:global(#dashboard-root) .input {
+  border: var(--ctl-border-w) solid var(--ctl-border);
+}
+
+:global(#dashboard-root) .input:hover:not(:disabled):not(:focus) {
+  border-color: var(--ctl-border-hover);
+}
+
+:global(#dashboard-root) .input:focus {
+  border-color: var(--ctl-focus-ring);
+}
+
+:global(#dashboard-root) .input:focus-visible {
+  outline: var(--ctl-focus-width) solid var(--ctl-focus-ring);
+  outline-offset: var(--ctl-focus-offset);
+}
+
+:global(#dashboard-root) .input:disabled {
+  opacity: 1;
+  background-color: var(--ctl-bg-disabled);
+  border-color: var(--ctl-border-disabled);
+  color: var(--ctl-text-disabled);
+}
+
+:global(#dashboard-root) .input::placeholder {
+  color: var(--ctl-placeholder);
+}

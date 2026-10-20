@@ -195,7 +195,7 @@
   min-height: var(--touch-comfy);
   padding: 0 var(--space-5);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-size: var(--text-sm);
@@ -291,7 +291,7 @@
   padding: var(--space-3) var(--space-2);
   min-height: 72px;
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast);
@@ -303,8 +303,8 @@
 }
 
 .segmentOptionActive {
-  background: var(--color-brand-subtle);
-  border-color: var(--color-brand);
+  background: var(--ctl-accent-soft);
+  border-color: var(--ctl-accent);
   box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
 }
 

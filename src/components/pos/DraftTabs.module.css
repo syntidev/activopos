@@ -19,11 +19,11 @@
   padding: 0 var(--space-2-5);
   height: 30px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   background: var(--color-surface);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
@@ -40,9 +40,9 @@
 }
 
 .tabActive {
-  border-color: var(--brand);
+  border-color: var(--ctl-accent);
   background: rgba(var(--brand-rgb), 0.08);
-  color: var(--brand);
+  color: var(--ctl-accent);
   font-weight: var(--weight-semibold);
   cursor: default;
 }
@@ -74,7 +74,7 @@
   border: none;
   background: none;
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   flex-shrink: 0;
   padding: 0;
@@ -101,7 +101,7 @@
   padding: 0 var(--space-2-5);
   height: 30px;
   border-radius: var(--radius-md);
-  border: 1px dashed var(--color-border-strong);
+  border: 1px dashed var(--ctl-border);
   background: none;
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);

@@ -16,7 +16,7 @@
   cursor: pointer;
 }
 .tab { background: var(--color-brand-subtle); color: var(--color-brand); }
-.tabActive { background: var(--color-brand); color: var(--color-text-on-brand); }
+.tabActive { background: var(--ctl-accent); color: var(--ctl-on-accent); }
 
 .video {
   display: block;

@@ -47,7 +47,7 @@
   height: var(--touch-min); /* 44px */
   padding: 0 var(--space-3) 0 calc(var(--space-3) + 14px + var(--space-2));
   background: var(--input-bg);
-  border: var(--border-width-thin) solid var(--input-border);
+  border: var(--border-width-thin) solid var(--ctl-border);
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
@@ -58,7 +58,7 @@
 }
 
 .input::placeholder {
-  color: var(--input-placeholder);
+  color: var(--ctl-placeholder);
 }
 
 .input:focus {
@@ -237,7 +237,7 @@
   min-height: var(--touch-min);
   border-radius: var(--radius-sm);
   background: var(--color-surface-3);
-  border: var(--border-width-thin) solid var(--color-border);
+  border: var(--border-width-thin) solid var(--ctl-border);
   color: var(--color-text-primary);
   cursor: pointer;
   transition: background var(--transition-fast);
@@ -279,7 +279,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   flex-shrink: 0;
   transition: background var(--transition-fast), color var(--transition-fast);
@@ -310,7 +310,7 @@
   width: 100%;
   padding: var(--space-3);
   background: var(--input-bg);
-  border: var(--border-width-thin) solid var(--input-border);
+  border: var(--border-width-thin) solid var(--ctl-border);
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
@@ -322,7 +322,7 @@
 }
 
 .textarea::placeholder {
-  color: var(--input-placeholder);
+  color: var(--ctl-placeholder);
 }
 
 .textarea:focus {

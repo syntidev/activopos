@@ -1315,3 +1315,21 @@
   }
   .productCell { width: 100%; }
 }
+/* ── Modal de eliminar: error de la API y spinner del botón ── */
+.deleteError {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--danger-soft);
+  border: var(--ctl-border-w) solid var(--danger-text);
+  border-radius: var(--radius-md);
+  color: var(--ctl-text);
+  font-size: var(--text-sm);
+}
+
+.deleteSpin { animation: deleteSpin 0.8s linear infinite; flex-shrink: 0; }
+
+@keyframes deleteSpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .deleteSpin { animation: none; }
+}

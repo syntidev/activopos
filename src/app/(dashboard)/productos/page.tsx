@@ -12,6 +12,7 @@ import {
   Package,
   Edit2,
   Trash2,
+  Loader2,
   SlidersHorizontal,
   Layers,
   ChevronUp,
@@ -220,7 +221,12 @@ export default function ProductosPage() {
 
   /* ── Delete modal state (FIX 2) ── */
   type DeletePhase = 'confirm' | 'has_history'
-  interface DeleteModal { product: Product; phase: DeletePhase; saving: boolean }
+  interface DeleteModal { product: Product; phase: DeletePhase; saving: boolean; error: string | null }
+  /** Mensaje que devuelve la API ({ error }) o uno genérico. */
+  const apiMessage = async (res: Response, fallback: string): Promise<string> => {
+    const j = await res.json().catch(() => ({})) as { error?: string }
+    return j.error ?? fallback
+  }
   const [deleteModal, setDeleteModal] = useState<DeleteModal | null>(null)
 
   /* ── Debounced search ── */
@@ -362,60 +368,70 @@ export default function ProductosPage() {
 
   /* ── Delete handlers (FIX 2) ── */
   const handleDeleteClick = useCallback((product: Product) => {
-    setDeleteModal({ product, phase: 'confirm', saving: false })
+    setDeleteModal({ product, phase: 'confirm', saving: false, error: null })
   }, [])
 
   const handleConfirmDelete = useCallback(async () => {
     if (!deleteModal) return
-    setDeleteModal(m => m ? { ...m, saving: true } : null)
+    setDeleteModal(m => m ? { ...m, saving: true, error: null } : null)
     try {
       const res = await fetch(`/api/products/${deleteModal.product.id}`, { method: 'DELETE' })
       if (res.ok) {
         setProducts(prev => prev.filter(p => p.id !== deleteModal.product.id))
         setDeleteModal(null)
+        toast(`"${deleteModal.product.name}" eliminado`, 'success')
       } else if (res.status === 409) {
         setDeleteModal(m => m ? { ...m, phase: 'has_history', saving: false } : null)
       } else {
-        setDeleteModal(m => m ? { ...m, saving: false } : null)
+        const msg = await apiMessage(res, 'No se pudo eliminar el producto. Intenta de nuevo.')
+        setDeleteModal(m => m ? { ...m, saving: false, error: msg } : null)
       }
     } catch {
-      setDeleteModal(m => m ? { ...m, saving: false } : null)
+      setDeleteModal(m => m ? { ...m, saving: false, error: 'Sin conexión con el servidor. Intenta de nuevo.' } : null)
     }
-  }, [deleteModal])
+  }, [deleteModal, toast])
 
   const handleDeactivateProduct = useCallback(async () => {
     if (!deleteModal) return
-    setDeleteModal(m => m ? { ...m, saving: true } : null)
+    setDeleteModal(m => m ? { ...m, saving: true, error: null } : null)
     try {
-      await fetch(`/api/products/${deleteModal.product.id}`, {
+      const res = await fetch(`/api/products/${deleteModal.product.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_available: false }),
       })
+      if (!res.ok) {
+        const msg = await apiMessage(res, 'No se pudo desactivar el producto. Intenta de nuevo.')
+        setDeleteModal(m => m ? { ...m, saving: false, error: msg } : null)
+        return
+      }
       setProducts(prev => prev.map(p =>
         p.id === deleteModal.product.id ? { ...p, is_available: false } : p
       ))
       setDeleteModal(null)
+      toast(`"${deleteModal.product.name}" desactivado`, 'success')
     } catch {
-      setDeleteModal(m => m ? { ...m, saving: false } : null)
+      setDeleteModal(m => m ? { ...m, saving: false, error: 'Sin conexión con el servidor. Intenta de nuevo.' } : null)
     }
-  }, [deleteModal])
+  }, [deleteModal, toast])
 
   const handleForceDelete = useCallback(async () => {
     if (!deleteModal) return
-    setDeleteModal(m => m ? { ...m, saving: true } : null)
+    setDeleteModal(m => m ? { ...m, saving: true, error: null } : null)
     try {
       const res = await fetch(`/api/products/${deleteModal.product.id}?force=true`, { method: 'DELETE' })
       if (res.ok) {
         setProducts(prev => prev.filter(p => p.id !== deleteModal.product.id))
         setDeleteModal(null)
+        toast(`"${deleteModal.product.name}" eliminado`, 'success')
       } else {
-        setDeleteModal(m => m ? { ...m, saving: false } : null)
+        const msg = await apiMessage(res, 'No se pudo eliminar el producto. Intenta de nuevo.')
+        setDeleteModal(m => m ? { ...m, saving: false, error: msg } : null)
       }
     } catch {
-      setDeleteModal(m => m ? { ...m, saving: false } : null)
+      setDeleteModal(m => m ? { ...m, saving: false, error: 'Sin conexión con el servidor. Intenta de nuevo.' } : null)
     }
-  }, [deleteModal])
+  }, [deleteModal, toast])
 
   /* ── Display list: filter + sort (FIX 3 + FIX 4) ── */
   const displayProducts = useMemo(() => {
@@ -1107,6 +1123,7 @@ export default function ProductosPage() {
                 <p className={styles.deletePanelMsg}>
                   Vas a eliminar <strong>{deleteModal.product.name}</strong>. Esta acción no se puede deshacer.
                 </p>
+                {deleteModal.error && <p className={styles.deleteError} role="alert">{deleteModal.error}</p>}
                 <div className={styles.deletePanelActions}>
                   <button
                     type="button"
@@ -1122,6 +1139,7 @@ export default function ProductosPage() {
                     onClick={() => void handleConfirmDelete()}
                     disabled={deleteModal.saving}
                   >
+                    {deleteModal.saving && <Loader2 size={14} className={styles.deleteSpin} aria-hidden="true" />}
                     {deleteModal.saving ? 'Eliminando…' : 'Eliminar'}
                   </button>
                 </div>
@@ -1136,6 +1154,7 @@ export default function ProductosPage() {
                   Si eliminas <strong>{deleteModal.product.name}</strong> perderás el registro de ventas asociado.
                   Se recomienda desactivarlo para ocultarlo del POS sin borrar el historial.
                 </p>
+                {deleteModal.error && <p className={styles.deleteError} role="alert">{deleteModal.error}</p>}
                 <div className={styles.deletePanelActions}>
                   <button
                     type="button"
@@ -1143,6 +1162,7 @@ export default function ProductosPage() {
                     onClick={() => void handleDeactivateProduct()}
                     disabled={deleteModal.saving}
                   >
+                    {deleteModal.saving && <Loader2 size={14} className={styles.deleteSpin} aria-hidden="true" />}
                     Desactivar (recomendado)
                   </button>
                   <button
@@ -1151,6 +1171,7 @@ export default function ProductosPage() {
                     onClick={() => void handleForceDelete()}
                     disabled={deleteModal.saving}
                   >
+                    {deleteModal.saving && <Loader2 size={14} className={styles.deleteSpin} aria-hidden="true" />}
                     {deleteModal.saving ? 'Eliminando…' : 'Eliminar de todas formas'}
                   </button>
                 </div>

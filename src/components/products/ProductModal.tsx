@@ -36,6 +36,8 @@ export interface ProductFormData {
   name: string
   description?: string | null
   barcode: string
+  /** SKU / referencia del producto; '' = sin SKU. Lo envían /nuevo y /editar (el modal rápido no lo usa). */
+  sku?: string
   saleMode: 'unit' | 'weight' | 'service'
   categoryId: number | null
   costPerUnitUsd: number
@@ -80,6 +82,8 @@ export interface EditableProduct {
   name: string
   description?: string | null
   barcode: string | null
+  /** SKU / referencia del producto (products.sku). */
+  sku?: string | null
   sale_mode: 'unit' | 'weight' | 'service'
   category_id: number | null
   cost_per_unit_usd: number | null

@@ -274,6 +274,22 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             </div>
           )}
 
+          {/* SKU / referencia */}
+          <div className={m.formGroup}>
+            <label className={m.label} htmlFor="np-sku">SKU / Referencia</label>
+            <input
+              id="np-sku"
+              type="text"
+              className={m.input}
+              placeholder="Ej: CAM-0042"
+              value={f.sku}
+              onChange={(e) => f.setSku(e.target.value)}
+              maxLength={50}
+              aria-describedby="np-sku-help"
+            />
+            <p id="np-sku-help" className={c.fixedPriceSub}>Código interno o referencia del fabricante</p>
+          </div>
+
           {/* Código de barras */}
           <div className={m.formGroup}>
             <label className={m.label} htmlFor="np-barcode">Código de Barras</label>
@@ -283,10 +299,11 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                 type="text"
                 inputMode="text"
                 className={m.input}
-                placeholder="EAN-13, QR, SKU..."
+                placeholder="EAN-13, UPC o QR"
                 value={f.barcode}
                 onChange={(e) => f.setBarcode(e.target.value)}
                 maxLength={60}
+                aria-describedby={f.hasVariants ? 'np-barcode-help' : undefined}
               />
               <button
                 type="button"
@@ -298,6 +315,11 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                 <ScanBarcode size={16} aria-hidden="true" />
               </button>
             </div>
+            {f.hasVariants && (
+              <p id="np-barcode-help" className={c.fixedPriceSub}>
+                Este producto tiene tallas: el código de barras y el SKU de cada talla se escriben en la pestaña Inventario y variantes.
+              </p>
+            )}
           </div>
         </AccordionCard>
 

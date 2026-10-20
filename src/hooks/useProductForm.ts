@@ -139,6 +139,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [name, setName]               = useState('')
   const [description, setDescription] = useState('')
   const [barcode, setBarcode]         = useState('')
+  const [sku, setSku]                 = useState('')
   const [productKind, setProductKind] = useState<ProductKind>('simple')
   const [measuredBy, setMeasuredBy]   = useState<'weight' | 'volume' | 'length'>('weight')
   const [unitLabel, setUnitLabel]     = useState('kg')
@@ -275,6 +276,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setName(editProduct.name)
     setDescription(editProduct.description ?? '')
     setBarcode(editProduct.barcode ?? '')
+    setSku(editProduct.sku ?? '')
 
     if (editProduct.product_type === 'combo' || editProduct.product_type === 'fabricable') {
       setProductKind('combo')
@@ -589,6 +591,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         name:            name.trim(),
         description:     description.trim() || null,
         barcode:         barcode.trim(),
+        sku:             sku.trim(),
         saleMode,
         productType,
         unitType,
@@ -657,7 +660,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
      dbVariants/varForm* quedan fuera: se guardan de inmediato contra la API
      (handleSaveVar/handleDeleteVar), no son parte de este submit. */
   const dirtySnapshot = JSON.stringify({
-    name, description, barcode, productKind, measuredBy, unitLabel, unitStep,
+    name, description, barcode, sku, productKind, measuredBy, unitLabel, unitStep,
     categoryId, costMode, bulkSize, cost, costUnknown, isFixedPrice, margin, price,
     stockInitial, stockAlertThreshold, showWholesale, wholesalePriceUsd,
     wholesalePricePerKgUsd, location, productNotes, images, isAvailable,
@@ -676,7 +679,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     isEdit,
     isDirty,
     // core state
-    name, setName, description, setDescription, barcode, setBarcode,
+    name, setName, description, setDescription, barcode, setBarcode, sku, setSku,
     productKind, setProductKind, measuredBy, setMeasuredBy,
     unitLabel, setUnitLabel, unitStep, setUnitStep,
     categoryId, setCategoryId,

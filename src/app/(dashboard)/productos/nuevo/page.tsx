@@ -55,6 +55,7 @@ export default function NuevoProductoPage() {
         name:               data.name,
         description:        data.description ?? null,
         barcode:            data.barcode || null,
+        sku:                data.sku || null,
         sale_mode:          data.saleMode,
         product_type:       data.productType,
         unit_type:          data.unitType,

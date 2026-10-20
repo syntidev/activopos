@@ -982,6 +982,7 @@ export default function ProductosPage() {
                               <span className={styles.productName}>{product.name}</span>
                               {isInactive && <span className={styles.inactiveBadge}>Inactivo</span>}
                             </div>
+                            {product.sku && <span className={styles.productSku}>SKU {product.sku}</span>}
                             <div className={styles.productMeta}>
                               {product.category && catBadgeClass && (
                                 <span className={`${styles.categoryBadge} ${catBadgeClass}`}>{product.category.name}</span>

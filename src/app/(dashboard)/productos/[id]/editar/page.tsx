@@ -23,6 +23,7 @@ interface ApiProductDetail {
   name: string
   description: string | null
   barcode: string | null
+  sku?: string | null
   sale_mode: EditableProduct['sale_mode']
   category_id: number | null
   cost_per_unit_usd: number | null
@@ -68,6 +69,7 @@ function toEditable(p: ApiProductDetail): EditableProduct {
     name:               p.name,
     description:        p.description,
     barcode:            p.barcode,
+    sku:                p.sku,
     sale_mode:          p.sale_mode,
     category_id:        p.category_id,
     cost_per_unit_usd:  p.cost_per_unit_usd,
@@ -214,6 +216,7 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
         name:               data.name,
         description:        data.description ?? null,
         barcode:            data.barcode || null,
+        sku:                data.sku || null,
         sale_mode:          data.saleMode,
         product_type:       data.productType,
         unit_type:          data.unitType,

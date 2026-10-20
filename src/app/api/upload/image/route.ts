@@ -4,21 +4,25 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import sharp from 'sharp'
-import { uploadLimiter, getClientIp } from '@/lib/rate-limit'
+import { uploadLimiter } from '@/lib/rate-limit'
 
 const ALLOWED_FORMATS = new Set(['jpeg', 'png', 'webp'])
 const MAX_SIZE        = 5 * 1024 * 1024 // 5MB — fotos de teléfono son 3-4MB
 
 export async function POST(req: NextRequest) {
   try {
-    await uploadLimiter.consume(getClientIp(req))
-  } catch {
-    return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
-  }
-
-  try {
     // No hay query a DB — el aislamiento es por session.businessId en el path de storage
     const { session } = await getAuthenticatedTenant()
+
+    // El límite es por USUARIO autenticado, no por IP: detrás de un proxy sin X-Real-IP / cf-connecting-ip
+    // (getClientIp cae en '127.0.0.1') todos los negocios compartían UN contador de 20 subidas por minuto y
+    // las casillas de foto dejaban de aceptar archivos. Mismo criterio que qzSignLimiter y labelOcrLimiter.
+    try {
+      await uploadLimiter.consume(`${session.businessId}:${session.userId}`)
+    } catch {
+      return NextResponse.json({ error: 'Demasiadas solicitudes' }, { status: 429 })
+    }
+
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const formData = await req.formData()

@@ -47,7 +47,7 @@
   height:        var(--touch-min);
   padding:       0 var(--space-3);
   background:    var(--input-bg);
-  border:        1px solid var(--input-border);
+  border:        var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color:         var(--input-text);
   font-size:     var(--text-sm);
@@ -404,7 +404,7 @@
   height:        var(--touch-min);
   padding:       0 var(--space-3);
   background:    var(--input-bg);
-  border:        1px solid var(--input-border);
+  border:        var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color:         var(--input-text);
   font-size:     var(--text-sm);
@@ -439,7 +439,7 @@
   background:      none;
   border:          none;
   border-radius:   var(--radius-full);
-  color:           var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor:          pointer;
   transition:      background var(--transition-fast), color var(--transition-fast);
   flex-shrink:     0;
@@ -488,7 +488,7 @@
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
@@ -576,7 +576,7 @@
   width: 100%;
   min-height: var(--touch-min);
   padding: 0 var(--space-3) 0 calc(var(--space-3) + 20px);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
@@ -588,7 +588,7 @@
 .tabDateInput {
   height: 34px;
   padding: 0 var(--space-3);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
@@ -603,7 +603,7 @@
   gap: 4px;
   padding: 0 var(--space-3);
   height: 34px;
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
@@ -640,7 +640,7 @@
   gap: var(--space-1);
   padding: var(--space-2) var(--space-3);
   height: 34px;
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text-secondary);

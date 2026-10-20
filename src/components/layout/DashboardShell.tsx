@@ -64,7 +64,7 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
   return (
     <ToastProvider>
       <a href="#main-content" className="skip-link">Saltar al contenido</a>
-      <div className={styles.root}>
+      <div id="dashboard-root" className={styles.root}>
         <Sidebar
           session={session}
           isImpersonating={isImpersonating}

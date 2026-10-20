@@ -235,7 +235,7 @@
 
 .cajaPillClosed {
   background-color: var(--badge-bg);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   color: var(--badge-text);
 }
 .cajaPillClosed:hover { background-color: var(--color-surface-2); }
@@ -371,7 +371,7 @@
 .rateToggleTrack {
   position: absolute;
   inset: 0;
-  background: var(--color-border);
+  background: var(--ctl-toggle-off);
   border-radius: var(--radius-full);
   transition: background-color var(--transition-fast);
 }
@@ -382,16 +382,17 @@
   left: 2px;
   width: 18px;
   height: 18px;
-  background: #fff;
+  background: var(--ctl-toggle-thumb);
+  box-shadow: var(--ctl-shadow-control);
   border-radius: var(--radius-full);
   transition: transform var(--transition-fast);
 }
 
-.rateToggleInput:checked ~ .rateToggleTrack { background: var(--color-brand); }
+.rateToggleInput:checked ~ .rateToggleTrack { background: var(--ctl-toggle-on); }
 .rateToggleInput:checked ~ .rateToggleThumb { transform: translateX(18px); }
 .rateToggleInput:focus-visible ~ .rateToggleTrack {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
+  outline: var(--ctl-focus-width) solid var(--ctl-focus-ring);
+  outline-offset: var(--ctl-focus-offset);
 }
 
 /* Mobile-first: columna — input y botón apilados a ancho completo, evita que
@@ -417,7 +418,7 @@
   width: 100%;
   flex: 1;
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   padding: 0 var(--space-3);
 }
@@ -487,7 +488,7 @@
   height: 38px;
   padding: 0 var(--space-4);
   background: transparent;
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
@@ -764,7 +765,7 @@
   height: var(--touch-min);
   flex-shrink: 0;
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--ctl-icon);
   background: none;
   border: none;
   cursor: pointer;

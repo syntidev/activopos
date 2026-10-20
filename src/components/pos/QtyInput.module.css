@@ -45,9 +45,9 @@
   width: var(--touch-large);
   height: var(--touch-large);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
+  color: var(--ctl-icon);
   cursor: pointer;
   flex-shrink: 0;
   transition: all var(--transition-fast);

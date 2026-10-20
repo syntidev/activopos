@@ -348,3 +348,103 @@ input, textarea, select {
   border-color: var(--color-danger);
 }
 .btn-icon:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ══════════════════════════════════════════════════════════════
+   CONTROLES DEL DASHBOARD — tokens --ctl-* (tokens.css)
+   Todo cuelga de #dashboard-root: catálogos públicos, login y marketing
+   no se tocan. Las reglas con :where() valen 0 de especificidad: ganan
+   al estilo del navegador y pierden ante cualquier CSS Module, así que
+   son red de seguridad para controles sin clase propia.
+══════════════════════════════════════════════════════════════ */
+
+/* Anillo de foco: 2px con offset, visible en teclado. El sidebar queda fuera. */
+#dashboard-root :is(a, button, summary, select, textarea, input:not([type="checkbox"]):not([type="radio"]), [role="button"], [role="tab"], [role="switch"], [tabindex]:not([tabindex="-1"])):focus-visible:not(aside *) {
+  outline: var(--ctl-focus-width) solid var(--ctl-focus-ring);
+  outline-offset: var(--ctl-focus-offset);
+}
+
+:where(#dashboard-root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]), #dashboard-root select, #dashboard-root textarea) {
+  border: var(--ctl-border-w) solid var(--ctl-border);
+  border-radius: var(--radius-md);
+  background-color: var(--ctl-bg);
+  color: var(--ctl-text);
+}
+
+:where(#dashboard-root) ::placeholder {
+  color: var(--ctl-placeholder);
+  opacity: 1;
+}
+
+/* Checkbox y radio: borde de 2px >= 3:1, relleno de acento al marcar, check claro. */
+:where(#dashboard-root input[type="checkbox"], #dashboard-root input[type="radio"]) {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: var(--ctl-check-border-w) solid var(--ctl-check-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--ctl-bg);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+:where(#dashboard-root input[type="radio"]) {
+  border-radius: 50%;
+}
+
+:where(#dashboard-root input[type="checkbox"]:hover:not(:disabled), #dashboard-root input[type="radio"]:hover:not(:disabled)) {
+  border-color: var(--ctl-border-hover);
+}
+
+:where(#dashboard-root input[type="checkbox"]:checked, #dashboard-root input[type="radio"]:checked, #dashboard-root input[type="checkbox"]:indeterminate) {
+  background-color: var(--ctl-check-on);
+  border-color: var(--ctl-check-on);
+}
+
+:where(#dashboard-root input[type="checkbox"])::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: var(--ctl-check-mark);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  transform: scale(0);
+  transition: transform var(--transition-fast);
+}
+
+:where(#dashboard-root input[type="checkbox"]:checked)::before {
+  transform: scale(1);
+}
+
+:where(#dashboard-root input[type="checkbox"]:indeterminate)::before {
+  clip-path: none;
+  height: 2px;
+  transform: scale(1);
+}
+
+:where(#dashboard-root input[type="radio"])::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--ctl-check-mark);
+  transform: scale(0);
+  transition: transform var(--transition-fast);
+}
+
+:where(#dashboard-root input[type="radio"]:checked)::before {
+  transform: scale(1);
+}
+
+:where(#dashboard-root input[type="checkbox"]:disabled, #dashboard-root input[type="radio"]:disabled) {
+  border-color: var(--ctl-border-disabled);
+  background-color: var(--ctl-bg-disabled);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(#dashboard-root input[type="checkbox"], #dashboard-root input[type="radio"])::before { transition: none; }
+}

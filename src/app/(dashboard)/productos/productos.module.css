@@ -152,7 +152,7 @@
   width: 100%;
   padding: 0 var(--space-11) 0 var(--space-9);
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--input-text);
   font-size: var(--text-sm);
@@ -167,7 +167,7 @@
 }
 
 .searchInput::placeholder {
-  color: var(--input-placeholder);
+  color: var(--ctl-placeholder);
 }
 
 .categoryFilter {
@@ -202,21 +202,26 @@
   gap: var(--space-1-5);
   height: var(--touch-min);
   padding: 0 var(--space-4);
-  background: transparent;
-  border: 1px solid var(--color-border);
+  background: var(--ctl-bg);
+  border: var(--ctl-border-w) solid var(--ctl-border-strong);
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--ctl-text);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  box-shadow: var(--ctl-shadow-control);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .btnAction:hover {
-  background-color: var(--color-surface-2);
-  color: var(--color-text-primary);
+  background-color: var(--ctl-bg-hover);
+  border-color: var(--ctl-border-hover);
+}
+
+.btnAction:active {
+  background-color: var(--ctl-bg-pressed);
 }
 
 .btnAction:focus-visible {
@@ -230,20 +235,25 @@
   gap: var(--space-1-5);
   height: var(--touch-min);
   padding: 0 var(--space-4);
-  background: var(--color-brand);
+  background: var(--ctl-accent);
   border: none;
   border-radius: var(--radius-md);
-  color: var(--color-text-on-brand);
+  color: var(--ctl-on-accent);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
+  box-shadow: var(--ctl-shadow-primary);
   transition: background-color var(--transition-fast);
 }
 
 .btnPrimary:hover {
-  background-color: var(--color-brand-hover);
+  background-color: var(--ctl-accent-hover);
+}
+
+.btnPrimary:active {
+  background-color: var(--ctl-accent-pressed);
 }
 
 .btnPrimary:focus-visible {
@@ -457,7 +467,7 @@
   border-radius: var(--radius-md);
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
   flex-shrink: 0;
@@ -664,11 +674,11 @@
   padding: 0 var(--space-4);
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   font-size: var(--text-sm);
   font-family: var(--font-sans);
   font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   cursor: pointer;
   white-space: nowrap;
   transition: color var(--transition-fast), border-bottom-color var(--transition-fast);
@@ -677,7 +687,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .catTab:hover { color: var(--color-text-primary); }
+  .catTab:hover { color: var(--ctl-tab-text-hover); border-bottom-color: var(--ctl-border); }
 }
 
 .catTab:focus-visible {
@@ -686,8 +696,8 @@
 }
 
 .catTabActive {
-  color: var(--color-brand);
-  border-bottom-color: var(--color-brand);
+  color: var(--ctl-accent);
+  border-bottom-color: var(--ctl-accent);
   font-weight: var(--weight-semibold);
 }
 
@@ -704,7 +714,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   opacity: 0.4;
   display: flex;
   align-items: center;
@@ -778,8 +788,8 @@
   display:    flex;
   gap:        var(--space-1);
   padding:    var(--space-1);
-  background: var(--color-surface-2);
-  border:     1px solid var(--color-border-subtle);
+  background: var(--ctl-bg);
+  border:     var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-lg);
   width:      fit-content;
 }
@@ -791,20 +801,20 @@
   border-radius: var(--radius-md);
   font-size:     var(--text-sm);
   font-weight:   var(--weight-medium);
-  color:         var(--color-text-muted);
+  color: var(--ctl-tab-text);
   cursor:        pointer;
   transition:    background var(--transition-fast), color var(--transition-fast);
   white-space:   nowrap;
   min-height:    var(--touch-min);
 }
 
-.statusTab:hover { color: var(--color-text-primary); }
+.statusTab:hover { color: var(--ctl-tab-text-hover); background: var(--ctl-bg-hover); }
 
 .statusTabActive {
-  background:  var(--color-surface);
-  color:       var(--color-brand);
+  background:  var(--ctl-tab-active-bg);
+  color: var(--ctl-tab-active-text);
   font-weight: var(--weight-semibold);
-  box-shadow:  0 1px 3px rgba(0,0,0,0.07);
+  box-shadow:  var(--ctl-shadow-control);
 }
 
 /* ── Inactive row (FIX 3) ── */
@@ -853,15 +863,20 @@
   display:       block;
   width:         34px;
   height:        18px;
-  background:    var(--color-surface-3);
-  border:        1.5px solid var(--color-border);
+  background:    var(--ctl-toggle-off);
+  border:        var(--ctl-border-w) solid var(--ctl-toggle-off);
   border-radius: var(--radius-full);
   transition:    background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .toggle:has(.toggleInput:checked) .toggleTrack {
-  background:   rgba(var(--success-rgb, 22, 163, 74), 0.15);
-  border-color: var(--color-success-border);
+  background:   var(--ctl-toggle-on);
+  border-color: var(--ctl-toggle-on);
+}
+
+.toggle:has(.toggleInput:focus-visible) .toggleTrack {
+  outline: var(--ctl-focus-width) solid var(--ctl-focus-ring);
+  outline-offset: var(--ctl-focus-offset);
 }
 
 .toggleThumb {
@@ -870,14 +885,14 @@
   left:          3px;
   width:         12px;
   height:        12px;
-  background:    var(--color-text-muted);
+  background:    var(--ctl-toggle-thumb);
   border-radius: var(--radius-full);
+  box-shadow:    var(--ctl-shadow-control);
   transition:    transform var(--transition-fast), background var(--transition-fast);
 }
 
 .toggle:has(.toggleInput:checked) .toggleThumb {
   transform:  translateX(16px);
-  background: var(--color-success-text);
 }
 
 /* ── Sortable column headers (FIX 4) ── */
@@ -969,7 +984,7 @@
   padding:       0 var(--space-4);
   min-height:    var(--touch-min);
   background:    var(--color-surface-2);
-  border:        1px solid var(--color-border);
+  border:        var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   font-size:     var(--text-sm);
   font-weight:   var(--weight-medium);
@@ -1056,7 +1071,7 @@
   height: var(--touch-min);
   background: none;
   border: none;
-  color: var(--color-text-muted);
+  color: var(--ctl-icon);
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: color var(--transition-fast), background var(--transition-fast);

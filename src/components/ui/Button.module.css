@@ -186,3 +186,62 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* ══ Dashboard: controles con --ctl-* (contraste >= 3:1). Solo dentro de #dashboard-root:
+   Button también lo usan catálogo premium, registro y admin, que NO cambian. ══ */
+:global(#dashboard-root) .btn {
+  border-width: var(--ctl-border-w);
+}
+
+:global(#dashboard-root) .btn:focus-visible {
+  outline: var(--ctl-focus-width) solid var(--ctl-focus-ring);
+  outline-offset: var(--ctl-focus-offset);
+}
+
+:global(#dashboard-root) .btn:disabled,
+:global(#dashboard-root) .btn[aria-disabled="true"] {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+:global(#dashboard-root) .variant-primary {
+  background-color: var(--ctl-accent);
+  color: var(--ctl-on-accent);
+  border-color: var(--ctl-accent);
+  box-shadow: var(--ctl-shadow-primary);
+}
+:global(#dashboard-root) .variant-primary:hover:not(:disabled) {
+  background-color: var(--ctl-accent-hover);
+  border-color: var(--ctl-accent-hover);
+}
+:global(#dashboard-root) .variant-primary:active:not(:disabled) {
+  background-color: var(--ctl-accent-pressed);
+  border-color: var(--ctl-accent-pressed);
+}
+
+:global(#dashboard-root) .variant-secondary {
+  background-color: var(--ctl-bg);
+  color: var(--ctl-text);
+  border-color: var(--ctl-border-strong);
+  box-shadow: var(--ctl-shadow-control);
+}
+:global(#dashboard-root) .variant-secondary:hover:not(:disabled) {
+  background-color: var(--ctl-bg-hover);
+  border-color: var(--ctl-border-hover);
+}
+:global(#dashboard-root) .variant-secondary:active:not(:disabled) {
+  background-color: var(--ctl-bg-pressed);
+}
+
+:global(#dashboard-root) .variant-ghost {
+  color: var(--ctl-tab-text);
+}
+:global(#dashboard-root) .variant-ghost:hover:not(:disabled) {
+  background-color: var(--ctl-bg-hover);
+  border-color: var(--ctl-border);
+  color: var(--ctl-text);
+}
+:global(#dashboard-root) .variant-ghost:active:not(:disabled) {
+  background-color: var(--ctl-bg-pressed);
+  border-color: var(--ctl-border-hover);
+}

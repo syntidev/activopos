@@ -407,7 +407,7 @@
   height: 38px;
   background: none;
   border: none;
-  color: var(--color-text-secondary);
+  color: var(--ctl-icon);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast);
 }

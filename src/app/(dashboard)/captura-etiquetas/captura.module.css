@@ -55,7 +55,7 @@
 .primaryButton { background: var(--color-brand); color: var(--color-text-on-brand); padding: 0 var(--space-4); }
 .secondaryButton { background: var(--color-brand-subtle); color: var(--color-brand); padding: 0 var(--space-4); }
 .chip { background: var(--color-brand-subtle); color: var(--color-brand); padding: 0 var(--space-3); font-size: var(--text-sm); }
-.chipActive { background: var(--color-brand); color: var(--color-text-on-brand); padding: 0 var(--space-3); font-size: var(--text-sm); }
+.chipActive { background: var(--ctl-accent); color: var(--ctl-on-accent); padding: 0 var(--space-3); font-size: var(--text-sm); }
 
 .bigButton:disabled,
 .primaryButton:disabled,
@@ -122,7 +122,7 @@
 }
 .sheetHeader { display: flex; align-items: center; justify-content: space-between; }
 .sheetTitle { font-family: var(--font-display); font-size: var(--text-xl); margin: 0; }
-.iconButton { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; background: none; border: none; color: var(--color-text-secondary); cursor: pointer; }
+.iconButton { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; background: none; border: none; color: var(--ctl-icon); cursor: pointer; }
 .readOnly { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-size: var(--text-sm); color: var(--color-text-secondary); }
 .field { display: grid; gap: var(--space-1); }
 .label { font-size: var(--text-xs); color: var(--color-text-secondary); }
@@ -130,7 +130,7 @@
   min-height: 44px;
   width: 100%;
   box-sizing: border-box;
-  border: var(--border-width-thin) solid var(--color-border);
+  border: var(--border-width-thin) solid var(--ctl-border);
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
   font-family: inherit;

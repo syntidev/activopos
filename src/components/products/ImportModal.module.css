@@ -73,7 +73,7 @@
 
 /* ── Drop zone ── */
 .dropZone {
-  border: 2px dashed var(--color-border);
+  border: 2px dashed var(--ctl-border);
   border-radius: var(--radius-lg);
   padding: var(--space-8) var(--space-6);
   display: flex;

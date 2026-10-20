@@ -111,7 +111,7 @@
 }
 
 .tabActive {
-  color: var(--brand-l);
+  color: var(--ctl-accent);
   border-bottom-color: var(--brand-l);
 }
 

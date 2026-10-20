@@ -337,10 +337,10 @@
 
 .cycleTab {
   height:         36px;
-  border:         1.5px solid var(--color-border);
+  border:         var(--ctl-border-w) solid var(--ctl-border);
   border-radius:  var(--radius-md);
   background:     var(--color-surface);
-  color:          var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   font-size:      var(--text-xs);
   font-weight:    var(--weight-medium);
   font-family:    var(--font-sans);
@@ -351,9 +351,9 @@
 .cycleTab:hover { border-color: var(--color-brand); }
 
 .cycleTabActive {
-  border-color: var(--color-brand);
-  background:   var(--color-brand);
-  color:        var(--color-white);
+  border-color: var(--ctl-accent);
+  background: var(--ctl-accent);
+  color: var(--ctl-on-accent);
 }
 
 .cycleSummary {

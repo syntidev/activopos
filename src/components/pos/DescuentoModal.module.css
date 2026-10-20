@@ -12,7 +12,7 @@
 .typeToggle {
   display: flex;
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   padding: var(--space-0-5);
   gap: var(--space-0-5);
@@ -27,15 +27,15 @@
   font-size: var(--text-sm);
   font-family: var(--font-sans);
   font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--ctl-tab-text);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .typeBtnActive {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-sm);
+  background: var(--ctl-tab-active-bg);
+  color: var(--ctl-tab-active-text);
+  box-shadow: var(--ctl-shadow-control);
 }
 
 /* Input */

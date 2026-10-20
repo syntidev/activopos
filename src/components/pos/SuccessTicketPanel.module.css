@@ -47,7 +47,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: var(--ctl-icon);
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
@@ -227,7 +227,7 @@
 /* Imprimir — ghost */
 .btnPrint {
   background: transparent;
-  border: 1.5px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   color: var(--color-text-primary);
 }
 

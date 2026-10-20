@@ -37,7 +37,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--color-text-secondary);
+  color: var(--ctl-icon);
   transition: background-color var(--transition-fast);
 }
 

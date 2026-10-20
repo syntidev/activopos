@@ -29,7 +29,7 @@
   min-height: var(--touch-min);
   padding: 0 var(--space-2);
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: var(--ctl-border-w) solid var(--ctl-border);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
   font-size: var(--text-sm);

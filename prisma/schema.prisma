@@ -386,6 +386,10 @@ model Product {
   // Sello de financiamiento (hoy solo Cashea) en la ficha pública. Solo se muestra si
   // además business.settings.catalog_financing_badge está activo. No es un precio.
   financing_eligible         Boolean           @default(false)
+  // Elegibilidad EFECTIVA para financiamiento = financiamiento activado en Configuración (settings.financing.enabled)
+  // Y financing_excluded = false. Por defecto todos los productos entran; esta columna solo SACA a los que no.
+  // financing_eligible queda como dato histórico (ya no decide nada).
+  financing_excluded         Boolean           @default(false)
   cost_per_unit_usd          Decimal?          @db.Decimal(10, 4)
   cost_unknown               Boolean           @default(false)
   wholesale_price_usd        Decimal?          @db.Decimal(10, 2)
@@ -888,6 +892,7 @@ model ProductVariant {
   order_items OrderItem[]
 
   @@index([barcode])
+  @@index([sku])
   @@map("product_variants")
 }
 

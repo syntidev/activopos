@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getActiveRate } from '@/lib/bcv'
+import { matchVariant, parseSearch, productSearchWhere } from '@/lib/product-search'
 
 function parseImages(raw: string | null): string[] | null {
   if (!raw) return null
@@ -12,29 +13,14 @@ export async function GET(req: NextRequest) {
     const { session, db } = await getAuthenticatedTenant()
 
     const sp           = req.nextUrl.searchParams
-    const q            = sp.get('q')?.trim() ?? ''
+    // Búsqueda única (lib/product-search.ts): nombre, barcode, SKU, "Ref" en descripción, SKU y barcode de variante.
+    const parsed       = parseSearch(sp.get('q'))
+    const q            = parsed.q
+    const searchWhere  = productSearchWhere(parsed)
     const limit        = Math.min(parseInt(sp.get('limit') ?? '20'), 50)
     const includeEmpty = sp.get('include_empty') !== 'false'
 
-    if (!q) return NextResponse.json({ ok: true, products: [] })
-
-    type WhereOr =
-      | { name:    { contains: string } }
-      | { barcode: string }
-      | { sku:     { contains: string } }
-      | { variants: { some: { is_active: true; barcode?: string; sku?: { contains: string } } } }
-
-    const orConditions: WhereOr[] = [
-      { name: { contains: q } },
-      { sku:  { contains: q } },
-      // SKU de variante ("11953H PULSE XL"): el producto aparece buscando por él.
-      { variants: { some: { is_active: true, sku: { contains: q } } } },
-    ]
-    if (q.length >= 4) {
-      orConditions.push({ barcode: q })
-      // EAN exacto de una VARIANTE: devuelve su producto y `matched_variant_id` (la talla escaneada).
-      orConditions.push({ variants: { some: { is_active: true, barcode: q } } })
-    }
+    if (!searchWhere) return NextResponse.json({ ok: true, products: [] })
 
     const [rawProducts, stockAgg, rate] = await Promise.all([
       db.product.findMany({
@@ -42,11 +28,13 @@ export async function GET(req: NextRequest) {
           // business_id inyectado por el tenant layer
           active:       true,
           is_available: true,
-          OR:           orConditions,
+          AND:          [searchWhere],
         },
         select: {
           id:                 true,
           name:               true,
+          sku:                true,
+          barcode:            true,
           sale_mode:          true,
           product_type:       true,
           base_unit_label:    true,
@@ -102,9 +90,13 @@ export async function GET(req: NextRequest) {
             ? (p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null)
             : (p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null)
 
+        const match = matchVariant(p.variants, parsed)
         const nameLower = p.name.toLowerCase()
         let score       = nameLower === qLower ? 100 : nameLower.startsWith(qLower) ? 60 : 20
         if (p.is_favorite) score += 5
+        // Un barcode exacto (del producto o de una de sus tallas) va SIEMPRE primero: Enter en el POS toma el primer resultado.
+        if (match.matched_by === 'barcode' || (parsed.code !== null && p.barcode === parsed.code)) score += 1000
+        else if (match.matched_by === 'sku') score += 500
 
         return {
           id:                 p.id,
@@ -119,8 +111,8 @@ export async function GET(req: NextRequest) {
           images:             parseImages(p.images),
           has_variants:       p.has_variants,
           variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
-          // Variante cuyo EAN es exactamente lo buscado/escaneado; null si fue otra coincidencia.
-          matched_variant_id: p.variants.find(v => v.barcode !== null && v.barcode === q)?.id ?? null,
+          // Talla que coincidió (barcode exacto o SKU único): id y valor; null si fue otra coincidencia.
+          ...match,
           is_favorite:        p.is_favorite,
           stock:              { net_qty },
           price_bs:           priceUsd ? Math.round(priceUsd * rate * 100) / 100 : null,

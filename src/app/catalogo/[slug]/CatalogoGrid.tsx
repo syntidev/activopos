@@ -184,6 +184,42 @@ export function CatalogoGrid({
   const [spyCategory,    setSpyCategory]    = useState<string | null>(null)
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null)
+
+  // Búsqueda por código y SKU de variante, "Ref" en la descripción, etc.: el servidor (misma búsqueda que Productos y el POS,
+  // solo productos visibles) devuelve los ids; el filtro local por nombre/categoría sigue funcionando sin red.
+  const [serverHits, setServerHits] = useState<Map<number, { value: string | null }>>(() => new Map())
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 3) { setServerHits(new Map()); return }
+    const ctrl = new AbortController()
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/catalog/${slug}/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        if (!r.ok) return
+        const j = (await r.json()) as { results?: Array<{ id: number; matched_variant_value: string | null }> }
+        setServerHits(new Map((j.results ?? []).map(h => [h.id, { value: h.matched_variant_value }])))
+      } catch { /* cancelado o sin red: queda el filtro local */ }
+    }, 250)
+    return () => { clearTimeout(t); ctrl.abort() }
+  }, [query, slug])
+
+  // Pistola de código de barras: escribe los dígitos y envía Enter → abre el producto del código exacto (o el único resultado).
+  const goToExactMatch = async () => {
+    const q = query.trim()
+    if (q.length < 3) return
+    try {
+      const r = await fetch(`/api/catalog/${slug}/search?q=${encodeURIComponent(q)}`)
+      if (!r.ok) return
+      const j = (await r.json()) as { results?: Array<{ id: number; matched_variant_id: number | null }> }
+      const all = j.results ?? []
+      const exact = all.filter(h => h.matched_variant_id !== null)
+      const target = exact.length === 1 ? exact[0] : all.length === 1 ? all[0] : null
+      if (target) router.push(`/catalogo/${slug}/p/${target.id}`)
+    } catch { /* sin red: no hace nada */ }
+  }
+  const onSearchEnter = (e: { key: string; preventDefault: () => void }) => {
+    if (e.key === 'Enter') { e.preventDefault(); void goToExactMatch() }
+  }
   const [variantError,    setVariantError]    = useState(false)
   const [selectedDim1,    setSelectedDim1]    = useState<string | null>(null)
   const [showBackTop,    setShowBackTop]    = useState(false)
@@ -271,13 +307,14 @@ export function CatalogoGrid({
       const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       return products.filter(p =>
         p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q) ||
-        (p.categoryName?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ?? '').includes(q),
+        (p.categoryName?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ?? '').includes(q) ||
+        serverHits.has(p.id),
       )
     }
     if (activeCategory === FEATURED_KEY) return products.filter(p => p.isFeatured)
     const byCat = activeCategory ? products.filter(p => p.categoryName === activeCategory) : products
     return activeSub ? byCat.filter(p => p.subcategory != null && subcategoryKey(p.subcategory) === activeSub) : byCat
-  }, [products, query, activeCategory, activeSub])
+  }, [products, query, activeCategory, activeSub, serverHits])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
   useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query])
@@ -674,6 +711,7 @@ export function CatalogoGrid({
               className={styles.searchExpandedInput}
               value={query}
               onChange={e => setQuery(e.target.value)}
+              onKeyDown={onSearchEnter}
               placeholder="Buscar productos…"
               aria-label="Buscar productos"
             />
@@ -842,6 +880,7 @@ export function CatalogoGrid({
                 placeholder="Buscar productos..."
                 value={query}
                 onChange={e => setQuery(e.target.value)}
+              onKeyDown={onSearchEnter}
                 aria-label="Buscar productos"
               />
             </div>

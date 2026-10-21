@@ -113,3 +113,28 @@ test('Pedido: el modo se cambia en el detalle y el servidor reprecia las líneas
   expect(sql(`SELECT GROUP_CONCAT(price_source ORDER BY id) FROM order_items WHERE order_id=${orderId}`)).toBe('divisa,fallback_bcv')
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/divisa_pedido_1440.png` })
 })
+
+test('Pedido: las líneas se mapean por id de línea, aunque el servidor las devuelva en otro orden', async ({ page }) => {
+  await login(page)
+  const number = sql(`SELECT order_number FROM orders WHERE id=${orderId}`)
+  // El servidor responde con las líneas en orden inverso: por índice, los precios se cruzarían.
+  await page.route('**/api/orders/*/price-mode', async (route) => {
+    const response = await route.fetch()
+    const json = await response.json() as { ticket: { items: unknown[] } }
+    json.ticket.items = [...json.ticket.items].reverse()
+    await route.fulfill({ response, json })
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/pedidos')
+  await page.getByText(number, { exact: true }).click()
+  const rows = page.getByLabel('Ítems del pedido').getByRole('listitem')
+
+  await page.getByRole('radio', { name: 'BCV (Bs)' }).click()
+  await expect(rows.filter({ hasText: NAME_A })).toContainText('$10.00')
+  await expect(rows.filter({ hasText: NAME_B })).toContainText('$5.00')
+
+  await page.getByRole('radio', { name: 'Divisa ($)' }).click()
+  await expect(rows.filter({ hasText: NAME_A })).toContainText('$8.00')
+  await expect(rows.filter({ hasText: NAME_B })).toContainText('$5.00')
+  await expect(rows.filter({ hasText: NAME_B })).toContainText('Sin precio Divisa')
+})

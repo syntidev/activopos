@@ -21,6 +21,8 @@ interface ProductResult {
 }
 
 interface EditableItem {
+  /** id de la línea en el servidor (los ítems recién agregados no lo tienen hasta guardar). */
+  id?: number
   product_id: number
   product_name: string
   variant_label?: string | null
@@ -31,6 +33,7 @@ interface EditableItem {
 
 /** Línea del `ticket` que devuelve PATCH /api/orders/{id}/price-mode. */
 interface PricedLine {
+  id: number
   product_id: number
   variant_id: number | null
   price_per_unit_usd: number
@@ -108,6 +111,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
         setOrder(data.order)
         setItems(
           data.order.items.map((i) => ({
+            id:                 i.id,
             product_id:         i.product_id,
             product_name:       i.product_name,
             variant_label:      i.variant_label,
@@ -203,8 +207,8 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
       const data = await res.json().catch(() => null) as { ticket?: { items: PricedLine[]; total_usd: number; total_bs: number } ; error?: string } | null
       if (!res.ok || !data?.ticket) { setModeError(data?.error ?? 'No se pudo cambiar el modo de precio.'); return }
       const lines = data.ticket.items
-      setItems((prev) => prev.map((it, i) => {
-        const hit = lines.length === prev.length ? lines[i] : lines.find((l) => l.product_id === it.product_id)
+      setItems((prev) => prev.map((it) => {
+        const hit = lines.find((l) => l.id === it.id)
         return hit ? { ...it, price_per_unit_usd: Number(hit.price_per_unit_usd), price_source: hit.price_source } : it
       }))
       const next: OrderDetail = { ...order, price_mode: mode, total_usd: data.ticket.total_usd, total_bs: data.ticket.total_bs }
@@ -242,6 +246,16 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
         return
       }
       setOrder(data.order)
+      // El servidor recrea las líneas al guardar: se toman sus ids nuevos para poder mapear el cambio de modo por id.
+      setItems(data.order.items.map((i) => ({
+        id:                 i.id,
+        product_id:         i.product_id,
+        product_name:       i.product_name,
+        variant_label:      i.variant_label,
+        quantity:           Number(i.quantity),
+        price_per_unit_usd: Number(i.price_per_unit_usd),
+        price_source:       i.price_source,
+      })))
       onUpdated(data.order)
       toast('Pedido actualizado', 'success')
     } catch {

@@ -14,7 +14,7 @@ export async function GET() {
     const headers = [
       'id', 'nombre', 'codigo_barras', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
       'tipo_producto', 'modo_venta', 'unidad',
-      'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
+      'precio_divisa_usd', 'precio_divisa_kg_usd', 'ubicacion', 'notas',
       'variante_tipo', 'variante_valor',
       'descripcion', 'marca', 'sku_variante', 'codigo_barras_variante',
     ]
@@ -84,8 +84,8 @@ export async function GET() {
       ['tipo_producto', 'No', 'simple | combo | fabricable — por defecto: simple', 'simple'],
       ['modo_venta', 'No', 'unidad | peso | servicio — por defecto: unidad', 'peso'],
       ['unidad', 'No', 'Texto, máx 20 — und, kg, lt, m… por defecto: und', 'kg'],
-      ['precio_mayorista_usd', 'No', 'Número ≥ 0 — precio al mayor por unidad', '1.05'],
-      ['precio_mayorista_kg_usd', 'No', 'Número ≥ 0 — precio al mayor por kilo', '0.95'],
+      ['precio_divisa_usd', 'No', 'Número ≥ 0 — Precio Divisa (dólar directo) por unidad. También se acepta el nombre anterior precio_mayorista_usd; si vienen las dos, gana precio_divisa_usd', '1.05'],
+      ['precio_divisa_kg_usd', 'No', 'Número ≥ 0 — Precio Divisa (dólar directo) por kilo. También se acepta precio_mayorista_kg_usd', '0.95'],
       ['ubicacion', 'No', 'Texto, máx 120', 'Pasillo 2, Estante A'],
       ['notas', 'No', 'Texto libre', 'Producto de temporada'],
       ['variante_tipo', 'No', 'talla | color | personalizado — por defecto: talla. Solo si la fila es una variante.', 'talla'],

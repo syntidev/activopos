@@ -129,16 +129,18 @@ function validateRow(
   }
 
   // Campos opcionales — solo se validan/incluyen si vienen con valor.
-  const whUnitRaw = raw['precio_mayorista_usd'] ?? raw['wholesale_price_usd'] ?? raw['Precio Mayorista USD']
+  // "Divisa" (nombre actual) gana sobre "mayorista" (nombre histórico, sigue aceptado); una celda vacía no gana.
+  const firstFilled = (...keys: string[]): unknown => keys.map(k => raw[k]).find(v => v !== undefined && toString(v) !== '')
+  const whUnitRaw = firstFilled('precio_divisa_usd', 'Precio Divisa USD', 'precio_mayorista_usd', 'wholesale_price_usd', 'Precio Mayorista USD')
   const wholesale_price_usd = whUnitRaw !== undefined && toString(whUnitRaw) !== '' ? toNum(whUnitRaw) : null
   if (wholesale_price_usd !== null && wholesale_price_usd < 0) {
-    return { error: { row: rowNum, message: '"wholesale_price_usd" debe ser ≥ 0' } }
+    return { error: { row: rowNum, message: '"precio_divisa_usd" debe ser ≥ 0' } }
   }
 
-  const whKgRaw = raw['precio_mayorista_kg_usd'] ?? raw['wholesale_price_per_kg_usd'] ?? raw['Precio Mayorista Kg USD']
+  const whKgRaw = firstFilled('precio_divisa_kg_usd', 'Precio Divisa Kg USD', 'precio_mayorista_kg_usd', 'wholesale_price_per_kg_usd', 'Precio Mayorista Kg USD')
   const wholesale_price_per_kg_usd = whKgRaw !== undefined && toString(whKgRaw) !== '' ? toNum(whKgRaw) : null
   if (wholesale_price_per_kg_usd !== null && wholesale_price_per_kg_usd < 0) {
-    return { error: { row: rowNum, message: '"wholesale_price_per_kg_usd" debe ser ≥ 0' } }
+    return { error: { row: rowNum, message: '"precio_divisa_kg_usd" debe ser ≥ 0' } }
   }
 
   const locRaw = toString(raw['ubicacion'] ?? raw['location'] ?? raw['Ubicación'] ?? '')

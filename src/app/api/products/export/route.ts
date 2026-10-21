@@ -42,7 +42,7 @@ export async function GET() {
     const headers = [
       'id', 'nombre', 'codigo_barras', 'sku', 'precio_usd', 'costo_usd', 'stock', 'categoria',
       'tipo_producto', 'modo_venta', 'unidad',
-      'precio_mayorista_usd', 'precio_mayorista_kg_usd', 'ubicacion', 'notas',
+      'precio_divisa_usd', 'precio_divisa_kg_usd', 'ubicacion', 'notas',
       'variante_tipo', 'variante_valor',
       'descripcion', 'marca', 'sku_variante', 'codigo_barras_variante',
     ]

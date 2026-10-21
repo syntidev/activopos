@@ -3,6 +3,8 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { getActiveRate } from '@/lib/bcv'
 import { matchVariant, parseSearch, productSearchWhere } from '@/lib/product-search'
 
+const MAX_IDS = 50
+
 function parseImages(raw: string | null): string[] | null {
   if (!raw) return null
   try { return JSON.parse(raw) as string[] } catch { return null }
@@ -20,7 +22,19 @@ export async function GET(req: NextRequest) {
     const limit        = Math.min(parseInt(sp.get('limit') ?? '20'), 50)
     const includeEmpty = sp.get('include_empty') !== 'false'
 
-    if (!searchWhere) return NextResponse.json({ ok: true, products: [] })
+    // Búsqueda por id exacto (hidratar borradores del POS con rol cajero): ?id=12 o ?id=12,15,40 (máx. 50).
+    // Mismo formato de respuesta; el orden es el de los ids pedidos; los que no existen o son de otro negocio no salen.
+    const idParam = sp.get('id')
+    let ids: number[] | null = null
+    if (idParam !== null) {
+      const parts = idParam.split(',').map(s => s.trim())
+      if (parts.length > MAX_IDS || parts.some(s => !/^\d{1,9}$/.test(s))) {
+        return NextResponse.json({ error: `El parámetro id acepta de 1 a ${MAX_IDS} ids numéricos separados por coma.` }, { status: 400 })
+      }
+      ids = Array.from(new Set(parts.map(Number)))
+    }
+
+    if (ids === null && !searchWhere) return NextResponse.json({ ok: true, products: [] })
 
     const [rawProducts, stockAgg, rate] = await Promise.all([
       db.product.findMany({
@@ -28,7 +42,7 @@ export async function GET(req: NextRequest) {
           // business_id inyectado por el tenant layer
           active:       true,
           is_available: true,
-          AND:          [searchWhere],
+          ...(ids !== null ? { id: { in: ids } } : { AND: [searchWhere!] }),
         },
         select: {
           id:                 true,
@@ -54,6 +68,7 @@ export async function GET(req: NextRequest) {
               tipo:         true,
               valor:        true,
               precio_extra: true,
+              price_usd:    true,
               stock:        true,
               sku:          true,
               barcode:      true,
@@ -110,7 +125,8 @@ export async function GET(req: NextRequest) {
           wholesale_price_per_kg_usd: p.wholesale_price_per_kg_usd != null ? Number(p.wholesale_price_per_kg_usd) : null,
           images:             parseImages(p.images),
           has_variants:       p.has_variants,
-          variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
+          // price_usd = precio propio de la talla (override absoluto, sin equivalente Divisa); null si usa el del producto.
+          variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra), price_usd: v.price_usd != null ? Number(v.price_usd) : null })),
           // Talla que coincidió (barcode exacto o SKU único): id y valor; null si fue otra coincidencia.
           ...match,
           is_favorite:        p.is_favorite,
@@ -120,8 +136,8 @@ export async function GET(req: NextRequest) {
         }
       })
       .filter(p => includeEmpty || p.stock.net_qty > 0)
-      .sort((a, b) => b._score - a._score)
-      .slice(0, limit)
+      .sort((a, b) => ids !== null ? ids.indexOf(a.id) - ids.indexOf(b.id) : b._score - a._score)
+      .slice(0, ids !== null ? MAX_IDS : limit)
       .map(({ _score, ...p }) => p)
 
     return NextResponse.json({ ok: true, products: scored, rate })

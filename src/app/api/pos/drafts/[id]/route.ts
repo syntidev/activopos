@@ -6,7 +6,8 @@ import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 import { redactSaleForRole } from '@/lib/redact'
-import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { resolveLinePrice, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { priceModeSchema } from '@/lib/price-mode'
 
 const patchItemSchema = draftItemSchema.extend({
   unit_price_override: z.number().positive().optional(),
@@ -18,6 +19,8 @@ const patchSchema = z.object({
   notes:             z.string().max(500).optional(),
   label:             z.string().trim().max(20).optional(),
   override_auth_pin: z.string().min(1).max(20).optional(),
+  // Si falta se conserva el modo que ya tiene la venta (cambiarlo sin tocar líneas: PATCH /api/sales/[id]/price-mode).
+  price_mode:        priceModeSchema.optional(),
 })
 
 type Context = { params: { id: string } }
@@ -78,14 +81,18 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         product_id: number; product_name: string; sale_mode: string; unit_label: string
         quantity: number; price_per_unit_usd: number; cost_per_unit_usd: number; subtotal_usd: number
         subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number
-        unit_price_override?: number | null; override_reason?: string | null
+        unit_price_override?: number | null; override_reason?: string | null; price_source: string
       }[] = []
+      const priceMode = body.price_mode ?? priceModeSchema.catch('bcv').parse(existing.price_mode)
 
       if (body.items.length > 0) {
         const productIds = Array.from(new Set(body.items.map(i => i.product_id)))
         const products   = await tx.product.findMany({
           where:  { id: { in: productIds }, business_id: session.businessId, active: true },
-          select: { id: true, name: true, sale_mode: true, unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true },
+          select: {
+            id: true, name: true, sale_mode: true, unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true,
+            wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
+          },
         })
         if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
         const productMap = new Map(products.map(p => [p.id, p]))
@@ -106,8 +113,11 @@ export async function PATCH(req: NextRequest, { params }: Context) {
           const p        = productMap.get(item.product_id)!
           const variant  = item.variant_id != null ? variantMap.get(item.variant_id) : undefined
           if (item.variant_id != null && variant?.product_id !== p.id) throw new Error('VARIANT_INVALID')
-          const dbPrice  = resolveUnitPriceUsd(p, variant)
-          const priceUsd = item.unit_price_override ?? dbPrice
+          const { price: priceUsd, source: priceSource } = resolveLinePrice(p, variant, {
+            mode:        priceMode,
+            saleMode:    p.sale_mode,
+            manualPrice: item.unit_price_override,
+          })
           if (priceUsd <= 0) throw new Error('PRICE_MISSING')
           const subtotal_usd = Math.max(0, item.quantity * priceUsd - item.discount_usd)
           return {
@@ -124,6 +134,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
             discount_usd:        item.discount_usd,
             unit_price_override: item.unit_price_override ?? null,
             override_reason:     item.override_reason ?? null,
+            price_source:        priceSource,
             ...(item.variant_id != null && { variant_id: item.variant_id }),
           }
         })
@@ -140,6 +151,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         data:  {
           total_usd,
           total_bs,
+          price_mode:  priceMode,
           rate_used:   rate,
           notes:       body.notes ?? existing.notes,
           draft_label: body.label !== undefined ? (body.label || null) : existing.draft_label,

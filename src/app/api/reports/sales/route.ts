@@ -17,6 +17,8 @@ const querySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   cashier_id: z.coerce.number().int().positive().optional(),
+  // Segmenta por modo de precio del ticket (bcv | divisa).
+  price_mode: z.enum(['bcv', 'divisa']).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -38,6 +40,7 @@ export async function GET(req: NextRequest) {
           }
         : {}),
       ...(query.cashier_id && { cashier_id: query.cashier_id }),
+      ...(query.price_mode && { price_mode: query.price_mode }),
     }
 
     const [sales, total] = await Promise.all([

@@ -10,7 +10,8 @@ import { computeReturnableLines, type ReturnableLine } from '@/lib/returns'
 import type { SaleStatus } from '@prisma/client'
 import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib/pin-rate-limit'
 import { redactSaleForRole } from '@/lib/redact'
-import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { resolveEffectiveMode, resolveLinePrice, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { priceModeSchema } from '@/lib/price-mode'
 import { fromBound, toBoundExclusive } from '@/lib/business-day'
 import { checkCedula } from '@/lib/cedula'
 
@@ -47,6 +48,8 @@ const saleSchema = z.object({
   credit_days:       z.number().int().positive().optional(),
   credit_notes:      z.string().max(500).optional(),
   override_auth_pin: z.string().min(1).max(20).optional(),
+  // Modo de precio del ticket. Si falta (clientes viejos) se deriva del tier del cliente; el explícito siempre gana.
+  price_mode:        priceModeSchema.optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -62,6 +65,7 @@ export async function GET(req: NextRequest) {
   const ticket       = params.get('ticket')
   const search       = params.get('search')
   const useCreatedAt = params.get('use_created_at') === '1'
+  const priceMode    = priceModeSchema.safeParse(params.get('price_mode')).data
   const page         = Math.max(1, parseInt(params.get('page')  ?? '1',  10))
   const limit        = Math.min(100, Math.max(1, parseInt(params.get('limit') ?? '20', 10)))
 
@@ -98,6 +102,7 @@ export async function GET(req: NextRequest) {
         : { status: status as SaleStatus }
       : {}),
     ...dateFilter,
+    ...(priceMode ? { price_mode: priceMode } : {}),
     ...(cashierId ? { cashier_id: parseInt(cashierId, 10) } : {}),
     ...(clientId  ? { client_id:  parseInt(clientId,  10) } : {}),
   }
@@ -372,6 +377,8 @@ export async function POST(req: NextRequest) {
           })
         : []
       const variantMap = new Map(variants.map(v => [v.id, v]))
+      // Modo del ticket: el explícito del POS gana sobre el tier del cliente (que solo aplica si no se envía).
+      const priceMode = resolveEffectiveMode(body.price_mode, clientTier)
 
       // Validate quantities
       for (const item of body.items) {
@@ -403,8 +410,11 @@ export async function POST(req: NextRequest) {
         // mayorista > 0 para su modo de venta, se usa ese en lugar del de detal.
         // Las variantes conservan su propio price_usd (no hay wholesale por variante).
         // Regla única en lib/pricing.ts (override de variante, precio_extra, mayorista).
-        const dbPrice  = resolveUnitPriceUsd(product, variant, clientTier, item.sale_mode)
-        const priceUsd = item.unit_price_override ?? dbPrice
+        const { price: priceUsd, source: priceSource } = resolveLinePrice(product, variant, {
+          mode:        priceMode,
+          saleMode:    item.sale_mode,
+          manualPrice: item.unit_price_override,
+        })
         if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
 
         const subtotal_usd =
@@ -439,6 +449,7 @@ export async function POST(req: NextRequest) {
           variant_id:          item.variant_id ?? null,
           unit_price_override: item.unit_price_override ?? null,
           override_reason:     item.override_reason ?? null,
+          price_source:        priceSource,
         }
       })
 
@@ -471,6 +482,7 @@ export async function POST(req: NextRequest) {
           ticket_number,
           status:             body.status,
           origin:             body.origin,
+          price_mode:         priceMode,
           total_usd,
           total_bs,
           rate_used:          rate,

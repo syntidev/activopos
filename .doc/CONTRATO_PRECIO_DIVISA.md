@@ -1,7 +1,6 @@
 # Contrato backend para CLI-B — modo de precio del ticket (BCV / Divisa)
 
-Fecha: 2026-10-21 · Autor: CLI-A · Estado: DISEÑO acordado, implementación en curso en la rama main local (sin push, sin deploy).
-Si algo de este documento cambia al implementar, se corrige aquí en el mismo commit que el código.
+Fecha: 2026-10-21 · Autor: CLI-A · Estado: IMPLEMENTADO en la rama main local y probado en el negocio 87 local (tests/precio-divisa.spec.ts, 9 PASS). Sin push, sin deploy; la migración `20261021000001_add_price_mode` NO está aplicada en el VPS.
 
 ## 1. Idea
 El precio que se cobra lo decide un **modo del ticket**, no el tipo de cliente:
@@ -94,6 +93,7 @@ Sin costos (apto para cajero). En pedidos, `total_usd` incluye `delivery_fee`.
 Archivos clave: `src/lib/pricing.ts` (regla única), `src/lib/pos.ts:119-125,173,205` (precio en el carrito del cliente), `src/app/api/sales/route.ts:353-408`, `src/app/api/pos/drafts/route.ts:107`, `src/app/api/pos/drafts/[id]/route.ts:109`, `src/app/api/orders/route.ts:~140`, `src/app/api/orders/[id]/items/route.ts:~58`, `src/app/api/orders/[id]/cobrar/route.ts:~114`, `src/app/api/catalog/[slug]/order/route.ts:354`.
 
 ## 7. Pendientes conocidos (no incluidos)
-- `precio_divisa` (44 productos con valor en el negocio 33) no alimenta el modo Divisa: si Carlos quiere que lo haga, es una decisión de datos (copiar a `wholesale_price_usd`) y no se hace automático.
+- `precio_divisa` y `wholesale_price_usd` NO se superponen en los datos reales: en el respaldo del negocio 33 (19-oct, 160 productos) hay 44 con `precio_divisa` y 86 con `wholesale_price_usd`, y NINGUNO con ambos (son dos conjuntos disjuntos). Consecuencia: los 44 productos que solo tienen `precio_divisa` caen a `fallback_bcv` en modo Divisa. Si Carlos quiere que ese valor sea su precio Divisa, es una decisión de datos (copiar `precio_divisa` a `wholesale_price_usd` donde esté vacío, con dry-run y autorización); no se hace automático.
+- Los descuentos globales/IVA/cargo del POS los calcula el cliente y llegan como `discount_usd` por línea; un ticket guardado que cambia de modo conserva esos montos (el cliente debe re-enviar el descuento calculado con los precios nuevos si usa descuento global).
 - Conversión de cotización a venta (`quotations/[id]/convert`) conserva los precios de la cotización.
 - `PATCH /api/orders/{id}/items` recrea las líneas sin `variant_id` (defecto previo); no se toca aquí.

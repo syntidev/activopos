@@ -4,7 +4,8 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
-import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { PriceModeError, priceModeSchema, repriceOrderTx } from '@/lib/price-mode'
 import { checkCedula } from '@/lib/cedula'
 import { validateShipping } from '@/lib/shipping'
 
@@ -15,6 +16,8 @@ const cobrarSchema = z.object({
   reference:         z.string().max(100).optional(),
   // Cédula declarada/corregida al cobrar; si falta se usa la del pedido.
   cedula:            z.string().max(20).optional(),
+  // Modo de precio con el que se cobra: si viene, se aplica y se guarda en el pedido; si no, el del pedido.
+  price_mode:        priceModeSchema.optional(),
 })
 
 // PERMISOS — INTENCIONAL: sin guard de rol. cashier cobra pedidos como admin (es la
@@ -105,14 +108,17 @@ export async function POST(req: NextRequest, { params }: Context) {
         : []
       const variantMap = new Map(variants.map(v => [v.id, v]))
 
+      // SEC-01: precios desde la DB, nunca del snapshot ni del cliente. El modo (bcv | divisa) lo decide el pedido o
+      // el body; repriceOrderTx deja el pedido y sus líneas ya recalculados (regla única en lib/pricing.ts).
+      const mode     = body.price_mode ?? priceModeSchema.catch('bcv').parse(order.price_mode)
+      const repriced = await repriceOrderTx(tx, session.businessId, orderId, mode, rate)
+      const lineById = new Map(repriced.items.map(l => [l.id, l]))
+
       const saleItems = order.items.map(item => {
         const p        = productMap.get(item.product_id)
         const variant  = item.variant_id !== null ? variantMap.get(item.variant_id) : undefined
-        // SEC-01: prices from DB — not from order snapshot. Regla única en
-        // lib/pricing.ts; pedidos de catálogo siempre a precio detal.
-        const priceUsd = p
-          ? resolveUnitPriceUsd(p, variant)
-          : Number(item.price_per_unit_usd)
+        const line     = lineById.get(item.id)
+        const priceUsd = line ? line.price_per_unit_usd : Number(item.price_per_unit_usd)
         const subtotal_usd = Math.round(Number(item.quantity) * priceUsd * 100) / 100
         const subtotal_bs  = Math.round(subtotal_usd * rate * 100) / 100
         // Mismo criterio que sales/route.ts: snapshot inmutable de la receta al
@@ -146,6 +152,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           // que referenciar (evita violar el FK de sale_items.variant_id) --
           // mismo criterio permisivo que priceUsd arriba cuando falta el producto.
           variant_id:         variant ? item.variant_id : null,
+          price_source:       line?.price_source ?? 'bcv',
         }
       })
 
@@ -161,6 +168,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           ticket_number,
           status:        'paid',
           origin:        'catalog',
+          price_mode:    mode,
           total_usd,
           total_bs,
           rate_used:     rate,
@@ -265,6 +273,9 @@ export async function POST(req: NextRequest, { params }: Context) {
     return NextResponse.json({ ok: true, sale_id: saleId })
   } catch (err) {
     if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    if (err instanceof PriceModeError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
     }
     if (err instanceof Error) {

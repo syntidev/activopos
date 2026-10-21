@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { priceModeSchema } from '@/lib/price-mode'
+import { resolveLinePrice } from '@/lib/pricing'
 
 type Context = { params: { id: string } }
 
@@ -51,17 +53,22 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       const productIds = Array.from(new Set(data.items.map((i) => i.product_id)))
       const products = await tx.product.findMany({
         where:  { id: { in: productIds }, business_id: session.businessId, active: true },
-        select: { id: true, price_per_unit_usd: true, price_per_kg_usd: true },
+        select: {
+          id: true, sale_mode: true, price_per_unit_usd: true, price_per_kg_usd: true,
+          wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
+        },
       })
       if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
       const productMap = new Map(products.map((p) => [p.id, p]))
+      // Las líneas nuevas se precian con el modo que ya tiene el pedido (bcv | divisa).
+      const mode = priceModeSchema.catch('bcv').parse(order.price_mode)
 
       const itemsWithPrices = data.items.map((item) => {
         const product  = productMap.get(item.product_id)!
-        const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        const { price: priceUsd, source: price_source } = resolveLinePrice(product, undefined, { mode, saleMode: product.sale_mode })
         if (priceUsd <= 0) throw new Error('PRICE_NOT_SET')
         const subtotal_usd = Number((item.quantity * priceUsd).toFixed(2))
-        return { ...item, price_per_unit_usd: priceUsd, subtotal_usd }
+        return { ...item, price_per_unit_usd: priceUsd, subtotal_usd, price_source }
       })
 
       // GAP-CATALOGO-1: los pedidos de catálogo bloquean stock disponible con
@@ -131,6 +138,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
               quantity:           item.quantity,
               price_per_unit_usd: item.price_per_unit_usd,
               subtotal_usd:       item.subtotal_usd,
+              price_source:       item.price_source,
             })),
           },
         },

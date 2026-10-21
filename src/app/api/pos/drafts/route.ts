@@ -6,11 +6,13 @@ import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { draftItemSchema } from '@/lib/draft-schema'
 import { redactSaleForRole } from '@/lib/redact'
-import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { resolveLinePrice, VARIANT_PRICING_SELECT } from '@/lib/pricing'
+import { priceModeSchema } from '@/lib/price-mode'
 
 const createDraftSchema = z.object({
   items: z.array(draftItemSchema).min(0).default([]),
   notes: z.string().max(500).optional(),
+  price_mode: priceModeSchema.default('bcv'),
 })
 
 // Tope configurable por negocio (Configuración > General) -- reemplaza el
@@ -76,14 +78,17 @@ export async function POST(req: NextRequest) {
       let saleItemsData: {
         product_id: number; product_name: string; sale_mode: string; unit_label: string
         quantity: number; price_per_unit_usd: number; cost_per_unit_usd: number; subtotal_usd: number
-        subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number
+        subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number; price_source: string
       }[] = []
 
       if (body.items.length > 0) {
         const productIds = Array.from(new Set(body.items.map(i => i.product_id)))
         const products   = await tx.product.findMany({
           where:  { id: { in: productIds }, business_id: session.businessId, active: true },
-          select: { id: true, name: true, sale_mode: true, unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true },
+          select: {
+            id: true, name: true, sale_mode: true, unit_label: true, price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true,
+            wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
+          },
         })
         if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
         const productMap = new Map(products.map(p => [p.id, p]))
@@ -104,7 +109,7 @@ export async function POST(req: NextRequest) {
           const p        = productMap.get(item.product_id)!
           const variant  = item.variant_id != null ? variantMap.get(item.variant_id) : undefined
           if (item.variant_id != null && variant?.product_id !== p.id) throw new Error('VARIANT_INVALID')
-          const priceUsd = resolveUnitPriceUsd(p, variant)
+          const { price: priceUsd, source: priceSource } = resolveLinePrice(p, variant, { mode: body.price_mode, saleMode: p.sale_mode })
           if (priceUsd <= 0) throw new Error('PRICE_MISSING')
           const subtotal_usd = Math.max(0, item.quantity * priceUsd - item.discount_usd)
           return {
@@ -119,6 +124,7 @@ export async function POST(req: NextRequest) {
             subtotal_bs:        Math.round(subtotal_usd * rate * 100) / 100,
             rate_used:          rate,
             discount_usd:       item.discount_usd,
+            price_source:       priceSource,
             ...(item.variant_id != null && { variant_id: item.variant_id }),
           }
         })
@@ -135,6 +141,7 @@ export async function POST(req: NextRequest) {
           ticket_number: 'DRAFT',
           status:        'draft',
           origin:        'pos',
+          price_mode:    body.price_mode,
           total_usd,
           total_bs,
           rate_used:     rate,

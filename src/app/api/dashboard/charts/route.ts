@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
             s.sold_at,
             s.total_usd,
             s.total_bs,
-            COALESCE(SUM(si.subtotal_usd - si.quantity * IFNULL(si.cost_per_unit_usd, 0)), 0) AS profit
+            COALESCE(SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd - si.quantity * si.cost_per_unit_usd ELSE 0 END), 0) AS profit
           FROM sales s
           LEFT JOIN sale_items si ON si.sale_id = s.id
           WHERE s.business_id = ${bid}
@@ -211,8 +211,8 @@ export async function GET(req: NextRequest) {
     ...(session.role === 'cashier' ? {} : {
       utilidad_barras: salesRows.map(r => {
         const back = devueltoSerie.get(String(r.date_label))
-        // Utilidad neta del bucket: utilidad bruta − (ingreso devuelto − COGS devuelto).
-        const neta = (parseFloat(String(r.profit)) || 0) - ((back?.usd ?? 0) - (back?.cogs ?? 0))
+        // Utilidad neta del bucket: utilidad bruta (solo líneas con costo conocido) − (ingreso devuelto costeado − COGS devuelto).
+        const neta = (parseFloat(String(r.profit)) || 0) - ((back?.costedUsd ?? 0) - (back?.cogs ?? 0))
         return { date: formatLabel(r.date_label), usd: Math.round(neta * 100) / 100 }
       }),
     }),

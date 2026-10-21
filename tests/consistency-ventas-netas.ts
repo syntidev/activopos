@@ -68,16 +68,17 @@ async function main(): Promise<void> {
     { sales: [], returns: [], registers: [], products: [], variants: [] }
 
   /** Venta de `qty` x `price` cobrada en efectivo. `duplicateLines` parte el mismo producto en 2 líneas con costos distintos. */
-  const mkSale = async (ticket: string, soldAt: Date, qty: number, price: number, opts?: { duplicateLines?: boolean }) => {
+  const mkSale = async (ticket: string, soldAt: Date, qty: number, price: number, opts?: { duplicateLines?: boolean; unknownCost?: boolean }) => {
     const totalUsd = qty * price
     const items = opts?.duplicateLines
       // Mismo producto en 2 líneas: es el caso en que (sale_id, product_id) no
       // identifica la línea y /api/returns debe exigir sale_item_id.
       ? [
-          { quantity: qty / 2, cost: 4 },
-          { quantity: qty / 2, cost: 6 },
+          { quantity: qty / 2, cost: 4 as number | null },
+          { quantity: qty / 2, cost: 6 as number | null },
         ]
-      : [{ quantity: qty, cost: 4 }]
+      // unknownCost: producto con costo DESCONOCIDO (SaleItem.cost_per_unit_usd NULL, p. ej. cost_unknown).
+      : [{ quantity: qty, cost: opts?.unknownCost ? null : 4 }]
 
     const sale = await prisma.sale.create({
       data: {
@@ -461,6 +462,22 @@ async function main(): Promise<void> {
       body: JSON.stringify({ sale_id: saleSinMetodo.id, reason: 'test:consistency', items: [{ product_id: ctx.productId, qty: 1 }] }),
     })
     check('sin refund_payment_method_id responde 4xx', resSinMetodo.status >= 400 && resSinMetodo.status < 500, true)
+
+    // ── e12: costo DESCONOCIDO (cost NULL): el ingreso suma a ventas pero NO es utilidad (ni sube ni baja al devolver) ──
+    const baseUnk = await snapshot(today, tomorrow)
+    const saleUnk = await mkSale('T-CONS-UNK', today, 4, 10, { unknownCost: true })
+    const afterUnk = await snapshot(today, tomorrow)
+    check('e12 las ventas netas sí suben (+40)', r2(afterUnk.dailyTotal - baseUnk.dailyTotal), 40)
+    check('e12 utilidad (reports/range) no sube', r2(afterUnk.rangeProfit - baseUnk.rangeProfit), 0)
+    check('e12 utilidad (dashboard/kpis) no sube', r2(afterUnk.kpisUtilidad - baseUnk.kpisUtilidad), 0)
+    check('e12 utilidad bruta (analytics) no sube', r2(afterUnk.sumUtilidad - baseUnk.sumUtilidad), 0)
+    check('e12 el COGS no cambia', r2(afterUnk.sumCogs - baseUnk.sumCogs), 0)
+    const retUnk = await doReturn(saleUnk.id, [{ product_id: ctx.productId, qty: 1 }], ctx.cashMethodId)
+    check('e12 devolución aceptada (HTTP 201)', retUnk.status, 201)
+    const afterRetUnk = await snapshot(today, tomorrow)
+    check('e12 devolver baja las ventas (+30 netas)', r2(afterRetUnk.dailyTotal - baseUnk.dailyTotal), 30)
+    check('e12 devolver no crea utilidad negativa (range)', r2(afterRetUnk.rangeProfit - baseUnk.rangeProfit), 0)
+    check('e12 devolver no crea utilidad negativa (kpis)', r2(afterRetUnk.kpisUtilidad - baseUnk.kpisUtilidad), 0)
   } finally {
     // ── Restaurar: borra SOLO lo que creó esta prueba ──
     if (created.returns.length) {

@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       // Fetch prices from DB (anti-tampering)
       let saleItemsData: {
         product_id: number; product_name: string; sale_mode: string; unit_label: string
-        quantity: number; price_per_unit_usd: number; cost_per_unit_usd: number; subtotal_usd: number
+        quantity: number; price_per_unit_usd: number; cost_per_unit_usd: number | null; subtotal_usd: number
         subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number
         unit_price_override?: number | null; override_reason?: string | null; price_source: string
       }[] = []
@@ -127,7 +127,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
             unit_label:          p.unit_label,
             quantity:            item.quantity,
             price_per_unit_usd:  priceUsd,
-            cost_per_unit_usd:   Number(p.cost_per_unit_usd ?? 0),
+            // costo desconocido = NULL (igual que POST /api/sales); con 0 se contaría como ganancia ficticia.
+            cost_per_unit_usd:   p.cost_per_unit_usd != null ? Number(p.cost_per_unit_usd) : null,
             subtotal_usd:        Math.round(subtotal_usd * 100) / 100,
             subtotal_bs:         Math.round(subtotal_usd * rate * 100) / 100,
             rate_used:           rate,

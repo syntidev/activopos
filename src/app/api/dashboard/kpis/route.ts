@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { netByProduct, netCogs, netSales } from '@/lib/sales-returns'
+import { grossProfitUsd, netByProduct, netCogs, netSales } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 import { calcTrend, getGreeting } from '@/lib/dashboard'
 import { businessDateKey, businessDayStart, businessHour, businessMonthKey, businessMonthRange, businessToday, shiftDateKey } from '@/lib/business-day'
@@ -149,9 +149,10 @@ export async function GET(req: NextRequest) {
 
   // Utilidad = ingreso neto − COGS neto (el costo de lo devuelto se revierte
   // con el snapshot de ReturnItem).
-  const uHoy   = r2(vHoy  - cgHoy.netUsd);   const uAyer = r2(vAyer - cgAyer.netUsd)
-  const uMes   = r2(vMes  - cgMes.netUsd);   const uMesA = r2(vMesA - cgMesAnt.netUsd)
-  const uPer   = r2(vPer  - cgPeriodo.netUsd)
+  // Solo sobre líneas con costo conocido (cost_unknown no suma como ganancia ficticia).
+  const uHoy   = grossProfitUsd(cgHoy);      const uAyer = grossProfitUsd(cgAyer)
+  const uMes   = grossProfitUsd(cgMes);      const uMesA = grossProfitUsd(cgMesAnt)
+  const uPer   = grossProfitUsd(cgPeriodo)
 
   const creditoHoy        = Number(creditAggToday._sum.total_usd ?? 0)
   const costoInvertidoHoy = cgHoy.netUsd

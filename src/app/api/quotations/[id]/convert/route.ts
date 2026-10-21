@@ -112,7 +112,8 @@ export async function POST(_req: NextRequest, { params }: Context) {
           unit_label:         p?.base_unit_label ?? 'und',
           quantity:           qty,
           price_per_unit_usd: priceUsd,
-          cost_per_unit_usd:  Number(p?.cost_per_unit_usd ?? 0),
+          // costo desconocido = NULL (igual que POST /api/sales); con 0 se contaría como ganancia ficticia.
+          cost_per_unit_usd:  p?.cost_per_unit_usd != null ? Number(p.cost_per_unit_usd) : null,
           subtotal_usd:       subtotalUsd,
           subtotal_bs:        r2(subtotalUsd * rate),
           rate_used:          rate,

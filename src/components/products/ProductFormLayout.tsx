@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   X, Plus, ImagePlus, Loader2, Layers, Globe, Star,
   Box, Scale, Wrench, Boxes, Search, ScanBarcode,
-  Warehouse, MapPin,
+  Calculator, MapPin,
 } from 'lucide-react'
 import { UNIDADES, type ProductKind, type useProductForm } from '@/hooks/useProductForm'
 import { categoryRequiresVariant } from '@/lib/variantPresets'
@@ -541,12 +541,86 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
       </div>
 
       <div role="tabpanel" id={tabPanelId('precio')} aria-labelledby={tabButtonId('precio')} hidden={tab !== 'precio'} className={s.panel}>
-        {/* ── Card: Precio (solo costo/margen/precio/utilidad) ── */}
+        {/* ── Card: Precio — a la vista solo Precio BCV y Precio Divisa; todo el cálculo vive detrás de UN toggle (apagado) ── */}
+        {(() => {
+          const normalPrice = f.computed.displayPrice
+          const setWholesaleRaw = f.saleMode === 'weight' ? f.setWholesalePricePerKgUsd : f.setWholesalePriceUsd
+          const wholesaleRaw   = f.saleMode === 'weight' ? f.wholesalePricePerKgUsd : f.wholesalePriceUsd
+          const wholesaleValue = parseFloat(wholesaleRaw) || 0
+          const wholesaleUtility = wholesaleValue - f.computed.costPerUnit
+
+          return (
         <AccordionCard
           title="Precio"
           defaultOpen
           hasError={!!(f.errors.cost || f.errors.margin || f.errors.price)}
         >
+          <div className={c.inlineRow2}>
+            <div className={m.formGroup}>
+              <label className={m.label} htmlFor="np-price">Precio BCV ($)</label>
+              <div className={`${c.inputPrefix} ${!f.isFixedPrice ? c.inputPrefixCalculated : ''}`}>
+                <span className={c.prefixSymbol}>$</span>
+                <input
+                  id="np-price"
+                  type="number"
+                  inputMode="numeric"
+                  className={`${c.prefixInput} ${!f.isFixedPrice ? c.calculatedField : ''}`}
+                  placeholder="0.00"
+                  value={f.isFixedPrice ? f.price : f.computed.displayPrice > 0 ? f.computed.displayPrice.toFixed(2) : ''}
+                  onChange={(e) => {
+                    if (f.isFixedPrice) {
+                      f.setPrice(e.target.value)
+                      if (f.errors.price) f.setErrors(p => ({ ...p, price: '' }))
+                    }
+                  }}
+                  readOnly={!f.isFixedPrice}
+                  tabIndex={!f.isFixedPrice ? -1 : 0}
+                  min="0" step="0.01"
+                />
+              </div>
+              {f.errors.price && <p className={m.errorMsg}>{f.errors.price}</p>}
+            </div>
+
+            <div className={m.formGroup}>
+              <label className={m.label} htmlFor="np-wholesale">
+                Precio Divisa{f.saleMode === 'weight' ? ` por ${f.unitLabel}` : ''} ($)
+              </label>
+              <div className={c.inputPrefix}>
+                <span className={c.prefixSymbol}>$</span>
+                <input
+                  id="np-wholesale"
+                  type="number"
+                  inputMode="numeric"
+                  className={c.prefixInput}
+                  placeholder="0.00"
+                  value={wholesaleRaw}
+                  onChange={(e) => setWholesaleRaw(e.target.value)}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={c.fixedPriceRow}>
+            <div className={c.fixedPriceLabel}>
+              <Calculator size={14} className={c.toggleIcon} aria-hidden="true" />
+              <span className={c.fixedPriceTitle}>Calcular con el sistema</span>
+            </div>
+            <label className={c.toggle} aria-label="Calcular con el sistema">
+              <input
+                type="checkbox"
+                className={c.toggleInput}
+                checked={f.calcSystem}
+                onChange={(e) => f.toggleCalcSystem(e.target.checked)}
+              />
+              <span className={c.toggleTrack} />
+              <span className={c.toggleThumb} />
+            </label>
+          </div>
+
+          {f.calcSystem && (
+            <>
           {/* Toggle costo desconocido */}
           <div className={c.fixedPriceRow}>
             <div className={c.fixedPriceLabel}>
@@ -633,39 +707,9 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             </>
           )}
 
-          <div className={m.divider} />
 
-          {/* Toggle precio fijo */}
-          <div className={c.fixedPriceRow}>
-            <div className={c.fixedPriceLabel}>
-              <span className={c.fixedPriceTitle}>Usar Precios Fijos (Manuales)</span>
-              <span className={c.fixedPriceSub}>
-                {f.costUnknown
-                  ? 'Forzado — sin costo no hay margen que calcular.'
-                  : f.isFixedPrice
-                  ? 'Precio editable — margen se calcula automáticamente.'
-                  : 'Precio calculado según el margen ingresado.'}
-              </span>
-            </div>
-            <label className={c.toggle} aria-label="Activar precio fijo">
-              <input
-                type="checkbox"
-                className={c.toggleInput}
-                checked={f.isFixedPrice}
-                disabled={f.costUnknown}
-                onChange={(e) => {
-                  const on = e.target.checked
-                  f.setIsFixedPrice(on)
-                  if (on && f.computed.displayPrice > 0) f.setPrice(f.computed.displayPrice.toFixed(2))
-                }}
-              />
-              <span className={c.toggleTrack} />
-              <span className={c.toggleThumb} />
-            </label>
-          </div>
-
-          {/* Margen + Precio */}
-          <div className={c.inlineRow2}>
+              {!f.costUnknown && (
+                <>
             <div className={m.formGroup}>
               <label className={m.label} htmlFor="np-margin">Margen (%)</label>
               <div className={`${c.inputPrefix} ${f.isFixedPrice ? c.inputPrefixCalculated : ''}`}>
@@ -690,32 +734,9 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               {f.errors.margin && <p className={m.errorMsg}>{f.errors.margin}</p>}
             </div>
 
-            <div className={m.formGroup}>
-              <label className={m.label} htmlFor="np-price">Precio Venta ($)</label>
-              <div className={`${c.inputPrefix} ${!f.isFixedPrice ? c.inputPrefixCalculated : ''}`}>
-                <span className={c.prefixSymbol}>$</span>
-                <input
-                  id="np-price"
-                  type="number"
-                  inputMode="numeric"
-                  className={`${c.prefixInput} ${!f.isFixedPrice ? c.calculatedField : ''}`}
-                  placeholder="0.00"
-                  value={f.isFixedPrice ? f.price : f.computed.displayPrice > 0 ? f.computed.displayPrice.toFixed(2) : ''}
-                  onChange={(e) => {
-                    if (f.isFixedPrice) {
-                      f.setPrice(e.target.value)
-                      if (f.errors.price) f.setErrors(p => ({ ...p, price: '' }))
-                    }
-                  }}
-                  readOnly={!f.isFixedPrice}
-                  tabIndex={!f.isFixedPrice ? -1 : 0}
-                  min="0" step="0.01"
-                />
-              </div>
-              {f.errors.price && <p className={m.errorMsg}>{f.errors.price}</p>}
-            </div>
-          </div>
 
+                </>
+              )}
           {/* Utilidad estimada */}
           {f.costUnknown ? (
             <div className={c.utilityCard}>
@@ -737,47 +758,12 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               </span>
             </div>
           )}
-        </AccordionCard>
 
-        {/* ── Card: Precio Mayorista — el toggle YA es el mecanismo de
-            expand/collapse (igual que Variantes), no se envuelve en
-            AccordionCard genérico. Colapsada por defecto porque
-            f.showWholesale arranca en false. ── */}
-        <section className={s.card}>
-          <div className={c.fixedPriceRow}>
-            <div className={c.fixedPriceLabel}>
-              <Warehouse size={14} className={c.toggleIcon} aria-hidden="true" />
-              <div>
-                <span className={c.fixedPriceTitle}>Precio Mayorista</span>
-                <span className={c.fixedPriceSub}>
-                  Precio especial para clientes con tier &ldquo;Mayorista&rdquo;
-                </span>
-              </div>
-            </div>
-            <label className={c.toggle} aria-label="Mostrar precio mayorista">
-              <input
-                type="checkbox"
-                className={c.toggleInput}
-                checked={f.showWholesale}
-                onChange={(e) => f.setShowWholesale(e.target.checked)}
-              />
-              <span className={c.toggleTrack} />
-              <span className={c.toggleThumb} />
-            </label>
-          </div>
-
-          {f.showWholesale && (() => {
-            const normalPrice = f.computed.displayPrice
-            const setWholesaleRaw = f.saleMode === 'weight' ? f.setWholesalePricePerKgUsd : f.setWholesalePriceUsd
-            const wholesaleRaw   = f.saleMode === 'weight' ? f.wholesalePricePerKgUsd : f.wholesalePriceUsd
-            const wholesaleValue = parseFloat(wholesaleRaw) || 0
-            const wholesaleUtility = wholesaleValue - f.computed.costPerUnit
-
-            return (
+              <div className={m.divider} />
               <>
                 <div className={m.formGroup}>
                   <p className={m.label}>Calcular Descuento Por</p>
-                  <div className={c.pillGroup} role="radiogroup" aria-label="Modo de descuento mayorista">
+                  <div className={c.pillGroup} role="radiogroup" aria-label="Modo de descuento Divisa">
                     {(['percent', 'fixed'] as const).map((mode) => (
                       <button
                         key={mode}
@@ -845,39 +831,16 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                   <p className={c.fixedPriceSub}>
                     Precio normal {f.fmtUsd(normalPrice)} − {wholesaleMode === 'percent'
                       ? `${wholesalePct || 0}%`
-                      : f.fmtUsd(parseFloat(wholesaleAmt) || 0)} = {f.fmtUsd(wholesaleValue)} mayorista
+                      : f.fmtUsd(parseFloat(wholesaleAmt) || 0)} = {f.fmtUsd(wholesaleValue)} Divisa
                   </p>
                 )}
 
-                <div className={m.formGroup}>
-                  <label className={m.label} htmlFor="np-wholesale">
-                    Precio Mayorista {f.saleMode === 'weight' ? `por ${f.unitLabel}` : 'Unitario'} ($)
-                  </label>
-                  <div className={c.inputPrefix}>
-                    <span className={c.prefixSymbol}>$</span>
-                    <input
-                      id="np-wholesale"
-                      type="number"
-                      inputMode="numeric"
-                      className={c.prefixInput}
-                      placeholder="0.00"
-                      value={wholesaleRaw}
-                      onChange={(e) => setWholesaleRaw(e.target.value)}
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <p className={c.fixedPriceSub}>
-                    Vacío = sin precio mayorista, se cobra el precio de venta normal.
-                    También podés editarlo directo, sin usar el % o $ de arriba.
-                  </p>
-                </div>
 
                 {wholesaleValue > 0 && !f.costUnknown && (
                   <div className={`${c.utilityCard} ${wholesaleUtility < 0 ? c.utilityCardNegative : ''}`}>
                     <div className={c.utilityInfo}>
                       <span className={`${c.utilityLabel} ${wholesaleUtility < 0 ? c.utilityLabelNegative : ''}`}>
-                        Utilidad con precio mayorista
+                        Utilidad con precio Divisa
                       </span>
                       <span className={c.utilitySub}>por unidad</span>
                     </div>
@@ -886,10 +849,13 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
                     </span>
                   </div>
                 )}
+
               </>
-            )
-          })()}
-        </section>
+            </>
+          )}
+        </AccordionCard>
+          )
+        })()}
 
       </div>
 

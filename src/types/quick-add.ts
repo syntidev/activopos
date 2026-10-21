@@ -65,6 +65,9 @@ export interface QuickAddProductResult {
   price_usd: number | null
   wholesale_usd: number | null
   has_variants: boolean
+  /** Solo en el lookup: la talla cuyo barcode o SKU coincidió (el código era de una variante). */
+  matched_variant_id?: number | null
+  matched_variant_value?: string | null
 }
 
 /** Fila de la lista de la sesión (lo insertado o sumado desde esta pestaña). */

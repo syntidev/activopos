@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
                    : rawType === 'landing' ? 'landing'
                    : rawType === 'brand' ? 'brand'
                    : rawType === 'reservas' ? 'reservas'
+                   : rawType === 'financing' ? 'financing'
                    : 'products'
 
     if (!(file instanceof Blob)) {

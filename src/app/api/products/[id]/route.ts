@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { createStockAdjustment, getNetStock } from '@/lib/stock-adjust'
 import { z } from 'zod'
 import { cleanSubcategory } from '@/lib/subcategory'
+import { Prisma } from '@prisma/client'
+import { logError } from '@/lib/safe-log'
 
 const patchSchema = z.object({
   name:               z.string().min(1).max(120).optional(),
@@ -48,6 +50,7 @@ const patchSchema = z.object({
   catalog_visibility:     z.enum(['visible', 'hidden', 'on_request']).optional(),
   stock_alert_threshold:  z.number().int().min(0).optional(),
   financing_eligible:     z.boolean().optional(),
+  financing_excluded:     z.boolean().optional(),
   // Existencia objetivo: el servidor calcula delta y lo registra como ajuste (nunca escribe stock directo).
   stock_quantity:         z.number().min(0).optional(),
 })
@@ -191,36 +194,78 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   }
 }
 
+/**
+ * Historial del producto = todo lo que borrarlo dejaría sin referencia o rompería. Ninguna de estas tablas
+ * tiene business_id: la propiedad del producto ya se validó antes (db.product.findFirst, capa de tenant).
+ * El stock inicial / ajustes manuales (inventory_entries 'adjustment') NO cuentan: se van con el producto.
+ */
+async function productHistory(id: number): Promise<{ total: number; detail: string[] }> {
+  const [sales, orders, quotes, returns, purchases, reservas, kits, movements] = await Promise.all([
+    prisma.saleItem.count({ where: { product_id: id } }),
+    prisma.orderItem.count({ where: { product_id: id } }),
+    prisma.quotationItem.count({ where: { product_id: id } }),
+    prisma.returnItem.count({ where: { product_id: id } }),
+    prisma.purchaseItem.count({ where: { product_id: id } }),
+    prisma.reserva.count({ where: { kit_id: id } }),
+    prisma.productComponent.count({ where: { OR: [{ parent_id: id }, { component_id: id }] } }),
+    prisma.inventoryEntry.count({ where: { product_id: id, entry_type: { not: 'adjustment' } } }),
+  ])
+  const parts: Array<[number, string]> = [
+    [sales, 'ventas'], [orders, 'pedidos'], [quotes, 'cotizaciones'], [returns, 'devoluciones'],
+    [purchases, 'compras'], [reservas, 'reservas'], [kits, 'kits'], [movements, 'movimientos de inventario'],
+  ]
+  return { total: parts.reduce((s, [n]) => s + n, 0), detail: parts.filter(([n]) => n > 0).map(([n, label]) => `${n} ${label}`) }
+}
+
+const deleteError = (status: number, code: string, message: string) =>
+  NextResponse.json({ ok: false, code, error: message, message }, { status })
+
+/**
+ * DELETE /api/products/[id]
+ *  - sin historial → se borra (con su stock inicial, variantes y vínculos de colección): 200 { action: 'deleted' }
+ *  - con historial → NO se borra, se DESACTIVA (active=false: sale del POS y del catálogo): 200 { action: 'deactivated' }
+ * Toda respuesta trae `code` y `message` (español, listo para mostrar tal cual); los errores además `error`.
+ */
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {
     const { session, db } = await getAuthenticatedTenant()
-    if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+    if (session.role === 'cashier') return deleteError(403, 'FORBIDDEN', 'No tienes permiso para eliminar productos.')
 
     const id = parseId(params.id)
-    if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    if (!id) return deleteError(400, 'INVALID_ID', 'El identificador del producto no es válido.')
 
-    const [existing, salesCount] = await Promise.all([
-      db.product.findFirst({ where: { id } }), // business_id inyectado por el tenant layer
-      // SaleItem no tiene business_id; el producto se valida por ownership abajo
-      db.saleItem.count({ where: { product_id: id } }),
-    ])
-    if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+    const existing = await db.product.findFirst({ where: { id }, select: { id: true, name: true } }) // business_id inyectado
+    if (!existing) return deleteError(404, 'NOT_FOUND', 'No encontramos ese producto. Puede que ya se haya eliminado.')
 
-    if (salesCount > 0) {
-      return NextResponse.json(
-        {
-          error: 'Este producto tiene historial de ventas. Te recomendamos desactivarlo en lugar de eliminarlo.',
-          sales_count: salesCount,
-        },
-        { status: 409 }
-      )
+    const history = await productHistory(id)
+    if (history.total > 0) {
+      await db.product.update({ where: { id }, data: { active: false } }) // business_id inyectado
+      await revalidateCatalogCache(session.businessId)
+      return NextResponse.json({
+        ok: true,
+        action: 'deactivated',
+        code: 'HAS_HISTORY',
+        message: `"${existing.name}" ya tiene historial (${history.detail.join(', ')}), por eso no se borró: se desactivó y ya no aparece en el POS ni en el catálogo.`,
+        history: history.detail,
+      })
     }
 
-    await db.product.delete({ where: { id } }) // business_id inyectado por el tenant layer
+    await prisma.$transaction([
+      prisma.inventoryEntry.deleteMany({ where: { product_id: id, business_id: session.businessId } }),
+      prisma.productVariant.deleteMany({ where: { product_id: id } }),
+      prisma.productCollection.deleteMany({ where: { product_id: id } }),
+      prisma.product.deleteMany({ where: { id, business_id: session.businessId } }),
+    ])
     await revalidateCatalogCache(session.businessId)
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, action: 'deleted', code: 'DELETED', message: `"${existing.name}" se eliminó.` })
   } catch (e) {
-    if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
-    throw e
+    if (e instanceof TenantError) return deleteError(e.status, e.code, e.status === 401 ? 'Tu sesión venció. Entra de nuevo.' : 'No tienes permiso para eliminar productos.')
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
+      // Una FK que productHistory no cubre: nunca un 500 mudo.
+      logError('Product delete blocked by FK', e)
+      return deleteError(409, 'IN_USE', 'Este producto está en uso en otros registros y no se puede eliminar. Desactívalo para ocultarlo.')
+    }
+    logError('Product delete error', e)
+    return deleteError(500, 'SERVER_ERROR', 'No se pudo eliminar el producto. Intenta de nuevo en unos segundos.')
   }
 }

@@ -293,7 +293,9 @@ export default async function CatalogoPage({ params }: PageProps) {
       brandName:    p.brand?.name ?? null,
       priceUsd,
       priceBs,
-      priceDivisa:  p.precio_divisa !== null ? Number(p.precio_divisa) : null,
+      // El catálogo público muestra SIEMPRE price_per_unit_usd, sin tachado: no existe campo de promoción y
+      // el servidor cobra ese precio (lib/pricing.ts). precio_divisa/mayorista/Cashea son de uso interno.
+      priceDivisa:  null,
       isService:    p.sale_mode === 'service',
       stockQty:     hideStock || p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
       stockHidden:   hideStock,

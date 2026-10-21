@@ -6,6 +6,7 @@ import { revalidateCatalogCache } from '@/lib/catalog'
 import { z } from 'zod'
 import { cleanSubcategory } from '@/lib/subcategory'
 import { findBarcodeConflict } from '@/lib/product-barcodes'
+import { matchVariant, parseSearch, productSearchWhere } from '@/lib/product-search'
 
 const productSchema = z.object({
   name:               z.string().min(1).max(120),
@@ -43,6 +44,8 @@ const productSchema = z.object({
   is_featured:        z.boolean().default(false),
   is_fixed_price:     z.boolean().default(false),
   financing_eligible: z.boolean().default(false),
+  // true = este producto NO entra al financiamiento aunque el negocio lo tenga activado (por defecto todos entran).
+  financing_excluded: z.boolean().default(false),
   sort_order:         z.number().int().default(0),
   // Marca (tabla brands) del negocio; se valida que sea suya antes de guardar.
   brand_id:           z.number().int().positive().nullable().optional(),
@@ -103,7 +106,9 @@ export async function GET(req: NextRequest) {
     const { session, db } = await getAuthenticatedTenant()
 
     const sp              = req.nextUrl.searchParams
-    const search          = sp.get('search') ?? ''
+    // Búsqueda única (lib/product-search.ts): nombre, barcode, SKU, "Ref" en descripción, SKU y barcode de variante.
+    const parsedSearch    = parseSearch(sp.get('search'))
+    const searchWhere     = productSearchWhere(parsedSearch)
     const categoryId      = sp.get('category_id')
     const showInactive    = sp.get('active') === 'false'
     const lowStockOnly    = sp.get('low_stock') === 'true'
@@ -118,17 +123,7 @@ export async function GET(req: NextRequest) {
           ...(availableFilter === 'true'  ? { is_available: true  } : {}),
           ...(availableFilter === 'false' ? { is_available: false } : {}),
           ...(posFilter ? { available_in_pos: true } : {}),
-          ...(search
-            ? {
-                OR: [
-                  { name:    { contains: search } },
-                  { sku:     { contains: search } },
-                  { barcode: { contains: search } },
-                  // Escaneo de una variante (EAN exacto) o búsqueda por su SKU.
-                  { variants: { some: { is_active: true, OR: [{ barcode: search }, { sku: { contains: search } }] } } },
-                ],
-              }
-            : {}),
+          ...(searchWhere ? { AND: [searchWhere] } : {}),
           ...(categoryId ? { category_id: parseInt(categoryId) } : {}),
         },
         include: {
@@ -181,8 +176,8 @@ export async function GET(req: NextRequest) {
           ...p,
           images:             parseImages(p.images),
           variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra) })),
-          // Si la búsqueda fue el EAN exacto de una variante: cuál es (el POS abre ESA talla directo).
-          matched_variant_id: search ? (p.variants.find(v => v.barcode === search)?.id ?? null) : null,
+          // Talla que coincidió (barcode exacto o SKU único): matched_variant_id / matched_variant_value / matched_by.
+          ...matchVariant(p.variants, parsedSearch),
           price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
           price_per_kg_usd:   p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null,
           wholesale_price_usd:        p.wholesale_price_usd        != null ? Number(p.wholesale_price_usd)        : null,
@@ -317,6 +312,7 @@ export async function POST(req: NextRequest) {
         is_featured:        data.is_featured,
         is_fixed_price:     data.is_fixed_price,
         financing_eligible: data.financing_eligible,
+        financing_excluded: data.financing_excluded,
         sort_order:         data.sort_order,
         variants: variantRows.length
           ? { create: variantRows.map(v => ({

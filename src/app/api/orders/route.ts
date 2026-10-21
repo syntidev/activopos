@@ -8,6 +8,8 @@ import { createNotification } from '@/lib/notifications'
 import { sendPushToBusinessSubscribers } from '@/lib/push-notify'
 import { fromBound, toBoundExclusive } from '@/lib/business-day'
 import { logError } from '@/lib/safe-log'
+import { resolveLinePrice } from '@/lib/pricing'
+import { priceModeSchema } from '@/lib/price-mode'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISOS — INTENCIONAL: Pedidos NO tiene guard de rol. cashier ve/crea/edita
@@ -50,6 +52,8 @@ const createSchema = z.object({
   origin:         z.enum(['whatsapp', 'catalog', 'phone', 'pos']).default('whatsapp'),
   estimated_time: z.number().int().positive().optional(),
   items:          z.array(orderItemSchema).min(1),
+  // Modo de precio del pedido (bcv por defecto); se puede cambiar luego con PATCH /api/orders/[id]/price-mode.
+  price_mode:     priceModeSchema.default('bcv'),
 })
 
 /* ── GET /api/orders ── */
@@ -147,7 +151,10 @@ export async function POST(req: NextRequest) {
       const productIds = Array.from(new Set(data.items.map((i) => i.product_id)))
       const products   = await tx.product.findMany({
         where:  { id: { in: productIds }, business_id: session.businessId, active: true },
-        select: { id: true, price_per_unit_usd: true, price_per_kg_usd: true },
+        select: {
+          id: true, sale_mode: true, price_per_unit_usd: true, price_per_kg_usd: true,
+          wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
+        },
       })
       if (products.length !== productIds.length) {
         throw new Error('Producto no encontrado o inactivo')
@@ -156,12 +163,12 @@ export async function POST(req: NextRequest) {
 
       const itemsWithPrices = data.items.map((item) => {
         const product  = productMap.get(item.product_id)!
-        const priceUsd = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
+        const { price: priceUsd, source: price_source } = resolveLinePrice(product, undefined, { mode: data.price_mode, saleMode: product.sale_mode })
         if (priceUsd <= 0) {
           throw new Error(`Precio no configurado para el producto ${item.product_id}`)
         }
         const subtotal_usd = Number((item.quantity * priceUsd).toFixed(2))
-        return { ...item, price_per_unit_usd: priceUsd, subtotal_usd }
+        return { ...item, price_per_unit_usd: priceUsd, subtotal_usd, price_source }
       })
 
       const itemsTotal = itemsWithPrices.reduce((acc, item) => acc + item.subtotal_usd, 0)
@@ -189,6 +196,7 @@ export async function POST(req: NextRequest) {
           client_address: data.client_address,
           notes:          data.notes,
           delivery_fee:   data.delivery_fee,
+          price_mode:     data.price_mode,
           total_usd,
           total_bs,
           rate_used:      rate,
@@ -201,6 +209,7 @@ export async function POST(req: NextRequest) {
               quantity:           item.quantity,
               price_per_unit_usd: item.price_per_unit_usd,
               subtotal_usd:       item.subtotal_usd,
+              price_source:       item.price_source,
             })),
           },
         },

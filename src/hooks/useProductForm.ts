@@ -152,7 +152,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [isFixedPrice, setIsFixedPrice] = useState(true)
   // Un solo grupo "Calcular con el sistema" (apagado por defecto): costo, margen, utilidad y descuento Divisa.
   const [calcSystem, setCalcSystem] = useState(false)
-  const [financingEligible, setFinancingEligible] = useState(false)
+  const [financingExcluded, setFinancingExcluded] = useState(false)
   // El checkbox "Disponible con Cashea" solo aparece si el negocio activó el sello (Config → Tema).
   const [financingBadgeOn, setFinancingBadgeOn]   = useState(false)
   const [margin, setMargin]           = useState('30')
@@ -264,8 +264,8 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     let active = true
     fetch('/api/config/catalog')
       .then(res => (res.ok ? res.json() : null))
-      .then((data: { catalog?: { catalog_financing_badge?: string | null } } | null) => {
-        if (active) setFinancingBadgeOn(!!data?.catalog?.catalog_financing_badge)
+      .then((data: { catalog?: { catalog_financing_badge?: string | null; financing?: { enabled?: boolean } } } | null) => {
+        if (active) setFinancingBadgeOn(data?.catalog?.financing?.enabled ?? !!data?.catalog?.catalog_financing_badge)
       })
       .catch(() => {})
     return () => { active = false }
@@ -316,7 +316,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setCostUnknownRaw(editProduct.cost_unknown ?? false)
     setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
     setStockInitial(String(editProduct.stock_quantity ?? 0))
-    setFinancingEligible(editProduct.financing_eligible ?? false)
+    setFinancingExcluded(editProduct.financing_excluded ?? false)
 
     const c =editProduct.cost_per_unit_usd ?? 0
     const p = editProduct.price_per_unit_usd
@@ -656,7 +656,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         subcategory: subcategory.trim(),
         isFeatured,
         isFixedPrice,
-        financingEligible,
+        financingExcluded,
       })
     } catch {
       setErrors({ submit: 'Error al guardar. Intenta de nuevo.' })
@@ -683,7 +683,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     wholesalePricePerKgUsd, location, productNotes, images, isAvailable,
     catalogVisibility, availability, hasVariants, rows, combineVariants,
     dim1Values, dim2Values, combinations, badge, subcategory, isFeatured,
-    components, financingEligible,
+    components, financingExcluded,
   })
   const initialSnapshotRef = useRef<string | null>(null)
   if (initialSnapshotRef.current === null && (!isEdit || populatedRef.current)) {
@@ -720,7 +720,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     availability, setAvailability,
     showCatalogUpgrade, setShowCatalogUpgrade, hasCatalogPlan,
     badge, setBadge, subcategory, setSubcategory, isFeatured, setIsFeatured,
-    financingEligible, setFinancingEligible, financingBadgeOn,
+    financingExcluded, setFinancingExcluded, financingBadgeOn,
     // tabla de variantes
     hasVariants, setHasVariants, rows, loadingDbVars, sizeTypeId, setSizeTypeId,
     addSize, updateRow, removeRow, setAllStock, variantStockTotal, checkBarcode, startRowScan,

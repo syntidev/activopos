@@ -451,19 +451,19 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
             </label>
           </div>
 
-          {/* Sello Cashea: solo si el negocio activó el sello en Configuración → Tema */}
+          {/* Financiamiento: por defecto todos los productos entran; solo se marca para EXCLUIR. Visible si el negocio lo activó en Configuración → Tema */}
           {f.financingBadgeOn && (
             <div className={c.fixedPriceRow}>
               <div className={c.fixedPriceLabel}>
-                <span className={c.fixedPriceTitle}>Disponible con Cashea</span>
-                <span className={c.fixedPriceSub}>Muestra el sello Cashea en la ficha pública del producto</span>
+                <span className={c.fixedPriceTitle}>Excluir de financiamiento</span>
+                <span className={c.fixedPriceSub}>Este producto no se ofrece en cuotas en el catálogo</span>
               </div>
-              <label className={c.toggle} aria-label="Disponible con Cashea">
+              <label className={c.toggle} aria-label="Excluir de financiamiento">
                 <input
                   type="checkbox"
                   className={c.toggleInput}
-                  checked={f.financingEligible}
-                  onChange={(e) => f.setFinancingEligible(e.target.checked)}
+                  checked={f.financingExcluded}
+                  onChange={(e) => f.setFinancingExcluded(e.target.checked)}
                 />
                 <span className={c.toggleTrack} />
                 <span className={c.toggleThumb} />

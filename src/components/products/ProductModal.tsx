@@ -61,7 +61,7 @@ export interface ProductFormData {
   subcategory: string
   isFeatured: boolean
   isFixedPrice: boolean
-  financingEligible?: boolean
+  financingExcluded?: boolean
   /** Solo edición: true si el usuario modificó la existencia respecto a la cargada. */
   stockChanged?: boolean
   productType: 'simple' | 'combo' | 'fabricable'
@@ -109,7 +109,7 @@ export interface EditableProduct {
   unit_step?: number
   stock_alert_threshold?: number | null
   stock_quantity?: number
-  financing_eligible?: boolean
+  financing_excluded?: boolean
 }
 
 interface DbVariant {

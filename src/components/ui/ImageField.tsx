@@ -15,7 +15,7 @@ import styles from './ImageField.module.css'
  * Tamaño/proporción de la vista previa: las pone cada pantalla (boxClassName).
  */
 
-export type ImageUploadType = 'logo' | 'catalog_cover' | 'landing' | 'brand'
+export type ImageUploadType = 'logo' | 'catalog_cover' | 'landing' | 'brand' | 'financing'
 
 // Mismos límites que api/upload/image/route.ts (MAX_SIZE = 5 MB, ALLOWED_FORMATS
 // jpeg/png/webp). El servidor es la fuente de verdad; esto solo ahorra el viaje.

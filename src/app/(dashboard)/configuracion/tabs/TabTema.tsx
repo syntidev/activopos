@@ -6,7 +6,7 @@ import { Moon, Sun, Check, ImageUp } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { ImageField } from '@/components/ui/ImageField'
-import type { FinancingBadgeKey } from '@/lib/financing-badges'
+import { FinancingConfig } from './FinancingConfig'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -19,7 +19,6 @@ const MODES: Array<{ key: ThemeMode; label: string; Icon: typeof Moon; mainClass
 ]
 
 const DEFAULT_COLOR = '#2563EB'
-const FINANCING_BADGE_KEY: FinancingBadgeKey = 'cashea'
 
 const SEGMENT_COLORS: Array<{ name: string; value: string; segment: string }> = [
   { name: 'Azul Clásico',     value: '#2563EB', segment: 'Tienda'      },
@@ -45,8 +44,6 @@ export function TabTema({ businessId: _b }: Props) {
   const [coverPath, setCoverPath]   = useState<string | null>(null)
   const [coverPath2, setCoverPath2] = useState<string | null>(null)
   const [coverPath3, setCoverPath3] = useState<string | null>(null)
-  const [financingOn, setFinancingOn] = useState(false)
-  const [financingBusy, setFinancingBusy] = useState(false)
   const [stockExact, setStockExact] = useState(true)
   const [stockBusy, setStockBusy]   = useState(false)
 
@@ -54,9 +51,8 @@ export function TabTema({ businessId: _b }: Props) {
     let active = true
     fetch('/api/config/catalog')
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { catalog?: { catalog_financing_badge?: string | null ; catalog_stock_display?: 'exact' | 'status' } } | null) => {
+      .then((data: { catalog?: { catalog_stock_display?: 'exact' | 'status' } } | null) => {
         if (active) setStockExact(data?.catalog?.catalog_stock_display !== 'status')
-        if (active) setFinancingOn(data?.catalog?.catalog_financing_badge === FINANCING_BADGE_KEY)
       })
       .catch(() => {})
     return () => { active = false }
@@ -111,26 +107,6 @@ export function TabTema({ businessId: _b }: Props) {
     if (!res.ok) throw new Error(url ? 'No se pudo guardar la portada.' : 'No se pudo quitar la imagen.')
     setPath(url)
     toast(url ? 'Portada del catálogo guardada.' : 'Imagen del banner quitada.', 'success')
-  }
-
-  /* Sello de financiamiento: se guarda al instante en settings.catalog_financing_badge. */
-  const toggleFinancing = async () => {
-    const next = !financingOn
-    setFinancingBusy(true)
-    try {
-      const res = await fetch('/api/config/catalog', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ catalog_financing_badge: next ? FINANCING_BADGE_KEY : null }),
-      })
-      if (!res.ok) throw new Error()
-      setFinancingOn(next)
-      toast(next ? 'Sello Cashea activado.' : 'Sello Cashea desactivado.', 'success')
-    } catch {
-      toast('No se pudo guardar el sello de financiamiento.', 'error')
-    } finally {
-      setFinancingBusy(false)
-    }
   }
 
   /* Existencias en el catálogo: 'exact' (cantidad) o 'status' (solo Disponible / Pocas unidades / Agotado). Se guarda al instante. */
@@ -271,27 +247,7 @@ export function TabTema({ businessId: _b }: Props) {
         </div>
       </div>
 
-      <div className={styles.formCard}>
-        <h3 className={styles.formCardTitle}>Financiamiento</h3>
-        <div className={styles.toggleRow}>
-          <div>
-            <p className={styles.toggleLabel}>Mostrar sello Cashea en productos elegibles</p>
-            <p className={styles.toggleHint}>
-              Aparece en la ficha del producto solo si lo marcas como &ldquo;Disponible con Cashea&rdquo;. Se guarda al instante.
-            </p>
-          </div>
-          <button
-            type="button"
-            className={`${styles.toggleBtn} ${financingOn ? styles.toggleBtnOn : ''}`}
-            onClick={toggleFinancing}
-            disabled={financingBusy}
-            aria-pressed={financingOn}
-            aria-label={financingOn ? 'Desactivar sello Cashea' : 'Activar sello Cashea'}
-          >
-            <span className={`${styles.toggleKnob} ${financingOn ? styles.toggleKnobOn : ''}`} />
-          </button>
-        </div>
-      </div>
+      <FinancingConfig />
 
       <div className={styles.formCard}>
         <h3 className={styles.formCardTitle}>

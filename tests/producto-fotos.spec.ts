@@ -76,7 +76,8 @@ test('alta nueva: una casilla acepta png, jpg y webp y la 6ª casilla también; 
   await page.goto('/productos/nuevo')
   await expect(page.locator('input[type=file]')).toHaveCount(6)
   await page.locator('#np-name').fill('ZZ Foto E2E alta')
-  await page.locator('#np-cost').fill('1') // el precio se calcula solo desde costo y margen
+  await page.locator('#np-cost').fill('1') // el precio se escribe directo (calcular con el sistema viene apagado)
+  await page.locator('#np-price').fill('2')
 
   // una MISMA casilla con los tres formatos (se vacía entre uno y otro)
   for (const fmt of FORMATS) {

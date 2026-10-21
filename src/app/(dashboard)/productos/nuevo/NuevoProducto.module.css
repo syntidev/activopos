@@ -10,7 +10,14 @@
   padding: var(--space-6);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-6);
+}
+
+/* Header, pestañas/formulario y SaveBar comparten un mismo ancho máximo, centrado. */
+.page > * {
+  width: 100%;
+  max-width: var(--form-max-width);
 }
 
 /* ── Header: ya no es sticky (tapaba contenido); la barra de pestañas es lo que queda fijo ── */

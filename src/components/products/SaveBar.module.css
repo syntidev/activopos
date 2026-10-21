@@ -70,5 +70,5 @@
 @media (max-width: 639px) {
   .bar { padding: var(--space-2) var(--space-3); }
   .cancel,
-  .save { flex: 1; padding: 0 var(--space-3); }
+  .save { padding: 0 var(--space-4); }
 }

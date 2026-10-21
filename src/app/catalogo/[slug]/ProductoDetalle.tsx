@@ -9,7 +9,8 @@ import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
-import { FINANCING_BADGES, type FinancingBadgeKey } from '@/lib/financing-badges'
+import { FinancingNote } from '@/components/catalog/FinancingNote'
+import type { PublicFinancing } from '@/lib/financing'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility } from './catalogUtils'
 import { productosHref } from '@/lib/subcategory'
 import { availabilityWaUrl, questionWaUrl } from '@/lib/availability-message'
@@ -42,7 +43,8 @@ interface Props {
   relatedProducts: RelatedProduct[]
   businessLogo:  string | null
   outOfStock:    boolean
-  financingBadge: FinancingBadgeKey | null
+  /** business.financing público, ya nulo si está desactivado o el producto está excluido. */
+  financing: PublicFinancing | null
   stockHidden:    boolean
   businessPhone:  string
 }
@@ -50,7 +52,7 @@ interface Props {
 export function ProductoDetalle({
   productId, name, description, images, categoryName, subcategory, categoryColor,
   priceUsd, priceBs, variants, businessName,
-  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financingBadge, stockHidden, businessPhone,
+  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, businessLogo, outOfStock, financing, stockHidden, businessPhone,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
@@ -242,19 +244,10 @@ export function ProductoDetalle({
             )}
           </div>
 
-          {(showBs || financingBadge) && (
+          {(showBs || financing) && (
             <div className={styles.infoLine}>
               {showBs && <span className={styles.bcvNote}>Recibimos bolívares a tasa BCV</span>}
-              {financingBadge && (
-                <img
-                  className={styles.financingBadge}
-                  src={FINANCING_BADGES[financingBadge].src}
-                  alt={FINANCING_BADGES[financingBadge].alt}
-                  width={FINANCING_BADGES[financingBadge].width}
-                  height={FINANCING_BADGES[financingBadge].height}
-                  loading="lazy"
-                />
-              )}
+              <FinancingNote financing={financing} />
             </div>
           )}
 

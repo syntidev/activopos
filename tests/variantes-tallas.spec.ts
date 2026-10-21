@@ -29,7 +29,7 @@ async function fillBasics(page: Page, name: string): Promise<void> {
   await page.goto('/productos/nuevo')
   await page.locator('#np-name').fill(name)
   await page.getByRole('tab', { name: 'Precio' }).click()
-  await page.locator('#np-cost').fill('10')
+  await page.locator('#np-price').fill('20')
   await page.getByRole('tab', { name: 'Inventario y variantes' }).click()
   await page.locator('label[aria-label="Este producto tiene tallas o colores"]').click()
 }

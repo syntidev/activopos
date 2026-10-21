@@ -42,7 +42,7 @@ test('nuevo: el campo SKU / Referencia existe con ayuda y el código de barras y
   await page.locator('#np-name').fill(NAME_NEW)
   await page.getByLabel('SKU / Referencia').fill('REF-NUEVO-1')
   await page.getByRole('tab', { name: 'Precio' }).click()
-  await page.locator('#np-cost').fill('3')
+  await page.locator('#np-price').fill('5')
   await page.getByRole('button', { name: 'Guardar producto' }).click()
   await page.waitForURL('**/productos')
   expect(skuOf(NAME_NEW)).toBe('REF-NUEVO-1')

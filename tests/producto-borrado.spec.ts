@@ -13,7 +13,15 @@ test.describe.configure({ mode: 'serial' })
 const CATEGORY_ID = Number(sql(`SELECT id FROM categories WHERE business_id=${BUSINESS_ID} AND active=1 LIMIT 1`))
 
 test.beforeAll(() => { cleanupTestProducts('Borrar') })
-test.afterAll(() => { cleanupTestProducts('Borrar') })
+test.afterAll(() => {
+  cleanupTestProducts('Borrar')
+  sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND action IN ('product_deleted','product_deactivated') AND JSON_UNQUOTE(JSON_EXTRACT(old_values,'$.name')) LIKE 'ZZ Borrar%'`)
+})
+
+/** Bitácora de borrar/desactivar: `quién|acción|nombre` (el producto ya puede no existir, el nombre va en old_values). */
+const removalLog = (productId: number): string =>
+  sql(`SELECT CONCAT(user_id,'|',action,'|',JSON_UNQUOTE(JSON_EXTRACT(old_values,'$.name'))) FROM activity_logs
+       WHERE business_id=${BUSINESS_ID} AND model_type='Product' AND model_id=${productId} AND action IN ('product_deleted','product_deactivated') ORDER BY id DESC LIMIT 1`).trim()
 
 function exists(id: number): number {
   return Number(sql(`SELECT COUNT(*) FROM products WHERE id=${id} AND business_id=${BUSINESS_ID}`))
@@ -37,6 +45,7 @@ test('Alta rápida con stock: DELETE borra (200 deleted), antes 500 mudo', async
   expect(j).toMatchObject({ ok: true, action: 'deleted', code: 'DELETED' })
   expect(typeof j.message).toBe('string')
   expect(exists(id)).toBe(0)
+  expect(removalLog(id)).toBe('86|product_deleted|ZZ Borrar AltaRapida') // quién y cuál quedan en la bitácora
   await api.dispose()
 })
 
@@ -67,6 +76,7 @@ test('con historial (pedido): no borra, desactiva con mensaje claro en español'
   expect(j.message).toMatch(/historial/)
   expect(exists(id)).toBe(1)
   expect(sql(`SELECT active FROM products WHERE id=${id}`)).toBe('0')
+  expect(removalLog(id)).toBe('86|product_deactivated|ZZ Borrar Historial')
   const forced = await api.delete(`/api/products/${id}?force=true`)
   expect(forced.status()).toBe(200)
   expect(exists(id)).toBe(1)

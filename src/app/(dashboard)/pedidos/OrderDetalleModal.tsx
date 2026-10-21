@@ -6,6 +6,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { generarCorteConsumoPDF } from '@/components/pos/CorteConsumoPDF'
+import { PriceModeSwitch } from '@/components/pos/PriceModeSwitch'
+import type { PriceMode, PriceSource } from '@/lib/pos'
 import styles from './NuevoPedidoModal.module.css'
 
 /* ── Types ── */
@@ -24,6 +26,15 @@ interface EditableItem {
   variant_label?: string | null
   quantity: number
   price_per_unit_usd: number
+  price_source?: PriceSource | null
+}
+
+/** Línea del `ticket` que devuelve PATCH /api/orders/{id}/price-mode. */
+interface PricedLine {
+  product_id: number
+  variant_id: number | null
+  price_per_unit_usd: number
+  price_source: PriceSource
 }
 
 export interface OrderDetail {
@@ -33,8 +44,11 @@ export interface OrderDetail {
   client_name: string | null
   total_usd: number | string
   total_bs: number | string
+  rate_used?: number | string
+  price_mode?: PriceMode
   items: {
     id: number
+    price_source?: PriceSource | null
     product_id: number
     product_name: string
     variant_label: string | null
@@ -52,6 +66,7 @@ interface Props {
 }
 
 const EDITABLE_STATUSES = ['received', 'preparing', 'ready']
+const CLOSED_STATUSES = ['delivered', 'cancelled']
 
 const fmtUsd = (n: number) => `$${n.toFixed(2)}`
 
@@ -66,12 +81,16 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
   const [businessName, setBusinessName] = useState('')
+  const [modeBusy, setModeBusy]   = useState(false)
+  const [modeError, setModeError] = useState('')
 
   const [productSearch, setProductSearch]   = useState('')
   const [productResults, setProductResults] = useState<ProductResult[]>([])
   const productTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editable = order !== null && EDITABLE_STATUSES.includes(order.status)
+  // El servidor rechaza (409) el cambio en pedidos cobrados/entregados/cancelados: ahí el modo se muestra en solo lectura.
+  const modeEditable = order !== null && !CLOSED_STATUSES.includes(order.status)
 
   /* ── Load order on open ── */
 
@@ -94,6 +113,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
             variant_label:      i.variant_label,
             quantity:           Number(i.quantity),
             price_per_unit_usd: Number(i.price_per_unit_usd),
+            price_source:       i.price_source,
           }))
         )
       })
@@ -161,6 +181,41 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   }
 
   const total = items.reduce((sum, item) => sum + item.quantity * item.price_per_unit_usd, 0)
+  const rate  = order ? Number(order.rate_used ?? 0) || (Number(order.total_usd) > 0 ? Number(order.total_bs) / Number(order.total_usd) : 0) : 0
+  const priceMode: PriceMode = order?.price_mode === 'divisa' ? 'divisa' : 'bcv'
+  // El servidor reprecia lo guardado: con cambios de ítems sin guardar el modo no se puede cambiar.
+  const dirty = order !== null && (items.length !== order.items.length
+    || items.some((it, i) => it.product_id !== order.items[i].product_id || it.quantity !== Number(order.items[i].quantity)))
+
+  /* ── Modo de precio (BCV / Divisa): el servidor reprecia el pedido y devuelve las líneas ── */
+
+  const handlePriceMode = async (mode: PriceMode) => {
+    if (!order || mode === priceMode || modeBusy) return
+    if (dirty) { setModeError('Guarda los cambios de ítems antes de cambiar el modo de precio.'); return }
+    setModeBusy(true)
+    setModeError('')
+    try {
+      const res  = await fetch(`/api/orders/${orderId}/price-mode`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ price_mode: mode }),
+      })
+      const data = await res.json().catch(() => null) as { ticket?: { items: PricedLine[]; total_usd: number; total_bs: number } ; error?: string } | null
+      if (!res.ok || !data?.ticket) { setModeError(data?.error ?? 'No se pudo cambiar el modo de precio.'); return }
+      const lines = data.ticket.items
+      setItems((prev) => prev.map((it, i) => {
+        const hit = lines.length === prev.length ? lines[i] : lines.find((l) => l.product_id === it.product_id)
+        return hit ? { ...it, price_per_unit_usd: Number(hit.price_per_unit_usd), price_source: hit.price_source } : it
+      }))
+      const next: OrderDetail = { ...order, price_mode: mode, total_usd: data.ticket.total_usd, total_bs: data.ticket.total_bs }
+      setOrder(next)
+      onUpdated(next)
+    } catch {
+      setModeError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setModeBusy(false)
+    }
+  }
 
   /* ── Guardar cambios ── */
 
@@ -328,6 +383,10 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
                         ) : (
                           <span className={styles.qtyVal}>{item.quantity}</span>
                         )}
+                        {item.price_source === 'manual' && <span className={styles.lineTag}>Manual</span>}
+                        {item.price_source === 'fallback_bcv' && (
+                          <span className={styles.lineTag} title="Este producto no tiene precio Divisa: se cobra a precio BCV">Sin precio Divisa</span>
+                        )}
                         <span className={styles.cartSubtotal}>
                           {fmtUsd(item.quantity * item.price_per_unit_usd)}
                         </span>
@@ -350,9 +409,21 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
               )}
             </div>
 
+            <PriceModeSwitch
+              mode={priceMode}
+              onChange={modeEditable ? handlePriceMode : undefined}
+              readOnly={!modeEditable}
+              busy={modeBusy}
+              error={modeError}
+              fallbackLines={items.filter((i) => i.price_source === 'fallback_bcv').length}
+            />
+
             <div className={styles.totalRow}>
               <span className={styles.totalLabel}>Total</span>
-              <span className={styles.totalValue}>{fmtUsd(total)}</span>
+              <span className={styles.totalValue}>
+                {fmtUsd(total)}
+                {rate > 0 && <span className={styles.totalBs}>Bs. {(total * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+              </span>
             </div>
           </>
         )}

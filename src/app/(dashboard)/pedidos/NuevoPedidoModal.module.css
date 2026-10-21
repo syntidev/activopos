@@ -379,3 +379,21 @@
     min-width: 44px;
   }
 }
+
+/* Etiqueta pequeña de la línea: precio manual o sin precio Divisa. */
+.lineTag {
+  flex-shrink: 0;
+  padding: 1px var(--space-1-5);
+  border: 1px solid var(--ctl-border-strong);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+}
+
+.totalBs {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}

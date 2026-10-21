@@ -1653,18 +1653,6 @@
   line-height:    1.2;
 }
 
-/* Precio normal tachado cuando el producto tiene precio_divisa -- precede al
-   .priceUsd (que pasa a mostrar precio_divisa, el destacado). Patrón KTM
-   Store: precio de lista arriba tachado, precio final grande debajo. */
-.priceUsdOld {
-  font-size:         11px;
-  font-weight:       var(--weight-medium);
-  color:             var(--color-text-secondary);
-  text-decoration:   line-through;
-  opacity:           0.65;
-  line-height:       1.2;
-}
-
 /* Símbolo de moneda pequeño y atenuado antes del número */
 .priceSymbol {
   font-size:    0.75em;
@@ -1933,14 +1921,6 @@
 .modalPriceUsdCol {
   display:        flex;
   flex-direction: column;
-}
-
-.modalPriceOld {
-  font-size:       var(--text-sm);
-  font-weight:     var(--weight-medium);
-  color:           var(--color-text-secondary);
-  text-decoration: line-through;
-  opacity:         0.65;
 }
 
 .modalPriceBs {
@@ -5297,13 +5277,6 @@ iframe.lsHeroMedia {
   font-size:   var(--text-sm);
   font-weight: var(--weight-bold);
   color:       var(--color-text-primary);
-}
-
-.compactPriceOld {
-  font-size:       var(--text-xs);
-  color:           var(--color-text-secondary);
-  text-decoration: line-through;
-  opacity:         0.65;
 }
 
 .compactPriceBs {

@@ -144,8 +144,6 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       brandName:         p.brand?.name ?? null,
       priceUsd,
       priceBs,
-      // Solo price_per_unit_usd, sin tachado (ver catalogo-premium/[slug]/page.tsx).
-      priceDivisa:       null,
       isService:         p.sale_mode === 'service',
       stockQty:          hideStock || p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),
       stockHidden:        hideStock,

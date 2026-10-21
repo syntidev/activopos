@@ -58,7 +58,6 @@ interface Props {
   categoryColor: string | null
   priceUsd:      number
   priceBs:       number | null
-  priceDivisa:   number | null
   variants:      CatalogProductVariant[]
   businessName:  string
   slug:          string
@@ -82,7 +81,7 @@ interface Props {
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, subcategory, categoryColor,
-  priceUsd, priceBs, priceDivisa, variants, businessName,
+  priceUsd, priceBs, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   outOfStock, financingBadge, stockHidden, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
 }: Props) {
@@ -149,15 +148,11 @@ export function ProductoDetalle({
   const consultUrl = availabilityWaUrl(
     businessPhone, name, selectedVariant ? (selectedVariant.combination_key ?? selectedVariant.valor) : null, pageUrl,
   )
-  // precio_bcv (normal): base de la conversión a Bs, siempre -- sin importar
-  // si hay precio_divisa. Se muestra tachado cuando precio_divisa existe.
+  // Precio de venta: base de la conversión a Bs y precio que se muestra y se cobra.
   const effectivePrice   = priceUsd + (selectedVariant?.precio_extra ?? 0)
   const effectivePriceBs = priceBs !== null
     ? effectivePrice * rate
     : null
-  // Precio final real: precio_divisa (si existe) es lo que se cobra y se
-  // destaca en $ -- no un tachado decorativo. Bs arriba sigue de precio_bcv.
-  const effectivePriceFinal = (priceDivisa ?? priceUsd) + (selectedVariant?.precio_extra ?? 0)
 
   const availableStock = selectedVariant
     ? (selectedVariant.stock ?? 10)
@@ -203,7 +198,7 @@ export function ProductoDetalle({
       product_id:    productId,
       name,
       qty,
-      price_usd:     effectivePriceFinal,
+      price_usd:     effectivePrice,
       image_url:     images[0] ?? null,
       variant_id:    selectedVariant?.id,
       variant_label: selectedVariant ? `${capitalize(selectedVariant.tipo)}: ${selectedVariant.valor}` : undefined,
@@ -505,10 +500,7 @@ export function ProductoDetalle({
           <div className={styles.priceBlock}>
             {showUsd && (
               <>
-                {priceDivisa !== null && priceDivisa > 0 && (
-                  <span className={styles.priceUsdOld}>{fmtUsd(effectivePrice)}</span>
-                )}
-                <span className={styles.priceUsd}>{fmtUsd(effectivePriceFinal)}</span>
+                <span className={styles.priceUsd}>{fmtUsd(effectivePrice)}</span>
               </>
             )}
             {showBs && effectivePriceBs !== null && (

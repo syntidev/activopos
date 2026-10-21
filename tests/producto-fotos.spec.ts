@@ -77,7 +77,7 @@ test('alta nueva: una casilla acepta png, jpg y webp y la 6ª casilla también; 
   await expect(page.locator('input[type=file]')).toHaveCount(6)
   await page.locator('#np-name').fill('ZZ Foto E2E alta')
   await page.getByRole('tab', { name: 'Precio' }).click() // el formulario ahora es por pestañas
-  await page.locator('#np-cost').fill('1') // el precio se escribe directo (calcular con el sistema viene apagado)
+  // el precio se escribe directo (calcular con el sistema viene apagado)
   await page.locator('#np-price').fill('2')
   await page.getByRole('tab', { name: 'Imágenes' }).click()
 

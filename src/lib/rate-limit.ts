@@ -17,6 +17,13 @@ export const catalogLimiter = new RateLimiterMemory({
   duration: 60,   // por minuto
 })
 
+// Búsqueda pública del catálogo (GET /api/catalog/[slug]/search): además del tope por IP, un tope por SLUG para que
+// muchas IPs juntas no puedan raspar un mismo catálogo. Por proceso (RateLimiterMemory), como los demás.
+export const catalogSearchSlugLimiter = new RateLimiterMemory({
+  points:   300,  // 300 búsquedas por catálogo
+  duration: 60,   // por minuto
+})
+
 // Checkout público (POST /api/catalog/[slug]/order). Todos son RateLimiterMemory: por PROCESO, no
 // compartidos entre instancias PM2 (en cluster de N procesos el tope efectivo es hasta N veces mayor).
 // La defensa que SÍ es consistente entre procesos es la de DB: máx. 3 pedidos 'received' por cédula/teléfono.

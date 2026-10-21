@@ -149,7 +149,9 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
   const [bulkSize, setBulkSize]       = useState('12')
   const [cost, setCost]               = useState('')
   const [costUnknown, setCostUnknownRaw] = useState(false)
-  const [isFixedPrice, setIsFixedPrice] = useState(false)
+  const [isFixedPrice, setIsFixedPrice] = useState(true)
+  // Un solo grupo "Calcular con el sistema" (apagado por defecto): costo, margen, utilidad y descuento Divisa.
+  const [calcSystem, setCalcSystem] = useState(false)
   const [financingEligible, setFinancingEligible] = useState(false)
   // El checkbox "Disponible con Cashea" solo aparece si el negocio activó el sello (Config → Tema).
   const [financingBadgeOn, setFinancingBadgeOn]   = useState(false)
@@ -309,7 +311,8 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     setBadge(editProduct.badge ?? 'none')
     setSubcategory(editProduct.subcategory ?? '')
     setIsFeatured(editProduct.is_featured ?? false)
-    setIsFixedPrice(editProduct.is_fixed_price ?? false)
+    // Al editar, el precio guardado se muestra tal cual: nada se recalcula salvo que el usuario active "Calcular con el sistema".
+    setIsFixedPrice(true)
     setCostUnknownRaw(editProduct.cost_unknown ?? false)
     setStockAlertThreshold(String(editProduct.stock_alert_threshold ?? 5))
     setStockInitial(String(editProduct.stock_quantity ?? 0))
@@ -348,10 +351,11 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     const bulkNum     = Math.max(parseInt(bulkSize) || 1, 1)
     const costPerUnit = costMode === 'bulk' ? costNum / bulkNum : costNum
     const marginNum   = Math.min(Math.max(parseFloat(margin) || 0, 0), 99.9)
+    const fixedPriceNum = parseFloat(price) || 0
+    // Sin costo cargado todavía no hay nada que calcular: se conserva el precio escrito.
     const priceFromMargin = costPerUnit > 0 && marginNum < 100
       ? costPerUnit / (1 - marginNum / 100)
-      : costPerUnit
-    const fixedPriceNum = parseFloat(price) || 0
+      : fixedPriceNum
     const displayPrice  = isFixedPrice ? fixedPriceNum : priceFromMargin
     const displayMargin = isFixedPrice && displayPrice > 0 && costPerUnit > 0
       ? Math.max(0, ((displayPrice - costPerUnit) / displayPrice) * 100)
@@ -365,11 +369,24 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     if (v) setIsFixedPrice(true)
   }
 
+  /* Encender el grupo calcula el precio de venta desde costo y margen; apagarlo deja el precio mostrado como valor escrito. */
+  const toggleCalcSystem = (on: boolean) => {
+    setCalcSystem(on)
+    if (on) {
+      if (costUnknown) return
+      setIsFixedPrice(false)
+      if (computed.displayMargin > 0) setMargin(computed.displayMargin.toFixed(1))
+    } else {
+      setIsFixedPrice(true)
+      if (computed.displayPrice > 0) setPrice(computed.displayPrice.toFixed(2))
+    }
+  }
+
   /* ── Validación ── */
   const validate = (): boolean => {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = 'El nombre es obligatorio'
-    if (!costUnknown && (!cost.trim() || parseFloat(cost) <= 0)) errs.cost = 'Ingresa el costo'
+    if (calcSystem && !costUnknown && (!cost.trim() || parseFloat(cost) <= 0)) errs.cost = 'Ingresa el costo'
     if (!isFixedPrice) {
       const m = parseFloat(margin)
       if (isNaN(m) || m < 0 || m >= 100) errs.margin = 'Margen debe estar entre 0% y 99.9%'
@@ -600,7 +617,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         components:      components.map(c => ({ component_id: c.component_id, quantity: c.quantity })),
         categoryId,
         costPerUnitUsd:  computed.costPerUnit,
-        costUnknown,
+        costUnknown: costUnknown || !cost.trim(),
         pricePerUnitUsd: computed.displayPrice,
         wholesalePriceUsd:      wholesalePriceUsd.trim()      ? parseFloat(wholesalePriceUsd)      : null,
         wholesalePricePerKgUsd: wholesalePricePerKgUsd.trim() ? parseFloat(wholesalePricePerKgUsd) : null,
@@ -685,7 +702,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     categoryId, setCategoryId,
     costMode, setCostMode, bulkSize, setBulkSize, cost, setCost,
     costUnknown, setCostUnknown,
-    isFixedPrice, setIsFixedPrice, margin, setMargin, price, setPrice,
+    isFixedPrice, setIsFixedPrice, calcSystem, toggleCalcSystem, margin, setMargin, price, setPrice,
     stockInitial, setStockInitial, stockAlertThreshold, setStockAlertThreshold,
     showWholesale, setShowWholesale,
     wholesalePriceUsd, setWholesalePriceUsd,

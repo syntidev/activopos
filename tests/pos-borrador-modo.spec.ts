@@ -88,12 +88,38 @@ test('borrador restaurado: cambiar a Divisa reprecia al instante, aunque el serv
     await route.continue()
   })
   await page.setViewportSize({ width: 1440, height: 900 })
+  // La hidratación pide por id exacto cada producto (+ sus tallas): se espera a que terminen, sin tiempos fijos.
+  const hydrated = Promise.all([idA, idB].map((id) => page.waitForResponse((r) => r.url().endsWith(`/api/products/${id}/variants`))))
   await page.goto(`/pos?draft=${draftId}`)
   const total = page.locator('[class*="totalUsdValue"]')
   await expect(total).toHaveText('$15.00')
-  await page.waitForTimeout(2500) // deja que se completen los precios base de las líneas restauradas
+  await hydrated
+  await page.waitForTimeout(300)
 
   await page.getByRole('radio', { name: 'Divisa ($)' }).click()
   await expect(total).toHaveText('$13.00', { timeout: 2000 })
   await expect(page.getByText('Sin precio Divisa', { exact: true }).first()).toBeVisible({ timeout: 2000 })
+})
+
+test('hidratación por id exacto: si el primer intento falla se reintenta y el repricing queda al instante', async ({ page }) => {
+  await login(page)
+  let byIdCalls = 0
+  await page.route(`**/api/products/${idA}`, async (route) => {
+    byIdCalls++
+    if (byIdCalls === 1) { await route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }); return }
+    await route.continue()
+  })
+  await page.route('**/api/sales/*/price-mode', async (route) => {
+    await new Promise((r) => setTimeout(r, 8000))
+    await route.continue()
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto(`/pos?draft=${draftId}`)
+  const total = page.locator('[class*="totalUsdValue"]')
+  await expect(total).toHaveText('$15.00')
+  await expect.poll(() => byIdCalls, { timeout: 15_000 }).toBeGreaterThanOrEqual(2) // 1.º falló, el reintento llegó
+  await page.waitForTimeout(1500)
+
+  await page.getByRole('radio', { name: 'Divisa ($)' }).click()
+  await expect(total).toHaveText('$13.00', { timeout: 2000 })
 })

@@ -28,6 +28,9 @@ export interface ProductForPOS {
   stock: { net_qty: number }
 }
 
+/** Lo que hace falta de un producto para repreciar una línea: precios y tallas con su precio extra. */
+export type ProductPrices = Pick<ProductForPOS, 'id' | 'sale_mode' | 'price_per_unit_usd' | 'price_per_kg_usd' | 'wholesale_price_usd' | 'wholesale_price_per_kg_usd' | 'variants'>
+
 export interface ClientForPOS {
   id: number
   name: string
@@ -145,7 +148,7 @@ function resolverPrecio(
   return { price: bcv, source: 'bcv' }
 }
 
-const preciosBase = (p: ProductForPOS): { bcv: number; divisa: number | null } => ({
+const preciosBase = (p: ProductPrices): { bcv: number; divisa: number | null } => ({
   bcv:    (p.sale_mode === 'weight' ? p.price_per_kg_usd : p.price_per_unit_usd) ?? 0,
   divisa: (p.sale_mode === 'weight' ? p.wholesale_price_per_kg_usd : p.wholesale_price_usd) ?? null,
 })
@@ -369,10 +372,10 @@ export const cambiarModoPrecio = (ticket: TicketState, mode: PriceMode): TicketS
 }
 
 /**
- * Las líneas restauradas de un borrador llegan sin precios base. Con el producto del buscador del POS se completan
+ * Las líneas restauradas de un borrador llegan sin precios base. Con el producto (consultado por id) se completan
  * (sin tocar el precio actual) para que cambiar de modo las reprecie al instante, igual que las líneas nuevas.
  */
-export const hidratarPreciosBase = (ticket: TicketState, product: ProductForPOS): TicketState => {
+export const hidratarPreciosBase = (ticket: TicketState, product: ProductPrices): TicketState => {
   const base = preciosBase(product)
   const items = ticket.items.map((i): TicketItem => {
     if (i.product_id !== product.id || i.bcv_unit_usd !== undefined) return i

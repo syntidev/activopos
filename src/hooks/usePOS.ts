@@ -5,6 +5,7 @@ import {
   TicketState,
   TicketTotals,
   ProductForPOS,
+  ProductPrices,
   ClientForPOS,
   PaymentInput,
   SaleResult,
@@ -37,6 +38,47 @@ export interface PaymentMethod {
 }
 
 const FALLBACK_RATE = 36.50
+
+const HYDRATE_ATTEMPTS = 3
+const HYDRATE_RETRY_MS = 1000
+
+interface ProductDetailResponse {
+  product?: {
+    id: number
+    sale_mode: ProductPrices['sale_mode']
+    price_per_unit_usd: number | null
+    price_per_kg_usd: number | null
+    wholesale_price_usd: number | null
+    wholesale_price_per_kg_usd: number | null
+  }
+}
+
+/**
+ * Precios base de UN producto por id exacto: GET /api/products/{id} (+ /variants). Ese detalle es solo admin: al
+ * cajero (403) se le cae al buscador del POS y se filtra por id exacto. Devuelve null si falla (el llamador reintenta).
+ */
+async function fetchProductPrices(id: number, name: string): Promise<ProductPrices | null> {
+  try {
+    const res = await fetch(`/api/products/${id}`)
+    if (res.ok) {
+      const json = await res.json() as ProductDetailResponse
+      if (json.product?.id !== id) return null
+      const vres = await fetch(`/api/products/${id}/variants`)
+      const vjson = vres.ok ? await vres.json() as { variants?: Array<{ id: number; valor: string; precio_extra: number; stock?: number }> } : null
+      return {
+        ...json.product,
+        variants: (vjson?.variants ?? []).map(v => ({ id: v.id, valor: v.valor, precio_extra: Number(v.precio_extra), stock: v.stock ?? 0 })),
+      }
+    }
+    if (res.status !== 403) return null
+    const sres = await fetch(`/api/products/search?q=${encodeURIComponent(name.slice(0, 60))}&limit=50`)
+    if (!sres.ok) return null
+    const sjson = await sres.json() as { products?: ProductForPOS[] }
+    return sjson.products?.find(p => p.id === id) ?? null
+  } catch {
+    return null
+  }
+}
 
 export function usePOS() {
   const [rate, setRate]         = useState(FALLBACK_RATE)
@@ -160,23 +202,30 @@ export function usePOS() {
 
   // ── Acciones síncronas del ticket ──────────────────────────────────────────
 
-  // Líneas restauradas de un borrador: se completan sus precios base para poder repreciarlas al instante.
+  // Líneas restauradas de un borrador: se completan sus precios base (consulta por id exacto, con reintentos) para
+  // poder repreciarlas al instante. Un producto solo se da por hidratado cuando ya se tiene su precio base.
   const hydratedRef = useRef<Set<number>>(new Set())
+  const hydratingRef = useRef<Set<number>>(new Set())
   useEffect(() => {
     const pending = new Map<number, string>()
     for (const i of ticket.items) {
       const needsBase = i.bcv_unit_usd === undefined && i.price_override_original == null && i.price_source !== 'manual'
-      if (needsBase && !hydratedRef.current.has(i.product_id)) pending.set(i.product_id, i.product_name)
+      if (needsBase && !hydratedRef.current.has(i.product_id) && !hydratingRef.current.has(i.product_id)) pending.set(i.product_id, i.product_name)
     }
     pending.forEach((name, id) => {
-      hydratedRef.current.add(id)
-      fetch(`/api/products/search?q=${encodeURIComponent(name.slice(0, 60))}&limit=50`)
-        .then(res => (res.ok ? res.json() : null))
-        .then((json: { products?: ProductForPOS[] } | null) => {
-          const hit = json?.products?.find(p => p.id === id)
-          if (hit) setTicket(prev => hidratarPreciosBase(prev, hit))
-        })
-        .catch(() => { hydratedRef.current.delete(id) })
+      hydratingRef.current.add(id)
+      void (async () => {
+        for (let attempt = 0; attempt < HYDRATE_ATTEMPTS; attempt++) {
+          const product = await fetchProductPrices(id, name)
+          if (product) {
+            hydratedRef.current.add(id)
+            setTicket(prev => hidratarPreciosBase(prev, product))
+            break
+          }
+          await new Promise(r => setTimeout(r, HYDRATE_RETRY_MS * (attempt + 1)))
+        }
+        hydratingRef.current.delete(id)
+      })()
     })
   }, [ticket.items])
 

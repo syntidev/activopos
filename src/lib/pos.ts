@@ -359,13 +359,33 @@ export const overridePrecioItem = (
  */
 export const cambiarModoPrecio = (ticket: TicketState, mode: PriceMode): TicketState => {
   const items = ticket.items.map((i): TicketItem => {
-    if (i.price_override_original != null || i.bcv_unit_usd === undefined) return i
+    if (i.price_override_original != null || i.price_source === 'manual' || i.bcv_unit_usd === undefined) return i
     const { price, source } = resolverPrecio(i.bcv_unit_usd, i.divisa_unit_usd ?? null, mode)
     const unit = price + i.precio_extra_usd
     const { usd, bs } = calcularSubtotalItem(i.quantity, unit, ticket.rate)
     return { ...i, price_per_unit_usd: unit, price_source: source, subtotal_usd: usd, subtotal_bs: bs, discount_usd: Math.min(i.discount_usd, usd) }
   })
   return { ...ticket, price_mode: mode, items }
+}
+
+/**
+ * Las líneas restauradas de un borrador llegan sin precios base. Con el producto del buscador del POS se completan
+ * (sin tocar el precio actual) para que cambiar de modo las reprecie al instante, igual que las líneas nuevas.
+ */
+export const hidratarPreciosBase = (ticket: TicketState, product: ProductForPOS): TicketState => {
+  const base = preciosBase(product)
+  const items = ticket.items.map((i): TicketItem => {
+    if (i.product_id !== product.id || i.bcv_unit_usd !== undefined) return i
+    const variant = product.variants?.find(v => v.id === i.variant_id)
+    return {
+      ...i,
+      bcv_unit_usd:     base.bcv,
+      divisa_unit_usd:  base.divisa,
+      precio_extra_usd: variant ? Number(variant.precio_extra ?? 0) : i.precio_extra_usd,
+      variant_label:    i.variant_label || variant?.valor,
+    }
+  })
+  return { ...ticket, items }
 }
 
 /** Línea del `ticket` que devuelven PATCH /api/sales|orders/{id}/price-mode (sin costos). */

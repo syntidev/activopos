@@ -13,6 +13,7 @@ import {
   ServerPricedLine,
   limpiarTicket,
   cambiarModoPrecio,
+  hidratarPreciosBase,
   aplicarPreciosServidor,
   calcularTotales,
   agregarItem,
@@ -158,6 +159,26 @@ export function usePOS() {
   }, [search])
 
   // ── Acciones síncronas del ticket ──────────────────────────────────────────
+
+  // Líneas restauradas de un borrador: se completan sus precios base para poder repreciarlas al instante.
+  const hydratedRef = useRef<Set<number>>(new Set())
+  useEffect(() => {
+    const pending = new Map<number, string>()
+    for (const i of ticket.items) {
+      const needsBase = i.bcv_unit_usd === undefined && i.price_override_original == null && i.price_source !== 'manual'
+      if (needsBase && !hydratedRef.current.has(i.product_id)) pending.set(i.product_id, i.product_name)
+    }
+    pending.forEach((name, id) => {
+      hydratedRef.current.add(id)
+      fetch(`/api/products/search?q=${encodeURIComponent(name.slice(0, 60))}&limit=50`)
+        .then(res => (res.ok ? res.json() : null))
+        .then((json: { products?: ProductForPOS[] } | null) => {
+          const hit = json?.products?.find(p => p.id === id)
+          if (hit) setTicket(prev => hidratarPreciosBase(prev, hit))
+        })
+        .catch(() => { hydratedRef.current.delete(id) })
+    })
+  }, [ticket.items])
 
   const addProduct = useCallback((product: ProductForPOS, qty = 1) => {
     if (product.has_variants) {

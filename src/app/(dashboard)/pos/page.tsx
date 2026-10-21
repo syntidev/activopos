@@ -249,6 +249,9 @@ function POSView() {
           onPriceOverride={pos.overrideItemPrice}
           allowCashierPriceOverride={pos.allowCashierPriceOverride}
           pendingSaleActive={pos.pendingSaleId !== null}
+          onPriceMode={(mode) => { void pos.setPriceMode(mode, /^\d+$/.test(drafts.activeId) ? Number(drafts.activeId) : undefined) }}
+          priceModeBusy={pos.priceModeBusy}
+          priceModeError={pos.priceModeError}
         />
       </div>
 

@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Printer, MessageCircle, ArrowRight, X } from 'lucide-react'
 import styles from './SuccessTicketPanel.module.css'
 import { buildWhatsAppMessage, whatsappPickChatUrl } from '@/lib/whatsapp-message'
+import { PriceModeSwitch } from './PriceModeSwitch'
+import type { PriceMode } from '@/lib/pos'
 
 type PosMode = 'ticket' | 'invoice'
 
@@ -24,6 +26,8 @@ export interface SaleSummary {
   payment_method: string
   rate:           number
   items:          SaleItemForPanel[]
+  /** Modo de precio con el que se cobró; se muestra en solo lectura. */
+  price_mode?:    PriceMode
 }
 
 interface Props {
@@ -135,6 +139,7 @@ export function SuccessTicketPanel({ sale, businessName, onClose }: Props) {
             {isCredit ? 'Crédito registrado' : '¡Venta registrada!'}
           </h2>
           <p className={styles.ticketNum}>{sale.ticket_number}</p>
+          {sale.price_mode && <PriceModeSwitch mode={sale.price_mode} readOnly />}
 
           {/* ── Totals ── */}
           <div className={styles.totals}>

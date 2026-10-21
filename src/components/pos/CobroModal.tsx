@@ -252,6 +252,7 @@ export function CobroModal({
             payment_method: snapPaymentMethod,
             rate:           rate,
             items:          snapItems,
+            price_mode:     saleResult.price_mode,
           }}
           businessName={businessName}
           onClose={handleReset}

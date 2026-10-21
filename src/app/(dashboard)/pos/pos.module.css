@@ -681,6 +681,17 @@
 .totalRowCargo    { color: var(--color-warning-text); }
 .totalRowIva      { color: var(--color-info-text, var(--color-brand)); }
 
+/* Etiqueta pequeña junto al precio de la línea: precio manual o sin precio Divisa. */
+.itemTag {
+  flex-shrink: 0;
+  padding: 1px var(--space-1-5);
+  border: 1px solid var(--ctl-border-strong);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+}
+
 .totalMain { display: flex; flex-direction: column; gap: var(--space-1); }
 
 .totalMainRow {

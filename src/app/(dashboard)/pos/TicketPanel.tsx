@@ -9,7 +9,8 @@ import {
   Printer, ShoppingCart, Tag, Trash2, User,
 } from 'lucide-react'
 import { Button } from '@/components/ui'
-import type { TicketItem, TicketState, TicketTotals } from '@/lib/pos'
+import { PriceModeSwitch } from '@/components/pos/PriceModeSwitch'
+import type { PriceMode, TicketItem, TicketState, TicketTotals } from '@/lib/pos'
 import styles from './pos.module.css'
 
 interface TicketPanelProps {
@@ -30,6 +31,9 @@ interface TicketPanelProps {
   onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
   pendingSaleActive?: boolean
+  onPriceMode: (mode: PriceMode) => void
+  priceModeBusy?: boolean
+  priceModeError?: string
 }
 
 export function TicketPanel({
@@ -37,6 +41,7 @@ export function TicketPanel({
   onUpdateQty, onRemove, onClear, onSelectClient,
   onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo, onImprimirCuenta,
   userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive,
+  onPriceMode, priceModeBusy, priceModeError,
 }: TicketPanelProps) {
   const router = useRouter()
   const { discount_global_pct: discountPct, cargo_global_pct: cargoPct } = ticket
@@ -113,6 +118,13 @@ export function TicketPanel({
 
       {/* Totals */}
       <div className={styles.ticketTotals}>
+        <PriceModeSwitch
+          mode={ticket.price_mode}
+          onChange={onPriceMode}
+          busy={priceModeBusy}
+          error={priceModeError}
+          fallbackLines={ticket.items.filter(i => i.price_source === 'fallback_bcv').length}
+        />
         {(discountPct > 0 || cargoPct > 0 || ticket.iva_pct > 0) && (
           <div className={styles.totalBreakdown}>
             <div className={styles.totalRow}>
@@ -430,6 +442,12 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
               </>
             ) : (
               <>${item.price_per_unit_usd.toFixed(2)}/{item.unit_label}</>
+            )}
+            {(item.price_override_original != null || item.price_source === 'manual') && (
+              <span className={styles.itemTag}>Manual</span>
+            )}
+            {item.price_source === 'fallback_bcv' && item.price_override_original == null && (
+              <span className={styles.itemTag} title="Este producto no tiene precio Divisa: se cobra a precio BCV">Sin precio Divisa</span>
             )}
             <button
               ref={pencilRef}

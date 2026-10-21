@@ -53,9 +53,6 @@ export function TicketPanel({
         <button className={styles.clienteBtn} onClick={onSelectClient} aria-label="Seleccionar cliente">
           <User size={15} aria-hidden="true" />
           <span>{ticket.client_name || 'Cliente General'}</span>
-          {ticket.client_price_tier === 'mayorista' && (
-            <span className={styles.tierBadge}>Divisa</span>
-          )}
           <ChevronDown size={14} aria-hidden="true" />
         </button>
         <div className={styles.ticketActions}>

@@ -49,7 +49,7 @@ export function TicketPanel({
           <User size={15} aria-hidden="true" />
           <span>{ticket.client_name || 'Cliente General'}</span>
           {ticket.client_price_tier === 'mayorista' && (
-            <span className={styles.tierBadge}>Mayorista</span>
+            <span className={styles.tierBadge}>Divisa</span>
           )}
           <ChevronDown size={14} aria-hidden="true" />
         </button>

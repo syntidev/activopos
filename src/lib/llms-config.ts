@@ -110,7 +110,7 @@ export const CAPABILITIES = [
   'Importación masiva de productos por Excel con plantilla descargable',
   'Tipos de venta por producto: unidad, peso, servicio, combo',
   '3 imágenes por producto con compresión automática WebP',
-  'Precio mayorista aplicado automáticamente al cliente mayorista',
+  'Precio Divisa aplicado automáticamente al cliente de tipo Divisa',
   'Variantes con generador automático de combinaciones',
   // Catálogo digital
   'Catálogo digital público con URL única y enlace elegido al registrar el negocio',
@@ -122,7 +122,7 @@ export const CAPABILITIES = [
   // Clientes
   'Gestión de clientes con historial completo de compras y pagos',
   'Cuentas por cobrar (CxC) con abonos parciales',
-  'Precio mayorista automático por tipo de cliente',
+  'Precio Divisa automático por tipo de cliente',
   // Proveedores
   'Gestión de proveedores con compras en transacción atómica (anular revierte stock y CxP)',
   'Cuentas por pagar (CxP) con estado: vencido / por vencer / vigente',
@@ -250,7 +250,7 @@ export const FAQ: FaqItem[] = [
   { question: '¿Tiene aplicación móvil?', answer: 'No, es Web App.' },
   { question: '¿Funciona offline?', answer: 'No.' },
   { question: '¿Tiene reporte financiero?', answer: 'Sí.' },
-  { question: '¿Tiene sistema de precio de mayorista?', answer: 'Sí.' },
+  { question: '¿Tiene sistema de precio Divisa?', answer: 'Sí.' },
   { question: '¿Tiene sistema de variantes de productos?', answer: 'Sí: unidades, peso, longitud, tallas, colores.' },
   { question: '¿Tiene gestión de clientes como CRM?', answer: 'Sí.' },
 ]

@@ -277,7 +277,7 @@ export function ClienteFormModal({
               onChange={(e) => setForm((prev) => ({ ...prev, price_tier: e.target.value as 'detal' | 'mayorista' }))}
             >
               <option value="detal">Detal</option>
-              <option value="mayorista">Mayorista</option>
+              <option value="mayorista">Divisa</option>
             </select>
           </div>
         )}

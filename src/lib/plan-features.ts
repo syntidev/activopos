@@ -81,7 +81,7 @@ export const NEGOCIO_CATEGORIES: FeatureCategoryGroup[] = [
     label:    FEATURE_CATEGORY_LABEL.clientes,
     items: [
       'Historial y cuentas por cobrar',
-      'Precio mayorista por cliente',
+      'Precio Divisa por cliente',
     ],
   },
   {

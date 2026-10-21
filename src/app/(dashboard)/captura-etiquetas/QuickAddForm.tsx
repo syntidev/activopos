@@ -94,9 +94,9 @@ export function QuickAddForm({ code, values, context, busy, canSave, onChange, o
 
       <div className={styles.twoCols}>
         <PriceField label="Precio al público (USD)" value={values.price} rate={context.rate} onChange={v => onChange({ price: v })} />
-        <PriceField label="Precio al mayor (USD)" value={values.wholesale} rate={context.rate} onChange={v => onChange({ wholesale: v })} />
+        <PriceField label="Precio Divisa (USD)" value={values.wholesale} rate={context.rate} onChange={v => onChange({ wholesale: v })} />
       </div>
-      {wholesaleAbovePublic && <p className={styles.warning} role="status">El precio al mayor es más alto que el del público. Revisa los precios.</p>}
+      {wholesaleAbovePublic && <p className={styles.warning} role="status">El precio Divisa es más alto que el del público. Revisa los precios.</p>}
 
       <div className={base.sheetActions}>
         <button type="button" className={base.secondaryButton} disabled={busy} onClick={onCancel}>Otro código</button>

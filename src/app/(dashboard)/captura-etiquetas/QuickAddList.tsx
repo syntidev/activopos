@@ -54,7 +54,7 @@ function ItemRow({ item, rate, onSave }: RowProps) {
       <span className={base.rowMeta}>{item.barcode} · cargadas aquí: {item.added} · stock: {item.stock}</span>
       <div className={styles.itemPrices}>
         <PriceLine label="Público" usd={item.price_usd} rate={rate} />
-        <PriceLine label="Mayor" usd={item.wholesale_usd} rate={rate} />
+        <PriceLine label="Divisa" usd={item.wholesale_usd} rate={rate} />
       </div>
       {!editing && (
         <button type="button" className={base.chip} onClick={() => setEditing(true)}>Corregir</button>
@@ -65,7 +65,7 @@ function ItemRow({ item, rate, onSave }: RowProps) {
             <input className={base.input} value={added} inputMode="numeric" onChange={e => setAdded(e.target.value.replace(/\D/g, ''))} /></label>
           <label className={base.field}><span className={base.label}>Público (USD)</span>
             <input className={base.input} value={price} inputMode="decimal" onChange={e => setPrice(e.target.value)} /></label>
-          <label className={base.field}><span className={base.label}>Mayor (USD)</span>
+          <label className={base.field}><span className={base.label}>Divisa (USD)</span>
             <input className={base.input} value={wholesale} inputMode="decimal" onChange={e => setWholesale(e.target.value)} /></label>
           {error && <p className={base.error}>{error}</p>}
           <div className={base.sheetActions}>

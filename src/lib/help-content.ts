@@ -176,8 +176,8 @@ export const helpContent = {
         body:  'Activa el toggle Variantes, elige el preset (talla, color, sabor + tamaño o combinado) y el generador crea automáticamente todas las combinaciones con su stock individual.',
       },
       {
-        title: 'Configura el precio mayorista',
-        body:  'Si tienes clientes con tier mayorista, el sistema aplica automáticamente el precio correspondiente según el tipo de cliente en el POS.',
+        title: 'Configura el precio Divisa',
+        body:  'Si tienes clientes de tipo Divisa, el sistema aplica automáticamente el precio correspondiente según el tipo de cliente en el POS.',
       },
       {
         title: 'Configura visibilidad en catálogo',
@@ -210,8 +210,8 @@ export const helpContent = {
         a: 'Marca el tipo Peso al crear el producto. En el POS, el cajero ingresa los kilos (con decimales) en vez de unidades enteras.',
       },
       {
-        q: '¿Qué es el precio mayorista?',
-        a: 'Un precio distinto que se aplica automáticamente en el POS cuando vendes a un cliente marcado como mayorista en su ficha.',
+        q: '¿Qué es el precio Divisa?',
+        a: 'Un precio distinto que se aplica automáticamente en el POS cuando vendes a un cliente marcado como Divisa en su ficha.',
       },
       {
         q: '¿Qué es "Visible en catálogo"?',
@@ -409,7 +409,7 @@ export const helpContent = {
       },
       {
         title: 'Configura el tier de precio',
-        body:  'Marca si el cliente es mayorista para que el POS le aplique automáticamente el precio mayorista de cada producto.',
+        body:  'Marca si el cliente es de tipo Divisa para que el POS le aplique automáticamente el precio Divisa de cada producto.',
       },
       {
         title: 'Vende a crédito',
@@ -446,7 +446,7 @@ export const helpContent = {
         a: 'Sí, con abonos parciales. El saldo se actualiza con cada pago registrado.',
       },
       {
-        q: '¿Qué es el precio mayorista de un cliente?',
+        q: '¿Qué es el precio Divisa de un cliente?',
         a: 'Un tier configurado en su ficha que hace que el POS le aplique automáticamente un precio distinto al de detal.',
       },
     ],

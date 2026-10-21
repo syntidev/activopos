@@ -96,7 +96,7 @@ const INVENTARIO_ITEMS: FeatureItem[] = [
   { Icon: ClipboardList, text: 'Consumo interno con nota (control de merma)' },
   { Icon: History,       text: 'Historial completo de movimientos con exportación a Excel' },
   { Icon: Shuffle,       text: 'Variantes con generador automático de combinaciones' },
-  { Icon: Warehouse,     text: 'Precio mayorista automático por tipo de cliente' },
+  { Icon: Warehouse,     text: 'Precio Divisa automático por tipo de cliente' },
 ]
 
 const FINANZAS_ITEMS: FeatureItem[] = [

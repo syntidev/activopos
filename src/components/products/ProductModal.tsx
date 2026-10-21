@@ -1307,18 +1307,18 @@ export function ProductModal({
 
                   <div className={mStyles.divider} />
 
-                  {/* ── Precio Mayorista (colapsable, opcional) ── */}
+                  {/* ── Precio Divisa (colapsable, opcional) ── */}
                   <div className={styles.fixedPriceRow}>
                     <div className={styles.fixedPriceLabel}>
                       <Warehouse size={14} className={styles.toggleIcon} aria-hidden="true" />
                       <div>
-                        <span className={styles.fixedPriceTitle}>Precio Mayorista</span>
+                        <span className={styles.fixedPriceTitle}>Precio Divisa</span>
                         <span className={styles.fixedPriceSub}>
-                          Precio especial para clientes con tier &ldquo;Mayorista&rdquo;
+                          Precio en dólares directo para clientes de tipo &ldquo;Divisa&rdquo;
                         </span>
                       </div>
                     </div>
-                    <label className={styles.toggle} aria-label="Mostrar precio mayorista">
+                    <label className={styles.toggle} aria-label="Mostrar precio Divisa">
                       <input
                         type="checkbox"
                         className={styles.toggleInput}
@@ -1333,7 +1333,7 @@ export function ProductModal({
                   {showWholesale && (
                     <div className={mStyles.formGroup}>
                       <label className={mStyles.label} htmlFor="pm-wholesale">
-                        Precio Mayorista {saleMode === 'weight' ? `por ${unitLabel}` : 'Unitario'} ($)
+                        Precio Divisa {saleMode === 'weight' ? `por ${unitLabel}` : 'Unitario'} ($)
                       </label>
                       <div className={styles.inputPrefix}>
                         <span className={styles.prefixSymbol}>$</span>
@@ -1364,7 +1364,7 @@ export function ProductModal({
                         )}
                       </div>
                       <p className={styles.fixedPriceSub}>
-                        Vacío = sin precio mayorista, se cobra el precio de venta normal.
+                        Vacío = sin precio Divisa, se cobra el precio de venta normal.
                       </p>
                     </div>
                   )}

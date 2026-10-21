@@ -57,7 +57,7 @@ const ROW1: FeatureCard[] = [
   { key: 'catalogo', Icon: Store, pattern: 'acumulador', color: 'brandDark', size: 'sq', title: 'Catálogo Digital', desc: 'Tu vitrina, abierta las 24 horas.' },
   {
     key: 'mayorista', Icon: Warehouse, pattern: 'giro', color: 'brandSoft', size: 'rect',
-    title: 'Precio Mayorista', desc: 'Un precio para el cliente, otro para el mayorista.',
+    title: 'Precio Divisa', desc: 'Un precio en bolívares, otro en dólares directos.',
     giroFaces: ['$10.00', '$8.00'],
   },
   { key: 'inventario', Icon: Boxes, pattern: 'acumulador', size: 'sq', title: 'Inventario', desc: 'Sabes qué tienes, sin contar a mano.' },

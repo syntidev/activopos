@@ -9,7 +9,11 @@ import {
   PaymentInput,
   SaleResult,
   QuoteOptions,
+  PriceMode,
+  ServerPricedLine,
   limpiarTicket,
+  cambiarModoPrecio,
+  aplicarPreciosServidor,
   calcularTotales,
   agregarItem,
   agregarItemConVariante,
@@ -43,6 +47,8 @@ export function usePOS() {
   const [cajaStatus, setCajaStatus]       = useState<'open' | 'closed' | 'loading'>('loading')
   const [paymentMethods, setPaymentMethods]                 = useState<PaymentMethod[]>([])
   const [allowCashierPriceOverride, setAllowCashierPriceOverride] = useState(false)
+  const [priceModeBusy, setPriceModeBusy]   = useState(false)
+  const [priceModeError, setPriceModeError] = useState('')
 
   /* ── Modal visibility ── */
   const [showCobro, setShowCobro]               = useState(false)
@@ -226,6 +232,37 @@ export function usePOS() {
     }))
   }, [])
 
+  /**
+   * Cambia el modo de precio: el ticket se reprecia al instante en el cliente y, si la venta ya existe en el
+   * servidor (pendiente o borrador), PATCH .../price-mode devuelve los precios autoritativos. Si el servidor
+   * rechaza (409: ya cobrada), se revierte y se muestra su mensaje tal cual.
+   */
+  const setPriceMode = useCallback(async (mode: PriceMode, draftId?: number): Promise<void> => {
+    const previous = ticket.price_mode
+    if (mode === previous) return
+    setPriceModeError('')
+    setTicket(prev => cambiarModoPrecio(prev, mode))
+    const saleId = pendingSaleId ?? draftId
+    if (saleId === undefined || saleId === null) return
+    setPriceModeBusy(true)
+    try {
+      const res  = await fetch(`/api/sales/${saleId}/price-mode`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ price_mode: mode }),
+      })
+      const data = await res.json().catch(() => null) as { ticket?: { items: ServerPricedLine[] }; error?: string } | null
+      if (!res.ok || !data?.ticket) throw new Error(data?.error ?? 'No se pudo cambiar el modo de precio.')
+      const lines = data.ticket.items
+      setTicket(prev => aplicarPreciosServidor(prev, mode, lines))
+    } catch (err) {
+      setTicket(prev => cambiarModoPrecio(prev, previous))
+      setPriceModeError(err instanceof Error ? err.message : 'No se pudo cambiar el modo de precio.')
+    } finally {
+      setPriceModeBusy(false)
+    }
+  }, [ticket.price_mode, pendingSaleId])
+
   const clearTicket = useCallback(() => {
     setTicket(limpiarTicket(rate, ivaPct))
     setPendingSaleId(null)
@@ -259,6 +296,7 @@ export function usePOS() {
         client_cedula: clientCedula || undefined,
         notes:        currentTicket.notes || options?.notes || undefined,
         iva_pct:      currentTicket.iva_pct || undefined,
+        price_mode:   currentTicket.price_mode,
         payments,
         due_date:     creditTerms?.due_date?.toISOString(),
         credit_days:  creditTerms?.credit_days,
@@ -276,6 +314,7 @@ export function usePOS() {
       status:        data.sale.status,
       total_usd:     Number(data.sale.total_usd),
       total_bs:      Number(data.sale.total_bs),
+      price_mode:    data.sale.price_mode === 'divisa' ? 'divisa' : 'bcv',
     }
   }
 
@@ -312,6 +351,7 @@ export function usePOS() {
         status:        data.sale.status,
         total_usd:     Number(data.sale.total_usd),
         total_bs:      Number(data.sale.total_bs),
+        price_mode:    data.sale.price_mode === 'divisa' ? 'divisa' : 'bcv',
       }
     } else {
       result = await postSale(ticket, 'paid', 'pos', payments, undefined, undefined, clientCedula)
@@ -376,6 +416,9 @@ export function usePOS() {
     updateQty,
     removeItem,
     overrideItemPrice,
+    setPriceMode,
+    priceModeBusy,
+    priceModeError,
     applyDiscount,
     applyDiscountWithPin,
     applyCargo,

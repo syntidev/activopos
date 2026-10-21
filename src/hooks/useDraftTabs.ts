@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { limpiarTicket } from '@/lib/pos'
-import type { TicketState, TicketItem } from '@/lib/pos'
+import type { TicketState, TicketItem, PriceMode, PriceSource } from '@/lib/pos'
 import type { SaleMode } from '@/types/products'
 
 export interface DraftTab {
@@ -30,6 +30,7 @@ interface ApiDraftItem {
   rate_used:          number
   discount_usd:       number
   variant_id?:        number | null
+  price_source?:      PriceSource | null
 }
 
 interface ApiDraft {
@@ -40,6 +41,7 @@ interface ApiDraft {
   client_id:    number | null
   client_name:  string | null
   client_phone: string | null
+  price_mode?:  PriceMode
   items:        ApiDraftItem[]
 }
 
@@ -62,6 +64,7 @@ function draftToTicketState(draft: ApiDraft, rate: number, ivaPct: number): Tick
       variant_id:         item.variant_id ?? undefined,
       variant_label:      '',
       precio_extra_usd:   0,
+      price_source:       item.price_source ?? undefined,
     })),
     // El draft guarda el cliente (una cotización convertida lo trae desde
     // quotations/[id]/convert). Descartarlo obligaba al cajero a volver a
@@ -74,6 +77,7 @@ function draftToTicketState(draft: ApiDraft, rate: number, ivaPct: number): Tick
     cargo_global_pct:    0,
     iva_pct:             ivaPct,
     status:              'open',
+    price_mode:          draft.price_mode === 'divisa' ? 'divisa' : 'bcv',
     rate,
   }
 }
@@ -116,6 +120,7 @@ function patchDraft(draftId: string, ticket: TicketState, label?: string): void 
     body:    JSON.stringify({
       items: ticketToApiItems(ticket),
       notes: ticket.notes || undefined,
+      price_mode: ticket.price_mode,
       ...(label !== undefined ? { label } : {}),
     }),
   }).catch(() => {})

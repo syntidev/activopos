@@ -4,6 +4,11 @@ import type { SaleMode } from '@/types/products'
 
 export type ClientPriceTier = 'detal' | 'mayorista'
 
+/** Modo de precio del ticket (contrato .doc/CONTRATO_PRECIO_DIVISA.md): bcv = precio de venta en Bs, divisa = dólar directo. */
+export type PriceMode = 'bcv' | 'divisa'
+/** Origen del precio de una línea; 'fallback_bcv' = se pidió Divisa pero el producto no tiene precio Divisa. */
+export type PriceSource = 'bcv' | 'divisa' | 'manual' | 'fallback_bcv'
+
 export interface ProductForPOS {
   id: number
   name: string
@@ -48,6 +53,7 @@ export interface SaleResult {
   status: 'quote' | 'pending' | 'paid' | 'credit'
   total_usd: number
   total_bs: number
+  price_mode?: PriceMode
 }
 
 // ── Ticket ────────────────────────────────────────────────────────────────────
@@ -69,6 +75,11 @@ export interface TicketItem {
   precio_extra_usd: number
   price_override_original?: number  // original price before manual override
   override_reason?: string
+  /** Origen del precio aplicado (la línea con precio manual no cambia al cambiar el modo). */
+  price_source?: PriceSource
+  /** Precios base del producto (sin precio_extra) para repricing instantáneo; ausentes en líneas restauradas de un borrador. */
+  bcv_unit_usd?: number
+  divisa_unit_usd?: number | null
 }
 
 export interface TicketState {
@@ -84,6 +95,8 @@ export interface TicketState {
   // cliente mayorista; sin ese wiring el carrito muestra detal, pero el SERVER
   // (sales/route.ts) ya cobra mayorista de forma autoritativa por su cuenta.
   client_price_tier?: ClientPriceTier
+  /** Modo de precio del ticket; el servidor lo recibe siempre explícito (el tier del cliente ya no decide el precio). */
+  price_mode: PriceMode
   notes: string
   discount_global_pct: number
   cargo_global_pct: number
@@ -118,14 +131,24 @@ interface SaleApiItem {
 const round2 = (n: number) => Math.round(n * 100) / 100
 const round4 = (n: number) => Math.round(n * 10000) / 10000
 
-const effectivePrice = (p: ProductForPOS, tier?: ClientPriceTier): number => {
-  const retail = (p.sale_mode === 'weight' ? p.price_per_kg_usd : p.price_per_unit_usd) ?? 0
-  if (tier === 'mayorista') {
-    const wholesale = (p.sale_mode === 'weight' ? p.wholesale_price_per_kg_usd : p.wholesale_price_usd) ?? 0
-    if (wholesale > 0) return wholesale
+/** Precio base de un producto en el modo del ticket; Divisa sin precio Divisa cae a BCV y lo marca. */
+function resolverPrecio(
+  bcv: number,
+  divisa: number | null,
+  mode: PriceMode,
+): { price: number; source: PriceSource } {
+  if (mode === 'divisa') {
+    return divisa != null && divisa > 0
+      ? { price: divisa, source: 'divisa' }
+      : { price: bcv, source: 'fallback_bcv' }
   }
-  return retail
+  return { price: bcv, source: 'bcv' }
 }
+
+const preciosBase = (p: ProductForPOS): { bcv: number; divisa: number | null } => ({
+  bcv:    (p.sale_mode === 'weight' ? p.price_per_kg_usd : p.price_per_unit_usd) ?? 0,
+  divisa: (p.sale_mode === 'weight' ? p.wholesale_price_per_kg_usd : p.wholesale_price_usd) ?? null,
+})
 
 // ── Cálculos puros ────────────────────────────────────────────────────────────
 
@@ -170,9 +193,13 @@ export const agregarItem = (
   const existing = ticket.items.find(i => i.product_id === product.id && !i.variant_id)
   if (existing) return actualizarCantidad(ticket, product.id, existing.quantity + qty)
 
-  const price = effectivePrice(product, ticket.client_price_tier)
+  const base = preciosBase(product)
+  const { price, source } = resolverPrecio(base.bcv, base.divisa, ticket.price_mode)
   const { usd, bs } = calcularSubtotalItem(qty, price, ticket.rate)
   const item: TicketItem = {
+    price_source:     source,
+    bcv_unit_usd:     base.bcv,
+    divisa_unit_usd:  base.divisa,
     product_id:       product.id,
     product_name:     product.name,
     sale_mode:        product.sale_mode,
@@ -202,11 +229,15 @@ export const agregarItemConVariante = (
     return actualizarCantidadVariante(ticket, product.id, variant.id, existing.quantity + qty)
   }
 
-  const basePrice  = effectivePrice(product, ticket.client_price_tier)
-  const totalPrice = basePrice + variant.price_extra_usd
+  const base       = preciosBase(product)
+  const resolved   = resolverPrecio(base.bcv, base.divisa, ticket.price_mode)
+  const totalPrice = resolved.price + variant.price_extra_usd
   const { usd, bs } = calcularSubtotalItem(qty, totalPrice, ticket.rate)
 
   const item: TicketItem = {
+    price_source:     resolved.source,
+    bcv_unit_usd:     base.bcv,
+    divisa_unit_usd:  base.divisa,
     product_id:       product.id,
     product_name:     product.name,
     sale_mode:        product.sale_mode,
@@ -290,6 +321,7 @@ export const limpiarTicket = (rate: number, ivaPct = 0): TicketState => ({
   cargo_global_pct: 0,
   iva_pct: ivaPct,
   status: 'open',
+  price_mode: 'bcv',
   rate,
 })
 
@@ -310,12 +342,56 @@ export const overridePrecioItem = (
       ...i,
       price_override_original: i.price_override_original ?? i.price_per_unit_usd,
       override_reason:         reason,
+      price_source:            'manual' as const,
       price_per_unit_usd:      newPrice,
       subtotal_usd:            usd,
       subtotal_bs:             bs,
     }
   })
   return { ...ticket, items }
+}
+
+// ── Modo de precio ────────────────────────────────────────────────────────────
+
+/**
+ * Cambia el modo del ticket y reprecia al instante las líneas cuyo precio base se conoce.
+ * Las líneas con precio manual no cambian; los descuentos por línea (montos absolutos) se conservan sin pasar del subtotal.
+ */
+export const cambiarModoPrecio = (ticket: TicketState, mode: PriceMode): TicketState => {
+  const items = ticket.items.map((i): TicketItem => {
+    if (i.price_override_original != null || i.bcv_unit_usd === undefined) return i
+    const { price, source } = resolverPrecio(i.bcv_unit_usd, i.divisa_unit_usd ?? null, mode)
+    const unit = price + i.precio_extra_usd
+    const { usd, bs } = calcularSubtotalItem(i.quantity, unit, ticket.rate)
+    return { ...i, price_per_unit_usd: unit, price_source: source, subtotal_usd: usd, subtotal_bs: bs, discount_usd: Math.min(i.discount_usd, usd) }
+  })
+  return { ...ticket, price_mode: mode, items }
+}
+
+/** Línea del `ticket` que devuelven PATCH /api/sales|orders/{id}/price-mode (sin costos). */
+export interface ServerPricedLine {
+  product_id:         number
+  variant_id:         number | null
+  price_per_unit_usd: number
+  price_source:       PriceSource
+  discount_usd:       number
+  subtotal_usd:       number
+}
+
+/** Aplica los precios autoritativos del servidor a las líneas del ticket local (mismo producto + variante). */
+export const aplicarPreciosServidor = (
+  ticket: TicketState,
+  mode: PriceMode,
+  lines: ReadonlyArray<ServerPricedLine>,
+): TicketState => {
+  const items = ticket.items.map((i): TicketItem => {
+    const hit = lines.find(l => l.product_id === i.product_id && (l.variant_id ?? undefined) === i.variant_id)
+    if (!hit) return i
+    const unit = Number(hit.price_per_unit_usd)
+    const { usd, bs } = calcularSubtotalItem(i.quantity, unit, ticket.rate)
+    return { ...i, price_per_unit_usd: unit, price_source: hit.price_source, subtotal_usd: usd, subtotal_bs: bs }
+  })
+  return { ...ticket, price_mode: mode, items }
 }
 
 // ── Conversión al payload de la API ───────────────────────────────────────────

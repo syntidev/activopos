@@ -23,6 +23,9 @@ import { ShippingActions } from '@/components/comprobante/ShippingActions'
 import { ShippingEditor, CedulaAlertBadge, ShippingMethodTag } from '@/components/comprobante/ShippingEditor'
 import type { OrderShippingFields } from '@/types/pedidos'
 import { OrderDetalleModal, type OrderDetail } from './OrderDetalleModal'
+import { FinancingBadge } from '@/components/financing/FinancingBadge'
+import { financingFromColumns } from '@/lib/financing-ui'
+import type { FinancingColumns } from '@/types/financing'
 import styles from './pedidos.module.css'
 
 /* ── Types ── */
@@ -36,7 +39,7 @@ interface OrderItem {
   subtotal_usd: number | string
 }
 
-interface Order extends OrderShippingFields {
+interface Order extends OrderShippingFields, FinancingColumns {
   id: number
   order_number: string
   status: string
@@ -182,6 +185,8 @@ function OrderCard({
       </div>
 
       <CedulaAlertBadge show={order.cedula_alert} />
+
+      {financingFromColumns(order) && <FinancingBadge financing={financingFromColumns(order)!} />}
 
       {order.delivery_type === 'delivery' && (
         <>
@@ -474,7 +479,15 @@ function PedidosContent() {
     setOrders((prev) =>
       prev.map((o) =>
         o.id === updated.id
-          ? { ...o, total_usd: updated.total_usd, total_bs: updated.total_bs, items: updated.items }
+          ? {
+              ...o,
+              total_usd: updated.total_usd,
+              total_bs: updated.total_bs,
+              items: updated.items,
+              financing_status: updated.financing_status,
+              financing_provider: updated.financing_provider,
+              financing_phrase: updated.financing_phrase,
+            }
           : o
       )
     )

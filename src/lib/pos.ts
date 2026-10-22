@@ -1,4 +1,5 @@
 import type { SaleMode } from '@/types/products'
+import type { TicketFinancing } from '@/types/financing'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
@@ -100,6 +101,8 @@ export interface TicketState {
   client_price_tier?: ClientPriceTier
   /** Modo de precio del ticket; el servidor lo recibe siempre explícito (el tier del cliente ya no decide el precio). */
   price_mode: PriceMode
+  /** Cashea declarado en el ticket (null/undefined = no usa financiamiento). */
+  financing?: TicketFinancing | null
   notes: string
   discount_global_pct: number
   cargo_global_pct: number

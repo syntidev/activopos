@@ -1,3 +1,5 @@
+import type { FinancingColumns } from '@/types/financing'
+
 // Datos del pedido que necesita el modal de cobro (subconjunto de la fila del Kanban).
 export interface CobrarPedidoItem {
   product_name: string
@@ -22,7 +24,7 @@ export interface OrderShippingFields {
   cedula_alert?:     boolean
 }
 
-export interface CobrarPedidoData extends OrderShippingFields {
+export interface CobrarPedidoData extends OrderShippingFields, FinancingColumns {
   id:           number
   order_number: string
   client_name:  string | null

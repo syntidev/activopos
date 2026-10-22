@@ -88,8 +88,8 @@ test('borrador restaurado: cambiar a Divisa reprecia al instante, aunque el serv
     await route.continue()
   })
   await page.setViewportSize({ width: 1440, height: 900 })
-  // La hidratación pide por id exacto cada producto (+ sus tallas): se espera a que terminen, sin tiempos fijos.
-  const hydrated = Promise.all([idA, idB].map((id) => page.waitForResponse((r) => r.url().endsWith(`/api/products/${id}/variants`))))
+  // La hidratación pide los productos del borrador en UNA consulta por ids: se espera a que termine, sin tiempos fijos.
+  const hydrated = page.waitForResponse((r) => r.url().includes('/api/products/search?id='))
   await page.goto(`/pos?draft=${draftId}`)
   const total = page.locator('[class*="totalUsdValue"]')
   await expect(total).toHaveText('$15.00')
@@ -101,10 +101,10 @@ test('borrador restaurado: cambiar a Divisa reprecia al instante, aunque el serv
   await expect(page.getByText('Sin precio Divisa', { exact: true }).first()).toBeVisible({ timeout: 2000 })
 })
 
-test('hidratación por id exacto: si el primer intento falla se reintenta y el repricing queda al instante', async ({ page }) => {
+test('hidratación por ids: si el primer intento falla se reintenta y el repricing queda al instante', async ({ page }) => {
   await login(page)
   let byIdCalls = 0
-  await page.route(`**/api/products/${idA}`, async (route) => {
+  await page.route('**/api/products/search?id=*', async (route) => {
     byIdCalls++
     if (byIdCalls === 1) { await route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }); return }
     await route.continue()

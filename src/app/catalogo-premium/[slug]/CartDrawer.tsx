@@ -7,6 +7,9 @@ import { useCart } from './CartContext'
 import { fmtUsd, fmtBs, isValidVePhone, currencyVisibility } from './catalogUtils'
 import type { PaymentMethod } from './CatalogoGrid'
 import { checkCedula } from '@/lib/cedula'
+import { CheckoutPaymentKind } from '@/components/catalog/CheckoutPaymentKind'
+import { useCheckoutFinancing } from '@/components/catalog/CheckoutFinancing'
+import type { PaymentKind } from '@/types/financing'
 import { validateShipping } from '@/lib/shipping'
 import type { PublicShippingMethod, SavedAddressResponse } from '@/types/shipping'
 import styles from './catalogo.module.css'
@@ -69,11 +72,20 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
   const [cPhone,         setCPhone]         = useState('')
   const [phoneError,     setPhoneError]     = useState(false)
   const [cRef,           setCRef]           = useState('')
-  const [cPayment,       setCPayment]       = useState(paymentMethods[0]?.name ?? '')
+  // Métodos normales: la financiadora se elige con Cashea (forma de pago), no como un método más.
+  const regularMethods = paymentMethods.filter(pm => !pm.is_financing)
+  const [cPayment,       setCPayment]       = useState(regularMethods[0]?.name ?? '')
+  const [cKind,          setCKind]          = useState<PaymentKind>('bs')
+  const { financing, excludedIds } = useCheckoutFinancing()
   const [cCedula,        setCCedula]        = useState('')
   const [cedulaError,    setCedulaError]    = useState<string | null>(null)
   // Financiadora = campo is_financing del método elegido (nunca el nombre).
-  const financingMethod = paymentMethods.find(pm => pm.name === cPayment && pm.is_financing) ?? null
+  const casheaName = paymentMethods.find(pm => pm.is_financing)?.name ?? financing?.name ?? 'Cashea'
+  const isCashea = cKind === 'cashea' && financing !== null
+  const financingMethod = isCashea ? { name: casheaName } : null
+  const effectivePayment = isCashea ? casheaName : cPayment
+  // Productos del carrito que no aplican a Cashea (se avisa antes del 409).
+  const blockedNames = Array.from(new Set(cart.filter(i => excludedIds.includes(i.product_id)).map(i => i.name)))
   const [checkoutStep,    setCheckoutStep]    = useState<1 | 2 | 3>(1)
   const [deliveryType,    setDeliveryType]    = useState<'pickup' | 'delivery'>('pickup')
   const [recipientName,   setRecipientName]   = useState('')
@@ -206,7 +218,8 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
   }
 
   const handleCheckout = async () => {
-    if (!cName.trim() || !cPhone.trim() || !cPayment.trim() || cart.length === 0) return
+    if (!cName.trim() || !cPhone.trim() || !effectivePayment.trim() || cart.length === 0) return
+    if (isCashea && blockedNames.length > 0) return
     if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
     if (deliveryType === 'delivery' && hasZones && zoneIdx < 0) return
     const isDelivery = deliveryType === 'delivery'
@@ -257,7 +270,8 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           customer_name:      cName.trim(),
           customer_phone:     cPhone.trim(),
           customer_reference: referenceWithZone,
-          payment_method:     cPayment,
+          payment_method:     effectivePayment,
+          payment_kind:       isCashea ? 'cashea' : cKind,
           customer_cedula:    cedulaCheck.value,
           delivery_type:      deliveryType,
           recipient_name:     recipientName.trim() || null,
@@ -285,7 +299,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           setCheckoutOpen(false)
           setCartOpen(false)
           setCName(''); setCPhone(''); setCRef(''); setCCedula(''); setCedulaError(null)
-          setCPayment(paymentMethods[0]?.name ?? '')
+          setCPayment(regularMethods[0]?.name ?? ''); setCKind('bs')
           setZoneIdx(-1)
           setCheckoutStep(1); setDeliveryType('pickup'); setRecipientName(''); setDeliveryAddress('')
           setMethodId(null); setHasSaved(false); setUseSaved(false); setBranchOffice('')
@@ -780,9 +794,17 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                 <p className={styles.checkoutStepLabel}>Paso 3</p>
                 <h3 className={styles.checkoutStepTitle}>Método de pago</h3>
 
-                {paymentMethods.length > 0 && (
+                <CheckoutPaymentKind
+                  kind={isCashea ? 'cashea' : cKind}
+                  onChange={(k) => { setCKind(k); setCedulaError(null) }}
+                  financing={financing}
+                  blockedNames={blockedNames}
+                  disabled={submitting}
+                />
+
+                {!isCashea && regularMethods.length > 0 && (
                   <div className={styles.paymentCards}>
-                    {paymentMethods.map(pm => (
+                    {regularMethods.map(pm => (
                       <button
                         key={pm.id}
                         type="button"
@@ -839,8 +861,8 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                     <span className={styles.checkoutSummaryLabel}>Total</span>
                     <span className={styles.checkoutSummaryValue}>
                       {[
-                        showUsd ? fmtUsd(checkoutTotalUsd) : null,
-                        showBs  ? fmtBs(checkoutTotalUsd * rate) : null,
+                        showUsd || isCashea ? fmtUsd(checkoutTotalUsd) : null,
+                        showBs  || isCashea ? fmtBs(checkoutTotalUsd * rate) : null,
                       ].filter(Boolean).join(' · ')}
                     </span>
                   </div>
@@ -859,7 +881,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                     data-testid="checkout-submit"
                     className={styles.sendBtn}
                     onClick={handleCheckout}
-                    disabled={submitting || !cPayment || cart.length === 0}
+                    disabled={submitting || !effectivePayment || cart.length === 0 || (isCashea && blockedNames.length > 0)}
                   >
                     <MessageCircle size={16} aria-hidden="true" />
                     {submitting ? 'Enviando…' : 'Enviar por WhatsApp'}

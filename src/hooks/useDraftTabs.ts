@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { limpiarTicket } from '@/lib/pos'
 import type { TicketState, TicketItem, PriceMode, PriceSource } from '@/lib/pos'
 import type { SaleMode } from '@/types/products'
+import type { FinancingColumns } from '@/types/financing'
+import { financingFromColumns } from '@/lib/financing-ui'
 
 export interface DraftTab {
   id:       string   // DB Sale.id as string, or 'local-{ts}' when API unavailable
@@ -33,7 +35,7 @@ interface ApiDraftItem {
   price_source?:      PriceSource | null
 }
 
-interface ApiDraft {
+interface ApiDraft extends FinancingColumns {
   id:           number
   ticket_number:string
   notes:        string | null
@@ -78,11 +80,12 @@ function draftToTicketState(draft: ApiDraft, rate: number, ivaPct: number): Tick
     iva_pct:             ivaPct,
     status:              'open',
     price_mode:          draft.price_mode === 'divisa' ? 'divisa' : 'bcv',
+    financing:           financingFromColumns(draft),
     rate,
   }
 }
 
-function ticketToApiItems(ticket: TicketState) {
+export function ticketToApiItems(ticket: TicketState) {
   return ticket.items.map(item => ({
     product_id:   item.product_id,
     quantity:     item.quantity,

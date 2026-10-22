@@ -12,6 +12,7 @@ import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib
 import { redactSaleForRole } from '@/lib/redact'
 import { resolveEffectiveMode, resolveLinePrice, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { priceModeSchema } from '@/lib/price-mode'
+import { FinancingError, DIVISA_BLOCKS_FINANCING_MESSAGE, assertFinancingEligible, assertPaymentMatchesFinancing } from '@/lib/ticket-financing'
 import { fromBound, toBoundExclusive } from '@/lib/business-day'
 import { checkCedula } from '@/lib/cedula'
 
@@ -50,6 +51,8 @@ const saleSchema = z.object({
   override_auth_pin: z.string().min(1).max(20).optional(),
   // Modo de precio del ticket. Si falta (clientes viejos) se deriva del tier del cliente; el explícito siempre gana.
   price_mode:        priceModeSchema.optional(),
+  // Declara financiamiento (Cashea) al crear la venta: solo con status 'pending'; luego se aprueba y se cobra con PATCH /pay.
+  financing:         z.literal('cashea').optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -66,6 +69,8 @@ export async function GET(req: NextRequest) {
   const search       = params.get('search')
   const useCreatedAt = params.get('use_created_at') === '1'
   const priceMode    = priceModeSchema.safeParse(params.get('price_mode')).data
+  // ?financing=cashea → solo ventas con financiamiento; ?financing=none → solo las que no lo usan.
+  const financing    = params.get('financing')
   const page         = Math.max(1, parseInt(params.get('page')  ?? '1',  10))
   const limit        = Math.min(100, Math.max(1, parseInt(params.get('limit') ?? '20', 10)))
 
@@ -103,6 +108,7 @@ export async function GET(req: NextRequest) {
       : {}),
     ...dateFilter,
     ...(priceMode ? { price_mode: priceMode } : {}),
+    ...(financing === 'cashea' ? { financing_status: { not: null } } : financing === 'none' ? { financing_status: null } : {}),
     ...(cashierId ? { cashier_id: parseInt(cashierId, 10) } : {}),
     ...(clientId  ? { client_id:  parseInt(clientId,  10) } : {}),
   }
@@ -234,6 +240,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = saleSchema.parse(await req.json())
+    if (body.financing && body.status !== 'pending') {
+      return NextResponse.json({ error: 'El financiamiento solo se declara en una venta pendiente.' }, { status: 400 })
+    }
 
     if (body.status === 'paid' && (!body.payments || body.payments.length === 0)) {
       return NextResponse.json(
@@ -378,7 +387,16 @@ export async function POST(req: NextRequest) {
         : []
       const variantMap = new Map(variants.map(v => [v.id, v]))
       // Modo del ticket: el explícito del POS gana sobre el tier del cliente (que solo aplica si no se envía).
-      const priceMode = resolveEffectiveMode(body.price_mode, clientTier)
+      // Con financiamiento el ticket es SIEMPRE bcv (Cashea se cobra a precio BCV completo): pedir Divisa se rechaza.
+      if (body.financing && body.price_mode === 'divisa') throw new FinancingError(409, DIVISA_BLOCKS_FINANCING_MESSAGE)
+      const priceMode = body.financing ? 'bcv' : resolveEffectiveMode(body.price_mode, clientTier)
+      const financingSnapshot = body.financing
+        ? await assertFinancingEligible(tx, session.businessId, productIds)
+        : null
+      // Cobro directo: sin declarar y aprobar el financiamiento no se puede cobrar con el método financiador.
+      if (body.status === 'paid' && body.payments) {
+        await assertPaymentMatchesFinancing(tx, session.businessId, null, body.payments.map(p => p.payment_method_id))
+      }
 
       // Validate quantities
       for (const item of body.items) {
@@ -483,6 +501,9 @@ export async function POST(req: NextRequest) {
           status:             body.status,
           origin:             body.origin,
           price_mode:         priceMode,
+          ...(financingSnapshot
+            ? { financing_status: 'requested', financing_provider: financingSnapshot.provider, financing_phrase: financingSnapshot.phrase }
+            : {}),
           total_usd,
           total_bs,
           rate_used:          rate,
@@ -521,6 +542,15 @@ export async function POST(req: NextRequest) {
           client: { select: { id: true, name: true } },
         },
       })
+
+      if (financingSnapshot) {
+        await tx.activityLog.create({
+          data: {
+            business_id: session.businessId, user_id: session.userId, action: 'financing_requested',
+            model_type: 'Sale', model_id: newSale.id, old_values: { financing_status: null }, new_values: { financing_status: 'requested' },
+          },
+        })
+      }
 
       // Client.cedula solo se llena si estaba nula: nunca se pisa una existente
       // (dos personas pueden compartir teléfono; la cédula propia vive en la venta).
@@ -634,6 +664,9 @@ export async function POST(req: NextRequest) {
         { error: 'Datos inválidos', details: err.issues },
         { status: 400 }
       )
+    }
+    if (err instanceof FinancingError) {
+      return NextResponse.json({ error: err.message, blocked_products: err.blockedProducts }, { status: err.status })
     }
     if (err instanceof Error) {
       const knownErrors = ['Pago insuficiente', 'productos no encontrados', 'Cantidad inválida', 'Precio no configurado', 'Variante no corresponde']

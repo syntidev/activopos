@@ -6,6 +6,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { PriceModeError, priceModeSchema, repriceOrderTx } from '@/lib/price-mode'
+import { FinancingError, assertPaymentMatchesFinancing } from '@/lib/ticket-financing'
 import { checkCedula } from '@/lib/cedula'
 import { validateShipping } from '@/lib/shipping'
 
@@ -61,6 +62,8 @@ export async function POST(req: NextRequest, { params }: Context) {
       if (!order)                                          throw new Error('ORDER_NOT_FOUND')
       if (order.sale_id !== null)                          throw new Error('ALREADY_COBRADO')
       if (['delivered', 'cancelled'].includes(order.status)) throw new Error('ORDER_TERMINAL')
+      // Financiamiento (Cashea): con la fila del pedido ya bloqueada, solo 'aprobado' se cobra con el método financiador.
+      await assertPaymentMatchesFinancing(tx, session.businessId, order.financing_status, [body.payment_method_id])
 
       // Cédula: obligatoria (V/E natural) si el método es financiadora. Snapshot
       // en la venta y el pedido; Client.cedula solo si estaba nula.
@@ -172,6 +175,10 @@ export async function POST(req: NextRequest, { params }: Context) {
           status:        'paid',
           origin:        'catalog',
           price_mode:    mode,
+          // La venta hereda el financiamiento del pedido (snapshot de proveedor y frase).
+          financing_status:   order.financing_status,
+          financing_provider: order.financing_provider,
+          financing_phrase:   order.financing_phrase,
           total_usd,
           total_bs,
           rate_used:     rate,
@@ -276,6 +283,9 @@ export async function POST(req: NextRequest, { params }: Context) {
     return NextResponse.json({ ok: true, sale_id: saleId })
   } catch (err) {
     if (err instanceof TenantError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
+    }
+    if (err instanceof FinancingError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
     }
     if (err instanceof PriceModeError) {

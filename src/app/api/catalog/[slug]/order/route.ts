@@ -10,6 +10,8 @@ import { logError } from '@/lib/safe-log'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
 import { checkCedula } from '@/lib/cedula'
+import { FinancingError, PAYMENT_KINDS, assertFinancingEligible } from '@/lib/ticket-financing'
+import type { PaymentKind } from '@/lib/ticket-financing'
 import { validateAddress, validateShipping } from '@/lib/shipping'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import {
@@ -34,6 +36,9 @@ const BodySchema = z.object({
   customer_phone:     z.string().min(7).max(20).trim(),
   customer_reference: z.string().min(1).max(200).trim(),
   payment_method:     z.string().min(1).max(60).trim(),
+  // Método declarado por el cliente: cashea (financiamiento, exige elegibilidad) | bs | divisa. Si falta y el método elegido
+  // es financiador (is_financing) se toma como cashea. El precio del pedido siempre nace en BCV.
+  payment_kind:       z.enum(PAYMENT_KINDS).optional(),
   // OBLIGATORIA siempre (retiro y envío). Va nullable/optional en el schema solo para que la falta
   // salga como 422 con field 'customer_cedula' (mensaje claro) y no como "Datos inválidos" genérico.
   customer_cedula:    z.string().max(20).trim().nullable().optional(),
@@ -198,9 +203,10 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     return NextResponse.json({ error: idCheck.message, field: 'customer_cedula' }, { status: 422 })
   }
   const clientCedula = idCheck.value
-  // Financiadora: además exige persona natural (V/E).
-  if (chosenMethod?.is_financing) {
-    const financingCheck = checkCedula(clientCedula, chosenMethod.name)
+  const paymentKind: PaymentKind | null = body.payment_kind ?? (chosenMethod?.is_financing ? 'cashea' : null)
+  // Financiadora o Cashea declarado: además exige persona natural (V/E).
+  if (chosenMethod?.is_financing || paymentKind === 'cashea') {
+    const financingCheck = checkCedula(clientCedula, chosenMethod?.name ?? body.payment_method)
     if (!financingCheck.ok) {
       return NextResponse.json({ error: financingCheck.message, field: 'customer_cedula' }, { status: 422 })
     }
@@ -284,6 +290,19 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
   }
 
   const productMap = new Map(dbProducts.map(p => [p.id, p]))
+
+  // Cashea: financiamiento activo en el negocio y NINGÚN producto excluido; si no, 409 con el producto que lo impide.
+  let financingSnapshot: { provider: string; phrase: string } | null = null
+  if (paymentKind === 'cashea') {
+    try {
+      financingSnapshot = await assertFinancingEligible(prisma, business.id, uniqueProductIds)
+    } catch (err) {
+      if (err instanceof FinancingError) {
+        return NextResponse.json({ error: err.message, field: 'payment_kind', blocked_products: err.blockedProducts }, { status: err.status })
+      }
+      throw err
+    }
+  }
 
   const needsKds = dbProducts.some(p => p.category?.requires_preparation === true)
 
@@ -457,6 +476,11 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         total_bs:       totalBs,
         rate_used:      rate,
         send_to_kds:    needsKds,
+        // Lo declarado en el checkout; con Cashea queda 'requested' y el snapshot de proveedor y frase.
+        payment_kind:   paymentKind,
+        ...(financingSnapshot
+          ? { financing_status: 'requested', financing_provider: financingSnapshot.provider, financing_phrase: financingSnapshot.phrase }
+          : {}),
         items: {
           create: resolvedItems.map(item => ({
             product_id:         item.product_id,

@@ -4,6 +4,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { checkCedula } from '@/lib/cedula'
+import { FinancingError, assertPaymentMatchesFinancing } from '@/lib/ticket-financing'
 
 class InsufficientStockError extends Error {}
 class SaleStateError extends Error {
@@ -114,6 +115,9 @@ export async function PATCH(
       if (!current) throw new SaleStateError(404, 'Venta no encontrada')
       if (current.status === 'paid') throw new SaleStateError(409, 'La venta ya fue cobrada')
       if (current.status === 'cancelled') throw new SaleStateError(409, 'La venta está anulada')
+
+      // Financiamiento (Cashea): con el estado ya bloqueado, solo 'aprobado' se cobra con el método financiador (todo o nada).
+      await assertPaymentMatchesFinancing(tx, session.businessId, current.financing_status, body.payments.map(p => p.payment_method_id))
 
       const totalBs  = Number(current.total_bs)
       const totalUsd = Number(current.total_usd)
@@ -282,6 +286,9 @@ export async function PATCH(
         { error: 'Datos inválidos', details: err.issues },
         { status: 400 }
       )
+    }
+    if (err instanceof FinancingError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
     }
     if (err instanceof SaleStateError) {
       return NextResponse.json({ error: err.message }, { status: err.status })

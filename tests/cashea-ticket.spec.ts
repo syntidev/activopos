@@ -1,4 +1,5 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
+import bcrypt from 'bcryptjs'
 import { sql } from './alta-helpers'
 import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts, tokenFor } from './p0-helpers'
 
@@ -14,6 +15,7 @@ interface Ticket { kind: string; id: number; status: string; price_mode: string;
 interface SaleResp { id: number; status: string; price_mode: string; financing_status: string | null; total_usd: number | string }
 
 const FIN_NAME = 'ZZ Cashea Pago'
+const PIN_EMAIL = 'zz-cashea-pin@example.invalid'
 const CASH_ID = Number(sql(`SELECT id FROM payment_methods WHERE business_id=${BUSINESS_ID} AND is_active=1 AND is_financing=0 AND type='cash' ORDER BY id LIMIT 1`))
 const CASHIER_ID = Number(sql(`SELECT id FROM users WHERE business_id=${BUSINESS_ID} AND role='cashier' ORDER BY id LIMIT 1`))
 const ids = { a: 0, excluido: 0, finMethod: 0 }
@@ -37,6 +39,7 @@ function cleanup(): void {
       sql(`DELETE FROM sales WHERE business_id=${BUSINESS_ID} AND id IN (${sl})`)
     }
   }
+  sql(`DELETE FROM users WHERE business_id=${BUSINESS_ID} AND email='${PIN_EMAIL}'`) // después de las ventas (discount_auth_by)
   sql(`DELETE FROM clients WHERE business_id=${BUSINESS_ID} AND name LIKE 'ZZ Cashea%'`)
   sql(`DELETE FROM payment_methods WHERE business_id=${BUSINESS_ID} AND name='${FIN_NAME}'`)
   sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND action LIKE 'financing_%'`)
@@ -328,6 +331,99 @@ test('defensa al cobrar: un ticket aprobado cuyo producto pasó a excluido ya no
   expect(r.status()).toBe(409)
   expect((await r.json()).error).toContain('no está disponible con financiamiento')
   expect(sql(`SELECT sale_id IS NULL FROM orders WHERE id=${orderId}`)).toBe('1')
+  await api.dispose()
+})
+
+test('borrador con cliente asignado: el cobro Cashea por el borrador conserva client_id (y uno de otro negocio se rechaza)', async () => {
+  const api = await apiAs()
+  const c = await api.post('/api/clients', { data: { name: 'ZZ Cashea cliente asignado', phone: '04125550177' } })
+  expect(c.status(), JSON.stringify(await c.json().catch(() => ({})))).toBe(201)
+  const clientId = (await c.json()).client.id as number
+  const item = [{ product_id: ids.a, quantity: 1 }]
+
+  // el cliente viaja al crear el borrador y también al editarlo
+  const d = await api.post('/api/pos/drafts', { data: { items: item, client_id: clientId } })
+  expect(d.status(), JSON.stringify(await d.json().catch(() => ({})))).toBe(201)
+  const draftId = (await d.json()).draft.id as number
+  expect(sql(`SELECT IFNULL(client_id,'null') FROM sales WHERE id=${draftId}`)).toBe(String(clientId))
+  const p = await api.patch(`/api/pos/drafts/${draftId}`, { data: { items: [{ product_id: ids.a, quantity: 2 }], client_id: clientId } })
+  expect(p.status()).toBe(200)
+  // un PATCH sin client_id NO borra al cliente
+  expect((await api.patch(`/api/pos/drafts/${draftId}`, { data: { items: [{ product_id: ids.a, quantity: 2 }] } })).status()).toBe(200)
+  expect(sql(`SELECT client_id FROM sales WHERE id=${draftId}`)).toBe(String(clientId))
+
+  await accion(api, 'sales', draftId, 'request')
+  await accion(api, 'sales', draftId, 'approve')
+  const totalBs = Number(sql(`SELECT total_bs FROM sales WHERE id=${draftId}`))
+  const totalUsd = Number(sql(`SELECT total_usd FROM sales WHERE id=${draftId}`))
+  const pay = await api.patch(`/api/sales/${draftId}/pay`, { data: { payments: [{ payment_method_id: ids.finMethod, amount_bs: totalBs, amount_usd: totalUsd }], client_cedula: 'V-12345678' } })
+  expect(pay.status(), JSON.stringify(await pay.json().catch(() => ({})))).toBe(200)
+  expect(sql(`SELECT CONCAT_WS('|', status, client_id, financing_status) FROM sales WHERE id=${draftId}`)).toBe(`paid|${clientId}|approved`)
+
+  // cliente de otro negocio: 400 y el borrador no queda colgado de él
+  const ajeno = Number(sql(`SELECT id FROM clients WHERE business_id<>${BUSINESS_ID} LIMIT 1`))
+  if (ajeno) {
+    const mal = await api.post('/api/pos/drafts', { data: { items: item, client_id: ajeno } })
+    expect(mal.status()).toBe(400)
+    expect((await mal.json()).error).toBe('Cliente no encontrado')
+  }
+  await api.dispose()
+})
+
+test('descuento con PIN sobre un ticket aprobado: vuelve a solicitado (con motivo) y cobrar da 409 hasta aprobar de nuevo', async () => {
+  const api = await apiAs()
+  // PIN de autorización = contraseña (bcrypt) de un usuario activo del negocio: se crea un admin temporal con PIN conocido.
+  const PIN = 'ZZ-Pin-4821'
+  sql(`INSERT INTO users (business_id, name, email, password, role, is_active, updated_at) VALUES (${BUSINESS_ID}, 'ZZ Cashea Admin PIN', '${PIN_EMAIL}', '${await bcrypt.hash(PIN, 4)}', 'admin', 1, NOW(3))`)
+
+  const v = await api.post('/api/sales', { data: { status: 'pending', origin: 'pos', financing: 'cashea', items: [{ product_id: ids.a, quantity: 2, sale_mode: 'unit' }] } })
+  const sale = (await v.json()).sale as SaleResp
+  await accion(api, 'sales', sale.id, 'approve')
+  expect(sql(`SELECT financing_status FROM sales WHERE id=${sale.id}`)).toBe('approved')
+
+  const d = await api.post(`/api/sales/${sale.id}/authorize-discount`, { data: { pin: PIN, discount_pct: 10 } })
+  expect(d.status(), JSON.stringify(await d.json().catch(() => ({})))).toBe(200)
+  expect(sql(`SELECT CONCAT_WS('|', financing_status, total_usd) FROM sales WHERE id=${sale.id}`)).toBe('requested|180.00')
+  const log = sql(`SELECT CONCAT(user_id,'|',IFNULL(reason,'')) FROM activity_logs WHERE business_id=${BUSINESS_ID} AND model_type='Sale' AND model_id=${sale.id} AND action='financing_status_changed' ORDER BY id DESC LIMIT 1`)
+  expect(log).toBe('86|Se aplicó un descuento: el monto debe aprobarse de nuevo')
+
+  const totalBs = Number(sql(`SELECT total_bs FROM sales WHERE id=${sale.id}`))
+  const pagoFin = [{ payment_method_id: ids.finMethod, amount_bs: totalBs, amount_usd: 180 }]
+  const sinAprobar = await api.patch(`/api/sales/${sale.id}/pay`, { data: { payments: pagoFin, client_cedula: 'V-12345678' } })
+  expect(sinAprobar.status()).toBe(409)
+  await accion(api, 'sales', sale.id, 'approve')
+  expect((await api.patch(`/api/sales/${sale.id}/pay`, { data: { payments: pagoFin, client_cedula: 'V-12345678' } })).status()).toBe(200)
+
+  // un descuento sobre un ticket SIN financiamiento sigue funcionando igual
+  const normal = (await (await api.post('/api/sales', { data: { status: 'pending', origin: 'pos', items: [{ product_id: ids.a, quantity: 1, sale_mode: 'unit' }] } })).json()).sale as SaleResp
+  const dn = await api.post(`/api/sales/${normal.id}/authorize-discount`, { data: { pin: PIN, discount_pct: 10 } })
+  expect(dn.status()).toBe(200)
+  expect(sql(`SELECT CONCAT_WS('|', IFNULL(financing_status,'null'), total_usd) FROM sales WHERE id=${normal.id}`)).toBe('null|90.00')
+  await api.dispose()
+})
+
+test('configurar un método: type cash + is_financing se rechaza (400); uno de otro tipo sí puede ser financiador', async () => {
+  const api = await apiAs()
+  const cash = await api.patch(`/api/config/payment-methods/${CASH_ID}`, { data: { is_financing: true } })
+  expect(cash.status()).toBe(400)
+  expect((await cash.json()).error).toContain('efectivo no puede ser financiador')
+  expect(sql(`SELECT is_financing FROM payment_methods WHERE id=${CASH_ID}`)).toBe('0')
+  expect((await api.patch(`/api/config/payment-methods/${ids.finMethod}`, { data: { is_financing: true } })).status()).toBe(200)
+  await api.dispose()
+})
+
+test('cobro con un método inexistente o de otro negocio mezclado: falla y la venta sigue pendiente (nunca se ignora)', async () => {
+  const api = await apiAs()
+  const v = await api.post('/api/sales', { data: { status: 'pending', origin: 'pos', items: [{ product_id: ids.a, quantity: 1, sale_mode: 'unit' }] } })
+  const sale = (await v.json()).sale as SaleResp
+  const totalBs = Number(sql(`SELECT total_bs FROM sales WHERE id=${sale.id}`))
+  const mezcla = [
+    { payment_method_id: CASH_ID, amount_bs: totalBs, amount_usd: Number(sale.total_usd) },
+    { payment_method_id: 999999999, amount_bs: 1, amount_usd: 1 },
+  ]
+  const r = await api.patch(`/api/sales/${sale.id}/pay`, { data: { payments: mezcla } })
+  expect([403, 409]).toContain(r.status()) // 403 por el chequeo de tenant del pay, 409 por el del financiamiento: nunca 200
+  expect(sql(`SELECT status FROM sales WHERE id=${sale.id}`)).toBe('pending')
   await api.dispose()
 })
 

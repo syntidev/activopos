@@ -1,7 +1,7 @@
 # Contrato backend para CLI-B — Cashea (financiamiento) como método declarado en el ticket
 
-Fecha: 2026-10-22 · Autor: CLI-A · Rama: `work-a-cashea` · Estado: DISEÑO acordado, implementación en curso (sin push, sin deploy).
-Si algo de este documento cambia al implementar, se corrige aquí en el mismo commit que el código.
+Fecha: 2026-10-22 · Autor: CLI-A · Rama: `work-a-cashea` · Estado: IMPLEMENTADO en la rama `work-a-cashea` y probado en el negocio 87 local (`tests/cashea-ticket.spec.ts`, 10 PASS). Sin push, sin deploy; la migración `20261022000001_add_ticket_financing` NO está aplicada en el VPS.
+Detalles confirmados al implementar: el pedido del catálogo con Cashea se crea en BCV y queda `requested`; un `payment_kind` `bs`/`divisa` solo se guarda como declaración (el pedido sigue en BCV); el 409 del checkout trae `field:"payment_kind"` y `blocked_products`; `PATCH .../financing` solo admite ventas `draft`/`pending` (una `quote` responde 409) y pedidos sin cobrar; la elegibilidad se revalida también al aprobar.
 Relacionados: `CONTRATO_FINANCIAMIENTO.md` (config del negocio y sello), `CONTRATO_PRECIO_DIVISA.md` (modo bcv/divisa).
 
 ## 0. Qué es "Cashea" aquí y qué ya existía (no se duplica)

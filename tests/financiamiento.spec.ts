@@ -132,11 +132,11 @@ test('ficha pública: sello Cashea con financiamiento activo, sin sello si el pr
   await api.patch('/api/config/catalog', { data: { financing: { enabled: true, mode: 'cashea' } } })
   await page.goto(`/catalogo/${SLUG}/p/${pid}`)
   await expect(page.getByRole('heading', { name: 'ZZ Financ Producto' })).toBeVisible({ timeout: 60_000 })
-  await expect(page.locator('img[alt="Disponible con Cashea"]')).toHaveCount(1)
+  await expect(page.locator('img[alt="Cashea"]')).toHaveCount(1) // FinancingNote pinta el logo con alt = nombre del proveedor
 
   await api.patch(`/api/products/${pid}`, { data: { financing_excluded: true } })
   await page.goto(`/catalogo/${SLUG}/p/${pid}`)
   await expect(page.getByRole('heading', { name: 'ZZ Financ Producto' })).toBeVisible({ timeout: 60_000 })
-  await expect(page.locator('img[alt="Disponible con Cashea"]')).toHaveCount(0)
+  await expect(page.locator('img[alt="Cashea"]')).toHaveCount(0)
   await api.dispose()
 })

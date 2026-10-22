@@ -279,6 +279,58 @@ test('POS: mismo resultado — declarar, no cobrar sin aprobar, todo o nada y el
   await api.dispose()
 })
 
+test('cambiar los ítems con financiamiento vivo: producto excluido 409; un aprobado vuelve a solicitado (pedido y borrador)', async () => {
+  const api = await apiAs()
+
+  // Pedido aprobado: meter un producto excluido se rechaza y no toca el estado
+  const o = await api.post('/api/orders', { data: { origin: 'phone', client_name: 'ZZ Cashea items', items: [{ product_id: ids.a, product_name: 'ZZ Cashea A', quantity: 1 }] } })
+  const orderId = (await o.json()).order.id as number
+  await accion(api, 'orders', orderId, 'request')
+  await accion(api, 'orders', orderId, 'approve')
+  const malo = await api.patch(`/api/orders/${orderId}/items`, { data: { items: [{ product_id: ids.excluido, product_name: 'ZZ Cashea Excluido', quantity: 1 }] } })
+  expect(malo.status()).toBe(409)
+  expect((await malo.json()).blocked_products).toEqual([{ id: ids.excluido, name: 'ZZ Cashea Excluido' }])
+  expect(sql(`SELECT financing_status FROM orders WHERE id=${orderId}`)).toBe('approved')
+  // Cambio válido: el monto cambió, así que la aprobación se pierde y queda en bitácora
+  const bien = await api.patch(`/api/orders/${orderId}/items`, { data: { items: [{ product_id: ids.a, product_name: 'ZZ Cashea A', quantity: 2 }] } })
+  expect(bien.status()).toBe(200)
+  expect(sql(`SELECT CONCAT(financing_status,'|',total_usd) FROM orders WHERE id=${orderId}`)).toBe('requested|200.00')
+  expect(finLog('Order', orderId).slice(-1)).toEqual(['86|financing_status_changed|approved>requested'])
+  // y ya no se puede cobrar hasta aprobar de nuevo
+  expect((await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: ids.finMethod } })).status()).toBe(409)
+
+  // Borrador del POS: mismo comportamiento
+  const d = await api.post('/api/pos/drafts', { data: { items: [{ product_id: ids.a, quantity: 1 }] } })
+  const draftId = (await d.json()).draft.id as number
+  await accion(api, 'sales', draftId, 'request')
+  await accion(api, 'sales', draftId, 'approve')
+  const dMalo = await api.patch(`/api/pos/drafts/${draftId}`, { data: { items: [{ product_id: ids.excluido, quantity: 1 }] } })
+  expect(dMalo.status()).toBe(409)
+  expect((await dMalo.json()).blocked_products).toEqual([{ id: ids.excluido, name: 'ZZ Cashea Excluido' }])
+  const dDivisa = await api.patch(`/api/pos/drafts/${draftId}`, { data: { items: [{ product_id: ids.a, quantity: 1 }], price_mode: 'divisa' } })
+  expect(dDivisa.status()).toBe(409)
+  expect(sql(`SELECT financing_status FROM sales WHERE id=${draftId}`)).toBe('approved')
+  const dBien = await api.patch(`/api/pos/drafts/${draftId}`, { data: { items: [{ product_id: ids.a, quantity: 3 }] } })
+  expect(dBien.status()).toBe(200)
+  expect(sql(`SELECT financing_status FROM sales WHERE id=${draftId}`)).toBe('requested')
+  await api.dispose()
+})
+
+test('defensa al cobrar: un ticket aprobado cuyo producto pasó a excluido ya no se cobra como financiado', async () => {
+  const api = await apiAs()
+  const extra = await crear(api, { name: 'ZZ Cashea Luego Excluido', cost_per_unit_usd: 10, price_per_unit_usd: 20, stock_quantity: 10 })
+  const o = await api.post('/api/orders', { data: { origin: 'phone', client_name: 'ZZ Cashea defensa', items: [{ product_id: extra, product_name: 'ZZ Cashea Luego Excluido', quantity: 1 }] } })
+  const orderId = (await o.json()).order.id as number
+  await accion(api, 'orders', orderId, 'request')
+  await accion(api, 'orders', orderId, 'approve')
+  expect((await api.patch(`/api/products/${extra}`, { data: { financing_excluded: true } })).status()).toBe(200)
+  const r = await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: ids.finMethod, cedula: 'V-12345678' } })
+  expect(r.status()).toBe(409)
+  expect((await r.json()).error).toContain('no está disponible con financiamiento')
+  expect(sql(`SELECT sale_id IS NULL FROM orders WHERE id=${orderId}`)).toBe('1')
+  await api.dispose()
+})
+
 test('cajero: solo opera el financiamiento de SUS ventas; el admin cualquiera', async () => {
   const admin = await apiAs()
   const cajero = await apiRole(CASHIER_ID, 'cashier')

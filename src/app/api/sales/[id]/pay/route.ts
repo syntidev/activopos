@@ -117,7 +117,8 @@ export async function PATCH(
       if (current.status === 'cancelled') throw new SaleStateError(409, 'La venta está anulada')
 
       // Financiamiento (Cashea): con el estado ya bloqueado, solo 'aprobado' se cobra con el método financiador (todo o nada).
-      await assertPaymentMatchesFinancing(tx, session.businessId, current.financing_status, body.payments.map(p => p.payment_method_id))
+      await assertPaymentMatchesFinancing(tx, session.businessId, current.financing_status, body.payments.map(p => p.payment_method_id),
+        { priceMode: current.price_mode, productIds: current.items.map(i => i.product_id) })
 
       const totalBs  = Number(current.total_bs)
       const totalUsd = Number(current.total_usd)

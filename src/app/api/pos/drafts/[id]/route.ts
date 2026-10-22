@@ -8,6 +8,7 @@ import { checkAndIncrementPinAttempts, clearPinAttempts, verifyPin } from '@/lib
 import { redactSaleForRole } from '@/lib/redact'
 import { resolveLinePrice, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { priceModeSchema } from '@/lib/price-mode'
+import { FinancingError, reconcileFinancingAfterItemsChangeTx } from '@/lib/ticket-financing'
 
 const patchItemSchema = draftItemSchema.extend({
   unit_price_override: z.number().positive().optional(),
@@ -71,6 +72,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     const { rate } = await getActiveRate(session.businessId)
 
     const draft = await prisma.$transaction(async (tx) => {
+      // Cerrojo de la fila del borrador (con business_id): serializa contra el financiamiento, el modo de precio y el cobro.
+      await tx.$queryRaw`SELECT id FROM sales WHERE id = ${draftId} AND business_id = ${session.businessId} FOR UPDATE`
       const existing = await tx.sale.findFirst({
         where: { id: draftId, business_id: session.businessId, cashier_id: session.userId, status: 'draft' },
       })
@@ -84,6 +87,12 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         unit_price_override?: number | null; override_reason?: string | null; price_source: string
       }[] = []
       const priceMode = body.price_mode ?? priceModeSchema.catch('bcv').parse(existing.price_mode)
+      // Con financiamiento vivo: el borrador sigue en BCV, los productos nuevos deben ser elegibles y un 'approved' vuelve a 'requested'.
+      await reconcileFinancingAfterItemsChangeTx(
+        tx, { businessId: session.businessId, userId: session.userId }, 'sale', draftId,
+        { financing_status: existing.financing_status, price_mode: priceMode },
+        Array.from(new Set(body.items.map(i => i.product_id))),
+      )
 
       if (body.items.length > 0) {
         const productIds = Array.from(new Set(body.items.map(i => i.product_id)))
@@ -168,6 +177,9 @@ export async function PATCH(req: NextRequest, { params }: Context) {
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    }
+    if (err instanceof FinancingError) {
+      return NextResponse.json({ error: err.message, blocked_products: err.blockedProducts }, { status: err.status })
     }
     if (err instanceof Error) {
       if (err.message === 'NOT_FOUND')         return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })

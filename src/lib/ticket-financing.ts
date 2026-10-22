@@ -215,14 +215,53 @@ export async function applyFinancingActionTx(
 }
 
 /**
+ * Cambio de ítems en un ticket que ya tiene financiamiento vivo (requested/approved): la elegibilidad se REVALIDA con
+ * los productos nuevos (409 si queda uno excluido o el financiamiento se apagó) y un 'approved' vuelve a 'requested',
+ * porque el total cambió y nadie aprobó ese monto. Con la fila del ticket ya bloqueada por el llamador. Sin
+ * financiamiento vivo no hace nada.
+ */
+export async function reconcileFinancingAfterItemsChangeTx(
+  tx: Prisma.TransactionClient,
+  actor: { businessId: number; userId: number },
+  kind: 'sale' | 'order',
+  id: number,
+  current: { financing_status: string | null; price_mode: string },
+  newProductIds: number[],
+): Promise<void> {
+  if (!isFinancingActive(current.financing_status)) return
+  if (current.price_mode === 'divisa') throw new FinancingError(409, FINANCING_BLOCKS_DIVISA_MESSAGE)
+  try {
+    await assertFinancingEligible(tx, actor.businessId, newProductIds)
+  } catch (err) {
+    if (err instanceof FinancingError) {
+      throw new FinancingError(409, `${err.message} Retira el financiamiento del ticket antes de hacer este cambio.`, err.blockedProducts)
+    }
+    throw err
+  }
+  if (current.financing_status !== 'approved') return
+  if (kind === 'sale') await tx.sale.update({ where: { id }, data: { financing_status: 'requested' } })
+  else await tx.order.update({ where: { id }, data: { financing_status: 'requested' } })
+  await tx.activityLog.create({
+    data: {
+      business_id: actor.businessId, user_id: actor.userId, action: 'financing_status_changed',
+      model_type: kind === 'sale' ? 'Sale' : 'Order', model_id: id,
+      reason: 'Cambiaron los ítems: el monto debe aprobarse de nuevo',
+      old_values: { financing_status: 'approved' }, new_values: { financing_status: 'requested' },
+    },
+  })
+}
+
+/**
  * Regla 4 del contrato: con qué métodos de pago se puede cobrar un ticket según su estado de financiamiento.
- * `financingStatus` es el estado YA bloqueado dentro de la transacción de cobro.
+ * `financingStatus` es el estado YA bloqueado dentro de la transacción de cobro. Con 'approved' se revalida además,
+ * por defensa en profundidad, que el ticket siga en BCV y que sus productos sigan siendo elegibles.
  */
 export async function assertPaymentMatchesFinancing(
-  db: Pick<Prisma.TransactionClient, 'paymentMethod'>,
+  db: Pick<Prisma.TransactionClient, 'paymentMethod' | 'business' | 'product'>,
   businessId: number,
   financingStatus: string | null,
   paymentMethodIds: number[],
+  ticket?: { priceMode: string; productIds: number[] },
 ): Promise<void> {
   const methods = await db.paymentMethod.findMany({
     where:  { id: { in: paymentMethodIds }, business_id: businessId },
@@ -234,6 +273,10 @@ export async function assertPaymentMatchesFinancing(
   switch (financingStatus) {
     case 'approved':
       if (!allFinancing) throw new FinancingError(409, 'El financiamiento aprobado se cobra completo con el método financiador (todo o nada): no se mezcla con otros métodos.')
+      if (ticket) {
+        if (ticket.priceMode !== 'bcv') throw new FinancingError(409, FINANCING_BLOCKS_DIVISA_MESSAGE)
+        await assertFinancingEligible(db, businessId, ticket.productIds)
+      }
       return
     case 'requested':
       throw new FinancingError(409, anyFinancing

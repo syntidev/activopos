@@ -63,7 +63,8 @@ export async function POST(req: NextRequest, { params }: Context) {
       if (order.sale_id !== null)                          throw new Error('ALREADY_COBRADO')
       if (['delivered', 'cancelled'].includes(order.status)) throw new Error('ORDER_TERMINAL')
       // Financiamiento (Cashea): con la fila del pedido ya bloqueada, solo 'aprobado' se cobra con el método financiador.
-      await assertPaymentMatchesFinancing(tx, session.businessId, order.financing_status, [body.payment_method_id])
+      await assertPaymentMatchesFinancing(tx, session.businessId, order.financing_status, [body.payment_method_id],
+        { priceMode: order.price_mode, productIds: order.items.map(i => i.product_id) })
 
       // Cédula: obligatoria (V/E natural) si el método es financiadora. Snapshot
       // en la venta y el pedido; Client.cedula solo si estaba nula.

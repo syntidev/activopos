@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { priceModeSchema } from '@/lib/price-mode'
+import { FinancingError, reconcileFinancingAfterItemsChangeTx } from '@/lib/ticket-financing'
 import { resolveLinePrice } from '@/lib/pricing'
 
 type Context = { params: { id: string } }
@@ -43,6 +44,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     const { session } = await getAuthenticatedTenant()
 
     const updated = await prisma.$transaction(async (tx) => {
+      // Cerrojo de la fila del pedido (con business_id): serializa contra el cobro, el cambio de modo y el financiamiento.
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${session.businessId} FOR UPDATE`
       const order = await tx.order.findFirst({
         where: { id: orderId, business_id: session.businessId },
       })
@@ -59,6 +62,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         },
       })
       if (products.length !== productIds.length) throw new Error('PRODUCT_NOT_FOUND')
+      // Con financiamiento vivo: los productos nuevos deben seguir siendo elegibles y un 'approved' vuelve a 'requested'.
+      await reconcileFinancingAfterItemsChangeTx(tx, { businessId: session.businessId, userId: session.userId }, 'order', orderId, order, productIds)
       const productMap = new Map(products.map((p) => [p.id, p]))
       // Las líneas nuevas se precian con el modo que ya tiene el pedido (bcv | divisa).
       const mode = priceModeSchema.catch('bcv').parse(order.price_mode)
@@ -177,8 +182,11 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     if (err instanceof TenantError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
     }
+    if (err instanceof FinancingError) {
+      return NextResponse.json({ error: err.message, blocked_products: err.blockedProducts }, { status: err.status })
+    }
     if (err instanceof Error) {
-      if (err.message === 'ORDER_NOT_FOUND')    return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
+      if (err.message === 'ORDER_NOT_FOUND')   return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
       if (err.message === 'ORDER_NOT_EDITABLE')  return NextResponse.json({ error: 'El pedido ya no admite edición de ítems' }, { status: 409 })
       if (err.message === 'PRODUCT_NOT_FOUND')   return NextResponse.json({ error: 'Uno o más productos no existen o están inactivos' }, { status: 400 })
       if (err.message === 'PRICE_NOT_SET')       return NextResponse.json({ error: 'Uno o más productos no tienen precio configurado' }, { status: 400 })

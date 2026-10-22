@@ -227,6 +227,7 @@ export async function reconcileFinancingAfterItemsChangeTx(
   id: number,
   current: { financing_status: string | null; price_mode: string },
   newProductIds: number[],
+  reason = 'Cambiaron los ítems: el monto debe aprobarse de nuevo',
 ): Promise<void> {
   if (!isFinancingActive(current.financing_status)) return
   if (current.price_mode === 'divisa') throw new FinancingError(409, FINANCING_BLOCKS_DIVISA_MESSAGE)
@@ -245,7 +246,7 @@ export async function reconcileFinancingAfterItemsChangeTx(
     data: {
       business_id: actor.businessId, user_id: actor.userId, action: 'financing_status_changed',
       model_type: kind === 'sale' ? 'Sale' : 'Order', model_id: id,
-      reason: 'Cambiaron los ítems: el monto debe aprobarse de nuevo',
+      reason,
       old_values: { financing_status: 'approved' }, new_values: { financing_status: 'requested' },
     },
   })
@@ -267,6 +268,8 @@ export async function assertPaymentMatchesFinancing(
     where:  { id: { in: paymentMethodIds }, business_id: businessId },
     select: { is_financing: true },
   })
+  // Todos los ids pedidos (sin repetir) deben ser métodos de ESTE negocio: si falta alguno no se adivina qué se cobra.
+  if (methods.length !== new Set(paymentMethodIds).size) throw new FinancingError(409, 'Alguno de los métodos de pago no es válido para este negocio.')
   const anyFinancing = methods.some(m => m.is_financing)
   const allFinancing = methods.length > 0 && methods.every(m => m.is_financing)
 

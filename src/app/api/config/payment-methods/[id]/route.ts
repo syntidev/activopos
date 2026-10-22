@@ -53,6 +53,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       )
     }
 
+    // Un método de tipo efectivo no puede ser financiador: la caja cuenta como efectivo todo pago de type 'cash'
+    // (cash/status), y lo cobrado por Cashea entraría al efectivo esperado. El type no se puede cambiar (arriba).
+    if (data.is_financing === true && existing.type === 'cash') {
+      return NextResponse.json(
+        { error: 'Un método de efectivo no puede ser financiador: su monto se contaría como efectivo en la caja. Crea un método de otro tipo (por ejemplo "Otro") y márcalo como financiador.' },
+        { status: 400 },
+      )
+    }
+
     const method = await db.paymentMethod.update({
       where: { id }, // business_id inyectado por el tenant layer
       data,

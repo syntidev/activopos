@@ -655,6 +655,11 @@ model Sale {
   discount_auth_by   Int?
   // Modo de precio del ticket: 'bcv' (por defecto) | 'divisa'. Lo decide el ticket, no el tier del cliente.
   price_mode         String     @default("bcv") @db.VarChar(10)
+  // Financiamiento (Cashea) declarado en el ticket: NULL = no usa. 'requested' | 'approved' | 'rejected'.
+  // Provider/phrase = snapshot de la config del negocio al declararlo. Se cobra siempre a precio BCV (todo o nada).
+  financing_status   String?    @db.VarChar(12)
+  financing_provider String?    @db.VarChar(40)
+  financing_phrase   String?    @db.VarChar(80)
   monto_recibido_usd Float?
   vuelto_usd         Float?
   due_date           DateTime?
@@ -919,6 +924,12 @@ model Order {
   delivery_fee     Decimal     @default(0) @db.Decimal(10, 2)
   // Modo de precio del pedido: 'bcv' (por defecto) | 'divisa'. Se puede cambiar hasta que se cobre.
   price_mode       String      @default("bcv") @db.VarChar(10)
+  // Financiamiento (Cashea) declarado en el pedido: NULL = no usa. Igual que sales.financing_*.
+  financing_status   String?   @db.VarChar(12)
+  financing_provider String?   @db.VarChar(40)
+  financing_phrase   String?   @db.VarChar(80)
+  // Lo que el cliente declaró en el checkout público: 'cashea' | 'bs' | 'divisa' (el precio sigue siendo BCV).
+  payment_kind       String?   @db.VarChar(10)
   total_usd        Decimal     @db.Decimal(10, 2)
   total_bs         Decimal     @db.Decimal(12, 2)
   rate_used        Decimal     @db.Decimal(10, 4)

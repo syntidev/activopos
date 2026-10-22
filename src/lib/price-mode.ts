@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { PRICE_MODES, VARIANT_PRICING_SELECT, resolveLinePrice } from '@/lib/pricing'
 import type { PriceMode, PriceSource } from '@/lib/pricing'
+import { FINANCING_BLOCKS_DIVISA_MESSAGE, isFinancingActive } from '@/lib/ticket-financing'
 
 /**
  * Cambio del modo de precio (bcv | divisa) de un ticket ABIERTO: venta (draft / pending / quote) o pedido sin cobrar.
@@ -118,6 +119,9 @@ export async function repriceSaleTx(
     )
   }
 
+  // Exclusión mutua con el financiamiento (Cashea se cobra a precio BCV completo): se RECHAZA, nada cambia solo.
+  if (mode === 'divisa' && isFinancingActive(sale.financing_status)) throw new PriceModeError(409, FINANCING_BLOCKS_DIVISA_MESSAGE)
+
   const lines: RepricedLine[] = []
   for (const item of sale.items) {
     const { price, source } = resolveLinePrice(item.product, item.variant ?? undefined, {
@@ -171,6 +175,8 @@ export async function repriceOrderTx(
   if (order.sale_id !== null) throw new PriceModeError(409, 'Este pedido ya fue cobrado; no se puede cambiar el modo de precio.')
   if (order.status === 'cancelled') throw new PriceModeError(409, 'Este pedido está cancelado; no se puede cambiar el modo de precio.')
   if (order.status === 'delivered') throw new PriceModeError(409, 'Este pedido ya fue entregado; no se puede cambiar el modo de precio.')
+
+  if (mode === 'divisa' && isFinancingActive(order.financing_status)) throw new PriceModeError(409, FINANCING_BLOCKS_DIVISA_MESSAGE)
 
   const products = await tx.product.findMany({
     where:  { id: { in: Array.from(new Set(order.items.map(i => i.product_id))) }, business_id: actor.businessId },

@@ -23,8 +23,10 @@ export async function loadCheckoutFinancing(slug: string): Promise<CheckoutFinan
   if (!business || !isCatalogLive(business)) return NONE
   const financing = toPublicFinancing(readFinancingConfig(business.settings, business.id))
   if (!financing) return NONE
+  // Solo los excluidos que el cliente puede llegar a tener en el carrito (activos y disponibles): no se filtran al
+  // navegador ids de productos desactivados u ocultos.
   const excluded = await prisma.product.findMany({
-    where:  { business_id: business.id, financing_excluded: true },
+    where:  { business_id: business.id, financing_excluded: true, active: true, is_available: true },
     select: { id: true },
   })
   return { financing, excludedIds: excluded.map(p => p.id) }

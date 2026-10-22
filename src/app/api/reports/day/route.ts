@@ -14,9 +14,10 @@ interface CategoryRow {
 }
 
 interface PaymentRow {
-  method:    string
-  cnt:       string | bigint
-  total_usd: string | number
+  method:       string
+  is_financing: number | boolean
+  cnt:          string | bigint
+  total_usd:    string | number
 }
 
 interface CostRow {
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
         ORDER BY vendido_usd DESC`,
 
       prisma.$queryRaw<PaymentRow[]>`
-        SELECT pm.name AS method, COUNT(*) AS cnt, SUM(sp.amount_usd) AS total_usd
+        SELECT pm.name AS method, pm.is_financing AS is_financing, COUNT(*) AS cnt, SUM(sp.amount_usd) AS total_usd
         FROM sale_payments sp
         JOIN payment_methods pm ON pm.id = sp.payment_method_id
         JOIN sales s ON s.id = sp.sale_id
@@ -139,10 +140,16 @@ export async function GET(req: NextRequest) {
       }
     }),
     payment_methods: paymentMethodsRaw.map(m => ({
-      method:    m.method,
-      count:     Number(m.cnt),
-      total_usd: Number(m.total_usd),
+      method:       m.method,
+      is_financing: Boolean(Number(m.is_financing)),
+      count:        Number(m.cnt),
+      total_usd:    Number(m.total_usd),
     })),
+    // Lo cobrado por métodos financiadores (Cashea), aparte: no se mezcla con Bs/Divisa (sigue incluido en cobrado_usd).
+    summary_financing: {
+      usd:   r2(paymentMethodsRaw.filter(m => Number(m.is_financing) === 1).reduce((a, m) => a + Number(m.total_usd), 0)),
+      count: paymentMethodsRaw.filter(m => Number(m.is_financing) === 1).reduce((a, m) => a + Number(m.cnt), 0),
+    },
     cash_registers: registers.map(reg => {
       const regSales = salesForRegs.filter(
         s => s.sold_at && s.sold_at >= reg.opened_at && (!reg.closed_at || s.sold_at <= reg.closed_at)

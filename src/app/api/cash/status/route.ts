@@ -13,7 +13,7 @@ export async function GET() {
 
     if (!register) return NextResponse.json({ isOpen: false })
 
-    const [ventas, payments, movements, abonosAgg, refunds] = await Promise.all([
+    const [ventas, payments, movements, abonosAgg, refunds, financingAgg] = await Promise.all([
       // Ventas netas del turno -- fuente única (src/lib/sales-returns.ts).
       netSales(session.businessId, register.opened_at),
 
@@ -48,6 +48,19 @@ export async function GET() {
 
       // Reembolsos EN EFECTIVO pagados durante este turno.
       cashRefundTotals(session.businessId, register.opened_at),
+
+      // Cobros del turno con métodos financiadores (Cashea): aparte, nunca mezclados con efectivo, Bs o Divisa.
+      db.salePayment.aggregate({
+        where: {
+          sale: {
+            business_id: session.businessId,
+            status:      { in: [...REALIZED_SALE_STATUSES] },
+            sold_at:     { gte: register.opened_at },
+          },
+          payment_method: { is_financing: true },
+        },
+        _sum: { amount_usd: true, amount_bs: true },
+      }),
     ])
 
     const cashVentasBs =
@@ -82,6 +95,10 @@ export async function GET() {
         movIn,
         movOut,
         efectivoEsperado,
+        financiamiento: {
+          usd: Number(financingAgg._sum.amount_usd ?? 0),
+          bs:  Number(financingAgg._sum.amount_bs  ?? 0),
+        },
         cobrosCredito: {
           usd: Number(abonosAgg._sum?.amount_usd ?? 0),
           bs:  Number(abonosAgg._sum?.amount_bs  ?? 0),

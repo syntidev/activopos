@@ -19,6 +19,8 @@ const querySchema = z.object({
   cashier_id: z.coerce.number().int().positive().optional(),
   // Segmenta por modo de precio del ticket (bcv | divisa).
   price_mode: z.enum(['bcv', 'divisa']).optional(),
+  // Segmenta por financiamiento: 'cashea' = solo ventas con financiamiento; 'none' = solo las que no lo usan.
+  financing: z.enum(['cashea', 'none']).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -41,6 +43,7 @@ export async function GET(req: NextRequest) {
         : {}),
       ...(query.cashier_id && { cashier_id: query.cashier_id }),
       ...(query.price_mode && { price_mode: query.price_mode }),
+      ...(query.financing === 'cashea' ? { financing_status: { not: null } } : query.financing === 'none' ? { financing_status: null } : {}),
     }
 
     const [sales, total] = await Promise.all([

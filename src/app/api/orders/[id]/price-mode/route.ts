@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     // La tasa se consulta fuera de la transacción (puede llamar a la red).
     const { rate } = await getActiveRate(session.businessId)
     const ticket = await prisma.$transaction(tx =>
-      repriceOrderTx(tx, session.businessId, orderId, parsed.data.price_mode, rate),
+      repriceOrderTx(tx, { businessId: session.businessId, userId: session.userId }, orderId, parsed.data.price_mode, rate),
     )
     return NextResponse.json({ ok: true, ticket })
   } catch (err) {

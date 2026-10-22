@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { REALIZED_SALE_STATUSES, marginPct, netByProduct, netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
+import { REALIZED_SALE_STATUSES, grossProfitUsd, marginPct, netByProduct, netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { businessDateKey, businessDayStart, businessMonthKey, businessMonthRange, businessOffsetHours } from '@/lib/business-day'
@@ -100,8 +100,9 @@ export async function GET(req: NextRequest) {
   const itemsSold     = Array.from(netoProd.values()).reduce((a, v) => a + v.netQty, 0)
   const costoVentas   = cogs.netUsd
   const gastosOp      = Number(gastosOpAgg._sum.monto_usd ?? 0)
-  const utilidadBruta = r2(totalUsd - costoVentas)
-  const utilidadNeta  = r2(totalUsd - costoVentas - gastosOp)
+  // Utilidad solo sobre líneas con costo conocido (cost_unknown no suma como ganancia ficticia).
+  const utilidadBruta = grossProfitUsd(cogs)
+  const utilidadNeta  = r2(utilidadBruta - gastosOp)
 
   const variacionPct: number =
     prevUsd > 0 ? r2(((totalUsd - prevUsd) / prevUsd) * 100) : 0

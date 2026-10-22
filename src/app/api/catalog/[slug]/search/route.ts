@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
+import { catalogLimiter, catalogSearchSlugLimiter, getClientIp } from '@/lib/rate-limit'
 import { CATALOG_WHERE_FILTER, isCatalogLive } from '@/lib/catalog'
 import { matchVariant, parseSearch, productSearchWhere } from '@/lib/product-search'
 import { logError } from '@/lib/safe-log'
@@ -26,6 +26,13 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   const slug = slugSchema.safeParse(params.slug)
   if (!slug.success) return NextResponse.json({ error: 'Slug inválido' }, { status: 400 })
+
+  // Tope por catálogo (además del de IP): muchas IPs no pueden raspar el mismo slug.
+  try {
+    await catalogSearchSlugLimiter.consume(slug.data)
+  } catch {
+    return NextResponse.json({ error: 'Demasiadas búsquedas. Espera un momento.' }, { status: 429 })
+  }
 
   try {
     const parsed = parseSearch(req.nextUrl.searchParams.get('q'))

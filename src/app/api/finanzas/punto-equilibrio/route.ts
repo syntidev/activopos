@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { netCogs, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
-import { prisma } from '@/lib/prisma'
 import { MONTH_NAMES, parsePeriodFromParams } from '@/lib/finanzas'
 
 export async function GET(req: NextRequest) {
@@ -18,32 +17,11 @@ export async function GET(req: NextRequest) {
   const bid  = session.businessId
   const now  = new Date()
 
-  const [ventasNetas, cogsNeto, costoRow, gastosAgg] = await Promise.all([
+  const [ventasNetas, cogsNeto, gastosAgg] = await Promise.all([
     // Ingreso y COGS netos -- fuente única (src/lib/sales-returns.ts). El
     // break-even se calcula sobre ingreso neto de devoluciones.
     netSales(bid, from, to),
     netCogs(bid, from, to),
-
-    // ingresos_costeados: ingreso de líneas CON costo conocido, NETO de lo
-    // devuelto de esas líneas -- denominador del margen de contribución.
-    prisma.$queryRaw<{ ingresos_costeados: string | null }[]>`
-      SELECT
-        (SELECT IFNULL(SUM(si.subtotal_usd), 0)
-           FROM sale_items si JOIN sales s ON s.id = si.sale_id
-          WHERE s.business_id = ${bid} AND s.status IN ('paid','partial_return')
-            AND si.cost_per_unit_usd IS NOT NULL
-            AND s.sold_at >= ${from} AND s.sold_at < ${to})
-        -
-        (SELECT IFNULL(SUM(ri.total_usd), 0)
-           FROM return_items ri
-           JOIN returns r ON r.id = ri.return_id
-           JOIN sales s   ON s.id = r.sale_id
-           JOIN sale_items si2 ON si2.sale_id = s.id AND si2.product_id = ri.product_id
-          WHERE r.business_id = ${bid} AND r.status = 'approved'
-            AND s.status IN ('paid','partial_return')
-            AND si2.cost_per_unit_usd IS NOT NULL
-            AND s.sold_at >= ${from} AND s.sold_at < ${to})
-        AS ingresos_costeados`,
 
     // Costos fijos excluyen categoria='proveedor' — esas compras ya cuentan como
     // costo variable vía COGS; contarlas aquí las duplicaría en el break-even (GAP-2).
@@ -55,7 +33,8 @@ export async function GET(req: NextRequest) {
 
   const ventasUsd         = ventasNetas.net.usd
   const costoVariable     = cogsNeto.netUsd
-  const ingresosCosteados = parseFloat(String(costoRow[0]?.ingresos_costeados ?? '0')) || 0
+  // Ingreso neto de líneas con costo conocido -- fuente única sales-returns (cost_unknown fuera del margen).
+  const ingresosCosteados = cogsNeto.costedNetUsd
   const productosSinCosto = cogsNeto.productsWithoutCostCount
   const gastosFijos   = Number(gastosAgg._sum.monto_usd ?? 0)
   const r2            = (x: number) => Math.round(x * 100) / 100

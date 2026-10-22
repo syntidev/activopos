@@ -39,6 +39,12 @@ export interface NetCogs {
   returnedUsd: number
   netUsd:      number
   /**
+   * Ingreso neto de las líneas CON costo conocido (SaleItem.cost_per_unit_usd no nulo), neto de lo devuelto de esas
+   * líneas. Utilidad y margen se calculan SOLO sobre esto (costedNetUsd − netUsd): el ingreso de productos con costo
+   * desconocido (cost_unknown) no entra como utilidad ficticia de costo 0.
+   */
+  costedNetUsd: number
+  /**
    * Costo devuelto que NO se pudo revertir: devoluciones previas al estándar
    * (sin snapshot de costo) cuya línea no es identificable sin ambigüedad.
    * Se expone en vez de estimarlo, para que un reporte pueda avisar.
@@ -54,6 +60,8 @@ export interface NetCogs {
 
 export interface NetDimension {
   netUsd:  number
+  /** Ingreso neto de líneas con costo conocido (ver NetCogs.costedNetUsd). */
+  costedUsd: number
   netQty:  number
   netCogs: number
 }
@@ -99,8 +107,9 @@ export async function netCogs(businessId: number, from: Date, to?: Date): Promis
   const to_ = to ?? null
 
   const [grossRows, returnedRows] = await Promise.all([
-    prisma.$queryRaw<{ cogs: string | null; sin_costo: string | number | null }[]>`
+    prisma.$queryRaw<{ cogs: string | null; costed: string | null; sin_costo: string | number | null }[]>`
       SELECT SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS cogs,
+             SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd ELSE 0 END) AS costed,
              COUNT(DISTINCT CASE WHEN si.cost_per_unit_usd IS NULL THEN si.product_id END) AS sin_costo
       FROM sale_items si
       JOIN sales s ON s.id = si.sale_id
@@ -112,8 +121,9 @@ export async function netCogs(businessId: number, from: Date, to?: Date): Promis
     // Revierte con el snapshot de ReturnItem. Si falta (devolución previa al
     // estándar), cae al SaleItem SOLO cuando ese producto está en una única
     // línea de la venta; si hay varias, no se adivina: suma en `unresolved`.
-    prisma.$queryRaw<{ reverted: string | null; unresolved: string | null }[]>`
+    prisma.$queryRaw<{ reverted: string | null; unresolved: string | null; costed: string | null }[]>`
       SELECT
+        SUM(CASE WHEN ri.cost_per_unit_usd IS NOT NULL OR (ln.n = 1 AND ln.unit_cost IS NOT NULL) THEN ri.total_usd ELSE 0 END) AS costed,
         SUM(CASE
               WHEN ri.cost_per_unit_usd IS NOT NULL THEN ri.qty * ri.cost_per_unit_usd
               WHEN ln.n = 1 THEN ri.qty * IFNULL(ln.unit_cost, 0)
@@ -145,9 +155,18 @@ export async function netCogs(businessId: number, from: Date, to?: Date): Promis
     grossUsd:              r2(grossUsd),
     returnedUsd:           r2(returnedUsd),
     netUsd:                r2(grossUsd - returnedUsd),
+    costedNetUsd:          r2(num(grossRows[0]?.costed) - num(returnedRows[0]?.costed)),
     unresolvedReturnedUsd: r2(num(returnedRows[0]?.unresolved)),
     productsWithoutCostCount: Math.trunc(num(grossRows[0]?.sin_costo)),
   }
+}
+
+/**
+ * Utilidad bruta neta: solo sobre el ingreso de líneas con costo conocido. El ingreso de productos con costo
+ * desconocido (cost_unknown) no suma como ganancia ficticia de costo 0 (ver NetCogs.costedNetUsd).
+ */
+export function grossProfitUsd(c: Pick<NetCogs, 'costedNetUsd' | 'netUsd'>): number {
+  return r2(c.costedNetUsd - c.netUsd)
 }
 
 /** Margen % sobre ingreso neto. 0 si no hubo ingreso (nunca divide por 0). */
@@ -173,9 +192,10 @@ async function dimensionRows(
     : Prisma.sql`COALESCE(c.name, 'Sin categoría')`
 
   const [sold, back] = await Promise.all([
-    prisma.$queryRaw<{ k: string; usd: string | null; qty: string | null; cogs: string | null }[]>`
+    prisma.$queryRaw<{ k: string; usd: string | null; qty: string | null; cogs: string | null; costed: string | null }[]>`
       SELECT ${keyExpr} AS k,
              SUM(si.subtotal_usd) AS usd,
+             SUM(CASE WHEN si.cost_per_unit_usd IS NOT NULL THEN si.subtotal_usd ELSE 0 END) AS costed,
              SUM(si.quantity)     AS qty,
              SUM(si.quantity * IFNULL(si.cost_per_unit_usd, 0)) AS cogs
       FROM sale_items si
@@ -188,9 +208,10 @@ async function dimensionRows(
         ${to_ ? Prisma.sql`AND s.sold_at < ${to_}` : Prisma.empty}
       GROUP BY k`,
 
-    prisma.$queryRaw<{ k: string; usd: string | null; qty: string | null; cogs: string | null }[]>`
+    prisma.$queryRaw<{ k: string; usd: string | null; qty: string | null; cogs: string | null; costed: string | null }[]>`
       SELECT ${keyExprRet} AS k,
              SUM(ri.total_usd) AS usd,
+             SUM(CASE WHEN ri.cost_per_unit_usd IS NOT NULL OR (ln.n = 1 AND ln.unit_cost IS NOT NULL) THEN ri.total_usd ELSE 0 END) AS costed,
              SUM(ri.qty)       AS qty,
              SUM(CASE
                    WHEN ri.cost_per_unit_usd IS NOT NULL THEN ri.qty * ri.cost_per_unit_usd
@@ -222,6 +243,7 @@ async function dimensionRows(
     const b = backMap.get(k)
     out.set(k, {
       netUsd:  r2(num(row.usd)  - num(b?.usd)),
+      costedUsd: r2(num(row.costed) - num(b?.costed)),
       netQty:  num(row.qty)  - num(b?.qty),
       netCogs: r2(num(row.cogs) - num(b?.cogs)),
     })
@@ -266,6 +288,8 @@ export async function returnedUsdBySeries(
 export interface ReturnedSeriesBucket {
   usd:  number
   cogs: number
+  /** Ingreso devuelto de líneas con costo conocido. */
+  costedUsd: number
 }
 
 /**
@@ -287,9 +311,10 @@ export async function returnedBySeries(
     granularity === 'week'  ? Prisma.sql`WEEK(${local}, 1)` :
                               Prisma.sql`HOUR(${local})`
 
-  const rows = await prisma.$queryRaw<{ k: string | number; usd: string | null; cogs: string | null }[]>`
+  const rows = await prisma.$queryRaw<{ k: string | number; usd: string | null; cogs: string | null; costed: string | null }[]>`
     SELECT ${expr} AS k,
            SUM(ri.total_usd) AS usd,
+           SUM(CASE WHEN ri.cost_per_unit_usd IS NOT NULL OR (ln.n = 1 AND ln.unit_cost IS NOT NULL) THEN ri.total_usd ELSE 0 END) AS costed,
            SUM(CASE
                  WHEN ri.cost_per_unit_usd IS NOT NULL THEN ri.qty * ri.cost_per_unit_usd
                  WHEN ln.n = 1 THEN ri.qty * IFNULL(ln.unit_cost, 0)
@@ -310,7 +335,7 @@ export async function returnedBySeries(
       ${to_ ? Prisma.sql`AND s.sold_at < ${to_}` : Prisma.empty}
     GROUP BY k`
 
-  return new Map(rows.map(r => [String(r.k), { usd: num(r.usd), cogs: num(r.cogs) }]))
+  return new Map(rows.map(r => [String(r.k), { usd: num(r.usd), cogs: num(r.cogs), costedUsd: num(r.costed) }]))
 }
 
 /* ──────────────────── Caja ──────────────────── */

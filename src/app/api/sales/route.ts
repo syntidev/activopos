@@ -326,7 +326,7 @@ export async function POST(req: NextRequest) {
           active: true,
         },
         select: {
-          id: true, name: true, base_unit_label: true,
+          id: true, name: true, base_unit_label: true, sale_mode: true,
           product_type: true, unit_type: true, unit_step: true,
           price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true,
           wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
@@ -412,7 +412,7 @@ export async function POST(req: NextRequest) {
         // Regla única en lib/pricing.ts (override de variante, precio_extra, mayorista).
         const { price: priceUsd, source: priceSource } = resolveLinePrice(product, variant, {
           mode:        priceMode,
-          saleMode:    item.sale_mode,
+          saleMode:    product.sale_mode, // del producto en la DB, nunca del body (igual que price-mode.ts)
           manualPrice: item.unit_price_override,
         })
         if (priceUsd <= 0) throw new Error(`Precio no configurado para "${product.name}"`)
@@ -436,7 +436,7 @@ export async function POST(req: NextRequest) {
         return {
           product_id:          item.product_id,
           product_name:        product.name,
-          sale_mode:           item.sale_mode,
+          sale_mode:           product.sale_mode,
           unit_label:          product.base_unit_label,
           quantity:            item.quantity,
           price_per_unit_usd:  priceUsd,

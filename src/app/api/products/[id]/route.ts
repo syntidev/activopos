@@ -226,6 +226,30 @@ const deleteError = (status: number, code: string, message: string) =>
  *  - con historial → NO se borra, se DESACTIVA (active=false: sale del POS y del catálogo): 200 { action: 'deactivated' }
  * Toda respuesta trae `code` y `message` (español, listo para mostrar tal cual); los errores además `error`.
  */
+/** Bitácora de borrar/desactivar un producto: quién, cuál. Un fallo al registrar no debe romper la operación ya hecha. */
+async function logProductRemoval(
+  session: { businessId: number; userId: number },
+  action: 'product_deleted' | 'product_deactivated',
+  productId: number,
+  name: string,
+  history: string[],
+): Promise<void> {
+  try {
+    await prisma.activityLog.create({
+      data: {
+        business_id: session.businessId,
+        user_id:     session.userId,
+        action,
+        model_type:  'Product',
+        model_id:    productId,
+        old_values:  { name, ...(history.length > 0 ? { history } : {}) },
+      },
+    })
+  } catch (e) {
+    logError('Product removal activity log failed', e)
+  }
+}
+
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {
     const { session, db } = await getAuthenticatedTenant()
@@ -240,6 +264,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     const history = await productHistory(id)
     if (history.total > 0) {
       await db.product.update({ where: { id }, data: { active: false } }) // business_id inyectado
+      await logProductRemoval(session, 'product_deactivated', id, existing.name, history.detail)
       await revalidateCatalogCache(session.businessId)
       return NextResponse.json({
         ok: true,
@@ -256,6 +281,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
       prisma.productCollection.deleteMany({ where: { product_id: id } }),
       prisma.product.deleteMany({ where: { id, business_id: session.businessId } }),
     ])
+    await logProductRemoval(session, 'product_deleted', id, existing.name, [])
     await revalidateCatalogCache(session.businessId)
     return NextResponse.json({ ok: true, action: 'deleted', code: 'DELETED', message: `"${existing.name}" se eliminó.` })
   } catch (e) {

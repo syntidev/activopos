@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
+import { grossProfitUsd, netCogs, netSales, returnedUsdBySeries } from '@/lib/sales-returns'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { businessOffsetHours, businessRange } from '@/lib/business-day'
@@ -79,7 +79,8 @@ export async function GET(req: NextRequest) {
       total_bs:    ventas.net.bs,
       // Utilidad neta: ingreso neto − COGS neto (el costo de lo devuelto se
       // revierte con el snapshot de ReturnItem).
-      profit_usd:  Math.round((ventas.net.usd - cogs.netUsd) * 100) / 100,
+      // Solo sobre líneas con costo conocido (cost_unknown no suma como ganancia ficticia).
+      profit_usd:  grossProfitUsd(cogs),
       by_day: byDayRows.map(r => ({
         date:        String(r.date),
         sales_count: Number(r.sales),

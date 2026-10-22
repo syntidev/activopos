@@ -33,7 +33,9 @@ El modo se puede cambiar en cualquier momento mientras el ticket o pedido NO est
 4. Venta o pedido cobrado NO acepta cambio de modo: **409** con mensaje en español (mostrar `error` tal cual).
 5. El servidor recalcula desde la base de datos; nunca confía en precios del cliente (salvo líneas `manual` ya autorizadas). `business_id` siempre de la sesión.
 6. Stock descuenta SOLO cuando la venta pasa a `paid` (o `credit`, como siempre). Cambiar el modo nunca mueve stock.
-7. Los descuentos (`discount_usd` por línea) son montos absolutos y se conservan tal cual al recalcular (nunca dejan una línea en negativo). El cliente recalcula su descuento global con los precios del modo y lo envía.
+7. **Permisos y bitácora:** un cajero solo cambia el modo de SUS tickets (draft, pending, quote); si el ticket es de otro cajero responde **404** (el admin sí puede con cualquiera). Todo cambio REAL de modo (venta o pedido, también el que llega por `price_mode` en `cobrar`) queda en `activity_logs` con `action='price_mode_changed'`, quién (`user_id`), `old_values.price_mode`, `new_values.price_mode` y el id de la venta/pedido. NO hay PIN ni rol especial para cambiar el modo (pendiente de decisión de Carlos).
+8. **Concurrencia:** cambiar el modo y cobrar se serializan con un cerrojo de fila: si el cobro gana, el cambio responde 409; si el cambio gana, el cobro revalida el total nuevo y puede responder 400 "Pago insuficiente" (el cliente debe volver a pedir el total y cobrar de nuevo).
+9. Los descuentos (`discount_usd` por línea) son montos absolutos y se conservan tal cual al recalcular (nunca dejan una línea en negativo). El cliente recalcula su descuento global con los precios del modo y lo envía.
 
 ## 4. Endpoints
 

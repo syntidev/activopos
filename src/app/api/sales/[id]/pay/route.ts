@@ -6,6 +6,9 @@ import { getActiveRate } from '@/lib/bcv'
 import { checkCedula } from '@/lib/cedula'
 
 class InsufficientStockError extends Error {}
+class SaleStateError extends Error {
+  constructor(readonly status: number, message: string) { super(message) }
+}
 
 const paySchema = z.object({
   payments: z
@@ -83,27 +86,46 @@ export async function PATCH(
     const clientCedula = cedulaCheck.value
 
     const { rate }     = await getActiveRate(session.businessId)
-    const totalBs      = Number(sale.total_bs)
-    const totalUsd     = Number(sale.total_usd)
     const payTotalBs   = body.payments.reduce((acc, p) => acc + p.amount_bs,  0)
     const payTotalUsd  = body.payments.reduce((acc, p) => acc + p.amount_usd, 0)
 
-    if (payTotalBs < totalBs - 0.01) {
-      return NextResponse.json(
-        {
-          error: `Pago insuficiente. Total: ${totalBs.toFixed(2)} Bs. Recibido: ${payTotalBs.toFixed(2)} Bs`,
-        },
-        { status: 400 }
-      )
-    }
-
-    const montoRecibidoUsd = Math.round(payTotalUsd * 100) / 100
-    const vueltoUsd        = Math.max(0, Math.round((payTotalUsd - totalUsd) * 100) / 100)
-
     // $transaction en prisma base: business_id manual adentro (la extension no se propaga al tx)
     const updated = await prisma.$transaction(async (tx) => {
-      const paidSale = await tx.sale.update({
-        where: { id: saleId },
+      // Cerrojo de la fila de la venta (con business_id): serializa el cobro contra un cambio de modo de precio
+      // (PATCH /price-mode). Estado y total se REVALIDAN adentro: lo leído arriba puede estar viejo.
+      await tx.$queryRaw`SELECT id FROM sales WHERE id = ${saleId} AND business_id = ${session.businessId} FOR UPDATE`
+      const current = await tx.sale.findFirst({
+        where: { id: saleId, business_id: session.businessId },
+        include: {
+          items: {
+            select: {
+              id: true, product_id: true, quantity: true,
+              recipe_snapshot: true, variant_id: true,
+              product: {
+                select: {
+                  product_type: true,
+                  components: { select: { component_id: true, quantity: true } },
+                },
+              },
+            },
+          },
+        },
+      })
+      if (!current) throw new SaleStateError(404, 'Venta no encontrada')
+      if (current.status === 'paid') throw new SaleStateError(409, 'La venta ya fue cobrada')
+      if (current.status === 'cancelled') throw new SaleStateError(409, 'La venta está anulada')
+
+      const totalBs  = Number(current.total_bs)
+      const totalUsd = Number(current.total_usd)
+      if (payTotalBs < totalBs - 0.01) {
+        throw new SaleStateError(400, `Pago insuficiente. Total: ${totalBs.toFixed(2)} Bs. Recibido: ${payTotalBs.toFixed(2)} Bs`)
+      }
+      const montoRecibidoUsd = Math.round(payTotalUsd * 100) / 100
+      const vueltoUsd        = Math.max(0, Math.round((payTotalUsd - totalUsd) * 100) / 100)
+
+      // Guarda de estado al marcar pagada: solo pasa si sigue abierta (nunca doble cobro).
+      const claimed = await tx.sale.updateMany({
+        where: { id: saleId, business_id: session.businessId, status: { notIn: ['paid', 'cancelled'] } },
         data: {
           status:             'paid',
           sold_at:            new Date(),
@@ -111,16 +133,21 @@ export async function PATCH(
           monto_recibido_usd: montoRecibidoUsd,
           vuelto_usd:         vueltoUsd,
           client_cedula:      clientCedula,
-          payments: {
-            create: body.payments.map(p => ({
-              payment_method_id: p.payment_method_id,
-              amount_bs: p.amount_bs,
-              amount_usd: p.amount_usd,
-              reference: p.reference,
-              rate_used: rate,
-            })),
-          },
         },
+      })
+      if (claimed.count !== 1) throw new SaleStateError(409, 'La venta ya fue cobrada')
+      await tx.salePayment.createMany({
+        data: body.payments.map(p => ({
+          sale_id:           saleId,
+          payment_method_id: p.payment_method_id,
+          amount_bs:         p.amount_bs,
+          amount_usd:        p.amount_usd,
+          reference:         p.reference,
+          rate_used:         rate,
+        })),
+      })
+      const paidSale = await tx.sale.findFirstOrThrow({
+        where: { id: saleId, business_id: session.businessId },
         include: {
           items: true,
           payments: {
@@ -132,9 +159,9 @@ export async function PATCH(
       })
 
       // Client.cedula solo si estaba nula; nunca se pisa una existente.
-      if (clientCedula && sale.client_id !== null) {
+      if (clientCedula && current.client_id !== null) {
         await tx.client.updateMany({
-          where: { id: sale.client_id, business_id: session.businessId, cedula: null },
+          where: { id: current.client_id, business_id: session.businessId, cedula: null },
           data:  { cedula: clientCedula },
         })
       }
@@ -149,7 +176,7 @@ export async function PATCH(
         created_by:  number
       }[] = []
 
-      for (const item of sale.items) {
+      for (const item of current.items) {
         const productType = item.product.product_type
         if (productType === 'simple') {
           if (item.variant_id != null) {
@@ -185,7 +212,7 @@ export async function PATCH(
               quantity:    -Number(item.quantity),
               waste:       0,
               entry_type:  'sale',
-              notes:       `VENTA #${sale.ticket_number}`,
+              notes:       `VENTA #${current.ticket_number}`,
               created_by:  session.userId,
             })
           }
@@ -203,7 +230,7 @@ export async function PATCH(
               quantity:    -(Number(item.quantity) * comp.quantity),
               waste:       0,
               entry_type:  'sale',
-              notes:       `VENTA #${sale.ticket_number} (componente)`,
+              notes:       `VENTA #${current.ticket_number} (componente)`,
               created_by:  session.userId,
             })
           }
@@ -220,9 +247,9 @@ export async function PATCH(
       // acepta 'converted' y un fetch a otra ruta quedaría fuera de la
       // transacción. updateMany filtra por business_id y no explota si la
       // cotización ya no existe.
-      if (sale.quotation_id) {
+      if (current.quotation_id) {
         await tx.quotation.updateMany({
-          where: { id: sale.quotation_id, business_id: session.businessId },
+          where: { id: current.quotation_id, business_id: session.businessId },
           data:  { status: 'converted' },
         })
       }
@@ -235,7 +262,7 @@ export async function PATCH(
           model_type: 'Sale',
           model_id: saleId,
           new_values: {
-            ticket_number: sale.ticket_number,
+            ticket_number: current.ticket_number,
             total_bs: totalBs,
             rate,
           },
@@ -255,6 +282,9 @@ export async function PATCH(
         { error: 'Datos inválidos', details: err.issues },
         { status: 400 }
       )
+    }
+    if (err instanceof SaleStateError) {
+      return NextResponse.json({ error: err.message }, { status: err.status })
     }
     if (err instanceof InsufficientStockError) {
       return NextResponse.json({ error: err.message }, { status: 400 })

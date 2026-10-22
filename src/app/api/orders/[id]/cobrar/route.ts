@@ -51,6 +51,8 @@ export async function POST(req: NextRequest, { params }: Context) {
 
     // $transaction en prisma base: business_id manual adentro (la extension no se propaga al tx)
     const { saleId } = await prisma.$transaction(async (tx) => {
+      // Cerrojo de la fila del pedido: dos cobros (o un cobro y un cambio de modo) no corren a la vez.
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${session.businessId} FOR UPDATE`
       const order = await tx.order.findFirst({
         where: { id: orderId, business_id: session.businessId },
         include: { items: true },
@@ -111,7 +113,7 @@ export async function POST(req: NextRequest, { params }: Context) {
       // SEC-01: precios desde la DB, nunca del snapshot ni del cliente. El modo (bcv | divisa) lo decide el pedido o
       // el body; repriceOrderTx deja el pedido y sus líneas ya recalculados (regla única en lib/pricing.ts).
       const mode     = body.price_mode ?? priceModeSchema.catch('bcv').parse(order.price_mode)
-      const repriced = await repriceOrderTx(tx, session.businessId, orderId, mode, rate)
+      const repriced = await repriceOrderTx(tx, { businessId: session.businessId, userId: session.userId }, orderId, mode, rate)
       const lineById = new Map(repriced.items.map(l => [l.id, l]))
 
       const saleItems = order.items.map(item => {
@@ -142,7 +144,8 @@ export async function POST(req: NextRequest, { params }: Context) {
           unit_label:         p?.base_unit_label ?? 'und',
           quantity:           Number(item.quantity),
           price_per_unit_usd: priceUsd,
-          cost_per_unit_usd:  p ? Number(p.cost_per_unit_usd ?? 0) : 0,
+          // costo desconocido = NULL (igual que POST /api/sales); con 0 se contaría como ganancia ficticia.
+          cost_per_unit_usd:  p && p.cost_per_unit_usd != null ? Number(p.cost_per_unit_usd) : null,
           subtotal_usd,
           subtotal_bs,
           rate_used:          rate,

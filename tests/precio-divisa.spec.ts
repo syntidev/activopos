@@ -1,6 +1,6 @@
-import { test, expect, type APIRequestContext } from '@playwright/test'
+import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, apiAs, cleanupTestProducts } from './p0-helpers'
+import { BASE, BUSINESS_ID, apiAs, cleanupTestProducts, tokenFor } from './p0-helpers'
 
 /**
  * Modo de precio del ticket (bcv | divisa), negocio 87 local. 'divisa' = wholesale_price_usd / _per_kg_usd.
@@ -45,6 +45,19 @@ async function crearProducto(api: APIRequestContext, data: Record<string, unknow
   expect(r.status(), JSON.stringify(await r.json().catch(() => ({})))).toBe(201)
   return (await r.json()).product.id as number
 }
+
+/** Sesión con un usuario y rol concretos del negocio 87 (QA: 86/104 admin, 105 cajero). */
+async function apiRole(userId: number, role: string): Promise<APIRequestContext> {
+  return pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${await tokenFor(userId, role)}` } })
+}
+const CASHIER_ID = Number(sql(`SELECT id FROM users WHERE business_id=${BUSINESS_ID} AND role='cashier' ORDER BY id LIMIT 1`))
+const OTHER_ADMIN_ID = Number(sql(`SELECT id FROM users WHERE business_id=${BUSINESS_ID} AND role='admin' AND id<>86 ORDER BY id LIMIT 1`))
+
+/** Bitácora de cambios de modo: una fila `quién|modo_anterior>modo_nuevo` por cambio real. */
+const modeLog = (modelType: 'Sale' | 'Order', modelId: number): string[] =>
+  sql(`SELECT CONCAT(user_id,'|',JSON_UNQUOTE(JSON_EXTRACT(old_values,'$.price_mode')),'>',JSON_UNQUOTE(JSON_EXTRACT(new_values,'$.price_mode')))
+       FROM activity_logs WHERE business_id=${BUSINESS_ID} AND action='price_mode_changed' AND model_type='${modelType}' AND model_id=${modelId} ORDER BY id`)
+    .split('\n').map(l => l.trim()).filter(Boolean)
 
 async function cambiarModo(api: APIRequestContext, kind: 'sales' | 'orders', id: number, mode: string) {
   return api.patch(`/api/${kind}/${id}/price-mode`, { data: { price_mode: mode } })
@@ -262,5 +275,108 @@ test('validaciones: modo inválido 400, inexistente 404, sin sesión 401, otro n
   const lista = await (await api.get('/api/sales?price_mode=divisa&limit=50')).json() as { sales: Array<{ price_mode: string }> }
   expect(lista.sales.length).toBeGreaterThan(0)
   expect(lista.sales.every(s => s.price_mode === 'divisa')).toBe(true)
+  await api.dispose()
+})
+
+test('concurrencia: cobrar vs cambiar de modo nunca deja una venta pagada con pago insuficiente', async () => {
+  test.setTimeout(120_000)
+  const api = await apiAs()
+  const resultados: string[] = []
+  for (let i = 0; i < 12; i++) {
+    const v = await api.post('/api/sales', { data: { status: 'pending', origin: 'pos', price_mode: 'divisa', items: [{ product_id: ids.a, quantity: 1, sale_mode: 'unit' }] } })
+    expect(v.status()).toBe(201)
+    const sale = (await v.json()).sale as SaleResp & { total_bs: number | string }
+    // El pago cubre EXACTAMENTE el total en divisa (80); el cambio a bcv lo subiría a 100.
+    const pagoDivisa = [{ payment_method_id: CASH_ID, amount_bs: Number(sale.total_bs), amount_usd: Number(sale.total_usd) }]
+    // El cambio de modo arranca con un desfase creciente (0..~66 ms) para recorrer los dos órdenes posibles.
+    const [pay, mode] = await Promise.all([
+      api.patch(`/api/sales/${sale.id}/pay`, { data: { payments: pagoDivisa } }),
+      new Promise(r => setTimeout(r, i * 6)).then(() => cambiarModo(api, 'sales', sale.id, 'bcv')),
+    ])
+    const par = `${pay.status()}/${mode.status()}`
+    resultados.push(par)
+    // O se cobró primero (cobro 200, cambio 409) o cambió primero (el cobro revalida el total nuevo y falla 400). Nunca 200/200.
+    expect(['200/409', '400/200'], `iteración ${i}: ${par}`).toContain(par)
+    const [status, totalBs] = sql(`SELECT CONCAT(status,'|',total_bs) FROM sales WHERE id=${sale.id}`).split('|')
+    if (pay.status() === 200) {
+      expect(status).toBe('paid')
+      const pagado = Number(sql(`SELECT IFNULL(SUM(amount_bs),0) FROM sale_payments WHERE sale_id=${sale.id}`))
+      expect(pagado + 0.01).toBeGreaterThanOrEqual(Number(totalBs))
+    } else {
+      expect(status).toBe('pending')
+      expect(Number(sql(`SELECT COUNT(*) FROM sale_payments WHERE sale_id=${sale.id}`))).toBe(0)
+    }
+  }
+  console.log('concurrencia pay/price-mode (pago/cambio):', resultados.join(' '))
+  await api.dispose()
+})
+
+test('concurrencia: dos cobros a la vez del mismo pedido producen UNA sola venta y descuentan el stock una vez', async () => {
+  const api = await apiAs()
+  const o = await api.post('/api/orders', {
+    data: { origin: 'catalog', client_name: 'ZZ Divisa cobro doble', items: [{ product_id: ids.b, product_name: 'ZZ Divisa B sin divisa', quantity: 1 }] },
+  })
+  const orderId = (await o.json()).order.id as number
+  const antes = netStock(ids.b)
+  const [c1, c2] = await Promise.all([
+    api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: CASH_ID } }),
+    api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: CASH_ID } }),
+  ])
+  expect([c1.status(), c2.status()].sort()).toEqual([200, 409])
+  expect(netStock(ids.b)).toBe(antes - 1)
+  expect(Number(sql(`SELECT COUNT(*) FROM sales WHERE business_id=${BUSINESS_ID} AND id=(SELECT sale_id FROM orders WHERE id=${orderId})`))).toBe(1)
+  await api.dispose()
+})
+
+test('bitácora: cada cambio real de modo registra quién, de qué modo a cuál, y el id (venta y pedido)', async () => {
+  const api = await apiAs()
+  const v = await api.post('/api/sales', { data: { status: 'pending', origin: 'pos', items: [{ product_id: ids.a, quantity: 1, sale_mode: 'unit' }] } })
+  const sale = (await v.json()).sale as SaleResp
+  await cambiarModo(api, 'sales', sale.id, 'divisa')
+  await cambiarModo(api, 'sales', sale.id, 'divisa') // mismo modo: recalcula pero no es un cambio
+  await cambiarModo(api, 'sales', sale.id, 'bcv')
+  expect(modeLog('Sale', sale.id)).toEqual(['86|bcv>divisa', '86|divisa>bcv'])
+
+  const o = await api.post('/api/orders', { data: { origin: 'catalog', client_name: 'ZZ Divisa bitacora', items: [{ product_id: ids.a, product_name: 'ZZ Divisa A', quantity: 1 }] } })
+  const orderId = (await o.json()).order.id as number
+  const admin2 = await apiRole(OTHER_ADMIN_ID, 'admin')
+  await cambiarModo(admin2, 'orders', orderId, 'divisa')
+  expect(modeLog('Order', orderId)).toEqual([`${OTHER_ADMIN_ID}|bcv>divisa`])
+  // cobrar con otro modo en el body también es un cambio de modo y queda registrado
+  expect((await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: CASH_ID, price_mode: 'bcv' } })).status()).toBe(200)
+  expect(modeLog('Order', orderId)).toEqual([`${OTHER_ADMIN_ID}|bcv>divisa`, '86|divisa>bcv'])
+  await admin2.dispose()
+  await api.dispose()
+})
+
+test('cajero: solo cambia el modo de SUS tickets (draft, pending, quote); el admin puede con cualquiera', async () => {
+  const admin = await apiAs()
+  const cajero = await apiRole(CASHIER_ID, 'cashier')
+  const item = [{ product_id: ids.a, quantity: 1, sale_mode: 'unit' }]
+
+  const ajena = (await (await admin.post('/api/sales', { data: { status: 'pending', origin: 'pos', items: item } })).json()).sale as SaleResp
+  expect((await cambiarModo(cajero, 'sales', ajena.id, 'divisa')).status()).toBe(404)
+  const ajenaQuote = (await (await admin.post('/api/sales', { data: { status: 'quote', origin: 'quote', items: item } })).json()).sale as SaleResp
+  expect((await cambiarModo(cajero, 'sales', ajenaQuote.id, 'divisa')).status()).toBe(404)
+  expect(sql(`SELECT price_mode FROM sales WHERE id=${ajena.id}`)).toBe('bcv')
+
+  const propia = await cajero.post('/api/sales', { data: { status: 'pending', origin: 'pos', items: item } })
+  expect(propia.status(), JSON.stringify(await propia.json().catch(() => ({})))).toBe(201)
+  const propiaId = ((await propia.json()) as { sale: SaleResp }).sale.id
+  expect((await cambiarModo(cajero, 'sales', propiaId, 'divisa')).status()).toBe(200)
+
+  expect((await cambiarModo(admin, 'sales', propiaId, 'bcv')).status()).toBe(200) // el admin sí
+  expect((await cambiarModo(admin, 'sales', ajena.id, 'divisa')).status()).toBe(200)
+  await cajero.dispose()
+  await admin.dispose()
+})
+
+test('sale_mode sale del producto en la DB, no del body: un body mentiroso no cambia el precio por kilo', async () => {
+  const api = await apiAs()
+  const v = await api.post('/api/sales', { data: { status: 'pending', origin: 'pos', price_mode: 'divisa', items: [{ product_id: ids.kilo, quantity: 2, sale_mode: 'unit' }] } })
+  expect(v.status(), JSON.stringify(await v.json().catch(() => ({})))).toBe(201)
+  const sale = (await v.json()).sale as SaleResp
+  expect(Number(sale.total_usd)).toBe(48) // 2 kg × 24 (wholesale_price_per_kg_usd), no 2 × precio de unidad
+  expect(sql(`SELECT sale_mode FROM sale_items WHERE sale_id=${sale.id}`)).toBe('weight')
   await api.dispose()
 })

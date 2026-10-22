@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { netByProduct, netCogs, netSales } from '@/lib/sales-returns'
+import { grossProfitUsd, netByProduct, netCogs, netSales } from '@/lib/sales-returns'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { businessRange } from '@/lib/business-day'
@@ -107,8 +107,8 @@ export async function GET(req: NextRequest) {
   const totalGastos   = Number(gastos._sum.monto_usd ?? 0)
   const utilidad      = totalIngresos - totalGastos
   const margen        = totalIngresos > 0 ? (utilidad / totalIngresos) * 100 : 0
-  // Utilidad bruta neta: ingreso neto − COGS neto.
-  const profitBruto   = Math.round((ventas.net.usd - cogs.netUsd) * 100) / 100
+  // Utilidad bruta neta: solo líneas con costo conocido (cost_unknown no suma como ganancia ficticia).
+  const profitBruto   = grossProfitUsd(cogs)
   const salesCount    = ventas.salesCount
 
   const topProductsHtml = topProductsRaw

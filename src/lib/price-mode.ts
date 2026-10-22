@@ -54,6 +54,29 @@ const PRODUCT_PRICING_SELECT = {
 
 const r2 = (n: number): number => Math.round(n * 100) / 100
 
+/** Bitácora de cada cambio de modo (quién, de qué modo a cuál, venta/pedido id). Va dentro de la misma transacción. */
+async function logModeChange(
+  tx: Prisma.TransactionClient,
+  actor: { businessId: number; userId: number },
+  modelType: 'Sale' | 'Order',
+  modelId: number,
+  from: string,
+  to: PriceMode,
+  totals: { total_usd: number; total_bs: number },
+): Promise<void> {
+  await tx.activityLog.create({
+    data: {
+      business_id: actor.businessId,
+      user_id:     actor.userId,
+      action:      'price_mode_changed',
+      model_type:  modelType,
+      model_id:    modelId,
+      old_values:  { price_mode: from },
+      new_values:  { price_mode: to, total_usd: totals.total_usd, total_bs: totals.total_bs },
+    },
+  })
+}
+
 function ticketOf(
   base: Pick<RepricedTicket, 'kind' | 'id' | 'number' | 'status' | 'price_mode' | 'rate' | 'total_usd' | 'total_bs'>,
   items: RepricedLine[],
@@ -69,6 +92,8 @@ export async function repriceSaleTx(
   mode: PriceMode,
   rate: number,
 ): Promise<RepricedTicket> {
+  // Cerrojo de la fila (con business_id): serializa contra el cobro (PATCH /pay) y contra otro cambio de modo.
+  await tx.$queryRaw`SELECT id FROM sales WHERE id = ${saleId} AND business_id = ${actor.businessId} FOR UPDATE`
   const sale = await tx.sale.findFirst({
     where:   { id: saleId, business_id: actor.businessId },
     include: {
@@ -80,8 +105,8 @@ export async function repriceSaleTx(
       },
     },
   })
-  // La pestaña (draft) es del cajero que la abrió: otro cajero no la ve.
-  if (!sale || (sale.status === 'draft' && actor.role === 'cashier' && sale.cashier_id !== actor.userId)) {
+  // Un cajero solo cambia el modo de SUS tickets (draft, pending o quote); otro cajero no los ve. Admin sí.
+  if (!sale || (actor.role === 'cashier' && sale.cashier_id !== actor.userId)) {
     throw new PriceModeError(404, 'Venta no encontrada')
   }
   if (!OPEN_SALE_STATUSES.includes(sale.status)) {
@@ -121,6 +146,7 @@ export async function repriceSaleTx(
     where: { id: sale.id },
     data:  { price_mode: mode, total_usd, total_bs, rate_used: rate },
   })
+  if (sale.price_mode !== mode) await logModeChange(tx, actor, 'Sale', sale.id, sale.price_mode, mode, { total_usd, total_bs })
   return ticketOf(
     { kind: 'sale', id: sale.id, number: sale.ticket_number, status: sale.status, price_mode: mode, rate, total_usd, total_bs },
     lines,
@@ -130,13 +156,15 @@ export async function repriceSaleTx(
 /** Pedido sin cobrar (incluye los del catálogo web). `delivery_fee` se suma al total y no depende del modo. */
 export async function repriceOrderTx(
   tx: Prisma.TransactionClient,
-  businessId: number,
+  actor: { businessId: number; userId: number },
   orderId: number,
   mode: PriceMode,
   rate: number,
 ): Promise<RepricedTicket> {
+  // Cerrojo de la fila del pedido (con business_id): serializa contra el cobro y contra otro cambio de modo.
+  await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${actor.businessId} FOR UPDATE`
   const order = await tx.order.findFirst({
-    where:   { id: orderId, business_id: businessId },
+    where:   { id: orderId, business_id: actor.businessId },
     include: { items: true },
   })
   if (!order) throw new PriceModeError(404, 'Pedido no encontrado')
@@ -145,7 +173,7 @@ export async function repriceOrderTx(
   if (order.status === 'delivered') throw new PriceModeError(409, 'Este pedido ya fue entregado; no se puede cambiar el modo de precio.')
 
   const products = await tx.product.findMany({
-    where:  { id: { in: Array.from(new Set(order.items.map(i => i.product_id))) }, business_id: businessId },
+    where:  { id: { in: Array.from(new Set(order.items.map(i => i.product_id))) }, business_id: actor.businessId },
     select: PRODUCT_PRICING_SELECT,
   })
   const productMap = new Map(products.map(p => [p.id, p]))
@@ -185,6 +213,7 @@ export async function repriceOrderTx(
     where: { id: order.id },
     data:  { price_mode: mode, total_usd, total_bs, rate_used: rate },
   })
+  if (order.price_mode !== mode) await logModeChange(tx, actor, 'Order', order.id, order.price_mode, mode, { total_usd, total_bs })
   return ticketOf(
     { kind: 'order', id: order.id, number: order.order_number, status: order.status, price_mode: mode, rate, total_usd, total_bs },
     lines,

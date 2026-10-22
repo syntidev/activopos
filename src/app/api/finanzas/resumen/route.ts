@@ -60,7 +60,6 @@ export async function GET(req: NextRequest) {
     ventas,
     abonosAgg,
     cogs,
-    costeadosRow,
     gastosOpAgg,
     gastosPagadosAgg,
     cxcAgg,
@@ -93,32 +92,6 @@ export async function GET(req: NextRequest) {
     // denominador para no inflar el margen con utilidad ficticia de costo $0.
     // COGS neto (revierte con el snapshot de ReturnItem) -- fuente única.
     netCogs(bid, from, to),
-
-    // ingresos_costeados: ingreso de las líneas CON costo conocido, neto de lo
-    // devuelto de esas mismas líneas. Es el denominador del % de margen: el
-    // ingreso de productos sin costo queda fuera para no inflar el margen con
-    // utilidad ficticia de costo 0.
-    prisma.$queryRaw<{ ingresos_costeados: string | null }[]>`
-      SELECT
-        (SELECT IFNULL(SUM(si.subtotal_usd), 0)
-           FROM sale_items si
-           JOIN sales s ON s.id = si.sale_id
-          WHERE s.business_id = ${bid}
-            AND s.status IN ('paid','partial_return')
-            AND si.cost_per_unit_usd IS NOT NULL
-            AND s.sold_at >= ${from} AND s.sold_at < ${to})
-        -
-        (SELECT IFNULL(SUM(ri.total_usd), 0)
-           FROM return_items ri
-           JOIN returns r ON r.id = ri.return_id
-           JOIN sales s   ON s.id = r.sale_id
-           JOIN sale_items si2 ON si2.sale_id = s.id AND si2.product_id = ri.product_id
-          WHERE r.business_id = ${bid}
-            AND r.status = 'approved'
-            AND s.status IN ('paid','partial_return')
-            AND si2.cost_per_unit_usd IS NOT NULL
-            AND s.sold_at >= ${from} AND s.sold_at < ${to})
-        AS ingresos_costeados`,
 
     // Gastos operativos incurridos en el período (pagados o no), EXCLUYENDO
     // categoria='proveedor' — esas compras son COGS al vender, no OPEX (GAP-2).
@@ -209,12 +182,13 @@ export async function GET(req: NextRequest) {
   const ventasBs      = ventas.net.bs
   const abonosUsd     = Number(abonosAgg._sum.amount_usd  ?? 0)
   const costoVentas       = cogs.netUsd
-  const ingresosCosteados = parseFloat(String(costeadosRow[0]?.ingresos_costeados ?? '0')) || 0
+  // Ingreso neto de líneas CON costo conocido (cost_unknown fuera): base de utilidad y margen -- fuente única sales-returns.
+  const ingresosCosteados = cogs.costedNetUsd
   const productosSinCosto = cogs.productsWithoutCostCount
   const gastosOpUsd   = Number(gastosOpAgg._sum.monto_usd        ?? 0)
   const cuentasPagUsd = Number(gastosPagadosAgg._sum.monto_usd   ?? 0)
 
-  const utilidadBruta = r2(ventasUsd - costoVentas)
+  const utilidadBruta = r2(ingresosCosteados - costoVentas)
   const utilidadNeta  = r2(utilidadBruta - gastosOpUsd)
   // margenBruto/margenNeto: % calculado SOLO sobre ventas con costo conocido —
   // productos con cost_unknown quedan fuera del ratio (ver productosSinCosto),

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { REALIZED_SALE_STATUSES, marginPct, netByCategory, netCogs, netSales } from '@/lib/sales-returns'
+import { REALIZED_SALE_STATUSES, grossProfitUsd, marginPct, netByCategory, netCogs, netSales } from '@/lib/sales-returns'
 import { prisma } from '@/lib/prisma'
 import { businessDateKey, businessDayRange } from '@/lib/business-day'
 
@@ -105,8 +105,9 @@ export async function GET(req: NextRequest) {
   const credito_usd     = Number(creditAgg._sum.total_usd ?? 0)
   const total_usd       = cobrado_usd + credito_usd
   const costo_invertido = cogs.netUsd
-  const utilidad_usd    = cobrado_usd - costo_invertido
-  const margen_pct      = marginPct(cobrado_usd, costo_invertido)
+  // Utilidad y margen SOLO sobre líneas con costo conocido (cost_unknown no suma como ganancia ficticia).
+  const utilidad_usd    = grossProfitUsd(cogs)
+  const margen_pct      = marginPct(cogs.costedNetUsd, costo_invertido)
 
   const r2 = (x: number) => Math.round(x * 100) / 100
   const devueltoPorVenta = new Map(ventasPorRegistro.map(g => [g.sale_id, Number(g._sum.total_usd ?? 0)]))
@@ -127,13 +128,14 @@ export async function GET(req: NextRequest) {
       const n       = netoCat.get(c.category ?? 'Sin categoría')
       const vendido = n?.netUsd  ?? Number(c.vendido_usd)
       const costo   = n?.netCogs ?? Number(c.costo_usd)
-      const util    = vendido - costo
+      const costeado = n?.costedUsd ?? vendido
+      const util    = costeado - costo
       return {
         category:     c.category,
         vendido_usd:  r2(vendido),
         costo_usd:    r2(costo),
         utilidad_usd: r2(util),
-        margen_pct:   marginPct(vendido, costo),
+        margen_pct:   marginPct(costeado, costo),
       }
     }),
     payment_methods: paymentMethodsRaw.map(m => ({

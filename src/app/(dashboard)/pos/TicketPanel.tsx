@@ -10,8 +10,20 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { PriceModeSwitch } from '@/components/pos/PriceModeSwitch'
+import { FinancingPanel } from '@/components/financing/FinancingPanel'
+import { FINANCING_BCV_NOTE, TICKET_ITEMS_EDIT_WARNING, isFinancingLive } from '@/lib/financing-ui'
 import type { PriceMode, TicketItem, TicketState, TicketTotals } from '@/lib/pos'
+import type { BlockedProduct, FinancingAction } from '@/types/financing'
 import styles from './pos.module.css'
+
+/** Cashea del ticket: acciones del hook useTicketFinancing y si el negocio tiene método financiador. */
+export interface TicketCasheaProps {
+  canRequest: boolean
+  onAction: (action: FinancingAction) => Promise<void>
+  busy: boolean
+  error: string
+  blocked: BlockedProduct[]
+}
 
 interface TicketPanelProps {
   ticket: TicketState
@@ -34,6 +46,7 @@ interface TicketPanelProps {
   onPriceMode: (mode: PriceMode) => void
   priceModeBusy?: boolean
   priceModeError?: string
+  cashea: TicketCasheaProps
 }
 
 export function TicketPanel({
@@ -41,10 +54,13 @@ export function TicketPanel({
   onUpdateQty, onRemove, onClear, onSelectClient,
   onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo, onImprimirCuenta,
   userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive,
-  onPriceMode, priceModeBusy, priceModeError,
+  onPriceMode, priceModeBusy, priceModeError, cashea,
 }: TicketPanelProps) {
   const router = useRouter()
   const { discount_global_pct: discountPct, cargo_global_pct: cargoPct } = ticket
+  const casheaLive = isFinancingLive(ticket.financing)
+  // Cashea solicitado: no se cobra hasta que se apruebe, se rechace o se retire.
+  const cobroBlocked = ticket.financing?.status === 'requested'
 
   return (
     <div className={styles.rightPanel}>
@@ -115,13 +131,24 @@ export function TicketPanel({
 
       {/* Totals */}
       <div className={styles.ticketTotals}>
+        <FinancingPanel
+          financing={ticket.financing ?? null}
+          onAction={cashea.onAction}
+          busy={cashea.busy}
+          error={cashea.error}
+          blocked={cashea.blocked}
+          canRequest={cashea.canRequest && !isEmpty}
+          editWarning={TICKET_ITEMS_EDIT_WARNING}
+        />
         <PriceModeSwitch
           mode={ticket.price_mode}
-          onChange={onPriceMode}
+          onChange={casheaLive ? undefined : onPriceMode}
+          readOnly={casheaLive}
           busy={priceModeBusy}
           error={priceModeError}
           fallbackLines={ticket.items.filter(i => i.price_source === 'fallback_bcv').length}
         />
+        {casheaLive && <p className={styles.totalBsLabel} role="note" data-testid="financing-bcv-note">{FINANCING_BCV_NOTE}</p>}
         {(discountPct > 0 || cargoPct > 0 || ticket.iva_pct > 0) && (
           <div className={styles.totalBreakdown}>
             <div className={styles.totalRow}>
@@ -168,9 +195,14 @@ export function TicketPanel({
 
       {/* Actions */}
       <div className={styles.ticketActionArea}>
-        <Button variant="cta" fullWidth size="lg" onClick={onProcesarPago} disabled={isEmpty}>
+        <Button variant="cta" fullWidth size="lg" onClick={onProcesarPago} disabled={isEmpty || cobroBlocked}>
           Procesar Pago
         </Button>
+        {cobroBlocked && (
+          <p className={styles.totalBsLabel} role="status" data-testid="cobro-blocked">
+            Cashea solicitado: falta la aprobación para cobrar. Apruébalo, recházalo o retíralo.
+          </p>
+        )}
         <Button variant="secondary" fullWidth onClick={onVenderCredito} disabled={isEmpty}>
           Venta a Crédito
         </Button>

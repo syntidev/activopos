@@ -65,13 +65,20 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
       .then(data => {
         const active = (data.methods ?? []).filter(m => m.is_active)
         setMethods(active)
-        if (active.length > 0) setSelected(active[0].id)
+        const approved = order?.financing_status === 'approved'
+        const usable = active.filter(m => approved === (m.is_financing === true))
+        if (usable.length > 0 && order?.financing_status !== 'requested') setSelected(usable[0].id)
       })
       .catch(() => {})
       .finally(() => setLoadingPm(false))
   }, [open])
 
-  const selectedMethod = methods.find(m => m.id === selected)
+  // Cashea declarado en el pedido (contrato §2.4): aprobado => SOLO financiadoras; solicitado => no se cobra aún;
+  // sin financiamiento o rechazado => solo métodos normales.
+  const finStatus = order?.financing_status ?? null
+  const awaitingApproval = finStatus === 'requested'
+  const visibleMethods = methods.filter(m => (finStatus === 'approved') === (m.is_financing === true))
+  const selectedMethod = visibleMethods.find(m => m.id === selected)
   const cashea   = isCashea(selectedMethod)
   const needsRef = cashea || (selectedMethod ? REFERENCE_TYPES.has(selectedMethod.type) : false)
   const refLabel = cashea ? 'N° de orden Cashea' : 'Referencia'
@@ -238,11 +245,13 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     <p className={styles.label}>Método de pago</p>
                     {loadingPm ? (
                       <div className={styles.skeleton} />
-                    ) : methods.length === 0 ? (
+                    ) : awaitingApproval ? (
+                      <p className={styles.emptyMethods} role="alert" data-testid="cobro-awaiting-approval">Este pedido pide Cashea y falta la aprobación. Apruébalo, recházalo o retíralo antes de cobrar.</p>
+                    ) : visibleMethods.length === 0 ? (
                       <p className={styles.emptyMethods}>Configura métodos de pago en Configuración primero.</p>
                     ) : (
                       <div className={styles.methods} role="radiogroup" aria-label="Método de pago">
-                        {methods.map(m => (
+                        {visibleMethods.map(m => (
                           <button
                             key={m.id}
                             type="button"
@@ -300,7 +309,7 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     type="button"
                     className={styles.confirmBtn}
                     onClick={handleConfirm}
-                    disabled={loading || !selected || loadingPm || (cedulaRequired && !cedulaCheck.ok)}
+                    disabled={loading || !selected || loadingPm || awaitingApproval || (cedulaRequired && !cedulaCheck.ok)}
                   >
                     {loading ? <span className={styles.spinner} aria-hidden="true" /> : null}
                     {loading ? 'Procesando...' : 'Confirmar cobro'}

@@ -526,6 +526,23 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     }
     if (newOrder === null) throw new WebCheckoutBusyError()
 
+    // Bitácora del pedido Cashea creado por el cliente. activity_logs.user_id es NOT NULL (y el panel admin lee user.name),
+    // así que va atribuido al admin del negocio -- igual que las reservas de abajo -- y se marca como origen público.
+    if (financingSnapshot) {
+      await tx.activityLog.create({
+        data: {
+          business_id: business.id,
+          user_id:     adminUser.id,
+          action:      'financing_requested',
+          model_type:  'Order',
+          model_id:    newOrder.id,
+          reason:      'Pedido público del catálogo: el cliente eligió Cashea',
+          old_values:  { financing_status: null },
+          new_values:  { financing_status: 'requested', source: 'public_checkout', order_number: newOrder.order_number },
+        },
+      })
+    }
+
     await tx.inventoryEntry.createMany({
       data: resolvedItems.map(item => ({
         business_id: business.id,

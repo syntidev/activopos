@@ -42,39 +42,18 @@ const FALLBACK_RATE = 36.50
 const HYDRATE_ATTEMPTS = 3
 const HYDRATE_RETRY_MS = 1000
 
-interface ProductDetailResponse {
-  product?: {
-    id: number
-    sale_mode: ProductPrices['sale_mode']
-    price_per_unit_usd: number | null
-    price_per_kg_usd: number | null
-    wholesale_price_usd: number | null
-    wholesale_price_per_kg_usd: number | null
-  }
-}
+const HYDRATE_MAX_IDS = 50
 
 /**
- * Precios base de UN producto por id exacto: GET /api/products/{id} (+ /variants). Ese detalle es solo admin: al
- * cajero (403) se le cae al buscador del POS y se filtra por id exacto. Devuelve null si falla (el llamador reintenta).
+ * Precios base por id exacto: GET /api/products/search?id=12,15,40 (máx. 50, apto para cajero). Los ids ausentes de la
+ * respuesta ya no están disponibles. Devuelve null si la consulta falla (el llamador reintenta).
  */
-async function fetchProductPrices(id: number, name: string): Promise<ProductPrices | null> {
+async function fetchProductPrices(ids: number[]): Promise<ProductPrices[] | null> {
   try {
-    const res = await fetch(`/api/products/${id}`)
-    if (res.ok) {
-      const json = await res.json() as ProductDetailResponse
-      if (json.product?.id !== id) return null
-      const vres = await fetch(`/api/products/${id}/variants`)
-      const vjson = vres.ok ? await vres.json() as { variants?: Array<{ id: number; valor: string; precio_extra: number; stock?: number }> } : null
-      return {
-        ...json.product,
-        variants: (vjson?.variants ?? []).map(v => ({ id: v.id, valor: v.valor, precio_extra: Number(v.precio_extra), stock: v.stock ?? 0 })),
-      }
-    }
-    if (res.status !== 403) return null
-    const sres = await fetch(`/api/products/search?q=${encodeURIComponent(name.slice(0, 60))}&limit=50`)
-    if (!sres.ok) return null
-    const sjson = await sres.json() as { products?: ProductForPOS[] }
-    return sjson.products?.find(p => p.id === id) ?? null
+    const res = await fetch(`/api/products/search?id=${ids.join(',')}`)
+    if (!res.ok) return null
+    const json = await res.json() as { products?: ProductPrices[] }
+    return json.products ?? null
   } catch {
     return null
   }
@@ -207,26 +186,29 @@ export function usePOS() {
   const hydratedRef = useRef<Set<number>>(new Set())
   const hydratingRef = useRef<Set<number>>(new Set())
   useEffect(() => {
-    const pending = new Map<number, string>()
+    const pending = new Set<number>()
     for (const i of ticket.items) {
       const needsBase = i.bcv_unit_usd === undefined && i.price_override_original == null && i.price_source !== 'manual'
-      if (needsBase && !hydratedRef.current.has(i.product_id) && !hydratingRef.current.has(i.product_id)) pending.set(i.product_id, i.product_name)
+      if (needsBase && !hydratedRef.current.has(i.product_id) && !hydratingRef.current.has(i.product_id)) pending.add(i.product_id)
     }
-    pending.forEach((name, id) => {
-      hydratingRef.current.add(id)
+    const ids = Array.from(pending)
+    for (let from = 0; from < ids.length; from += HYDRATE_MAX_IDS) {
+      const batch = ids.slice(from, from + HYDRATE_MAX_IDS)
+      batch.forEach(id => hydratingRef.current.add(id))
       void (async () => {
         for (let attempt = 0; attempt < HYDRATE_ATTEMPTS; attempt++) {
-          const product = await fetchProductPrices(id, name)
-          if (product) {
-            hydratedRef.current.add(id)
-            setTicket(prev => hidratarPreciosBase(prev, product))
+          const products = await fetchProductPrices(batch)
+          if (products) {
+            // Los ids que no vuelven ya no están disponibles: no se reintentan, la línea queda con su precio guardado.
+            batch.forEach(id => hydratedRef.current.add(id))
+            setTicket(prev => products.reduce(hidratarPreciosBase, prev))
             break
           }
           await new Promise(r => setTimeout(r, HYDRATE_RETRY_MS * (attempt + 1)))
         }
-        hydratingRef.current.delete(id)
+        batch.forEach(id => hydratingRef.current.delete(id))
       })()
-    })
+    }
   }, [ticket.items])
 
   const addProduct = useCallback((product: ProductForPOS, qty = 1) => {

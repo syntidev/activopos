@@ -28,6 +28,7 @@ import {
 } from '@/lib/pos'
 import type { ProductVariant } from '@/components/products/VariantSelector'
 import type { CreditTerms } from '@/components/pos/CreditoModal'
+import type { TicketFinancing } from '@/types/financing'
 
 export interface PaymentMethod {
   id: number
@@ -387,10 +388,17 @@ export function usePOS() {
     setTicket(prev => aplicarDescuentoGlobal(prev, discountPct))
   }
 
-  const procesarPago = async (payments: PaymentInput[], clientCedula?: string | null): Promise<SaleResult> => {
+  /** Cashea del ticket: lo fija el hook de financiamiento (estado que devuelve el servidor). */
+  const setFinancing = useCallback((financing: TicketFinancing | null) => {
+    setTicket(prev => ({ ...prev, financing }))
+  }, [])
+
+  // financingSaleId: borrador del ticket cuando tiene Cashea vivo; se cobra con PATCH /pay sobre esa venta (no se crea otra).
+  const procesarPago = async (payments: PaymentInput[], clientCedula?: string | null, financingSaleId?: number): Promise<SaleResult> => {
     let result: SaleResult
-    if (pendingSaleId) {
-      const res  = await fetch(`/api/sales/${pendingSaleId}/pay`, {
+    const payId = pendingSaleId ?? financingSaleId
+    if (payId) {
+      const res  = await fetch(`/api/sales/${payId}/pay`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined }),
@@ -469,6 +477,7 @@ export function usePOS() {
     removeItem,
     overrideItemPrice,
     setPriceMode,
+    setFinancing,
     priceModeBusy,
     priceModeError,
     applyDiscount,

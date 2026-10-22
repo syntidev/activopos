@@ -22,6 +22,9 @@ const patchSchema = z.object({
   override_auth_pin: z.string().min(1).max(20).optional(),
   // Si falta se conserva el modo que ya tiene la venta (cambiarlo sin tocar líneas: PATCH /api/sales/[id]/price-mode).
   price_mode:        priceModeSchema.optional(),
+  // Cliente del ticket: se guarda en el borrador para que el cobro (PATCH /pay) conserve client_id. Omitido = no se toca;
+  // null = quita al cliente. Se valida contra el negocio de la sesión.
+  client_id:         z.number().int().positive().nullable().optional(),
 })
 
 type Context = { params: { id: string } }
@@ -86,6 +89,15 @@ export async function PATCH(req: NextRequest, { params }: Context) {
         subtotal_bs: number; rate_used: number; discount_usd: number; variant_id?: number
         unit_price_override?: number | null; override_reason?: string | null; price_source: string
       }[] = []
+      let clientData: { client_id: number | null; client_name: string | null } | undefined
+      if (body.client_id !== undefined) {
+        if (body.client_id === null) clientData = { client_id: null, client_name: null }
+        else {
+          const c = await tx.client.findFirst({ where: { id: body.client_id, business_id: session.businessId }, select: { id: true, name: true } })
+          if (!c) throw new Error('CLIENT_NOT_FOUND')
+          clientData = { client_id: c.id, client_name: c.name }
+        }
+      }
       const priceMode = body.price_mode ?? priceModeSchema.catch('bcv').parse(existing.price_mode)
       // Con financiamiento vivo: el borrador sigue en BCV, los productos nuevos deben ser elegibles y un 'approved' vuelve a 'requested'.
       await reconcileFinancingAfterItemsChangeTx(
@@ -162,6 +174,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
           total_usd,
           total_bs,
           price_mode:  priceMode,
+          ...(clientData ?? {}),
           rate_used:   rate,
           notes:       body.notes ?? existing.notes,
           draft_label: body.label !== undefined ? (body.label || null) : existing.draft_label,
@@ -182,6 +195,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       return NextResponse.json({ error: err.message, blocked_products: err.blockedProducts }, { status: err.status })
     }
     if (err instanceof Error) {
+      if (err.message === 'CLIENT_NOT_FOUND')  return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 400 })
       if (err.message === 'NOT_FOUND')         return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
       if (err.message === 'PRODUCT_NOT_FOUND') return NextResponse.json({ error: 'Producto no encontrado' }, { status: 400 })
       if (err.message === 'PRICE_MISSING')     return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })

@@ -13,6 +13,8 @@ const createDraftSchema = z.object({
   items: z.array(draftItemSchema).min(0).default([]),
   notes: z.string().max(500).optional(),
   price_mode: priceModeSchema.default('bcv'),
+  // Cliente del ticket: se guarda en el borrador para que el cobro conserve client_id (se valida contra el negocio de la sesión).
+  client_id: z.number().int().positive().nullable().optional(),
 })
 
 // Tope configurable por negocio (Configuración > General) -- reemplaza el
@@ -72,6 +74,13 @@ export async function POST(req: NextRequest) {
       })
       if (count >= maxOpenTickets) {
         throw new Error(`MAX_DRAFTS:${maxOpenTickets}`)
+      }
+
+      let clientData: { client_id: number; client_name: string } | undefined
+      if (body.client_id != null) {
+        const c = await tx.client.findFirst({ where: { id: body.client_id, business_id: session.businessId }, select: { id: true, name: true } })
+        if (!c) throw new Error('CLIENT_NOT_FOUND')
+        clientData = { client_id: c.id, client_name: c.name }
       }
 
       // Fetch prices from DB if items provided
@@ -143,6 +152,7 @@ export async function POST(req: NextRequest) {
           status:        'draft',
           origin:        'pos',
           price_mode:    body.price_mode,
+          ...(clientData ?? {}),
           total_usd,
           total_bs,
           rate_used:     rate,
@@ -172,6 +182,7 @@ export async function POST(req: NextRequest) {
         const max = err.message.split(':')[1] ?? '5'
         return NextResponse.json({ error: `Máximo ${max} tickets abiertos por cajero` }, { status: 400 })
       }
+      if (err.message === 'CLIENT_NOT_FOUND')  return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 400 })
       if (err.message === 'PRODUCT_NOT_FOUND') return NextResponse.json({ error: 'Producto no encontrado' }, { status: 400 })
       if (err.message === 'PRICE_MISSING')     return NextResponse.json({ error: 'Precio no configurado' }, { status: 400 })
       if (err.message === 'VARIANT_INVALID')   return NextResponse.json({ error: 'Variante inválida para el producto' }, { status: 400 })

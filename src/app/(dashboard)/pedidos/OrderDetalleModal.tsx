@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { generarCorteConsumoPDF } from '@/components/pos/CorteConsumoPDF'
 import { PriceModeSwitch } from '@/components/pos/PriceModeSwitch'
+import { FinancingPanel } from '@/components/financing/FinancingPanel'
+import { FINANCING_BCV_NOTE, ITEMS_EDIT_WARNING, financingFromColumns, isFinancingLive, patchFinancing } from '@/lib/financing-ui'
 import type { PriceMode, PriceSource } from '@/lib/pos'
+import type { BlockedProduct, FinancingAction, FinancingColumns, TicketFinancing } from '@/types/financing'
 import styles from './NuevoPedidoModal.module.css'
 
 /* ── Types ── */
@@ -40,7 +43,7 @@ interface PricedLine {
   price_source: PriceSource
 }
 
-export interface OrderDetail {
+export interface OrderDetail extends FinancingColumns {
   id: number
   order_number: string
   status: string
@@ -86,6 +89,12 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   const [businessName, setBusinessName] = useState('')
   const [modeBusy, setModeBusy]   = useState(false)
   const [modeError, setModeError] = useState('')
+  const [financing, setFinancing]     = useState<TicketFinancing | null>(null)
+  const [finBusy, setFinBusy]         = useState(false)
+  const [finError, setFinError]       = useState('')
+  const [finBlocked, setFinBlocked]   = useState<BlockedProduct[]>([])
+  // Sin método de pago financiador (Configuración > Cobros) no se ofrece pedir Cashea.
+  const [hasFinancier, setHasFinancier] = useState(false)
 
   const [productSearch, setProductSearch]   = useState('')
   const [productResults, setProductResults] = useState<ProductResult[]>([])
@@ -109,6 +118,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
           return
         }
         setOrder(data.order)
+        setFinancing(financingFromColumns(data.order))
         setItems(
           data.order.items.map((i) => ({
             id:                 i.id,
@@ -124,6 +134,11 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
       .catch(() => setError('Error de conexión'))
       .finally(() => setLoading(false))
 
+    fetch('/api/payment-methods')
+      .then((r) => r.json())
+      .then((j: { methods?: { is_financing?: boolean }[] }) => setHasFinancier((j.methods ?? []).some((m) => m.is_financing === true)))
+      .catch(() => {})
+
     fetch('/api/config/business')
       .then((r) => r.json())
       .then((j: { business?: { name?: string } }) => {
@@ -137,6 +152,9 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
       setOrder(null)
       setItems([])
       setError('')
+      setFinancing(null)
+      setFinError('')
+      setFinBlocked([])
       setProductSearch('')
       setProductResults([])
     }
@@ -221,6 +239,32 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
     }
   }
 
+  /* ── Financiamiento (Cashea): pedir, aprobar, rechazar o retirar; el servidor valida y devuelve el estado ── */
+
+  const handleFinancing = async (action: FinancingAction) => {
+    if (!order || finBusy) return
+    setFinBusy(true)
+    setFinError('')
+    setFinBlocked([])
+    const result = await patchFinancing('orders', orderId, action)
+    setFinBusy(false)
+    if (!result.ok) {
+      setFinError(result.error ?? 'No se pudo cambiar el financiamiento.')
+      setFinBlocked(result.blocked_products ?? [])
+      return
+    }
+    setFinancing(result.financing)
+    const next: OrderDetail = {
+      ...order,
+      price_mode:         'bcv',
+      financing_status:   result.financing?.status ?? null,
+      financing_provider: result.financing?.provider ?? null,
+      financing_phrase:   result.financing?.phrase ?? null,
+    }
+    setOrder(next)
+    onUpdated(next)
+  }
+
   /* ── Guardar cambios ── */
 
   const handleSave = async () => {
@@ -246,6 +290,8 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
         return
       }
       setOrder(data.order)
+      // Un pedido aprobado por Cashea vuelve a "solicitado" al cambiar sus ítems.
+      setFinancing(financingFromColumns(data.order))
       // El servidor recrea las líneas al guardar: se toman sus ids nuevos para poder mapear el cambio de modo por id.
       setItems(data.order.items.map((i) => ({
         id:                 i.id,
@@ -425,11 +471,25 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
 
             <PriceModeSwitch
               mode={priceMode}
-              onChange={modeEditable ? handlePriceMode : undefined}
-              readOnly={!modeEditable}
+              onChange={modeEditable && !isFinancingLive(financing) ? handlePriceMode : undefined}
+              readOnly={!modeEditable || isFinancingLive(financing)}
               busy={modeBusy}
               error={modeError}
               fallbackLines={items.filter((i) => i.price_source === 'fallback_bcv').length}
+            />
+            {isFinancingLive(financing) && (
+              <p className={styles.cartEmpty} role="note" data-testid="financing-bcv-note">{FINANCING_BCV_NOTE}</p>
+            )}
+
+            <FinancingPanel
+              financing={financing}
+              onAction={handleFinancing}
+              busy={finBusy}
+              error={finError}
+              blocked={finBlocked}
+              canRequest={hasFinancier && modeEditable}
+              readOnly={!modeEditable}
+              editWarning={ITEMS_EDIT_WARNING}
             />
 
             <div className={styles.totalRow}>

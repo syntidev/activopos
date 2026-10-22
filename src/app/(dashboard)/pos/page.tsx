@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { ShoppingCart, X } from 'lucide-react'
 import { usePOS } from '@/hooks/usePOS'
 import { useDraftTabs } from '@/hooks/useDraftTabs'
+import { useTicketFinancing } from '@/hooks/useTicketFinancing'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import { calcularTotales, ticketVacio } from '@/lib/pos'
 import { LeftPanel } from './LeftPanel'
@@ -86,6 +87,19 @@ function POSView() {
     if (active) pos.setTicketDirect(active.snapshot)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drafts.loading, drafts.activeId])
+
+  // Cashea del ticket activo: vive en su borrador (PATCH /api/sales/{id}/financing).
+  const draftId = /^\d+$/.test(drafts.activeId) ? Number(drafts.activeId) : undefined
+  const financing = useTicketFinancing({ ticket: pos.ticket, pendingSaleId: pos.pendingSaleId, draftId, setFinancing: pos.setFinancing })
+  const hasFinancier = pos.paymentMethods.some(m => m.is_financing === true)
+  // Contrato §2.4: aprobado => solo financiadoras (todo o nada); sin Cashea o rechazado => solo métodos normales.
+  const casheaApproved = pos.ticket.financing?.status === 'approved'
+  const cobroMethods = pos.paymentMethods.filter(m => (m.is_financing === true) === casheaApproved)
+  const openCobro = () => {
+    if (isEmpty) { toast('Agrega productos antes de cobrar', 'warning'); return }
+    if (pos.ticket.financing?.status === 'requested') { toast('Cashea solicitado: falta la aprobación para cobrar', 'warning'); return }
+    pos.setShowCobro(true)
+  }
 
   useHardwareScanner({
     enabled: pos.cajaStatus === 'open',
@@ -233,10 +247,7 @@ function POSView() {
           onRemove={pos.removeItem}
           onClear={pos.clearTicket}
           onSelectClient={() => pos.setShowCliente(true)}
-          onProcesarPago={() => {
-            if (isEmpty) { toast('Agrega productos antes de cobrar', 'warning'); return }
-            pos.setShowCobro(true)
-          }}
+          onProcesarPago={openCobro}
           onVenderCredito={handleVenderCredito}
           onCotizar={() => {
             if (isEmpty) { toast('Agrega productos primero', 'warning'); return }
@@ -252,6 +263,7 @@ function POSView() {
           onPriceMode={(mode) => { void pos.setPriceMode(mode, /^\d+$/.test(drafts.activeId) ? Number(drafts.activeId) : undefined) }}
           priceModeBusy={pos.priceModeBusy}
           priceModeError={pos.priceModeError}
+          cashea={{ canRequest: hasFinancier, onAction: financing.act, busy: financing.busy, error: financing.error, blocked: financing.blocked }}
         />
       </div>
 
@@ -268,9 +280,11 @@ function POSView() {
         open={pos.showCobro}
         onClose={() => pos.setShowCobro(false)}
         totals={totals}
-        paymentMethods={pos.paymentMethods}
+        paymentMethods={cobroMethods}
         onConfirm={async (payments, cedula) => {
-          const result = await pos.procesarPago(payments, cedula)
+          // Con Cashea vivo se guardan los ítems y se cobra la venta del borrador (PATCH /pay); si dejó de estar aprobado, lanza.
+          const financingSaleId = await financing.prepareCobro()
+          const result = await pos.procesarPago(payments, cedula, financingSaleId)
           // Impresión térmica automática (QZ Tray, config por equipo). Sin await
           // y sin lanzar: una falla de impresión nunca debe demorar ni afectar
           // una venta ya cobrada, solo avisar. Apagada en este equipo = no hace nada.
@@ -354,7 +368,7 @@ function POSView() {
         onClose={() => setScannerOpen(false)}
         onProcesarPago={() => {
           setScannerOpen(false)
-          pos.setShowCobro(true)
+          openCobro()
         }}
       />
 

@@ -1245,7 +1245,7 @@ export function CatalogoGrid({
             {brands.map(brand => (
               <Link
                 key={brand.name}
-                href={`/catalogo-premium/${slug}/productos?marca=${brand.id}`}
+                href={`/catalogo-premium/${slug}/productos${brand.search_term.trim() ? `?buscar=${encodeURIComponent(brand.search_term.trim())}` : ''}`}
                 className={styles.brandCard}
               >
                 <span className={styles.brandCardMedia}>

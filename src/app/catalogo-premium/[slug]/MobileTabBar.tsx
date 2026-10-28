@@ -9,6 +9,8 @@ interface Props {
   slug:           string
   onSearchClick:  () => void
   onAccountClick: () => void
+  /** Modo vitrina de marca: Inicio lleva a la vitrina y no hay "Tienda". */
+  vitrinaHref?:   string
 }
 
 interface TabItem {
@@ -25,23 +27,24 @@ interface TabItem {
 // existen en el header (setSearchExpanded/setInfoOpen, pasados por el padre)
 // en vez de duplicar esa UI. Carrito reusa useCart() — mismo estado que
 // CartHeaderButton, para que el badge nunca se desincronice entre los dos.
-export function MobileTabBar({ slug, onSearchClick, onAccountClick }: Props) {
+export function MobileTabBar({ slug, onSearchClick, onAccountClick, vitrinaHref }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
   const { totalItems, cartOpen, setCartOpen } = useCart()
 
-  const homeHref   = `/catalogo-premium/${slug}`
+  const homeHref   = vitrinaHref ?? `/catalogo-premium/${slug}`
   const tiendaHref = `/catalogo-premium/${slug}/productos`
   const isHome     = pathname === homeHref
   const isTienda   = pathname.startsWith(tiendaHref)
 
-  const items: TabItem[] = [
+  const allItems: TabItem[] = [
     { key: 'inicio',  label: 'Inicio',  Icon: Home,       active: isHome,   onClick: () => router.push(homeHref) },
     { key: 'tienda',  label: 'Tienda',  Icon: Store,      active: isTienda, onClick: () => router.push(tiendaHref) },
     { key: 'buscar',  label: 'Buscar',  Icon: Search,     active: false,    onClick: onSearchClick },
     { key: 'carrito', label: 'Carrito', Icon: ShoppingBag, active: cartOpen, onClick: () => setCartOpen(true), badge: totalItems },
     { key: 'cuenta',  label: 'Cuenta',  Icon: User,       active: false,    onClick: onAccountClick },
   ]
+  const items = vitrinaHref ? allItems.filter(i => i.key !== 'tienda') : allItems
 
   return (
     <nav className={styles.mobileTabBar} aria-label="Navegación móvil">

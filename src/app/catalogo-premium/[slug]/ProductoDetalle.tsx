@@ -19,6 +19,7 @@ import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import { productosHref } from '@/lib/subcategory'
+import type { VitrinaContext } from '@/types/vitrina'
 import { availabilityWaUrl, questionWaUrl } from '@/lib/availability-message'
 import styles from './productoDetalle.module.css'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
@@ -79,6 +80,8 @@ interface Props {
   businessPhone:     string
   businessInstagram: string | null
   businessHours:     string | null
+  /** Abierta desde una vitrina de marca: header sin nav, volver/relacionados/anterior-siguiente dentro de la vitrina. */
+  vitrina?:          VitrinaContext
 }
 
 export function ProductoDetalle({
@@ -86,8 +89,16 @@ export function ProductoDetalle({
   priceUsd, priceBs, variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   outOfStock, financing, stockHidden, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
+  vitrina,
 }: Props) {
   const router = useRouter()
+  // Destinos que en vitrina nunca salen de la marca: "inicio"/volver, fichas hermanas (?vitrina=) y categorías.
+  const homeHref = vitrina?.href ?? catalogUrl
+  const productHref = (id: number): string =>
+    `/catalogo-premium/${slug}/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`
+  const categoryHref = (category: string, sub?: string | null): string => vitrina
+    ? `${vitrina.href}?categoria=${encodeURIComponent(category)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}`
+    : productosHref(catalogUrl, category, sub)
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
   const [imageIndex,        setImageIndex]        = useState(0)
@@ -130,7 +141,7 @@ export function ProductoDetalle({
 
   const submitSearch = () => {
     const q = searchQuery.trim()
-    router.push(`/catalogo-premium/${slug}/productos${q ? `?buscar=${encodeURIComponent(q)}` : ''}`)
+    router.push(`${vitrina ? vitrina.href : `/catalogo-premium/${slug}/productos`}${q ? `?buscar=${encodeURIComponent(q)}` : ''}`)
   }
 
   // Scroll lock — el drawer/checkout del carrito puede abrirse desde esta página también
@@ -215,7 +226,7 @@ export function ProductoDetalle({
           mismo comportamiento (glass-on-scroll, búsqueda expandible, panel de
           info), solo cambia qué hace "buscar" (acá navega, no filtra in-place). */}
       <header ref={headerRef} className={`${catStyles.stickyHeader} ${isScrolled ? catStyles.stickyHeaderScrolled : ''}`}>
-        <Link href={catalogUrl} className={catStyles.headerLogo} aria-label={`Ir al inicio de ${businessName}`}>
+        <Link href={homeHref} className={catStyles.headerLogo} aria-label={`Ir al inicio de ${businessName}`}>
           {businessLogo ? (
             <img src={businessLogo} alt={businessName} className={catStyles.headerLogoImg} />
           ) : (
@@ -226,15 +237,17 @@ export function ProductoDetalle({
               <span className={catStyles.headerName}>{businessName}</span>
               <span className={catStyles.headerStatusDot} aria-label="Abierto" title="Abierto" />
             </span>
-            {businessCity && <span className={catStyles.headerCity}>{businessCity}</span>}
+            {(vitrina?.brandName ?? businessCity) && <span className={catStyles.headerCity}>{vitrina?.brandName ?? businessCity}</span>}
           </span>
         </Link>
 
-        <nav className={catStyles.headerNav} aria-label="Navegación principal">
-          <Link href={catalogUrl} className={catStyles.headerNavLink}>Inicio</Link>
-          <Link href={`/catalogo-premium/${slug}/productos`} className={catStyles.headerNavLink}>Tienda</Link>
-          <Link href={`${catalogUrl}#marcas`} className={catStyles.headerNavLink}>Marcas</Link>
-        </nav>
+        {!vitrina && (
+          <nav className={catStyles.headerNav} aria-label="Navegación principal">
+            <Link href={catalogUrl} className={catStyles.headerNavLink}>Inicio</Link>
+            <Link href={`/catalogo-premium/${slug}/productos`} className={catStyles.headerNavLink}>Tienda</Link>
+            <Link href={`${catalogUrl}#marcas`} className={catStyles.headerNavLink}>Marcas</Link>
+          </nav>
+        )}
 
         <div className={catStyles.iconCluster}>
           <button
@@ -393,18 +406,18 @@ export function ProductoDetalle({
           que la home (sort_order), ver prevProduct/nextProduct en page.tsx. */}
       <nav className={styles.breadcrumb} aria-label="Navegación">
         <div className={styles.breadcrumbLeft}>
-          <Link href={catalogUrl} className={styles.breadcrumbBack}>
+          <Link href={homeHref} className={styles.breadcrumbBack}>
             <ArrowLeft size={16} aria-hidden="true" />
-            <span>Volver al catálogo</span>
+            <span>{vitrina ? `Volver a ${vitrina.brandName}` : 'Volver al catálogo'}</span>
           </Link>
           {categoryName && (
             <>
               <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
-              <Link href={productosHref(catalogUrl, categoryName)} className={styles.breadcrumbCat}>{categoryName}</Link>
+              <Link href={categoryHref(categoryName)} className={styles.breadcrumbCat}>{categoryName}</Link>
               {subcategory && (
                 <>
                   <span className={styles.breadcrumbSep} aria-hidden="true">›</span>
-                  <Link href={productosHref(catalogUrl, categoryName, subcategory)} className={styles.breadcrumbCat}>{subcategory}</Link>
+                  <Link href={categoryHref(categoryName, subcategory)} className={styles.breadcrumbCat}>{subcategory}</Link>
                 </>
               )}
             </>
@@ -413,7 +426,7 @@ export function ProductoDetalle({
         {(prevProduct || nextProduct) && (
           <div className={styles.adjacentNav} aria-label="Producto anterior y siguiente">
             {prevProduct ? (
-              <Link href={`/catalogo-premium/${slug}/p/${prevProduct.id}`} className={styles.adjacentLink} title={prevProduct.name}>
+              <Link href={productHref(prevProduct.id)} className={styles.adjacentLink} title={prevProduct.name}>
                 <ArrowLeft size={14} aria-hidden="true" />
                 Anterior
               </Link>
@@ -425,7 +438,7 @@ export function ProductoDetalle({
             )}
             <span className={styles.breadcrumbSep} aria-hidden="true">|</span>
             {nextProduct ? (
-              <Link href={`/catalogo-premium/${slug}/p/${nextProduct.id}`} className={styles.adjacentLink} title={nextProduct.name}>
+              <Link href={productHref(nextProduct.id)} className={styles.adjacentLink} title={nextProduct.name}>
                 Siguiente
                 <ArrowRight size={14} aria-hidden="true" />
               </Link>
@@ -489,7 +502,7 @@ export function ProductoDetalle({
         <div className={styles.info}>
           {categoryName && (
             <Link
-              href={productosHref(catalogUrl, categoryName, subcategory)}
+              href={categoryHref(categoryName, subcategory)}
               className={styles.categoryBadge}
               style={{ '--badge-color': categoryBadgeColor(categoryName, categoryColor) } as CSSProperties}
             >
@@ -715,7 +728,7 @@ export function ProductoDetalle({
         <section className={styles.relatedSection}>
           <div className={styles.relatedHeader}>
             <h3 className={styles.relatedTitle}>Productos relacionados</h3>
-            <Link href={catalogUrl} className={styles.relatedVerTodos}>
+            <Link href={homeHref} className={styles.relatedVerTodos}>
               Ver todos →
             </Link>
           </div>
@@ -723,7 +736,7 @@ export function ProductoDetalle({
             {relatedProducts.map(rp => (
               <Link
                 key={rp.id}
-                href={`/catalogo-premium/${slug}/p/${rp.id}`}
+                href={productHref(rp.id)}
                 className={styles.relatedCard}
               >
                 <div className={styles.relatedImageWrap}>

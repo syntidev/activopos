@@ -18,11 +18,13 @@ interface CatalogFooterProps {
   phone:            string | null
   catalogInstagram: string | null
   catalogHours:     string | null
+  /** Modo vitrina de marca: sin enlaces Inicio/Catálogo en la barra de cierre. */
+  hideNav?:         boolean
 }
 
 export function CatalogFooter({
   slug, displayTitle, logoPath, catalogDesc, rif, address, location,
-  waPhone, phone, catalogInstagram, catalogHours,
+  waPhone, phone, catalogInstagram, catalogHours, hideNav = false,
 }: CatalogFooterProps) {
   const [expanded, setExpanded]   = useState(false)
   const [overflows, setOverflows] = useState(false)
@@ -169,13 +171,15 @@ export function CatalogFooter({
       {/* Barra de cierre */}
       <div className={styles.footerBottom}>
         <span>© {displayTitle} · {new Date().getFullYear()}</span>
-        <nav className={styles.footerNav} aria-label="Navegación del catálogo">
-          {catalogNav(slug).map(l => (
-            <Link key={l.href} href={l.href} className={styles.footerNavLink}>
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        {!hideNav && (
+          <nav className={styles.footerNav} aria-label="Navegación del catálogo">
+            {catalogNav(slug).map(l => (
+              <Link key={l.href} href={l.href} className={styles.footerNavLink}>
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+        )}
         <span>
           Impulsado por{' '}
           <a

@@ -3,6 +3,8 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { subcategoryKey } from '@/lib/subcategory'
+import { brandSlug, resolveVitrinaBrand } from '@/lib/vitrina'
+import type { VitrinaContext } from '@/types/vitrina'
 import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER , stockDisplayOf } from '@/lib/catalog'
 import { isFinancingEffective, readFinancingConfig, toPublicFinancing } from '@/lib/financing'
 import { ProductoDetalle } from '../../ProductoDetalle'
@@ -12,6 +14,8 @@ import styles from '../../catalogo.module.css'
 
 interface PageProps {
   params: { slug: string; id: string }
+  /** ?vitrina=<marca>: la ficha se abrió desde una vitrina de marca (ver /marca/[marca]). */
+  searchParams: { vitrina?: string }
 }
 
 function parseImages(raw: string | null): string[] {
@@ -51,7 +55,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 const RELATED_MAX = 4
 
-export default async function ProductoPage({ params }: PageProps) {
+export default async function ProductoPage({ params, searchParams }: PageProps) {
   const productId = parseInt(params.id, 10)
   if (isNaN(productId)) notFound()
 
@@ -95,6 +99,20 @@ export default async function ProductoPage({ params }: PageProps) {
   ])
   if (!product) notFound()
 
+  // Contexto vitrina: solo vale si la marca existe, es visible y es la del producto; si no, ficha normal
+  // (un ?vitrina= ajeno nunca acota ni cambia nada).
+  const vitrinaBrand = searchParams.vitrina ? await resolveVitrinaBrand(business.id, searchParams.vitrina) : null
+  const vitrina: VitrinaContext | undefined = vitrinaBrand && product.brand_id === vitrinaBrand.id
+    ? {
+        href:       `/catalogo-premium/${params.slug}/marca/${brandSlug(vitrinaBrand.name)}`,
+        marca:      brandSlug(vitrinaBrand.name),
+        brandName:  vitrinaBrand.name,
+        brandImage: vitrinaBrand.image_url,
+      }
+    : undefined
+  // Anterior/siguiente y relacionados solo de la misma marca cuando hay vitrina.
+  const brandScope = vitrinaBrand && vitrina ? { brand_id: vitrinaBrand.id } : {}
+
   // Anterior/Siguiente: mismo orden que la home (sort_order, luego id como
   // desempate estable), dentro de la categoría del producto -- o de todo el
   // catálogo si no tiene categoría, nunca "sin navegación" por esa causa.
@@ -103,6 +121,7 @@ export default async function ProductoPage({ params }: PageProps) {
     active:            true,
     available_in_pos:  true,
     category_id:       product.category_id,
+    ...brandScope,
     ...CATALOG_WHERE_FILTER,
   }
   const [prevRaw, nextRaw] = await Promise.all([
@@ -163,6 +182,7 @@ export default async function ProductoPage({ params }: PageProps) {
       available_in_pos:  true,
       category_id:       product.category_id,
       id:                { not: productId },
+      ...brandScope,
       ...CATALOG_WHERE_FILTER,
     },
     select: {
@@ -235,6 +255,7 @@ export default async function ProductoPage({ params }: PageProps) {
         businessPhone={business.phone ?? ''}
         businessInstagram={business.catalog_instagram ?? null}
         businessHours={business.catalog_hours ?? null}
+        vitrina={vitrina}
       />
       <CatalogFooter
         slug={params.slug}
@@ -248,6 +269,7 @@ export default async function ProductoPage({ params }: PageProps) {
         phone={business.phone}
         catalogInstagram={business.catalog_instagram ?? null}
         catalogHours={business.catalog_hours ?? null}
+        hideNav={!!vitrina}
       />
     </div>
   )

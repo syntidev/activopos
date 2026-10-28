@@ -26,10 +26,12 @@ export interface CatalogHeaderProps {
   onInfoClick?:    () => void
   /** Link "200K" al microsite del Kit: solo si su config está activa y pide mostrarse. */
   showKitLink?:    boolean
+  /** Modo vitrina de marca: el logo lleva a la vitrina y no hay nav (Inicio/Tienda/Marcas/200K). */
+  vitrinaHref?:    string
 }
 
 export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(function CatalogHeader(
-  { slug, businessName, businessLogo, businessCity, isScrolled, showIconCluster = true, onSearchClick, onInfoClick, showKitLink = false },
+  { slug, businessName, businessLogo, businessCity, isScrolled, showIconCluster = true, onSearchClick, onInfoClick, showKitLink = false, vitrinaHref },
   ref,
 ) {
   const initials = getInitials(businessName)
@@ -37,7 +39,7 @@ export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(functio
   return (
     <header ref={ref} className={`${styles.stickyHeader} ${isScrolled ? styles.stickyHeaderScrolled : ''}`}>
       <Link
-        href={`/catalogo-premium/${slug}`}
+        href={vitrinaHref ?? `/catalogo-premium/${slug}`}
         className={styles.headerLogo}
         aria-label={`Ir al inicio de ${businessName}`}
       >
@@ -55,7 +57,7 @@ export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(functio
         </span>
       </Link>
 
-      <nav className={styles.headerNav} aria-label="Navegación principal">
+      {!vitrinaHref && <nav className={styles.headerNav} aria-label="Navegación principal">
         <Link href={`/catalogo-premium/${slug}`} className={styles.headerNavLink}>Inicio</Link>
         <Link href={`/catalogo-premium/${slug}/productos`} className={styles.headerNavLink}>Tienda</Link>
         {showKitLink && <Link href="/kit-200k" className={styles.headerNavLink}>200K</Link>}
@@ -72,7 +74,7 @@ export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(functio
         >
           Marcas
         </Link>
-      </nav>
+      </nav>}
 
       {showIconCluster && (
         <div className={styles.iconCluster}>

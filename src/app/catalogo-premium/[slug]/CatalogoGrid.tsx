@@ -25,6 +25,7 @@ import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, getInitials, fmtBs } from './catalogUtils'
 import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { normalizePhone } from '@/lib/utils'
+import type { VitrinaContext } from '@/types/vitrina'
 import styles from './catalogo.module.css'
 
 /* ── Public interfaces ───────────────────────────────────────── */
@@ -115,6 +116,8 @@ interface Props {
   brands?:            CatalogBrand[]
   /** Link "200K" del header: solo si la config del Kit está activa y pide mostrarse. */
   showKitLink?:       boolean
+  /** Vitrina de marca: `products` ya viene acotado a la marca; sin nav al resto del catálogo y fichas con ?vitrina=. */
+  vitrina?:           VitrinaContext
 }
 
 export interface CatalogBrand {
@@ -197,9 +200,13 @@ export function CatalogoGrid({
   cartelera = null,
   brands = [],
   showKitLink = false,
+  vitrina,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
+  // Ficha de producto: en vitrina conserva el contexto de marca (?vitrina=) para que la ficha siga acotada.
+  const productHref = (id: number): string =>
+    `/catalogo-premium/${slug}/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`
   const { cart, cartOpen, setCartOpen, checkoutOpen, addToCart: addItemToCart } = useCart()
 
   // Valores de la URL (?categoria=&sub=): si no existen en el catálogo se ignoran.
@@ -251,7 +258,8 @@ export function CatalogoGrid({
       const all = j.results ?? []
       const exact = all.filter(h => h.matched_variant_id !== null)
       const target = exact.length === 1 ? exact[0] : all.length === 1 ? all[0] : null
-      if (target) router.push(`/catalogo-premium/${slug}/p/${target.id}`)
+      // En vitrina el código exacto de un producto de otra marca no saca al visitante de la vitrina.
+      if (target && (!vitrina || products.some(p => p.id === target.id))) router.push(productHref(target.id))
     } catch { /* sin red: no hace nada */ }
   }
   const onSearchEnter = (e: { key: string; preventDefault: () => void }) => {
@@ -724,9 +732,9 @@ export function CatalogoGrid({
         key={p.id}
         className={`${styles.productCard} ${isOut ? styles.productCardOutOfStock : ''}`}
         style={cardStyle}
-        onClick={() => router.push(`/catalogo-premium/${slug}/p/${p.id}`)}
+        onClick={() => router.push(productHref(p.id))}
         onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/catalogo-premium/${slug}/p/${p.id}`) }
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(productHref(p.id)) }
         }}
         tabIndex={0}
         role="button"
@@ -865,7 +873,7 @@ export function CatalogoGrid({
               onClick={e => {
                 e.stopPropagation()
                 p.variants.length > 0
-                  ? router.push(`/catalogo-premium/${slug}/p/${p.id}`)
+                  ? router.push(productHref(p.id))
                   : addToCart(p, 1)
               }}
               aria-label={
@@ -891,9 +899,9 @@ export function CatalogoGrid({
   const renderCompactRow = (p: CatalogProduct) => (
     <a
       key={p.id}
-      href={`/catalogo-premium/${slug}/p/${p.id}`}
+      href={productHref(p.id)}
       className={styles.compactRow}
-      onClick={e => { e.preventDefault(); router.push(`/catalogo-premium/${slug}/p/${p.id}`) }}
+      onClick={e => { e.preventDefault(); router.push(productHref(p.id)) }}
     >
       <span className={styles.compactThumb}>
         {p.image ? (
@@ -944,11 +952,12 @@ export function CatalogoGrid({
         slug={slug}
         businessName={businessName}
         businessLogo={businessLogo}
-        businessCity={businessCity}
+        businessCity={vitrina ? vitrina.brandName : businessCity}
         isScrolled={isScrolled}
         onSearchClick={() => setSearchExpanded(true)}
         onInfoClick={() => setInfoOpen(true)}
         showKitLink={showKitLink}
+        vitrinaHref={vitrina?.href}
       />
 
       {/* ── H2: Navegación + búsqueda expandible (sticky) ──────── */}
@@ -1048,21 +1057,23 @@ export function CatalogoGrid({
                 <div className={styles.catMenuBackdrop} onClick={() => setCatMenuOpen(false)} aria-hidden="true" />
                 <div className={styles.catMenuDropdown} role="menu" aria-label="Menú">
                   <Link
-                    href={`/catalogo-premium/${slug}`}
+                    href={vitrina?.href ?? `/catalogo-premium/${slug}`}
                     role="menuitem"
                     className={styles.catMenuItem}
                     onClick={() => setCatMenuOpen(false)}
                   >
                     Inicio
                   </Link>
-                  <Link
-                    href={`/catalogo-premium/${slug}/productos`}
-                    role="menuitem"
-                    className={styles.catMenuItem}
-                    onClick={() => setCatMenuOpen(false)}
-                  >
-                    Catálogo
-                  </Link>
+                  {!vitrina && (
+                    <Link
+                      href={`/catalogo-premium/${slug}/productos`}
+                      role="menuitem"
+                      className={styles.catMenuItem}
+                      onClick={() => setCatMenuOpen(false)}
+                    >
+                      Catálogo
+                    </Link>
+                  )}
                 </div>
               </>
             )}
@@ -1114,12 +1125,26 @@ export function CatalogoGrid({
       {/* ── Modo catálogo puro — sin hero/shelves, solo título + grid ── */}
       {catalogMode === 'productos' && (
         <div className={styles.catalogPageHeader}>
-          <h1 className={styles.catalogPageTitle}>
-            Catálogo de Productos
-          </h1>
-          <p className={styles.catalogPageSubtitle}>
-            Todos los productos disponibles
-          </p>
+          {vitrina ? (
+            <div className={styles.vitrinaHero}>
+              {vitrina.brandImage && (
+                <img src={vitrina.brandImage} alt="" className={styles.vitrinaHeroImg} />
+              )}
+              <div>
+                <h1 className={styles.catalogPageTitle}>{vitrina.brandName}</h1>
+                <p className={styles.catalogPageSubtitle}>Productos {vitrina.brandName} de {businessName}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h1 className={styles.catalogPageTitle}>
+                Catálogo de Productos
+              </h1>
+              <p className={styles.catalogPageSubtitle}>
+                Todos los productos disponibles
+              </p>
+            </>
+          )}
           <div className={styles.catalogSearchRow}>
             <div className={styles.catalogSearchWrap}>
               <Search size={16} className={styles.catalogSearchIcon} aria-hidden="true" />
@@ -2033,6 +2058,7 @@ export function CatalogoGrid({
         slug={slug}
         onSearchClick={() => setSearchExpanded(true)}
         onAccountClick={() => setInfoOpen(true)}
+        vitrinaHref={vitrina?.href}
       />
     </>
   )

@@ -24,6 +24,7 @@ import { FilterPanel } from './FilterPanel'
 import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, getInitials, fmtBs } from './catalogUtils'
 import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
+import { deportesDeProductos, parseDeportes, plano } from '@/lib/catalog-deportes'
 import { normalizePhone } from '@/lib/utils'
 import type { VitrinaContext } from '@/types/vitrina'
 import styles from './catalogo.module.css'
@@ -108,6 +109,8 @@ interface Props {
   initialCategory?:   string | null
   initialSub?:        string | null
   initialQuery?:      string | null
+  /** Deporte preseleccionado (?deporte=<slug>); si ningún producto lo tiene se ignora. */
+  initialDeporte?:    string | null
   /** Marca preseleccionada (tile "Comprá por marca": ?marca=<id>). */
   initialBrandId?:    number | null
   landingSections?:   RenderableLandingSection[]
@@ -195,6 +198,7 @@ export function CatalogoGrid({
   initialCategory = null,
   initialSub = null,
   initialQuery = null,
+  initialDeporte = null,
   initialBrandId = null,
   landingSections = [],
   cartelera = null,
@@ -219,6 +223,37 @@ export function CatalogoGrid({
   const [activeCategory, setActiveCategory] = useState<string | null>(startCategory)
   const [activeSub,      setActiveSub]      = useState<string | null>(startSub)
   const [query,          setQuery]          = useState(initialQuery ?? '')
+
+  // "¿Qué practicas?": deportes leídos de la línea "Deportes:" de la descripción. Sin esa línea
+  // en ningún producto la lista queda vacía y no se muestra nada. En vitrina de marca no aplica.
+  const deportes = useMemo(
+    () => (vitrina ? [] : deportesDeProductos(products.map(p => p.description))),
+    [products, vitrina],
+  )
+  const [deporte, setDeporte] = useState<string | null>(
+    () => (initialDeporte && deportes.some(d => d.slug === initialDeporte) ? initialDeporte : null),
+  )
+  const deporteCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of products) for (const d of parseDeportes(p.description)) map.set(d.slug, (map.get(d.slug) ?? 0) + 1)
+    return map
+  }, [products])
+  // Texto buscable por producto (nombre + categoría + descripción), sin tildes ni mayúsculas.
+  const searchText = useMemo(
+    () => new Map(products.map(p => [p.id, plano(`${p.name} ${p.categoryName ?? ''} ${p.description ?? ''}`)])),
+    [products],
+  )
+
+  // La URL refleja el deporte activo para compartirla por WhatsApp (sin recargar ni apilar historial).
+  useEffect(() => {
+    if (catalogMode !== 'productos' || vitrina) return
+    const url = new URL(window.location.href)
+    // Solo si cambia: reescribir la query sin cambios la reserializaría (%20 → +).
+    if (url.searchParams.get('deporte') === deporte) return
+    if (deporte) url.searchParams.set('deporte', deporte)
+    else url.searchParams.delete('deporte')
+    window.history.replaceState(window.history.state, '', url)
+  }, [deporte, catalogMode, vitrina])
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
   const [modalQty,       setModalQty]       = useState(1)
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
@@ -412,13 +447,17 @@ export function CatalogoGrid({
   const visible = useMemo(() => {
     let result = products
 
-    if (query.trim()) {
-      const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-      result = result.filter(p =>
-        p.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(q) ||
-        (p.categoryName?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') ?? '').includes(q) ||
-        serverHits.has(p.id),
-      )
+    // Búsqueda por palabras: todas deben aparecer (en cualquier orden) en nombre + categoría + descripción.
+    const words = plano(query).split(/\s+/).filter(Boolean)
+    if (words.length > 0) {
+      result = result.filter(p => {
+        const text = searchText.get(p.id) ?? ''
+        return words.every(w => text.includes(w)) || serverHits.has(p.id)
+      })
+    }
+
+    if (deporte) {
+      result = result.filter(p => parseDeportes(p.description).some(d => d.slug === deporte))
     }
 
     if (activeCategory === FEATURED_KEY) {
@@ -443,10 +482,10 @@ export function CatalogoGrid({
     }
 
     return result
-  }, [products, brands, query, serverHits, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
+  }, [products, brands, query, serverHits, searchText, deporte, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
-  useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, activePriceRange, filterCategories, filterBrands])
+  useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, deporte, activePriceRange, filterCategories, filterBrands])
 
   const paged     = visible.slice(0, visibleCount)
   const remaining = visible.length - visibleCount
@@ -454,7 +493,7 @@ export function CatalogoGrid({
   // ── Modo browse: vitrina apilada por categoría con scroll-spy ──
   // Activo solo sin filtro de categoría real, precio ni búsqueda; Destacados y
   // subcategorías siguen usando el grid filtrado único de arriba.
-  const browseMode = activeCategory === null && !query.trim() && !activePriceRange
+  const browseMode = activeCategory === null && !query.trim() && !activePriceRange && !deporte
     && filterCategories.length === 0 && filterBrands.length === 0
 
   const ORPHAN_KEY = '__otros__'
@@ -644,6 +683,8 @@ export function CatalogoGrid({
 
   // Resaltado del tab: en browse sigue al scroll-spy; Destacados es filtro real
   const tabActive = (cat: string | null): boolean => {
+    // /productos no tiene secciones con scroll-spy: el chip activo es el filtro real (como el sidebar).
+    if (catalogMode === 'productos') return activeCategory === cat
     if (cat === FEATURED_KEY) return activeCategory === FEATURED_KEY
     return browseMode && spyCategory === cat
   }
@@ -1178,6 +1219,31 @@ export function CatalogoGrid({
               {visible.length} producto{visible.length !== 1 ? 's' : ''}
             </span>
           </div>
+          {deportes.length > 0 && (
+            <div className={styles.deporteBlock} role="group" aria-label="¿Qué practicas?">
+              <p className={styles.deporteTitle}>¿Qué practicas?</p>
+              <div className={styles.deporteRow}>
+                {deportes.map(d => (
+                  <button
+                    key={d.slug}
+                    type="button"
+                    aria-pressed={deporte === d.slug}
+                    className={`${styles.deporteChip} ${deporte === d.slug ? styles.deporteChipActive : ''}`}
+                    onClick={() => setDeporte(deporte === d.slug ? null : d.slug)}
+                  >
+                    {d.label}
+                    <span className={styles.categoryTabCount}>{deporteCounts.get(d.slug) ?? 0}</span>
+                  </button>
+                ))}
+                {deporte && (
+                  <button type="button" className={styles.deporteClear} onClick={() => setDeporte(null)}>
+                    <X size={14} aria-hidden="true" />
+                    Quitar deporte
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1284,6 +1350,24 @@ export function CatalogoGrid({
                   )}
                 </span>
                 <span className={styles.brandCardName}>{brand.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── ¿Qué practicas? (home): enlaza a /productos?deporte=<slug>. Solo si algún producto declara deportes. ── */}
+      {catalogMode === 'home' && browseMode && deportes.length > 0 && (
+        <section className={styles.deporteBlockHome} aria-label="¿Qué practicas?">
+          <p className={styles.deporteTitle}>¿Qué practicas?</p>
+          <div className={styles.deporteRow}>
+            {deportes.map(d => (
+              <Link
+                key={d.slug}
+                href={`/catalogo-premium/${slug}/productos?deporte=${d.slug}`}
+                className={styles.deporteChip}
+              >
+                {d.label}
               </Link>
             ))}
           </div>
@@ -1546,6 +1630,15 @@ export function CatalogoGrid({
                 <Search className={styles.emptyIcon} size={40} strokeWidth={1.25} aria-hidden="true" />
                 <p className={styles.emptyTitle}>Sin resultados para &ldquo;{query}&rdquo;</p>
                 <p className={styles.emptySubtitle}>Intenta con otro nombre o categoría.</p>
+              </>
+            ) : deporte ? (
+              <>
+                <p className={styles.emptyTitle}>Aún no tenemos productos para este deporte con esos filtros</p>
+                <p className={styles.emptySubtitle}>Prueba otra categoría o quita el deporte para ver todo el catálogo.</p>
+                <button type="button" className={styles.deporteClear} onClick={() => { setDeporte(null); setActiveCategory(null); setActivePriceRange(null); setFilterCategories([]); setFilterBrands([]) }}>
+                  <X size={14} aria-hidden="true" />
+                  Ver todo el catálogo
+                </button>
               </>
             ) : (
               <p className={styles.emptyTitle}>Sin productos en esta categoría</p>

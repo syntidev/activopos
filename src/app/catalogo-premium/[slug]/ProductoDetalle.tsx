@@ -16,6 +16,7 @@ import { hasSizeGuide } from '@/lib/size-guide'
 import { FinancingNote } from '@/components/catalog/FinancingNote'
 import type { PublicFinancing } from '@/lib/financing'
 import { PRESET_GROUPS } from '@/lib/variantPresets'
+import { descripcionSinDeportes, parseDeportes } from '@/lib/catalog-deportes'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor } from './catalogUtils'
 import { normalizePhone } from '@/lib/utils'
 import { productosHref } from '@/lib/subcategory'
@@ -94,6 +95,8 @@ export function ProductoDetalle({
   const router = useRouter()
   // Destinos que en vitrina nunca salen de la marca: "inicio"/volver, fichas hermanas (?vitrina=) y categorías.
   const homeHref = vitrina?.href ?? catalogUrl
+  const descripcionTexto = description ? descripcionSinDeportes(description) : ''
+  const deportesFicha = parseDeportes(description)
   const productHref = (id: number): string =>
     `/catalogo-premium/${slug}/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`
   const categoryHref = (category: string, sub?: string | null): string => vitrina
@@ -714,10 +717,25 @@ export function ProductoDetalle({
             </>
           )}
 
-          {description && (
+          {description && (descripcionTexto || deportesFicha.length > 0) && (
             <div className={styles.productDescSection}>
               <h3 className={styles.productDescTitle}>Descripción</h3>
-              <p className={styles.productDescText}>{description}</p>
+              {descripcionTexto && <p className={styles.productDescText}>{descripcionTexto}</p>}
+              {/* La línea "Deportes:" no se muestra como texto: son chips al filtro del catálogo
+                  (en vitrina de marca no, para no sacar al visitante de la marca). */}
+              {!vitrina && deportesFicha.length > 0 && (
+                <div className={styles.deporteFicha} role="group" aria-label="Deportes">
+                  {deportesFicha.map(d => (
+                    <Link
+                      key={d.slug}
+                      href={`/catalogo-premium/${slug}/productos?deporte=${d.slug}`}
+                      className={styles.deporteFichaChip}
+                    >
+                      {d.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

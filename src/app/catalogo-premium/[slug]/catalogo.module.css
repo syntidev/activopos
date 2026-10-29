@@ -4510,16 +4510,6 @@ iframe.lsHeroMedia {
   margin:    0 0 var(--space-6);
 }
 
-.lsCommunityGrid {
-  display:               grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:                   var(--space-3);
-}
-
-@media (min-width: 768px) {
-  .lsCommunityGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
-}
-
 .lsCommunityItem {
   position:      relative;
   aspect-ratio:  4 / 5;
@@ -4539,9 +4529,11 @@ iframe.lsHeroMedia {
   position:      absolute;
   left:          var(--space-3);
   bottom:        var(--space-3);
-  background:    #141414;
-  color:         #FFFFFF;
+  max-width:     calc(100% - 2 * var(--space-3));
+  background:    var(--color-black);
+  color:         var(--color-white);
   font-size:     var(--text-xs);
+  line-height:   1.35;
   padding:       var(--space-2) var(--space-3);
   border-radius: 6px;
 }

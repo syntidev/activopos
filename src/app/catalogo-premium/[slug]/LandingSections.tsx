@@ -207,7 +207,7 @@ function CommunitySection({ config }: { config: CommunityConfig }) {
     <section className={styles.lsCommunity}>
       <h2 className={styles.lsCommunityHeading}>{config.heading}</h2>
       <p className={styles.lsCommunitySubheading}>{config.subheading}</p>
-      <div className={styles.lsCommunityGrid}>
+      <AdaptiveGrid>
         {config.items.map((item, i) => (
           <div key={i} className={styles.lsCommunityItem}>
             <ImgWithFallback
@@ -223,7 +223,7 @@ function CommunitySection({ config }: { config: CommunityConfig }) {
             <span className={styles.lsCommunityTag}>{item.product_tag}</span>
           </div>
         ))}
-      </div>
+      </AdaptiveGrid>
     </section>
   )
 }

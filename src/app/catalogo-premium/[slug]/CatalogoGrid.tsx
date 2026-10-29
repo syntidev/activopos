@@ -517,8 +517,9 @@ export function CatalogoGrid({
   // ── Restructuración patrón conversión (Flatsome-validated) — extrae hero/
   // banner-de-marca/foto-ambiente de Landing Sections para posicionarlos en
   // el orden fijo de la página, en vez del orden libre por `order` de DB.
-  // community y el texto completo de story quedan archivados (código intacto
-  // en LandingSections.tsx, solo sin invocar acá).
+  // El texto completo de story queda archivado (código intacto en
+  // LandingSections.tsx, solo sin invocar acá). community se reconectó vía
+  // listSections más abajo.
   const heroSection = useMemo(() =>
     landingSections.find((s): s is Extract<RenderableLandingSection, { type: 'hero' }> => s.type === 'hero')
   , [landingSections])
@@ -548,8 +549,10 @@ export function CatalogoGrid({
 
   // product_list con slot no es un bloque nuevo -- ya se consumió arriba
   // (novedades/columnas), excluido acá para no duplicarlo en pantalla.
+  // community viaja con las listas: page.tsx ya trae solo las visibles y
+  // ordenadas por `order`, así que respeta el orden del admin entre ellas.
   const listSections = useMemo(() =>
-    landingSections.filter(s => (s.type === 'product_list' && !s.config.slot) || s.type === 'category_list')
+    landingSections.filter(s => (s.type === 'product_list' && !s.config.slot) || s.type === 'category_list' || s.type === 'community')
   , [landingSections])
 
   // Primera categoría no vacía, mismo orden que el admin definió en
@@ -1315,8 +1318,8 @@ export function CatalogoGrid({
             )
       )}
 
-      {/* Bloques de lista (product_list/category_list): pueden ser varios, van
-          juntos en el orden que el admin definió en Configuración > Landing. */}
+      {/* Bloques de lista (product_list/category_list) y Comunidad: pueden ser
+          varios, van juntos en el orden que el admin definió en Configuración > Landing. */}
       {catalogMode === 'home' && browseMode && listSections.length > 0 && (
         <LandingSections sections={listSections} slug={slug} businessId={businessId} />
       )}
@@ -1494,9 +1497,8 @@ export function CatalogoGrid({
 
       {/* ── SECCIÓN 8: Franja de foto ambiente — todo lo que sobrevive del
           bloque "Nuestra Historia": SOLO la imagen, sin eyebrow/título/párrafo
-          largo. El texto completo y "La comunidad OnBike" quedan archivados
-          en LandingSections.tsx (código intacto, sin invocar acá) para
-          onbikemargarita.com. ── */}
+          largo. El texto completo queda archivado en LandingSections.tsx
+          (código intacto, sin invocar acá) para onbikemargarita.com. ── */}
       {/* Solo la imagen, nada más en la sección (ver comentario arriba) --
           sin image_url real no hay nada que mostrar: el fallback dejaba un
           bloque de ~380px con solo el placeholder decorativo, mismo patrón

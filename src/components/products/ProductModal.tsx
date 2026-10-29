@@ -752,10 +752,10 @@ export function ProductModal({
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe el producto: materiales, medidas, usos, beneficios..."
                       rows={3}
-                      maxLength={500}
+                      maxLength={2000}
                     />
                     <p className={styles.fixedPriceSub}>
-                      Aparece en la página del producto en el catálogo digital. Máximo 500 caracteres.
+                      Aparece en la página del producto en el catálogo digital. Máximo 2000 caracteres ({description.length}/2000).
                     </p>
                   </div>
 

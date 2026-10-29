@@ -122,10 +122,10 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               onChange={(e) => f.setDescription(e.target.value)}
               placeholder="Describe el producto: materiales, medidas, usos, beneficios..."
               rows={3}
-              maxLength={500}
+              maxLength={2000}
             />
             <p className={c.hintExamples}>
-              Aparece en la página del producto en el catálogo digital. Máximo 500 caracteres.
+              Aparece en la página del producto en el catálogo digital. Máximo 2000 caracteres ({f.description.length}/2000).
             </p>
           </div>
 

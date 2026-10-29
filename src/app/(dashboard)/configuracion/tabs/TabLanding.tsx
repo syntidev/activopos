@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, LayoutTemplate,
   Image as ImageIcon, GalleryHorizontal, Users, BookOpen, LayoutGrid, Megaphone, ShoppingBag, Tags,
@@ -462,40 +462,54 @@ function EventSliderForm({ config, onChange }: { config: EventSliderConfig; onCh
 }
 
 function CommunityForm({ config, onChange }: { config: CommunityConfig; onChange: (c: CommunityConfig) => void }) {
+  const uid = useId()
+  // La subida de una foto termina DESPUÉS de renderizar: con el `config` del
+  // render que la lanzó, la foto 2 pisaba el texto ya escrito y la foto 1
+  // (POST con image_url ""). Todo cambio se compone sobre el último config.
+  const latest = useRef(config)
+  latest.current = config
+  const update = (next: CommunityConfig) => { latest.current = next; onChange(next) }
+
   const setItem = (i: number, patch: Partial<CommunityItemConfig>) => {
-    const items = config.items.map((it, idx) => idx === i ? { ...it, ...patch } : it)
-    onChange({ ...config, items })
+    const items = latest.current.items.map((it, idx) => idx === i ? { ...it, ...patch } : it)
+    update({ ...latest.current, items })
   }
   const addItem = () => {
-    if (config.items.length >= 4) return
-    onChange({ ...config, items: [...config.items, { ...EMPTY_ITEM }] })
+    if (latest.current.items.length >= 4) return
+    update({ ...latest.current, items: [...latest.current.items, { ...EMPTY_ITEM }] })
   }
   const removeItem = (i: number) => {
-    if (config.items.length <= 2) return
-    onChange({ ...config, items: config.items.filter((_, idx) => idx !== i) })
+    if (latest.current.items.length <= 2) return
+    update({ ...latest.current, items: latest.current.items.filter((_, idx) => idx !== i) })
   }
+  const atMin = config.items.length <= 2
 
+  // id propio por campo: Input deriva el id del texto del label, y las fotos
+  // compartían "input-producto-etiquetado" (el label de la foto 2 apuntaba a la 1).
   return (
     <div className={styles.formFields}>
-      <Input label="Encabezado" value={config.heading} onChange={e => onChange({ ...config, heading: e.target.value })} maxLength={120} />
-      <Input label="Subtítulo" value={config.subheading} onChange={e => onChange({ ...config, subheading: e.target.value })} maxLength={200} />
+      <Input id={`${uid}-heading`} label="Encabezado" value={config.heading} onChange={e => update({ ...latest.current, heading: e.target.value })} maxLength={120} />
+      <Input id={`${uid}-subheading`} label="Subtítulo" value={config.subheading} onChange={e => update({ ...latest.current, subheading: e.target.value })} maxLength={200} />
       {config.items.map((item, i) => (
         <div key={i} className={styles.landingSubCard}>
           <div className={styles.landingCardHeader}>
             <span className={styles.landingSubCardTitle}>Foto {i + 1}</span>
-            <button
-              type="button"
-              className={`${styles.landingIconBtn} ${styles.landingIconBtnDanger}`}
-              onClick={() => removeItem(i)}
-              disabled={config.items.length <= 2}
-              aria-label={`Eliminar foto ${i + 1}`}
-            >
-              <Trash2 size={14} aria-hidden="true" />
-            </button>
+            <div className={styles.landingCardControls}>
+              {atMin && <span className={styles.landingMinHint}>Mínimo 2 fotos</span>}
+              <button
+                type="button"
+                className={`${styles.landingIconBtn} ${styles.landingIconBtnDanger}`}
+                onClick={() => removeItem(i)}
+                disabled={atMin}
+                aria-label={`Eliminar foto ${i + 1}`}
+              >
+                <Trash2 size={14} aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div className={styles.formFields}>
             <ImageField label={`Foto ${i + 1}`} value={item.image_url} onChange={v => setItem(i, { image_url: v ?? '' })} uploadType="landing" compress boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
-            <Input label="Producto etiquetado" value={item.product_tag} onChange={e => setItem(i, { product_tag: e.target.value })} maxLength={80} />
+            <Input id={`${uid}-tag-${i}`} label="Texto de la foto (testimonio o frase)" value={item.product_tag} onChange={e => setItem(i, { product_tag: e.target.value })} maxLength={80} />
           </div>
         </div>
       ))}

@@ -13,7 +13,7 @@ const productSchema = z.object({
   category_id:        z.number().int().nullable().optional(),
   barcode:            z.string().max(50).nullable().optional(),
   sku:                z.string().max(50).nullable().optional(),
-  description:        z.string().nullable().optional(),
+  description:        z.string().max(5000).nullable().optional(),
   sale_mode:          z.enum(['weight', 'unit', 'service', 'length', 'volume', 'package']).default('unit'),
   product_type:       z.enum(['simple', 'combo', 'fabricable']).default('simple'),
   unit_type:          z.enum(['unit', 'weight', 'volume', 'length']).default('unit'),

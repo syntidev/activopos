@@ -61,7 +61,7 @@ test.beforeAll(async () => {
   api = await pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${adminToken}` } })
   ids.reloj = await crearProducto('ZZ Dep Reloj', CAT_ROPA, 'Reloj multideporte con GPS.\nBateria de 14 dias.\nDeportes: Running, Natación, Día a día')
   ids.radar = await crearProducto('ZZ Dep Radar', CAT_CALZADO, 'Radar para la bicicleta.\nDEPORTES : ciclismo')
-  ids.sensor = await crearProducto('ZZ Dep Sensor', CAT_CALZADO, 'Sensor de cadencia.\nDeportes: Ciclismo, Running')
+  ids.sensor = await crearProducto('ZZ Dep Sensor', CAT_CALZADO, 'Sensor de cadencia.\nDeportes: Ciclismo, Running, Triatlón, Outdoor, Náutica, Ecuestre')
   ids.gorro = await crearProducto('ZZ Dep Gorro', CAT_ROPA, 'Ideal para natacion en aguas abiertas.')
   ids.sin = await crearProducto('ZZ Dep Sin Descripcion', CAT_ROPA, null)
 })
@@ -98,8 +98,8 @@ for (const vp of [{ nombre: '375', width: 375, height: 800 }, { nombre: '1280', 
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await abrir(page, PRODUCTOS, '¿Qué practicas?')
 
-    // Orden fijo: Running, Ciclismo, Natación, … Día a día; solo los que algún producto declara.
-    await expect(chipsDeporte(page).getByRole('button')).toHaveText([/^Running/, /^Ciclismo/, /^Natación/, /^Día a día/])
+    // Orden fijo: Running, Ciclismo, Natación, Triatlón, Outdoor, Día a día, Náutica, Ecuestre.
+    await expect(chipsDeporte(page).getByRole('button')).toHaveText([/^Running/, /^Ciclismo/, /^Natación/, /^Triatlón/, /^Outdoor/, /^Día a día/, /^Náutica/, /^Ecuestre/])
 
     await chipDeporte(page, /^Running/).click()
     await expect(page).toHaveURL(/[?&]deporte=running(&|$)/)
@@ -136,6 +136,40 @@ for (const vp of [{ nombre: '375', width: 375, height: 800 }, { nombre: '1280', 
     await page.screenshot({ path: path.join(CAPTURAS, `productos-${vp.nombre}.png`), fullPage: false })
   })
 }
+
+// La home la marca como <section> (region) y /productos como group: se localiza por la etiqueta.
+const seccionDeporte = (page: Page) => page.locator('[aria-label="¿Qué practicas?"]')
+
+test('en 375px los 8 chips de deporte caben en pantalla, sin scroll horizontal (home y /productos)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  const paginas = [
+    { nombre: 'home', url: `/catalogo-premium/${SLUG}`, chips: (p: Page) => seccionDeporte(p).getByRole('link') },
+    { nombre: 'productos', url: PRODUCTOS, chips: (p: Page) => seccionDeporte(p).locator('button[aria-pressed]') },
+  ]
+  for (const pg of paginas) {
+    await abrir(page, pg.url, '¿Qué practicas?')
+    const chips = pg.chips(page)
+    await expect(chips).toHaveCount(8)
+    const boxes = await chips.evaluateAll(els => els.map(e => {
+      const r = e.getBoundingClientRect()
+      return { x: r.x, right: r.right, height: r.height, nombre: (e.textContent ?? '').trim() }
+    }))
+    for (const b of boxes) {
+      expect(b.x, `${pg.nombre}: ${b.nombre} se sale por la izquierda`).toBeGreaterThanOrEqual(0)
+      expect(b.right, `${pg.nombre}: ${b.nombre} se sale por la derecha`).toBeLessThanOrEqual(375)
+      expect(b.height, `${pg.nombre}: ${b.nombre} bajo 44px`).toBeGreaterThanOrEqual(44)
+    }
+    // La fila no desborda ni scrollea, y la página tampoco.
+    const fila = await seccionDeporte(page).evaluate(el => {
+      const row = el.querySelector('div')
+      return { rowOverflow: row ? row.scrollWidth - row.clientWidth : -1, pageOverflow: document.documentElement.scrollWidth - window.innerWidth }
+    })
+    expect(fila.rowOverflow, `${pg.nombre}: la fila hace scroll horizontal`).toBeLessThanOrEqual(0)
+    expect(fila.pageOverflow, `${pg.nombre}: la página hace scroll horizontal`).toBeLessThanOrEqual(0)
+    await seccionDeporte(page).evaluate(el => el.scrollIntoView({ block: 'center' }))
+    await page.screenshot({ path: path.join(CAPTURAS, `movil-${pg.nombre}-375.png`), fullPage: false })
+  }
+})
 
 test('?deporte= directo llega filtrado (y uno inexistente se ignora)', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })

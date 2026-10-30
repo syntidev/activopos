@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { fmtBs, fmtUsd } from '@/app/catalogo-premium/[slug]/catalogUtils'
+import InfoTip from './InfoTip'
 import styles from './pulso.module.css'
 
 /** Ancho dinámico de barra: única excepción tolerada de `style` (un valor por barra, no se puede
@@ -10,8 +11,10 @@ const barStyle = (pct: number): BarStyle => ({ '--w': `${Math.max(0, Math.min(10
 
 export const EMPTY_TEXT = 'Aún no hay visitas en este rango'
 
-export function Card({ title, icon: Icon, children, wide = false, accent = false }: {
+export function Card({ title, icon: Icon, children, wide = false, accent = false, tip }: {
   title: string
+  /** Qué mide y cómo se cuenta; muestra el "?" junto al título. */
+  tip?: string
   icon: LucideIcon
   children: ReactNode
   wide?: boolean
@@ -20,10 +23,13 @@ export function Card({ title, icon: Icon, children, wide = false, accent = false
   const cls = [styles.card, wide ? styles.wide : '', accent ? styles.cardAccent : ''].join(' ').trim()
   return (
     <section className={cls}>
-      <h2 className={styles.cardTitle}>
-        <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-        {title}
-      </h2>
+      <div className={styles.cardHead}>
+        <h2 className={styles.cardTitle}>
+          <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+          {title}
+        </h2>
+        {tip && <InfoTip label={title} text={tip} />}
+      </div>
       {children}
     </section>
   )
@@ -100,9 +106,20 @@ export function DailyChart({ days, label = 'Visitantes por día', empty }: {
   )
 }
 
-export function Kpi({ icon: Icon, label, children, tone, hero = false }: {
+/** Subtítulo de una card con su "?" propio (p. ej. Ciudades). */
+export function SubHead({ title, tip }: { title: string; tip: string }) {
+  return (
+    <div className={styles.subRow}>
+      <h3 className={styles.sub}>{title}</h3>
+      <InfoTip label={title} text={tip} />
+    </div>
+  )
+}
+
+export function Kpi({ icon: Icon, label, children, tone, hero = false, tip }: {
   icon: LucideIcon
   label: string
+  tip?: string
   children: ReactNode
   tone: 'green' | 'amber' | 'blue' | 'purple'
   hero?: boolean
@@ -117,6 +134,7 @@ export function Kpi({ icon: Icon, label, children, tone, hero = false }: {
         <span className={styles.kpiLabel}>{label}</span>
         <div className={styles.kpiValue}>{children}</div>
       </div>
+      {tip && <InfoTip label={label} text={tip} onDark={hero} className={styles.kpiTip} />}
     </div>
   )
 }

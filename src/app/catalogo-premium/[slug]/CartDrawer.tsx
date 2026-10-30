@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, MessageCircle, ShoppingBag, Plus, Minus, CheckCircle, Loader2, MapPin } from 'lucide-react'
 import { useCart } from './CartContext'
+import { track, getPulsoOrderContext } from '@/lib/pulso-client'
 import { fmtUsd, fmtBs, isValidVePhone, currencyVisibility } from './catalogUtils'
 import type { PaymentMethod } from './CatalogoGrid'
 import { checkCedula } from '@/lib/cedula'
@@ -279,6 +280,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           ...(useSavedNow ? { use_saved_address: true } : {}),
           ...(isDelivery && methods.length > 0 ? { shipping_method_id: selectedMethod?.id ?? null } : {}),
           ...(branchNeeded ? { branch_office: branchOffice.trim() } : {}),
+          pulso:              getPulsoOrderContext() ?? undefined,
         }),
       })
 
@@ -796,7 +798,12 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
 
                 <CheckoutPaymentKind
                   kind={isCashea ? 'cashea' : cKind}
-                  onChange={(k) => { setCKind(k); setCedulaError(null) }}
+                  onChange={(k) => {
+                    const prev: PaymentKind = isCashea ? 'cashea' : cKind
+                    if (k === 'cashea' && prev !== 'cashea') track({ type: 'cashea_selected' })
+                    else if (k !== 'cashea' && k !== prev) track({ type: 'currency_switch', query: k })
+                    setCKind(k); setCedulaError(null)
+                  }}
                   financing={financing}
                   blockedNames={blockedNames}
                   disabled={submitting}

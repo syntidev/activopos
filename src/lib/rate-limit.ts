@@ -129,3 +129,10 @@ export const getClientIp = (req: Request): string =>
   req.headers.get('cf-connecting-ip')?.trim()
   || req.headers.get('x-real-ip')?.trim()
   || '127.0.0.1'
+
+// Eventos de Pulso (POST /api/public/events): llave `ip:slug`. Un visitante normal manda ~1 lote cada 3 s;
+// 60/min deja margen y frena a quien intente inflar la analítica. Por proceso (RateLimiterMemory), como los demás.
+export const pulsoEventsLimiter = new RateLimiterMemory({
+  points:   60,   // 60 lotes por ip:slug
+  duration: 60,   // por minuto
+})

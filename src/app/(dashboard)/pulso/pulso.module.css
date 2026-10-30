@@ -5,7 +5,7 @@
    rangeLink rangeActive kpis kpi kpiHero kpiIcon tone* kpiBody kpiLabel kpiValue
    kpiBig grid card cardAccent wide cardTitle hint sub stats bars barRow barHead
    barLabel barValue barTrack barFill barFillWarning daily* empty money* venta*
-   total contact contactItem
+   total contact contactItem contactLabel
    ============================================================ */
 
 .page {
@@ -80,6 +80,7 @@
 }
 
 .kpi {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -155,6 +156,7 @@
 }
 
 .card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -408,6 +410,9 @@
   color: var(--color-brand);
 }
 
+.contactLabel { display: flex; align-items: center; gap: var(--space-1); }
+.tipFlow { top: auto; }
+
 .contactItem .kpiBig { color: var(--color-text-primary); }
 
 /* ── Tablet 640–1023: 2 columnas ── */
@@ -423,3 +428,66 @@
 @media (min-width: 1024px) {
   .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* ── Ayuda "?" (InfoTip) ── */
+.tipHost { position: relative; }
+
+.cardHead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.tipBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  margin: calc(var(--space-2) * -1);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.tipBtn:hover,
+.tipBtn[aria-expanded="true"] { color: var(--color-text-primary); background: var(--color-surface-hover); }
+.tipBtn:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+
+.tipBtnDark { color: var(--kpi-on-label); }
+.tipBtnDark:hover,
+.tipBtnDark[aria-expanded="true"] { color: var(--kpi-on-primary); background: var(--kpi-on-delta-bg); }
+
+.kpiTip { position: absolute; top: var(--space-3); right: var(--space-3); }
+
+.tip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: var(--z-tooltip);
+  margin-top: var(--space-1);
+  padding: var(--space-2-5) var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-normal);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.tip[hidden] { display: none; }
+
+.subRow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); position: relative; margin-top: var(--space-2); }
+.subRow .sub { margin-top: 0; }
+
+/* Con un "?" abierto, el bloque sube sobre sus vecinos (en hover el bloque crea su propio contexto por el transform). */
+.kpi:has([aria-expanded="true"]),
+.card:has([aria-expanded="true"]) { z-index: var(--z-raised); }

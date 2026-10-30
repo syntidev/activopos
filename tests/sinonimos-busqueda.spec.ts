@@ -13,6 +13,7 @@ const ADMIN_ID = 79
 const SLUG = 'boutique-demo'
 const PRODUCTOS = `/catalogo-premium/${SLUG}/productos`
 const CAT_ROPA = 13
+const CAMP = 'zz-sinonimos'
 
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
@@ -27,6 +28,7 @@ const token = async (): Promise<string> =>
     .sign(new TextEncoder().encode(envValue('JWT_SECRET')))
 
 const sinonimosEnDb = (): string => sql(`SELECT IFNULL(JSON_EXTRACT(settings,'$.search_synonyms'),'null') FROM businesses WHERE id=${BUSINESS_ID}`)
+const eventos = (where: string): number => Number(sql(`SELECT COUNT(*) FROM catalog_events WHERE business_id=${BUSINESS_ID} AND utm_campaign='${CAMP}' AND ${where}`))
 const zzCount = (): number => Number(sql(`SELECT COUNT(*) FROM products WHERE business_id=${BUSINESS_ID} AND name LIKE 'ZZ Camisa%'`))
 
 function cleanup(): void {
@@ -37,6 +39,7 @@ function cleanup(): void {
     sql(`DELETE FROM product_collections WHERE product_id IN (${list})`)
     sql(`DELETE FROM products WHERE business_id=${BUSINESS_ID} AND id IN (${list})`)
   }
+  sql(`DELETE FROM catalog_events WHERE business_id=${BUSINESS_ID} AND utm_campaign='${CAMP}'`)
   sql(`UPDATE businesses SET settings=JSON_REMOVE(settings,'$.search_synonyms') WHERE id=${BUSINESS_ID}`)
 }
 
@@ -59,6 +62,7 @@ test.afterAll(async () => {
   await api.dispose()
   // Confirmación: conteo 0, sin sinónimos y plantilla original.
   expect(zzCount()).toBe(0)
+  expect(Number(sql(`SELECT COUNT(*) FROM catalog_events WHERE business_id=${BUSINESS_ID} AND utm_campaign='${CAMP}'`))).toBe(0)
   expect(sinonimosEnDb()).toBe('null')
   expect(sql(`SELECT catalog_template FROM businesses WHERE id=${BUSINESS_ID}`)).toBe(originalTemplate)
 })
@@ -113,4 +117,14 @@ test('con sinónimos: "maillot" encuentra ZZ Camisa (catálogo, ?buscar= y API)'
   // Entre palabras sigue siendo Y: "maillot rojo" no encuentra nada.
   await page.goto(`${PRODUCTOS}?buscar=${encodeURIComponent('maillot rojo')}`)
   await expect(resultCount(page)).toHaveText('0 productos')
+})
+
+test('Pulso: una búsqueda resuelta por sinónimo se registra con resultados, nunca como "sin resultados"', async ({ page }) => {
+  await expect(async () => {
+    await page.goto(`${PRODUCTOS}?utm_campaign=${CAMP}`)
+    await page.locator('input[type="search"]:visible').first().fill('maillot')
+    await expect.poll(() => eventos(`type='search' AND query='maillot'`), { timeout: 12_000 }).toBeGreaterThanOrEqual(1)
+  }).toPass({ timeout: 90_000 })
+  expect(eventos(`type='search' AND query='maillot' AND results_count >= 1`)).toBeGreaterThanOrEqual(1)
+  expect(eventos(`type='search' AND query='maillot' AND results_count = 0`)).toBe(0)
 })

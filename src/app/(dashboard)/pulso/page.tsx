@@ -7,12 +7,33 @@ import {
 import { getSession } from '@/lib/auth'
 import { getPulso } from '@/lib/pulso'
 import type { PulsoCount, PulsoDias, PulsoVentaOrigen } from '@/types/pulso-panel'
-import { Bars, Card, DailyChart, Empty, Kpi, Money, type BarItem } from './blocks'
+import { Bars, Card, DailyChart, Empty, Kpi, Money, SubHead, type BarItem } from './blocks'
+import InfoTip from './InfoTip'
 import styles from './pulso.module.css'
 
 export const dynamic = 'force-dynamic'
 
 const RANGOS: PulsoDias[] = [7, 30]
+// Textos de ayuda ("?"): qué mide cada indicador y cómo se cuenta.
+const TIP = {
+  visitantes: 'Navegadores distintos en el periodo. No cuenta al personal con sesión ni a los equipos marcados con ?pulso=off.',
+  pedidos: 'Pedidos creados desde el catálogo en el periodo, estén pagados o no.',
+  valor: 'Suma de todos los pedidos creados desde el catálogo en el periodo, incluso los que luego se cancelen.',
+  visitaPedido: 'De cada 100 visitantes, cuántos terminaron creando un pedido.',
+  sinResultados: 'Lo que buscaron y no encontraron: candidatos para traer o para sinónimos.',
+  trafico: 'Visitantes distintos por día y tiempo promedio entre el primer y el último movimiento de cada sesión.',
+  equipoLugar: 'Tipo de equipo, país y ciudad de los visitantes. Se deduce del navegador y de la conexión, no de un permiso de ubicación.',
+  ciudad: 'Requiere el ajuste de ubicación de visitantes en Cloudflare.',
+  origen: 'Visitas sin etiqueta UTM. Agrega utm_source y utm_campaign a tus enlaces para ver el canal.',
+  interes: 'Lo más visto, las marcas y deportes elegidos, y lo que más se busca. Cada visitante cuenta una vez por producto.',
+  embudo: 'Visitantes que llegan a cada paso. Pedido pagado: Pedidos del catálogo que el equipo marcó como pagados en ActivoPOS.',
+  ventasOrigen: 'Pedidos y su valor agrupados por la fuente y la campaña con que llegó el visitante.',
+  pagos: 'Pedidos del periodo agrupados por el método de pago elegido en el catálogo.',
+  contacto: 'Toques en los botones de contacto del catálogo: intención de contactar, no mensajes ni llamadas confirmadas.',
+  whatsapp: 'Toques en los botones de WhatsApp. Mide intención de escribir, no mensajes enviados.',
+  llamadas: 'Toques en los botones de llamar del catálogo. Mide intención de llamar; la llamada ocurre en el teléfono y no se puede confirmar.',
+} as const
+
 const DEVICE_LABEL: Record<string, string> = { mobile: 'Celular', tablet: 'Tablet', desktop: 'Computadora', desconocido: 'Sin dato' }
 
 function parseDias(raw: string | string[] | undefined): PulsoDias {
@@ -83,22 +104,22 @@ export default async function PulsoPage({ searchParams }: { searchParams: { dias
       </header>
 
       <div className={styles.kpis}>
-        <Kpi hero icon={Users} tone="blue" label={`Visitantes · ${rangoTxt}`}>
+        <Kpi hero icon={Users} tone="blue" label={`Visitantes · ${rangoTxt}`} tip={TIP.visitantes}>
           <span className={styles.kpiBig}>{trafico.visitantesRango.toLocaleString('es-VE')}</span>
         </Kpi>
-        <Kpi icon={ShoppingCart} tone="blue" label="Pedidos">
+        <Kpi icon={ShoppingCart} tone="blue" label="Pedidos" tip={TIP.pedidos}>
           <span className={styles.kpiBig}>{ventas.pedidos.toLocaleString('es-VE')}</span>
         </Kpi>
-        <Kpi icon={DollarSign} tone="green" label="Valor de pedidos del catálogo">
+        <Kpi icon={DollarSign} tone="green" label="Valor de pedidos del catálogo" tip={TIP.valor}>
           <Money usd={ventas.usd} bs={ventas.bs} />
         </Kpi>
-        <Kpi icon={TrendingUp} tone="purple" label="Visita a pedido">
+        <Kpi icon={TrendingUp} tone="purple" label="Visita a pedido" tip={TIP.visitaPedido}>
           <span className={styles.kpiBig}>{fmtPct(embudo[3].sessions, embudo[0].sessions)}</span>
         </Kpi>
       </div>
 
       <div className={styles.grid}>
-        <Card title="Búsquedas sin resultados" icon={Search} accent wide>
+        <Card title="Búsquedas sin resultados" icon={Search} accent wide tip={TIP.sinResultados}>
           <p className={styles.hint}>Lo que tus clientes buscan y no encuentran: agrégalo a tu catálogo.</p>
           <Bars
             items={counts(interes.busquedasSinResultado)}
@@ -107,7 +128,7 @@ export default async function PulsoPage({ searchParams }: { searchParams: { dias
           />
         </Card>
 
-        <Card title="Tráfico" icon={Activity}>
+        <Card title="Tráfico" icon={Activity} tip={TIP.trafico}>
           <dl className={styles.stats}>
             <div><dt>Visitantes hoy</dt><dd>{trafico.visitantesHoy.toLocaleString('es-VE')}</dd></div>
             <div><dt>Visitantes en {rangoTxt}</dt><dd>{trafico.visitantesRango.toLocaleString('es-VE')}</dd></div>
@@ -116,23 +137,23 @@ export default async function PulsoPage({ searchParams }: { searchParams: { dias
           <DailyChart days={trafico.serieDiaria} />
         </Card>
 
-        <Card title="Equipo y lugar" icon={Globe}>
+        <Card title="Equipo y lugar" icon={Globe} tip={TIP.equipoLugar}>
           <h3 className={styles.sub}>Equipo</h3>
           <Bars items={counts(trafico.equipos, DEVICE_LABEL)} />
           <h3 className={styles.sub}>Países</h3>
           <Bars items={counts(trafico.paises)} empty="Sin datos de país" />
-          <h3 className={styles.sub}>Ciudades</h3>
+          <SubHead title="Ciudades" tip={TIP.ciudad} />
           <Bars items={counts(trafico.ciudades)} empty="Sin datos de ciudad" />
         </Card>
 
-        <Card title="Origen de las visitas" icon={MousePointerClick}>
+        <Card title="Origen de las visitas" icon={MousePointerClick} tip={TIP.origen}>
           <h3 className={styles.sub}>Fuente</h3>
           <Bars items={counts(origen.fuentes)} />
           <h3 className={styles.sub}>Campaña</h3>
           <Bars items={counts(origen.campanas)} empty="Aún no hay visitas desde campañas en este rango" />
         </Card>
 
-        <Card title="Interés" icon={Heart}>
+        <Card title="Interés" icon={Heart} tip={TIP.interes}>
           <h3 className={styles.sub}>Productos más vistos</h3>
           <Bars items={interes.productos.map(p => ({ label: p.name, value: p.count }))} />
           <h3 className={styles.sub}>Marcas</h3>
@@ -143,7 +164,7 @@ export default async function PulsoPage({ searchParams }: { searchParams: { dias
           <Bars items={counts(interes.busquedasTop)} empty="Aún no hay búsquedas en este rango" />
         </Card>
 
-        <Card title="Embudo" icon={Filter}>
+        <Card title="Embudo" icon={Filter} tip={TIP.embudo}>
           <Bars
             items={embudo.map(s => ({
               label: s.label,
@@ -155,14 +176,14 @@ export default async function PulsoPage({ searchParams }: { searchParams: { dias
           />
         </Card>
 
-        <Card title="Ventas por origen" icon={Eye}>
+        <Card title="Ventas por origen" icon={Eye} tip={TIP.ventasOrigen}>
           <h3 className={styles.sub}>Por fuente</h3>
           <VentasList rows={ventas.porFuente} />
           <h3 className={styles.sub}>Por campaña</h3>
           <VentasList rows={ventas.porCampana} />
         </Card>
 
-        <Card title="Cómo pagan" icon={DollarSign}>
+        <Card title="Cómo pagan" icon={DollarSign} tip={TIP.pagos}>
           <VentasList rows={ventas.porMetodo.filter(m => m.pedidos > 0)} />
           {ventas.pedidos > 0 && (
             <div className={styles.total}>
@@ -172,17 +193,23 @@ export default async function PulsoPage({ searchParams }: { searchParams: { dias
           )}
         </Card>
 
-        <Card title="Contacto" icon={Radar} wide>
+        <Card title="Contacto" icon={Radar} wide tip={TIP.contacto}>
           <div className={styles.contact}>
             <div className={styles.contactItem}>
               <MessageCircle size={20} strokeWidth={1.75} aria-hidden="true" />
               <span className={styles.kpiBig}>{contacto.whatsapp.toLocaleString('es-VE')}</span>
-              <span className={styles.kpiLabel}>Clics a WhatsApp</span>
+              <span className={styles.contactLabel}>
+                <span className={styles.kpiLabel}>Clics a WhatsApp</span>
+                <InfoTip label="Clics a WhatsApp" text={TIP.whatsapp} flow />
+              </span>
             </div>
             <div className={styles.contactItem}>
               <Phone size={20} strokeWidth={1.75} aria-hidden="true" />
               <span className={styles.kpiBig}>{contacto.llamadas.toLocaleString('es-VE')}</span>
-              <span className={styles.kpiLabel}>Llamadas</span>
+              <span className={styles.contactLabel}>
+                <span className={styles.kpiLabel}>Llamadas</span>
+                <InfoTip label="Llamadas" text={TIP.llamadas} flow />
+              </span>
             </div>
           </div>
           <DailyChart

@@ -27,6 +27,7 @@ import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { deportesDeProductos, parseDeportes, plano } from '@/lib/catalog-deportes'
 import { matchesWords, NO_SYNONYMS, type SynonymGroups } from '@/lib/search-synonyms'
 import { track } from '@/lib/pulso-client'
+import { DEFAULT_TRUST_STRIP, type TrustItem } from '@/lib/trust-strip'
 import { normalizePhone } from '@/lib/utils'
 import type { VitrinaContext } from '@/types/vitrina'
 import styles from './catalogo.module.css'
@@ -125,6 +126,8 @@ interface Props {
   vitrina?:           VitrinaContext
   /** Sinónimos de búsqueda del negocio (settings.search_synonyms); [] = búsqueda de siempre. */
   searchSynonyms?:    SynonymGroups
+  /** Franja de confianza de la home (settings.trust_strip); sin valor, los textos de siempre. */
+  trustStrip?:        readonly TrustItem[]
 }
 
 export interface CatalogBrand {
@@ -210,6 +213,7 @@ export function CatalogoGrid({
   showKitLink = false,
   vitrina,
   searchSynonyms = NO_SYNONYMS,
+  trustStrip = DEFAULT_TRUST_STRIP,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
@@ -1442,27 +1446,15 @@ export function CatalogoGrid({
           delgada, sin foto. ── */}
       {catalogMode === 'home' && browseMode && (
         <section className={styles.trustStripSection} aria-label="Confianza">
-          <div className={styles.trustStripItem}>
-            <Truck size={22} aria-hidden="true" />
-            <div>
-              <p className={styles.trustStripTitle}>Envío en Margarita</p>
-              <p className={styles.trustStripDesc}>Coordinamos entrega en toda la isla.</p>
+          {[Truck, ShieldCheck, MessageCircle].map((Icon, i) => (
+            <div key={i} className={styles.trustStripItem}>
+              <Icon size={22} aria-hidden="true" />
+              <div>
+                <p className={styles.trustStripTitle}>{trustStrip[i].title}</p>
+                <p className={styles.trustStripDesc}>{trustStrip[i].desc}</p>
+              </div>
             </div>
-          </div>
-          <div className={styles.trustStripItem}>
-            <ShieldCheck size={22} aria-hidden="true" />
-            <div>
-              <p className={styles.trustStripTitle}>Garantía de marca oficial</p>
-              <p className={styles.trustStripDesc}>Distribuidor autorizado, producto original.</p>
-            </div>
-          </div>
-          <div className={styles.trustStripItem}>
-            <MessageCircle size={22} aria-hidden="true" />
-            <div>
-              <p className={styles.trustStripTitle}>Atención directa</p>
-              <p className={styles.trustStripDesc}>Escríbenos por WhatsApp, respondemos rápido.</p>
-            </div>
-          </div>
+          ))}
         </section>
       )}
 

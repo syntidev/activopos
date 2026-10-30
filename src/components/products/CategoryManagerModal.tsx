@@ -125,7 +125,7 @@ export function CategoryManagerModal({ isOpen, onClose, onChanged }: CategoryMan
 
   const handleMove = (index: number, dir: -1 | 1) => {
     const j = index + dir
-    if (j < 0 || j >= items.length) return
+    if (busy || j < 0 || j >= items.length) return
     const next = [...items]
     ;[next[index], next[j]] = [next[j], next[index]]
     setItems(next) // optimista; run() recarga el orden real

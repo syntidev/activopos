@@ -9,6 +9,7 @@ import { mergeAttribution, nextSession } from '@/lib/pulso-attribution'
 
 const SESSION_KEY = 'activopos_pulso_session'
 const ATTR_KEY = 'activopos_pulso_attr'
+const OFF_KEY = 'activopos_pulso_off'
 const ENDPOINT = '/api/public/events'
 const FLUSH_DELAY_MS = 3000
 
@@ -21,6 +22,7 @@ let attribution: PulsoAttribution | null = null
 let queue: PulsoEventInput[] = []
 let timer: ReturnType<typeof setTimeout> | null = null
 let listening = false
+let blocked = false // interno o ?pulso=off: no se reactiva hasta recargar la página
 
 function isDnt(): boolean {
   try {
@@ -29,6 +31,44 @@ function isDnt(): boolean {
   } catch {
     return false
   }
+}
+
+/** Marca local de exclusión por dispositivo (?pulso=off). Sin storage: no hay marca. */
+function isOptedOut(): boolean {
+  try {
+    return localStorage.getItem(OFF_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** Corta el registro de este navegador y descarta lo que esté en cola. */
+function disable(): void {
+  blocked = true
+  slug = null
+  sessionId = null
+  attribution = null
+  queue = []
+  if (timer) { clearTimeout(timer); timer = null }
+}
+
+/** `?pulso=off` marca este dispositivo como interno; `?pulso=on` quita la marca. Silencioso. */
+export function applyPulsoSwitch(search: string): void {
+  try {
+    const v = new URLSearchParams(search).get('pulso')
+    if (v === 'off') { localStorage.setItem(OFF_KEY, '1'); disable() }
+    else if (v === 'on') localStorage.removeItem(OFF_KEY)
+  } catch {
+    // storage bloqueado: sin marca, el dispositivo cuenta normal
+  }
+}
+
+/** Sesión de ActivoPOS (cookie httpOnly, ilegible desde JS): el servidor dice si este navegador es personal. */
+function checkInternal(): void {
+  fetch(ENDPOINT, { cache: 'no-store', credentials: 'same-origin' })
+    .then(r => (r.ok ? r.json() : null))
+    .then((j: { internal?: boolean } | null) => { if (j?.internal === true) disable() })
+    .catch(() => { /* sin respuesta: la barrera del servidor descarta igual */ })
 }
 
 function readJson<T>(key: string): T | null {
@@ -105,8 +145,10 @@ function onHide(): void {
 /** Idempotente: inicia (o retoma) la sesión del catálogo `slug`. */
 export function initPulso(newSlug: string): void {
   try {
-    if (typeof window === 'undefined' || isDnt()) return
+    if (typeof window === 'undefined' || isDnt() || isOptedOut() || blocked) return
+    const first = slug !== newSlug
     slug = newSlug
+    if (first) checkInternal()
     touchSession()
     attribution = attribution ?? readJson<PulsoAttribution>(ATTR_KEY)
     if (!listening) {

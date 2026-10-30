@@ -14,6 +14,8 @@ import { CartDrawer } from './CartDrawer'
 import { capitalize, currencyVisibility, fmtBs } from './catalogUtils'
 import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { normalizePhone } from '@/lib/utils'
+import { matchesWords, NO_SYNONYMS, type SynonymGroups } from '@/lib/search-synonyms'
+import { plano } from '@/lib/catalog-deportes'
 import styles from './catalogo.module.css'
 
 /* ── Public interfaces ───────────────────────────────────────── */
@@ -71,6 +73,8 @@ export interface PaymentMethod {
 
 interface Props {
   products:       CatalogProduct[]
+  /** Sinónimos de búsqueda del negocio (settings.search_synonyms); [] = búsqueda de siempre. */
+  searchSynonyms?: SynonymGroups
   categories:     string[]
   categoryColors: Record<string, string | null>
   categoryImages: Record<string, string | null>
@@ -141,6 +145,7 @@ const FEATURED_KEY = '__destacados__'
 
 export function CatalogoGrid({
   products,
+  searchSynonyms = NO_SYNONYMS,
   categories,
   categoryColors,
   categoryImages,
@@ -303,6 +308,9 @@ export function CatalogoGrid({
   }, [searchExpanded])
 
   const visible = useMemo(() => {
+    if (query.trim() && searchSynonyms.length > 0) {
+      return products.filter(p => matchesWords(plano(`${p.name} ${p.categoryName ?? ''}`), query, searchSynonyms) || serverHits.has(p.id))
+    }
     if (query.trim()) {
       const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       return products.filter(p =>
@@ -314,7 +322,7 @@ export function CatalogoGrid({
     if (activeCategory === FEATURED_KEY) return products.filter(p => p.isFeatured)
     const byCat = activeCategory ? products.filter(p => p.categoryName === activeCategory) : products
     return activeSub ? byCat.filter(p => p.subcategory != null && subcategoryKey(p.subcategory) === activeSub) : byCat
-  }, [products, query, activeCategory, activeSub, serverHits])
+  }, [products, query, activeCategory, activeSub, serverHits, searchSynonyms])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
   useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query])

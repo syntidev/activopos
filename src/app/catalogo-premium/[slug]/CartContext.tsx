@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { track } from '@/lib/pulso-client'
 
 export interface CartItem {
   product_id:     number
@@ -66,7 +67,11 @@ export function CartProvider({ slug, children }: Props) {
     localStorage.setItem(storageKey, JSON.stringify(cart))
   }, [cart, storageKey])
 
+  // Una vez por cada apertura del checkout.
+  useEffect(() => { if (checkoutOpen) track({ type: 'checkout_start' }) }, [checkoutOpen])
+
   const addToCart = (item: CartItem) => {
+    track({ type: 'add_to_cart', product_id: item.product_id })
     setCart(prev => {
       const existing = prev.find(i => i.product_id === item.product_id && i.variant_id === item.variant_id)
       if (existing) {

@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast'
 import { ImageField } from '@/components/ui/ImageField'
 import { FinancingConfig } from './FinancingConfig'
 import { SearchSynonyms } from './SearchSynonyms'
+import { TrustStripEditor } from './TrustStripEditor'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -329,6 +330,7 @@ export function TabTema({ businessId: _b }: Props) {
         </p>
       </div>
       <SearchSynonyms />
+      <TrustStripEditor />
       </div>
 
       <div className={styles.saveRow}>

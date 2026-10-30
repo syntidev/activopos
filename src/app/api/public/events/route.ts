@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/auth'
 import { getClientIp, pulsoEventsLimiter } from '@/lib/rate-limit'
 import { logError } from '@/lib/safe-log'
 import { brandSlug } from '@/lib/vitrina'
@@ -21,6 +22,12 @@ function brandSlugFromPath(path: string): string | null {
   const m = BRAND_PATH_RE.exec(path)
   if (!m) return null
   try { return decodeURIComponent(m[1]) } catch { return m[1] }
+}
+
+// ¿Este navegador trae sesión válida de ActivoPOS (personal)? La cookie es httpOnly: solo el servidor la ve.
+export async function GET(): Promise<Response> {
+  const session = await getSession()
+  return NextResponse.json({ internal: session !== null }, { headers: { 'Cache-Control': 'no-store', Vary: 'Cookie' } })
 }
 
 // Analítica propia del catálogo (ver .doc/CONTRATO_PULSO.md §3). Público: el negocio sale del slug, nunca del body.
@@ -63,6 +70,9 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   // Bots: se responde igual que un éxito para que no reintenten, sin tocar la DB.
   if (isBotUserAgent(req.headers.get('user-agent'))) return new Response(null, { status: 204 })
+
+  // Tráfico interno: lote con sesión de ActivoPOS válida (doble barrera con el tracker). order_created no pasa por acá.
+  if (await getSession()) return new Response(null, { status: 204 })
 
   try {
     const business = await prisma.business.findFirst({

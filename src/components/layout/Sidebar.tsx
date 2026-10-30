@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Activity,
   Store,
+  Radar,
   Sparkles,
   Settings,
   HelpCircle,
@@ -136,6 +137,7 @@ const NAV_GROUPS: NavGroup[] = [
     adminOnly: true,
     items: [
       { href: '/catalogo-digital', icon: Store, label: 'Catálogo Digital', moduleKey: 'catalog', colorKey: 'inventario', requiresCatalogPlan: true },
+      { href: '/pulso', icon: Radar, label: 'Pulso', colorKey: 'inventario', requiresCatalogPlan: true },
     ],
   },
   /* ── Grupos preservados: no listados en la nueva estructura pedida,

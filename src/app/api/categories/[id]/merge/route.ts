@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { deletedCategoryName } from '@/lib/categories'
 
 const mergeSchema = z.object({ target_id: z.number().int().positive() })
 
@@ -30,11 +31,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     // o el destino entre medias, no se mueve nada.
     const moved = await prisma.$transaction(async tx => {
       const target = await tx.category.count({ where: { id: targetId, business_id: businessId, active: true } })
+      const origin = await tx.category.findFirst({
+        where:  { id: sourceId, business_id: businessId, active: true },
+        select: { name: true },
+      })
+      if (target !== 1 || !origin) throw new CategoryNotFoundError()
+      // Renombrar libera el nombre para poder crear otra categoría igual (unique business_id+name).
       const source = await tx.category.updateMany({
         where: { id: sourceId, business_id: businessId, active: true },
-        data:  { active: false },
+        data:  { active: false, name: deletedCategoryName(origin.name, sourceId) },
       })
-      if (target !== 1 || source.count !== 1) throw new CategoryNotFoundError()
+      if (source.count !== 1) throw new CategoryNotFoundError()
       const { count } = await tx.product.updateMany({
         where: { category_id: sourceId, business_id: businessId },
         data:  { category_id: targetId },

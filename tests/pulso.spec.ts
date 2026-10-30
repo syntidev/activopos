@@ -242,6 +242,115 @@ test('bot ignorado: 204 y nada se guarda', async () => {
   expect(eventos(`session_id='${SID(8)}'`)).toBe(0)
 })
 
+const TIPS: [string, string][] = [
+  ['Llamadas', 'Toques en los botones de llamar del catálogo. Mide intención de llamar; la llamada ocurre en el teléfono y no se puede confirmar.'],
+  ['Clics a WhatsApp', 'Toques en los botones de WhatsApp. Mide intención de escribir, no mensajes enviados.'],
+  ['Visitantes · 7 días', 'Navegadores distintos en el periodo. No cuenta al personal con sesión ni a los equipos marcados con ?pulso=off.'],
+  ['Embudo', 'Pedido pagado: Pedidos del catálogo que el equipo marcó como pagados en ActivoPOS.'],
+  ['Origen de las visitas', 'Visitas sin etiqueta UTM. Agrega utm_source y utm_campaign a tus enlaces para ver el canal.'],
+  ['Búsquedas sin resultados', 'Lo que buscaron y no encontraron: candidatos para traer o para sinónimos.'],
+  ['Ciudades', 'Requiere el ajuste de ubicación de visitantes en Cloudflare.'],
+]
+
+test('tráfico interno: con sesión de ActivoPOS el tracker no envía y el servidor descarta el lote', async ({ page }) => {
+  const camp = `${CAMP}-int`
+  await login(page)
+  await page.goto(`${HOME}?utm_campaign=${camp}`)
+  await page.goto(`${HOME}/productos?utm_campaign=${camp}`)
+  await page.waitForTimeout(6000) // más que el retardo de envío del tracker (3 s)
+  expect(eventos(`utm_campaign='${camp}'`)).toBe(0)
+
+  // Barrera del servidor: un lote válido con la cookie de sesión se responde 204 y no guarda nada.
+  const staff = await pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { 'user-agent': UA_PERSONA, cookie: `activopos_session=${await token('cashier')}` } })
+  const r = await staff.post('/api/public/events', { data: lote(SLUG, 20, [{ type: 'page_view', path: HOME }]) })
+  const quien = await staff.get('/api/public/events')
+  const quienJson = (await quien.json()) as { internal: boolean }
+  await staff.dispose()
+  expect(r.status()).toBe(204)
+  expect(quienJson.internal).toBe(true)
+  expect(eventos(`session_id='${SID(20)}'`)).toBe(0)
+  // Sin sesión, el mismo lote sí cuenta y GET responde internal:false.
+  expect((await enviar(lote(SLUG, 20, [{ type: 'page_view', path: HOME }]))).status()).toBe(204)
+  expect(eventos(`session_id='${SID(20)}'`)).toBe(1)
+  const anon = await pwRequest.newContext({ baseURL: BASE })
+  expect(((await (await anon.get('/api/public/events')).json()) as { internal: boolean }).internal).toBe(false)
+  await anon.dispose()
+})
+
+test('?pulso=off deja de registrar en ese navegador y ?pulso=on lo devuelve', async ({ page }) => {
+  const off = `${CAMP}-off`
+  const on = `${CAMP}-on`
+  await page.goto(`${HOME}?pulso=off&utm_campaign=${off}`)
+  await page.goto(`${HOME}/productos?utm_campaign=${off}`)
+  await page.waitForTimeout(6000)
+  expect(eventos(`utm_campaign='${off}'`)).toBe(0)
+  await expect(page.getByText(/pulso/i).filter({ hasText: /off|desactiv/i })).toHaveCount(0) // nada visible para el cliente
+  expect(await page.evaluate(() => localStorage.getItem('activopos_pulso_off'))).toBe('1')
+
+  await expect(async () => {
+    await page.goto(`${HOME}?pulso=on&utm_campaign=${on}`)
+    await expect.poll(() => eventos(`business_id=${BUSINESS_ID} AND type='page_view' AND utm_campaign='${on}'`), { timeout: 12_000 }).toBeGreaterThanOrEqual(1)
+  }).toPass({ timeout: 90_000 })
+  expect(await page.evaluate(() => localStorage.getItem('activopos_pulso_off'))).toBeNull()
+})
+
+test('el pedido del personal sigue registrando order_created (es venta real)', async () => {
+  const staff = await pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { 'user-agent': UA_PERSONA, cookie: `activopos_session=${await token('admin')}` } })
+  const r = await staff.post(`/api/catalog/${SLUG}/order`, {
+    data: { ...PEDIDO, customer_phone: '04141230001', items: [{ product_id: productId, qty: 1 }], pulso: { session_id: SID(21), utm_campaign: `${CAMP}-int` } },
+  })
+  const cuerpo = await r.text()
+  await staff.dispose()
+  expect(r.status(), cuerpo).toBeLessThan(300)
+  expect(eventos(`type='order_created' AND session_id='${SID(21)}' AND business_id=${BUSINESS_ID} AND value_usd=10.00`)).toBe(1)
+})
+
+test('panel /pulso: cada indicador explica qué mide (teclado, táctil ≥44px, 375px sin desborde)', async ({ page }) => {
+  await login(page)
+  await page.goto('/pulso?dias=7')
+  await expect(page.getByRole('heading', { name: 'Pulso', exact: true })).toBeVisible()
+
+  for (const [nombre, texto] of TIPS) {
+    const btn = page.getByRole('button', { name: `Qué mide: ${nombre}` })
+    await expect(btn, nombre).toBeVisible()
+    const box = await btn.boundingBox()
+    expect(box!.width, `${nombre} ancho`).toBeGreaterThanOrEqual(44)
+    expect(box!.height, `${nombre} alto`).toBeGreaterThanOrEqual(44)
+    await btn.focus()
+    await page.keyboard.press('Enter')
+    await expect(btn).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('tooltip').filter({ hasText: texto }), nombre).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(btn).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.getByRole('tooltip').filter({ hasText: texto })).toBeHidden()
+  }
+
+  // Tocar fuera cierra.
+  const v = page.getByRole('button', { name: 'Qué mide: Visitantes · 7 días' })
+  await v.click()
+  await page.getByRole('heading', { name: 'Pulso', exact: true }).click()
+  await expect(v).toHaveAttribute('aria-expanded', 'false')
+
+  // Capturas con un tooltip abierto (sin versionar).
+  mkdirSync(CAPTURAS, { recursive: true })
+  for (const [ancho, alto] of [[1280, 2200], [375, 3600]] as const) {
+    await page.setViewportSize({ width: ancho, height: alto })
+    await page.goto('/pulso?dias=7')
+    await expect(page.getByRole('heading', { name: 'Pulso', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Qué mide: Visitantes · 7 días' }).click()
+    await expect(page.getByRole('tooltip').filter({ hasText: 'Navegadores distintos' })).toBeVisible()
+    await page.screenshot({ path: path.join(CAPTURAS, `pulso-tooltip-${ancho}.png`) })
+    // El popover no se sale de la pantalla.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `sin desborde ${ancho}px`).toBeLessThanOrEqual(0)
+    const tb = await page.getByRole('tooltip').filter({ hasText: 'Navegadores distintos' }).boundingBox()
+    expect(tb!.x).toBeGreaterThanOrEqual(0)
+    // Y queda por encima de los bloques vecinos (no tapado).
+    const tapado = await page.evaluate(({ x, y }) => !document.elementFromPoint(x, y)?.closest('[role="tooltip"]'), { x: tb!.x + 20, y: tb!.y + 10 })
+    expect(tapado, `tooltip tapado a ${ancho}px`).toBe(false)
+    expect(tb!.x + tb!.width).toBeLessThanOrEqual(ancho)
+  }
+})
+
 test('panel /pulso: muestra los conteos reales y exige ser admin', async ({ page }) => {
   // Datos deterministas del panel (sesiones cccccccc-…-0010..12), además de lo que dejaron los tests anteriores.
   const attr = { utm_source: 'zz-wa', utm_campaign: CAMP }
@@ -262,8 +371,8 @@ test('panel /pulso: muestra los conteos reales y exige ser admin', async ({ page
   await expect(page.getByText('Búsquedas sin resultados').first()).toBeVisible()
   await expect(page.getByText('zzzzqxk').first()).toBeVisible()
   await expect(page.getByText('zz-wa').first()).toBeVisible()
-  // Pedidos de prueba ($20.00 + $10.00 = $30.00): USD y su equivalente en Bs, siempre juntos.
-  await expect(page.getByText('$30.00').first()).toBeVisible()
+  // Pedidos de prueba ($20.00 + $10.00 + $10.00 del personal = $40.00): USD y su equivalente en Bs, siempre juntos.
+  await expect(page.getByText('$40.00').first()).toBeVisible()
   await expect(page.getByText(/Bs\./).first()).toBeVisible()
   await expect(page.getByText(String(clicsWa), { exact: true }).first()).toBeVisible()
 

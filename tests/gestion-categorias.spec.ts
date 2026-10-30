@@ -1,6 +1,7 @@
 import { test, expect, request as pwRequest, type APIRequestContext, type Page } from '@playwright/test'
 import { SignJWT } from 'jose'
 import path from 'path'
+import * as XLSX from 'xlsx'
 import { envValue, sql } from './alta-helpers'
 
 /**
@@ -152,6 +153,67 @@ test('merge: aislamiento entre negocios y validaciones', async () => {
   const anon = await pwRequest.newContext({ baseURL: BASE })
   expect((await anon.post(`/api/categories/${mia}/merge`, { data: { target_id: ids.destino }, maxRedirects: 0 })).status()).not.toBe(200)
   await anon.dispose()
+})
+
+const xlsx = (rows: (string | number)[][]): Buffer => {
+  const ws = XLSX.utils.aoa_to_sheet([['nombre', 'precio_usd', 'costo_usd', 'stock', 'categoria'], ...rows])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Productos')
+  return Buffer.from(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as number[])
+}
+
+const createCat = async (name: string): Promise<number> => {
+  const r = await api.post('/api/categories', { data: { name } })
+  expect(r.status(), JSON.stringify(await r.json().catch(() => ({})))).toBe(201)
+  return (await r.json()).category.id as number
+}
+
+test('fusionar libera el nombre: "ZZ Cat A" se puede crear de nuevo y el importador usa la activa', async () => {
+  const a = await createCat('ZZ Cat A')
+  const b = await createCat('ZZ Cat B')
+  const merged = await api.post(`/api/categories/${a}/merge`, { data: { target_id: b } })
+  expect(merged.status()).toBe(200)
+  expect(sql(`SELECT CONCAT(active,'|',name) FROM categories WHERE id=${a}`)).toBe(`0|ZZ Cat A [eliminada #${a}]`)
+
+  const a2 = await createCat('ZZ Cat A')
+  expect(a2).not.toBe(a)
+
+  const res = await api.post('/api/products/import-excel', {
+    multipart: {
+      file: { name: 'cat.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: xlsx([['ZZ Cat Imp1', 10, 2, 1, 'ZZ Cat A']]) },
+      dry_run: 'false',
+    },
+  })
+  expect(res.status(), await res.text()).toBe(200)
+  expect(sql(`SELECT category_id FROM products WHERE business_id=${BIZ} AND name='ZZ Cat Imp1'`)).toBe(String(a2))
+})
+
+test('eliminar libera el nombre y una inactiva heredada (sin renombrar) nunca se reutiliza', async () => {
+  const d = await createCat('ZZ Cat Del')
+  expect((await api.delete(`/api/categories/${d}`)).status()).toBe(200)
+  expect(sql(`SELECT name FROM categories WHERE id=${d}`)).toBe(`ZZ Cat Del [eliminada #${d}]`)
+  expect(await createCat('ZZ Cat Del')).not.toBe(d)
+
+  // fila heredada: inactiva con el nombre original, como las borradas antes de este cambio
+  sql(`INSERT INTO categories (business_id, name, active) VALUES (${BIZ}, 'ZZ Cat Legacy', 0)`)
+  const legacy = catId('ZZ Cat Legacy')
+  const nueva = await createCat('ZZ Cat Legacy')
+  expect(nueva).not.toBe(legacy)
+  expect(sql(`SELECT name FROM categories WHERE id=${legacy}`)).toBe(`ZZ Cat Legacy [eliminada #${legacy}]`)
+
+  sql(`INSERT INTO categories (business_id, name, active) VALUES (${BIZ}, 'ZZ Cat Legacy2', 0)`)
+  const legacy2 = catId('ZZ Cat Legacy2')
+  const res = await api.post('/api/products/import-excel', {
+    multipart: {
+      file: { name: 'cat.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: xlsx([['ZZ Cat Imp2', 10, 2, 1, 'ZZ Cat Legacy2']]) },
+      dry_run: 'false',
+    },
+  })
+  expect(res.status(), await res.text()).toBe(200)
+  const cat = sql(`SELECT category_id FROM products WHERE business_id=${BIZ} AND name='ZZ Cat Imp2'`)
+  expect(cat).not.toBe(String(legacy2))
+  expect(sql(`SELECT active FROM categories WHERE id=${cat}`)).toBe('1')
+  expect(sql(`SELECT COUNT(*) FROM categories WHERE business_id=${BIZ} AND active=1 AND name='ZZ Cat Legacy2'`)).toBe('1')
 })
 
 test('capturas 1280 y 375', async ({ page }) => {

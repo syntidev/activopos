@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
+import { readSynonyms } from '@/lib/search-synonyms'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import { CatalogFooter } from './CatalogFooter'
 import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf } from '@/lib/catalog'
@@ -239,6 +240,7 @@ export default async function CatalogoPage({ params }: PageProps) {
     >
       {/* ── CatalogoGrid: header + hero + search + tabs + grid + modals ── */}
       <CatalogoGrid
+        searchSynonyms={readSynonyms(business.settings)}
         products={catalogProducts}
         categories={categories}
         categoryColors={categoryColors}

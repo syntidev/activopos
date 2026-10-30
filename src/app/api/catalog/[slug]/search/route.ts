@@ -5,6 +5,7 @@ import { catalogLimiter, catalogSearchSlugLimiter, getClientIp } from '@/lib/rat
 import { CATALOG_WHERE_FILTER, isCatalogLive } from '@/lib/catalog'
 import { matchVariant, parseSearch, productSearchWhere } from '@/lib/product-search'
 import { logError } from '@/lib/safe-log'
+import { readSynonyms } from '@/lib/search-synonyms'
 
 /**
  * GET /api/catalog/[slug]/search?q=...   (público, sin sesión)
@@ -36,14 +37,16 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   try {
     const parsed = parseSearch(req.nextUrl.searchParams.get('q'))
-    const where = productSearchWhere(parsed)
-    if (!where) return NextResponse.json({ ok: true, q: '', results: [] })
+    if (!parsed.q) return NextResponse.json({ ok: true, q: '', results: [] })
 
     const business = await prisma.business.findFirst({
       where:  { catalog_slug: slug.data, catalog_active: true, active: true },
-      select: { id: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true },
+      select: { id: true, settings: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true },
     })
     if (!business || !isCatalogLive(business)) return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
+
+    const where = productSearchWhere(parsed, readSynonyms(business.settings))
+    if (!where) return NextResponse.json({ ok: true, q: '', results: [] })
 
     const products = await prisma.product.findMany({
       where: {

@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client'
+import { expandWord, type SynonymGroups } from '@/lib/search-synonyms'
 
 /**
  * Búsqueda ÚNICA de productos (Productos, POS cámara/texto/pistola, catálogo público y Alta rápida).
@@ -35,9 +36,9 @@ export function parseSearch(raw: string | null | undefined): ParsedSearch {
 }
 
 /** Filtro de Prisma para Product (sin business_id: lo inyecta la capa de tenant o lo agrega quien llama). */
-export function productSearchWhere(p: ParsedSearch): Prisma.ProductWhereInput | null {
+export function productSearchWhere(p: ParsedSearch, synonyms: SynonymGroups = []): Prisma.ProductWhereInput | null {
   if (!p.q) return null
-  const word = (w: string): Prisma.ProductWhereInput => ({
+  const term = (w: string): Prisma.ProductWhereInput => ({
     OR: [
       { name:        { contains: w } },
       { sku:         { contains: w } },
@@ -46,8 +47,13 @@ export function productSearchWhere(p: ParsedSearch): Prisma.ProductWhereInput | 
       { variants:    { some: { is_active: true, sku: { contains: w } } } },
     ],
   })
+  // Con sinónimos, la palabra se cumple por cualquier término de su grupo; sin grupos expandWord devuelve [w] (+ normaliza).
+  const word = (w: string): Prisma.ProductWhereInput =>
+    synonyms.length === 0 ? term(w) : { OR: expandWord(w, synonyms).map(term) }
   const or: Prisma.ProductWhereInput[] = [
     { AND: p.words.map(word) },
+    // La consulta completa como frase de un grupo ("reloj inteligente")
+    ...(synonyms.length > 0 && p.words.length > 1 ? [word(p.words.join(' '))] : []),
     // La frase completa contra un SKU que lleva espacios ("21216H UNICO COLOR XS")
     { sku: { contains: p.q } },
     { variants: { some: { is_active: true, sku: { contains: p.q } } } },

@@ -6,6 +6,7 @@ import { FINANCING_BADGES, isFinancingBadgeKey } from '@/lib/financing-badges'
 import { stockDisplayOf, revalidateCatalogCache } from '@/lib/catalog'
 import { CASHEA_PRESET, buildFinancingConfig, financingInputSchema, readFinancingConfig } from '@/lib/financing'
 import type { FinancingConfig } from '@/lib/financing'
+import { readSynonyms, synonymsInputSchema } from '@/lib/search-synonyms'
 
 const financingSchema = z.object({
   // Config de financiamiento completa (modo, nombre, frase, logo). Ver .doc/CONTRATO_FINANCIAMIENTO.md.
@@ -13,7 +14,9 @@ const financingSchema = z.object({
   // Interruptor viejo (solo Cashea): se sigue aceptando mientras la pantalla de Tema no migre a `financing`.
   catalog_financing_badge: z.enum(Object.keys(FINANCING_BADGES) as [string, ...string[]]).nullable().optional(),
   catalog_stock_display:   z.enum(['exact', 'status']).optional(),
-}).refine(d => d.financing !== undefined || d.catalog_financing_badge !== undefined || d.catalog_stock_display !== undefined, { message: 'Nada que guardar' })
+  // Grupos de sinónimos de búsqueda (se normalizan y validan en lib/search-synonyms.ts).
+  search_synonyms:         synonymsInputSchema.optional(),
+}).refine(d => d.financing !== undefined || d.catalog_financing_badge !== undefined || d.catalog_stock_display !== undefined || d.search_synonyms !== undefined, { message: 'Nada que guardar' })
 
 const upgradeSchema = z.object({
   action: z.literal('request_upgrade'),
@@ -42,6 +45,7 @@ export async function GET() {
       catalog_financing_badge: isFinancingBadgeKey(badge) ? badge : null,
       financing:               readFinancingConfig(settings, session.businessId),
       catalog_stock_display:   stockDisplayOf(settings),
+      search_synonyms:         readSynonyms(settings),
     },
   })
 }
@@ -83,6 +87,7 @@ export async function PATCH(req: NextRequest) {
           // catalog_financing_badge se mantiene sincronizado (solo 'cashea' activo) para lo que aún lo lea.
           ...(financing ? { financing: { ...financing }, catalog_financing_badge: financing.enabled && financing.mode === 'cashea' ? 'cashea' : null } : {}),
           ...(data.catalog_stock_display !== undefined ? { catalog_stock_display: data.catalog_stock_display } : {}),
+          ...(data.search_synonyms !== undefined ? { search_synonyms: data.search_synonyms } : {}),
         },
       },
     })

@@ -5,6 +5,7 @@ import { parseKitConfig } from '@/lib/kit-config'
 import { getSession } from '@/lib/auth'
 import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from '../CatalogoGrid'
+import { readSynonyms } from '@/lib/search-synonyms'
 import type { CatalogProduct, PaymentMethod } from '../CatalogoGrid'
 import { CatalogFooter } from '../CatalogFooter'
 import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf } from '@/lib/catalog'
@@ -206,6 +207,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         : undefined}
     >
       <CatalogoGrid
+        searchSynonyms={readSynonyms(business.settings)}
         businessId={business.id}
         products={catalogProducts}
         categories={categories}

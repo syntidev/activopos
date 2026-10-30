@@ -7,6 +7,7 @@ import { brandSlug, resolveVitrinaBrand } from '@/lib/vitrina'
 import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive, stockDisplayOf } from '@/lib/catalog'
 import type { VitrinaContext } from '@/types/vitrina'
 import { CatalogoGrid } from '../../CatalogoGrid'
+import { readSynonyms } from '@/lib/search-synonyms'
 import type { CatalogProduct, PaymentMethod } from '../../CatalogoGrid'
 import { CatalogFooter } from '../../CatalogFooter'
 import styles from '../../catalogo.module.css'
@@ -188,6 +189,7 @@ export default async function VitrinaMarcaPage({ params, searchParams }: PagePro
         : undefined}
     >
       <CatalogoGrid
+        searchSynonyms={readSynonyms(business.settings)}
         businessId={business.id}
         products={catalogProducts}
         categories={categories}

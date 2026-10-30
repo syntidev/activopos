@@ -7,6 +7,7 @@ import { Button }   from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { ImageField } from '@/components/ui/ImageField'
 import { FinancingConfig } from './FinancingConfig'
+import { SearchSynonyms } from './SearchSynonyms'
 import styles from '../configuracion.module.css'
 
 interface Props { businessId: number }
@@ -327,6 +328,7 @@ export function TabTema({ businessId: _b }: Props) {
           un Hero en Landing, el Hero ocupa este lugar.
         </p>
       </div>
+      <SearchSynonyms />
       </div>
 
       <div className={styles.saveRow}>

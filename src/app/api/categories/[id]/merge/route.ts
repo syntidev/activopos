@@ -5,6 +5,8 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 
 const mergeSchema = z.object({ target_id: z.number().int().positive() })
 
+class CategoryNotFoundError extends Error {}
+
 type RouteContext = { params: { id: string } }
 
 // Fusiona la categoría :id en target_id: mueve TODOS sus productos (activos o no, para no
@@ -15,8 +17,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const { session } = await getAuthenticatedTenant()
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
-    const sourceId = parseInt(params.id)
-    if (isNaN(sourceId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    const sourceId = Number(params.id)
+    if (!Number.isInteger(sourceId) || sourceId <= 0) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const { target_id: targetId } = mergeSchema.parse(await req.json())
     if (targetId === sourceId) {
@@ -24,25 +26,25 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const businessId = session.businessId
-    const found = await prisma.category.count({
-      where: { id: { in: [sourceId, targetId] }, business_id: businessId, active: true },
-    })
-    if (found !== 2) return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 404 })
-
+    // Validación y movimiento en la misma transacción: si otro request desactiva el origen
+    // o el destino entre medias, no se mueve nada.
     const moved = await prisma.$transaction(async tx => {
+      const target = await tx.category.count({ where: { id: targetId, business_id: businessId, active: true } })
+      const source = await tx.category.updateMany({
+        where: { id: sourceId, business_id: businessId, active: true },
+        data:  { active: false },
+      })
+      if (target !== 1 || source.count !== 1) throw new CategoryNotFoundError()
       const { count } = await tx.product.updateMany({
         where: { category_id: sourceId, business_id: businessId },
         data:  { category_id: targetId },
-      })
-      await tx.category.updateMany({
-        where: { id: sourceId, business_id: businessId },
-        data:  { active: false },
       })
       return count
     })
 
     return NextResponse.json({ ok: true, moved })
   } catch (err) {
+    if (err instanceof CategoryNotFoundError) return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 404 })
     if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })

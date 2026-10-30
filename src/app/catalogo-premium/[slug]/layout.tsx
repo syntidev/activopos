@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { CartProvider } from './CartContext'
 import { CheckoutFinancingProvider } from '@/components/catalog/CheckoutFinancing'
 import { loadCheckoutFinancing } from '@/lib/catalog-checkout-financing'
+import PulsoTracker from '@/components/pulso/PulsoTracker'
 
 interface LayoutProps {
   children: ReactNode
@@ -16,7 +17,10 @@ export default async function CatalogoSlugLayout({ children, params }: LayoutPro
   const { financing, excludedIds } = await loadCheckoutFinancing(params.slug)
   return (
     <CheckoutFinancingProvider financing={financing} excludedIds={excludedIds}>
-      <CartProvider slug={params.slug}>{children}</CartProvider>
+      <CartProvider slug={params.slug}>
+        <PulsoTracker slug={params.slug} />
+        {children}
+      </CartProvider>
     </CheckoutFinancingProvider>
   )
 }

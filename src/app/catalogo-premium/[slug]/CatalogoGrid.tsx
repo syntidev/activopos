@@ -25,6 +25,7 @@ import type { RenderableLandingSection } from '@/lib/landing-sections'
 import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, getInitials, fmtBs } from './catalogUtils'
 import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { deportesDeProductos, parseDeportes, plano } from '@/lib/catalog-deportes'
+import { matchesWords, NO_SYNONYMS, type SynonymGroups } from '@/lib/search-synonyms'
 import { normalizePhone } from '@/lib/utils'
 import type { VitrinaContext } from '@/types/vitrina'
 import styles from './catalogo.module.css'
@@ -121,6 +122,8 @@ interface Props {
   showKitLink?:       boolean
   /** Vitrina de marca: `products` ya viene acotado a la marca; sin nav al resto del catálogo y fichas con ?vitrina=. */
   vitrina?:           VitrinaContext
+  /** Sinónimos de búsqueda del negocio (settings.search_synonyms); [] = búsqueda de siempre. */
+  searchSynonyms?:    SynonymGroups
 }
 
 export interface CatalogBrand {
@@ -205,6 +208,7 @@ export function CatalogoGrid({
   brands = [],
   showKitLink = false,
   vitrina,
+  searchSynonyms = NO_SYNONYMS,
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
@@ -448,12 +452,8 @@ export function CatalogoGrid({
     let result = products
 
     // Búsqueda por palabras: todas deben aparecer (en cualquier orden) en nombre + categoría + descripción.
-    const words = plano(query).split(/\s+/).filter(Boolean)
-    if (words.length > 0) {
-      result = result.filter(p => {
-        const text = searchText.get(p.id) ?? ''
-        return words.every(w => text.includes(w)) || serverHits.has(p.id)
-      })
+    if (plano(query).trim()) {
+      result = result.filter(p => matchesWords(searchText.get(p.id) ?? '', query, searchSynonyms) || serverHits.has(p.id))
     }
 
     if (deporte) {
@@ -482,7 +482,7 @@ export function CatalogoGrid({
     }
 
     return result
-  }, [products, brands, query, serverHits, searchText, deporte, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
+  }, [products, brands, query, serverHits, searchText, searchSynonyms, deporte, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
   useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, deporte, activePriceRange, filterCategories, filterBrands])

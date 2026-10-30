@@ -28,12 +28,14 @@ import {
   ChevronRight,
   ArrowLeftRight,
   Download,
+  Settings2,
 } from 'lucide-react'
 import { useScanner } from '@/hooks/useScanner'
 import { useToast } from '@/components/ui/Toast'
 import { Button } from '@/components/ui/Button'
 import { ProductModal } from '@/components/products/ProductModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
+import { CategoryManagerModal } from '@/components/products/CategoryManagerModal'
 import { ImportModal } from '@/components/products/ImportModal'
 import { StockModal } from '@/components/products/StockModal'
 import type { ProductFormData, ModalCategory, EditableProduct } from '@/components/products/ProductModal'
@@ -191,6 +193,7 @@ export default function ProductosPage() {
   const [showCategoryModal, setShowCategoryModal]   = useState(false)
   const [editCategoryData, setEditCategoryData]     = useState<Category | null>(null)
   const [reorderMode, setReorderMode]               = useState(false)
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [reordering, setReordering]                 = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [stockProduct, setStockProduct]   = useState<Product | null>(null)
@@ -864,6 +867,15 @@ export default function ProductosPage() {
             <ArrowLeftRight size={14} aria-hidden="true" />
             {reorderMode ? 'Listo' : 'Ordenar'}
           </button>
+          <button
+            type="button"
+            className={styles.catReorderToggle}
+            onClick={() => setShowCategoryManager(true)}
+            disabled={reorderMode}
+          >
+            <Settings2 size={14} aria-hidden="true" />
+            Gestionar categorías
+          </button>
         </div>
         {reorderMode && (
           <p className={styles.catReorderHint}>
@@ -1086,6 +1098,12 @@ export default function ProductosPage() {
         onClose={() => { setShowCategoryModal(false); setEditCategoryData(null) }}
         initialData={editCategoryData ?? undefined}
         onSave={handleSaveCategory}
+      />
+
+      <CategoryManagerModal
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+        onChanged={() => { setSelectedCategory(''); void fetchCategories(); void fetchProducts() }}
       />
 
       <ImportModal

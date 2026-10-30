@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { z } from 'zod'
+import { releaseInactiveCategoryName } from '@/lib/categories'
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
 
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       sortOrder = (last._max.sort_order ?? -1) + 1
     }
 
+    await releaseInactiveCategoryName(prisma, session.businessId, data.name)
     const category = await prisma.category.create({
       data: { business_id: session.businessId, ...data, sort_order: sortOrder },
     })

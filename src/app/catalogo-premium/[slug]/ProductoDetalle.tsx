@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
 import { useCart } from './CartContext'
+import { track } from '@/lib/pulso-client'
 import { CartHeaderButton } from './CartHeaderButton'
 import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
@@ -126,6 +127,8 @@ export function ProductoDetalle({
   // CatalogoGrid. Acá el header NO es hijo directo de `.root`: esta página
   // envuelve todo en su propio `.page` (productoDetalle.module.css), así que
   // hay que subir 2 niveles, no 1.
+  useEffect(() => { track({ type: 'product_view', product_id: productId }) }, [productId])
+
   useEffect(() => {
     const scroller = headerRef.current?.parentElement?.parentElement
     if (!scroller) return

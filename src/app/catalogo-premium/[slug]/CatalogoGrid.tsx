@@ -26,6 +26,7 @@ import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, 
 import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { deportesDeProductos, parseDeportes, plano } from '@/lib/catalog-deportes'
 import { matchesWords, NO_SYNONYMS, type SynonymGroups } from '@/lib/search-synonyms'
+import { track } from '@/lib/pulso-client'
 import { normalizePhone } from '@/lib/utils'
 import type { VitrinaContext } from '@/types/vitrina'
 import styles from './catalogo.module.css'
@@ -486,6 +487,25 @@ export function CatalogoGrid({
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
   useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, deporte, activePriceRange, filterCategories, filterBrands])
+
+  // Pulso: un evento `search` por búsqueda estable (800 ms), nunca por el initialQuery del montaje.
+  const lastTrackedQuery = useRef((initialQuery ?? '').trim())
+  const visibleCountRef  = useRef(visible.length)
+  visibleCountRef.current = visible.length
+  // Con categoría/marca/precio activos `visible.length` no mide la búsqueda sola (un término que el catálogo SÍ tiene
+  // saldría como "sin resultados"): en ese caso no se registra.
+  const otherFiltersRef = useRef(false)
+  otherFiltersRef.current = activeCategory !== null || filterCategories.length > 0 || filterBrands.length > 0 || activePriceRange !== null
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 2 || q === lastTrackedQuery.current) return
+    const t = setTimeout(() => {
+      lastTrackedQuery.current = q
+      if (otherFiltersRef.current) return
+      track({ type: 'search', query: q.slice(0, 100), results_count: visibleCountRef.current })
+    }, 800)
+    return () => clearTimeout(t)
+  }, [query])
 
   const paged     = visible.slice(0, visibleCount)
   const remaining = visible.length - visibleCount
@@ -1232,7 +1252,10 @@ export function CatalogoGrid({
                     type="button"
                     aria-pressed={deporte === d.slug}
                     className={`${styles.deporteChip} ${deporte === d.slug ? styles.deporteChipActive : ''}`}
-                    onClick={() => setDeporte(deporte === d.slug ? null : d.slug)}
+                    onClick={() => {
+                      if (deporte !== d.slug) track({ type: 'deporte_select', deporte: d.slug })
+                      setDeporte(deporte === d.slug ? null : d.slug)
+                    }}
                   >
                     {d.label}
                     <span className={styles.categoryTabCount}>{deporteCounts.get(d.slug) ?? 0}</span>
@@ -1369,6 +1392,7 @@ export function CatalogoGrid({
                 key={d.slug}
                 href={`/catalogo-premium/${slug}/productos?deporte=${d.slug}`}
                 className={styles.deporteChip}
+                onClick={() => track({ type: 'deporte_select', deporte: d.slug })}
               >
                 {d.label}
               </Link>

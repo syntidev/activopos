@@ -20,6 +20,8 @@ import {
 import {
   ensureWebCheckoutLocks, lockWebCheckout, resolveWebClient, WebCheckoutBusyError, webCheckoutKeys,
 } from '@/lib/web-client'
+import { PulsoOrderSchema, cleanAttribution } from '@/lib/pulso-events'
+import { pulsoRequestContext } from '@/lib/pulso-ua'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -58,6 +60,8 @@ const BodySchema = z.object({
   // Oficina de destino: obligatoria SOLO si el método elegido tiene requires_branch. El servidor la antepone
   // a la dirección ("Oficina: X | dirección"); en el resto de métodos se ignora.
   branch_office:      z.string().max(120).trim().nullable().optional(),
+  // Analítica (Pulso): sesión + atribución del visitante. Opcional; el pedido nunca depende de ella.
+  pulso:              z.unknown().optional(),
 })
 
 /** Error de negocio dentro de la transacción: la deshace y responde con este status. */
@@ -554,6 +558,27 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         created_by:  adminUser.id,
       })),
     })
+
+    // Pulso: el pedido queda atribuido en la MISMA transacción (si el pedido se deshace, no queda evento).
+    // La analítica NUNCA tumba una venta: un bloque `pulso` mal formado se ignora (sesión nueva, sin UTM) y un fallo
+    // del insert se registra y sigue (en MariaDB una sentencia fallida no aborta la transacción).
+    const pulso = PulsoOrderSchema.safeParse(body.pulso)
+    try {
+      await tx.catalogEvent.create({
+        data: {
+          business_id: business.id,
+          session_id:  pulso.success ? pulso.data.session_id : crypto.randomUUID(),
+          type:        'order_created',
+          path:        `/catalogo-premium/${parsedSlug.data}/checkout`,
+          order_id:    newOrder.id,
+          value_usd:   newOrder.total_usd,
+          ...cleanAttribution(pulso.success ? pulso.data : {}),
+          ...pulsoRequestContext(req),
+        },
+      })
+    } catch (err) {
+      logError('pulso order_created', err)
+    }
 
     return newOrder
     }, { maxWait: TX_MAX_WAIT_MS, timeout: TX_TIMEOUT_MS })

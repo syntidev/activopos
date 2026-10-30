@@ -1541,3 +1541,37 @@ model LabelCapture {
   @@unique([business_id, ean])
   @@map("label_captures")
 }
+
+// Pulso: analítica propia del catálogo público (ver .doc/CONTRATO_PULSO.md). Una fila por evento.
+// Nunca guarda IP, user-agent crudo ni datos personales. Sin FK a nada (ni a businesses): alto volumen de
+// escritura, y una FK tomaría el lock compartido sobre la fila del negocio (mismo criterio que web_order_locks).
+model CatalogEvent {
+  id            BigInt   @id @default(autoincrement())
+  business_id   Int
+  session_id    String   @db.VarChar(36)
+  type          String   @db.VarChar(24)
+  path          String   @db.VarChar(255)
+  product_id    Int?
+  brand_id      Int?
+  deporte       String?  @db.VarChar(40)
+  query         String?  @db.VarChar(100)
+  results_count Int?
+  order_id      Int?
+  value_usd     Decimal? @db.Decimal(10, 2)
+  utm_source    String?  @db.VarChar(80)
+  utm_medium    String?  @db.VarChar(80)
+  utm_campaign  String?  @db.VarChar(80)
+  utm_content   String?  @db.VarChar(80)
+  utm_term      String?  @db.VarChar(100)
+  referrer_host String?  @db.VarChar(120)
+  device        String?  @db.VarChar(10)
+  os            String?  @db.VarChar(24)
+  browser       String?  @db.VarChar(24)
+  country       String?  @db.VarChar(2)
+  city          String?  @db.VarChar(80)
+  created_at    DateTime @default(now())
+
+  @@index([business_id, created_at])
+  @@index([business_id, type, created_at])
+  @@map("catalog_events")
+}

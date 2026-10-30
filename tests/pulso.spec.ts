@@ -351,6 +351,57 @@ test('panel /pulso: cada indicador explica qué mide (teclado, táctil ≥44px, 
   }
 })
 
+const busquedas = (camp: string, like: string): number =>
+  eventos(`business_id=${BUSINESS_ID} AND type='search' AND utm_campaign='${camp}' AND query LIKE '${like}'`)
+
+test('búsqueda: teclear "garmin" letra por letra deja UN solo evento (y reemplaza la consulta anterior)', async ({ page }) => {
+  const camp = `${CAMP}-tec`
+  await page.goto(`${HOME}/productos?utm_campaign=${camp}`)
+  const input = page.locator('input[type="search"]:visible').first()
+  await input.pressSequentially('gar', { delay: 80 })
+  await page.waitForTimeout(2200) // se asienta "gar" (1500 ms)
+  await input.pressSequentially('min', { delay: 80 }) // sigue la misma consulta dentro de 10 s: reemplaza
+  await expect.poll(() => busquedas(camp, 'garmin'), { timeout: 30_000 }).toBe(1)
+  await page.waitForTimeout(2000)
+  expect(busquedas(camp, '%'), 'un solo evento de búsqueda, sin prefijos: ' + sql(`SELECT GROUP_CONCAT(query) FROM catalog_events WHERE type='search' AND utm_campaign='${camp}'`)).toBe(1)
+})
+
+test('búsqueda: Enter la registra sin esperar y el prefijo intermedio no se guarda', async ({ page }) => {
+  const camp = `${CAMP}-ent`
+  await page.goto(`${HOME}/productos?utm_campaign=${camp}`)
+  const input = page.locator('input[type="search"]:visible').first()
+  await input.pressSequentially('zzenter', { delay: 60 })
+  await input.press('Enter')
+  await expect.poll(() => busquedas(camp, 'zzenter'), { timeout: 30_000 }).toBe(1)
+  expect(busquedas(camp, '%')).toBe(1)
+})
+
+test('servidor: basura y búsquedas de 1 carácter no se guardan, con respuesta normal', async () => {
+  const camp = `${CAMP}-bad`
+  const basura = ['<script>alert(1)</script>', '<s', 'a', ' ', '!!', 'x'.repeat(61), 'hola\u0007']
+  for (const [i, q] of basura.entries()) {
+    const r = await enviar(lote(SLUG, 40 + i, [{ type: 'search', path: `${HOME}/productos`, query: q, results_count: 0 }], { utm_campaign: camp }))
+    expect(r.status(), q).toBe(204)
+  }
+  const ok = await enviar(lote(SLUG, 50, [{ type: 'search', path: `${HOME}/productos`, query: 'zzvalida', results_count: 0 }], { utm_campaign: camp }))
+  expect(ok.status()).toBe(204)
+  expect(busquedas(camp, '%')).toBe(1)
+  expect(busquedas(camp, 'zzvalida')).toBe(1)
+})
+
+test('panel: las búsquedas se agrupan sin tildes y en minúsculas', async ({ page }) => {
+  const camp = `${CAMP}-agr`
+  for (const [i, q] of ['ZZCamión', 'zzcamion', 'ZZCAMIÓN'].entries()) {
+    expect((await enviar(lote(SLUG, 60 + i, [{ type: 'search', path: `${HOME}/productos`, query: q, results_count: 0 }], { utm_campaign: camp }))).status()).toBe(204)
+  }
+  await login(page)
+  await page.goto('/pulso?dias=7')
+  const fila = page.locator('li', { hasText: 'zzcamion' }).first()
+  await expect(fila).toBeVisible()
+  await expect(fila).toContainText('3')
+  await expect(page.getByText(/ZZCami|zzcamió/)).toHaveCount(0)
+})
+
 test('panel /pulso: muestra los conteos reales y exige ser admin', async ({ page }) => {
   // Datos deterministas del panel (sesiones cccccccc-…-0010..12), además de lo que dejaron los tests anteriores.
   const attr = { utm_source: 'zz-wa', utm_campaign: CAMP }

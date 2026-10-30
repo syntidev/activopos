@@ -6,14 +6,11 @@ import { getClientIp, pulsoEventsLimiter } from '@/lib/rate-limit'
 import { logError } from '@/lib/safe-log'
 import { brandSlug } from '@/lib/vitrina'
 import { isBotUserAgent, pulsoRequestContext } from '@/lib/pulso-ua'
-import { PulsoBatchSchema, cleanAttribution } from '@/lib/pulso-events'
+import { PulsoBatchSchema, cleanAttribution, isStorableSearch } from '@/lib/pulso-events'
 
 export const dynamic = 'force-dynamic'
 
 const MAX_BODY_BYTES = 16 * 1024
-
-// Texto de búsqueda que parece teléfono, cédula o email: el evento se descarta (no se guarda dato personal).
-const SENSITIVE_QUERY_RE = /\d{6,}|@|\d[\d\s.-]{7,}/
 
 // /catalogo-premium/<slug>/marca/<marcaSlug>
 const BRAND_PATH_RE = /^\/catalogo-premium\/[^/]+\/marca\/([^/?#]+)/
@@ -109,8 +106,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     for (const e of events) {
       // product_id ajeno: se descarta el evento completo.
       if (e.product_id !== undefined && !brandByProduct.has(e.product_id)) continue
-      // Búsqueda con pinta de dato personal (teléfono, cédula, email): no se guarda.
-      if (e.type === 'search' && e.query && SENSITIVE_QUERY_RE.test(e.query)) continue
+      // Búsqueda basura (markup, control, muy corta/larga, sin letras) o con dato personal: no se guarda; respuesta normal.
+      if (e.type === 'search' && !(e.query && isStorableSearch(e.query))) continue
       const routeBrand = brandSlugFromPath(e.path)
       const brandId = (e.product_id !== undefined ? brandByProduct.get(e.product_id) : null)
         ?? (routeBrand ? brandIdBySlug.get(routeBrand) : null)

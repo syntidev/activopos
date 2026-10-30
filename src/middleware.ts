@@ -73,6 +73,7 @@ const ADMIN_ONLY = [
   '/finanzas',
   '/api/reports',
   '/reportes',
+  '/pulso',
   '/analytics',
   '/api/analytics',
   '/api/quotations',

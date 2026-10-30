@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { initPulso, setPulsoAttribution, track } from '@/lib/pulso-client'
+import { applyPulsoSwitch, initPulso, setPulsoAttribution, track } from '@/lib/pulso-client'
 import { externalReferrerHost, parseUtm } from '@/lib/pulso-attribution'
 
 interface PulsoTrackerProps {
@@ -17,6 +17,7 @@ export default function PulsoTracker({ slug }: PulsoTrackerProps): null {
   // Sesión + UTM/referrer: una vez al montar el layout (navegación interna no lo remonta).
   useEffect(() => {
     try {
+      applyPulsoSwitch(window.location.search)
       initPulso(slug)
       setPulsoAttribution({
         ...parseUtm(window.location.search),

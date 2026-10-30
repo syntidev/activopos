@@ -7,6 +7,7 @@ import { stockDisplayOf, revalidateCatalogCache } from '@/lib/catalog'
 import { CASHEA_PRESET, buildFinancingConfig, financingInputSchema, readFinancingConfig } from '@/lib/financing'
 import type { FinancingConfig } from '@/lib/financing'
 import { readSynonyms, synonymsInputSchema } from '@/lib/search-synonyms'
+import { readTrustStrip, trustStripInputSchema } from '@/lib/trust-strip'
 
 const financingSchema = z.object({
   // Config de financiamiento completa (modo, nombre, frase, logo). Ver .doc/CONTRATO_FINANCIAMIENTO.md.
@@ -16,7 +17,9 @@ const financingSchema = z.object({
   catalog_stock_display:   z.enum(['exact', 'status']).optional(),
   // Grupos de sinónimos de búsqueda (se normalizan y validan en lib/search-synonyms.ts).
   search_synonyms:         synonymsInputSchema.optional(),
-}).refine(d => d.financing !== undefined || d.catalog_financing_badge !== undefined || d.catalog_stock_display !== undefined || d.search_synonyms !== undefined, { message: 'Nada que guardar' })
+  // Franja de confianza de la home premium (3 items título/descripción).
+  trust_strip:             trustStripInputSchema.optional(),
+}).refine(d => d.financing !== undefined || d.catalog_financing_badge !== undefined || d.catalog_stock_display !== undefined || d.search_synonyms !== undefined || d.trust_strip !== undefined, { message: 'Nada que guardar' })
 
 const upgradeSchema = z.object({
   action: z.literal('request_upgrade'),
@@ -46,6 +49,7 @@ export async function GET() {
       financing:               readFinancingConfig(settings, session.businessId),
       catalog_stock_display:   stockDisplayOf(settings),
       search_synonyms:         readSynonyms(settings),
+      trust_strip:             readTrustStrip(settings),
     },
   })
 }
@@ -88,6 +92,7 @@ export async function PATCH(req: NextRequest) {
           ...(financing ? { financing: { ...financing }, catalog_financing_badge: financing.enabled && financing.mode === 'cashea' ? 'cashea' : null } : {}),
           ...(data.catalog_stock_display !== undefined ? { catalog_stock_display: data.catalog_stock_display } : {}),
           ...(data.search_synonyms !== undefined ? { search_synonyms: data.search_synonyms } : {}),
+          ...(data.trust_strip !== undefined ? { trust_strip: data.trust_strip } : {}),
         },
       },
     })

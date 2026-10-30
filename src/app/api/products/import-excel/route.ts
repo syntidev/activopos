@@ -5,6 +5,7 @@ import type { SessionPayload } from '@/lib/auth'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import * as XLSX from 'xlsx'
 import { revalidateCatalogCache } from '@/lib/catalog'
+import { releaseInactiveCategoryName } from '@/lib/categories'
 import {
   VALID_PRODUCT_TYPES, VALID_SALE_MODES, VARIANT_TIPOS, planImport, summarizePlan,
 } from '@/lib/product-import-plan'
@@ -355,9 +356,10 @@ export async function POST(req: NextRequest) {
     const cached = categoryCache.get(name)
     if (cached !== undefined) return cached
     const found = await db.category.findFirst({
-      where:  { name }, // business_id inyectado por el tenant layer
+      where:  { name, active: true }, // business_id inyectado por el tenant layer; una inactiva nunca se reutiliza
       select: { id: true },
     })
+    if (!found) await releaseInactiveCategoryName(prisma, session.businessId, name)
     const id = found
       ? found.id
       : (await db.category.create({ data: { business_id: session.businessId, name } })).id // business_id explícito (tipo de create)

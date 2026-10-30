@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { prisma } from '@/lib/prisma'
+import { deletedCategoryName, releaseInactiveCategoryName } from '@/lib/categories'
 import { z } from 'zod'
 
 const patchSchema = z.object({
@@ -33,9 +35,13 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     })
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
+    if (data.name) await releaseInactiveCategoryName(prisma, session.businessId, data.name)
     const category = await db.category.update({ where: { id }, data }) // business_id inyectado
     return NextResponse.json({ ok: true, category })
   } catch (err) {
+    if ((err as { code?: string }).code === 'P2002') {
+      return NextResponse.json({ error: 'Ya existe una categoría con ese nombre' }, { status: 409 })
+    }
     if (err instanceof TenantError) {
       return NextResponse.json({ error: err.message }, { status: err.status })
     }
@@ -70,7 +76,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
       )
     }
 
-    await db.category.update({ where: { id }, data: { active: false } }) // business_id inyectado
+    // Renombrar libera el nombre (unique business_id+name) para crear otra categoría igual.
+    await db.category.update({ where: { id }, data: { active: false, name: deletedCategoryName(existing.name, id) } }) // business_id inyectado
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })

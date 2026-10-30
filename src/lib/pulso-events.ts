@@ -69,3 +69,29 @@ export function cleanAttribution(a: Partial<PulsoAttribution> | undefined): Puls
     referrer_host: clean(a?.referrer_host, 120, false),
   }
 }
+
+export const SEARCH_MIN_CHARS = 2
+export const SEARCH_MAX_CHARS = 60
+
+// Texto de búsqueda que parece teléfono, cédula o email: no se guarda dato personal.
+const SENSITIVE_QUERY_RE = /\d{6,}|@|\d[\d\s.-]{7,}/
+const CONTROL_CHARS_RE = /[\u0000-\u001f\u007f-\u009f]/
+const INVISIBLE_CHARS_RE = /[​-‏‪-‮⁠-⁩﻿]/ // ancho cero y bidi
+const HAS_ALNUM_RE = /[0-9A-Za-zÀ-ɏ]/ // sin flag u (target ES5): latín y latín extendido
+const COMBINING_MARKS_RE = /[̀-ͯ]/g
+
+/** ¿Vale la pena guardar esta búsqueda? Falso = se descarta en silencio (el servidor responde igual). */
+export function isStorableSearch(query: string): boolean {
+  const q = query.trim()
+  if (q.length < SEARCH_MIN_CHARS || q.length > SEARCH_MAX_CHARS) return false
+  // NFKC pliega variantes de ancho completo (＜script＞, dígitos ０４１４…) a su forma normal antes de revisar.
+  const n = q.normalize('NFKC')
+  if (/[<>]/.test(n) || CONTROL_CHARS_RE.test(n) || INVISIBLE_CHARS_RE.test(n)) return false
+  if (!HAS_ALNUM_RE.test(n)) return false
+  return !SENSITIVE_QUERY_RE.test(n)
+}
+
+/** Clave de agrupación del panel: minúsculas, sin tildes, espacios colapsados. */
+export function normalizeSearchTerm(query: string): string {
+  return query.normalize('NFD').replace(COMBINING_MARKS_RE, '').toLowerCase().replace(/\s+/g, ' ').trim()
+}

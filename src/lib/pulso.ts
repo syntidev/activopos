@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { isStorableSearch, normalizeSearchTerm } from '@/lib/pulso-events'
 import { businessDateKey, businessDayStart, shiftDateKey } from '@/lib/business-day'
 import type {
   PulsoContactoDia,
@@ -28,6 +29,17 @@ interface VentaRow { k: string | null; pedidos: Num; usd: Num; bs: Num }
 
 const toCounts = (rows: CountRow[]): PulsoCount[] =>
   rows.map(r => ({ label: r.k ?? 'Sin dato', count: num(r.n) }))
+
+/** Búsquedas: agrupa sin tildes y en minúsculas (la colación de la tabla ya junta, esto fija la etiqueta). */
+const toSearchCounts = (rows: CountRow[]): PulsoCount[] => {
+  const merged = new Map<string, number>()
+  for (const r of rows) {
+    const k = normalizeSearchTerm(r.k ?? '')
+    // También oculta basura que ya estaba guardada antes del filtro del servidor (`<s`, `<script>`…).
+    if (isStorableSearch(k)) merged.set(k, (merged.get(k) ?? 0) + num(r.n))
+  }
+  return Array.from(merged, ([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count)
+}
 
 const toVentas = (rows: VentaRow[]): PulsoVentaOrigen[] =>
   rows.map(r => ({ label: r.k ?? 'Sin dato', pedidos: num(r.pedidos), usd: num(r.usd), bs: num(r.bs) }))
@@ -219,8 +231,8 @@ export async function getPulso(businessId: number, dias: PulsoDias): Promise<Pul
       productos,
       marcas: toCounts(marcaRows),
       deportes: toCounts(deporteRows),
-      busquedasSinResultado: toCounts(sinResRows),
-      busquedasTop: toCounts(topSearchRows),
+      busquedasSinResultado: toSearchCounts(sinResRows),
+      busquedasTop: toSearchCounts(topSearchRows),
     },
     embudo,
     ventas: {

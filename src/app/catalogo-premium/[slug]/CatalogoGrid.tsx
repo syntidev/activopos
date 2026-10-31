@@ -1369,7 +1369,7 @@ export function CatalogoGrid({
           <div className={styles.brandHeader}>
             <span className={styles.brandTitle}>
               <Tag size={16} aria-hidden="true" />
-              Comprá por marca
+              Compra por marca
             </span>
           </div>
           <div className={styles.brandScroll}>
@@ -1458,7 +1458,7 @@ export function CatalogoGrid({
         <section className={styles.trustStripSection} aria-label="Confianza">
           {[Truck, ShieldCheck, MessageCircle].map((Icon, i) => (
             <div key={i} className={styles.trustStripItem}>
-              <Icon size={22} aria-hidden="true" />
+              <span className={styles.trustStripIcon}><Icon size={22} aria-hidden="true" /></span>
               <div>
                 <p className={styles.trustStripTitle}>{trustStrip[i].title}</p>
                 <p className={styles.trustStripDesc}>{trustStrip[i].desc}</p>

@@ -238,7 +238,7 @@
   flex-shrink:   0;
   padding:       0;
   cursor:        pointer;
-  background:    #F3F4F6;
+  background:    #FFFFFF; /* igual que la tarjeta: las PNG con recuadro blanco no se notan */
   transition:    border-color 150ms ease;
 }
 .galleryThumb img {

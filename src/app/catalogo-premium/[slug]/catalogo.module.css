@@ -34,8 +34,17 @@
      pide más adelante. Si el tenant real define `theme_color` en Business,
      ese valor gana siempre (--biz-color tiene prioridad sobre este). */
   --onbike-blue: #0B4FCC;
-  /* Fondo de tiles/imágenes del mockup (#F5F5F5) — sección Novedades */
-  --onbike-tile: #F5F5F5;
+  /* Fondo de tiles/imágenes de producto. Blanco (antes #F5F5F5): las PNG que
+     traen un recuadro blanco propio se funden con el fondo en vez de verse
+     como una caja sobre gris. */
+  --onbike-tile: #FFFFFF;
+  /* Navy de marca para bloques de acento (franja de confianza): derivado de
+     --onbike-blue para combinar con los botones; brilla arriba y baja a navy. */
+  --onbike-navy-glow:     #1A4FB0;
+  --onbike-navy:          #0B2A66;
+  --onbike-navy-deep:     #081F4D;
+  --onbike-on-dark-muted: rgba(255, 255, 255, 0.72);
+  --onbike-on-dark-line:  rgba(255, 255, 255, 0.22);
   /* Tinta de texto del mockup (#141414, negro neutro) — sección Novedades */
   --onbike-ink: #141414;
   /* Categoría sobre el degradado oscuro de los tiles de la cartelera (#8FB2FF) */
@@ -1366,7 +1375,7 @@
   /* Inset de 10px respecto a los bordes de la card, con radio propio */
   margin:        10px;
   border-radius: 12px;
-  background:    var(--color-surface-2);
+  background:    var(--onbike-tile);
   flex-shrink:   0;
 }
 
@@ -4825,9 +4834,9 @@ iframe.lsHeroMedia {
 .trustStripSection {
   display:               grid;
   grid-template-columns: 1fr;
-  gap:                   var(--space-4);
-  padding:               var(--space-8) var(--space-4);
-  background:            var(--color-surface-2, #F7F7F8);
+  gap:                   var(--space-6);
+  padding:               var(--space-12) var(--space-4);
+  background:            radial-gradient(120% 140% at 50% 0%, var(--onbike-navy-glow) 0%, var(--onbike-navy) 55%, var(--onbike-navy-deep) 100%);
 }
 
 @media (min-width: 640px) {
@@ -4842,26 +4851,75 @@ iframe.lsHeroMedia {
   align-items:    center;
   text-align:     center;
   gap:            var(--space-3);
-  color:          var(--biz-color, var(--onbike-blue));
+  color:          var(--color-white);
 }
 
-.trustStripItem > svg {
-  width:  40px;
-  height: 40px;
+/* Ícono de trazo fino en un aro tenue; un solo arco azul de marca gira
+   lento sobre el aro (rueda). */
+.trustStripIcon {
+  position:        relative;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           68px;
+  height:          68px;
+  border:          1px solid var(--onbike-on-dark-line);
+  border-radius:   50%;
+  transition:      transform 300ms ease;
+}
+.trustStripIcon::before {
+  content:       '';
+  position:      absolute;
+  inset:         -1px;
+  border-radius: 50%;
+  background:    conic-gradient(transparent 0 290deg, var(--color-white) 340deg, transparent 360deg);
+  /* deja visible solo un aro de 2px */
+  -webkit-mask:  radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  mask:          radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  animation:     trustRingSpin 6s linear infinite;
+}
+.trustStripIcon > svg {
+  width:        28px;
+  height:       28px;
+  stroke-width: 1.6;
+}
+.trustStripItem:hover .trustStripIcon { transform: translateY(-3px); }
+
+@keyframes trustRingSpin { to { transform: rotate(360deg); } }
+
+/* Entrada escalonada al aparecer en pantalla (solo navegadores con
+   scroll-driven animations; en el resto se ve estático, sin parpadeo). */
+@supports (animation-timeline: view()) {
+  .trustStripItem {
+    animation:          trustRise linear both;
+    animation-timeline: view();
+    animation-range:    entry 0% entry 60%;
+  }
+  .trustStripItem:nth-child(2) { animation-range: entry 10% entry 70%; }
+  .trustStripItem:nth-child(3) { animation-range: entry 20% entry 80%; }
+}
+@keyframes trustRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trustStripIcon, .trustStripIcon::before, .trustStripItem { animation: none; transition: none; }
 }
 
 .trustStripTitle {
-  margin:      0;
-  font-size:   var(--text-base);
-  font-weight: var(--weight-semibold);
-  color:       var(--color-text-primary);
+  margin:         0;
+  font-size:      var(--text-base);
+  font-weight:    var(--weight-semibold);
+  letter-spacing: 0.01em;
+  color:          var(--color-white);
 }
 
 .trustStripDesc {
   margin:    var(--space-1) auto 0;
   max-width: 32ch;
   font-size: var(--text-sm);
-  color:     var(--color-text-secondary);
+  color:     var(--onbike-on-dark-muted);
 }
 
 /* ── CARTELERA DE CAMPAÑA — grid premium 1+4 ─────────────────────────────

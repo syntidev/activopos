@@ -34,8 +34,8 @@ const EXISTENTES: { id: number; contiene: string }[] = [
   { id: 592, contiene: 'maurten' },
   { id: 593, contiene: 'carbs' },
   { id: 594, contiene: 'sis' },
-  { id: 600, contiene: 'tripa' },
-  { id: 601, contiene: 'tripa' },
+  { id: 600, contiene: 'vittoria' },
+  { id: 601, contiene: 'continental mtb' },
 ]
 
 // Grupos NUEVOS (se agregan a los existentes; un grupo cuyo primer término ya existe se omite).

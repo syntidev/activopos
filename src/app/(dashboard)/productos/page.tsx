@@ -207,6 +207,10 @@ export default function ProductosPage() {
   type StatusFilter = 'all' | 'active' | 'inactive'
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
+  /* ── Filtro de visibilidad en el catálogo público (Product.catalog_visibility) ── */
+  type CatalogFilter = 'all' | 'visible' | 'hidden' | 'on_request'
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>('all')
+
   /* ── Sort state (FIX 4) ── */
   type ProdSortKey = 'name' | 'price' | 'stock' | 'utility' | 'category'
   type SortDir = 'asc' | 'desc'
@@ -441,6 +445,8 @@ export default function ProductosPage() {
     let list = products
     if (statusFilter === 'active')   list = list.filter(p => p.is_available !== false)
     if (statusFilter === 'inactive') list = list.filter(p => p.is_available === false)
+    // Sin valor se trata como 'hidden', igual que el default del API
+    if (catalogFilter !== 'all') list = list.filter(p => (p.catalog_visibility ?? 'hidden') === catalogFilter)
     if (!sortKey) return list
     return [...list].sort((a, b) => {
       let cmp = 0
@@ -455,7 +461,7 @@ export default function ProductosPage() {
       if (sortKey === 'category') cmp = (a.category?.name ?? '').localeCompare(b.category?.name ?? '')
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [products, statusFilter, sortKey, sortDir])
+  }, [products, statusFilter, catalogFilter, sortKey, sortDir])
 
   /* ── KPIs de inventario (inversión / estimado de venta) ── */
   const kpis = useMemo(() => {
@@ -763,9 +769,24 @@ export default function ProductosPage() {
           ))}
         </div>
 
+        <div className={styles.statusTabsBar} role="tablist" aria-label="Filtrar por visibilidad en el catálogo">
+          {(['all', 'visible', 'hidden', 'on_request'] as const).map(c => (
+            <button
+              key={c}
+              role="tab"
+              type="button"
+              className={`${styles.statusTab} ${catalogFilter === c ? styles.statusTabActive : ''}`}
+              onClick={() => setCatalogFilter(c)}
+              aria-selected={catalogFilter === c}
+            >
+              {{ all: 'Catálogo: todos', visible: 'Visibles', hidden: 'Ocultos', on_request: 'Solo consulta' }[c]}
+            </button>
+          ))}
+        </div>
+
         {!isLoading && products.length > 0 && (
           <span className={styles.countInfo}>
-            {products.length} {products.length === 1 ? 'producto' : 'productos'}
+            {displayProducts.length} {displayProducts.length === 1 ? 'producto' : 'productos'}
           </span>
         )}
       </div>
@@ -954,13 +975,13 @@ export default function ProductosPage() {
                     </div>
                   </td>
                 </tr>
-              ) : displayProducts.length === 0 && statusFilter !== 'all' ? (
+              ) : displayProducts.length === 0 && (statusFilter !== 'all' || catalogFilter !== 'all') ? (
                 <tr>
                   <td colSpan={7}>
                     <div className={styles.emptyState}>
                       <div className={styles.emptyIcon}><Package size={24} aria-hidden="true" /></div>
                       <p className={styles.emptyTitle}>
-                        No hay productos {statusFilter === 'active' ? 'activos' : 'inactivos'}
+                        No hay productos con estos filtros
                       </p>
                     </div>
                   </td>

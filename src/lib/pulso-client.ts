@@ -12,6 +12,7 @@ const ATTR_KEY = 'activopos_pulso_attr'
 const OFF_KEY = 'activopos_pulso_off'
 const ENDPOINT = '/api/public/events'
 const FLUSH_DELAY_MS = 3000
+const SEARCH_REPLACE_MS = 10_000 // una consulta que sigue a la anterior dentro de esta ventana la reemplaza
 
 /** `path` es opcional: por defecto la ruta actual sin query. */
 export type PulsoTrackInput = Omit<PulsoEventInput, 'path'> & { path?: string }
@@ -22,6 +23,7 @@ let attribution: PulsoAttribution | null = null
 let queue: PulsoEventInput[] = []
 let timer: ReturnType<typeof setTimeout> | null = null
 let listening = false
+let pendingSearch: { event: PulsoEventInput; at: number; timer: ReturnType<typeof setTimeout> } | null = null
 let blocked = false // interno o ?pulso=off: no se reactiva hasta recargar la página
 
 function isDnt(): boolean {
@@ -45,6 +47,7 @@ function isOptedOut(): boolean {
 /** Corta el registro de este navegador y descarta lo que esté en cola. */
 function disable(): void {
   blocked = true
+  if (pendingSearch) { clearTimeout(pendingSearch.timer); pendingSearch = null }
   slug = null
   sessionId = null
   attribution = null
@@ -123,8 +126,10 @@ function send(body: string): void {
     .catch(() => { /* sin red: se descarta, no se reintenta */ })
 }
 
-function flush(): void {
+/** `force` (página oculta o cerrada): también envía la búsqueda retenida; el flush por tiempo la respeta. */
+function flush(force = false): void {
   if (timer) { clearTimeout(timer); timer = null }
+  if (force) releaseSearch()
   try {
     while (queue.length > 0 && slug && sessionId) {
       const events = queue.splice(0, PULSO_MAX_BATCH)
@@ -139,7 +144,7 @@ function flush(): void {
 }
 
 function onHide(): void {
-  if (document.visibilityState === 'hidden') flush()
+  if (document.visibilityState === 'hidden') flush(true)
 }
 
 /** Idempotente: inicia (o retoma) la sesión del catálogo `slug`. */
@@ -154,7 +159,7 @@ export function initPulso(newSlug: string): void {
     if (!listening) {
       listening = true
       document.addEventListener('visibilitychange', onHide)
-      window.addEventListener('pagehide', flush)
+      window.addEventListener('pagehide', () => flush(true))
     }
   } catch {
     // analítica nunca debe romper el catálogo
@@ -167,7 +172,34 @@ export function track(event: PulsoTrackInput): void {
     touchSession()
     queue.push({ ...event, path: event.path ?? window.location.pathname })
     if (queue.length >= PULSO_MAX_BATCH) flush()
-    else if (!timer) timer = setTimeout(flush, FLUSH_DELAY_MS)
+    else if (!timer) timer = setTimeout(() => flush(), FLUSH_DELAY_MS)
+  } catch {
+    // analítica nunca debe romper el catálogo
+  }
+}
+
+/** Pasa la búsqueda retenida a la cola de envío. */
+function releaseSearch(): void {
+  if (!pendingSearch) return
+  clearTimeout(pendingSearch.timer)
+  queue.push(pendingSearch.event)
+  pendingSearch = null
+}
+
+/** Búsqueda asentada. Si empieza igual que la anterior (dentro de 10 s) la reemplaza en vez de sumar:
+ *  la anterior se retiene hasta que pase esa ventana o la página se oculte. */
+export function trackSearch(query: string, resultsCount: number): void {
+  try {
+    if (!slug || isDnt()) return
+    touchSession()
+    const now = Date.now()
+    if (pendingSearch && !(now - pendingSearch.at < SEARCH_REPLACE_MS && query.startsWith(pendingSearch.event.query ?? ''))) {
+      releaseSearch()
+    } else if (pendingSearch) {
+      clearTimeout(pendingSearch.timer)
+    }
+    const event: PulsoEventInput = { type: 'search', path: window.location.pathname, query, results_count: resultsCount }
+    pendingSearch = { event, at: now, timer: setTimeout(() => { releaseSearch(); if (!timer) timer = setTimeout(() => flush(), FLUSH_DELAY_MS) }, SEARCH_REPLACE_MS) }
   } catch {
     // analítica nunca debe romper el catálogo
   }

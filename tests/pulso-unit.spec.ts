@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { parseUserAgent, isBotUserAgent, requestGeo } from '../src/lib/pulso-ua'
+import { isStorableSearch, normalizeSearchTerm } from '../src/lib/pulso-events'
 import { parseUtm, externalReferrerHost, nextSession, mergeAttribution } from '../src/lib/pulso-attribution'
 
 /** Unit (sin navegador, sin servidor): parseo de user-agent, UTM y sesión de Pulso. */
@@ -134,5 +135,19 @@ test.describe('mergeAttribution', () => {
   test('misma sesión con UTM entrante nuevo: lo reemplaza', () => {
     const r = mergeAttribution({ utm_source: 'ig', referrer_host: 'instagram.com' }, { utm_source: 'wa' }, false)
     expect(r.utm_source).toBe('wa')
+  })
+})
+
+test.describe('búsquedas: filtro del servidor y agrupación del panel', () => {
+  test('guarda búsquedas normales', () => {
+    for (const q of ['garmin', 'ab', 'Cámara 360', 'forerunner 255', 'x'.repeat(60)]) expect(isStorableSearch(q), q).toBe(true)
+  })
+  test('descarta markup, control, muy corta/larga, sin letras ni números y datos personales', () => {
+    const malas = ['<s', '<scrip>ale', '<script>alert(1)</script>', 'a>b', 'a', ' a ', '', '  ', '!!', '--', 'x'.repeat(61), 'hola\u0007', 'li\nne', 'a@b.com', '04141234567', '０４１４５５５１２３４', '＜script＞', 'za​patos']
+    for (const q of malas) expect(isStorableSearch(q), JSON.stringify(q)).toBe(false)
+  })
+  test('normalizeSearchTerm: minúsculas, sin tildes, espacios colapsados', () => {
+    expect(normalizeSearchTerm('  CAMIÓN   Grúa ')).toBe('camion grua')
+    expect(normalizeSearchTerm('Camión')).toBe(normalizeSearchTerm('camion'))
   })
 })

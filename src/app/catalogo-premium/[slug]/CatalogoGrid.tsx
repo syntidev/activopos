@@ -26,7 +26,7 @@ import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, 
 import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { deportesDeProductos, parseDeportes, plano } from '@/lib/catalog-deportes'
 import { matchesWords, NO_SYNONYMS, type SynonymGroups } from '@/lib/search-synonyms'
-import { track } from '@/lib/pulso-client'
+import { track, trackSearch } from '@/lib/pulso-client'
 import { DEFAULT_TRUST_STRIP, type TrustItem } from '@/lib/trust-strip'
 import { normalizePhone } from '@/lib/utils'
 import type { VitrinaContext } from '@/types/vitrina'
@@ -307,7 +307,7 @@ export function CatalogoGrid({
     } catch { /* sin red: no hace nada */ }
   }
   const onSearchEnter = (e: { key: string; preventDefault: () => void }) => {
-    if (e.key === 'Enter') { e.preventDefault(); void goToExactMatch() }
+    if (e.key === 'Enter') { e.preventDefault(); settleSearchSoon(); void goToExactMatch() }
   }
   const [variantError,    setVariantError]    = useState(false)
   const [selectedDim1,    setSelectedDim1]    = useState<string | null>(null)
@@ -492,23 +492,31 @@ export function CatalogoGrid({
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
   useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, deporte, activePriceRange, filterCategories, filterBrands])
 
-  // Pulso: un evento `search` por búsqueda estable (800 ms), nunca por el initialQuery del montaje.
+  // Pulso: un evento `search` cuando la búsqueda se asienta (1500 ms sin teclear, Enter o salir del campo),
+  // nunca por el initialQuery del montaje ni por cada tecla. trackSearch reemplaza la consulta anterior si esta empieza igual.
   const lastTrackedQuery = useRef((initialQuery ?? '').trim())
+  const queryRef         = useRef(query)
+  queryRef.current = query
   const visibleCountRef  = useRef(visible.length)
   visibleCountRef.current = visible.length
   // Con categoría/marca/precio activos `visible.length` no mide la búsqueda sola (un término que el catálogo SÍ tiene
   // saldría como "sin resultados"): en ese caso no se registra.
   const otherFiltersRef = useRef(false)
   otherFiltersRef.current = activeCategory !== null || filterCategories.length > 0 || filterBrands.length > 0 || activePriceRange !== null
-  useEffect(() => {
-    const q = query.trim()
+  const settleSearch = (): void => {
+    const q = queryRef.current.trim()
     if (q.length < 2 || q === lastTrackedQuery.current) return
-    const t = setTimeout(() => {
-      lastTrackedQuery.current = q
-      if (otherFiltersRef.current) return
-      track({ type: 'search', query: q.slice(0, 100), results_count: visibleCountRef.current })
-    }, 800)
+    lastTrackedQuery.current = q
+    if (otherFiltersRef.current) return
+    trackSearch(q.slice(0, 60), visibleCountRef.current)
+  }
+  // Enter y blur esperan un instante: el filtro de servidor (sinónimos, códigos) responde ~250 ms después de teclear.
+  const settleSearchSoon = (): void => { setTimeout(settleSearch, 350) }
+  useEffect(() => {
+    if (query.trim().length < 2) return
+    const t = setTimeout(settleSearch, 1500)
     return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- settleSearch solo lee refs
   }, [query])
 
   const paged     = visible.slice(0, visibleCount)
@@ -1040,6 +1048,7 @@ export function CatalogoGrid({
               value={query}
               onChange={e => setQuery(e.target.value)}
               onKeyDown={onSearchEnter}
+              onBlur={settleSearchSoon}
               placeholder="Buscar productos…"
               aria-label="Buscar productos"
             />
@@ -1223,6 +1232,7 @@ export function CatalogoGrid({
                 value={query}
                 onChange={e => setQuery(e.target.value)}
               onKeyDown={onSearchEnter}
+                onBlur={settleSearchSoon}
                 aria-label="Buscar productos"
               />
             </div>

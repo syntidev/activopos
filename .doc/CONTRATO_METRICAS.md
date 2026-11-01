@@ -1,11 +1,13 @@
 # CONTRATO — Métricas (ventas por producto/grupo y metas mensuales)
-Versión 1 · 2026-10-31 · CLI-A · rama `feat/metricas`
+Versión 1.1 · 2026-10-31 · CLI-A · rama `feat/metricas`
 
 Módulo **global** (todos los negocios, sin feature flag): unidades y monto vendidos por producto, por categoría / subcategoría /
 marca, comparativo contra el período anterior y **metas mensuales** con avance. Caso real: el café de OnBike cuenta hamburguesas
 por mes y fija metas. Venta simple: sin impuestos, sin IGTF.
 
 > CLI-B construye contra este archivo. Cualquier cambio posterior se anota como **v2** al final y se avisa.
+
+> **v1.1 (2026-10-31, decisión de Carlos):** cambian SOLO las cifras (prorrateo del descuento/cargo global, §0.4, D1, D2). **La forma de todas las respuestas es idéntica a v1.**
 
 ## 0. Reglas de cálculo (no negociables)
 
@@ -16,9 +18,16 @@ por mes y fija metas. Venta simple: sin impuestos, sin IGTF.
 2. **Día/mes de negocio** (America/Caracas, UTC−4): `src/lib/business-day.ts` (`businessRange`, `businessMonthRange`, `businessDateKey`).
    `from`/`to` son claves `YYYY-MM-DD` **inclusivas**.
 3. **Unidades** = Σ `sale_items.quantity` (Decimal; hay ventas por peso → pueden traer hasta 3 decimales) − Σ `return_items.qty`.
-4. **Monto USD** = Σ `sale_items.subtotal_usd` − Σ `return_items.total_usd`. **Monto Bs** = Σ `sale_items.subtotal_bs` (tasa histórica
-   guardada en la venta, nunca la de hoy) − Σ (`return_items.total_usd` × tasa de esa línea de venta; si la línea no es identificable,
-   `returns.rate_used`). Ver decisión D1 sobre el descuento.
+4. **Monto (v1.1, prorrateo global)**. El descuento por ítem ya viene dentro de `sale_items.subtotal_*`; el descuento y el cargo
+   **globales** de la venta no (`sales.total_*` ≠ Σ ítems). Cada venta reparte su total entre sus líneas en proporción a
+   `subtotal_usd` / `subtotal_bs`:
+   `monto_línea_usd = subtotal_usd × (sales.total_usd / Σ subtotal_usd de la venta)` y lo mismo en Bs con `total_bs` y `subtotal_bs`
+   (tasa histórica guardada en la venta, nunca la de hoy). Las **unidades NO se prorratean**.
+   Devoluciones aprobadas: `returns.total_usd/bs` se reparte entre las líneas de la devolución en proporción a `return_items.total_usd`.
+   **Monto neto = Σ prorrateado de ventas − Σ prorrateado de devoluciones.** Con esto la suma de `totals` de `/api/metrics/products`
+   y `/groups` coincide al centavo con `total_usd`/`total_bs` de `/api/reports/range` (que usa `netSales`) para el mismo rango.
+   Los montos por producto se calculan con 4 decimales y `totals` se suma **antes** de redondear (la suma de las filas ya redondeadas
+   a 2 decimales puede diferir de `totals` por centavos de redondeo).
 5. **Agrupar por `product_id`**: las variantes suman a su producto. Nombre = el actual del producto (fallback `sale_items.product_name`).
 6. **Comparativo**: cada fila trae el período anterior de **igual duración** inmediatamente previo (`prev_qty`, `prev_usd`).
 7. **Sin N+1**: una consulta agregada de ventas netas por producto (actual) + una del período anterior + una de metadatos de producto.
@@ -27,7 +36,7 @@ por mes y fija metas. Venta simple: sin impuestos, sin IGTF.
 ## 1. Acceso
 
 Mismo guard que `/api/reports`: **`ADMIN_ONLY`** en `src/middleware.ts` (`/api/metrics` se agrega a la lista) y verificación de rol en
-cada handler (`admin` | `super_admin`). `cashier` y `operador_reservas` → **403**. Sin sesión → **401**.
+cada handler (`admin` | `super_admin`). En la práctica el **middleware** corta antes, igual que en `/api/reports`: sin sesión → **307 a `/login`**, `cashier` → **307 a `/pos`**, `operador_reservas` → denegado por defecto. Si una petición llegara al handler: sin sesión → **401**, rol sin permiso → **403**.
 La exportación (`/api/metrics/export`) además pasa el plan gate `access_export`, igual que `/api/reports/export-excel`.
 
 ## 2. Tipos (`src/types/metrics.ts`)
@@ -138,8 +147,9 @@ Query: `view` (`products|groups`, requerido), `by` (requerido si `view=groups`),
 | código | cuándo |
 |---|---|
 | 400 | zod inválido (fechas, `from > to`, rango > 366 días, `by`/`view` faltante o inválido, campo desconocido, `target ≤ 0`, `q` largo) |
-| 401 | sin sesión |
-| 403 | rol sin permiso, o plan sin exportación (`code: "PLAN_LIMIT"`) |
+| 307 | middleware: sin sesión (→ `/login`) o `cashier` (→ `/pos`); el handler no llega a ejecutarse |
+| 401 | sin sesión (solo si se llega al handler) |
+| 403 | rol sin permiso (solo si se llega al handler), o plan sin exportación (`code: "PLAN_LIMIT"`) |
 | 404 | meta inexistente/ajena; `ref_id` de producto/categoría/marca ajeno o inexistente |
 | 409 | meta duplicada (misma clave única) |
 | 500 | `{ "error": "Error del servidor" }` (el detalle va al log, nunca al cliente) |
@@ -152,12 +162,13 @@ y se marca con `migrate resolve --applied`. La tabla debe existir **antes** del 
 
 ## 6. DECISIONES
 
-- **D1 — descuento.** El pedido decía "monto = `subtotal_usd` − `discount_usd`". Verificado en el código (`POST /api/sales`:
-  `subtotal_usd = quantity × price − discount_usd`; `quotations/convert` igual; `total_usd = Σ subtotal_usd`): `sale_items.subtotal_usd`
-  y `subtotal_bs` **ya vienen netos del descuento**; `discount_usd` es informativo. Restarlo otra vez descontaría dos veces y los
-  totales no cuadrarían con `/api/reports` ni con `sales.total_usd`. Se usa `subtotal_usd` / `subtotal_bs` tal cual (neto de descuento).
-- **D2 — Bs de las devoluciones.** `ReturnItem` no guarda Bs: se convierte con la tasa de la línea de venta (`sale_items.rate_used`),
-  fallback `returns.rate_used`. Puede diferir en centavos de `netSales().net.bs` (que resta `returns.total_bs` a la tasa del día de la devolución).
+- **D1 — descuento y cargo global (v1.1, decisión de Carlos).** El pedido original decía "monto = `subtotal_usd` − `discount_usd`", pero
+  `sale_items.subtotal_usd/bs` ya vienen netos del descuento por ítem (`POST /api/sales`: `subtotal = qty × price − discount_usd`), así que
+  restarlo otra vez descontaría dos veces. Además `sales.total_*` incluye el descuento global (`authorize-discount` solo toca `sales.total_*`;
+  el POS lo prorratea en `discount_usd` de los ítems) y el cargo global. Para que Métricas cuadre al centavo con `/api/reports` se **prorratea**
+  el total de cada venta entre sus líneas en proporción a `subtotal_usd`/`subtotal_bs` (§0.4). `discount_usd` no se resta. Unidades sin prorratear.
+- **D2 — Bs de las devoluciones (v1.1).** `ReturnItem` no guarda Bs: se reparte `returns.total_bs` entre sus líneas en proporción a `return_items.total_usd`
+  (tasa del día de la devolución, igual que `netSales().net.bs`). Así el neto en Bs coincide con `/api/reports/range`.
 - **D3 — subcategoría.** No es una entidad: es el texto `products.subcategory`. Se agrupa por ese texto (sin tildes ni mayúsculas para
   decidir igualdad, la etiqueta es la primera variante vista); `key_id` siempre `null`. Dos categorías con la misma subcategoría se juntan.
 - **D4 — metas por categoría/marca** suman las ventas netas de los productos cuya `category_id` / `brand_id` actual es `ref_id`
@@ -168,3 +179,4 @@ y se marca con `migrate resolve --applied`. La tabla debe existir **antes** del 
 - **D7 — `cashier_id` ajeno** no se valida contra el negocio: la consulta ya está limitada a `business_id` de la sesión, así que un id
   de otro negocio devuelve vacío sin filtrar datos.
 - **D8 — rango por defecto** (sin `from`/`to`): mes en curso hasta hoy en hora Caracas.
+- **D9 — ventas sin líneas (límite conocido, pendiente de decisión).** Hay ventas realizadas con `sale_items` vacío (datos legados / cobros sin detalle de producto: en la base local, negocio 1: 22 ventas, $185.00; negocio 87: 6 ventas, $150.00). No se pueden atribuir a ningún producto, así que **no entran** en `/products` ni `/groups` y `totals` queda por debajo de `/api/reports/range` en ese monto. Con ventas que sí traen líneas, el cuadre es exacto (probado: $160.00 / Bs 16,000.00 con descuento y cargo global y una devolución). **Propuesta v1.2 (solo aditiva, no aplicada):** campo extra `without_detail: { sales: number; usd: number; bs: number }` en `ProductsMetricsResponse` y `GroupsMetricsResponse`, para que `totals + without_detail` = reportes. Requiere OK de Carlos antes de tocar la forma.

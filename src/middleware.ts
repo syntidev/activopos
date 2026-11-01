@@ -52,7 +52,7 @@ const PUBLIC_EXACT = new Set([
 const PROTECTED_PREFIXES = [
   '/analytics', '/ayuda', '/caja', '/catalogo-digital', '/clientes', '/configuracion',
   '/cotizaciones', '/devoluciones', '/escritorio', '/finanzas', '/inventario', '/kds',
-  '/onboarding', '/pedidos', '/pos', '/productos', '/proveedores', '/reportes',
+  '/metricas', '/onboarding', '/pedidos', '/pos', '/productos', '/proveedores', '/reportes',
   '/reservas', '/tu-dia', '/usuarios', '/ventas',
   '/admin', '/blog-admin', '/businesses', '/invoices', '/settings', '/stats', '/tickets',
   '/api/',
@@ -74,6 +74,7 @@ const ADMIN_ONLY = [
   '/api/reports',
   '/api/metrics',
   '/reportes',
+  '/metricas',
   '/pulso',
   '/analytics',
   '/api/analytics',

@@ -19,6 +19,7 @@ import {
   Package,
   Calculator,
   BarChart2,
+  Target,
   TrendingUp,
   Activity,
   Store,
@@ -122,6 +123,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/caja',     icon: Calculator, label: 'Gestión de Caja', moduleKey: 'caja',     colorKey: 'caja' },
       { href: '/reportes', icon: BarChart2,  label: 'Reportes',        moduleKey: 'reportes', colorKey: 'caja', adminOnly: true },
+      { href: '/metricas', icon: Target,     label: 'Métricas',        moduleKey: 'reportes', colorKey: 'caja', adminOnly: true },
     ],
   },
   {

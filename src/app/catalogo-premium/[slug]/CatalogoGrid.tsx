@@ -16,6 +16,7 @@ import { LandingSections } from './LandingSections'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { ImgWithFallback } from './ImgWithFallback'
 import { NovedadesSection } from './NovedadesSection'
+import { pickDaily } from '@/lib/daily-rotation'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import { CarteleraGrid } from './CarteleraGrid'
 import type { CarteleraData } from './cartelera'
@@ -128,6 +129,8 @@ interface Props {
   searchSynonyms?:    SynonymGroups
   /** Franja de confianza de la home (settings.trust_strip); sin valor, los textos de siempre. */
   trustStrip?:        readonly TrustItem[]
+  /** Fecha de negocio YYYY-MM-DD (America/Caracas) calculada en el servidor: semilla de la rotación diaria de Novedades. */
+  dayKey?:            string
 }
 
 export interface CatalogBrand {
@@ -166,6 +169,10 @@ const BADGE_ICON: Record<string, ReactNode> = {
 const FEATURED_KEY = '__destacados__'
 /** Cards de la sección Novedades (grid 4×2 del mockup: 8 productos). */
 const NOVEDADES_COUNT = 8
+/** Novedades rota a diario entre los N ingresos más recientes (con stock y foto). */
+const NOVEDADES_POOL = 40
+/** Tope por categoría en la rotación (evita un día con 8 cauchos). */
+const NOVEDADES_MAX_PER_CATEGORY = 2
 
 // TODO(Carlos/Daniel): copy SIN CONFIRMAR. Tomado tal cual de las "ideas de
 // diseño" en .doc/PLAN_TRABAJO_OnBike_ActivoPOS.md (Gran Fondo 200K, Zafeti,
@@ -214,6 +221,7 @@ export function CatalogoGrid({
   vitrina,
   searchSynonyms = NO_SYNONYMS,
   trustStrip = DEFAULT_TRUST_STRIP,
+  dayKey = '',
 }: Props) {
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
@@ -397,13 +405,22 @@ export function CatalogoGrid({
     const overrideRows   = Math.floor(overrideItems.length / 4) * 4
     if (overrideRows > 0) return overrideItems.slice(0, overrideRows)
 
-    const inStock = products.filter(p => !p.outOfStock)
-    const flagged = inStock.filter(p => p.badge === 'nuevo')
-    const recent  = inStock.filter(p => p.badge !== 'nuevo').sort((a, b) => b.id - a.id)
-    const available = [...flagged, ...recent].slice(0, NOVEDADES_COUNT)
+    const inStock   = products.filter(p => !p.outOfStock)
+    // Solo con foto (una tarjeta vacía en la portada se ve peor que repetir);
+    // si no alcanzan para una fila, se usan todos los que tienen stock.
+    const withPhoto = inStock.filter(p => p.image !== null || p.images.length > 0)
+    const base      = withPhoto.length >= 4 ? withPhoto : inStock
+    const flagged   = base.filter(p => p.badge === 'nuevo')
+    const recent    = base.filter(p => p.badge !== 'nuevo').sort((a, b) => b.id - a.id)
+    // Rotación diaria: los marcados 'nuevo' primero; el resto, sorteo con
+    // semilla del día entre los NOVEDADES_POOL más recientes (mismo resultado
+    // para todos ese día, en servidor y cliente). Sin dayKey: orden de siempre.
+    const available = dayKey
+      ? pickDaily(flagged, recent.slice(0, NOVEDADES_POOL), `${dayKey}:novedades`, NOVEDADES_COUNT, NOVEDADES_MAX_PER_CATEGORY)
+      : [...flagged, ...recent].slice(0, NOVEDADES_COUNT)
     const fullRows = Math.floor(available.length / 4) * 4
     return available.slice(0, fullRows)
-  }, [products, slotSections])
+  }, [products, slotSections, dayKey])
 
   const categoryCounts = useMemo(() => {
     const map = new Map<string, number>()

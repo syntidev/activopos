@@ -7,6 +7,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
 import { readSynonyms } from '@/lib/search-synonyms'
 import { readTrustStrip } from '@/lib/trust-strip'
+import { businessDateKey } from '@/lib/business-day'
 import type { CatalogProduct, PaymentMethod } from './CatalogoGrid'
 import { CatalogFooter } from './CatalogFooter'
 import { getCartelera } from './cartelera'
@@ -416,6 +417,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       <CatalogoGrid
         searchSynonyms={readSynonyms(business.settings)}
         trustStrip={readTrustStrip(business.settings)}
+        dayKey={businessDateKey()}
         businessId={business.id}
         products={catalogProducts}
         categories={categories}

@@ -7,7 +7,8 @@ import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { businessMonthKey } from '@/lib/business-day'
 import type { GoalMetric, GoalScope, SalesGoalItem } from '@/types/metrics'
-import { apiError, fmtQty, fmtUsd } from './format'
+import { useRate } from '@/context/RateContext'
+import { apiError, fmtBs, fmtQty, fmtUsd } from './format'
 import { barStyle } from './GruposTab'
 import { useApiData } from './useApiData'
 import { ViewState } from './ViewState'
@@ -19,7 +20,9 @@ const REF_SEARCH_MIN = 2
 const REF_SEARCH_DEBOUNCE_MS = 300
 const REF_LIST_MAX = 8
 
-const fmtGoal = (metric: GoalMetric, n: number): string => (metric === 'usd' ? fmtUsd(n) : fmtQty(n))
+/** Unidades tal cual; dólares SIEMPRE con su equivalente en Bs a la tasa del día (sin tasa: "Bs. —", nunca se bloquea). */
+const fmtGoal = (metric: GoalMetric, n: number, rate: number | null): string =>
+  metric === 'usd' ? `${fmtUsd(n)} · ${rate ? fmtBs(n * rate) : 'Bs. —'}` : fmtQty(n)
 
 type GoalStatus = 'cumplida' | 'camino' | 'atrasada' | 'cerrada'
 const STATUS_LABEL: Record<GoalStatus, string> = { cumplida: 'Cumplida', camino: 'En camino', atrasada: 'Atrasada', cerrada: 'Mes cerrado' }
@@ -38,11 +41,12 @@ export function goalStatus(g: SalesGoalItem): GoalStatus {
   return g.pct >= (elapsed / total) * 100 ? 'camino' : 'atrasada'
 }
 
-function goalLine(g: SalesGoalItem, status: GoalStatus): string {
-  if (status === 'cumplida') return `¡Cumpliste la meta! Llevas ${fmtGoal(g.metric, g.actual)} de ${fmtGoal(g.metric, g.target)}.`
-  if (status === 'cerrada') return `El mes cerró: vendiste ${fmtGoal(g.metric, g.actual)} de ${fmtGoal(g.metric, g.target)} y te faltaron ${fmtGoal(g.metric, g.remaining)}.`
-  const perDay = g.per_day_needed === null ? '' : `: ${fmtGoal(g.metric, g.per_day_needed)} por día`
-  return `Te faltan ${fmtGoal(g.metric, g.remaining)}${perDay}`
+function goalLine(g: SalesGoalItem, status: GoalStatus, rate: number | null): string {
+  const f = (n: number): string => fmtGoal(g.metric, n, rate)
+  if (status === 'cumplida') return `¡Cumpliste la meta! Llevas ${f(g.actual)} de ${f(g.target)}.`
+  if (status === 'cerrada') return `El mes cerró: vendiste ${f(g.actual)} de ${f(g.target)} y te faltaron ${f(g.remaining)}.`
+  const perDay = g.per_day_needed === null ? '' : `: ${f(g.per_day_needed)} por día`
+  return `Te faltan ${f(g.remaining)}${perDay}`
 }
 
 interface RefOption { id: number; name: string }
@@ -50,6 +54,7 @@ interface GoalModalProps { goal: SalesGoalItem | null; defaultPeriod: string; on
 
 function GoalModal({ goal, defaultPeriod, onClose, onSaved }: GoalModalProps) {
   const { toast } = useToast()
+  const { rate } = useRate()
   const editing = goal !== null
   const [scope, setScope] = useState<GoalScope>(goal?.scope ?? 'product')
   const [ref, setRef] = useState<RefOption | null>(goal ? { id: goal.ref_id, name: goal.label } : null)
@@ -166,6 +171,7 @@ function GoalModal({ goal, defaultPeriod, onClose, onSaved }: GoalModalProps) {
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Objetivo {metric === 'usd' ? '(en $)' : '(en unidades)'}</span>
           <input type="number" inputMode="decimal" min="0" step="any" className={styles.control} value={target} onChange={e => setTarget(e.target.value)} aria-label="Objetivo de la meta" />
+          {metric === 'usd' && Number(target) > 0 && <span className={styles.hint}>{fmtGoal('usd', Number(target), rate)}</span>}
         </label>
 
         {formError && <p className={styles.formError} role="alert">{formError}</p>}
@@ -176,6 +182,7 @@ function GoalModal({ goal, defaultPeriod, onClose, onSaved }: GoalModalProps) {
 
 export function MetasTab() {
   const { toast } = useToast()
+  const { rate } = useRate()
   const nowPeriod = businessMonthKey()
   const [period, setPeriod] = useState(nowPeriod)
   const [reload, setReload] = useState(0)
@@ -229,10 +236,10 @@ export function MetasTab() {
                   <span className={styles.goalBadge}>{STATUS_LABEL[status]}</span>
                 </div>
                 <p className={styles.goalNumbers}>
-                  <strong>{fmtGoal(g.metric, g.actual)}</strong> de {fmtGoal(g.metric, g.target)} ({g.pct.toLocaleString('es-VE')}%)
+                  <strong>{fmtGoal(g.metric, g.actual, rate)}</strong> de {fmtGoal(g.metric, g.target, rate)} ({g.pct.toLocaleString('es-VE')}%)
                 </p>
                 <span className={styles.barTrack}><span className={styles.goalFill} style={barStyle(g.pct)} /></span>
-                <p className={styles.goalLine}>{goalLine(g, status)}</p>
+                <p className={styles.goalLine}>{goalLine(g, status, rate)}</p>
                 {confirmId === g.id ? (
                   <div className={styles.confirm} role="alert">
                     <span>¿Eliminar la meta de {g.label}?</span>

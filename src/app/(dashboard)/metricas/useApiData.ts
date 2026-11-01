@@ -7,24 +7,26 @@ export interface ApiState<T> { data: T | null; loading: boolean; error: string |
 
 /** GET real a `url` (null = no pedir). Cancela la petición anterior al cambiar la URL; `reloadKey` repite la actual. */
 export function useApiData<T>(url: string | null, reloadKey = 0): ApiState<T> {
-  const [state, setState] = useState<ApiState<T>>({ data: null, loading: url !== null, error: null })
+  // `url` viaja con el estado: si no coincide con la URL actual (render previo al efecto), esos datos son de otro filtro y no se muestran.
+  const [state, setState] = useState<ApiState<T> & { url: string | null }>({ data: null, loading: url !== null, error: null, url })
 
   useEffect(() => {
-    if (url === null) return
+    if (url === null) { setState({ data: null, loading: false, error: null, url }); return }
     const ctrl = new AbortController()
-    setState(s => ({ ...s, loading: true, error: null }))
+    setState({ data: null, loading: true, error: null, url })
     fetch(url, { signal: ctrl.signal })
       .then(async res => {
         if (!res.ok) throw new Error(await apiError(res))
         return res.json() as Promise<T>
       })
-      .then(data => setState({ data, loading: false, error: null }))
+      .then(data => { if (!ctrl.signal.aborted) setState({ data, loading: false, error: null, url }) })
       .catch((e: unknown) => {
         if (ctrl.signal.aborted) return
-        setState({ data: null, loading: false, error: e instanceof Error ? e.message : 'No se pudo cargar.' })
+        setState({ data: null, loading: false, error: e instanceof Error ? e.message : 'No se pudo cargar.', url })
       })
     return () => ctrl.abort()
   }, [url, reloadKey])
 
-  return state
+  if (state.url !== url) return { data: null, loading: url !== null, error: null }
+  return { data: state.data, loading: state.loading, error: state.error }
 }

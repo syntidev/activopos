@@ -188,6 +188,85 @@ test('metas: crear, editar y eliminar con confirmación en la UI', async ({ page
   expect(Number(sql(`SELECT COUNT(*) FROM sales_goals WHERE business_id=${BUSINESS_ID} AND period='${PERIOD}'`))).toBe(0)
 })
 
+test('cambio de rango rápido: las cifras son las del rango final, nunca las del filtro anterior ni de una respuesta tardía', async ({ page }) => {
+  const resumen = page.getByTestId('metricas-resumen')
+  const demora = (match: (search: string) => boolean, ms: number) =>
+    page.route(u => u.pathname === '/api/metrics/products' && match(u.search), async route => {
+      await new Promise(r => setTimeout(r, ms))
+      await route.continue().catch(() => undefined) // la petición ya pudo cancelarse
+    })
+
+  await abrir(page)
+  await rangoAbril(page)
+  await expect(resumen).toContainText('$81.00')
+
+  // A) El rango final tarda: mientras llega no puede verse ninguna cifra de abril ni del rango intermedio.
+  await demora(s => s.includes('from=2001-03-01&to=2001-03-31'), 2500)
+  await page.getByLabel('Desde').fill('2001-03-01') // intermedio 03-01..04-30 (rápido): abril + marzo
+  await expect(resumen).toContainText('$101.00')
+  await page.getByLabel('Hasta').fill('2001-03-31') // final (lento)
+  await expect(page.getByRole('status')).toContainText('Cargando tus ventas')
+  await expect(page.getByText('$101.00')).toHaveCount(0)
+  await expect(page.getByText('$81.00')).toHaveCount(0)
+  await expect(resumen).toContainText('$20.00') // solo marzo
+  await expect(page.getByTestId('metricas-tabla-productos').locator('tbody tr')).toHaveCount(1) // solo la Hamburguesa de marzo
+})
+
+test('respuesta tardía de un rango anterior no pisa el rango final', async ({ page }) => {
+  const resumen = page.getByTestId('metricas-resumen')
+  await abrir(page)
+  await rangoAbril(page)
+  await expect(resumen).toContainText('$81.00')
+  await page.getByLabel('Desde').fill('2001-03-01')
+  await expect(resumen).toContainText('$101.00')
+  await page.getByLabel('Hasta').fill('2001-03-31')
+  await expect(resumen).toContainText('$20.00')
+
+  // El rango 03-01..04-30 se pide lento y se vuelve de inmediato al rango final 03-01..03-31
+  await page.route(u => u.pathname === '/api/metrics/products' && u.search.includes('to=2001-04-30'), async route => {
+    await new Promise(r => setTimeout(r, 3000))
+    await route.continue().catch(() => undefined)
+  })
+  await page.getByLabel('Hasta').fill('2001-04-30')
+  await page.getByLabel('Hasta').fill('2001-03-31')
+  await expect(resumen).toContainText('$20.00')
+  await page.waitForTimeout(3500) // la respuesta tardía ya llegó (o se canceló): las cifras siguen siendo las del rango final
+  await expect(resumen).toContainText('$20.00')
+  await expect(resumen).not.toContainText('$101.00')
+})
+
+test('modal de metas: mientras busca no muestra los resultados del texto anterior', async ({ page }) => {
+  await abrir(page)
+  await tab(page, 'Metas').click()
+  await page.getByRole('button', { name: 'Nueva meta' }).click()
+  const modal = page.getByTestId('metricas-modal-meta')
+  await modal.getByLabel('Buscar producto').fill('ZZ UI Ham')
+  await expect(modal.getByRole('button', { name: 'ZZ UI Hamburguesa' })).toBeVisible()
+
+  await page.route(u => u.pathname === '/api/products' && u.search.includes('Ref'), async route => {
+    await new Promise(r => setTimeout(r, 2500))
+    await route.continue().catch(() => undefined)
+  })
+  await modal.getByLabel('Buscar producto').fill('ZZ UI Ref')
+  await expect(modal.getByText('Buscando…')).toBeVisible()
+  await expect(modal.getByRole('button', { name: 'ZZ UI Hamburguesa' })).toHaveCount(0) // el resultado de "Ham" ya no aplica
+  await expect(modal.getByRole('button', { name: 'ZZ UI Refresco' })).toBeVisible()
+})
+
+test('metas en dólares muestran USD y Bs a la vez, con la tasa del día', async ({ page }) => {
+  const r = await api.post('/api/metrics/goals', { data: { scope: 'product', ref_id: p1, period: PERIOD, metric: 'usd', target: 100 } })
+  expect(r.status(), await r.text()).toBe(201)
+  await abrir(page)
+  await tab(page, 'Metas').click()
+  await page.getByLabel('Mes de las metas').fill(PERIOD)
+  const meta = page.getByTestId('metricas-meta')
+  await expect(meta).toContainText('ZZ UI Hamburguesa')
+  await expect(meta.locator('p').first()).toContainText(/\$50\.00 · Bs\. [\d.,]+ de \$100\.00 · Bs\. [\d.,]+/) // logrado y objetivo, ambos con Bs
+  await expect(meta).toContainText(/te faltaron \$50\.00 · Bs\. [\d.,]+/) // faltante en Bs (mes cerrado)
+  await expect(meta).not.toContainText('Bs. —') // hay tasa del día
+  sql(`DELETE FROM sales_goals WHERE business_id=${BUSINESS_ID} AND period='${PERIOD}'`)
+})
+
 test('exportar Excel descarga un .xlsx con los datos del rango', async ({ page }) => {
   await abrir(page)
   await rangoAbril(page)

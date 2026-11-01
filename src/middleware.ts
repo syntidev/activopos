@@ -72,6 +72,7 @@ const ADMIN_ONLY = [
   '/configuracion',
   '/finanzas',
   '/api/reports',
+  '/api/metrics',
   '/reportes',
   '/pulso',
   '/analytics',

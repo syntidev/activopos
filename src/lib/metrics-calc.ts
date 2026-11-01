@@ -1,5 +1,5 @@
 import { shiftDateKey } from '@/lib/business-day'
-import type { GroupMetricRow, MetricsGroupBy, MetricsRange } from '@/types/metrics'
+import type { GroupMetricRow, MetricsGroupBy, MetricsRange, ProductMetricRow } from '@/types/metrics'
 
 // Cálculo puro de Métricas (sin base de datos): rangos, avance de metas. Reglas en .doc/CONTRATO_METRICAS.md.
 
@@ -79,8 +79,10 @@ function subKey(s: string): string {
 const COMBINING_MARKS = /[\u0300-\u036f]/g
 
 /** Agrupa productos por categoría | subcategoría | marca; "Sin …" es fila propia (key_id null). Orden: usd desc, label asc. */
+type Acc = Omit<GroupMetricRow, 'qty' | 'prev_qty'> & { qty: number; prev_qty: number }
+
 export function groupRows(by: MetricsGroupBy, items: GroupInput[]): GroupMetricRow[] {
-  const groups = new Map<string, GroupMetricRow>()
+  const groups = new Map<string, Acc>()
   for (const it of items) {
     let id: number | null = null
     let label: string
@@ -97,4 +99,36 @@ export function groupRows(by: MetricsGroupBy, items: GroupInput[]): GroupMetricR
   return Array.from(groups.values())
     .map(g => ({ ...g, qty: Math.round(g.qty * 1000) / 1000, usd: r2(g.usd), bs: r2(g.bs), prev_qty: Math.round(g.prev_qty * 1000) / 1000, prev_usd: r2(g.prev_usd) }))
     .sort((a, b) => b.usd - a.usd || a.label.localeCompare(b.label, 'es'))
+}
+
+/* ───────────────────── Ventas sin detalle de producto (v1.2) ───────────────────── */
+
+export const NO_DETAIL_LABEL = 'Ventas sin detalle de producto'
+
+export interface Money { usd: number; bs: number }
+
+const r4 = (x: number): number => Math.round(x * 10000) / 10000
+
+/** Lo que reportes cuenta y no se atribuye a un producto: neto del rango − Σ neto por producto (4 decimales). */
+export function remainder(net: Money, attributed: Money): Money {
+  return { usd: r4(net.usd - attributed.usd), bs: r4(net.bs - attributed.bs) }
+}
+
+/** ¿Hay algo que mostrar? (ruido de redondeo menor a medio centavo no crea fila). */
+export function hasRemainder(cur: Money, prev: Money): boolean {
+  return [cur.usd, cur.bs, prev.usd].some(v => Math.abs(v) >= 0.005)
+}
+
+export function noDetailProductRow(cur: Money, prev: Money): ProductMetricRow {
+  return {
+    product_id: null, name: NO_DETAIL_LABEL, category: null, subcategory: null, brand: null,
+    qty: null, usd: r2(cur.usd), bs: r2(cur.bs), prev_qty: null, prev_usd: r2(prev.usd),
+  }
+}
+
+export function noDetailGroupRow(cur: Money, prev: Money): GroupMetricRow {
+  return {
+    key_id: null, label: NO_DETAIL_LABEL, qty: null, usd: r2(cur.usd), bs: r2(cur.bs),
+    prev_qty: null, prev_usd: r2(prev.usd), products_count: 0,
+  }
 }

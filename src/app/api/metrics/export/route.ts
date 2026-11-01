@@ -27,15 +27,15 @@ export async function GET(req: NextRequest): Promise<Response> {
       const res = await getProductMetrics(session.businessId, { ...q, from, to })
       rows = res.rows.map(r => ({
         'Producto': safeText(r.name), 'Categoría': safeText(r.category ?? ''), 'Subcategoría': safeText(r.subcategory ?? ''), 'Marca': safeText(r.brand ?? ''),
-        'Unidades': r.qty, 'Monto USD': r.usd, 'Monto Bs': r.bs,
-        'Unidades (período anterior)': r.prev_qty, 'Monto USD (período anterior)': r.prev_usd,
+        'Unidades': r.qty ?? '', 'Monto USD': r.usd, 'Monto Bs': r.bs,
+        'Unidades (período anterior)': r.prev_qty ?? '', 'Monto USD (período anterior)': r.prev_usd,
       }))
     } else {
       const res = await getGroupMetrics(session.businessId, q.by ?? 'category', { from, to, cashier_id: q.cashier_id })
       rows = res.rows.map(r => ({
         'Grupo': safeText(r.label), 'Productos': r.products_count,
-        'Unidades': r.qty, 'Monto USD': r.usd, 'Monto Bs': r.bs,
-        'Unidades (período anterior)': r.prev_qty, 'Monto USD (período anterior)': r.prev_usd,
+        'Unidades': r.qty ?? '', 'Monto USD': r.usd, 'Monto Bs': r.bs,
+        'Unidades (período anterior)': r.prev_qty ?? '', 'Monto USD (período anterior)': r.prev_usd,
       }))
     }
 

@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { businessDateKey, businessMonthRange, businessRange } from '@/lib/business-day'
-import { netProductLines, type NetProductLine } from '@/lib/sales-returns'
+import { netProductLines, netSales, type NetProductLine } from '@/lib/sales-returns'
 import { normalizeSearchTerm } from '@/lib/pulso-events'
-import { goalProgress, groupRows, monthToDate, rangeWithPrevious } from '@/lib/metrics-calc'
+import {
+  goalProgress, groupRows, hasRemainder, monthToDate, noDetailGroupRow, noDetailProductRow, rangeWithPrevious, remainder, type Money,
+} from '@/lib/metrics-calc'
 import type {
   GoalMetric, GoalScope, GroupsMetricsResponse, MetricsCashier, MetricsGroupBy, MetricsRange,
   MetricsTotals, ProductMetricRow, ProductsMetricsResponse, SalesGoalItem,
@@ -48,11 +50,28 @@ async function netFor(businessId: number, r: MetricsRange, cashierId?: number): 
 }
 
 /** Una consulta de ventas netas por período + una de metadatos: sin N+1. Solo productos con actividad en alguno de los dos. */
-async function loadMerged(businessId: number, f: MetricsFilters): Promise<{ range: MetricsRange; prev: MetricsRange; merged: Merged[] }> {
+interface NoDetail { cur: Money; prev: Money }
+
+/** v1.2: neto del rango (netSales, la misma cifra de /api/reports) − Σ neto atribuido a productos. Cubre ventas sin líneas,
+ *  productos borrados y devoluciones sin línea: así `totals` == reportes al centavo. */
+async function noDetailFor(businessId: number, r: MetricsRange, attributed: Map<number, NetProductLine>, cashierId?: number): Promise<Money> {
+  const { start, end } = businessRange(r.from, r.to)
+  const net = await netSales(businessId, start, end, cashierId)
+  const sum = Array.from(attributed.values()).reduce((a, n) => ({ usd: a.usd + n.usd, bs: a.bs + n.bs }), { usd: 0, bs: 0 })
+  return remainder(net.net, sum)
+}
+
+async function loadMerged(businessId: number, f: MetricsFilters): Promise<{ range: MetricsRange; prev: MetricsRange; merged: Merged[]; noDetail: NoDetail | null }> {
   const { from, to } = f.from && f.to ? { from: f.from, to: f.to } : monthToDate(businessDateKey())
   const { range, prev } = rangeWithPrevious(from, to)
   const [cur, before] = await Promise.all([netFor(businessId, range, f.cashier_id), netFor(businessId, prev, f.cashier_id)])
   const ids = Array.from(new Set([...Array.from(cur.keys()), ...Array.from(before.keys())]))
+  // Con filtro de categoría/marca/búsqueda lo "sin detalle" no se puede atribuir: no aplica.
+  const productFiltered = Boolean(f.category_id || f.brand_id || f.q)
+  const noDetail: NoDetail | null = productFiltered ? null : {
+    cur: await noDetailFor(businessId, range, cur, f.cashier_id),
+    prev: await noDetailFor(businessId, prev, before, f.cashier_id),
+  }
 
   const metas: ProductMeta[] = ids.length === 0 ? [] : await prisma.product.findMany({
     where: { business_id: businessId, id: { in: ids } },
@@ -77,19 +96,20 @@ async function loadMerged(businessId: number, f: MetricsFilters): Promise<{ rang
     if (c.qty === 0 && c.usd === 0 && p.qty === 0 && p.usd === 0) continue
     merged.push({ meta, cur: c, prev: p })
   }
-  return { range, prev, merged }
+  return { range, prev, merged, noDetail }
 }
 
 /** Totales desde los montos por producto con 4 decimales (sin redondear a centavos): así cuadran con netSales (reportes). */
-function totalsOf(merged: Merged[]): MetricsTotals {
+function totalsOf(merged: Merged[], noDetail: NoDetail | null): MetricsTotals {
+  const extra = noDetail ?? { cur: { usd: 0, bs: 0 }, prev: { usd: 0, bs: 0 } }
   const t = merged.reduce((a, { cur, prev }) => ({
     qty: a.qty + cur.qty, usd: a.usd + cur.usd, bs: a.bs + cur.bs, prev_qty: a.prev_qty + prev.qty, prev_usd: a.prev_usd + prev.usd,
-  }), { qty: 0, usd: 0, bs: 0, prev_qty: 0, prev_usd: 0 })
+  }), { qty: 0, usd: extra.cur.usd, bs: extra.cur.bs, prev_qty: 0, prev_usd: extra.prev.usd })
   return { qty: r3(t.qty), usd: r2(t.usd), bs: r2(t.bs), prev_qty: r3(t.prev_qty), prev_usd: r2(t.prev_usd) }
 }
 
 export async function getProductMetrics(businessId: number, f: MetricsFilters): Promise<ProductsMetricsResponse> {
-  const { range, prev, merged } = await loadMerged(businessId, f)
+  const { range, prev, merged, noDetail } = await loadMerged(businessId, f)
   const rows: ProductMetricRow[] = merged.map(({ meta, cur, prev: p }) => ({
     product_id: meta.id,
     name: meta.name,
@@ -100,7 +120,8 @@ export async function getProductMetrics(businessId: number, f: MetricsFilters): 
     prev_qty: r3(p.qty), prev_usd: r2(p.usd),
   }))
   rows.sort((a, b) => b.usd - a.usd || a.name.localeCompare(b.name, 'es'))
-  return { range, prev_range: prev, rows, totals: totalsOf(merged) }
+  if (noDetail && hasRemainder(noDetail.cur, noDetail.prev)) rows.push(noDetailProductRow(noDetail.cur, noDetail.prev)) // siempre última
+  return { range, prev_range: prev, rows, totals: totalsOf(merged, noDetail) }
 }
 
 export async function getGroupMetrics(
@@ -108,13 +129,14 @@ export async function getGroupMetrics(
   by: MetricsGroupBy,
   f: Pick<MetricsFilters, 'from' | 'to' | 'cashier_id'>,
 ): Promise<GroupsMetricsResponse> {
-  const { range, prev, merged } = await loadMerged(businessId, f)
+  const { range, prev, merged, noDetail } = await loadMerged(businessId, f)
   const rows = groupRows(by, merged.map(({ meta, cur, prev: p }) => ({
     category_id: meta.category_id, category: meta.category?.name ?? null,
     brand_id: meta.brand_id, brand: meta.brand?.name ?? null,
     subcategory: meta.subcategory, cur, prev: p,
   })))
-  return { by, range, prev_range: prev, rows, totals: totalsOf(merged) }
+  if (noDetail && hasRemainder(noDetail.cur, noDetail.prev)) rows.push(noDetailGroupRow(noDetail.cur, noDetail.prev)) // siempre última
+  return { by, range, prev_range: prev, rows, totals: totalsOf(merged, noDetail) }
 }
 
 export async function getCashiers(businessId: number): Promise<MetricsCashier[]> {

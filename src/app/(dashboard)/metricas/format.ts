@@ -3,14 +3,16 @@ import { fmtBs, fmtUsd } from '@/app/catalogo-premium/[slug]/catalogUtils'
 export { fmtBs, fmtUsd }
 
 /** Unidades: enteras o hasta 2 decimales (ventas por peso). */
-export function fmtQty(n: number): string {
-  return n.toLocaleString('es-VE', { maximumFractionDigits: 2 })
+export function fmtQty(n: number | null): string {
+  return n === null ? '—' : n.toLocaleString('es-VE', { maximumFractionDigits: 2 })
 }
 
 export interface Delta { text: string; dir: 'up' | 'down' | 'flat' | 'new' }
 
-/** Variación de unidades contra el período anterior. Sin base previa: "Nuevo" (o sin cambio si ambos son 0). */
-export function deltaQty(qty: number, prev: number): Delta {
+/** Variación de unidades contra el período anterior. Sin base previa: "Nuevo" (o sin cambio si ambos son 0).
+ *  Unidades null (fila "Ventas sin detalle de producto", contrato v1.2): sin variación que calcular. */
+export function deltaQty(qty: number | null, prev: number | null): Delta | null {
+  if (qty === null || prev === null) return null
   if (prev === 0) return qty > 0 ? { text: 'Nuevo', dir: 'new' } : { text: '0%', dir: 'flat' }
   const pct = Math.round(((qty - prev) / Math.abs(prev)) * 1000) / 10
   if (pct === 0) return { text: '0%', dir: 'flat' }

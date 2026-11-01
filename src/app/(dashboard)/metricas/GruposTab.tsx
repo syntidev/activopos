@@ -76,7 +76,7 @@ export function GruposTab({ qs, by, onBy, onPick }: GruposTabProps) {
                 <span className={styles.rankMoney}>
                   <span className={styles.moneyUsd}>{fmtUsd(r.usd)}</span>
                   <span className={styles.moneyBs}>{fmtBs(r.bs)}</span>
-                  <span className={styles.rankCount}>{r.products_count} {r.products_count === 1 ? 'producto' : 'productos'}</span>
+                  {r.qty !== null && <span className={styles.rankCount}>{r.products_count} {r.products_count === 1 ? 'producto' : 'productos'}</span>}
                 </span>
               </>
             )

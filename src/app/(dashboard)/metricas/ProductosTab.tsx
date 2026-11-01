@@ -25,12 +25,14 @@ function sortValue(r: ProductMetricRow, key: SortKey): string | number {
     case 'name': return r.name.toLowerCase()
     case 'category': return (r.category ?? '').toLowerCase()
     case 'brand': return (r.brand ?? '').toLowerCase()
-    case 'delta': return r.qty - r.prev_qty
+    case 'qty': return r.qty ?? 0
+    case 'delta': return (r.qty ?? 0) - (r.prev_qty ?? 0)
     default: return r[key]
   }
 }
 
-export function DeltaBadge({ delta }: { delta: Delta }) {
+export function DeltaBadge({ delta }: { delta: Delta | null }) {
+  if (delta === null) return <span className={styles.muted}>—</span>
   const cls = `${styles.delta} ${styles[`delta_${delta.dir}`]}`
   const Icon = delta.dir === 'up' ? ArrowUp : delta.dir === 'down' ? ArrowDown : Minus
   return (
@@ -63,13 +65,15 @@ export function ProductosTab({ qs, q, onQ, filterLabel, onClearFilter }: Product
   }, [input, q, onQ])
 
   const rows = useMemo(() => {
-    const list = [...(data?.rows ?? [])]
+    const all = data?.rows ?? []
     const sign = sort.dir === 'asc' ? 1 : -1
-    return list.sort((a, b) => {
+    const sorted = all.filter(r => r.product_id !== null).sort((a, b) => {
       const va = sortValue(a, sort.key)
       const vb = sortValue(b, sort.key)
       return (va < vb ? -1 : va > vb ? 1 : 0) * sign
     })
+    // "Ventas sin detalle de producto" (product_id null) va siempre última, sea cual sea el orden.
+    return [...sorted, ...all.filter(r => r.product_id === null)]
   }, [data, sort])
 
   const toggleSort = (key: SortKey): void =>
@@ -137,7 +141,7 @@ export function ProductosTab({ qs, q, onQ, filterLabel, onClearFilter }: Product
             </thead>
             <tbody>
               {rows.map(r => (
-                <tr key={r.product_id}>
+                <tr key={r.product_id ?? 'sin-detalle'}>
                   <th scope="row" className={styles.rowName}>{r.name}</th>
                   <td>{r.category ?? <span className={styles.muted}>Sin categoría</span>}</td>
                   <td>{r.brand ?? <span className={styles.muted}>Sin marca</span>}</td>

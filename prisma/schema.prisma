@@ -1575,3 +1575,33 @@ model CatalogEvent {
   @@index([business_id, type, created_at])
   @@map("catalog_events")
 }
+
+// Métricas: metas mensuales de venta (ver .doc/CONTRATO_METRICAS.md). Sin FK a products/categories/brands:
+// ref_id se valida contra el negocio en la API; una meta no bloquea el borrado de nada.
+enum SalesGoalScope {
+  product
+  category
+  brand
+}
+
+enum SalesGoalMetric {
+  units
+  usd
+}
+
+model SalesGoal {
+  id          Int             @id @default(autoincrement())
+  business_id Int
+  scope       SalesGoalScope
+  ref_id      Int
+  period      String          @db.VarChar(7)
+  metric      SalesGoalMetric
+  target      Decimal         @db.Decimal(12, 2)
+  created_by  Int
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @updatedAt
+
+  @@unique([business_id, scope, ref_id, period, metric])
+  @@index([business_id, period])
+  @@map("sales_goals")
+}

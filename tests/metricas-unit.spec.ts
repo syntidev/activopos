@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { daysInMonth, goalProgress, groupRows, inclusiveDays, monthToDate, rangeWithPrevious, type GroupInput } from '../src/lib/metrics-calc'
+import {
+  NO_DETAIL_LABEL, daysInMonth, goalProgress, groupRows, hasRemainder, inclusiveDays, monthToDate, noDetailGroupRow, noDetailProductRow,
+  rangeWithPrevious, remainder, type GroupInput,
+} from '../src/lib/metrics-calc'
 import { createGoalSchema, exportQuerySchema, goalsQuerySchema, groupsQuerySchema, patchGoalSchema, productsQuerySchema } from '../src/lib/metrics-schemas'
 
 /** Unit (sin navegador, sin servidor, sin base): rangos, avance de metas, agrupación y validación de Métricas. */
@@ -133,5 +136,38 @@ test.describe('validación zod', () => {
     expect(goalsQuerySchema.safeParse({}).success).toBe(true)
     expect(goalsQuerySchema.safeParse({ period: '2026-10' }).success).toBe(true)
     expect(goalsQuerySchema.safeParse({ period: '2026-00' }).success).toBe(false)
+  })
+})
+
+test.describe('ventas sin detalle de producto (v1.2)', () => {
+  test('una venta sin líneas: reportes cuenta $25 que ningún producto explica y queda como resto', () => {
+    // reportes (netSales): 185.00 / Bs 18,500; Σ por producto: 160.00 / Bs 16,000; la venta sin líneas pesa 25.00 / Bs 2,500
+    expect(remainder({ usd: 185, bs: 18500 }, { usd: 160, bs: 16000 })).toEqual({ usd: 25, bs: 2500 })
+  })
+  test('sin ventas sin líneas el resto es 0 y no crea fila; el ruido de redondeo tampoco', () => {
+    const cero = remainder({ usd: 160, bs: 16000 }, { usd: 160, bs: 16000 })
+    expect(cero).toEqual({ usd: 0, bs: 0 })
+    expect(hasRemainder(cero, { usd: 0, bs: 0 })).toBe(false)
+    expect(hasRemainder({ usd: 0.0004, bs: 0.0002 }, { usd: 0, bs: 0 })).toBe(false)
+    expect(hasRemainder({ usd: 25, bs: 2500 }, { usd: 0, bs: 0 })).toBe(true)
+    expect(hasRemainder({ usd: 0, bs: 0 }, { usd: 40, bs: 0 })).toBe(true) // solo el período anterior tuvo resto
+  })
+  test('fila de producto: product_id y qty null, usd/bs reales, sin categoría ni marca', () => {
+    expect(noDetailProductRow({ usd: 25, bs: 2500 }, { usd: 10, bs: 0 })).toEqual({
+      product_id: null, name: NO_DETAIL_LABEL, category: null, subcategory: null, brand: null,
+      qty: null, usd: 25, bs: 2500, prev_qty: null, prev_usd: 10,
+    })
+  })
+  test('fila de grupo: key_id y qty null, products_count 0', () => {
+    expect(noDetailGroupRow({ usd: 25, bs: 2500 }, { usd: 0, bs: 0 })).toEqual({
+      key_id: null, label: 'Ventas sin detalle de producto', qty: null, usd: 25, bs: 2500, prev_qty: null, prev_usd: 0, products_count: 0,
+    })
+  })
+  test('el total con el resto iguala al neto de reportes', () => {
+    const rows = [{ usd: 132, bs: 13200 }, { usd: 28, bs: 2800 }]
+    const resto = remainder({ usd: 185, bs: 18500 }, { usd: 160, bs: 16000 })
+    const usd = rows.reduce((a, r) => a + r.usd, resto.usd)
+    const bs = rows.reduce((a, r) => a + r.bs, resto.bs)
+    expect([usd, bs]).toEqual([185, 18500])
   })
 })

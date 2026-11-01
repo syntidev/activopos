@@ -98,6 +98,8 @@ test.beforeAll(async () => {
   // D cancelada y E devuelta: no cuentan
   venta('ZZM-D', 'cancelled', 90, 9000, '2001-03-11 16:00:00', [[p1, 9, 90, 9000]])
   venta('ZZM-E', 'returned', 10, 1000, '2001-03-13 16:00:00', [[p1, 1, 10, 1000]])
+  // G: venta SIN LÍNEAS (dato legado/cobro sin detalle): reportes la cuenta, ningún producto la explica
+  venta('ZZM-G', 'paid', 25, 2500, '2001-03-25 16:00:00', [])
   // F: período anterior (misma duración: 2001-01-29 a 2001-02-28)
   venta('ZZM-F', 'paid', 40, 4000, '2001-02-15 16:00:00', [[p1, 4, 40, 4000]])
 })
@@ -110,10 +112,10 @@ test.afterAll(async () => {
   expect(Number(sql(`SELECT COUNT(*) FROM sales_goals WHERE period LIKE '2001-%'`))).toBe(0)
 })
 
-interface ProductRow { product_id: number; name: string; brand: string | null; qty: number; usd: number; bs: number; prev_qty: number; prev_usd: number }
+interface ProductRow { product_id: number | null; name: string; brand: string | null; qty: number; usd: number; bs: number; prev_qty: number; prev_usd: number }
 interface Totals { qty: number; usd: number; bs: number; prev_qty: number; prev_usd: number }
 
-test('productos: venta con descuento global y cargo global prorrateados; devuelta/cancelada fuera; comparativo', async () => {
+test('productos: descuento y cargo global prorrateados; devuelta/cancelada fuera; venta sin líneas como fila propia; comparativo', async () => {
   const r = await api.get(`/api/metrics/products?${Q}`)
   expect(r.status(), await r.text()).toBe(200)
   const body = (await r.json()) as { range: { days: number }; prev_range: { from: string; to: string; days: number }; rows: ProductRow[]; totals: Totals }
@@ -124,8 +126,12 @@ test('productos: venta con descuento global y cargo global prorrateados; devuelt
   // P1: A (20 → 18) + B neto (20 − 10 = 10)   P2: A (30 → 27) + C (100 → 105)
   expect(reloj).toMatchObject({ qty: 3, usd: 28, bs: 2800, prev_qty: 4, prev_usd: 40, brand: 'ZZ Metricas Marca' })
   expect(taza).toMatchObject({ qty: 2, usd: 132, bs: 13200, prev_qty: 0, prev_usd: 0, brand: null })
-  expect(body.rows.map(x => x.product_id)).toEqual([p2, p1]) // orden por monto desc
-  expect(body.totals).toEqual({ qty: 5, usd: 160, bs: 16000, prev_qty: 4, prev_usd: 40 })
+  expect(body.rows.map(x => x.product_id)).toEqual([p2, p1, null]) // orden por monto desc; "sin detalle" siempre última
+  expect(body.rows[2]).toEqual({
+    product_id: null, name: 'Ventas sin detalle de producto', category: null, subcategory: null, brand: null,
+    qty: null, usd: 25, bs: 2500, prev_qty: null, prev_usd: 0,
+  })
+  expect(body.totals).toEqual({ qty: 5, usd: 185, bs: 18500, prev_qty: 4, prev_usd: 40 })
 })
 
 test('cuadre: la suma de /api/metrics/products == total de /api/reports/range (USD y Bs, al centavo)', async () => {
@@ -136,17 +142,21 @@ test('cuadre: la suma de /api/metrics/products == total de /api/reports/range (U
   console.log(`CUADRE metrics.totals usd=${totals.usd} bs=${totals.bs} | reports/range total_usd=${report.total_usd} total_bs=${report.total_bs}`)
   expect(totals.usd).toBe(report.total_usd)
   expect(totals.bs).toBe(report.total_bs)
-  expect(totals.usd).toBe(160)
+  expect(totals.usd).toBe(185)
 })
 
 test('grupos: por marca ("Sin marca" fila propia), por categoría y subcategoría; totales iguales', async () => {
   const brand = (await (await api.get(`/api/metrics/groups?by=brand&${Q}`)).json()) as { rows: { key_id: number | null; label: string; usd: number; products_count: number }[]; totals: Totals }
-  expect(brand.rows.map(x => [x.key_id, x.label, x.usd, x.products_count])).toEqual([[null, 'Sin marca', 132, 1], [brandId, 'ZZ Metricas Marca', 28, 1]])
-  expect(brand.totals.usd).toBe(160)
+  expect(brand.rows.map(x => [x.key_id, x.label, x.usd, x.products_count])).toEqual([[null, 'Sin marca', 132, 1], [brandId, 'ZZ Metricas Marca', 28, 1], [null, 'Ventas sin detalle de producto', 25, 0]])
+  expect(brand.totals.usd).toBe(185)
   const cat = (await (await api.get(`/api/metrics/groups?by=category&${Q}`)).json()) as { rows: { key_id: number | null; label: string; usd: number }[]; totals: Totals }
-  expect(cat.rows).toEqual([expect.objectContaining({ key_id: null, label: 'Sin categoría', usd: 160 })])
+  expect(cat.rows).toEqual([
+    expect.objectContaining({ key_id: null, label: 'Sin categoría', usd: 160 }),
+    expect.objectContaining({ key_id: null, label: 'Ventas sin detalle de producto', usd: 25, bs: 2500, qty: null }),
+  ])
+  expect(cat.totals.usd).toBe(185)
   const sub = (await (await api.get(`/api/metrics/groups?by=subcategory&${Q}`)).json()) as { rows: { key_id: number | null; label: string }[] }
-  expect(sub.rows).toEqual([expect.objectContaining({ key_id: null, label: 'Sin subcategoría' })])
+  expect(sub.rows.map(x => x.label)).toEqual(['Sin subcategoría', 'Ventas sin detalle de producto'])
 })
 
 test('filtros: marca, búsqueda sin tildes, cajero inexistente; parámetros inválidos dan 400', async () => {
@@ -159,7 +169,9 @@ test('filtros: marca, búsqueda sin tildes, cajero inexistente; parámetros inv�
   expect(noCashier.rows).toEqual([])
   expect(noCashier.totals.usd).toBe(0)
   const mine = (await (await api.get(`/api/metrics/products?${Q}&cashier_id=${ADMIN_ID}`)).json()) as { totals: Totals }
-  expect(mine.totals.usd).toBe(160)
+  expect(mine.totals.usd).toBe(185) // el filtro de cajero conserva el resto (netSales por cajero)
+  const byQ2 = (await (await api.get(`/api/metrics/products?${Q}&q=zz`)).json()) as { rows: ProductRow[] }
+  expect(byQ2.rows.every(x => x.product_id !== null)).toBe(true) // con filtro de producto no aplica "sin detalle"
   for (const bad of [`from=${FROM}`, `from=${TO}&to=${FROM}`, 'from=2000-01-01&to=2002-01-02', 'category_id=0']) {
     expect((await api.get(`/api/metrics/products?${bad}`)).status(), bad).toBe(400)
   }
@@ -249,8 +261,8 @@ test('exportación: .xlsx con USD y Bs (o 403 PLAN_LIMIT si el plan no exporta)'
   expect(r.headers()['content-disposition']).toContain(`metricas-products-${FROM}_a_${TO}.xlsx`)
   const wb = XLSX.read(await r.body(), { type: 'buffer' })
   const rows = XLSX.utils.sheet_to_json<Record<string, string | number>>(wb.Sheets[wb.SheetNames[0]])
-  expect(rows).toHaveLength(2)
-  expect(rows.map(x => x['Monto USD'])).toEqual([132, 28])
-  expect(rows.map(x => x['Monto Bs'])).toEqual([13200, 2800])
+  expect(rows).toHaveLength(3)
+  expect(rows.map(x => x['Monto USD'])).toEqual([132, 28, 25])
+  expect(rows.map(x => x['Monto Bs'])).toEqual([13200, 2800, 2500])
   expect((await api.get(`/api/metrics/export?view=groups&${Q}`)).status()).toBe(400) // falta by
 })

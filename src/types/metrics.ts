@@ -11,15 +11,15 @@ export interface MetricsTotals {
 }
 
 export interface ProductMetricRow {
-  product_id: number
+  product_id: number | null      // null = fila "Ventas sin detalle de producto" (v1.2)
   name: string
   category: string | null
   subcategory: string | null
   brand: string | null
-  qty: number
+  qty: number | null             // null solo en la fila sin detalle
   usd: number
   bs: number
-  prev_qty: number
+  prev_qty: number | null
   prev_usd: number
 }
 
@@ -35,10 +35,10 @@ export type MetricsGroupBy = 'category' | 'subcategory' | 'brand'
 export interface GroupMetricRow {
   key_id: number | null
   label: string
-  qty: number
+  qty: number | null             // null solo en la fila sin detalle (v1.2)
   usd: number
   bs: number
-  prev_qty: number
+  prev_qty: number | null
   prev_usd: number
   products_count: number
 }

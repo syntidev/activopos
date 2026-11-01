@@ -1,5 +1,5 @@
 # CONTRATO — Métricas (ventas por producto/grupo y metas mensuales)
-Versión 1.1 · 2026-10-31 · CLI-A · rama `feat/metricas`
+Versión 1.2 · 2026-10-31 · CLI-A · rama `feat/metricas`
 
 Módulo **global** (todos los negocios, sin feature flag): unidades y monto vendidos por producto, por categoría / subcategoría /
 marca, comparativo contra el período anterior y **metas mensuales** con avance. Caso real: el café de OnBike cuenta hamburguesas
@@ -8,6 +8,8 @@ por mes y fija metas. Venta simple: sin impuestos, sin IGTF.
 > CLI-B construye contra este archivo. Cualquier cambio posterior se anota como **v2** al final y se avisa.
 
 > **v1.1 (2026-10-31, decisión de Carlos):** cambian SOLO las cifras (prorrateo del descuento/cargo global, §0.4, D1, D2). **La forma de todas las respuestas es idéntica a v1.**
+
+> **v1.2 (2026-10-31, autorizado por Carlos):** cambia la FORMA de forma aditiva. `/products` y `/groups` agregan la fila **"Ventas sin detalle de producto"** (§0.9) y por eso `product_id`, `qty` y `prev_qty` pasan a `number | null` (solo `null` en esa fila). `totals` la incluye: `totals.usd/bs` == `total_usd/total_bs` de `/api/reports/range` al centavo para cualquier rango.
 
 ## 0. Reglas de cálculo (no negociables)
 
@@ -32,6 +34,12 @@ por mes y fija metas. Venta simple: sin impuestos, sin IGTF.
 6. **Comparativo**: cada fila trae el período anterior de **igual duración** inmediatamente previo (`prev_qty`, `prev_usd`).
 7. **Sin N+1**: una consulta agregada de ventas netas por producto (actual) + una del período anterior + una de metadatos de producto.
 8. `business_id` **siempre de `getSession()`**, nunca del query/body.
+9. **Ventas sin detalle de producto (v1.2).** Hay ventas realizadas sin líneas en `sale_items` (datos legados, cobros sin detalle), productos borrados
+   y devoluciones sin línea: reportes los cuenta, ningún producto los explica. La fila **"Ventas sin detalle de producto"** (`key_id`/`product_id`
+   `null`, `qty` y `prev_qty` `null`, `usd`/`bs`/`prev_usd` reales) es el **resto**: `netSales(rango)` (la misma cifra de `/api/reports/range`) menos la suma
+   neta atribuida a productos. Va **siempre última**, entra en `totals` y aparece solo si el resto es ≥ $0.005 o Bs 0.005 en algún período.
+   Con filtros de producto (`category_id`, `brand_id`, `q`) NO aparece (no se puede atribuir). El filtro `cashier_id` sí la conserva (el resto se calcula
+   con `netSales` filtrado por cajero). En `/groups` la fila aplica a las tres vistas (`by`). En la exportación va como una fila más (Unidades vacías).
 
 ## 1. Acceso
 
@@ -49,13 +57,15 @@ export interface MetricsTotals {
 }
 
 export interface ProductMetricRow {
-  product_id: number
+  product_id: number | null      // null SOLO en la fila "Ventas sin detalle de producto" (v1.2)
   name: string
   category: string | null        // null = sin categoría
   subcategory: string | null     // texto libre del producto; null = sin subcategoría
   brand: string | null           // null = sin marca
-  qty: number; usd: number; bs: number
-  prev_qty: number; prev_usd: number
+  qty: number | null             // null SOLO en la fila sin detalle (v1.2)
+  usd: number; bs: number
+  prev_qty: number | null        // null SOLO en la fila sin detalle (v1.2)
+  prev_usd: number
 }
 export interface ProductsMetricsResponse {
   range: MetricsRange
@@ -67,10 +77,12 @@ export interface ProductsMetricsResponse {
 export type MetricsGroupBy = 'category' | 'subcategory' | 'brand'
 export interface GroupMetricRow {
   key_id: number | null          // category.id / brand.id; null en "Sin …" y SIEMPRE null en subcategory
-  label: string                  // nombre; "Sin categoría" | "Sin subcategoría" | "Sin marca"
-  qty: number; usd: number; bs: number
-  prev_qty: number; prev_usd: number
-  products_count: number         // productos distintos con actividad (período actual o anterior)
+  label: string                  // nombre; "Sin categoría" | "Sin subcategoría" | "Sin marca" | "Ventas sin detalle de producto"
+  qty: number | null             // null SOLO en la fila sin detalle (v1.2)
+  usd: number; bs: number
+  prev_qty: number | null        // null SOLO en la fila sin detalle (v1.2)
+  prev_usd: number
+  products_count: number         // productos distintos con actividad (período actual o anterior); 0 en la fila sin detalle
 }
 export interface GroupsMetricsResponse {
   by: MetricsGroupBy
@@ -179,4 +191,4 @@ y se marca con `migrate resolve --applied`. La tabla debe existir **antes** del 
 - **D7 — `cashier_id` ajeno** no se valida contra el negocio: la consulta ya está limitada a `business_id` de la sesión, así que un id
   de otro negocio devuelve vacío sin filtrar datos.
 - **D8 — rango por defecto** (sin `from`/`to`): mes en curso hasta hoy en hora Caracas.
-- **D9 — ventas sin líneas (límite conocido, pendiente de decisión).** Hay ventas realizadas con `sale_items` vacío (datos legados / cobros sin detalle de producto: en la base local, negocio 1: 22 ventas, $185.00; negocio 87: 6 ventas, $150.00). No se pueden atribuir a ningún producto, así que **no entran** en `/products` ni `/groups` y `totals` queda por debajo de `/api/reports/range` en ese monto. Con ventas que sí traen líneas, el cuadre es exacto (probado: $160.00 / Bs 16,000.00 con descuento y cargo global y una devolución). **Propuesta v1.2 (solo aditiva, no aplicada):** campo extra `without_detail: { sales: number; usd: number; bs: number }` en `ProductsMetricsResponse` y `GroupsMetricsResponse`, para que `totals + without_detail` = reportes. Requiere OK de Carlos antes de tocar la forma.
+- **D9 — ventas sin líneas (resuelto en v1.2).** Medido en la base local antes de v1.2: negocio 1 (jun–jul 2026) 22 ventas sin líneas, $185.00; negocio 87 (octubre) 6 ventas, $150.00. Ahora se muestran como la fila "Ventas sin detalle de producto" (§0.9) y `totals` cuadra con reportes.

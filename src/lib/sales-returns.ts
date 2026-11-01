@@ -412,3 +412,89 @@ export async function approvedReturnsInRange(
     is_cash:     r.refund_payment_method_id === null || r.refund_payment_method?.type === 'cash',
   }))
 }
+
+/* ──────────────────── Neto por producto con Bs y filtro de cajero (Métricas) ──────────────────── */
+
+export interface NetProductLine {
+  qty: number
+  usd: number
+  bs:  number
+}
+
+/**
+ * Unidades y monto netos por product_id en [from, to): ventas realizadas menos devoluciones aprobadas, imputadas a la
+ * fecha de la venta (mismo criterio que `dimensionRows`). Extiende `netByProduct` con Bs y filtro por cajero, que Métricas
+ * necesita (ver .doc/CONTRATO_METRICAS.md, v1.1). Cuadra al centavo con `netSales`:
+ *  - Cada venta reparte su total (con descuento/cargo global) entre sus líneas en proporción a subtotal_usd / subtotal_bs:
+ *    monto línea = subtotal_línea × (sales.total / Σ subtotales de la venta). Las UNIDADES no se prorratean.
+ *  - Cada devolución reparte `returns.total_usd/bs` entre sus líneas en proporción a `return_items.total_usd`.
+ *  - Los montos se devuelven con 4 decimales: redondear por producto antes de sumar descuadra centavos.
+ */
+export async function netProductLines(
+  businessId: number,
+  from: Date,
+  to: Date,
+  cashierId?: number,
+): Promise<Map<number, NetProductLine>> {
+  const cashier = cashierId ? Prisma.sql`AND s.cashier_id = ${cashierId}` : Prisma.empty
+
+  const [sold, back] = await Promise.all([
+    prisma.$queryRaw<{ pid: number; qty: string | null; usd: number | null; bs: number | null }[]>`
+      SELECT si.product_id AS pid,
+             SUM(si.quantity) AS qty,
+             SUM(CAST(si.subtotal_usd AS DOUBLE) * IF(t.su > 0, CAST(s.total_usd AS DOUBLE) / CAST(t.su AS DOUBLE), 1)) AS usd,
+             SUM(CAST(si.subtotal_bs  AS DOUBLE) * IF(t.sb > 0, CAST(s.total_bs  AS DOUBLE) / CAST(t.sb AS DOUBLE), 1)) AS bs
+      FROM sale_items si
+      JOIN sales s ON s.id = si.sale_id
+      JOIN (
+        SELECT x.sale_id, SUM(x.subtotal_usd) AS su, SUM(x.subtotal_bs) AS sb
+        FROM sale_items x
+        JOIN sales y ON y.id = x.sale_id
+        WHERE y.business_id = ${businessId}
+          AND y.status IN ${REALIZED_SQL}
+          AND y.sold_at >= ${from} AND y.sold_at < ${to}
+        GROUP BY x.sale_id
+      ) t ON t.sale_id = s.id
+      WHERE s.business_id = ${businessId}
+        AND s.status IN ${REALIZED_SQL}
+        AND s.sold_at >= ${from} AND s.sold_at < ${to}
+        ${cashier}
+      GROUP BY si.product_id`,
+
+    prisma.$queryRaw<{ pid: number; qty: string | null; usd: number | null; bs: number | null }[]>`
+      SELECT ri.product_id AS pid,
+             SUM(ri.qty) AS qty,
+             SUM(CAST(r.total_usd AS DOUBLE) * CAST(ri.total_usd AS DOUBLE) / CAST(rt.sum_usd AS DOUBLE)) AS usd,
+             SUM(CAST(r.total_bs  AS DOUBLE) * CAST(ri.total_usd AS DOUBLE) / CAST(rt.sum_usd AS DOUBLE)) AS bs
+      FROM return_items ri
+      JOIN returns r ON r.id = ri.return_id
+      JOIN sales s   ON s.id = r.sale_id
+      JOIN (
+        SELECT z.return_id, SUM(z.total_usd) AS sum_usd
+        FROM return_items z
+        JOIN returns w ON w.id = z.return_id
+        JOIN sales y ON y.id = w.sale_id AND y.sold_at >= ${from} AND y.sold_at < ${to}
+        WHERE w.business_id = ${businessId}
+        GROUP BY z.return_id
+      ) rt ON rt.return_id = r.id AND rt.sum_usd > 0
+      WHERE r.business_id = ${businessId}
+        AND r.status = 'approved'
+        AND s.status IN ${REALIZED_SQL}
+        AND s.sold_at >= ${from} AND s.sold_at < ${to}
+        ${cashier}
+      GROUP BY ri.product_id`,
+  ])
+
+  const r4 = (x: number): number => Math.round(x * 10000) / 10000
+  const backMap = new Map(back.map(b => [Number(b.pid), b]))
+  const out = new Map<number, NetProductLine>()
+  for (const row of sold) {
+    const b = backMap.get(Number(row.pid))
+    out.set(Number(row.pid), {
+      qty: Math.round((num(row.qty) - num(b?.qty)) * 1000) / 1000,
+      usd: r4(num(row.usd) - num(b?.usd)),
+      bs:  r4(num(row.bs)  - num(b?.bs)),
+    })
+  }
+  return out
+}

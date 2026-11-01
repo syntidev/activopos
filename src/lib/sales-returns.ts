@@ -73,10 +73,11 @@ const r2 = (x: number): number => Math.round(x * 100) / 100
 
 /* ───────────────────────── Ventas netas ───────────────────────── */
 
-export async function netSales(businessId: number, from: Date, to?: Date): Promise<NetSales> {
+export async function netSales(businessId: number, from: Date, to?: Date, cashierId?: number): Promise<NetSales> {
+  const byCashier = cashierId ? { cashier_id: cashierId } : {}
   const [salesAgg, returnsAgg] = await Promise.all([
     prisma.sale.aggregate({
-      where:  { business_id: businessId, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: range(from, to) },
+      where:  { business_id: businessId, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: range(from, to), ...byCashier },
       _sum:   { total_usd: true, total_bs: true },
       _count: { id: true },
     }),
@@ -84,7 +85,7 @@ export async function netSales(businessId: number, from: Date, to?: Date): Promi
       where: {
         business_id: businessId,
         status:      'approved',
-        sale:        { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: range(from, to) },
+        sale:        { status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: range(from, to), ...byCashier },
       },
       _sum: { total_usd: true, total_bs: true },
     }),

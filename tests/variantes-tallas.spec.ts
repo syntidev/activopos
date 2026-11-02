@@ -64,7 +64,7 @@ test('ropa: 3 tallas con stock y código de barras, guarda y recarga', async ({ 
   await rowOf(page, 'S').getByLabel('Código de barras').fill(BC_S)
   await rowOf(page, 'M').getByLabel('Código de barras').fill(BC_M)
   await rowOf(page, 'L').getByLabel('SKU (opcional)').fill(`SKU-${TAG}`)
-  await rowOf(page, 'M').getByLabel('Precio propio (opcional)').fill('25')
+  await rowOf(page, 'M').getByLabel('Precio Full propio de la talla M').fill('25')
 
   await page.getByRole('button', { name: 'Guardar producto' }).click()
   await page.waitForURL('**/productos')

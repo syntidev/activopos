@@ -206,6 +206,7 @@ function POSView() {
           isSearching={pos.isSearching}
           results={pos.searchResults}
           rate={pos.rate}
+          mode={pos.ticket.price_mode}
           onProductClick={handleProductClick}
           onScannerOpen={() => setScannerOpen(true)}
         />
@@ -271,6 +272,7 @@ function POSView() {
         <QtyInput
           product={weightProduct}
           rate={pos.rate}
+          mode={pos.ticket.price_mode}
           onConfirm={(qty) => { pos.addProduct(weightProduct, qty); setWeightProduct(null) }}
           onClose={() => setWeightProduct(null)}
         />

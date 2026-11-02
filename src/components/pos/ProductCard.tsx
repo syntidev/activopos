@@ -3,19 +3,20 @@
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui'
 import type { ProductForPOS } from '@/lib/pos'
+import type { PriceMode } from '@/lib/pricing'
+import { cardPrice, NO_DIVISA_LABEL, NO_DIVISA_TITLE } from '@/lib/pos-products'
 import styles from './ProductCard.module.css'
 
 interface ProductCardProps {
   product: ProductForPOS
   rate: number
+  /** Modo de precio del ticket activo: la tarjeta muestra el precio de ESE modo. */
+  mode: PriceMode
   onAdd: (p: ProductForPOS) => void
 }
 
-export function ProductCard({ product, rate, onAdd }: ProductCardProps) {
-  const price =
-    product.sale_mode === 'weight'
-      ? (product.price_per_kg_usd ?? 0)
-      : (product.price_per_unit_usd ?? 0)
+export function ProductCard({ product, rate, mode, onAdd }: ProductCardProps) {
+  const { price, source } = cardPrice(product, mode)
 
   const stock = product.stock?.net_qty ?? 0
   const isService = product.sale_mode === 'service'
@@ -58,6 +59,7 @@ export function ProductCard({ product, rate, onAdd }: ProductCardProps) {
           <span className={styles.priceBs}>
             Bs.&nbsp;{(price * rate).toFixed(2)}
           </span>
+          {source === 'fallback_bcv' && <span className={styles.fallbackNote} title={NO_DIVISA_TITLE}>{NO_DIVISA_LABEL}</span>}
         </div>
       </div>
     </motion.button>

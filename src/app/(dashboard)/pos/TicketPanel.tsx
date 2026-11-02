@@ -452,6 +452,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
     <>
       <motion.div
         className={styles.ticketItem}
+        data-testid="ticket-line"
         initial={{ opacity: 0, x: 16, scale: 0.98 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: -12, scale: 0.96, height: 0, marginBottom: 0 }}

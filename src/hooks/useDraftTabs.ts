@@ -89,7 +89,7 @@ export function ticketToApiItems(ticket: TicketState) {
   return ticket.items.map(item => ({
     product_id:   item.product_id,
     quantity:     item.quantity,
-    variant_id:   item.variant_id,
+    variant_id:   item.variant_id ?? undefined,  // null y ausente son lo mismo; así la API nunca recibe null
     discount_usd: item.discount_usd,
     ...(item.price_override_original != null ? { unit_price_override: item.price_per_unit_usd } : {}),
     ...(item.override_reason                 ? { override_reason:     item.override_reason }     : {}),

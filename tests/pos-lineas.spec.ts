@@ -77,8 +77,8 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   cleanup()
-  if (abriCaja) await api.post('/api/cash/close', { data: { closing_amount_usd: 0, closing_amount_bs: 0, close_notes: 'ZZ prueba pos-lineas' } })
-  await api.dispose()
+  if (abriCaja && api) await api.post('/api/cash/close', { data: { closing_amount_usd: 0, closing_amount_bs: 0, close_notes: 'ZZ prueba pos-lineas' } })
+  await api?.dispose()
   expect(Number(sql(`SELECT COUNT(*) FROM products WHERE business_id=${BUSINESS_ID} AND name LIKE 'ZZ PosLin%'`))).toBe(0)
 })
 
@@ -87,6 +87,9 @@ const lineas = (page: Page) => page.getByTestId('ticket-line')
 const mas = (l: Locator) => l.getByRole('button', { name: 'Aumentar cantidad' })
 const menos = (l: Locator) => l.getByRole('button', { name: 'Reducir cantidad' })
 const cantidad = (l: Locator) => l.locator('[class*="qtyValue"]')
+// Las filas no muestran la talla: se ubican por su precio unitario (T1 100, T2 120) o por el nombre (Q), no por posición.
+const lineaPorPrecio = (page: Page, precio: number) => lineas(page).filter({ hasText: `${usd(precio)}/` })
+const lineaQ = (page: Page) => lineas(page).filter({ hasText: NAME_Q })
 
 async function buscar(page: Page): Promise<void> {
   await page.getByPlaceholder('Buscar producto o código...').fill(`ZZ PosLin `)
@@ -109,31 +112,54 @@ test('ticket: +, − y eliminar afectan solo la línea indicada, con totales cor
   await page.getByTestId('product-card').filter({ hasText: NAME_Q }).first().click()
   await expect(lineas(page)).toHaveCount(3)
   await expect(totalUsd(page)).toHaveText(usd(100 + 120 + 30))
-  const [t1, t2] = [lineas(page).nth(0), lineas(page).nth(1)]
+  const [t1, t2] = [lineaPorPrecio(page, 100), lineaPorPrecio(page, 120)]
 
   // + en la línea de T1: solo T1 sube
   await mas(t1).click()
-  await expect(cantidad(t1)).toContainText('2')
-  await expect(cantidad(t2)).toContainText('1')
+  await expect(cantidad(t1)).toHaveText(/^2 /)
+  await expect(cantidad(t2)).toHaveText(/^1 /)
   await expect(totalUsd(page)).toHaveText(usd(200 + 120 + 30))
   // − en T1 vuelve a 1
   await menos(t1).click()
-  await expect(cantidad(t1)).toContainText('1')
+  await expect(cantidad(t1)).toHaveText(/^1 /)
   await expect(totalUsd(page)).toHaveText(usd(100 + 120 + 30))
 
   // + dos veces en T2: solo T2
   await mas(t2).click()
   await mas(t2).click()
-  await expect(cantidad(t2)).toContainText('3')
-  await expect(cantidad(t1)).toContainText('1')
+  await expect(cantidad(t2)).toHaveText(/^3 /)
+  await expect(cantidad(t1)).toHaveText(/^1 /)
   await expect(totalUsd(page)).toHaveText(usd(100 + 360 + 30))
 
   // eliminar T1: quedan T2 (3) y Q (1)
   await t1.getByRole('button', { name: /^Eliminar/ }).click()
   await expect(lineas(page)).toHaveCount(2)
   await expect(totalUsd(page)).toHaveText(usd(360 + 30))
-  await expect(cantidad(lineas(page).nth(0))).toContainText('3')
-  await expect(cantidad(lineas(page).nth(1))).toContainText('1')
+  await expect(cantidad(t2)).toHaveText(/^3 /)
+  await expect(cantidad(lineaQ(page))).toHaveText(/^1 /)
+
+  // Ciclo real UI → guardado del borrador → recarga → restauración: "+ Nuevo" guarda el ticket activo en la DB
+  await page.getByRole('button', { name: /Nuevo/ }).click()
+  const idsProd = `${productP},${productQ}`
+  await expect.poll(() => {
+    const rows = sql(`SELECT si.product_id, IFNULL(si.variant_id,0), si.quantity FROM sale_items si JOIN sales s ON s.id=si.sale_id
+                      WHERE s.business_id=${BUSINESS_ID} AND s.status='draft' AND si.product_id IN (${idsProd})`)
+    return rows.split('\n').filter(Boolean).map(r => r.split('\t').map(Number)).sort((a, b) => a[0] - b[0] || a[1] - b[1])
+  }, { timeout: 30_000, message: 'el borrador debe quedar guardado con T2 ×3 y Q ×1, sin T1' }).toEqual(
+    [[productP, talla.T2, 3], [productQ, 0, 1]].sort((a, b) => a[0] - b[0] || a[1] - b[1]),
+  )
+  const guardado = sql(`SELECT s.id FROM sales s JOIN sale_items si ON si.sale_id=s.id WHERE s.business_id=${BUSINESS_ID} AND s.status='draft' AND si.product_id IN (${idsProd}) LIMIT 1`)
+  await page.goto(`/pos?draft=${guardado}`)
+  await expect(lineas(page)).toHaveCount(2, { timeout: 30_000 })
+  await expect(totalUsd(page)).toHaveText(usd(360 + 30))
+  await expect(cantidad(lineaPorPrecio(page, 120))).toHaveText(/^3\s/)
+  await expect(cantidad(lineaQ(page))).toHaveText(/^1\s/)
+  // la restaurada de T2 también responde a −, y se deja el borrador para que el test siguiente parta de cero
+  await menos(lineaPorPrecio(page, 120)).click()
+  await expect(cantidad(lineaPorPrecio(page, 120))).toHaveText(/^2\s/)
+  await expect(totalUsd(page)).toHaveText(usd(240 + 30))
+  sql(`DELETE FROM sale_items WHERE sale_id=${guardado}`)
+  sql(`DELETE FROM sales WHERE id=${guardado} AND business_id=${BUSINESS_ID} AND status='draft'`)
 })
 
 test('borrador restaurado: ajustar y eliminar sobre las líneas restauradas, y cobrar con las cantidades finales', async ({ page }) => {
@@ -154,19 +180,19 @@ test('borrador restaurado: ajustar y eliminar sobre las líneas restauradas, y c
   await expect(totalUsd(page)).toHaveText(usd(200 + 360 + 30))
 
   // eliminar la línea restaurada de T1 (con talla): solo desaparece esa
-  await lineas(page).nth(0).getByRole('button', { name: /^Eliminar/ }).click()
+  await lineaPorPrecio(page, 100).getByRole('button', { name: /^Eliminar/ }).click()
   await expect(lineas(page)).toHaveCount(2)
   await expect(totalUsd(page)).toHaveText(usd(360 + 30))
-  const [t2, q] = [lineas(page).nth(0), lineas(page).nth(1)]
+  const [t2, q] = [lineaPorPrecio(page, 120), lineaQ(page)]
 
   // − en la línea restaurada de T2 (con talla): 3 → 2
   await menos(t2).click()
-  await expect(cantidad(t2)).toContainText('2')
-  await expect(cantidad(q)).toContainText('1')
+  await expect(cantidad(t2)).toHaveText(/^2 /)
+  await expect(cantidad(q)).toHaveText(/^1 /)
   await expect(totalUsd(page)).toHaveText(usd(240 + 30))
   // + en la línea restaurada sin talla (Q): 1 → 2
   await mas(q).click()
-  await expect(cantidad(q)).toContainText('2')
+  await expect(cantidad(q)).toHaveText(/^2 /)
   await expect(totalUsd(page)).toHaveText(usd(240 + 60))
 
   // eliminar la restaurada sin talla y volver a agregarla dos veces: la eliminación sí funcionó y la nueva línea suma en una sola

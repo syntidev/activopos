@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
+import { priceForMode, variantBases, type PriceMode, type PriceSource, type PricingProduct } from '@/lib/pricing'
 import styles from './VariantSelector.module.css'
 
 export interface ProductVariant {
@@ -11,6 +12,7 @@ export interface ProductVariant {
   name: string
   price_extra_usd: number
   price_usd: number | null
+  divisa_price_usd: number | null
   stock: number
   tipo?: string
   combination_key?: string | null
@@ -21,7 +23,12 @@ export interface ProductVariant {
 interface VariantSelectorProps {
   open: boolean
   onClose: () => void
-  product: { id: number; name: string; price_per_unit_usd?: number | null } | null
+  /** Precios del producto: con ellos y el modo del ticket se calcula, con la misma regla del servidor, el precio de cada talla. */
+  product: (PricingProduct & { id: number; name: string; sale_mode?: string }) | null
+  /** Modo de precio del ticket (BCV / Divisa): el selector muestra el precio de ESE modo. */
+  mode: PriceMode
+  /** Tasa del ticket para mostrar el equivalente en Bs. */
+  rate: number
   onSelect: (variant: ProductVariant) => void
 }
 
@@ -30,6 +37,7 @@ interface ApiVariant {
   valor: string
   precio_extra: number
   price_usd: number | null
+  divisa_price_usd: number | null
   stock: number
   tipo: string
   combination_key: string | null
@@ -51,6 +59,8 @@ export function VariantSelector({
   open,
   onClose,
   product,
+  mode,
+  rate,
   onSelect,
 }: VariantSelectorProps) {
   useScrollLock(open)
@@ -72,6 +82,7 @@ export function VariantSelector({
           name:            v.valor,
           price_extra_usd: Number(v.precio_extra ?? 0),
           price_usd:       v.price_usd != null ? Number(v.price_usd) : null,
+          divisa_price_usd: v.divisa_price_usd != null ? Number(v.divisa_price_usd) : null,
           stock:           Number(v.stock ?? 0),
           tipo:            v.tipo,
           combination_key: v.combination_key,
@@ -84,10 +95,25 @@ export function VariantSelector({
       .finally(() => setLoading(false))
   }, [open, product])
 
-  const basePrice = product?.price_per_unit_usd ?? 0
+  // Misma regla que la línea del ticket y que el servidor (lib/pricing.ts): precio del modo del ticket, o Full marcado "Sin precio Divisa".
+  const getLine = (v: ProductVariant): { price: number; source: PriceSource } =>
+    product
+      ? priceForMode(variantBases(product, { precio_extra: v.price_extra_usd, price_usd: v.price_usd, divisa_price_usd: v.divisa_price_usd }, product.sale_mode), mode)
+      : { price: 0, source: 'bcv' }
 
-  const getPrice = (v: ProductVariant): number =>
-    v.price_usd != null ? v.price_usd : basePrice + v.price_extra_usd
+  /** USD y Bs a la vez (regla sellada) + aviso cuando se pidió Divisa y la talla no tiene precio Divisa. */
+  const renderPrice = (v: ProductVariant) => {
+    const { price, source } = getLine(v)
+    return (
+      <>
+        <span className={styles.variantPrice} data-testid="variant-price" data-source={source}>${price.toFixed(2)}</span>
+        <span className={styles.variantBs}>Bs. {(price * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        {source === 'fallback_bcv' && (
+          <span className={styles.variantNote} title="Esta talla no tiene precio Divisa: se cobra a precio BCV">Sin precio Divisa</span>
+        )}
+      </>
+    )
+  }
 
   // Variantes combinadas (talla+color…): combination_key = "S-Azul", tipo = "talla+color".
   // El primer segmento (antes del primer "-") es la dimensión 1.
@@ -175,7 +201,6 @@ export function VariantSelector({
                       <p className={styles.chainedStepLabel}>2. {dim2Label}</p>
                       <div className={styles.variantGrid}>
                         {dim2Options.map((v) => {
-                          const price = getPrice(v)
                           const outOfStock = v.stock <= 0
                           const label = v.combination_key!.slice(selectedDim1.length + 1)
                           return (
@@ -188,7 +213,7 @@ export function VariantSelector({
                               type="button"
                             >
                               <span className={styles.variantName}>{label}</span>
-                              <span className={styles.variantPrice}>${price.toFixed(2)}</span>
+                              {renderPrice(v)}
                               <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
                                 {outOfStock ? 'Agotado' : `${v.stock} und`}
                               </span>
@@ -202,7 +227,6 @@ export function VariantSelector({
               ) : (
                 <div className={styles.variantGrid}>
                   {variants.map((v) => {
-                    const price = getPrice(v)
                     const outOfStock = v.stock <= 0
                     return (
                       <button
@@ -214,7 +238,7 @@ export function VariantSelector({
                         type="button"
                       >
                         <span className={styles.variantName}>{v.name}{v.sku ? ` (${v.sku})` : ''}</span>
-                        <span className={styles.variantPrice}>${price.toFixed(2)}</span>
+                        {renderPrice(v)}
                         <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
                           {outOfStock ? 'Agotado' : `${v.stock} und`}
                         </span>

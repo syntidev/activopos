@@ -379,9 +379,15 @@ function POSView() {
           ? {
               id: pos.pendingVariantProduct.id,
               name: pos.pendingVariantProduct.name,
+              sale_mode: pos.pendingVariantProduct.sale_mode,
               price_per_unit_usd: pos.pendingVariantProduct.price_per_unit_usd,
+              price_per_kg_usd: pos.pendingVariantProduct.price_per_kg_usd,
+              wholesale_price_usd: pos.pendingVariantProduct.wholesale_price_usd,
+              wholesale_price_per_kg_usd: pos.pendingVariantProduct.wholesale_price_per_kg_usd,
             }
           : null}
+        mode={pos.ticket.price_mode}
+        rate={pos.ticket.rate}
         onSelect={(variant) => {
           if (pos.pendingVariantProduct) {
             pos.addProductWithVariant(pos.pendingVariantProduct, variant)

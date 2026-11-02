@@ -1,5 +1,6 @@
 import type { SaleMode } from '@/types/products'
 import type { TicketFinancing } from '@/types/financing'
+import { priceForMode, variantBases, type PricingVariant } from '@/lib/pricing'
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
@@ -25,7 +26,8 @@ export interface ProductForPOS {
   has_variants?: boolean
   /** Talla escaneada (EAN de variante): el POS la agrega directo sin abrir el selector. */
   matched_variant_id?: number | null
-  variants?: Array<{ id: number; valor: string; precio_extra: number; stock: number }>
+  /** price_usd = Full propio de la talla; divisa_price_usd = Divisa propio (ambos nulos = usa el del producto). */
+  variants?: Array<{ id: number; valor: string; precio_extra: number; price_usd?: number | null; divisa_price_usd?: number | null; stock: number }>
   stock: { net_qty: number }
 }
 
@@ -81,7 +83,7 @@ export interface TicketItem {
   override_reason?: string
   /** Origen del precio aplicado (la línea con precio manual no cambia al cambiar el modo). */
   price_source?: PriceSource
-  /** Precios base del producto (sin precio_extra) para repricing instantáneo; ausentes en líneas restauradas de un borrador. */
+  /** Precios base de la línea (precio_extra de la variante YA incluido, ver variantBases) para repricing instantáneo; ausentes en líneas restauradas de un borrador. */
   bcv_unit_usd?: number
   divisa_unit_usd?: number | null
 }
@@ -137,23 +139,9 @@ interface SaleApiItem {
 const round2 = (n: number) => Math.round(n * 100) / 100
 const round4 = (n: number) => Math.round(n * 10000) / 10000
 
-/** Precio base de un producto en el modo del ticket; Divisa sin precio Divisa cae a BCV y lo marca. */
-function resolverPrecio(
-  bcv: number,
-  divisa: number | null,
-  mode: PriceMode,
-): { price: number; source: PriceSource } {
-  if (mode === 'divisa') {
-    return divisa != null && divisa > 0
-      ? { price: divisa, source: 'divisa' }
-      : { price: bcv, source: 'fallback_bcv' }
-  }
-  return { price: bcv, source: 'bcv' }
-}
-
-const preciosBase = (p: ProductPrices): { bcv: number; divisa: number | null } => ({
-  bcv:    (p.sale_mode === 'weight' ? p.price_per_kg_usd : p.price_per_unit_usd) ?? 0,
-  divisa: (p.sale_mode === 'weight' ? p.wholesale_price_per_kg_usd : p.wholesale_price_usd) ?? null,
+/** Variante tal como llega al POS (selector, búsqueda/escaneo) → forma que entiende variantBases (misma regla que el servidor). */
+const pricingVariant = (v: { precio_extra: number; price_usd?: number | null; divisa_price_usd?: number | null }): PricingVariant => ({
+  precio_extra: v.precio_extra, price_usd: v.price_usd ?? null, divisa_price_usd: v.divisa_price_usd ?? null,
 })
 
 // ── Cálculos puros ────────────────────────────────────────────────────────────
@@ -199,8 +187,8 @@ export const agregarItem = (
   const existing = ticket.items.find(i => i.product_id === product.id && !i.variant_id)
   if (existing) return actualizarCantidad(ticket, product.id, existing.quantity + qty)
 
-  const base = preciosBase(product)
-  const { price, source } = resolverPrecio(base.bcv, base.divisa, ticket.price_mode)
+  const base = variantBases(product, undefined, product.sale_mode)
+  const { price, source } = priceForMode(base, ticket.price_mode)
   const { usd, bs } = calcularSubtotalItem(qty, price, ticket.rate)
   const item: TicketItem = {
     price_source:     source,
@@ -225,7 +213,7 @@ export const agregarItem = (
 export const agregarItemConVariante = (
   ticket: TicketState,
   product: ProductForPOS,
-  variant: { id: number; name: string; price_extra_usd: number },
+  variant: { id: number; name: string; price_extra_usd: number; price_usd?: number | null; divisa_price_usd?: number | null },
   qty = 1
 ): TicketState => {
   const existing = ticket.items.find(
@@ -235,9 +223,10 @@ export const agregarItemConVariante = (
     return actualizarCantidadVariante(ticket, product.id, variant.id, existing.quantity + qty)
   }
 
-  const base       = preciosBase(product)
-  const resolved   = resolverPrecio(base.bcv, base.divisa, ticket.price_mode)
-  const totalPrice = resolved.price + variant.price_extra_usd
+  // Las bases ya traen el precio_extra de la talla (o su Full/Divisa propio): no se suma nada aparte.
+  const base       = variantBases(product, pricingVariant({ precio_extra: variant.price_extra_usd, price_usd: variant.price_usd, divisa_price_usd: variant.divisa_price_usd }), product.sale_mode)
+  const resolved   = priceForMode(base, ticket.price_mode)
+  const totalPrice = resolved.price
   const { usd, bs } = calcularSubtotalItem(qty, totalPrice, ticket.rate)
 
   const item: TicketItem = {
@@ -366,8 +355,7 @@ export const overridePrecioItem = (
 export const cambiarModoPrecio = (ticket: TicketState, mode: PriceMode): TicketState => {
   const items = ticket.items.map((i): TicketItem => {
     if (i.price_override_original != null || i.price_source === 'manual' || i.bcv_unit_usd === undefined) return i
-    const { price, source } = resolverPrecio(i.bcv_unit_usd, i.divisa_unit_usd ?? null, mode)
-    const unit = price + i.precio_extra_usd
+    const { price: unit, source } = priceForMode({ bcv: i.bcv_unit_usd, divisa: i.divisa_unit_usd ?? null }, mode)
     const { usd, bs } = calcularSubtotalItem(i.quantity, unit, ticket.rate)
     return { ...i, price_per_unit_usd: unit, price_source: source, subtotal_usd: usd, subtotal_bs: bs, discount_usd: Math.min(i.discount_usd, usd) }
   })
@@ -379,10 +367,12 @@ export const cambiarModoPrecio = (ticket: TicketState, mode: PriceMode): TicketS
  * (sin tocar el precio actual) para que cambiar de modo las reprecie al instante, igual que las líneas nuevas.
  */
 export const hidratarPreciosBase = (ticket: TicketState, product: ProductPrices): TicketState => {
-  const base = preciosBase(product)
   const items = ticket.items.map((i): TicketItem => {
     if (i.product_id !== product.id || i.bcv_unit_usd !== undefined) return i
     const variant = product.variants?.find(v => v.id === i.variant_id)
+    // Talla que ya no está activa: no se puede repreciar en el cliente (el servidor sigue siendo la autoridad).
+    if (i.variant_id !== undefined && !variant) return i
+    const base = variantBases(product, variant ? pricingVariant(variant) : undefined, product.sale_mode)
     return {
       ...i,
       bcv_unit_usd:     base.bcv,

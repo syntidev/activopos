@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
               valor:        true,
               precio_extra: true,
               price_usd:    true,
+              divisa_price_usd: true,
               stock:        true,
               sku:          true,
               barcode:      true,
@@ -126,7 +127,7 @@ export async function GET(req: NextRequest) {
           images:             parseImages(p.images),
           has_variants:       p.has_variants,
           // price_usd = precio propio de la talla (override absoluto, sin equivalente Divisa); null si usa el del producto.
-          variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra), price_usd: v.price_usd != null ? Number(v.price_usd) : null })),
+          variants:           p.variants.map(v => ({ ...v, precio_extra: Number(v.precio_extra), price_usd: v.price_usd != null ? Number(v.price_usd) : null, divisa_price_usd: v.divisa_price_usd != null ? Number(v.divisa_price_usd) : null })),
           // Talla que coincidió (barcode exacto o SKU único): id y valor; null si fue otra coincidencia.
           ...match,
           is_favorite:        p.is_favorite,

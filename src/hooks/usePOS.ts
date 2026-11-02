@@ -219,6 +219,7 @@ export function usePOS() {
       if (hit && hit.stock > 0) {
         setTicket(prev => agregarItemConVariante(prev, product, {
           id: hit.id, name: hit.valor, price_extra_usd: Number(hit.precio_extra ?? 0),
+          price_usd: hit.price_usd ?? null, divisa_price_usd: hit.divisa_price_usd ?? null,
         }, qty))
         return
       }

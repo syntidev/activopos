@@ -354,6 +354,7 @@ export function usePOS() {
         notes:        currentTicket.notes || options?.notes || undefined,
         iva_pct:      currentTicket.iva_pct || undefined,
         price_mode:   currentTicket.price_mode,
+        cargo_pct:    currentTicket.cargo_global_pct || undefined,
         payments,
         due_date:     creditTerms?.due_date?.toISOString(),
         credit_days:  creditTerms?.credit_days,

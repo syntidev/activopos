@@ -7,7 +7,8 @@ import { ProductCard } from '@/components/pos/ProductCard'
 import { ProductListRow } from '@/components/pos/ProductListRow'
 import { useToast } from '@/components/ui'
 import type { ProductForPOS } from '@/lib/pos'
-import type { SaleMode } from '@/types/products'
+import type { PriceMode } from '@/lib/pricing'
+import { cardPrice, toPOSProduct, type ApiPOSProduct } from '@/lib/pos-products'
 import styles from './pos.module.css'
 
 type ViewMode = 'grid' | 'list'
@@ -16,56 +17,13 @@ interface BrowseProduct extends ProductForPOS {
   category_name: string | null
 }
 
-/* ── API response normalizers ──────────────────────────────────────────────── */
+/* ── Normalización: la ÚNICA es toPOSProduct (lib/pos-products); browse solo le suma la categoría ── */
 
-interface ApiProduct {
-  id: number
-  name: string
-  sale_mode: string
-  base_unit_label: string
-  price_per_unit_usd: number | null
-  price_per_kg_usd: number | null
-  cost_per_unit_usd: number | null
-  image_path?: string | null
-  images?: string[] | null
-  is_favorite: boolean
-  has_variants?: boolean
-  stock: { net_qty: number }
+interface ApiBrowseProduct extends ApiPOSProduct {
   category?: { name: string } | null
 }
 
-function normalizeBrowse(p: ApiProduct): BrowseProduct {
-  return {
-    id:                 p.id,
-    name:               p.name,
-    sale_mode:          p.sale_mode as SaleMode,
-    base_unit_label:    p.base_unit_label,
-    price_per_unit_usd: p.price_per_unit_usd,
-    price_per_kg_usd:   p.price_per_kg_usd,
-    cost_per_unit_usd:  p.cost_per_unit_usd,
-    image_path:         p.image_path ?? p.images?.[0] ?? null,
-    is_favorite:        p.is_favorite,
-    has_variants:       p.has_variants ?? false,
-    stock:              p.stock,
-    category_name:      p.category?.name ?? null,
-  }
-}
-
-function normalizeRecent(p: ApiProduct): ProductForPOS {
-  return {
-    id:                 p.id,
-    name:               p.name,
-    sale_mode:          p.sale_mode as SaleMode,
-    base_unit_label:    p.base_unit_label,
-    price_per_unit_usd: p.price_per_unit_usd,
-    price_per_kg_usd:   p.price_per_kg_usd,
-    cost_per_unit_usd:  p.cost_per_unit_usd,
-    image_path:         p.image_path ?? p.images?.[0] ?? null,
-    is_favorite:        p.is_favorite,
-    has_variants:       p.has_variants ?? false,
-    stock:              p.stock,
-  }
-}
+const toBrowse = (p: ApiBrowseProduct): BrowseProduct => ({ ...toPOSProduct(p), category_name: p.category?.name ?? null })
 
 /* ── Props ─────────────────────────────────────────────────────────────────── */
 
@@ -75,6 +33,8 @@ interface LeftPanelProps {
   isSearching: boolean
   results: ProductForPOS[]
   rate: number
+  /** Modo de precio del ticket activo: todas las tarjetas, filas y chips muestran el precio de ESE modo. */
+  mode: PriceMode
   onProductClick: (p: ProductForPOS) => void
   onScannerOpen?: () => void
 }
@@ -82,7 +42,7 @@ interface LeftPanelProps {
 /* ── Component ─────────────────────────────────────────────────────────────── */
 
 export function LeftPanel({
-  search, onSearchChange, isSearching, results, rate, onProductClick, onScannerOpen,
+  search, onSearchChange, isSearching, results, rate, mode, onProductClick, onScannerOpen,
 }: LeftPanelProps) {
   const { toast } = useToast()
 
@@ -107,8 +67,8 @@ export function LeftPanel({
     setBrowseLoading(true)
     fetch('/api/products?available=true')
       .then(r => r.json())
-      .then((data: { products?: ApiProduct[] }) => {
-        setBrowseProducts((data.products ?? []).map(normalizeBrowse))
+      .then((data: { products?: ApiBrowseProduct[] }) => {
+        setBrowseProducts((data.products ?? []).map(toBrowse))
       })
       .catch(() => setBrowseProducts([]))
       .finally(() => setBrowseLoading(false))
@@ -120,8 +80,8 @@ export function LeftPanel({
   useEffect(() => {
     fetch('/api/products/recent')
       .then(r => r.json())
-      .then((data: { products?: ApiProduct[] }) => {
-        setRecientes((data.products ?? []).map(normalizeRecent))
+      .then((data: { products?: ApiPOSProduct[] }) => {
+        setRecientes((data.products ?? []).map(toPOSProduct))
       })
       .catch(() => setRecientes([]))
   }, [])
@@ -230,6 +190,7 @@ export function LeftPanel({
                     key={p.id}
                     product={p}
                     rate={rate}
+                    mode={mode}
                     onAdd={onProductClick}
                   />
                 ))}
@@ -281,6 +242,7 @@ export function LeftPanel({
                 products={results}
                 viewMode={viewMode}
                 rate={rate}
+                mode={mode}
                 onAdd={onProductClick}
               />
             )}
@@ -295,6 +257,7 @@ export function LeftPanel({
                 products={filteredBrowse}
                 viewMode={viewMode}
                 rate={rate}
+                mode={mode}
                 onAdd={onProductClick}
               />
             )}
@@ -311,16 +274,17 @@ interface ProductsViewProps {
   products: ProductForPOS[]
   viewMode: ViewMode
   rate: number
+  mode: PriceMode
   onAdd: (p: ProductForPOS) => void
 }
 
-function ProductsView({ products, viewMode, rate, onAdd }: ProductsViewProps) {
+function ProductsView({ products, viewMode, rate, mode, onAdd }: ProductsViewProps) {
   if (viewMode === 'list') {
     return (
       <div className={styles.productList}>
         <AnimatePresence mode="popLayout">
           {products.map(p => (
-            <ProductListRow key={p.id} product={p} rate={rate} onAdd={onAdd} />
+            <ProductListRow key={p.id} product={p} rate={rate} mode={mode} onAdd={onAdd} />
           ))}
         </AnimatePresence>
       </div>
@@ -338,7 +302,7 @@ function ProductsView({ products, viewMode, rate, onAdd }: ProductsViewProps) {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ delay: i < 20 ? i * 0.02 : 0, duration: 0.15 }}
           >
-            <ProductCard product={p} rate={rate} onAdd={onAdd} />
+            <ProductCard product={p} rate={rate} mode={mode} onAdd={onAdd} />
           </motion.div>
         ))}
       </AnimatePresence>
@@ -349,14 +313,12 @@ function ProductsView({ products, viewMode, rate, onAdd }: ProductsViewProps) {
 interface RecenteChipProps {
   product: ProductForPOS
   rate: number
+  mode: PriceMode
   onAdd: (p: ProductForPOS) => void
 }
 
-function RecenteChip({ product, rate, onAdd }: RecenteChipProps) {
-  const price =
-    product.sale_mode === 'weight'
-      ? (product.price_per_kg_usd ?? 0)
-      : (product.price_per_unit_usd ?? 0)
+function RecenteChip({ product, mode, onAdd }: RecenteChipProps) {
+  const { price } = cardPrice(product, mode)
 
   const outOfStock = (product.stock?.net_qty ?? 0) <= 0
 

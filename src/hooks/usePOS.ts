@@ -19,8 +19,8 @@ import {
   calcularTotales,
   agregarItem,
   agregarItemConVariante,
-  actualizarCantidad,
-  eliminarItem,
+  updateLineQty,
+  removeLine,
   aplicarDescuentoGlobal,
   aplicarCargoGlobal,
   buildSalePayload,
@@ -246,12 +246,13 @@ export function usePOS() {
     setPendingVariantProduct(null)
   }, [])
 
-  const updateQty = useCallback((productId: number, qty: number) => {
-    setTicket(prev => actualizarCantidad(prev, productId, qty))
+  // La línea se identifica por producto + talla (null/undefined = sin talla): cada una cambia o se elimina por separado.
+  const updateQty = useCallback((productId: number, variantId: number | null | undefined, qty: number) => {
+    setTicket(prev => updateLineQty(prev, productId, variantId, qty))
   }, [])
 
-  const removeItem = useCallback((productId: number) => {
-    setTicket(prev => eliminarItem(prev, productId))
+  const removeItem = useCallback((productId: number, variantId: number | null | undefined) => {
+    setTicket(prev => removeLine(prev, productId, variantId))
   }, [])
 
   const applyDiscount = useCallback((pct: number) => {
@@ -264,7 +265,7 @@ export function usePOS() {
 
   const overrideItemPrice = useCallback((
     productId: number,
-    variantId: number | undefined,
+    variantId: number | null | undefined,
     newPrice: number,
     reason?: string,
     pin?: string

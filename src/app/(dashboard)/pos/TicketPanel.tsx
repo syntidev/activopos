@@ -12,7 +12,7 @@ import { Button } from '@/components/ui'
 import { PriceModeSwitch } from '@/components/pos/PriceModeSwitch'
 import { FinancingPanel } from '@/components/financing/FinancingPanel'
 import { FINANCING_BCV_NOTE, TICKET_ITEMS_EDIT_WARNING, isFinancingLive } from '@/lib/financing-ui'
-import type { PriceMode, TicketItem, TicketState, TicketTotals } from '@/lib/pos'
+import { lineKey, type PriceMode, type TicketItem, type TicketState, type TicketTotals } from '@/lib/pos'
 import type { BlockedProduct, FinancingAction } from '@/types/financing'
 import styles from './pos.module.css'
 
@@ -29,8 +29,8 @@ interface TicketPanelProps {
   ticket: TicketState
   totals: TicketTotals
   isEmpty: boolean
-  onUpdateQty: (id: number, qty: number) => void
-  onRemove: (id: number) => void
+  onUpdateQty: (productId: number, variantId: number | null | undefined, qty: number) => void
+  onRemove: (productId: number, variantId: number | null | undefined) => void
   onClear: () => void
   onSelectClient: () => void
   onProcesarPago: () => void
@@ -40,7 +40,7 @@ interface TicketPanelProps {
   onCargo: () => void
   onImprimirCuenta: () => void
   userRole: 'admin' | 'super_admin' | 'cashier'
-  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
+  onPriceOverride: (productId: number, variantId: number | null | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
   pendingSaleActive?: boolean
   onPriceMode: (mode: PriceMode) => void
@@ -114,7 +114,7 @@ export function TicketPanel({
           <AnimatePresence initial={false}>
             {ticket.items.map((item) => (
               <TicketItemRow
-                key={`${item.product_id}-${item.variant_id ?? 'base'}`}
+                key={lineKey(item.product_id, item.variant_id)}
                 item={item}
                 rate={ticket.rate}
                 onUpdateQty={onUpdateQty}
@@ -231,10 +231,10 @@ export function TicketPanel({
 interface RowProps {
   item: TicketItem
   rate: number
-  onUpdateQty: (id: number, qty: number) => void
-  onRemove: (id: number) => void
+  onUpdateQty: (productId: number, variantId: number | null | undefined, qty: number) => void
+  onRemove: (productId: number, variantId: number | null | undefined) => void
   userRole: 'admin' | 'super_admin' | 'cashier'
-  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
+  onPriceOverride: (productId: number, variantId: number | null | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
   pendingSaleActive?: boolean
 }
@@ -310,7 +310,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({
             product_id:          item.product_id,
-            variant_id:          item.variant_id,
+            variant_id:          item.variant_id ?? undefined,
             unit_price_override: price,
             override_reason:     reason || undefined,
             pin:                 pinStr,
@@ -495,7 +495,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
           <div className={styles.qtyControl}>
             <button
               className={styles.qtyBtn}
-              onClick={() => onUpdateQty(item.product_id, item.quantity - qtyStep)}
+              onClick={() => onUpdateQty(item.product_id, item.variant_id, item.quantity - qtyStep)}
               aria-label="Reducir cantidad"
               type="button"
             >
@@ -508,7 +508,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
             </span>
             <button
               className={styles.qtyBtn}
-              onClick={() => onUpdateQty(item.product_id, item.quantity + qtyStep)}
+              onClick={() => onUpdateQty(item.product_id, item.variant_id, item.quantity + qtyStep)}
               aria-label="Aumentar cantidad"
               type="button"
             >
@@ -523,7 +523,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
           </div>
           <button
             className={styles.removeBtn}
-            onClick={() => onRemove(item.product_id)}
+            onClick={() => onRemove(item.product_id, item.variant_id)}
             aria-label={`Eliminar ${item.product_name}`}
             type="button"
           >

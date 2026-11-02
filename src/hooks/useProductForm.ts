@@ -22,6 +22,7 @@ interface DbVariant {
   barcode: string | null
   precio_extra: number
   price_usd: number | null
+  divisa_price_usd: number | null
   stock: number
   variant_group: string | null
 }
@@ -214,6 +215,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         sku:     v.sku ?? '',
         // Antes se guardaba "precio extra"; el precio propio equivalente es base + extra.
         price:   v.price_usd != null ? String(v.price_usd) : v.precio_extra > 0 ? (basePrice + v.precio_extra).toFixed(2) : '',
+        divisaPrice: v.divisa_price_usd != null ? String(v.divisa_price_usd) : '',
       }))
       savedRowsRef.current = loaded
       setRows(loaded)
@@ -442,7 +444,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     if (rows.some(r => r.valor.toLowerCase() === v.toLowerCase())) return false
     setRows(prev => [...prev, {
       key: newKey(), valor: v, tipo: type.tipo, group: type.group,
-      stock: '0', barcode: '', sku: '', price: '',
+      stock: '0', barcode: '', sku: '', price: '', divisaPrice: '',
     }])
     return true
   }
@@ -535,6 +537,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
       fail(key, j.error ?? `Error ${res.status}`, j.field === 'barcode')
     }
     const priceNum = (r: VariantRow) => (r.price.trim() === '' ? null : Math.max(parseFloat(r.price) || 0, 0))
+    const divisaNum = (r: VariantRow) => (r.divisaPrice.trim() === '' ? null : Math.max(parseFloat(r.divisaPrice) || 0, 0))
 
     for (const old of savedRowsRef.current) {
       if (!rows.some(r => r.id === old.id)) await send(`v${old.id}`, `${base}/${old.id}`, 'DELETE')
@@ -545,7 +548,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
         const price = priceNum(r)
         await send(r.key, base, 'POST', {
           tipo: r.tipo, valor: r.valor.trim(), sku: r.sku.trim() || null, barcode: r.barcode.trim() || null,
-          stock, price_usd: price, precio_extra: 0, variant_group: r.group,
+          stock, price_usd: price, divisa_price_usd: divisaNum(r), precio_extra: 0, variant_group: r.group,
         })
         continue
       }
@@ -557,6 +560,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
       if (r.barcode.trim() !== o.barcode)     patch.barcode = r.barcode.trim() || null
       if (stock !== (parseInt(o.stock) || 0)) patch.stock   = stock
       if (r.price.trim() !== o.price.trim())  { patch.price_usd = priceNum(r); patch.precio_extra = 0 }
+      if (r.divisaPrice.trim() !== o.divisaPrice.trim()) patch.divisa_price_usd = divisaNum(r)
       if (Object.keys(patch).length) await send(r.key, `${base}/${r.id}`, 'PATCH', patch)
     }
     return ok
@@ -641,6 +645,7 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
           sku:             r.sku.trim() || null,
           barcode:         r.barcode.trim() || null,
           price_usd:       r.price.trim() === '' ? null : Math.max(parseFloat(r.price) || 0, 0),
+          divisa_price_usd: r.divisaPrice.trim() === '' ? null : Math.max(parseFloat(r.divisaPrice) || 0, 0),
         })),
         variantDimensions: combineVariants && combinations.length
           ? [{ tipo: 'talla', valores: dim1Values }, { tipo: 'color', valores: dim2Values }]

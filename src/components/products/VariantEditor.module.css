@@ -282,6 +282,26 @@
 .removeText { display: inline; }
 
 .priceWrap { position: relative; display: block; }
+
+/* Full y Divisa propios de la talla, apilados en la misma celda */
+.priceStack { display: flex; flex-direction: column; gap: var(--space-2); }
+.priceField { display: flex; align-items: center; gap: var(--space-2); }
+.priceTag { min-width: 3.25rem; margin: 0; }
+
+/* Referencia con los precios del producto, sobre la tabla */
+.priceRef {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+.priceRef strong { color: var(--color-text-primary); }
+
+/* Aviso en línea: Full propio sin Divisa propio */
+.warn {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--warning-text);
+}
 .currency {
   position: absolute;
   left: var(--space-3);

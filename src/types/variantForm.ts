@@ -13,8 +13,10 @@ export interface VariantRow {
   stock: string
   barcode: string
   sku: string
-  /** Precio propio en USD; vacío = usa el precio del producto. */
+  /** Precio propio Full en USD; vacío = usa el precio del producto. */
   price: string
+  /** Precio propio Divisa en USD; vacío = usa el Divisa del producto (solo si la talla no tiene Full propio). */
+  divisaPrice: string
   /** Error en línea del código de barras. */
   barcodeError?: string
 }

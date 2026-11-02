@@ -103,7 +103,7 @@ export default function NuevoProductoPage() {
       throw new Error(err?.error ?? `Error ${res.status}`)
     }
     // El alta de producto no acepta precio propio por variante: se aplica con el endpoint de variantes.
-    const own = data.variants.filter(v => v.price_usd != null)
+    const own = data.variants.filter(v => v.price_usd != null || v.divisa_price_usd != null)
     if (data.hasVariants && own.length) {
       const created = await res.json() as { product?: { id: number; variants: Array<{ id: number; valor: string }> } }
       const pid = created.product?.id
@@ -112,7 +112,7 @@ export default function NuevoProductoPage() {
         if (!pid || !vid) continue
         await fetch(`/api/products/${pid}/variants/${vid}`, {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ price_usd: v.price_usd }),
+          body: JSON.stringify({ price_usd: v.price_usd ?? null, divisa_price_usd: v.divisa_price_usd ?? null }),
         })
       }
     }

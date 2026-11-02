@@ -14,9 +14,11 @@ const variantSchema = z.object({
   color_hex:     z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().optional(),
   sort_order:    z.number().int().default(0),
   price_usd:     z.number().min(0).nullable().optional(),
+  // Divisa propio de la talla (nulo = usa el Divisa del producto si no tiene Full propio; ver lib/pricing.ts variantBases).
+  divisa_price_usd: z.number().min(0).nullable().optional(),
   cost_usd:      z.number().min(0).nullable().optional(),
   variant_group: z.string().max(30).nullable().optional(),
-})
+}).strict()
 
 type RouteContext = { params: { id: string } }
 
@@ -90,6 +92,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           color_hex:    body.color_hex    ?? null,
           sort_order:   body.sort_order,
           price_usd:    body.price_usd    ?? null,
+          divisa_price_usd: body.divisa_price_usd ?? null,
           cost_usd:     body.cost_usd     ?? null,
           variant_group: body.variant_group ?? null,
         },

@@ -1,6 +1,8 @@
 .body { display: flex; flex-direction: column; gap: var(--space-4); }
 
-.footer { display: flex; gap: var(--space-2); }
+/* Pie en cuadrícula: fila 1 = "Guardar y imprimir" a todo el ancho; fila 2 = Cancelar | Solo imprimir. Sin overflow a 375 ni 1280 px. */
+.footer { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); width: 100%; }
+.footer > :last-child { grid-column: 1 / -1; order: -1; }
 
 .section { display: flex; flex-direction: column; gap: var(--space-2); }
 

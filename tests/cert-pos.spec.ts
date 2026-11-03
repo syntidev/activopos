@@ -278,9 +278,16 @@ test('f-g) documentos impresos: ticket de venta (servidor) y cotización (client
 test('7) costo visible al cajero en /api/products/search y /api/products/[id]/variants', async () => {
   const s = await (await cashier.get(`/api/products/search?q=${encodeURIComponent(N('Simple'))}`)).text()
   const v = await (await cashier.get(`/api/products/${id.talla}/variants`)).text()
-  console.log(`COSTO search(cashier) cost_per_unit_usd: ${s.includes('cost_per_unit_usd')} | variants(cashier) cost_usd: ${v.includes('cost_usd')}`)
-  expect(s).not.toContain('cost_per_unit_usd')
-  expect(v).not.toContain('cost_usd')
+  // El campo puede venir, pero redactado (null): mismo criterio que GET /api/products. Ningún valor de costo llega al cajero.
+  const sj = JSON.parse(s) as { products: Array<{ cost_per_unit_usd: number | null }> }
+  const vj = JSON.parse(v) as { variants: Array<{ cost_usd: number | null }> }
+  expect(sj.products.length).toBeGreaterThan(0)
+  expect(vj.variants.length).toBeGreaterThan(0)
+  expect(sj.products.every(p => p.cost_per_unit_usd == null), 'search no debe dar costo al cajero').toBe(true)
+  expect(vj.variants.every(x => x.cost_usd == null), 'variants no debe dar costo al cajero').toBe(true)
+  // El admin sí recibe el costo del producto
+  const sa = JSON.parse(await (await admin.get(`/api/products/search?q=${encodeURIComponent(N('Simple'))}`)).text()) as { products: Array<{ cost_per_unit_usd: number | null }> }
+  expect(sa.products[0].cost_per_unit_usd, 'el admin debe seguir viendo el costo').not.toBeNull()
 })
 
 test('j) cierre: ventas del recorrido == reports/daily', async () => {

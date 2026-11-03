@@ -121,7 +121,8 @@ export async function GET(req: NextRequest) {
           base_unit_label:    p.base_unit_label,
           price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,
           price_per_kg_usd:   p.price_per_kg_usd   ? Number(p.price_per_kg_usd)   : null,
-          cost_per_unit_usd:  p.cost_per_unit_usd  ? Number(p.cost_per_unit_usd)  : null,
+          // El cajero nunca recibe costos (mismo criterio que GET /api/products); el servidor toma el costo de la DB al vender.
+          cost_per_unit_usd:  session.role === 'cashier' ? null : (p.cost_per_unit_usd ? Number(p.cost_per_unit_usd) : null),
           wholesale_price_usd:        p.wholesale_price_usd        != null ? Number(p.wholesale_price_usd)        : null,
           wholesale_price_per_kg_usd: p.wholesale_price_per_kg_usd != null ? Number(p.wholesale_price_per_kg_usd) : null,
           images:             parseImages(p.images),

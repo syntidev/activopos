@@ -1,3 +1,4 @@
+import { divisaPriceOf } from '@/lib/catalog-divisa'
 import { redirect, notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
@@ -295,6 +296,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       brandId:      p.brand_id ?? null,
       brandName:    p.brand?.name ?? null,
       priceUsd,
+      divisaUsd: divisaPriceOf(p),
       priceBs,
       isService:    p.sale_mode === 'service',
       stockQty:     hideStock || p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),

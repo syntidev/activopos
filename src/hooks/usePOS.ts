@@ -406,7 +406,8 @@ export function usePOS() {
       const res  = await fetch(`/api/sales/${payId}/pay`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined }),
+        // Con una venta pendiente (descuento con PIN) el servidor no conoce el cargo de la pantalla: se manda para que entre en el total.
+        body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined, ...(pendingSaleId ? { cargo_pct: ticket.cargo_global_pct } : {}) }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al procesar el pago')

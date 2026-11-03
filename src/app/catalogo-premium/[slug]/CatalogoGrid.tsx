@@ -64,6 +64,8 @@ export interface CatalogProduct {
   brandName:         string | null
   priceUsd:          number
   priceBs:           number | null
+  /** Precio Divisa (wholesale_price_usd): principal en la tarjeta cuando existe. */
+  divisaUsd?:        number | null
   outOfStock:        boolean
   isService:         boolean
   stockQty:          number | null
@@ -938,14 +940,20 @@ export function CatalogoGrid({
                   <>
                     <span className={styles.priceUsd}>
                       <span className={styles.priceSymbol}>$</span>
-                      {p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {(p.divisaUsd ?? p.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
                   </>
                 )}
                 {showBs && p.priceBs && (
-                  <span className={styles.priceBs}>
-                    {fmtBs(p.priceBs)}
-                  </span>
+                  p.divisaUsd ? (
+                    <span className={styles.priceFullLine}>
+                      {fmtBs(p.priceBs)} · Cashea · Full ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                  ) : (
+                    <span className={styles.priceBs}>
+                      {fmtBs(p.priceBs)}
+                    </span>
+                  )
                 )}
               </>
             ) : (
@@ -1017,13 +1025,13 @@ export function CatalogoGrid({
             {showUsd && (
               <>
                 <span className={styles.compactPrice}>
-                  ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ${(p.divisaUsd ?? p.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </>
             )}
             {showBs && p.priceBs && (
               <span className={styles.compactPriceBs}>
-                {fmtBs(p.priceBs)}
+                {fmtBs(p.priceBs)}{p.divisaUsd ? ` · Full $${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : ''}
               </span>
             )}
           </span>

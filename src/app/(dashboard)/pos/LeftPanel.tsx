@@ -37,17 +37,20 @@ interface LeftPanelProps {
   mode: PriceMode
   onProductClick: (p: ProductForPOS) => void
   onScannerOpen?: () => void
+  /** < 768 px: siempre grilla de 2 columnas, sin toggle de vista ni recientes. */
+  mobile?: boolean
 }
 
 /* ── Component ─────────────────────────────────────────────────────────────── */
 
 export function LeftPanel({
-  search, onSearchChange, isSearching, results, rate, mode, onProductClick, onScannerOpen,
+  search, onSearchChange, isSearching, results, rate, mode, onProductClick, onScannerOpen, mobile = false,
 }: LeftPanelProps) {
   const { toast } = useToast()
 
   /* ── View mode (localStorage) ── */
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [savedViewMode, setViewMode] = useState<ViewMode>('grid')
+  const viewMode: ViewMode = mobile ? 'grid' : savedViewMode
 
   useEffect(() => {
     const saved = localStorage.getItem('pos_view')
@@ -154,7 +157,7 @@ export function LeftPanel({
           </div>
 
           {/* View mode toggle */}
-          <div className={styles.viewToggle} role="group" aria-label="Vista de productos">
+          {!mobile && <div className={styles.viewToggle} role="group" aria-label="Vista de productos">
             <button
               type="button"
               className={`${styles.viewToggleBtn} ${viewMode === 'grid' ? styles.viewToggleActive : ''}`}
@@ -173,7 +176,7 @@ export function LeftPanel({
             >
               <List size={18} aria-hidden="true" />
             </button>
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -181,7 +184,7 @@ export function LeftPanel({
       {!inSearchMode && (
         <>
           {/* Recientes */}
-          {recientes.length > 0 && (
+          {!mobile && recientes.length > 0 && (
             <div className={styles.recentesSection}>
               <p className={styles.recentesLabel}>Recientes</p>
               <div className={styles.recentesScroll}>

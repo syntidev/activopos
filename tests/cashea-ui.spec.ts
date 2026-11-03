@@ -165,7 +165,8 @@ test('POS: Cashea solicitado bloquea el cobro; aprobado ofrece solo la financiad
   await login(page)
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto(`/pos?draft=${draftId}`)
-  await page.getByRole('button', { name: /Ver carrito/ }).click()
+  // posición: el aviso "1 error" de Next dev tapa el centro-izquierda de la barra inferior móvil
+  await page.getByRole('button', { name: /Ver carrito/ }).click({ position: { x: 220, y: 20 } })
   const panel = page.getByTestId('financing-panel')
   await expect(panel).toBeVisible({ timeout: 60_000 })
 

@@ -1678,6 +1678,14 @@
   font-variant-numeric:  tabular-nums;
 }
 
+/* Con precio Divisa principal: Bs, Cashea y el Full en una línea pequeña bajo el precio. */
+.priceFullLine {
+  font-size:             11px;
+  color:                 var(--color-text-secondary);
+  margin-top:            1px;
+  font-variant-numeric:  tabular-nums;
+}
+
 /* Precio a la izquierda, CTA circular a la derecha, alineados al pie */
 .priceRow {
   display:         flex;

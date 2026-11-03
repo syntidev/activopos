@@ -3,8 +3,8 @@ import { SignJWT } from 'jose'
 import { envValue, sql } from './alta-helpers'
 
 /**
- * Precio Divisa principal en el catálogo premium. Negocio 80 (se pone en plantilla premium y con medios divisa
- * 313 + 315 mientras dura la prueba; todo se restaura al final). Productos ZZ con limpieza.
+ * Selector de moneda de la ficha premium (mockup C) + tarjeta. Negocio 80: se pone en plantilla premium y con medios
+ * divisa (Efectivo USD 313, Zelle 315 + ZZ Binance y ZZ Bancamiga Cash) mientras dura la prueba; todo se restaura al final.
  */
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
 const BID = 80
@@ -12,6 +12,7 @@ const SLUG = 'boutique-demo'
 const TAG = String(Date.now()).slice(-6)
 const CON = `ZZ Divisa Con ${TAG}`
 const SIN = `ZZ Divisa Sin ${TAG}`
+const MOCKUP = 'file:///C:/laragon/www/activopos/.doc/mockups/precio_divisa_opcionC.html'
 
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
@@ -27,6 +28,7 @@ const token = () => new SignJWT({ userId: 79, businessId: BID, role: 'admin', na
 
 function restaurar(): void {
   sql(`UPDATE businesses SET catalog_template='${templateOriginal}', settings=JSON_REMOVE(COALESCE(settings,JSON_OBJECT()),'$.catalog_divisa_methods') WHERE id=${BID}`)
+  sql(`DELETE FROM payment_methods WHERE business_id=${BID} AND name LIKE 'ZZ Divisa %'`)
   const ids = sql(`SELECT id FROM products WHERE business_id=${BID} AND name LIKE 'ZZ Divisa%'`).split('\n').filter(Boolean).join(',')
   if (!ids) return
   sql(`DELETE FROM inventory_entries WHERE product_id IN (${ids})`)
@@ -38,7 +40,9 @@ test.beforeAll(async () => {
   templateOriginal = sql(`SELECT catalog_template FROM businesses WHERE id=${BID}`) || 'generic'
   if (templateOriginal === 'premium') templateOriginal = 'generic'
   restaurar()
-  sql(`UPDATE businesses SET catalog_template='premium', settings=JSON_SET(COALESCE(settings,JSON_OBJECT()),'$.catalog_divisa_methods',JSON_ARRAY(313,315)) WHERE id=${BID}`)
+  sql(`INSERT INTO payment_methods (business_id,name,type,is_financing) VALUES (${BID},'ZZ Divisa Binance','binance',0),(${BID},'ZZ Divisa Bancamiga Cash','other',0),(${BID},'ZZ Divisa Transferencia','transfer',0),(${BID},'ZZ Divisa Cashea','other',1)`)
+  const idsZz = sql(`SELECT id FROM payment_methods WHERE business_id=${BID} AND name IN ('ZZ Divisa Binance','ZZ Divisa Bancamiga Cash')`).split('\n').filter(Boolean)
+  sql(`UPDATE businesses SET catalog_template='premium', settings=JSON_SET(COALESCE(settings,JSON_OBJECT()),'$.catalog_divisa_methods',JSON_ARRAY(313,315,${idsZz.join(',')})) WHERE id=${BID}`)
   api = await pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${await token()}` } })
   const mk = async (data: Record<string, unknown>): Promise<number> => {
     const r = await api.post('/api/products', { data: { is_fixed_price: true, cost_per_unit_usd: 5, stock_quantity: 10, catalog_visibility: 'visible', ...data } })
@@ -53,22 +57,42 @@ test.afterAll(async () => {
   restaurar()
   await api?.dispose()
   expect(Number(sql(`SELECT COUNT(*) FROM products WHERE business_id=${BID} AND name LIKE 'ZZ Divisa%'`))).toBe(0)
+  expect(Number(sql(`SELECT COUNT(*) FROM payment_methods WHERE business_id=${BID} AND name LIKE 'ZZ Divisa %'`))).toBe(0)
 })
 
-test('ficha con Divisa: abre en Divisa con su precio y pastillas; Bs muestra el Full en Bs', async ({ page }) => {
+test('ficha con Divisa: abre en Divisa, pastilla compacta; Divisa sin Pago Móvil; Bs sin Bancamiga', async ({ page }) => {
   await page.goto(`/catalogo-premium/${SLUG}/p/${idCon}`)
   const bloque = page.getByTestId('precio-divisa')
-  await expect(bloque.getByRole('radio', { name: /Divisa/ })).toHaveAttribute('aria-checked', 'true')
+  const grupo = bloque.getByRole('group', { name: 'Moneda de pago' })
+  await expect(grupo.getByRole('button', { name: /\$ Divisa/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(bloque.getByTestId('precio-principal')).toHaveText('$30.00')
-  const pastillas = bloque.getByRole('list', { name: 'Formas de pago en divisa' })
-  await expect(pastillas).toContainText('Efectivo USD')
-  await expect(pastillas).toContainText('Zelle')
-  await expect(pastillas).not.toContainText('Pago')
-  await page.screenshot({ path: 'tests/__capturas__/precio-divisa-ficha-1280.png' })
-  await bloque.getByRole('radio', { name: /Bolívares/ }).click()
+
+  // La pastilla mide menos que el contenedor (no es de ancho completo).
+  const wGrupo = (await grupo.boundingBox())?.width ?? 0
+  const wBloque = (await bloque.boundingBox())?.width ?? 0
+  expect(wGrupo).toBeGreaterThan(0)
+  expect(wGrupo).toBeLessThan(wBloque)
+
+  const divisa = bloque.getByRole('list', { name: 'Formas de pago en divisa' })
+  for (const n of ['Binance', 'Zelle', 'Efectivo USD', 'Bancamiga Cash']) await expect(divisa).toContainText(n)
+  await expect(divisa).not.toContainText('Pago Móvil')
+  await expect(divisa).not.toContainText('Cashea')
+  await page.screenshot({ path: 'tests/__capturas__/selector-ficha-1280-divisa.png' })
+
+  await grupo.getByRole('button', { name: /Bolívares/ }).click()
+  await expect(grupo.getByRole('button', { name: /Bolívares/ })).toHaveAttribute('aria-pressed', 'true')
   await expect(bloque.getByTestId('precio-principal')).toContainText('Bs')
   await expect(bloque).toContainText('Equivale a $40.00')
-  await expect(bloque.getByRole('list', { name: 'Formas de pago en bolívares' })).toContainText('Pago')
+  const bs = bloque.getByRole('list', { name: 'Formas de pago en bolívares' })
+  await expect(bs).toContainText('Pago Móvil')
+  await expect(bs).toContainText('Transferencia')
+  await expect(bs.locator('img[src*="cashea"]')).toHaveCount(1)
+  await expect(bs).not.toContainText('Bancamiga')
+  await expect(page.getByText('Recibimos bolívares a tasa BCV')).toBeVisible()
+
+  // El default no se recuerda: al recargar vuelve a Divisa.
+  await page.reload()
+  await expect(page.getByTestId('precio-divisa').getByRole('button', { name: /\$ Divisa/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('ficha sin Divisa: Full como principal, sin selector', async ({ page }) => {
@@ -78,29 +102,50 @@ test('ficha sin Divisa: Full como principal, sin selector', async ({ page }) => 
   await expect(page.getByText('$20.00').first()).toBeVisible()
 })
 
-test('tarjeta: Divisa grande y debajo Bs · Cashea · Full', async ({ page }) => {
+test('tarjeta: Divisa grande y debajo [Bs] [cashea] $Full', async ({ page }) => {
   await page.goto(`/catalogo-premium/${SLUG}/productos`)
   const card = page.locator('a, article, div').filter({ hasText: CON }).filter({ has: page.locator('[class*="priceUsd"]') }).last()
   await expect(card.locator('[class*="priceUsd"]').first()).toContainText('30.00')
-  await expect(card.locator('[class*="priceFullLine"]').first()).toContainText('Cashea · Full $40.00')
-  await card.screenshot({ path: 'tests/__capturas__/precio-divisa-tarjeta-1280.png' })
+  const linea = card.locator('[class*="priceFullLine"]').first()
+  await expect(linea).toContainText('Bs')
+  await expect(linea).toContainText('$40.00')
+  await expect(linea.locator('img[alt="Cashea"]')).toHaveCount(1)
+  await card.screenshot({ path: 'tests/__capturas__/selector-tarjeta-1280.png' })
 })
 
-test('375 px: sin scroll horizontal y selector debajo de la foto', async ({ page }) => {
+test('375 px: sin scroll horizontal, orden foto > selector > precio y capturas de ambos modos', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 })
   await page.goto(`/catalogo-premium/${SLUG}/p/${idCon}`)
   const bloque = page.getByTestId('precio-divisa')
   await expect(bloque).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
-  // La foto del producto = la imagen/placeholder más grande de la página (la ficha de prueba no tiene foto real).
-  const fotoBottom = await page.evaluate(() => {
-    const els = Array.from(document.querySelectorAll('img, [class*="gallery"], [class*="mainImage"]'))
-    const rects = els.map(e => e.getBoundingClientRect()).filter(r => r.width > 200).sort((a, b) => b.width * b.height - a.width * a.height)
-    return rects.length > 0 ? rects[0].bottom + window.scrollY : 0
+  const orden = await page.evaluate(() => {
+    const y = (el: Element | null): number => (el ? el.getBoundingClientRect().top + window.scrollY : -1)
+    const rects = Array.from(document.querySelectorAll('img, [class*="gallery"], [class*="mainImage"]'))
+      .map(e => e.getBoundingClientRect()).filter(r => r.width > 200).sort((a, b) => b.width * b.height - a.width * a.height)
+    return {
+      fotoBottom: rects.length > 0 ? rects[0].bottom + window.scrollY : 0,
+      nombre: y(document.querySelector('h1')),
+      selector: y(document.querySelector('[data-testid="precio-divisa"] [role="group"]')),
+      precio: y(document.querySelector('[data-testid="precio-principal"]')),
+      pastillas: y(document.querySelector('[data-testid="precio-divisa"] ul')),
+    }
   })
-  const selBox = await bloque.getByRole('radiogroup').boundingBox()
-  const sel = selBox && { y: selBox.y + (await page.evaluate(() => window.scrollY)) }
-  const foto = { y: 0, height: fotoBottom }
-  await page.screenshot({ path: 'tests/__capturas__/precio-divisa-ficha-375.png', fullPage: true })
-  expect(foto && sel && sel.y >= foto.y + foto.height - 1).toBe(true)
+  expect(orden.fotoBottom).toBeLessThanOrEqual(orden.nombre + 1)
+  expect(orden.nombre).toBeLessThan(orden.selector)
+  expect(orden.selector).toBeLessThan(orden.precio)
+  expect(orden.precio).toBeLessThan(orden.pastillas)
+  await page.screenshot({ path: 'tests/__capturas__/selector-ficha-375-divisa.png', fullPage: true })
+  await bloque.getByRole('button', { name: /Bolívares/ }).click()
+  await page.screenshot({ path: 'tests/__capturas__/selector-ficha-375-bs.png', fullPage: true })
+})
+
+test('captura del mockup C a 375 px (referencia)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 })
+  try {
+    await page.goto(MOCKUP, { timeout: 15_000 })
+    await page.screenshot({ path: 'tests/__capturas__/selector-mockup-375.png', fullPage: true })
+  } catch {
+    test.info().annotations.push({ type: 'mockup', description: 'no se pudo abrir el mockup local' })
+  }
 })

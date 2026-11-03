@@ -23,8 +23,11 @@ export function readDivisaMethodIds(settings: unknown): number[] {
   return Array.isArray(raw) ? raw.filter((v): v is number => Number.isInteger(v) && v > 0) : []
 }
 
-/** Reparte los medios de cobro activos: los marcados como divisa vs el resto (Bs: pago móvil, transferencia, Cashea…). */
-export function splitPayMethods<T extends { id: number }>(methods: readonly T[], divisaIds: readonly number[]): { divisa: T[]; bs: T[] } {
+/** Reparte los medios de cobro activos: los marcados como divisa vs los de Bs (pago móvil/transferencia y la financiadora). */
+export function splitPayMethods<T extends { id: number; type: string; is_financing: boolean }>(methods: readonly T[], divisaIds: readonly number[]): { divisa: T[]; bs: T[] } {
   const set = new Set(divisaIds)
-  return { divisa: methods.filter(m => set.has(m.id)), bs: methods.filter(m => !set.has(m.id)) }
+  return {
+    divisa: methods.filter(m => set.has(m.id)),
+    bs:     methods.filter(m => !set.has(m.id) && (m.is_financing || m.type === 'transfer')),
+  }
 }

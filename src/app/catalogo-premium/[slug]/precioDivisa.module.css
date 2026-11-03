@@ -1,4 +1,4 @@
-/* Selector de precio Divisa | Bs/Cashea de la ficha (catálogo premium). */
+/* Selector de moneda de la ficha (catálogo premium). Referencia: .doc/mockups/precio_divisa_opcionC.html, sección C. */
 .root {
   display:        flex;
   flex-direction: column;
@@ -6,35 +6,52 @@
   min-width:      0;
 }
 
-.switch {
-  display:       flex;
-  gap:           var(--space-1);
-  padding:       var(--space-1);
-  border-radius: var(--radius-md);
-  background:    var(--color-border-subtle);
+/* Pastilla compacta: NO ocupa todo el ancho. */
+.toggle {
+  display:       inline-flex;
+  width:         fit-content;
+  max-width:     100%;
+  border:        1px solid var(--color-border-subtle);
+  border-radius: var(--radius-toggle);
+  overflow:      hidden;
 }
 
 .opt {
-  flex:          1 1 0;
-  min-width:     0;
-  min-height:    var(--touch-min);
-  padding:       0 var(--space-2);
-  border:        none;
-  border-radius: var(--radius-md);
-  background:    transparent;
-  color:         var(--color-text-secondary);
-  font-size:     var(--text-sm);
-  font-weight:   var(--weight-semibold);
-  cursor:        pointer;
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  min-height:  var(--touch-min);
+  padding:     0 var(--space-3);
+  border:      none;
+  background:  var(--color-white);
+  color:       var(--pay-neutral-fg);
+  font:        inherit;
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor:      pointer;
 }
 
-.optOn {
+.opt[aria-pressed="true"] {
   background: var(--onbike-blue);
   color:      var(--color-white);
 }
 
+.badgeBs {
+  padding:       1px 4px;
+  border-radius: var(--radius-sm);
+  background:    var(--badge-bs-bg);
+  color:         var(--color-white);
+  font-size:     10px;
+  font-weight:   var(--weight-extrabold);
+}
+
+.logo {
+  height: 14px;
+  width:  auto;
+}
+
 .price {
-  font-size:   40px;
+  font-size:   34px;
   font-weight: var(--weight-extrabold);
   color:       var(--color-text-primary);
   line-height: 1;
@@ -45,28 +62,34 @@
   color:     var(--color-text-secondary);
 }
 
+.sub b {
+  color:       var(--pay-neutral-fg);
+  font-weight: var(--weight-semibold);
+}
+
 .pills {
   display:    flex;
   flex-wrap:  wrap;
-  gap:        var(--space-2);
+  gap:        5px;
   margin:     0;
   padding:    0;
   list-style: none;
 }
 
+/* Pastillas pastel, sin borde. */
 .pill {
   display:       inline-flex;
   align-items:   center;
   gap:           var(--space-1);
-  padding:       var(--space-1) var(--space-3);
-  border:        1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  font-size:     var(--text-sm);
-  font-weight:   var(--weight-medium);
-  color:         var(--color-text-primary);
+  padding:       3px 7px;
+  border:        none;
+  border-radius: 20px;
+  font-size:     10.5px;
+  font-weight:   var(--weight-bold);
 }
 
-.logo {
-  height: 16px;
-  width:  auto;
-}
+.toneAmber   { background: var(--pay-amber-bg);   color: var(--pay-amber-fg); }
+.toneViolet  { background: var(--pay-violet-bg);  color: var(--pay-violet-fg); }
+.toneGreen   { background: var(--pay-green-bg);   color: var(--pay-green-fg); }
+.toneSky     { background: var(--pay-sky-bg);     color: var(--pay-sky-fg); }
+.toneNeutral { background: var(--pay-neutral-bg); color: var(--pay-neutral-fg); }

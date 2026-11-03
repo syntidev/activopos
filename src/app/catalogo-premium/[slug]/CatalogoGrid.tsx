@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useMemo, useRef, useEffect, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -947,7 +948,9 @@ export function CatalogoGrid({
                 {showBs && p.priceBs && (
                   p.divisaUsd ? (
                     <span className={styles.priceFullLine}>
-                      {fmtBs(p.priceBs)} · Cashea · Full ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      <span className={styles.badgeBs}>Bs</span>
+                      <Image src="/brand/cashea.png" alt="Cashea" width={49} height={14} className={styles.casheaLogo} />
+                      ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </span>
                   ) : (
                     <span className={styles.priceBs}>

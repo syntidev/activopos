@@ -1680,10 +1680,27 @@
 
 /* Con precio Divisa principal: Bs, Cashea y el Full en una línea pequeña bajo el precio. */
 .priceFullLine {
-  font-size:             11px;
+  display:               flex;
+  align-items:           center;
+  gap:                   6px;
+  font-size:             12px;
   color:                 var(--color-text-secondary);
-  margin-top:            1px;
+  margin-top:            var(--space-1);
   font-variant-numeric:  tabular-nums;
+}
+
+.badgeBs {
+  padding:       1px 4px;
+  border-radius: var(--radius-sm);
+  background:    var(--badge-bs-bg);
+  color:         var(--color-white);
+  font-size:     10px;
+  font-weight:   var(--weight-extrabold);
+}
+
+.casheaLogo {
+  height: 14px;
+  width:  auto;
 }
 
 /* Precio a la izquierda, CTA circular a la derecha, alineados al pie */

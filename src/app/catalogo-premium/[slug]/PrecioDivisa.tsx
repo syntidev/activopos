@@ -15,44 +15,51 @@ interface PrecioDivisaProps {
   rate: number
   /** Medios de cobro activos marcados como divisa en la configuración del negocio. */
   divisaMethods: PayPill[]
-  /** Resto de medios de cobro activos (pago móvil, transferencia, Cashea…). */
+  /** Medios de Bs (pago móvil, transferencia, Cashea). */
   bsMethods: PayPill[]
 }
 
 type Mode = 'divisa' | 'bs'
 
-/** Selector "$ Divisa | Bs Bolívares / Cashea": abre SIEMPRE en Divisa. Solo presentación: el carrito no cambia. */
+/** Color de la pastilla de divisa por tipo de medio (binance ámbar, zelle violeta, efectivo verde, el resto celeste). */
+const DIVISA_TONE: Record<string, string> = { binance: 'toneAmber', zelle: 'toneViolet', cash: 'toneGreen' }
+
+/**
+ * Selector de moneda de la ficha: pastilla compacta "$ Divisa | [Bs] Bolívares / [cashea]". Abre SIEMPRE en Divisa
+ * (el default no se recuerda). Solo presentación: el carrito y el checkout no cambian.
+ */
 export function PrecioDivisa({ divisaUsd, fullUsd, rate, divisaMethods, bsMethods }: PrecioDivisaProps) {
   const [mode, setMode] = useState<Mode>('divisa')
-  const fullBs = fullUsd * rate
+  const isDivisa = mode === 'divisa'
 
   return (
     <div className={styles.root} data-testid="precio-divisa">
-      <div className={styles.switch} role="radiogroup" aria-label="Forma de pago para ver el precio">
-        <button type="button" role="radio" aria-checked={mode === 'divisa'} className={`${styles.opt} ${mode === 'divisa' ? styles.optOn : ''}`} onClick={() => setMode('divisa')}>
+      <div className={styles.toggle} role="group" aria-label="Moneda de pago">
+        <button type="button" className={styles.opt} aria-pressed={isDivisa} onClick={() => setMode('divisa')}>
           $ Divisa
         </button>
-        <button type="button" role="radio" aria-checked={mode === 'bs'} className={`${styles.opt} ${mode === 'bs' ? styles.optOn : ''}`} onClick={() => setMode('bs')}>
-          Bs Bolívares / Cashea
+        <button type="button" className={styles.opt} aria-pressed={!isDivisa} onClick={() => setMode('bs')}>
+          <span className={styles.badgeBs}>Bs</span> Bolívares / <Image src="/brand/cashea.png" alt="Cashea" width={49} height={14} className={styles.logo} />
         </button>
       </div>
 
-      {mode === 'divisa' ? (
+      {isDivisa ? (
         <>
           <span className={styles.price} data-testid="precio-principal">{fmtUsd(divisaUsd)}</span>
-          <span className={styles.sub}>Pagando en Bs: {fmtBs(fullBs)}</span>
           <ul className={styles.pills} aria-label="Formas de pago en divisa">
-            {divisaMethods.map(m => <li key={m.id} className={styles.pill}>{m.name}</li>)}
+            {divisaMethods.map(m => (
+              <li key={m.id} className={`${styles.pill} ${styles[DIVISA_TONE[m.type] ?? 'toneSky']}`}>{m.name}</li>
+            ))}
           </ul>
         </>
       ) : (
         <>
-          <span className={styles.price} data-testid="precio-principal">{fmtBs(fullBs)}</span>
-          <span className={styles.sub}>Equivale a {fmtUsd(fullUsd)}</span>
+          <span className={styles.price} data-testid="precio-principal">{fmtBs(fullUsd * rate)}</span>
+          <span className={styles.sub}>Equivale a <b>{fmtUsd(fullUsd)}</b></span>
           <ul className={styles.pills} aria-label="Formas de pago en bolívares">
             {bsMethods.map(m => (
-              <li key={m.id} className={styles.pill}>
-                {m.is_financing && <Image src="/brand/cashea.png" alt="" width={48} height={16} className={styles.logo} />}
+              <li key={m.id} className={`${styles.pill} ${styles.toneNeutral}`}>
+                {m.is_financing && <Image src="/brand/cashea.png" alt="" width={49} height={14} className={styles.logo} />}
                 {m.name}
               </li>
             ))}

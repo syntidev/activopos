@@ -190,6 +190,20 @@
   --header-height:      48px;
   --pos-ticket-width:   340px;
   --touch-min:          44px;
+
+  /* Selector de precio Divisa (catálogo premium): pastillas de pago por tipo, badge Bs y radio del selector */
+  --radius-toggle:      10px;
+  --badge-bs-bg:        #1E3A8A;
+  --pay-amber-bg:       #FEF3C7;
+  --pay-amber-fg:       #92400E;
+  --pay-violet-bg:      #EDE9FE;
+  --pay-violet-fg:      #5B21B6;
+  --pay-green-bg:       #DCFCE7;
+  --pay-green-fg:       #15803D;
+  --pay-sky-bg:         #E0F2FE;
+  --pay-sky-fg:         #075985;
+  --pay-neutral-bg:     #F3F4F6;
+  --pay-neutral-fg:     #374151;
   --form-max-width:     1200px;
   --touch-comfy:        48px;
   --touch-large:        56px;

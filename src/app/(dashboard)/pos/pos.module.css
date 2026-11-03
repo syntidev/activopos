@@ -550,6 +550,9 @@
   line-height: var(--leading-tight);
 }
 
+/* Talla de la línea, bajo el nombre del producto */
+.itemVariant { font-size: var(--text-xs); color: var(--color-text-secondary); }
+
 .itemPrice { font-size: var(--text-xs); color: var(--color-text-muted); }
 
 .itemControls {
@@ -786,45 +789,7 @@
   height: 100%;
 }
 
-/* ── Cart toggle button (mobile only, visible ≤767px) ── */
-
-.cartToggle {
-  display: none;
-  position: relative; /* anchor for .cartBadge */
-}
-
-/* ── Cart badge ── */
-
-.cartBadge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  background: var(--color-danger);
-  color: var(--color-text-on-brand);
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-bold);
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  line-height: 1;
-}
-
-/* ── Drawer overlay backdrop (mobile only, rendered when cartOpen) ── */
-
-.drawerOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: var(--z-overlay);
-  animation: fadeInOverlay 0.2s ease;
-}
-
-/* ── Mobile: bottom drawer ── */
+/* ── Mobile (< 768 px): productos a pantalla completa + hoja del ticket ── */
 
 @media (max-width: 767px) {
   .posContainer {
@@ -837,82 +802,32 @@
     gap: var(--space-2);
   }
 
-  /* FAB base */
-  .cartToggle {
-    display: flex;
-    position: fixed;
-    bottom: var(--space-6);
-    right: var(--space-4);
-    z-index: var(--z-sticky);
-    min-width: 56px;
-    height: 56px;
-    padding: 0 var(--space-4);
-    border-radius: var(--radius-full);
-    background: var(--brand-dark);
-    color: var(--kpi-on-primary);
-    border: none;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    box-shadow: 0 4px 20px rgba(var(--brand-rgb), 0.45);
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast), min-width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Espacio para que la barra inferior no tape los últimos productos */
+  .leftAreaWithBar {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 
-  .cartToggle:active { transform: scale(0.93); }
-
-  /* FAB text label (shown when cart has items) */
-  .cartToggleText {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    white-space: nowrap;
-    letter-spacing: var(--tracking-tight);
-  }
-
-  /* Bottom drawer */
+  /* Hoja del ticket: pantalla completa, desliza desde abajo */
   .cartSlot {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
+    inset: 0;
     width: 100%;
     max-width: none;
-    height: 72dvh;
+    height: 100dvh;
     z-index: var(--z-modal);
     transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    visibility: hidden;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.3s;
     display: flex;
     flex-direction: column;
     background: var(--pos-ticket-bg);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
     overflow: hidden;
   }
 
-  /* Handle pill via ::before */
-  .cartSlot::before {
-    content: '';
-    display: block;
-    flex-shrink: 0;
-    width: 36px;
-    height: 4px;
-    background: var(--color-border);
-    border-radius: 2px;
-    margin: 10px auto 0;
-  }
-
-  .cartSlotOpen { transform: translateY(0); }
-
-  .cartSlot .rightPanel {
-    flex: 1;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    border-left: none;
-    border-top: none;
-    border-radius: 0;
-    box-shadow: none;
+  .cartSlotOpen {
+    transform: translateY(0);
+    visibility: visible;
+    transition-delay: 0s;
   }
 }
 

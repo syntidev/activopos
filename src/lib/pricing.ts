@@ -20,14 +20,16 @@ export interface PricingProduct {
 }
 
 export interface PricingVariant {
-  price_usd:    Numeric
-  precio_extra: Numeric
+  price_usd:         Numeric
+  precio_extra:      Numeric
+  /** Precio Divisa propio de la variante (nulo = ver variantBases). */
+  divisa_price_usd?: Numeric
 }
 
 export type PriceTier = 'detal' | 'mayorista'
 
-/** Campos de ProductVariant que resolveUnitPriceUsd necesita (usar en `select`). */
-export const VARIANT_PRICING_SELECT = { price_usd: true, precio_extra: true } as const
+/** Campos de ProductVariant que resolveUnitPriceUsd / variantBases necesitan (usar en `select`). */
+export const VARIANT_PRICING_SELECT = { price_usd: true, precio_extra: true, divisa_price_usd: true } as const
 
 /** Modo de precio del ticket: lo decide el ticket (no el tier del cliente). 'divisa' = wholesale_price_*. */
 export type PriceMode = 'bcv' | 'divisa'
@@ -41,10 +43,42 @@ export function resolveEffectiveMode(explicit: PriceMode | undefined, tier: Pric
   return explicit ?? (tier === 'mayorista' ? 'divisa' : 'bcv')
 }
 
+/** Precios unitarios completos de una línea (precio_extra ya incluido): Full (bcv) y Divisa (null = sin precio Divisa). */
+export interface LineBases { bcv: number; divisa: number | null }
+
+/**
+ * Bases de precio de una línea — fuente ÚNICA para el servidor (resolveLinePrice) y el cliente (POS, lib/pos.ts).
+ *   bcv    = variante con Full propio (price_usd, absoluto) | Full del producto + precio_extra.
+ *   divisa = Divisa propio de la variante (divisa_price_usd)
+ *            | si la variante NO tiene Full propio: Divisa del producto (per_kg si es por peso) + precio_extra, o null si el producto no lo tiene
+ *            | null (Full propio sin Divisa propio: no hay Divisa que derivar).
+ * Sin variante: las bases del producto.
+ */
+export function variantBases(
+  product:  PricingProduct,
+  variant:  PricingVariant | undefined,
+  saleMode: string = 'unit',
+): LineBases {
+  const extra = Number(variant?.precio_extra ?? 0)
+  const bcv = variant?.price_usd != null
+    ? Number(variant.price_usd)
+    : Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0) + extra
+
+  if (variant?.divisa_price_usd != null) return { bcv, divisa: Number(variant.divisa_price_usd) }
+  if (variant?.price_usd != null) return { bcv, divisa: null }
+  const wholesale = Number((saleMode === 'weight' ? product.wholesale_price_per_kg_usd : product.wholesale_price_usd) ?? 0)
+  return { bcv, divisa: wholesale > 0 ? wholesale + extra : null }
+}
+
+/** Elige el precio de las bases según el modo del ticket. Divisa sin precio Divisa (> 0) cae al Full y SIEMPRE queda marcado 'fallback_bcv'. */
+export function priceForMode(bases: LineBases, mode: PriceMode): { price: number; source: PriceSource } {
+  if (mode === 'divisa' && bases.divisa != null && bases.divisa > 0) return { price: bases.divisa, source: 'divisa' }
+  return { price: bases.bcv, source: mode === 'divisa' ? 'fallback_bcv' : 'bcv' }
+}
+
 /**
  * Precio unitario de UNA línea según el modo del ticket y su origen.
- *   manual → se respeta siempre; bcv → regla de siempre; divisa → wholesale_price_usd (per_kg si es por peso),
- *   sin precio Divisa (o variante con price_usd propio, que no tiene equivalente) → BCV con origen 'fallback_bcv'.
+ *   manual → se respeta siempre; si no, variantBases + priceForMode (bcv → Full; divisa → Divisa, o Full marcado 'fallback_bcv').
  */
 export function resolveLinePrice(
   product:  PricingProduct,
@@ -52,13 +86,7 @@ export function resolveLinePrice(
   opts:     { mode: PriceMode; saleMode?: string; manualPrice?: number | null },
 ): { price: number; source: PriceSource } {
   if (opts.manualPrice != null) return { price: opts.manualPrice, source: 'manual' }
-  const saleMode = opts.saleMode ?? 'unit'
-  const bcv = resolveUnitPriceUsd(product, variant, 'detal', saleMode)
-  if (opts.mode === 'bcv') return { price: bcv, source: 'bcv' }
-  if (variant?.price_usd != null) return { price: bcv, source: 'fallback_bcv' }
-  const divisa = Number((saleMode === 'weight' ? product.wholesale_price_per_kg_usd : product.wholesale_price_usd) ?? 0)
-  if (divisa > 0) return { price: divisa + Number(variant?.precio_extra ?? 0), source: 'divisa' }
-  return { price: bcv, source: 'fallback_bcv' }
+  return priceForMode(variantBases(product, variant, opts.saleMode ?? 'unit'), opts.mode)
 }
 
 export function resolveUnitPriceUsd(

@@ -27,6 +27,8 @@ export interface ProductVariantInput {
   barcode?: string | null
   /** Precio propio en USD; null/ausente = usa el precio del producto. */
   price_usd?: number | null
+  /** Precio Divisa propio en USD; null/ausente = usa el Divisa del producto. */
+  divisa_price_usd?: number | null
 }
 
 type CatalogVisibility = 'visible' | 'on_request' | 'hidden'

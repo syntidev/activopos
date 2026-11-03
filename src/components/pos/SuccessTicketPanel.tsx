@@ -12,6 +12,8 @@ type PosMode = 'ticket' | 'invoice'
 
 export interface SaleItemForPanel {
   name:      string
+  /** Talla de la línea; se anexa al nombre en el comprobante y en el mensaje de WhatsApp. */
+  variant_label?: string
   qty:       number
   price_usd: number
 }
@@ -49,7 +51,7 @@ function buildWhatsappMessage(sale: SaleSummary, businessName: string): string {
     audience:      'client',
     businessName,
     orderNumber:   sale.ticket_number,
-    lines:         sale.items.map(i => ({ name: i.name, qty: i.qty, subtotalUsd: i.qty * i.price_usd })),
+    lines:         sale.items.map(i => ({ name: i.variant_label ? `${i.name} (${i.variant_label})` : i.name, qty: i.qty, subtotalUsd: i.qty * i.price_usd })),
     totalUsd:      sale.total_usd,
     rate:          sale.rate,
     paymentMethod: isCredit ? 'Crédito' : sale.payment_method,

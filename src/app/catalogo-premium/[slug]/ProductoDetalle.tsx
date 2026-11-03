@@ -19,6 +19,7 @@ import type { PublicFinancing } from '@/lib/financing'
 import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { descripcionSinDeportes, parseDeportes } from '@/lib/catalog-deportes'
 import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor } from './catalogUtils'
+import { PrecioDivisa, type PayPill } from './PrecioDivisa'
 import { normalizePhone } from '@/lib/utils'
 import { productosHref } from '@/lib/subcategory'
 import type { VitrinaContext } from '@/types/vitrina'
@@ -62,6 +63,10 @@ interface Props {
   categoryColor: string | null
   priceUsd:      number
   priceBs:       number | null
+  /** Precio Divisa del producto (wholesale_price_usd); null/ausente = sin selector, Full como principal. */
+  divisaUsd?:    number | null
+  divisaMethods?: PayPill[]
+  bsMethods?:    PayPill[]
   variants:      CatalogProductVariant[]
   businessName:  string
   slug:          string
@@ -88,7 +93,7 @@ interface Props {
 
 export function ProductoDetalle({
   productId, name, description, images, categoryName, subcategory, categoryColor,
-  priceUsd, priceBs, variants, businessName,
+  priceUsd, priceBs, divisaUsd = null, divisaMethods = [], bsMethods = [], variants, businessName,
   catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   outOfStock, financing, stockHidden, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
   vitrina,
@@ -518,16 +523,26 @@ export function ProductoDetalle({
 
           <h1 className={styles.productName}>{name}</h1>
 
-          <div className={styles.priceBlock}>
-            {showUsd && (
-              <>
-                <span className={styles.priceUsd}>{fmtUsd(effectivePrice)}</span>
-              </>
-            )}
-            {showBs && effectivePriceBs !== null && (
-              <span className={styles.priceBs}>{fmtBs(effectivePriceBs)}</span>
-            )}
-          </div>
+          {divisaUsd !== null ? (
+            <PrecioDivisa
+              divisaUsd={divisaUsd + (selectedVariant?.precio_extra ?? 0)}
+              fullUsd={effectivePrice}
+              rate={rate}
+              divisaMethods={divisaMethods}
+              bsMethods={bsMethods}
+            />
+          ) : (
+            <div className={styles.priceBlock}>
+              {showUsd && (
+                <>
+                  <span className={styles.priceUsd}>{fmtUsd(effectivePrice)}</span>
+                </>
+              )}
+              {showBs && effectivePriceBs !== null && (
+                <span className={styles.priceBs}>{fmtBs(effectivePriceBs)}</span>
+              )}
+            </div>
+          )}
 
           {(showBs || financing) && (
             <div className={styles.infoLine}>

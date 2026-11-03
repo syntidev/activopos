@@ -3,16 +3,17 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ChevronDown, Clock, Minus, Pencil, Percent, Plus,
   Printer, ShoppingCart, Tag, Trash2, User,
 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { PriceModeSwitch } from '@/components/pos/PriceModeSwitch'
+import { MobileTicketSheet } from '@/components/pos/MobileTicketSheet'
 import { FinancingPanel } from '@/components/financing/FinancingPanel'
 import { FINANCING_BCV_NOTE, TICKET_ITEMS_EDIT_WARNING, isFinancingLive } from '@/lib/financing-ui'
-import type { PriceMode, TicketItem, TicketState, TicketTotals } from '@/lib/pos'
+import { lineKey, type PriceMode, type TicketItem, type TicketState, type TicketTotals } from '@/lib/pos'
 import type { BlockedProduct, FinancingAction } from '@/types/financing'
 import styles from './pos.module.css'
 
@@ -29,8 +30,8 @@ interface TicketPanelProps {
   ticket: TicketState
   totals: TicketTotals
   isEmpty: boolean
-  onUpdateQty: (id: number, qty: number) => void
-  onRemove: (id: number) => void
+  onUpdateQty: (productId: number, variantId: number | null | undefined, qty: number) => void
+  onRemove: (productId: number, variantId: number | null | undefined) => void
   onClear: () => void
   onSelectClient: () => void
   onProcesarPago: () => void
@@ -40,13 +41,18 @@ interface TicketPanelProps {
   onCargo: () => void
   onImprimirCuenta: () => void
   userRole: 'admin' | 'super_admin' | 'cashier'
-  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
+  onPriceOverride: (productId: number, variantId: number | null | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
   pendingSaleActive?: boolean
   onPriceMode: (mode: PriceMode) => void
   priceModeBusy?: boolean
   priceModeError?: string
   cashea: TicketCasheaProps
+  /** < 768 px: hoja a pantalla completa en vez del panel lateral. */
+  mobile?: boolean
+  onCloseSheet?: () => void
+  /** Pestañas de tickets (solo móvil: van arriba de la hoja). */
+  tabsSlot?: ReactNode
 }
 
 export function TicketPanel({
@@ -55,12 +61,150 @@ export function TicketPanel({
   onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo, onImprimirCuenta,
   userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive,
   onPriceMode, priceModeBusy, priceModeError, cashea,
+  mobile = false, onCloseSheet, tabsSlot,
 }: TicketPanelProps) {
   const router = useRouter()
   const { discount_global_pct: discountPct, cargo_global_pct: cargoPct } = ticket
   const casheaLive = isFinancingLive(ticket.financing)
   // Cashea solicitado: no se cobra hasta que se apruebe, se rechace o se retire.
   const cobroBlocked = ticket.financing?.status === 'requested'
+
+  // Piezas compartidas por el panel de escritorio y la hoja móvil: mismo contenido, distinto layout.
+  const linesNode = isEmpty ? (
+    <motion.div
+      className={styles.ticketEmpty}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+    >
+      <ShoppingCart size={36} strokeWidth={1} aria-hidden="true" />
+      <p className={styles.ticketEmptyTitle}>Ticket vacío</p>
+      <p className={styles.ticketEmptySubtitle}>Toca un producto para agregarlo</p>
+    </motion.div>
+  ) : (
+    <AnimatePresence initial={false}>
+      {ticket.items.map((item) => (
+        <TicketItemRow
+          key={lineKey(item.product_id, item.variant_id)}
+          item={item}
+          rate={ticket.rate}
+          onUpdateQty={onUpdateQty}
+          onRemove={onRemove}
+          userRole={userRole}
+          onPriceOverride={onPriceOverride}
+          allowCashierPriceOverride={allowCashierPriceOverride}
+          pendingSaleActive={pendingSaleActive}
+        />
+      ))}
+    </AnimatePresence>
+  )
+
+  const financingNode = (
+    <FinancingPanel
+      financing={ticket.financing ?? null}
+      onAction={cashea.onAction}
+      busy={cashea.busy}
+      error={cashea.error}
+      blocked={cashea.blocked}
+      canRequest={cashea.canRequest && !isEmpty}
+      editWarning={TICKET_ITEMS_EDIT_WARNING}
+    />
+  )
+
+  const priceNode = (
+    <PriceModeSwitch
+      mode={ticket.price_mode}
+      onChange={casheaLive ? undefined : onPriceMode}
+      readOnly={casheaLive}
+      busy={priceModeBusy}
+      error={priceModeError}
+      fallbackLines={ticket.items.filter(i => i.price_source === 'fallback_bcv').length}
+    />
+  )
+
+  const breakdownNode = (discountPct > 0 || cargoPct > 0 || ticket.iva_pct > 0) && (
+    <div className={styles.totalBreakdown}>
+      <div className={styles.totalRow}>
+        <span>Subtotal</span>
+        <span>${totals.subtotal_usd.toFixed(2)}</span>
+      </div>
+      {discountPct > 0 && (
+        <div className={`${styles.totalRow} ${styles.totalRowDiscount}`}>
+          <span>Descuento ({discountPct}%)</span>
+          <span>-${totals.discount_usd.toFixed(2)}</span>
+        </div>
+      )}
+      {cargoPct > 0 && (
+        <div className={`${styles.totalRow} ${styles.totalRowCargo}`}>
+          <span>Cargo ({cargoPct}%)</span>
+          <span>+${totals.cargo_usd.toFixed(2)}</span>
+        </div>
+      )}
+      {/* IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo
+          fiscal: la línea se mostraba pero el cobro nunca se persistía
+          realmente). ticket.iva_pct siempre es 0 en producción hoy
+          (Business.iva_enabled=false en los 5 negocios reales). */}
+      {false && ticket.iva_pct > 0 && (
+        <div className={`${styles.totalRow} ${styles.totalRowIva}`}>
+          <span>IVA ({ticket.iva_pct}%)</span>
+          <span>+${totals.iva_usd.toFixed(2)}</span>
+        </div>
+      )}
+    </div>
+  )
+
+  const totalNode = (
+    <div className={styles.totalMain}>
+      <div className={styles.totalMainRow}>
+        <span className={styles.totalUsdLabel}>TOTAL USD</span>
+        <span className={styles.totalUsdValue}>${totals.total_usd.toFixed(2)}</span>
+      </div>
+      <div className={styles.totalBsRow}>
+        <span className={styles.totalBsLabel}>En Bs. (@ {ticket.rate.toFixed(2)})</span>
+        <span className={styles.totalBsValue}>
+          Bs.&nbsp;{totals.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
+        </span>
+      </div>
+    </div>
+  )
+
+  const casheaNotes = (
+    <>
+      {casheaLive && <p className={styles.totalBsLabel} role="note" data-testid="financing-bcv-note">{FINANCING_BCV_NOTE}</p>}
+      {cobroBlocked && (
+        <p className={styles.totalBsLabel} role="status" data-testid="cobro-blocked">
+          Cashea solicitado: falta la aprobación para cobrar. Apruébalo, recházalo o retíralo.
+        </p>
+      )}
+    </>
+  )
+
+  if (mobile) {
+    return (
+      <MobileTicketSheet
+        tabsSlot={tabsSlot}
+        priceNode={priceNode}
+        linesNode={linesNode}
+        financingNode={financingNode}
+        breakdownNode={breakdownNode}
+        totalNode={totalNode}
+        casheaNotes={casheaNotes}
+        clientName={ticket.client_name}
+        discountPct={discountPct}
+        cargoPct={cargoPct}
+        isEmpty={isEmpty}
+        cobroBlocked={cobroBlocked}
+        onClose={onCloseSheet}
+        onSelectClient={onSelectClient}
+        onProcesarPago={onProcesarPago}
+        onVenderCredito={onVenderCredito}
+        onCotizar={onCotizar}
+        onDescuento={onDescuento}
+        onCargo={onCargo}
+        onImprimirCuenta={onImprimirCuenta}
+      />
+    )
+  }
 
   return (
     <div className={styles.rightPanel}>
@@ -99,98 +243,16 @@ export function TicketPanel({
 
       {/* Items */}
       <div className={styles.ticketItems}>
-        {isEmpty ? (
-          <motion.div
-            className={styles.ticketEmpty}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-          >
-            <ShoppingCart size={36} strokeWidth={1} aria-hidden="true" />
-            <p className={styles.ticketEmptyTitle}>Ticket vacío</p>
-            <p className={styles.ticketEmptySubtitle}>Toca un producto para agregarlo</p>
-          </motion.div>
-        ) : (
-          <AnimatePresence initial={false}>
-            {ticket.items.map((item) => (
-              <TicketItemRow
-                key={`${item.product_id}-${item.variant_id ?? 'base'}`}
-                item={item}
-                rate={ticket.rate}
-                onUpdateQty={onUpdateQty}
-                onRemove={onRemove}
-                userRole={userRole}
-                onPriceOverride={onPriceOverride}
-                allowCashierPriceOverride={allowCashierPriceOverride}
-                pendingSaleActive={pendingSaleActive}
-              />
-            ))}
-          </AnimatePresence>
-        )}
+        {linesNode}
       </div>
 
       {/* Totals */}
       <div className={styles.ticketTotals}>
-        <FinancingPanel
-          financing={ticket.financing ?? null}
-          onAction={cashea.onAction}
-          busy={cashea.busy}
-          error={cashea.error}
-          blocked={cashea.blocked}
-          canRequest={cashea.canRequest && !isEmpty}
-          editWarning={TICKET_ITEMS_EDIT_WARNING}
-        />
-        <PriceModeSwitch
-          mode={ticket.price_mode}
-          onChange={casheaLive ? undefined : onPriceMode}
-          readOnly={casheaLive}
-          busy={priceModeBusy}
-          error={priceModeError}
-          fallbackLines={ticket.items.filter(i => i.price_source === 'fallback_bcv').length}
-        />
+        {financingNode}
+        {priceNode}
         {casheaLive && <p className={styles.totalBsLabel} role="note" data-testid="financing-bcv-note">{FINANCING_BCV_NOTE}</p>}
-        {(discountPct > 0 || cargoPct > 0 || ticket.iva_pct > 0) && (
-          <div className={styles.totalBreakdown}>
-            <div className={styles.totalRow}>
-              <span>Subtotal</span>
-              <span>${totals.subtotal_usd.toFixed(2)}</span>
-            </div>
-            {discountPct > 0 && (
-              <div className={`${styles.totalRow} ${styles.totalRowDiscount}`}>
-                <span>Descuento ({discountPct}%)</span>
-                <span>-${totals.discount_usd.toFixed(2)}</span>
-              </div>
-            )}
-            {cargoPct > 0 && (
-              <div className={`${styles.totalRow} ${styles.totalRowCargo}`}>
-                <span>Cargo ({cargoPct}%)</span>
-                <span>+${totals.cargo_usd.toFixed(2)}</span>
-              </div>
-            )}
-            {/* IVA desconectado -- ver auditoría 2026-07-16, no borrar (riesgo
-                fiscal: la línea se mostraba pero el cobro nunca se persistía
-                realmente). ticket.iva_pct siempre es 0 en producción hoy
-                (Business.iva_enabled=false en los 5 negocios reales). */}
-            {false && ticket.iva_pct > 0 && (
-              <div className={`${styles.totalRow} ${styles.totalRowIva}`}>
-                <span>IVA ({ticket.iva_pct}%)</span>
-                <span>+${totals.iva_usd.toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-        )}
-        <div className={styles.totalMain}>
-          <div className={styles.totalMainRow}>
-            <span className={styles.totalUsdLabel}>TOTAL USD</span>
-            <span className={styles.totalUsdValue}>${totals.total_usd.toFixed(2)}</span>
-          </div>
-          <div className={styles.totalBsRow}>
-            <span className={styles.totalBsLabel}>En Bs. (@ {ticket.rate.toFixed(2)})</span>
-            <span className={styles.totalBsValue}>
-              Bs.&nbsp;{totals.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-            </span>
-          </div>
-        </div>
+        {breakdownNode}
+        {totalNode}
       </div>
 
       {/* Actions */}
@@ -231,10 +293,10 @@ export function TicketPanel({
 interface RowProps {
   item: TicketItem
   rate: number
-  onUpdateQty: (id: number, qty: number) => void
-  onRemove: (id: number) => void
+  onUpdateQty: (productId: number, variantId: number | null | undefined, qty: number) => void
+  onRemove: (productId: number, variantId: number | null | undefined) => void
   userRole: 'admin' | 'super_admin' | 'cashier'
-  onPriceOverride: (productId: number, variantId: number | undefined, newPrice: number, reason?: string, pin?: string) => void
+  onPriceOverride: (productId: number, variantId: number | null | undefined, newPrice: number, reason?: string, pin?: string) => void
   allowCashierPriceOverride?: boolean
   pendingSaleActive?: boolean
 }
@@ -310,7 +372,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({
             product_id:          item.product_id,
-            variant_id:          item.variant_id,
+            variant_id:          item.variant_id ?? undefined,
             unit_price_override: price,
             override_reason:     reason || undefined,
             pin:                 pinStr,
@@ -452,6 +514,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
     <>
       <motion.div
         className={styles.ticketItem}
+        data-testid="ticket-line"
         initial={{ opacity: 0, x: 16, scale: 0.98 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: -12, scale: 0.96, height: 0, marginBottom: 0 }}
@@ -459,6 +522,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
       >
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>{item.product_name}</span>
+          {item.variant_label && <span className={styles.itemVariant} data-testid="ticket-line-variant">{item.variant_label}</span>}
           <span className={styles.itemPrice}>
             {item.price_override_original != null ? (
               <>
@@ -495,7 +559,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
           <div className={styles.qtyControl}>
             <button
               className={styles.qtyBtn}
-              onClick={() => onUpdateQty(item.product_id, item.quantity - qtyStep)}
+              onClick={() => onUpdateQty(item.product_id, item.variant_id, item.quantity - qtyStep)}
               aria-label="Reducir cantidad"
               type="button"
             >
@@ -508,7 +572,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
             </span>
             <button
               className={styles.qtyBtn}
-              onClick={() => onUpdateQty(item.product_id, item.quantity + qtyStep)}
+              onClick={() => onUpdateQty(item.product_id, item.variant_id, item.quantity + qtyStep)}
               aria-label="Aumentar cantidad"
               type="button"
             >
@@ -523,7 +587,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
           </div>
           <button
             className={styles.removeBtn}
-            onClick={() => onRemove(item.product_id)}
+            onClick={() => onRemove(item.product_id, item.variant_id)}
             aria-label={`Eliminar ${item.product_name}`}
             type="button"
           >

@@ -6,22 +6,26 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import type { ProductForPOS } from '@/lib/pos'
+import type { PriceMode } from '@/lib/pricing'
+import { cardPrice } from '@/lib/pos-products'
 import styles from './QtyInput.module.css'
 
 interface QtyInputProps {
   product: ProductForPOS
   rate: number
+  /** Modo de precio del ticket: el precio y el subtotal del diálogo son los de ESE modo. */
+  mode: PriceMode
   onConfirm: (qty: number) => void
   onClose: () => void
 }
 
-export function QtyInput({ product, rate, onConfirm, onClose }: QtyInputProps) {
+export function QtyInput({ product, rate, mode, onConfirm, onClose }: QtyInputProps) {
   useScrollLock(true)
 
   const [value, setValue] = useState('1.000')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const price = product.price_per_kg_usd ?? 0
+  const { price } = cardPrice(product, mode)
   const qty = parseFloat(value) || 0
   const subtotalUsd = qty * price
   const subtotalBs = subtotalUsd * rate

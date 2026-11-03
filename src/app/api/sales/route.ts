@@ -51,6 +51,8 @@ const saleSchema = z.object({
   override_auth_pin: z.string().min(1).max(20).optional(),
   // Modo de precio del ticket. Si falta (clientes viejos) se deriva del tier del cliente; el explícito siempre gana.
   price_mode:        priceModeSchema.optional(),
+  // Cargo global del ticket en % (0-100); se suma al total tras los descuentos.
+  cargo_pct:         z.number().min(0).max(100).optional(),
   // Declara financiamiento (Cashea) al crear la venta: solo con status 'pending'; luego se aprueba y se cobra con PATCH /pay.
   financing:         z.literal('cashea').optional(),
 })
@@ -471,10 +473,14 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      const total_usd =
-        Math.round(saleItems.reduce((acc, i) => acc + i.subtotal_usd, 0) * 100) / 100
-      const total_bs =
-        Math.round(saleItems.reduce((acc, i) => acc + i.subtotal_bs, 0) * 100) / 100
+      const itemsUsd = Math.round(saleItems.reduce((acc, i) => acc + i.subtotal_usd, 0) * 100) / 100
+      const itemsBs  = Math.round(saleItems.reduce((acc, i) => acc + i.subtotal_bs, 0) * 100) / 100
+      // Cargo global del ticket (POS): mismo cálculo que calcularTotales() en lib/pos.ts, sobre el neto ya descontado.
+      // Sin esto el cajero cobraba el total con cargo y la venta guardaba el total sin cargo.
+      const cargoPct = body.cargo_pct ?? 0
+      const cargoUsd = cargoPct > 0 ? Math.round(itemsUsd * cargoPct) / 100 : 0
+      const total_usd = Math.round((itemsUsd + cargoUsd) * 100) / 100
+      const total_bs  = cargoPct > 0 ? Math.round(total_usd * rate * 100) / 100 : itemsBs
 
       let montoRecibidoUsd: number | null = null
       let vueltoUsd: number | null = null

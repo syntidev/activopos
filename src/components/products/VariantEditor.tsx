@@ -33,6 +33,8 @@ export function VariantEditor({ f }: VariantEditorProps) {
   const type: SizeType | null = SIZE_TYPES.find(t => t.id === f.sizeTypeId) ?? null
   const taken = new Set(f.rows.map(r => r.valor.toLowerCase()))
   const basePrice = f.computed.displayPrice
+  const productDivisa = parseFloat(f.wholesalePriceUsd) || 0
+  const money = (n: number) => `$${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   const addExtra = () => {
     if (type && f.addSize(type, extra)) setExtra('')
@@ -144,13 +146,20 @@ export function VariantEditor({ f }: VariantEditorProps) {
             <p className={s.total} aria-live="polite">Stock total: <strong>{f.variantStockTotal} und</strong></p>
           </div>
 
+          <p className={s.priceRef} data-testid="variant-price-ref">
+            Si los dejas vacíos se usa el del producto:{' '}
+            <strong>{basePrice > 0 ? money(basePrice) : 'sin precio'} Full</strong>
+            {' · '}
+            <strong>{productDivisa > 0 ? `${money(productDivisa)} Divisa` : 'sin precio Divisa'}</strong>
+          </p>
+
           <div className={s.table} role="table" aria-label="Tallas del producto">
             <div className={s.headRow} role="row">
               <span role="columnheader">Talla</span>
               <span role="columnheader">Stock</span>
               <span role="columnheader">Código de barras</span>
               <span role="columnheader">SKU (opcional)</span>
-              <span role="columnheader">Precio propio (opcional)</span>
+              <span role="columnheader">Precio propio (opcional): Full y Divisa</span>
               <span role="columnheader" className={s.srOnly}>Quitar</span>
             </div>
 
@@ -217,22 +226,45 @@ export function VariantEditor({ f }: VariantEditorProps) {
                     />
                   </label>
 
-                  <label className={s.field} role="cell">
-                    <span className={`${s.label} ${s.cellLabel}`}>Precio propio (opcional)</span>
-                    <span className={s.priceWrap}>
-                      <span className={s.currency} aria-hidden="true">$</span>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        step="0.01"
-                        className={`${s.input} ${s.priceInput}`}
-                        value={r.price}
-                        placeholder={basePrice > 0 ? basePrice.toFixed(2) : 'Igual al producto'}
-                        onChange={e => f.updateRow(r.key, { price: e.target.value })}
-                      />
-                    </span>
-                  </label>
+                  <div className={s.field} role="cell">
+                    <div className={s.priceStack}>
+                      <label className={s.priceField}>
+                        <span className={`${s.label} ${s.priceTag}`}>Full</span>
+                        <span className={s.priceWrap}>
+                          <span className={s.currency} aria-hidden="true">$</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step="0.01"
+                            className={`${s.input} ${s.priceInput}`}
+                            value={r.price}
+                            aria-label={`Precio Full propio de la talla ${r.valor}`}
+                            onChange={e => f.updateRow(r.key, { price: e.target.value })}
+                          />
+                        </span>
+                      </label>
+                      <label className={s.priceField}>
+                        <span className={`${s.label} ${s.priceTag}`}>Divisa</span>
+                        <span className={s.priceWrap}>
+                          <span className={s.currency} aria-hidden="true">$</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step="0.01"
+                            className={`${s.input} ${s.priceInput}`}
+                            value={r.divisaPrice}
+                            aria-label={`Precio Divisa propio de la talla ${r.valor}`}
+                            onChange={e => f.updateRow(r.key, { divisaPrice: e.target.value })}
+                          />
+                        </span>
+                      </label>
+                    </div>
+                    {r.price.trim() !== '' && r.divisaPrice.trim() === '' && (
+                      <p className={s.warn} role="note">Esta talla no tendrá precio Divisa: en Divisa se cobrará el Full</p>
+                    )}
+                  </div>
 
                   <button
                     type="button"
@@ -249,8 +281,7 @@ export function VariantEditor({ f }: VariantEditorProps) {
           </div>
 
           <p className={s.help}>
-            Precio propio: déjalo vacío para cobrar el precio del producto
-            {basePrice > 0 ? ` ($${basePrice.toFixed(2)})` : ''}. Escríbelo solo si esa talla cuesta distinto.
+            Escribe un precio propio solo si esa talla cuesta distinto. Si pones el Full propio, pon también el Divisa: sin él, en modo Divisa se cobra el Full.
           </p>
         </section>
       )}

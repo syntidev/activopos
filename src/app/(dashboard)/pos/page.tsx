@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ShoppingCart, X } from 'lucide-react'
 import { usePOS } from '@/hooks/usePOS'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useDraftTabs } from '@/hooks/useDraftTabs'
 import { useTicketFinancing } from '@/hooks/useTicketFinancing'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
@@ -12,6 +12,7 @@ import { LeftPanel } from './LeftPanel'
 import { TicketPanel } from './TicketPanel'
 import { DraftTabs } from '@/components/pos/DraftTabs'
 import { CajaAperturaScreen } from '@/components/pos/CajaAperturaScreen'
+import { MobileCartBar } from '@/components/pos/MobileCartBar'
 import { CobroModal } from '@/components/pos/CobroModal'
 import { printSaleThermal } from '@/lib/thermal-print'
 import { ScannerModal } from '@/components/pos/ScannerModal'
@@ -43,6 +44,7 @@ function POSView() {
   const { toast } = useToast()
   const [weightProduct, setWeightProduct] = useState<ProductForPOS | null>(null)
   const [cartOpen, setCartOpen]           = useState(false)
+  const isMobile                          = useMediaQuery('(max-width: 767px)')
   const [scannerOpen, setScannerOpen]     = useState(false)
   const [businessName, setBusinessName]   = useState('')
   const [maxOpenTickets, setMaxOpenTickets] = useState(5)
@@ -166,6 +168,7 @@ function POSView() {
   const handlePaymentComplete = async () => {
     const nextTicket = await drafts.paymentComplete()
     pos.setTicketDirect(nextTicket)
+    setCartOpen(false)
   }
 
   // "Imprimir cuenta" -- corte de consumo del ticket abierto, NO cobra ni
@@ -188,56 +191,54 @@ function POSView() {
     })
   }
 
+  // En móvil las pestañas de tickets viven dentro de la hoja del ticket, no arriba de los productos.
+  const draftTabs = (
+    <DraftTabs
+      tabs={drafts.tabs}
+      activeId={drafts.activeId}
+      loading={drafts.loading}
+      onSwitch={handleSwitchTab}
+      onNew={handleNewTab}
+      onClose={handleCloseTab}
+      onRename={drafts.renameTab}
+    />
+  )
+  const cobroBlocked = pos.ticket.financing?.status === 'requested'
+  // La pestaña activa se mide con el ticket vivo (pos.ticket); su snapshot puede ir atrasado.
+  const openTickets = drafts.tabs.filter(t => (t.id === drafts.activeId ? !isEmpty : !ticketVacio(t.snapshot))).length
+  const showBar = isMobile && openTickets > 0
+
   return (
     <div className={styles.posContainer}>
-      <div className={styles.leftArea}>
-        <DraftTabs
-          tabs={drafts.tabs}
-          activeId={drafts.activeId}
-          loading={drafts.loading}
-          onSwitch={handleSwitchTab}
-          onNew={handleNewTab}
-          onClose={handleCloseTab}
-          onRename={drafts.renameTab}
-        />
+      <div className={`${styles.leftArea}${showBar ? ` ${styles.leftAreaWithBar}` : ''}`}>
+        {!isMobile && draftTabs}
         <LeftPanel
+          mobile={isMobile}
           search={pos.search}
           onSearchChange={pos.setSearch}
           isSearching={pos.isSearching}
           results={pos.searchResults}
           rate={pos.rate}
+          mode={pos.ticket.price_mode}
           onProductClick={handleProductClick}
           onScannerOpen={() => setScannerOpen(true)}
         />
       </div>
 
-      {/* Mobile: floating cart toggle */}
-      <button
-        className={styles.cartToggle}
-        onClick={() => setCartOpen(o => !o)}
-        aria-label={cartOpen ? 'Cerrar carrito' : `Ver carrito (${itemCount} ítems)`}
-      >
-        {cartOpen
-          ? <X size={20} aria-hidden="true" />
-          : itemCount > 0
-            ? <>
-                <ShoppingCart size={18} aria-hidden="true" />
-                <span className={styles.cartToggleText}>Ver carrito ({itemCount})</span>
-              </>
-            : <ShoppingCart size={22} aria-hidden="true" />
-        }
-      </button>
-
-      {/* Mobile: overlay backdrop */}
-      {cartOpen && (
-        <div
-          className={styles.drawerOverlay}
-          onClick={() => setCartOpen(false)}
-          aria-hidden="true"
+      {/* Mobile: barra inferior con el resumen del ticket (oculta solo si TODAS las pestañas están vacías) */}
+      {showBar && (
+        <MobileCartBar
+          itemCount={itemCount}
+          totalUsd={totals.total_usd}
+          totalBs={totals.total_bs}
+          cobroBlocked={cobroBlocked}
+          openTickets={openTickets}
+          onOpen={() => setCartOpen(true)}
+          onCobrar={openCobro}
         />
       )}
 
-      {/* Cart slot — side drawer on mobile, grid panel on desktop */}
+      {/* Cart slot — hoja a pantalla completa en móvil, panel de la grilla en escritorio */}
       <div className={`${styles.cartSlot}${cartOpen ? ` ${styles.cartSlotOpen}` : ''}`}>
         <TicketPanel
           ticket={pos.ticket}
@@ -264,6 +265,9 @@ function POSView() {
           priceModeBusy={pos.priceModeBusy}
           priceModeError={pos.priceModeError}
           cashea={{ canRequest: hasFinancier, onAction: financing.act, busy: financing.busy, error: financing.error, blocked: financing.blocked }}
+          mobile={isMobile}
+          onCloseSheet={() => setCartOpen(false)}
+          tabsSlot={draftTabs}
         />
       </div>
 
@@ -271,6 +275,7 @@ function POSView() {
         <QtyInput
           product={weightProduct}
           rate={pos.rate}
+          mode={pos.ticket.price_mode}
           onConfirm={(qty) => { pos.addProduct(weightProduct, qty); setWeightProduct(null) }}
           onClose={() => setWeightProduct(null)}
         />
@@ -310,6 +315,7 @@ function POSView() {
         clientCedula={pos.ticket.client_cedula}
         items={pos.ticket.items.map(i => ({
           name:      i.product_name,
+          variant_label: i.variant_label,
           qty:       i.quantity,
           price_usd: i.price_per_unit_usd,
         }))}
@@ -379,16 +385,22 @@ function POSView() {
           ? {
               id: pos.pendingVariantProduct.id,
               name: pos.pendingVariantProduct.name,
+              sale_mode: pos.pendingVariantProduct.sale_mode,
               price_per_unit_usd: pos.pendingVariantProduct.price_per_unit_usd,
+              price_per_kg_usd: pos.pendingVariantProduct.price_per_kg_usd,
+              wholesale_price_usd: pos.pendingVariantProduct.wholesale_price_usd,
+              wholesale_price_per_kg_usd: pos.pendingVariantProduct.wholesale_price_per_kg_usd,
             }
           : null}
+        mode={pos.ticket.price_mode}
+        rate={pos.ticket.rate}
         onSelect={(variant) => {
           if (pos.pendingVariantProduct) {
             pos.addProductWithVariant(pos.pendingVariantProduct, variant)
           }
         }}
       />
-      <HelpButton module="pos" />
+      {!isMobile && <HelpButton module="pos" />}
     </div>
   )
 }

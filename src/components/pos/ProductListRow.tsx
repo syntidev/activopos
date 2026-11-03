@@ -4,19 +4,20 @@ import { motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
 import { Badge } from '@/components/ui'
 import type { ProductForPOS } from '@/lib/pos'
+import type { PriceMode } from '@/lib/pricing'
+import { cardPrice, NO_DIVISA_LABEL, NO_DIVISA_TITLE } from '@/lib/pos-products'
 import styles from './ProductListRow.module.css'
 
 interface Props {
   product: ProductForPOS
   rate: number
+  /** Modo de precio del ticket activo: la fila muestra el precio de ESE modo. */
+  mode: PriceMode
   onAdd: (p: ProductForPOS) => void
 }
 
-export function ProductListRow({ product, rate, onAdd }: Props) {
-  const price =
-    product.sale_mode === 'weight'
-      ? (product.price_per_kg_usd ?? 0)
-      : (product.price_per_unit_usd ?? 0)
+export function ProductListRow({ product, rate, mode, onAdd }: Props) {
+  const { price, source } = cardPrice(product, mode)
 
   const stock        = product.stock?.net_qty ?? 0
   const isService    = product.sale_mode === 'service'
@@ -58,6 +59,7 @@ export function ProductListRow({ product, rate, onAdd }: Props) {
         <span className={styles.priceBs}>
           Bs.&nbsp;{(price * rate).toLocaleString('es-VE', { maximumFractionDigits: 0 })}
         </span>
+        {source === 'fallback_bcv' && <span className={styles.fallbackNote} title={NO_DIVISA_TITLE}>{NO_DIVISA_LABEL}</span>}
       </div>
 
       <div className={styles.stockCol}>

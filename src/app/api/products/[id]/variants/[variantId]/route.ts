@@ -6,6 +6,8 @@ import { findBarcodeConflict } from '@/lib/product-barcodes'
 import { z } from 'zod'
 
 const patchSchema = z.object({
+  // El editor antiguo (ProductModal) manda `tipo`; con .strict() hay que declararlo.
+  tipo:          z.enum(['talla', 'color', 'personalizado']).optional(),
   valor:         z.string().min(1).max(50).optional(),
   sku:           z.string().max(50).nullable().optional(),
   barcode:       z.string().trim().max(50).nullable().optional(),
@@ -15,9 +17,11 @@ const patchSchema = z.object({
   is_active:     z.boolean().optional(),
   sort_order:    z.number().int().optional(),
   price_usd:     z.number().min(0).nullable().optional(),
+  // Divisa propio de la talla (nulo = usa el Divisa del producto si no tiene Full propio; ver lib/pricing.ts variantBases).
+  divisa_price_usd: z.number().min(0).nullable().optional(),
   cost_usd:      z.number().min(0).nullable().optional(),
   variant_group: z.string().max(30).nullable().optional(),
-})
+}).strict()
 
 type RouteContext = { params: { id: string; variantId: string } }
 

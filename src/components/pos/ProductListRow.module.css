@@ -107,6 +107,14 @@
   white-space: nowrap;
 }
 
+/* Modo Divisa y el producto no tiene precio Divisa: se muestra el Full y se avisa (mismo texto que la línea del ticket) */
+.fallbackNote {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--warning-text);
+  white-space: nowrap;
+}
+
 /* ── Stock ── */
 .stockCol { flex-shrink: 0; }
 

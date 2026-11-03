@@ -19,14 +19,15 @@ import {
   calcularTotales,
   agregarItem,
   agregarItemConVariante,
-  actualizarCantidad,
-  eliminarItem,
+  updateLineQty,
+  removeLine,
   aplicarDescuentoGlobal,
   aplicarCargoGlobal,
   buildSalePayload,
   overridePrecioItem,
 } from '@/lib/pos'
 import type { ProductVariant } from '@/components/products/VariantSelector'
+import { toPOSProduct, type ApiPOSProduct } from '@/lib/pos-products'
 import type { CreditTerms } from '@/components/pos/CreditoModal'
 import type { TicketFinancing } from '@/types/financing'
 
@@ -167,7 +168,8 @@ export function usePOS() {
           `/api/products/search?q=${encodeURIComponent(trimmed)}&limit=20`
         )
         const json = await res.json()
-        setSearchResults(json.products ?? [])
+        // Misma normalización que browse y recientes (foto con fallback a images[0], precios Full + Divisa).
+        setSearchResults(((json.products ?? []) as ApiPOSProduct[]).map(toPOSProduct))
       } catch {
         setSearchResults([])
       } finally {
@@ -219,6 +221,7 @@ export function usePOS() {
       if (hit && hit.stock > 0) {
         setTicket(prev => agregarItemConVariante(prev, product, {
           id: hit.id, name: hit.valor, price_extra_usd: Number(hit.precio_extra ?? 0),
+          price_usd: hit.price_usd ?? null, divisa_price_usd: hit.divisa_price_usd ?? null,
         }, qty))
         return
       }
@@ -243,12 +246,13 @@ export function usePOS() {
     setPendingVariantProduct(null)
   }, [])
 
-  const updateQty = useCallback((productId: number, qty: number) => {
-    setTicket(prev => actualizarCantidad(prev, productId, qty))
+  // La línea se identifica por producto + talla (null/undefined = sin talla): cada una cambia o se elimina por separado.
+  const updateQty = useCallback((productId: number, variantId: number | null | undefined, qty: number) => {
+    setTicket(prev => updateLineQty(prev, productId, variantId, qty))
   }, [])
 
-  const removeItem = useCallback((productId: number) => {
-    setTicket(prev => eliminarItem(prev, productId))
+  const removeItem = useCallback((productId: number, variantId: number | null | undefined) => {
+    setTicket(prev => removeLine(prev, productId, variantId))
   }, [])
 
   const applyDiscount = useCallback((pct: number) => {
@@ -261,7 +265,7 @@ export function usePOS() {
 
   const overrideItemPrice = useCallback((
     productId: number,
-    variantId: number | undefined,
+    variantId: number | null | undefined,
     newPrice: number,
     reason?: string,
     pin?: string
@@ -350,6 +354,7 @@ export function usePOS() {
         notes:        currentTicket.notes || options?.notes || undefined,
         iva_pct:      currentTicket.iva_pct || undefined,
         price_mode:   currentTicket.price_mode,
+        cargo_pct:    currentTicket.cargo_global_pct || undefined,
         payments,
         due_date:     creditTerms?.due_date?.toISOString(),
         credit_days:  creditTerms?.credit_days,
@@ -401,7 +406,8 @@ export function usePOS() {
       const res  = await fetch(`/api/sales/${payId}/pay`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined }),
+        // Con una venta pendiente (descuento con PIN) el servidor no conoce el cargo de la pantalla: se manda para que entre en el total.
+        body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined, ...(pendingSaleId ? { cargo_pct: ticket.cargo_global_pct } : {}) }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al procesar el pago')

@@ -6,7 +6,7 @@ import { X, Minus, Plus, ShoppingCart, Camera, Aperture, ImagePlus } from 'lucid
 import { useScanner } from '@/hooks/useScanner'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import type { ProductForPOS, TicketState, TicketTotals } from '@/lib/pos'
+import { lineKey, type ProductForPOS, type TicketState, type TicketTotals } from '@/lib/pos'
 import styles from './ScannerModal.module.css'
 
 /* ── Props ── */
@@ -16,7 +16,7 @@ interface Props {
   ticket: TicketState
   totals: TicketTotals
   onAddProduct: (product: ProductForPOS) => void
-  onUpdateQty: (productId: number, qty: number) => void
+  onUpdateQty: (productId: number, variantId: number | null | undefined, qty: number) => void
   onClose: () => void
   onProcesarPago: () => void
 }
@@ -266,7 +266,7 @@ export function ScannerModal({
           <ul className={styles.itemList} role="list">
             {ticket.items.map(item => (
               <li
-                key={`${item.product_id}-${item.variant_id ?? 0}`}
+                key={lineKey(item.product_id, item.variant_id)}
                 className={styles.itemRow}
               >
                 <div className={styles.itemInfo}>
@@ -284,7 +284,7 @@ export function ScannerModal({
                     <button
                       type="button"
                       className={styles.qtyBtn}
-                      onClick={() => onUpdateQty(item.product_id, item.quantity - 1)}
+                      onClick={() => onUpdateQty(item.product_id, item.variant_id, item.quantity - 1)}
                       aria-label={`Reducir ${item.product_name}`}
                     >
                       <Minus size={14} strokeWidth={2.5} aria-hidden="true" />
@@ -298,7 +298,7 @@ export function ScannerModal({
                     <button
                       type="button"
                       className={styles.qtyBtn}
-                      onClick={() => onUpdateQty(item.product_id, item.quantity + 1)}
+                      onClick={() => onUpdateQty(item.product_id, item.variant_id, item.quantity + 1)}
                       aria-label={`Aumentar ${item.product_name}`}
                     >
                       <Plus size={14} strokeWidth={2.5} aria-hidden="true" />

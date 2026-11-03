@@ -25,6 +25,7 @@ test.describe.configure({ mode: 'serial', timeout: 180_000 })
 let api: APIRequestContext
 let abriCaja = false
 let metodoPago = ''
+let maxSaleId = 0
 
 const token = async (): Promise<string> =>
   new SignJWT({ userId: ADMIN_ID, businessId: BUSINESS_ID, role: 'admin', name: 'Admin Demo' })
@@ -48,6 +49,7 @@ function cleanup(): void {
 
 test.beforeAll(async () => {
   cleanup()
+  maxSaleId = Number(sql(`SELECT IFNULL(MAX(id),0) FROM sales WHERE business_id=${BUSINESS_ID}`))
   api = await pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${await token()}` } })
   if (Number(sql(`SELECT COUNT(*) FROM cash_registers WHERE business_id=${BUSINESS_ID} AND closed_at IS NULL`)) === 0) {
     const open = await api.post('/api/cash/open', { data: { opening_amount_usd: 0, opening_amount_bs: 0 } })
@@ -73,6 +75,8 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   cleanup()
+  // "+ Nuevo" crea borradores vacíos en la DB: se quitan los que creó esta prueba
+  sql(`DELETE FROM sales WHERE business_id=${BUSINESS_ID} AND status='draft' AND id>${maxSaleId} AND id NOT IN (SELECT sale_id FROM sale_items)`)
   if (abriCaja && api) await api.post('/api/cash/close', { data: { closing_amount_usd: 0, closing_amount_bs: 0, close_notes: 'ZZ prueba pos-movil' } })
   await api?.dispose()
   expect(Number(sql(`SELECT COUNT(*) FROM products WHERE business_id=${BUSINESS_ID} AND name LIKE 'ZZ PosMov%'`))).toBe(0)
@@ -138,7 +142,7 @@ test('móvil 375: grid, barra, hoja, líneas, Divisa, Más y cobro coherente con
   await expect(total).toHaveText(usd(100))
 
   // cerrar la hoja con el botón y volver a agregar Q desde el grid
-  await page.getByRole('button', { name: 'Cerrar ticket' }).click()
+  await page.getByRole('button', { name: 'Cerrar ticket', exact: true }).click()
   await expect(hoja(page)).toBeHidden()
   await card(page, NAME_Q).click()
   await expect(page.getByTestId('pos-cart-count')).toHaveText('2 artículos')
@@ -172,6 +176,37 @@ test('móvil 375: grid, barra, hoja, líneas, Divisa, Más y cobro coherente con
                      WHERE s.business_id=${BUSINESS_ID} AND s.status='paid' AND si.product_id IN
                      (SELECT id FROM products WHERE business_id=${BUSINESS_ID} AND name LIKE 'ZZ PosMov%') ORDER BY s.id DESC LIMIT 1`)
   expect(Number(venta)).toBeCloseTo(mostrado, 2)
+})
+
+test('móvil 375: ticket activo vacío con otra pestaña con ítems muestra "Tickets abiertos: N"; con todas vacías la barra se oculta', async ({ page }) => {
+  await entrar(page, 375, 812)
+  await card(page, NAME_Q).click()
+  await expect(page.getByTestId('pos-cart-count')).toHaveText('1 artículo')
+  await abrirHoja(page)
+  await hoja(page).getByRole('button', { name: /Nuevo/ }).click()
+  await expect(lineas(page)).toHaveCount(0)
+  await page.getByRole('button', { name: 'Cerrar ticket', exact: true }).click()
+  await expect(hoja(page)).toBeHidden()
+
+  // activo vacío + otra pestaña con ítems: barra con el aviso, sin Cobrar
+  await expect(barra(page)).toBeVisible()
+  await expect(page.getByTestId('pos-cart-open-tickets')).toHaveText('Tickets abiertos: 1')
+  await expect(barra(page).getByRole('button', { name: 'Cobrar' })).toHaveCount(0)
+  expect(await noHScroll(page), 'sin scroll horizontal con el aviso').toBe(true)
+  await page.screenshot({ path: path.join(SHOTS, 'pos-movil-tickets-abiertos-375.png') })
+
+  // tocar la barra abre la hoja y desde ahí se llega al ticket con ítems
+  await page.getByRole('button', { name: /Ver tickets abiertos/ }).click()
+  await expect(hoja(page)).toBeVisible()
+  await hoja(page).getByRole('tab', { name: /Ticket 1/ }).click()
+  await expect(lineas(page)).toHaveCount(1)
+  await expect(page.getByTestId('pos-cart-count')).toHaveText('1 artículo')
+
+  // todas las pestañas vacías: la barra desaparece
+  await lineas(page).first().getByRole('button', { name: /^Eliminar/ }).click()
+  await expect(lineas(page)).toHaveCount(0)
+  await page.getByRole('button', { name: 'Cerrar ticket', exact: true }).click()
+  await expect(barra(page)).toHaveCount(0)
 })
 
 test('escritorio 1280: el POS conserva panel lateral, pestañas arriba, sin barra móvil y con ayuda', async ({ page }) => {

@@ -8,12 +8,31 @@ interface MobileCartBarProps {
   totalUsd: number
   totalBs: number
   cobroBlocked: boolean
+  /** Tickets (pestañas) con ítems. Con el ticket activo vacío la barra solo avisa de ellos. */
+  openTickets: number
   onOpen: () => void
   onCobrar: () => void
 }
 
-/** Barra inferior del POS móvil: resumen del ticket (abre la hoja) y "Cobrar". Solo se monta con el ticket no vacío. */
-export function MobileCartBar({ itemCount, totalUsd, totalBs, cobroBlocked, onOpen, onCobrar }: MobileCartBarProps) {
+/** Barra inferior del POS móvil: resumen del ticket (abre la hoja) y "Cobrar". Se monta si algún ticket tiene ítems. */
+export function MobileCartBar({ itemCount, totalUsd, totalBs, cobroBlocked, openTickets, onOpen, onCobrar }: MobileCartBarProps) {
+  // Ticket activo vacío pero otra pestaña con ítems: sin totales ni Cobrar, solo acceso a la hoja.
+  if (itemCount === 0) {
+    return (
+      <div className={styles.bar} data-testid="pos-cart-bar">
+        <button
+          type="button"
+          className={styles.summary}
+          onClick={onOpen}
+          aria-label={`Ver tickets abiertos (${openTickets})`}
+        >
+          <ShoppingCart size={20} aria-hidden="true" className={styles.icon} />
+          <span className={styles.openTickets} data-testid="pos-cart-open-tickets">Tickets abiertos: {openTickets}</span>
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.bar} data-testid="pos-cart-bar">
       <button

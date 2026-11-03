@@ -204,10 +204,13 @@ function POSView() {
     />
   )
   const cobroBlocked = pos.ticket.financing?.status === 'requested'
+  // La pestaña activa se mide con el ticket vivo (pos.ticket); su snapshot puede ir atrasado.
+  const openTickets = drafts.tabs.filter(t => (t.id === drafts.activeId ? !isEmpty : !ticketVacio(t.snapshot))).length
+  const showBar = isMobile && openTickets > 0
 
   return (
     <div className={styles.posContainer}>
-      <div className={`${styles.leftArea}${isMobile && !isEmpty ? ` ${styles.leftAreaWithBar}` : ''}`}>
+      <div className={`${styles.leftArea}${showBar ? ` ${styles.leftAreaWithBar}` : ''}`}>
         {!isMobile && draftTabs}
         <LeftPanel
           mobile={isMobile}
@@ -222,13 +225,14 @@ function POSView() {
         />
       </div>
 
-      {/* Mobile: barra inferior con el resumen del ticket (oculta si está vacío) */}
-      {isMobile && !isEmpty && (
+      {/* Mobile: barra inferior con el resumen del ticket (oculta solo si TODAS las pestañas están vacías) */}
+      {showBar && (
         <MobileCartBar
           itemCount={itemCount}
           totalUsd={totals.total_usd}
           totalBs={totals.total_bs}
           cobroBlocked={cobroBlocked}
+          openTickets={openTickets}
           onOpen={() => setCartOpen(true)}
           onCobrar={openCobro}
         />

@@ -12,6 +12,21 @@ export interface QuotePDFOptions {
   notes: string
 }
 
+/** Datos del documento: salen de la DB (negocio y usuario), nunca escritos a mano. */
+export interface QuoteMeta {
+  businessName: string
+  cashierName: string
+  /** Número de la cotización guardada; sin él se rotula "Borrador (sin número)". */
+  ticketNumber?: string
+  rif?: string | null
+  address?: string | null
+  phone?: string | null
+  /** URL ABSOLUTA del logo: el documento se abre como blob: y no resuelve rutas relativas. */
+  logoUrl?: string | null
+  /** Pie configurado por el negocio (quotation_footer); si falta se arma con sus datos. */
+  footer?: string | null
+}
+
 /* ── Formatting ── */
 
 const fUSD = (n: number) => '$' + n.toFixed(2)
@@ -74,7 +89,7 @@ export function generarCotizacionPDF(
   ticket: TicketState,
   totals: TicketTotals,
   options: QuotePDFOptions,
-  meta: { businessName: string; cashierName: string; ticketNumber?: string }
+  meta: QuoteMeta
 ): void {
   const rate   = ticket.rate || 1
   const today  = new Date().toLocaleDateString('es-VE', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -86,6 +101,7 @@ export function generarCotizacionPDF(
     body{font-family:Arial,sans-serif;font-size:11px;max-width:720px;margin:20px auto;color:#222;background:#fff}
     .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:2px solid #222;margin-bottom:16px}
     .biz{font-size:22px;font-weight:700}
+    .logo{display:block;max-height:56px;max-width:160px;margin-bottom:6px}
     .doc-title{font-size:18px;font-weight:700;color:#444;text-align:right}
     .sub{font-size:11px;color:#555}
     table{width:100%;border-collapse:collapse;margin:12px 0}
@@ -115,7 +131,7 @@ export function generarCotizacionPDF(
     const subBs = i.subtotal_usd * rate
     return [
       '<tr>',
-      `  <td>${esc(i.product_name)}</td>`,
+      `  <td>${esc(i.product_name)}${i.variant_label ? ` &mdash; ${esc(i.variant_label)}` : ''}</td>`,
       `  <td class="r">${esc(fQty(i.quantity, i.sale_mode))}</td>`,
       hasUsd ? `  <td class="r">${esc(fUSD(i.price_per_unit_usd))}</td><td class="r">${esc(fUSD(i.subtotal_usd))}</td>` : '',
       hasBs  ? `  <td class="r">${esc(fBs(subBs))}</td>` : '',
@@ -128,16 +144,25 @@ export function generarCotizacionPDF(
     `<div class="trow"><span>Descuento</span><span>${hasUsd ? '-' + esc(fUSD(totals.discount_usd)) : ''}</span></div>`,
   ].join('') : ''
 
+  // Pie: el configurado por el negocio o, si no hay, sus propios datos (nunca la marca de ActivoPOS).
+  const datosNegocio = [meta.businessName, meta.rif ? `RIF ${meta.rif}` : '', meta.phone ? `Tel. ${meta.phone}` : '', meta.address ?? '']
+    .filter(Boolean).join(' · ')
+  const pie = meta.footer?.trim() || datosNegocio
+
   const html = [
     '<div class="hdr">',
     '  <div>',
+    meta.logoUrl ? `    <img class="logo" src="${esc(meta.logoUrl)}" alt="">` : '',
     `    <div class="biz">${esc(meta.businessName)}</div>`,
+    meta.rif ? `    <div class="sub">RIF: ${esc(meta.rif)}</div>` : '',
+    meta.address ? `    <div class="sub">${esc(meta.address)}</div>` : '',
+    meta.phone ? `    <div class="sub">Tel: ${esc(meta.phone)}</div>` : '',
     `    <div class="sub">${esc(today)}</div>`,
     `    <div class="sub">Atendido por: ${esc(meta.cashierName)}</div>`,
     '  </div>',
     '  <div>',
     '    <div class="doc-title">COTIZACI&Oacute;N</div>',
-    meta.ticketNumber ? `    <div class="sub r">N&deg; ${esc(meta.ticketNumber)}</div>` : '',
+    `    <div class="sub r">${meta.ticketNumber ? `N&deg; ${esc(meta.ticketNumber)}` : 'Borrador (sin n&uacute;mero)'}</div>`,
     `    <div class="validity r">V&aacute;lida hasta: ${esc(expiry)}</div>`,
     '  </div>',
     '</div>',
@@ -158,7 +183,7 @@ export function generarCotizacionPDF(
       : '',
     '<div class="footer">',
     `  Esta cotizaci&oacute;n es v&aacute;lida por ${options.validityDays} d&iacute;as contados desde su fecha de emisi&oacute;n.<br>`,
-    '  ActivoPOS &mdash; Sistema de Punto de Venta',
+    `  ${esc(pie)}`,
     '</div>',
   ].join('\n')
 

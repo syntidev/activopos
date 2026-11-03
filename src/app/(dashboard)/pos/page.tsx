@@ -312,6 +312,7 @@ function POSView() {
         clientCedula={pos.ticket.client_cedula}
         items={pos.ticket.items.map(i => ({
           name:      i.product_name,
+          variant_label: i.variant_label,
           qty:       i.quantity,
           price_usd: i.price_per_unit_usd,
         }))}

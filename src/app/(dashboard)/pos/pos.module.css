@@ -550,6 +550,9 @@
   line-height: var(--leading-tight);
 }
 
+/* Talla de la línea, bajo el nombre del producto */
+.itemVariant { font-size: var(--text-xs); color: var(--color-text-secondary); }
+
 .itemPrice { font-size: var(--text-xs); color: var(--color-text-muted); }
 
 .itemControls {

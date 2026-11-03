@@ -460,6 +460,7 @@ function TicketItemRow({ item, rate, onUpdateQty, onRemove, userRole, onPriceOve
       >
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>{item.product_name}</span>
+          {item.variant_label && <span className={styles.itemVariant} data-testid="ticket-line-variant">{item.variant_label}</span>}
           <span className={styles.itemPrice}>
             {item.price_override_original != null ? (
               <>

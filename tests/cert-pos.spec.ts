@@ -182,6 +182,40 @@ test('d) DESCUENTO global 10% en 2 líneas: total pantalla == DB al centavo', as
   expect(Number(sql(`SELECT total_usd FROM sales WHERE id=${v}`))).toBeCloseTo(14.4, 2)
 })
 
+test('d) P0-2: descuento con PIN y DESPUÉS cargo: total pantalla == sales.total_usd == pagos − vuelto', async ({ page }) => {
+  await abrirPos(page)
+  for (const n of ['Simple', 'SinDivisa']) {
+    await buscar(page, N(n))
+    await page.getByTestId('product-card').filter({ hasText: N(n) }).first().click()
+  }
+  // 1) descuento 10% autorizado con PIN → crea la venta pendiente en el servidor (sin cargo)
+  await page.getByRole('button', { name: 'Descuento', exact: true }).click()
+  const dd = page.getByRole('dialog')
+  await dd.getByLabel('Porcentaje de descuento').fill('10')
+  for (let i = 0; i < 4; i++) await dd.getByLabel(`Dígito ${i + 1} del PIN`).fill(String(i + 1))
+  await dd.getByRole('button', { name: 'Aplicar descuento' }).click()
+  await expect(dd).toBeHidden({ timeout: 15_000 })
+  // 2) cargo 10% DESPUÉS: 16 × 0.9 × 1.1 = 15.84
+  await page.getByRole('button', { name: 'Cargo', exact: true }).click()
+  const dc = page.getByRole('dialog')
+  await dc.getByLabel('Porcentaje de cargo').fill('10')
+  await dc.getByRole('button', { name: /Aplicar/ }).click()
+  await expect(page.locator('[class*="totalUsdValue"]')).toContainText('15.84')
+  // 3) cobrar: lo que ve el cajero == lo que guarda la venta == lo cobrado menos el vuelto
+  const payReq = page.waitForRequest(rq => /\/api\/sales\/\d+\/pay$/.test(rq.url()) && rq.method() === 'PATCH')
+  const r = await cobrarUnMetodo(page, 'Efectivo USD')
+  const cuerpo = (await payReq).postData() ?? ''
+  console.log(`P0-2 PATCH /pay body: ${cuerpo}`)
+  expect(cuerpo, 'el cobro de la venta pendiente debe mandar el cargo vigente').toContain('"cargo_pct":10')
+  const v = ultimaVenta()
+  const dbTotal = Number(sql(`SELECT total_usd FROM sales WHERE id=${v}`))
+  const neto = Number(sql(`SELECT ROUND(SUM(p.amount_usd) - s.vuelto_usd, 2) FROM sale_payments p JOIN sales s ON s.id = p.sale_id WHERE p.sale_id=${v}`))
+  console.log(`P0-2 ui=${r.uiTotalUsd.trim()} db.total_usd=${dbTotal} pagos-vuelto=${neto}`)
+  expect(r.uiTotalUsd).toContain('15.84')
+  expect(dbTotal, 'la venta debe guardar descuento Y cargo').toBe(15.84)
+  expect(neto, 'lo cobrado menos el vuelto debe ser el total').toBe(15.84)
+})
+
 test('b-c-k) talla M en modo Divisa: precio, price_source y stock propio de la talla', async ({ page }) => {
   const antesTalla = stockTalla(vid.M)
   const antesOtras = stockTalla(vid.S)
@@ -231,24 +265,14 @@ test('i) devolución de una venta con talla repone el stock de ESA talla', async
 test('f-g) documentos impresos: ticket de venta (servidor) y cotización (cliente)', async ({ page }) => {
   const sid = sales[sales.length - 1]
   const html = await (await admin.get(`/api/sales/${sid}/ticket`)).text()
-  console.log(`TICKET trae negocio: ${html.includes('Boutique Demo Pro')} rif: ${html.includes('J-40123456-7')} cajero: ${html.includes('Cajero: Demo Pro')}`)
-  expect(html).toContain('Boutique Demo Pro')
+  // El nombre sale de la DB (no se compara con un literal): el ticket del servidor ya trae el negocio real.
+  expect(html).toContain(sql(`SELECT name FROM businesses WHERE id=${BID}`))
+  // P1-1: la talla sale impresa en la línea (antes dos tallas del mismo producto salían iguales)
   const tallaSid = Number(sql(`SELECT si.sale_id FROM sale_items si WHERE si.variant_id=${vid.M} ORDER BY si.id DESC LIMIT 1`))
   const tallaTxt = (await (await admin.get(`/api/sales/${tallaSid}/ticket`)).text()).replace(/<[^>]+>/g, ' ')
-  console.log(`TICKET talla M impresa: ${/ZZ Cert Talla[^\n]*\bM\b/.test(tallaTxt)}`)
-
-  await abrirPos(page)
-  await buscar(page, N('Simple'))
-  await page.getByTestId('product-card').filter({ hasText: N('Simple') }).first().click()
-  await page.getByRole('button', { name: /Cotizar/ }).click()
-  const [popup] = await Promise.all([
-    page.waitForEvent('popup'),
-    page.getByRole('button', { name: 'Solo imprimir' }).click(),
-  ])
-  await popup.waitForLoadState('domcontentloaded')
-  const cot = (await popup.content()).replace(/<[^>]+>/g, ' ')
-  console.log(`COTIZACION "Mi Negocio": ${cot.includes('Mi Negocio')} | "Atendido por: Cajero": ${cot.includes('Atendido por: Cajero')} | negocio real: ${cot.includes('Boutique Demo Pro')}`)
-  expect(cot, 'la cotización impresa debe traer el nombre real del negocio').toContain('Boutique Demo Pro')
+  expect(tallaTxt, 'la talla M debe salir en la línea del ticket').toMatch(/ZZ Cert Talla[^\n]*\bM\b/)
+  // La cotización impresa (datos del negocio, usuario, número y talla) la cubre tests/pos-cotizacion.spec.ts leyendo el HTML.
+  void page
 })
 
 test('7) costo visible al cajero en /api/products/search y /api/products/[id]/variants', async () => {

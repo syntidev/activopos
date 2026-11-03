@@ -55,6 +55,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
               // SaleItem no la persiste. Un ticket reimpreso muestra la
               // descripción de hoy, no la del día de la venta.
               product: { select: { description: true } },
+              variant: { select: { valor: true } },
             },
             orderBy: { id: 'asc' },
           },
@@ -144,7 +145,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     const itemsHtml = sale.items.map(item => {
       const qty  = Number(item.quantity)
-      const name = esc(item.product_name).slice(0, 20)
+      // 20 caracteres en total: con talla se recorta el nombre del producto para que la talla siempre salga impresa.
+      const talla = item.variant?.valor
+      const name  = talla
+        ? `${esc(item.product_name.slice(0, Math.max(0, 19 - talla.length)))} ${esc(talla)}`
+        : esc(item.product_name).slice(0, 20)
       const disc = Number(item.discount_usd)
       // El monto por línea sigue al mismo interruptor que los totales: si el
       // negocio apagó divisas, el ítem se imprime en Bs, no desaparece.

@@ -64,7 +64,7 @@ async function resolveCollectionGridSections(
         select: {
           product: {
             select: {
-              id: true, name: true, images: true,
+              id: true, name: true, images: true, has_variants: true,
               price_per_unit_usd: true, price_per_kg_usd: true,
               wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
               active: true, catalog_visibility: true,
@@ -88,6 +88,7 @@ async function resolveCollectionGridSections(
           priceUsd,
           priceBs:  priceUsd > 0 ? priceUsd * rate : null,
           divisaUsd: divisaPriceOf(p),
+          hasVariants: p.has_variants,
         }
       })
     return [c.id, { name: c.name, products }]
@@ -384,7 +385,7 @@ export default async function CatalogoPage({ params }: PageProps) {
             .slice(0, c.cantidad_maxima ?? 8)
       if (list.length === 0) return []
       return [{ ...s, config: { ...c, products: list.map(p => ({
-        id: p.id, name: p.name, image: p.image, priceUsd: p.priceUsd, priceBs: p.priceBs, divisaUsd: p.divisaUsd ?? null,
+        id: p.id, name: p.name, image: p.image, priceUsd: p.priceUsd, priceBs: p.priceBs, divisaUsd: p.divisaUsd ?? null, hasVariants: p.variants.length > 0,
       })) } }]
     }
     if (s.type === 'category_list') {

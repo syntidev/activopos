@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import type { CarteleraData } from './cartelera'
 import { ProductCard } from './ProductCard'
-import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import styles from './catalogo.module.css'
 
 interface CarteleraGridProps {
@@ -24,11 +23,13 @@ export function CarteleraGrid({ data, slug }: CarteleraGridProps) {
           Ver todos →
         </Link>
       </div>
-      <AdaptiveGrid max={{ mobile: 2, tablet: 3, desktop: 5 }}>
-        {data.products.map(p => (
-          <ProductCard key={p.id} p={p} href={`/catalogo-premium/${slug}/p/${p.id}`} />
+      <div className={styles.carteleraGrid}>
+        {data.products.map((p, i) => (
+          <div key={p.id} className={i === 0 ? styles.carteleraHero : styles.carteleraCell}>
+            <ProductCard p={p} href={`/catalogo-premium/${slug}/p/${p.id}`} size={i === 0 ? 'hero' : 'card'} />
+          </div>
         ))}
-      </AdaptiveGrid>
+      </div>
     </section>
   )
 }

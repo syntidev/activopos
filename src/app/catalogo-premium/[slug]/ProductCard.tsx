@@ -1,5 +1,6 @@
 import { type CSSProperties, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { useCart } from './CartContext'
 import { Flame, Sparkles, Tag, ThumbsUp, Star, Archive, Plus } from 'lucide-react'
 import { ImgWithFallback } from './ImgWithFallback'
 import { PrecioDual } from './PrecioDual'
@@ -24,6 +25,8 @@ export interface CardProduct {
   isFeatured?:        boolean
   catalogVisibility?: 'visible' | 'on_request' | 'hidden'
   availability?:      'in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued'
+  /** Con tallas el "+" abre la ficha para elegirla; sin tallas agrega al carrito. */
+  hasVariants?:       boolean
 }
 
 interface ProductCardProps {
@@ -32,9 +35,7 @@ interface ProductCardProps {
   index?:         number
   accentColor?:   string | null
   categoryColor?: string | null
-  hasVariants?:   boolean
-  /** Agregar directo al carrito; sin él (o con tallas) el "+" abre la ficha. */
-  onAdd?:         () => void
+  size?:          'card' | 'hero'
 }
 
 function getBadgeClass(badge: string | null | undefined): string {
@@ -62,19 +63,21 @@ const BADGE_ICON: Record<string, ReactNode> = {
 }
 
 /** Tarjeta única del catálogo premium (patrón de "Productos Destacados"): se usa en todas las secciones. */
-export function ProductCard({ p: raw, href, index = 0, accentColor, categoryColor, hasVariants = false, onAdd }: ProductCardProps) {
+export function ProductCard({ p: raw, href, index = 0, accentColor, categoryColor, size = 'card' }: ProductCardProps) {
   const router = useRouter()
+  const { addToCart } = useCart()
   const p = {
     images: [] as string[], outOfStock: false, isService: false, stockQty: null, stockHidden: false, badge: null,
-    isFeatured: false, catalogVisibility: 'visible' as const, availability: 'in_stock' as const, ...raw,
+    isFeatured: false, hasVariants: false, catalogVisibility: 'visible' as const, availability: 'in_stock' as const, ...raw,
   }
   const i = index
+  const { hasVariants } = p
   const isOut = p.outOfStock || p.availability === 'out_of_stock'
   const cardStyle: CSSProperties = { '--card-index': Math.min(i, 12) } as CSSProperties
   if (accentColor) (cardStyle as Record<string, string>)['--accent-cat'] = accentColor
   return (
     <article
-              className={`${styles.productCard} ${isOut ? styles.productCardOutOfStock : ''}`}
+              className={`${styles.productCard} ${size === 'hero' ? styles.productCardHero : ''} ${isOut ? styles.productCardOutOfStock : ''}`}
       style={cardStyle}
       onClick={() => router.push(href)}
       onKeyDown={e => {
@@ -201,7 +204,7 @@ export function ProductCard({ p: raw, href, index = 0, accentColor, categoryColo
               e.stopPropagation()
               hasVariants
                 ? router.push(href)
-                : onAdd ? onAdd() : router.push(href)
+                : addToCart({ product_id: p.id, name: p.name, qty: 1, price_usd: p.priceUsd, image_url: p.image })
             }}
             aria-label={
               hasVariants

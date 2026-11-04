@@ -798,13 +798,11 @@ export function CatalogoGrid({
   const renderProductCard = (p: CatalogProduct, i: number, accentColor?: string | null) => (
     <ProductCard
       key={p.id}
-      p={p}
+      p={{ ...p, hasVariants: p.variants.length > 0 }}
       index={i}
       href={productHref(p.id)}
       accentColor={accentColor}
       categoryColor={p.categoryName ? categoryColors[p.categoryName] : null}
-      hasVariants={p.variants.length > 0}
-      onAdd={() => addToCart(p, 1)}
     />
   )
 

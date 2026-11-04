@@ -27,7 +27,7 @@ export function NovedadesSection({ products, slug }: NovedadesSectionProps) {
 
       <AdaptiveGrid>
         {products.map(p => (
-          <ProductCard key={p.id} p={p} href={`/catalogo-premium/${slug}/p/${p.id}`} hasVariants={p.variants.length > 0} />
+          <ProductCard key={p.id} p={{ ...p, hasVariants: p.variants.length > 0 }} href={`/catalogo-premium/${slug}/p/${p.id}`} />
         ))}
       </AdaptiveGrid>
     </section>

@@ -14,6 +14,7 @@ export interface CarteleraProduct {
   priceUsd:     number
   priceBs:      number | null
   divisaUsd:    number | null
+  hasVariants:  boolean
 }
 
 export interface CarteleraData {
@@ -47,7 +48,7 @@ export async function getCartelera(businessId: number, rate: number): Promise<Ca
         select: {
           product: {
             select: {
-              id: true, name: true, images: true, badge: true, sort_order: true,
+              id: true, name: true, images: true, badge: true, sort_order: true, has_variants: true,
               price_per_unit_usd: true, price_per_kg_usd: true,
               wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
               active: true, catalog_visibility: true,
@@ -76,6 +77,7 @@ export async function getCartelera(businessId: number, rate: number): Promise<Ca
         priceUsd,
         priceBs:      priceUsd > 0 ? priceUsd * rate : null,
         divisaUsd:    divisaPriceOf(p),
+        hasVariants:  p.has_variants,
       }
     })
 

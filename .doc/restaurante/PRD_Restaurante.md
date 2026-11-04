@@ -1,6 +1,6 @@
 # PRD — Módulo Restaurante (mesas, cuentas, estaciones y KDS)
 
-Versión R0 | 2026-11-04 | Estado: PROPUESTA, pendiente de aprobación de Carlos
+Versión R0.1 | 2026-11-04 | Estado: PROPUESTA, mockups pendientes de aprobación de Carlos (no se empieza R1 sin ella)
 Rama: `feat/restaurante` | Sin código de producto en esta fase.
 
 ---
@@ -122,7 +122,7 @@ Mesonero o cajero → **Pedir cuenta**: `account_status=bill_requested`, mesa `p
 
 ### F7. Cobrar con el POS actual
 Solo `cashier`/`admin`. **Cobrar** crea la(s) `Sale` a partir de los ítems no anulados (precios del servidor) y abre el cobro existente del POS:
-- **Pago mixto** (varias formas de pago en una venta), **Divisa/Bs** (`price_mode`), **Cashea** (financiamiento), cédula cuando aplica: mismas reglas y validaciones de hoy.
+- **Pago mixto** (varias formas de pago en una venta, **máximo 10 pagos por venta**), **Divisa/Bs** (`price_mode`), **Cashea** (financiamiento), cédula cuando aplica: mismas reglas y validaciones de hoy, porque el cobro llama a `/api/sales/[id]/cargo` y `/api/sales/[id]/pay` actuales. El total lo fija el servidor al crear la venta; la pantalla nunca lo envía.
 - La venta queda vinculada a la cuenta y a la mesa; el stock baja solo al quedar `paid`.
 - Con toda la cuenta pagada: `account_status=closed`, `Order.status=delivered`, mesa `por_limpiar`.
 - La propina (F9) se registra aparte de la venta.
@@ -213,13 +213,17 @@ Referencia: `src/lib/reservas.ts` (`parseSearchParam`) y `matchesSearch`.
 
 ---
 
-## 9. Preguntas de negocio abiertas (sí/no, máximo 5)
+## 9. Decisiones de negocio (cerradas)
 
-1. ¿La propina se registra aparte (no cuenta como venta ni ingreso del negocio) y se reporta por mesonero? *(propuesta: sí)*
-2. ¿Agregamos "cargo por servicio" (ej. 10 %) como línea fija de la cuenta, activable por negocio? *(propuesta: no en R1-R5; solo propina libre)*
-3. ¿Las reservas de mesa son por ahora solo una marca manual (nombre + hora), sin calendario? *(propuesta: sí)*
-4. ¿El mesonero puede cobrar desde su celular en negocios pequeños sin caja separada? *(propuesta: no; solo pide cuenta)*
-5. ¿El KDS actual (pedidos de WhatsApp/catálogo) sigue igual para esos pedidos, conviviendo con las estaciones de mesa? *(propuesta: sí; en R5 también se pueden rutear a estaciones)*
+Respondidas por Carlos el 2026-11-04 (si cambia alguna, avisa y se actualiza este documento):
+
+1. **Propina: SÍ.** Se registra aparte, no cuenta como venta ni ingreso del negocio, y se reporta por mesonero.
+2. **Cargo por servicio propio: NO.** El módulo no agrega una línea de servicio. Solo propina libre. (El `cargo_pct` global que ya tiene el POS sigue existiendo y el cajero puede usarlo; el módulo no lo preselecciona.)
+3. **Reserva de mesa: SÍ, solo marca manual** (nombre + hora), sin calendario ni cliente.
+4. **Mesonero cobra: NO.** Solo pide la cuenta; cobra el `cashier`/`admin`.
+5. **KDS actual: SÍ sigue igual** para pedidos de WhatsApp/catálogo, conviviendo con las estaciones de mesa; en R5 esos pedidos también pueden rutearse a estaciones.
+
+**Dependencia técnica resuelta:** `PATCH /api/sales/[id]/pay` quedó corregido en `main` (`e288f22`, `d9c7f65`): total y montos solo del servidor, una sola tasa, máximo 10 pagos por venta, el cajero solo cobra sus ventas. El cobro de mesa usa `/cargo` y `/pay` tal como están (ver ADR §5).
 
 ---
 

@@ -1,6 +1,7 @@
 # ADR — Modelo de datos del módulo Restaurante
 
-Versión R0 | 2026-11-04 | Estado: PROPUESTO | Complementa `PRD_Restaurante.md`
+Versión R0.1 | 2026-11-04 | Estado: PROPUESTO (mockups pendientes de aprobación de Carlos) | Complementa `PRD_Restaurante.md`
+Cambios R0.1: respuestas de negocio incorporadas; `/pay` corregido en `main` (`e288f22`, `d9c7f65`) y rama sincronizada con `origin/main`; §5 y riesgos #6/6b/6c reescritos; `Sale.cargo_pct` ya existe en el esquema.
 Base verificada contra `prisma/schema.prisma` de esta rama (`Order` L911, `OrderItem` L1008, `Category` L336, `Role` L11, `Business.reservas_enabled` L214).
 
 ## 1. Decisión
@@ -187,7 +188,20 @@ Hoy `Order.sale_id` es `@unique` (1 pedido → 1 venta). Una cuenta dividida nec
 | A. Quitar `@unique` de `Order.sale_id` | cambio mínimo | rompe la garantía que `cobrar` usa (`ALREADY_COBRADO`) |
 | **B. `Sale.table_order_id` (N ventas → 1 cuenta)**; `Order.sale_id` queda null en cuentas de mesa | aditivo, no toca el flujo de pedidos actual | reportes que unan por `orders.sale_id` no ven mesas (hoy solo `cobrar` y `price-mode` lo usan; se re-verifica en R1) |
 
-**Se elige B.** El cobro de mesa NO reutiliza `/api/orders/[id]/cobrar` (1 solo pago, origen catálogo, recalcula desde el producto e ignoraría modificadores). Camino nuevo en una transacción: (1) con la cuenta bloqueada `FOR UPDATE`, crea la `Sale` con `SaleItem` armados **desde `OrderItem` con precios del servidor** (base + variante + modificadores); (2) la paga con la misma lógica de `PATCH /api/sales/[id]/pay` (`payments[]`, `assertPaymentMatchesFinancing`, `checkCedula`, descuento de stock al pasar a `paid`). Esa lógica se extrae a una función compartida en R4 en vez de duplicarla.
+**Se elige B.** El cobro de mesa NO reutiliza `/api/orders/[id]/cobrar` (1 solo pago, origen catálogo, recalcula desde el producto e ignoraría modificadores). Camino nuevo:
+
+1. **Crear la venta (servidor, una transacción).** Con la cuenta bloqueada `FOR UPDATE`, `restaurante-cobro` crea la `Sale` en `pending` con `SaleItem` armados **desde `OrderItem` con precios del servidor** (base + variante + modificadores). `total_usd`/`total_bs` salen de `pendingSaleTotals()` (`src/lib/sale-totals.ts`, mismo redondeo que `calcularTotales()` del POS) con la tasa activa redondeada a 4 decimales. `cashier_id` = quien cobra.
+2. **Cargo (opcional, existente).** `PATCH /api/sales/[id]/cargo` (`cargo_pct`, solo ventas `pending`/`quote`, recalcula el total en servidor y re-aprueba Cashea si hace falta). Es una función ya presente del POS; el módulo **no** agrega cargo por servicio propio (decisión de Carlos: no).
+3. **Pagar.** `PATCH /api/sales/[id]/pay` **tal como está en `main`** (`pay-seguro` e288f22, `pay-integridad` d9c7f65). No se copia ni se extrae su lógica: se llama.
+
+**Contrato de `/pay` del que depende el diseño (verificado en el código mergeado):**
+- El total es **solo el guardado en la venta**; el body no puede traer `cargo_pct` ni `discount_pct` (se descartan). Por eso la cuenta de mesa debe quedar **completa y cerrada a cambios** antes de crear la venta.
+- **Una sola tasa:** si la tasa del día difiere de la guardada, `/pay` recalcula `total_bs` y el Bs de las líneas y guarda esa tasa. Cada pago debe cuadrar `amount_usd × tasa ≈ amount_bs` (≤ 0.01 Bs). El cliente nunca fija su tasa.
+- **Máximo 10 pagos por venta** (`payments.min(1).max(10)`). Partes iguales o por monto se limita a 10 pagos por `Sale`; más de 10 comensales pagando por separado se resuelve dividiendo por ítems (varias ventas). Se valida en R4 y la UI lo advierte.
+- **Propiedad:** un `cashier` solo cobra ventas suyas o creadas después de la apertura de su caja abierta; el `admin` cobra cualquiera de su negocio. Como la venta se crea en el momento de cobrar con `cashier_id` = quien cobra, el flujo cumple la regla sin tocarla. El `waiter` no cobra (decisión de Carlos) y `/pay` no entra en su lista blanca.
+- Cashea (`assertPaymentMatchesFinancing`), cédula y descuento de stock al pasar a `paid` siguen dentro de `/pay`.
+
+La cuenta de mesa solo avanza a `closed` cuando todas las ventas hijas están `paid`.
 
 - **Partes iguales / por monto:** 1 `Sale`, N `SalePayment`.
 - **Por ítems:** N `Sale`, cada una con su subconjunto (cantidades fraccionarias válidas: `quantity` es `Decimal(10,3)`).
@@ -211,7 +225,9 @@ Sondeo corto con cursor: `GET …?since=<kds_updated_at ISO>` devuelve solo camb
 | 3 | Pedidos de mesa contaminan `/pedidos`, el KDS actual y reportes | `send_to_kds=false` en cuentas de mesa; filtro `origin != 'table'` en listado de pedidos y KDS legacy; E2E de no regresión |
 | 4 | `Order.sale_id` unique vs. cuentas divididas | Opción B (§5); auditoría de joins en R1 |
 | 5 | `repriceOrderTx` y `cobrar` recalculan desde el producto e ignoran modificadores | Camino de cobro propio (§5); no se toca el existente |
-| 6 | **Preexistente:** `PATCH /api/sales/[id]/pay` confía en precios/montos del cliente (hallazgo de la sesión de captura, origen commit `1ffb851`) | El cobro de mesa arma los totales en el servidor; **R4 queda bloqueada hasta que Carlos decida cerrar o encapsular ese hallazgo** |
+| 6 | ~~`/pay` confiaba en precios/montos del cliente~~ **RESUELTO en `main`** (`e288f22` + `d9c7f65`: total y montos solo del servidor, una sola tasa, propiedad del cajero) | R4 desbloqueada. Riesgo residual: la venta de mesa debe crearse con totales completos y correctos, porque `/pay` ya no los puede corregir; cubierto con tests de consistencia y de integridad |
+| 6b | Límite de 10 pagos por venta en `/pay` | Partes iguales ≤ 10 por venta; más comensales → dividir por ítems (varias ventas). UI lo advierte |
+| 6c | Tasa cambia entre crear la venta y pagarla | `/pay` recalcula `total_bs` con la tasa del día y la guarda; la UI de cobro vuelve a leer la venta tras cada cambio |
 | 7 | Concurrencia: dos dispositivos abren la misma mesa o editan la cuenta | `SELECT … FOR UPDATE` sobre mesa/cuenta (patrón de `cobrar`); `409` con id de la cuenta existente |
 | 8 | Carga del KDS (sondeo cada 3 s) | Índices del §3 y `since`; tope de 100 comandas activas por estación |
 | 9 | Aislamiento entre negocios | Modelos con `business_id` entran solos al tenant layer; `OrderItem` por `order.business_id` o estación validada; E2E de acceso cruzado |

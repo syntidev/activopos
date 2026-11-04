@@ -31,7 +31,8 @@ model DiningTable {
   area_id      Int
   label        String  @db.VarChar(20)          // "5", "T-2"
   capacity     Int     @default(4)
-  shape        String  @default("rect") @db.VarChar(10)  // rect | round | bar
+  shape        String  @default("rect") @db.VarChar(10)  // rect | round | stool (taburete de barra)
+  // Las sillas NO se guardan: se dibujan según `capacity` (derivadas), igual que en los mockups v2.
   // Posición en el plano: unidades de cuadrícula (1 = 1 celda), no píxeles.
   pos_x        Int     @default(0)
   pos_y        Int     @default(0)
@@ -50,6 +51,22 @@ model DiningTable {
   @@unique([business_id, area_id, label])
   @@index([business_id, area_id])
   @@map("dining_tables")
+}
+
+model FloorElement {                // plano de arquitecto: muro, entrada, barra, pase de cocina
+  id          Int     @id @default(autoincrement())
+  business_id Int
+  area_id     Int
+  kind        String  @db.VarChar(12)          // wall | door | bar | pass
+  label       String? @db.VarChar(40)          // "ENTRADA", "BARRA", "PASE DE COCINA"
+  pos_x       Int
+  pos_y       Int
+  width       Int
+  height      Int
+  rotation    Int     @default(0)
+  // Los taburetes de barra son mesas de 1 puesto: se guardan como DiningTable (shape 'stool'); aquí solo va el mobiliario fijo.
+  @@index([business_id, area_id])
+  @@map("floor_elements")
 }
 
 model PrepStation {                 // Cocina, Barra, Fría, Sándwich…
@@ -246,7 +263,7 @@ Sondeo corto con cursor: `GET …?since=<kds_updated_at ISO>` devuelve solo camb
 
 | Fase | Migración |
 |---|---|
-| R1 | `…_restaurante_base`: `restaurante_enabled`, `ServiceArea`, `DiningTable`, `OrderOrigin.table`, `Role.waiter/kitchen` |
+| R1 | `…_restaurante_base`: `restaurante_enabled`, `ServiceArea`, `DiningTable`, `FloorElement`, `OrderOrigin.table`, `Role.waiter/kitchen` |
 | R2 | `…_restaurante_cuenta`: campos de `Order`/`OrderItem`, `PrepStation`, `UserStation`, `ProductModifier`, `Category/Product.station_id`, `TableEvent` |
 | R4 | `…_restaurante_cobro`: `Sale.table_order_id`, `SaleTip`, `OrderTable` |
 

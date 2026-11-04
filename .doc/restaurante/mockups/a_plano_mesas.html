@@ -1,230 +1,206 @@
 <!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mockup A — Plano de áreas y mesas</title>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup A — Salón: plano y editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#EEEDF4;--card:#FFF;--ink:#2F2B3D;--muted:#6B6880;--line:#E4E2EE;--brand:#0038BD;--brand-soft:#E6ECFB;
-  --s-libre:#16A34A;--s-libre-bg:#DCFCE7;
-  --s-ocupada:#2563EB;--s-ocupada-bg:#DBEAFE;
-  --s-cobrar:#D97706;--s-cobrar-bg:#FEF3C7;
-  --s-reserva:#9333EA;--s-reserva-bg:#F3E8FF;
-  --s-limpiar:#475569;--s-limpiar-bg:#E2E8F0;
-  --shadow:0 2px 8px rgba(47,43,61,.10),0 0 1px rgba(47,43,61,.06);
-  --shadow-up:0 4px 16px rgba(47,43,61,.14),0 0 1px rgba(47,43,61,.06);
-}
+/* "El color es atención": libre = sin color; ocupada = navy; por cobrar = ámbar + pulso; reservada / por limpiar = rayado; listo = globo verde. */
+:root{--page:#EEEDF4;--card:#FFF;--ink:#141824;--ink-2:#4B5162;--muted:#8A90A0;--line:#E4E3EC;
+--navy:#0B2A6B;--navy-2:#123A8F;--navy-soft:#E8EDF8;--amber:#C26A00;--amber-bg:#FFF3DF;--green:#127A3E;--green-bg:#E4F5EA;--red:#C4231B;
+--floor:#FBFAF7;--wall:#2B2F3A;--ui:'Instrument Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;--sh:0 2px 8px rgba(47,43,61,.10),0 0 1px rgba(47,43,61,.06)}
 *{box-sizing:border-box;margin:0}
-body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:#d9d7e6;color:var(--ink);padding:24px;font-size:14px}
-h1.t{font:600 13px/1 Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 12px}
-.stage{display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;margin-bottom:40px}
-.frame{background:var(--bg);overflow:hidden;box-shadow:0 8px 40px rgba(47,43,61,.25);border-radius:12px}
-.f-desk{width:1280px}.f-mob{width:375px}
-svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:14px 18px}
-.money{display:flex;flex-direction:column;line-height:1.25;text-align:right}.money b{font-weight:700}.money small{color:var(--muted);font-size:12px}
-.shell{display:grid;grid-template-columns:220px 1fr;min-height:760px}
-.side{background:#fff;padding:18px 12px;display:flex;flex-direction:column;gap:4px;box-shadow:1px 0 0 var(--line)}
-.logo{font:700 20px Fraunces,Georgia,serif;color:var(--brand);padding:4px 10px 16px}
-.nav{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;color:var(--muted);min-height:44px;font-weight:500}
-.nav.on{background:var(--brand-soft);color:var(--brand);font-weight:600}
-.main{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
-.top{display:flex;align-items:center;gap:12px;justify-content:space-between}
-.top h2{font:600 24px Fraunces,Georgia,serif}
-.search{display:flex;gap:8px;align-items:center;background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:0 12px;min-height:44px;width:340px;color:var(--muted)}
-.search span{color:var(--ink)}
-.btn{display:inline-flex;gap:8px;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;font-weight:600;background:var(--brand);color:#fff;border:0}
-.btn.ghost{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
-.tabs{display:flex;gap:8px}
-.tab{min-height:44px;padding:0 16px;display:flex;align-items:center;border-radius:12px;background:#fff;box-shadow:var(--shadow);font-weight:500}
-.tab.on{background:var(--brand);color:#fff}
-.tab em{font-style:normal;opacity:.7;margin-left:6px;font-size:12px}
-.legend{display:flex;gap:14px;flex-wrap:wrap}
-.lg{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
-.dot{width:10px;height:10px;border-radius:50%}
-.cols{display:grid;gap:16px}
-.cols.plano{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
-.canvas{position:relative;height:520px;border-radius:16px;background:
-  linear-gradient(var(--line) 1px,transparent 1px) 0 0/40px 40px,
-  linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/40px 40px,#fff;box-shadow:var(--shadow);overflow:hidden}
-.tbl{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;border-radius:14px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;border:2px solid}
-.tbl:hover{transform:translateY(-1px);box-shadow:var(--shadow-up)}
-.tbl.round{border-radius:50%}
-.tbl small{font:500 10px Inter,system-ui;display:flex;gap:3px;align-items:center;white-space:nowrap}
-.tbl small .i{width:12px;height:12px}
-.tbl .tm{font:600 10px Inter,system-ui;white-space:nowrap}
-.tbl.round .tm{display:none}
-.tbl .bell{position:absolute;top:-8px;right:-8px;background:var(--s-libre);color:#fff;border-radius:99px;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px}
-.tbl.libre{background:var(--s-libre-bg);color:var(--s-libre);border-color:var(--s-libre)}
-.tbl.ocupada{background:var(--s-ocupada-bg);color:var(--s-ocupada);border-color:var(--s-ocupada)}
-.tbl.cobrar{background:var(--s-cobrar-bg);color:var(--s-cobrar);border-color:var(--s-cobrar)}
-.tbl.reserva{background:var(--s-reserva-bg);color:var(--s-reserva);border-color:var(--s-reserva);border-style:dashed}
-.tbl.limpiar{background:var(--s-limpiar-bg);color:var(--s-limpiar);border-color:var(--s-limpiar)}
-.tbl.sel{outline:3px solid var(--brand);outline-offset:3px}
-.merged{position:absolute;border:2px dashed var(--s-cobrar);border-radius:18px;pointer-events:none}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
-.row:last-child{border:0}.row .l{display:flex;flex-direction:column}.row .l small{color:var(--muted)}
-.pill{display:inline-flex;gap:4px;align-items:center;padding:3px 8px;border-radius:99px;font-size:12px;font-weight:600}
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.kpi{display:flex;gap:10px;align-items:center}
-.kpi .c{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-.kpi.hero{background:var(--brand);color:#fff}.kpi.hero small{color:#cdd8f6}
-.kpi b{font-size:20px;display:block}.kpi small{color:var(--muted)}
-.palette{display:flex;flex-direction:column;gap:10px}
-.shapebtn{display:flex;gap:10px;align-items:center;min-height:44px;padding:0 12px;border-radius:12px;background:var(--bg);font-weight:500}
-.shape{width:26px;height:18px;border:2px solid var(--ink);border-radius:4px}.shape.r{border-radius:50%;width:22px;height:22px}.shape.b{width:34px;height:10px}
-.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
-.field div{min-height:44px;background:var(--bg);border-radius:10px;padding:0 12px;display:flex;align-items:center;color:var(--ink);font-size:14px}
-.handle{position:absolute;width:12px;height:12px;background:#fff;border:2px solid var(--brand);border-radius:3px}
-.snap{position:absolute;background:var(--brand);opacity:.5}
-.m-head{background:#fff;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)}
-.m-head h2{font:600 20px Fraunces,Georgia,serif}
-.m-body{padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
-.m-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}.m-tabs .tab{white-space:nowrap}
-.m-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.mt{border-radius:16px;padding:12px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;border:2px solid;box-shadow:var(--shadow);background:#fff}
-.mt b{font-size:22px}.mt .st{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600}
-.mt.libre{border-color:var(--s-libre)}.mt.libre .st{color:var(--s-libre)}
-.mt.ocupada{border-color:var(--s-ocupada)}.mt.ocupada .st{color:var(--s-ocupada)}
-.mt.cobrar{border-color:var(--s-cobrar)}.mt.cobrar .st{color:var(--s-cobrar)}
-.mt.reserva{border-color:var(--s-reserva);border-style:dashed}.mt.reserva .st{color:var(--s-reserva)}
-.mt.limpiar{border-color:var(--s-limpiar)}.mt.limpiar .st{color:var(--s-limpiar)}
-.mt small{color:var(--muted)}
-.bottom{background:#fff;box-shadow:0 -2px 8px rgba(47,43,61,.1);padding:10px 16px;display:flex;gap:8px}
-.bottom .btn{flex:1;justify-content:center}
-.note{max-width:1280px;color:var(--muted);margin:0 0 20px;line-height:1.5}
-</style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute"><defs>
-<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
-<symbol id="users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
-<symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
-<symbol id="card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
-<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
-<symbol id="sparkles" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></symbol>
-<symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
-<symbol id="bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
-<symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
-<symbol id="cart" viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></symbol>
-<symbol id="utensils" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></symbol>
-<symbol id="chef" viewBox="0 0 24 24"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1ZM6 17h12"/></symbol>
-<symbol id="box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8"/></symbol>
-<symbol id="cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
-<symbol id="move" viewBox="0 0 24 24"><path d="m5 9-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></symbol>
-</defs></svg>
+body{background:#D6D4E2;font-family:var(--ui);color:var(--ink);padding:24px 16px 48px}
+.note{max-width:1280px;margin:0 auto 18px;color:#5A5F70;font-size:13px;line-height:1.5}
+.cap{max-width:1280px;margin:0 auto 10px;font:600 12px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:#5A5F70}
+.frame{margin:0 auto 36px;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px -20px rgba(20,24,36,.35);width:1280px;background:var(--page)}
+.row{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;margin-bottom:36px}
+.phone{width:375px;border-radius:22px;overflow:hidden;box-shadow:0 20px 50px -20px rgba(20,24,36,.35);background:var(--page);display:flex;flex-direction:column;min-height:720px}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:760px}
+.side{background:#FAFBFC;border-right:1px solid #E5E7EB;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+.logo{font:700 19px var(--ui);color:var(--navy);padding:2px 10px 18px;letter-spacing:-.01em}
+.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:14px;color:var(--ink-2)}
+.nav.on{background:var(--navy-soft);color:var(--navy);font-weight:600}
+.nav i{width:18px;height:18px;border-radius:5px;border:1.6px solid currentColor;opacity:.7}
+.main{padding:22px 24px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-content:start}
+.head{grid-column:1/-1;display:flex;align-items:center;gap:14px}
+.head h1{font:700 26px var(--ui);letter-spacing:-.02em}
+.zones{display:flex;gap:2px;background:#E2E1EA;padding:3px;border-radius:11px}
+.zones b{font:600 13px var(--ui);padding:7px 14px;border-radius:9px;color:var(--ink-2);white-space:nowrap}
+.zones b.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.zones b span{font:600 12px var(--mono);color:var(--muted);margin-left:6px}
+.search{margin-left:auto;display:flex;align-items:center;gap:8px;background:#fff;border-radius:11px;padding:9px 14px;width:260px;color:var(--muted);font-size:14px;box-shadow:var(--sh)}
+.kbd{margin-left:auto;font:600 11px var(--mono);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+.strip{grid-column:1/-1;display:flex;gap:22px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.strip b{font:700 15px var(--mono);color:var(--ink);margin-right:5px}.strip .w b{color:var(--amber)}
+.btn{font:600 13px var(--ui);padding:10px 16px;border-radius:10px;background:var(--navy);color:#fff;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;min-height:44px}
+.btn.o{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.am{background:var(--amber)}
+.plan{background:var(--floor);border-radius:16px;box-shadow:var(--sh);position:relative;height:560px;overflow:hidden;background-image:radial-gradient(circle,#E6E3DA 1px,transparent 1.2px);background-size:22px 22px}
+.walls{position:absolute;inset:22px;border:5px solid var(--wall);border-radius:4px}
+.door{position:absolute;left:46%;bottom:17px;width:84px;height:12px;background:var(--floor)}
+.door::after{content:"ENTRADA";position:absolute;top:14px;left:12px;font:600 9.5px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.bar{position:absolute;right:27px;top:60px;width:62px;height:300px;background:#E9E5DA;border:2px solid #CFC8B6;border-right:0;border-radius:10px 0 0 10px}
+.bar::after{content:"BARRA";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg);font:600 10px var(--mono);letter-spacing:.2em;color:#9A9179}
+.pass{position:absolute;left:60px;top:22px;width:180px;height:5px;background:#F0C36B}
+.pass::after{content:"PASE DE COCINA";position:absolute;top:9px;left:0;font:600 9.5px var(--mono);letter-spacing:.14em;color:#B08423;white-space:nowrap}
+.t{position:absolute;display:grid;place-items:center}
+.t .top{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border:1.5px solid #CFCDD8;border-radius:12px;width:100%;height:100%;transition:transform .15s,box-shadow .15s;cursor:pointer}
+.t:hover .top{transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(20,24,36,.35)}
+.t.r .top{border-radius:50%}
+.t .n{font:700 20px var(--mono);line-height:1}.t .s{font:600 10.5px var(--mono);color:var(--muted);margin-top:4px;white-space:nowrap}
+.chair{position:absolute;z-index:1;background:#D9D7E0;border-radius:5px}
+.t.occ .top{background:var(--navy);border-color:var(--navy)}.t.occ .n{color:#fff}.t.occ .s{color:#B9C6EA}.t.occ .chair{background:#9FB0DA}
+.t.pay .top{background:var(--amber);border-color:var(--amber)}.t.pay .n,.t.pay .s{color:#fff}.t.pay .chair{background:#E9B970}
+.t.pay::before{content:"";position:absolute;inset:-9px;border-radius:18px;border:2px solid var(--amber);opacity:.5;animation:ring 1.8s ease-out infinite}
+.t.r.pay::before{border-radius:50%}
+@keyframes ring{0%{transform:scale(.92);opacity:.6}100%{transform:scale(1.12);opacity:0}}
+@media (prefers-reduced-motion:reduce){.t.pay::before,.tile.pay::before{animation:none}}
+.t.res .top{background:repeating-linear-gradient(135deg,#fff 0 6px,var(--navy-soft) 6px 12px);border-style:dashed;border-color:#8EA1D3}.t.res .s{color:var(--navy-2)}
+.t.dirty .top{background:repeating-linear-gradient(135deg,#F3F2F6 0 6px,#E6E5EC 6px 12px)}.t.dirty .n{color:var(--muted)}
+.rdy{position:absolute;z-index:3;top:-9px;right:-9px;background:var(--green);color:#fff;font:700 11px var(--mono);border-radius:99px;padding:3px 7px;box-shadow:0 0 0 3px var(--floor)}
+.join{position:absolute;z-index:0;border:2px dashed var(--amber);border-radius:16px}
+.stool .top{border-radius:50%}
+.queue{display:flex;flex-direction:column;gap:12px}
+.qh{font:600 12px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding:0 4px}
+.act{background:#fff;border-radius:16px;box-shadow:var(--sh);padding:14px 16px;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center}
+.act .tg{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font:700 17px var(--mono);color:#fff;background:var(--navy)}
+.act.pay .tg{background:var(--amber)}.act.ready .tg{background:var(--green)}.act.dirty .tg{background:#E6E5EC;color:var(--ink-2)}
+.act .ti{font:600 14px var(--ui)}.act .su{font-size:12.5px;color:var(--muted);margin-top:2px}
+.act .am{font:700 15px var(--mono);text-align:right}.act .am small{display:block;font:500 11px var(--mono);color:var(--muted)}
+.go{font:600 13px var(--ui);color:#fff;background:var(--navy);border-radius:10px;padding:9px 12px;white-space:nowrap}
+.act.pay .go{background:var(--amber)}.act.ready .go{background:var(--green)}.act.dirty .go{background:#fff;color:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2);padding:6px 4px}.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;border:1.5px solid #CFCDD8;background:#fff}.sw.o{background:var(--navy);border-color:var(--navy)}.sw.p{background:var(--amber);border-color:var(--amber)}
+.sw.r{background:repeating-linear-gradient(135deg,#fff 0 3px,var(--navy-soft) 3px 6px);border-style:dashed;border-color:#8EA1D3}.sw.d{background:repeating-linear-gradient(135deg,#F3F2F6 0 3px,#E6E5EC 3px 6px)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tool{display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;box-shadow:var(--sh);padding:0 12px;min-height:44px;font:600 13px var(--ui)}
+.tool .g{width:20px;height:14px;border:2px solid var(--ink);border-radius:3px}.tool .g.c{border-radius:50%;width:16px;height:16px}.tool .g.w{background:var(--wall);border-color:var(--wall);height:5px}
+.tool .g.d{border-style:dashed;height:6px;border-width:2px 0 0}.tool .g.p{background:#F0C36B;border-color:#F0C36B;height:5px}.tool .g.b{background:#E9E5DA;border-color:#CFC8B6}
+.card{background:#fff;border-radius:16px;box-shadow:var(--sh);padding:14px 16px}
+.props{display:flex;flex-direction:column;gap:12px}
+.fl{display:flex;flex-direction:column;gap:4px;font:600 11px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fl div{min-height:44px;background:var(--page);border-radius:10px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;font:600 14px var(--mono);color:var(--ink);text-transform:none;letter-spacing:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:2px;background:#E2E1EA;padding:3px;border-radius:11px}.seg b{flex:1;text-align:center;font:600 13px var(--ui);padding:9px 0;border-radius:9px;color:var(--ink-2)}.seg b.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.hand{position:absolute;z-index:5;width:11px;height:11px;background:#fff;border:2px solid var(--navy-2);border-radius:3px}
+.guide{position:absolute;z-index:4;background:var(--navy-2);opacity:.45}
+.sel .top{outline:3px solid var(--navy-2);outline-offset:3px}
+.tip{font-size:12.5px;color:var(--muted);line-height:1.45}
+.mh{background:#fff;padding:14px 16px 12px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:10px}
+.mh h1{font:700 22px var(--ui);letter-spacing:-.02em;display:flex;justify-content:space-between;align-items:baseline}
+.mh .zones{width:100%}.mh .zones b{flex:1;text-align:center;padding:8px 4px}
+.msearch{display:flex;align-items:center;gap:8px;background:var(--page);border-radius:11px;padding:0 12px;min-height:44px;color:var(--muted);font-size:14px}
+.mb{padding:12px 16px 20px;display:flex;flex-direction:column;gap:12px;flex:1}
+.mstrip{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-2)}.mstrip b{font:700 14px var(--mono);color:var(--ink);margin-right:4px}.mstrip .w b{color:var(--amber)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{position:relative;background:#fff;border:1.5px solid #CFCDD8;border-radius:14px;padding:12px;min-height:92px;display:flex;flex-direction:column;justify-content:space-between}
+.tile .n{font:700 24px var(--mono);line-height:1}.tile .s{font:600 11.5px var(--mono);color:var(--muted)}
+.tile.occ{background:var(--navy);border-color:var(--navy)}.tile.occ .n{color:#fff}.tile.occ .s{color:#B9C6EA}
+.tile.pay{background:var(--amber);border-color:var(--amber)}.tile.pay .n,.tile.pay .s{color:#fff}
+.tile.pay::before{content:"";position:absolute;inset:-6px;border-radius:19px;border:2px solid var(--amber);opacity:.5;animation:ring 1.8s ease-out infinite}
+.tile.res{background:repeating-linear-gradient(135deg,#fff 0 6px,var(--navy-soft) 6px 12px);border-style:dashed;border-color:#8EA1D3}.tile.res .s{color:var(--navy-2)}
+.tile.dirty{background:repeating-linear-gradient(135deg,#F3F2F6 0 6px,#E6E5EC 6px 12px)}.tile.dirty .n{color:var(--muted)}
+.tile .rdy{top:-8px;right:4px;box-shadow:0 0 0 3px var(--page)}
+.mbar{background:#fff;box-shadow:0 -2px 8px rgba(47,43,61,.1);padding:10px 16px;display:flex;gap:10px}.mbar .btn{flex:1}
+.stepper{display:flex;align-items:center;justify-content:space-between;background:var(--page);border-radius:12px;min-height:52px;padding:0 18px;font:700 22px var(--mono)}
+.stepper span{font:600 20px var(--mono);color:var(--ink-2)}
+</style></head><body>
+<p class="note"><b>Mockup A — Salón (plano de arquitecto).</b> Dirección “el color es atención”. Libre = sin color · ocupada = navy · por cobrar = ámbar con pulso (único elemento animado; respeta <code>prefers-reduced-motion</code>) · reservada y por limpiar = rayado · listo para servir = globo verde. Sillas según capacidad. Montos en USD y Bs (formato sellado <code>$15.00</code> / <code>Bs. 8,951.73</code>), tasa de ejemplo 596.78. Datos sintéticos.</p>
 
-<p class="note"><b>Mockup A — Plano de áreas y mesas.</b> Cada estado va con color <i>y</i> con ícono + texto. Tasa de ejemplo: Bs. 596.78/USD. Datos sintéticos. Los tokens de estado se crean en <code>tokens.css</code> (R1) antes de consumirlos.</p>
+<div class="cap">1 · Escritorio 1280 — Plano en vivo (cajero / admin)</div>
+<div class="frame"><div class="app">
+  <aside class="side" data-side></aside>
+  <main class="main">
+    <div class="head"><h1>Salón</h1>
+      <div class="zones"><b class="on">Principal<span>12</span></b><b>Terraza<span>6</span></b><b>Barra<span>5</span></b></div>
+      <div class="search">Buscar mesa, cliente o cuenta <span class="kbd">/</span></div><span class="btn o">Editar plano</span></div>
+    <div class="strip"><span><b>7/12</b>ocupadas</span><span class="w"><b>2</b>por cobrar</span><span><b>3</b>platos listos en el pase</span><span><b>38 min</b>estancia media</span></div>
+    <div class="plan" id="plan1"><div class="walls"></div><div class="door"></div><div class="bar"></div><div class="pass"></div></div>
+    <div class="queue" id="queue"></div>
+  </main>
+</div></div>
 
-<h1 class="t">1 · Escritorio 1280 — Plano en vivo (cajero/admin)</h1>
-<div class="stage"><div class="frame f-desk"><div class="shell">
-  <aside class="side" id="side1"></aside>
-  <section class="main">
-    <div class="top">
-      <h2>Restaurante · Plano</h2>
-      <div style="display:flex;gap:10px"><div class="search"><svg class="i"><use href="#search"/></svg><span>juan 5</span></div><button class="btn ghost"><svg class="i"><use href="#move"/></svg>Editar plano</button></div>
+<div class="cap">2 · Escritorio 1280 — Editor de plano (solo admin)</div>
+<div class="frame"><div class="app">
+  <aside class="side" data-side></aside>
+  <main class="main">
+    <div class="head"><h1>Editar plano</h1><div class="zones"><b class="on">Principal<span>12</span></b><b>Terraza<span>6</span></b><b>Barra<span>5</span></b></div>
+      <span style="margin-left:auto" class="btn o">Descartar</span><span class="btn">Guardar plano</span></div>
+    <div>
+      <div class="tools"><span class="tool"><i class="g"></i>Mesa</span><span class="tool"><i class="g c"></i>Mesa redonda</span><span class="tool"><i class="g c" style="width:12px;height:12px"></i>Taburete</span><span class="tool"><i class="g b"></i>Barra</span><span class="tool"><i class="g w"></i>Muro</span><span class="tool"><i class="g d"></i>Entrada</span><span class="tool"><i class="g p"></i>Pase de cocina</span></div>
+      <div class="plan" id="plan2"><div class="walls"></div><div class="door"></div><div class="bar"></div><div class="pass"></div></div>
     </div>
-    <div class="tabs"><div class="tab on">Salón<em>12</em></div><div class="tab">Terraza<em>6</em></div><div class="tab">Barra<em>5</em></div></div>
-    <div class="legend" id="legend1"></div>
-    <div class="cols plano">
-      <div class="canvas" id="cv1"></div>
-      <div style="display:flex;flex-direction:column;gap:16px">
-        <div class="kpis">
-          <div class="card kpi hero"><div><small>Ocupación</small><b>7 / 12</b></div></div>
-          <div class="card kpi"><div class="c" style="background:#FEF3C7;color:#D97706"><svg class="i"><use href="#clock"/></svg></div><div><b>2</b><small>Por cobrar</small></div></div>
-          <div class="card kpi"><div class="c" style="background:#DCFCE7;color:#16A34A"><svg class="i"><use href="#check"/></svg></div><div><b>4</b><small>Libres</small></div></div>
-        </div>
-        <div class="card"><div style="font-weight:600;margin-bottom:4px">Por cobrar</div><div id="porcobrar"></div></div>
-        <div class="card"><div style="font-weight:600;margin-bottom:4px">Listos para servir</div><div id="listos"></div></div>
-      </div>
+    <div class="props">
+      <div class="card props"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font:700 18px var(--mono)">Mesa 4</b><span class="tip">Principal</span></div>
+        <div class="fl">Etiqueta<div>4</div></div>
+        <div class="fl">Capacidad (define las sillas)<div><span>2 personas</span><span style="color:var(--muted)">− +</span></div></div>
+        <div class="fl">Forma<div class="seg" style="padding:3px;background:#E2E1EA"><b class="on">Cuadrada</b><b>Redonda</b><b>Barra</b></div></div>
+        <div class="g2"><div class="fl">Ancho<div>2</div></div><div class="fl">Alto<div>2</div></div><div class="fl">Rotación<div>0°</div></div><div class="fl">Posición<div>x10 · y3</div></div></div>
+        <span class="btn o" style="color:var(--red)">Eliminar mesa</span>
+        <p class="tip">No se elimina una mesa con cuenta abierta. Al soltar, la mesa se ajusta a la cuadrícula. Para juntar mesas selecciona 2 o más y usa “Juntar” en el plano en vivo.</p></div>
+      <div class="card"><div class="qh" style="margin-bottom:8px">Áreas</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:14px"><div style="display:flex;justify-content:space-between"><b>Principal</b><span style="font-family:var(--mono)">12 mesas</span></div><div style="display:flex;justify-content:space-between"><span>Terraza</span><span style="font-family:var(--mono);color:var(--muted)">6 mesas</span></div><div style="display:flex;justify-content:space-between"><span>Barra</span><span style="font-family:var(--mono);color:var(--muted)">5 puestos</span></div></div></div>
     </div>
-  </section>
-</div></div></div>
+  </main>
+</div></div>
 
-<h1 class="t">2 · Escritorio 1280 — Editor de plano (admin)</h1>
-<div class="stage"><div class="frame f-desk"><div class="shell">
-  <aside class="side" id="side2"></aside>
-  <section class="main">
-    <div class="top"><h2>Editar plano · Salón</h2><div style="display:flex;gap:10px"><button class="btn ghost">Descartar</button><button class="btn"><svg class="i"><use href="#check"/></svg>Guardar plano</button></div></div>
-    <div class="cols" style="grid-template-columns:200px minmax(0,1fr) 240px">
-      <div class="card palette">
-        <b>Agregar mesa</b>
-        <div class="shapebtn"><span class="shape"></span>Rectangular</div>
-        <div class="shapebtn"><span class="shape r"></span>Redonda</div>
-        <div class="shapebtn"><span class="shape b"></span>Barra</div>
-        <b style="margin-top:6px">Áreas</b>
-        <div class="shapebtn" style="background:var(--brand-soft);color:var(--brand)">Salón</div>
-        <div class="shapebtn">Terraza</div><div class="shapebtn">Barra</div>
-        <button class="btn ghost" style="justify-content:center"><svg class="i"><use href="#plus"/></svg>Nueva área</button>
-      </div>
-      <div class="canvas" id="cv2"></div>
-      <div class="card" style="display:flex;flex-direction:column;gap:12px">
-        <b>Mesa 4</b>
-        <div class="field">Etiqueta<div>4</div></div>
-        <div class="field">Capacidad<div>4 personas</div></div>
-        <div class="field">Forma<div>Rectangular</div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="field">Ancho<div>2</div></div><div class="field">Alto<div>2</div></div>
-          <div class="field">Rotación<div>0°</div></div><div class="field">Pos.<div>6 · 3</div></div>
-        </div>
-        <button class="btn ghost" style="justify-content:center;color:#B91C1C">Eliminar mesa</button>
-        <small style="color:var(--muted)">No se elimina una mesa con cuenta abierta. Al soltar, se ajusta a la cuadrícula.</small>
-      </div>
+<div class="cap">3 · Móvil 375 — Mesonero: salón y apertura de mesa</div>
+<div class="row">
+  <div class="phone">
+    <div class="mh"><h1>Salón<span style="font:600 12px var(--mono);color:var(--muted)">María P.</span></h1>
+      <div class="zones"><b class="on">Principal<span>12</span></b><b>Terraza<span>6</span></b><b>Barra<span>5</span></b></div>
+      <div class="msearch">Mesa, cliente o cuenta <span class="kbd">/</span></div></div>
+    <div class="mb">
+      <div class="mstrip"><span><b>7/12</b>ocupadas</span><span class="w"><b>2</b>por cobrar</span><span><b>3</b>listos</span></div>
+      <div class="qh">Para hacer ahora</div>
+      <div id="mq" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div class="qh" style="margin-top:4px">Mesas</div>
+      <div class="grid" id="mgrid"></div>
+      <div class="legend"><span><i class="sw"></i>Libre</span><span><i class="sw o"></i>Ocupada</span><span><i class="sw p"></i>Por cobrar</span><span><i class="sw r"></i>Reservada</span><span><i class="sw d"></i>Por limpiar</span></div>
     </div>
-  </section>
-</div></div></div>
-
-<h1 class="t">3 · Móvil 375 — Plano del mesonero y apertura de mesa</h1>
-<div class="stage">
-  <div class="frame f-mob">
-    <div class="m-head"><h2>Salón</h2><div class="search" style="width:100%"><svg class="i"><use href="#search"/></svg><span style="color:var(--muted)">Buscar mesa, cuenta o cliente</span></div></div>
-    <div class="m-body">
-      <div class="m-tabs"><div class="tab on">Salón<em>12</em></div><div class="tab">Terraza<em>6</em></div><div class="tab">Barra<em>5</em></div></div>
-      <div class="m-grid" id="mgrid"></div>
-    </div>
-    <div class="bottom"><button class="btn ghost"><svg class="i"><use href="#bell"/></svg>2 listos</button><button class="btn"><svg class="i"><use href="#plus"/></svg>Abrir mesa</button></div>
+    <div class="mbar"><span class="btn o">3 listos</span><span class="btn">Abrir mesa</span></div>
   </div>
-  <div class="frame f-mob">
-    <div class="m-head"><h2>Abrir mesa 6</h2></div>
-    <div class="m-body">
+  <div class="phone">
+    <div class="mh"><h1>Abrir mesa 6<span style="font:600 12px var(--mono);color:var(--muted)">Principal</span></h1></div>
+    <div class="mb">
       <div class="card" style="display:flex;flex-direction:column;gap:14px">
-        <div class="field">Comensales<div style="justify-content:space-between"><b>−</b><b style="font-size:20px">3</b><b>+</b></div></div>
-        <div class="field">Mesonero<div>María P.</div></div>
-        <div class="field">Cliente (opcional)<div style="color:var(--muted)">Nombre o teléfono</div></div>
-        <button class="btn" style="justify-content:center">Abrir cuenta</button>
-      </div>
-      <div class="card"><div style="font-weight:600;margin-bottom:6px">Si otro dispositivo ya la abrió</div><small style="color:var(--muted)">Se avisa “Mesa 6 ya tiene cuenta abierta por Luis” y se entra a esa cuenta, sin duplicar.</small></div>
+        <div class="fl">Comensales (capacidad 2)<div class="stepper"><span>−</span>2<span>+</span></div></div>
+        <div class="fl">Mesonero<div>María P.</div></div>
+        <div class="fl">Cliente (opcional)<div style="color:var(--muted);font-weight:500;font-family:var(--ui)">Nombre o teléfono</div></div>
+        <span class="btn">Abrir cuenta</span></div>
+      <div class="card"><b style="font-size:14px">Si otro dispositivo ya la abrió</b><p class="tip" style="margin-top:6px">Se avisa “Mesa 6 ya tiene cuenta abierta por Luis” y se entra a esa cuenta, sin duplicar.</p></div>
+      <div class="card"><b style="font-size:14px">Mesa reservada</b><p class="tip" style="margin-top:6px">Mesa 8 · 20:30 · Rosa. Al sentarlos se abre la cuenta y se quita la marca.</p></div>
     </div>
   </div>
 </div>
 
 <script>
 const RATE=596.78;
-const fmt=u=>({usd:'$'+u.toFixed(2),bs:'Bs. '+(u*RATE).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})});
-const money=u=>{const f=fmt(u);return `<div class="money"><b>${f.usd}</b><small>${f.bs}</small></div>`};
-const ST={libre:['Libre','check','--s-libre'],ocupada:['Ocupada','users','--s-ocupada'],cobrar:['Por cobrar','card','--s-cobrar'],reserva:['Reservada','clock','--s-reserva'],limpiar:['Por limpiar','sparkles','--s-limpiar']};
-const ic=n=>`<svg class="i"><use href="#${n}"/></svg>`;
-const nav=[['grid','Escritorio'],['cart','POS'],['utensils','Restaurante',1],['chef','Cocina (KDS)'],['box','Productos'],['cog','Configuración']];
-for(const id of ['side1','side2'])document.getElementById(id).innerHTML='<div class="logo">ActivoPOS</div>'+nav.map(n=>`<div class="nav ${n[2]?'on':''}">${ic(n[0])}${n[1]}</div>`).join('');
-document.getElementById('legend1').innerHTML=Object.values(ST).map(s=>`<span class="lg"><span class="dot" style="background:var(${s[2]})"></span>${s[0]}</span>`).join('')+'<span class="lg">Línea punteada = mesas juntadas</span>';
-const T=[['1',1,1,2,2,'','libre',''],['2',4,1,2,2,'','ocupada','3 pers · 24 min'],['3',7,1,2,2,'round','cobrar','$54.00'],['4',10,1,2,2,'','ocupada','2 pers · 8 min'],
-['5',1,5,2,2,'round','ocupada','4 pers · Juan'],['6',4,5,2,2,'','libre',''],['7',7,5,2,2,'','limpiar',''],['8',10,5,2,2,'round','reserva','20:30 · Rosa'],
-['9',1,9,3,2,'','cobrar','$31.50'],['10',5,9,2,2,'','ocupada','2 pers · 41 min'],['11',8,9,2,2,'','libre',''],['12',11,9,2,2,'','libre','']];
-function build(el,list,o){o=o||{};const cell=40;
-  el.innerHTML=list.map(t=>{const l=t[0],d=ST[t[6]];
-    return `<div class="tbl ${t[6]} ${t[5]} ${o.sel===l?'sel':''}" style="left:${t[1]*cell}px;top:${t[2]*cell}px;width:${t[3]*cell}px;height:${t[4]*cell}px">
-    <span style="font-size:20px">${l}</span><small>${ic(d[1])}${d[0]}</small>${o.handles?'':`<span class="tm">${t[7]}</span>`}${l==='2'&&!o.handles?'<span class="bell">1</span>':''}</div>`}).join('');
-  if(o.handles){const t=list.find(x=>x[0]===o.sel);
-    [[0,0],[1,0],[0,1],[1,1]].forEach(a=>el.insertAdjacentHTML('beforeend',`<span class="handle" style="left:${(t[1]+a[0]*t[3])*cell-6}px;top:${(t[2]+a[1]*t[4])*cell-6}px"></span>`));
-    el.insertAdjacentHTML('beforeend',`<span class="snap" style="left:${t[1]*cell}px;top:0;width:1px;height:100%"></span><span class="snap" style="top:${t[2]*cell}px;left:0;height:1px;width:100%"></span>`)}
-}
-build(document.getElementById('cv1'),T);
-document.getElementById('cv1').insertAdjacentHTML('beforeend','<span class="merged" style="left:32px;top:352px;width:136px;height:96px"></span>');
-build(document.getElementById('cv2'),T.map(t=>t[0]==='4'?['4',6,3,2,2,'','libre','']:t),{sel:'4',handles:true});
-document.getElementById('porcobrar').innerHTML=[['Mesa 3 · Pedro',54],['Mesas 9+10 · Ana',31.5]].map(r=>`<div class="row"><div class="l"><b>${r[0]}</b><small>Cuenta pedida hace 3 min</small></div>${money(r[1])}</div>`).join('');
-document.getElementById('listos').innerHTML=[['Mesa 2','2× Pasta · Cocina'],['Mesa 5','1× Cerveza · Barra']].map(r=>`<div class="row"><div class="l"><b>${r[0]}</b><small>${r[1]}</small></div><span class="pill" style="background:var(--s-libre-bg);color:var(--s-libre)">${ic('check')}Listo</span></div>`).join('');
-document.getElementById('mgrid').innerHTML=T.slice(0,8).map(t=>{const d=ST[t[6]];return `<div class="mt ${t[6]}"><div style="display:flex;justify-content:space-between"><b>${t[0]}</b>${t[0]==='2'?'<span class="pill" style="background:var(--s-libre);color:#fff">'+ic('bell')+'1</span>':''}</div><div class="st">${ic(d[1])}${d[0]}</div><small>${t[7]||'&nbsp;'}</small></div>`}).join('');
-</script>
-</body>
-</html>
+const usd=u=>'$'+u.toFixed(2),bs=u=>'Bs. '+(u*RATE).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+document.querySelectorAll('[data-side]').forEach(s=>{s.innerHTML='<div class="logo">ActivoPOS</div>'+['Escritorio','Punto de venta','Salón','Cocina','Productos','Configuración'].map(n=>`<div class="nav ${n==='Salón'?'on':''}"><i></i>${n}</div>`).join('')});
+function chairs(w,h,cap,round){let o='';const add=(l,t,cw,ch)=>o+=`<i class="chair" style="left:${l}px;top:${t}px;width:${cw}px;height:${ch}px"></i>`;
+  if(round){for(let i=0;i<cap;i++){const a=-Math.PI/2+i*2*Math.PI/cap,R=w/2+7;add(w/2+R*Math.cos(a)-7,h/2+R*Math.sin(a)-7,14,14)}return o}
+  let top,bot,lef,rig;
+  if(w>=96&&cap>=4){top=Math.ceil(cap/2);bot=cap-top;lef=rig=0}else if(cap<=4){top=cap>0?1:0;bot=cap>1?1:0;lef=cap>2?1:0;rig=cap>3?1:0}else{lef=rig=1;top=Math.ceil((cap-2)/2);bot=cap-2-top}
+  const row=(n,y)=>{for(let i=0;i<n;i++)add((i+1)*w/(n+1)-8,y,16,12)},col=(n,x)=>{for(let i=0;i<n;i++)add(x,(i+1)*h/(n+1)-8,12,16)};
+  row(top,-15);row(bot,h+3);col(lef,-15);col(rig,w+3);return o}
+const T=[['1',64,70,74,74,0,'','4 pers',4],['2',180,70,74,74,0,'occ','24 min',4,2],['3',296,66,82,82,1,'pay',usd(54),4],['4',412,70,74,74,0,'occ','8 min',2],
+['5',64,210,80,80,1,'occ','41 min',2,1],['6',180,212,74,74,0,'','2 pers',2],['7',296,212,74,74,0,'dirty','limpiar',2],['8',408,208,82,82,1,'res','20:30',4],
+['9',64,362,100,74,0,'pay',usd(31.5),4],['10',176,362,100,74,0,'pay','con 9',4],['11',312,362,74,74,0,'','2 pers',2],['12',412,362,74,74,0,'','2 pers',2]];
+const tbl=(t,extra)=>`<div class="t ${t[5]?'r':''} ${t[6]} ${extra||''}" style="left:${t[1]}px;top:${t[2]}px;width:${t[3]}px;height:${t[4]}px">${t[9]?`<span class="rdy">${t[9]}</span>`:''}<div class="top"><span class="n">${t[0]}</span><span class="s">${t[7]}</span></div>${chairs(t[3],t[4],t[8],t[5])}</div>`;
+const stools=[['B1','occ',0],['B2','',0],['B3','occ',1],['B4','',0]].map((s,i)=>`<div class="t stool ${s[1]}" style="right:104px;top:${88+i*62}px;width:36px;height:36px">${s[2]?'<span class="rdy" style="top:-8px;right:-10px;padding:2px 6px;font-size:10px">1</span>':''}<div class="top"><span class="n" style="font-size:12px">${s[0]}</span></div></div>`).join('');
+const join='<div class="join" style="left:52px;top:350px;width:236px;height:98px"></div>';
+document.getElementById('plan1').insertAdjacentHTML('beforeend',join+T.map(t=>tbl(t)).join('')+stools);
+const E=T.map(t=>t[0]==='4'?['4',380,100,74,74,0,'','2 pers',2]:t.slice());
+let h='';E.filter(t=>!(t[0]==='9'||t[0]==='10')).forEach(t=>h+=tbl(t,t[0]==='4'?'sel':''));
+h+=tbl(['9',64,362,100,74,0,'','4 pers',4])+tbl(['10',176,362,100,74,0,'','4 pers',4]);
+[[0,0],[1,0],[0,1],[1,1]].forEach(a=>h+=`<span class="hand" style="left:${380+a[0]*74-6}px;top:${100+a[1]*74-6}px"></span>`);
+h+='<span class="hand" style="left:411px;top:68px;border-radius:50%"></span><span class="guide" style="left:380px;top:0;width:1px;height:100%"></span><span class="guide" style="left:0;top:100px;width:100%;height:1px"></span>'+stools;
+document.getElementById('plan2').insertAdjacentHTML('beforeend',h);
+const act=(c,tg,ti,su,right)=>`<div class="act ${c}"><div class="tg">${tg}</div><div><div class="ti">${ti}</div><div class="su">${su}</div></div>${right}</div>`;
+const money=u=>`<div class="am">${usd(u)}<small>${bs(u)}</small></div>`;
+const Q=[['pay','3','Cobrar · Pedro','Pidió la cuenta hace 3 min',money(54)],['pay','9','Cobrar · Mesas 9+10','Pidió la cuenta hace 1 min',money(31.5)],['ready','2','Servir 2 platos','Pasta carbonara ×2 · Cocina','<span class="go">Servido</span>'],['ready','B3','Servir 1 bebida','Mojito · Barra','<span class="go">Servido</span>'],['dirty','7','Limpiar mesa','Liberada hace 6 min','<span class="go">Lista</span>']];
+document.getElementById('queue').innerHTML='<div class="qh">Para hacer ahora</div>'+Q.map(q=>act(...q)).join('')+'<div class="legend"><span><i class="sw"></i>Libre</span><span><i class="sw o"></i>Ocupada</span><span><i class="sw p"></i>Por cobrar</span><span><i class="sw r"></i>Reservada</span><span><i class="sw d"></i>Por limpiar</span></div>';
+document.getElementById('mq').innerHTML=[act('pay','3','Cobrar · Pedro','Cuenta hace 3 min',`<div class="am" style="font-size:14px">${usd(54)}</div>`),act('ready','2','Servir 2 platos','Pasta carbonara ×2','<span class="go">Servido</span>'),act('ready','B3','Servir 1 bebida','Mojito · Barra','<span class="go">Servido</span>')].join('');
+document.getElementById('mgrid').innerHTML=T.slice(0,8).map(t=>`<div class="tile ${t[6]}">${t[9]?`<span class="rdy">${t[9]}</span>`:''}<span class="n">${t[0]}</span><span class="s">${t[7]}</span></div>`).join('');
+</script></body></html>

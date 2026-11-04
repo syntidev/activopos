@@ -10,6 +10,8 @@ Nota: `PLAN_Fase_Upgrade_10Nov2026.md` (F4/F5) no existe en este worktree ni en 
 - **Migración versionada por fase** (`prisma migrate dev`), aditiva, probada en `activopos_kds`. Nada de `db push`.
 - **DoD común (CLAUDE.md):** `npx tsc --noEmit` = 0 · `npm run build` con EXIT_REAL numérico · E2E de la fase en verde · suite E2E existente sin regresión · `npm run test:consistency` si toca dinero · el reporte abre con `git rev-parse --short HEAD` y `origin/main` · función cableada en todas sus capas (DB → API → UI → recibos → reportes) o se declara qué falta · cero fachadas (botón sin acción, mock, valor hardcodeado) · UI con CSS Modules + tokens, USD y Bs juntos, targets ≥ 44 px.
 - **Aprobación visual:** solo cuando Carlos lo ve en 1280 px y 375 px. Un commit no es aprobación.
+- **Dirección visual (mockups v2):** “el color es atención”, referencia `activopos/.doc/mockups/r0/r0_direccion_visual.html`. Libre = sin color · ocupada = navy sólido · por cobrar = ámbar sólido + pulso (único animado, respeta `prefers-reduced-motion`) · reservada y por limpiar = rayado · listo para servir = globo verde. Plano = vista de arquitecto con sillas derivadas de la capacidad; KDS = fondo oscuro con comanda de papel y encabezado que cambia por urgencia. **Antes de R1 hay que confirmar con Carlos tres choques con CLAUDE.md:** (1) tipografías Instrument Sans + IBM Plex Mono en lugar de Fraunces/Inter, (2) navy `#0B2A6B`/ámbar `#C26A00`/verde `#127A3E` en lugar de `#0038BD` y los tokens de KPI, (3) KDS oscuro y plano crema fuera del fondo `#EEEDF4`. Si se aprueban, se crean como tokens del módulo en `tokens.css` **antes** de consumirlos (sin hex en los `.module.css`).
+- **Formato de dinero:** se mantiene el sellado `$15.00` / `Bs. 8,951.73` (no el formato con coma decimal de la referencia).
 - **Scope por CLI:** backend = CLI-A, UI = CLI-B, E2E = CLI-D, auditoría = CLI-C (`security-reviewer` en cada fase que toque auth o dinero).
 - Cada endpoint: Zod v4 (`.issues`), `business_id` de `getSession()`, `requireRestauranteAccess`, rate limit donde aplique.
 
@@ -20,7 +22,9 @@ Nota: `PLAN_Fase_Upgrade_10Nov2026.md` (F4/F5) no existe en este worktree ni en 
 **Objetivo:** el negocio con el flag ve **Restaurante → Plano**, crea áreas y mesas y las acomoda; sin cuentas todavía.
 
 **Crear**
-- `prisma/migrations/<ts>_restaurante_base/migration.sql` (flag, `ServiceArea`, `DiningTable`, `OrderOrigin.table`, `Role.waiter/kitchen`)
+- `prisma/migrations/<ts>_restaurante_base/migration.sql` (flag, `ServiceArea`, `DiningTable`, `FloorElement` para muros/entrada/barra/pase, `OrderOrigin.table`, `Role.waiter/kitchen`)
+- `src/app/api/restaurante/elementos/route.ts` y `[id]/route.ts` (CRUD de `FloorElement`, solo admin)
+- `PlanoSalon.tsx` dibuja muros, entrada, barra con taburetes, pase y **sillas derivadas de `capacity`**; mesas juntadas con contorno punteado; panel "Para hacer ahora" ordenado por urgencia
 - `src/lib/restaurante.ts` (`requireRestauranteAccess`, `tableStatus()` derivado, `matchesTableSearch`)
 - `src/types/restaurante.ts`
 - `src/app/api/restaurante/areas/route.ts` y `[id]/route.ts`

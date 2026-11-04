@@ -1,126 +1,116 @@
 <!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mockup C — KDS por estación</title>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup C — KDS de estación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#EEEDF4;--card:#FFF;--ink:#2F2B3D;--muted:#6B6880;--line:#E4E2EE;--brand:#0038BD;--brand-soft:#E6ECFB;
---ok:#16A34A;--ok-bg:#DCFCE7;--info:#2563EB;--info-bg:#DBEAFE;--warn:#D97706;--warn-bg:#FEF3C7;--crit:#DC2626;--crit-bg:#FEE2E2;--gray:#475569;--gray-bg:#E2E8F0;
---shadow:0 2px 8px rgba(47,43,61,.10),0 0 1px rgba(47,43,61,.06)}
+:root{--red:#C4231B;--amber:#C26A00;--green:#127A3E;--ui:'Instrument Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;
+--k-bg:#0E1015;--k-col:#161922;--k-paper:#F5F2EA;--k-ink:#16130E}
 *{box-sizing:border-box;margin:0}
-body{font-family:Inter,system-ui,Segoe UI,sans-serif;background:#d9d7e6;color:var(--ink);padding:24px;font-size:14px}
-h1.t{font:600 13px/1 Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 12px}
-.note{max-width:1180px;color:var(--muted);margin:0 0 20px;line-height:1.5}
-.stage{display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;margin-bottom:40px}
-.frame{background:var(--bg);overflow:hidden;box-shadow:0 8px 40px rgba(47,43,61,.25);border-radius:12px}
-.tablet{width:1180px;height:820px;display:flex;flex-direction:column}.f-mob{width:375px;min-height:760px;display:flex;flex-direction:column}
-svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.bar{background:#fff;box-shadow:var(--shadow);padding:10px 16px;display:flex;gap:10px;align-items:center}
-.bar h2{font:600 20px Fraunces,Georgia,serif;display:flex;gap:8px;align-items:center}
-.tab{min-height:44px;padding:0 16px;display:flex;align-items:center;gap:8px;border-radius:12px;background:var(--bg);font-weight:600;white-space:nowrap}
-.tab.on{background:var(--brand);color:#fff}.tab em{font-style:normal;opacity:.75;font-size:12px}
-.sp{flex:1}
-.search{display:flex;gap:8px;align-items:center;background:var(--bg);border-radius:12px;padding:0 12px;min-height:44px;width:230px;color:var(--muted)}
-.pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600}
-.live{background:var(--ok-bg);color:var(--ok)}
-.board{flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:14px 16px;min-height:0}
-.col{display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto;padding-bottom:8px}
-.col .ticket{flex:none}
-.colh{display:flex;justify-content:space-between;align-items:center;font-weight:700;padding:0 4px}
-.colh .n{min-width:28px;height:28px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
-.ticket{background:#fff;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;border-top:6px solid var(--gray)}
-.ticket.w{border-top-color:var(--warn)}.ticket.c{border-top-color:var(--crit);animation:pulse 1.4s infinite}.ticket.ok{border-top-color:var(--ok)}
-@keyframes pulse{50%{box-shadow:0 0 0 4px rgba(220,38,38,.25)}}
-@media (prefers-reduced-motion:reduce){.ticket.c{animation:none}}
-.th{display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px}
-.mesa{font:700 26px Fraunces,Georgia,serif;line-height:1}.who{color:var(--muted);font-size:12px}
-.timer{display:flex;gap:6px;align-items:center;font:700 18px ui-monospace,Consolas,monospace;padding:4px 10px;border-radius:10px;background:var(--gray-bg);color:var(--gray)}
-.timer.w{background:var(--warn-bg);color:var(--warn)}.timer.c{background:var(--crit-bg);color:var(--crit)}.timer.ok{background:var(--ok-bg);color:var(--ok)}
-.it{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;padding:8px 14px;border-top:1px solid var(--line);align-items:start}
-.it .q{font-weight:800;font-size:20px}.it .n{font-weight:700;font-size:16px}
-.mod{display:inline-block;margin:3px 4px 0 0;padding:2px 8px;border-radius:8px;background:var(--warn-bg);color:#92400E;font-weight:700;font-size:13px}
-.note2{margin-top:3px;font-weight:600;color:var(--crit);font-size:13px}
-.it.void .n,.it.void .q{text-decoration:line-through;color:var(--crit)}
-.it.hold{opacity:.5}
-.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--gray-bg);color:var(--gray);height:fit-content}
-.tag.fire{background:var(--brand);color:#fff}.tag.void{background:var(--crit-bg);color:var(--crit)}
-.act{display:flex;gap:8px;padding:10px 14px 12px}
-.btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:52px;padding:0 16px;border-radius:12px;font-weight:700;font-size:15px;color:#fff;border:0;flex:1;background:var(--brand)}
-.btn.ok{background:var(--ok)}.btn.ghost{background:var(--bg);color:var(--ink);flex:0 0 auto}
-.foot{background:#fff;padding:8px 16px;display:flex;gap:16px;color:var(--muted);font-size:12px;align-items:center;box-shadow:0 -1px 0 var(--line)}
-.empty{border:2px dashed var(--line);border-radius:16px;padding:28px;text-align:center;color:var(--muted)}
-.banner{background:var(--crit-bg);color:var(--crit);padding:8px 16px;font-weight:600;display:flex;gap:8px;align-items:center}
-</style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute"><defs>
-<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
-<symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
-<symbol id="chef" viewBox="0 0 24 24"><path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1ZM6 17h12"/></symbol>
-<symbol id="play" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9Z"/></symbol>
-<symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
-<symbol id="undo" viewBox="0 0 24 24"><path d="M3 7v6h6M3 13a9 9 0 1 0 3-7.7L3 8"/></symbol>
-<symbol id="vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4ZM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
-<symbol id="alert" viewBox="0 0 24 24"><path d="m10.3 3.9-8.5 14.7A2 2 0 0 0 3.5 21h17a2 2 0 0 0 1.7-2.4L13.7 3.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></symbol>
-<symbol id="wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14 0M1.4 9a16 16 0 0 1 21.2 0M8.5 16a6 6 0 0 1 7 0M12 20h.01"/></symbol>
-<symbol id="flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></symbol>
-</defs></svg>
+body{background:#D6D4E2;font-family:var(--ui);padding:24px 16px 48px;color:#E9EAF0}
+.note{max-width:1280px;margin:0 auto 18px;color:#5A5F70;font-size:13px;line-height:1.5}
+.cap{max-width:1280px;margin:0 auto 10px;font:600 12px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:#5A5F70}
+.frame{width:1280px;margin:0 auto 36px;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px -20px rgba(20,24,36,.5)}
+.row{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;margin-bottom:36px}
+.phone{width:375px;background:var(--k-bg);border-radius:22px;overflow:hidden;box-shadow:0 20px 50px -20px rgba(20,24,36,.5);min-height:720px}
+.kds{background:var(--k-bg);padding:16px 18px 18px;min-height:780px}
+.phone .kds{padding:14px 16px 20px;min-height:720px}
+.kbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.kbar h2{font:700 22px var(--ui);letter-spacing:-.01em;margin-right:8px}
+.st{font:600 14px var(--ui);padding:9px 16px;border-radius:10px;background:#1C2030;color:#A9AEBF;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center}
+.st.on{background:var(--k-paper);color:var(--k-ink)}.st span{font:700 13px var(--mono);margin-left:8px;opacity:.7}
+.ksearch{margin-left:auto;background:#1C2030;color:#8E94A8;border-radius:10px;padding:0 14px;min-height:44px;display:flex;align-items:center;gap:8px;font-size:14px;width:210px}
+.snd{font:600 12px var(--mono);color:#A9AEBF;background:#1C2030;border-radius:10px;min-height:44px;padding:0 12px;display:flex;align-items:center}
+.live{font:600 12px var(--mono);color:#7FD3A0;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:#3FCB78;box-shadow:0 0 0 4px rgba(63,203,120,.18)}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
+.colh{font:600 12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#7C8296;margin:0 0 12px 2px;min-height:15px}
+.col{display:flex;flex-direction:column;gap:22px}
+.tk{background:var(--k-paper);color:var(--k-ink);border-radius:4px 4px 10px 10px;position:relative;padding:14px 14px 12px;box-shadow:0 10px 24px -10px rgba(0,0,0,.7);font-family:var(--mono);display:flex;flex-direction:column}
+.tk::before{content:"";position:absolute;left:0;right:0;top:-6px;height:6px;background:radial-gradient(circle at 6px 0,transparent 5px,var(--k-paper) 5.5px) 0 0/12px 6px repeat-x}
+.tk::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;background:radial-gradient(circle at 6px 6px,transparent 5px,var(--k-paper) 5.5px) 0 0/12px 6px repeat-x}
+.tk .th{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:10px;border-bottom:2px dashed #CFC8B6}
+.tk .mesa{font:700 26px var(--mono);letter-spacing:-.02em}.tk .tm{font:700 22px var(--mono);font-variant-numeric:tabular-nums}
+.tk .who{font:500 11.5px var(--mono);color:#6E6656;margin-top:4px;letter-spacing:.02em}
+.tk ul{list-style:none;padding:10px 0 0;display:flex;flex-direction:column;gap:10px;flex:1}
+.tk li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:4px;font:600 15.5px var(--mono);line-height:1.25}
+.tk li b{font:700 17px var(--mono)}
+.tk li em{grid-column:2;font:600 12.5px var(--mono);font-style:normal;color:#8A5A00}
+.tk li em.al{color:var(--red);text-transform:uppercase;letter-spacing:.04em}
+.tk li.wait{opacity:.5}.tk li.void{text-decoration:line-through;color:var(--red)}.tk li.void em{text-decoration:none}
+.tk li.fire{display:flex;grid-column:1/-1;white-space:nowrap;font:700 12px var(--mono);border:1.5px solid var(--k-ink);border-radius:8px;padding:9px 10px;text-align:center;margin-top:4px;min-height:44px;display:flex;align-items:center;justify-content:center}
+.bump{margin-top:12px;font:700 15px var(--ui);letter-spacing:.02em;border-radius:10px;padding:14px;text-align:center;background:var(--k-ink);color:var(--k-paper);min-height:48px}
+.bump.start{background:transparent;color:var(--k-ink);box-shadow:inset 0 0 0 2px var(--k-ink)}
+.two{display:flex;gap:8px}.two .bump{flex:1}.two .undo{flex:0 0 auto;padding:14px 14px}
+.tk.warn .th{background:#FFE2A8;margin:-14px -14px 0;padding:14px 14px 10px;border-radius:4px 4px 0 0}
+.tk.late{box-shadow:0 0 0 3px var(--red),0 10px 24px -10px rgba(0,0,0,.7)}
+.tk.late .th{background:var(--red);color:#fff;margin:-14px -14px 0;padding:14px 14px 10px;border-radius:4px 4px 0 0;border-bottom-color:transparent}
+.tk.late .who{color:#FFD3CF}
+.tk.late::before{background:radial-gradient(circle at 6px 0,transparent 5px,var(--red) 5.5px) 0 0/12px 6px repeat-x}
+.tk.done{opacity:.55}
+.kfoot{display:flex;justify-content:space-between;margin-top:26px;font:500 12px var(--mono);color:#6F7487;flex-wrap:wrap;gap:6px}
+.off{background:var(--red);color:#fff;font:600 13px var(--mono);padding:10px 16px;display:flex;gap:8px;align-items:center}
+.empty{border:2px dashed #2A2F40;border-radius:14px;padding:26px 16px;text-align:center;color:#7C8296;font:500 13px var(--mono);line-height:1.6}
+.empty b{display:block;font:700 15px var(--ui);color:#C8CBD8}
+.tabs{display:flex;gap:8px;margin-bottom:16px}.tabs .st{flex:1;justify-content:center;padding:9px 6px}
+.q{font:600 12px var(--mono);background:#FFE2A8;color:#6B4200;border-radius:8px;padding:4px 8px}
+</style></head><body>
+<p class="note"><b>Mockup C — KDS de estación.</b> Cocina oscura, comanda de papel con borde perforado, y la urgencia cambia el <i>encabezado completo</i> de la comanda (ámbar a los 10 min, rojo a los 20; umbrales por estación). Sin precios. Sondeo cada 3 s (“EN VIVO · hace 2 s”). Incluye cursos (espera curso 2 + Disparar), modificadores, alergias, ítem anulado con “Visto”, deshacer, y modo sin conexión.</p>
 
-<p class="note"><b>Mockup C — KDS de una estación.</b> Tablet horizontal 1180×820 y móvil 375. Sin precios. Sondeo cada 3 s (indicador “Actualizado hace 2 s”). El estado nunca va solo por color: cada tarjeta lleva texto y borde superior. Los umbrales ámbar/rojo son configurables por estación (ejemplo: 10 y 20 min).</p>
-
-<h1 class="t">1 · Tablet horizontal — Estación Cocina</h1>
-<div class="stage"><div class="frame tablet">
-  <div class="bar">
-    <h2><svg class="i"><use href="#chef"/></svg>Cocina</h2>
-    <div class="tab on">Cocina<em>7</em></div><div class="tab">Barra<em>2</em></div><div class="tab">Fría<em>1</em></div>
-    <span class="sp"></span>
-    <div class="search"><svg class="i"><use href="#search"/></svg><span>mesa, producto…</span></div>
-    <span class="pill live"><svg class="i"><use href="#wifi"/></svg>Actualizado hace 2 s</span>
-    <div class="tab" aria-label="Sonido"><svg class="i"><use href="#vol"/></svg></div>
+<div class="cap">1 · Tablet 1280 — Estación Cocina</div>
+<div class="frame"><div class="kds">
+  <div class="kbar"><h2>Cocina</h2><span class="st on">Cocina<span>7</span></span><span class="st">Barra<span>2</span></span><span class="st">Fría<span>1</span></span><span class="st">Todas<span>10</span></span>
+    <div class="ksearch">Mesa o producto…</div><span class="snd">SONIDO ON</span><span class="live">EN VIVO · hace 2 s</span></div>
+  <div class="board">
+    <div><div class="colh">Nuevas · 2</div><div class="col">
+      <div class="tk"><div class="th"><div><div class="mesa">M4</div><div class="who">María P. · curso 1</div></div><div class="tm">02:14</div></div>
+        <ul><li><b>2</b>Pasta carbonara<em>+ extra queso</em></li><li><b>1</b>Pargo frito<em>bien cocido</em><em class="al">alergia: maní</em></li><li class="wait"><b>1</b>Tarta de queso<em>espera curso 2</em></li></ul>
+        <div class="bump start">Empezar</div></div>
+      <div class="tk"><div class="th"><div><div class="mesa">M6</div><div class="who">Luis R. · curso 1</div></div><div class="tm">00:48</div></div>
+        <ul><li><b>2</b>Tequeños<em>sin picante</em></li></ul><div class="bump start">Empezar</div></div>
+    </div></div>
+    <div><div class="colh">En preparación · 3</div><div class="col">
+      <div class="tk"><div class="th"><div><div class="mesa">M2</div><div class="who">María P. · curso 1</div></div><div class="tm">06:10</div></div>
+        <ul><li><b>1</b>Ensalada César<em>aderezo aparte</em></li><li class="wait"><b>2</b>Pasta carbonara<em>espera curso 2</em></li><li class="fire">DISPARAR CURSO 2</li></ul>
+        <div class="two"><div class="bump">Listo</div><div class="bump start undo">Deshacer</div></div></div>
+      <div class="tk warn"><div class="th"><div><div class="mesa">M9</div><div class="who">Luis R. · curso 1</div></div><div class="tm">12:40</div></div>
+        <ul><li><b>3</b>Hamburguesa<em>sin cebolla · término medio</em></li></ul><div class="bump">Listo</div></div>
+    </div></div>
+    <div><div class="colh">Atrasadas · 1</div><div class="col">
+      <div class="tk late"><div class="th"><div><div class="mesa">M11</div><div class="who">Ana G. · curso 1</div></div><div class="tm">22:31</div></div>
+        <ul><li><b>2</b>Pizza margarita</li><li><b>1</b>Pizza 4 quesos<em>mitad champiñón</em></li><li class="void"><b>1</b>Alitas ×6<em class="al">anulado: cliente cambió</em></li></ul>
+        <div class="two"><div class="bump">Listo</div><div class="bump start undo">Visto</div></div></div>
+    </div></div>
+    <div><div class="colh">Listas · 2</div><div class="col">
+      <div class="tk done"><div class="th"><div><div class="mesa">M5</div><div class="who">Juan C. · hace 1 min</div></div><div class="tm">01:02</div></div>
+        <ul><li><b>2</b>Pasta pomodoro</li></ul><div class="bump start">Avisado al mesonero</div></div>
+      <div class="tk done"><div class="th"><div><div class="mesa">M2</div><div class="who">María P. · hace 3 min</div></div><div class="tm">03:20</div></div>
+        <ul><li><b>2</b>Tequeños<em>sin picante</em></li></ul><div class="bump start">Avisado al mesonero</div></div>
+    </div></div>
   </div>
-  <div class="board" id="board"></div>
-  <div class="foot"><span>Umbrales Cocina: ámbar 10 min · rojo 20 min</span><span class="sp"></span><span>Promedio hoy: 11 min · p90: 19 min</span></div>
+  <div class="kfoot"><span>Umbrales Cocina: ámbar 10 min · rojo 20 min</span><span>Promedio hoy 11 min · p90 19 min</span></div>
 </div></div>
 
-<h1 class="t">2 · Móvil 375 — Cocinero en teléfono (una columna)</h1>
-<div class="stage">
-  <div class="frame f-mob">
-    <div class="bar" style="flex-wrap:wrap"><h2><svg class="i"><use href="#chef"/></svg>Cocina</h2><span class="sp"></span><span class="pill live">Hace 2 s</span>
-      <div style="display:flex;gap:8px;width:100%;overflow-x:auto"><div class="tab on">Pendiente<em>2</em></div><div class="tab">Preparando<em>3</em></div><div class="tab">Listo<em>2</em></div></div></div>
-    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px" id="mcol"></div>
-  </div>
-  <div class="frame f-mob">
-    <div class="banner"><svg class="i"><use href="#alert"/></svg>Sin conexión. Reintentando… (2 acciones en cola)</div>
-    <div class="bar"><h2><svg class="i"><use href="#chef"/></svg>Cocina</h2></div>
-    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:12px">
-      <div class="empty"><svg class="i" style="width:36px;height:36px"><use href="#chef"/></svg><p style="margin-top:8px;font-weight:600">Sin comandas pendientes</p><p>Última actualización 19:42:08</p></div>
-      <div class="ticket"><div class="th"><div><div class="mesa">Mesa 7</div><div class="who">Cola: “Listo” pendiente de enviar</div></div><span class="pill" style="background:var(--warn-bg);color:var(--warn)">En cola</span></div></div>
+<div class="cap">2 · Móvil 375 — Cocinero en teléfono (una columna) y modo sin conexión</div>
+<div class="row">
+  <div class="phone"><div class="kds">
+    <div class="kbar" style="margin-bottom:12px"><h2>Cocina</h2><span class="live" style="margin-left:auto">hace 2 s</span></div>
+    <div class="tabs"><span class="st on">Nuevas<span>2</span></span><span class="st">Prep.<span>3</span></span><span class="st">Listas<span>2</span></span></div>
+    <div class="col" style="gap:22px;padding-top:6px">
+      <div class="tk"><div class="th"><div><div class="mesa">M4</div><div class="who">María P. · curso 1</div></div><div class="tm">02:14</div></div>
+        <ul><li><b>2</b>Pasta carbonara<em>+ extra queso</em></li><li><b>1</b>Pargo frito<em>bien cocido</em><em class="al">alergia: maní</em></li><li class="wait"><b>1</b>Tarta de queso<em>espera curso 2</em></li></ul><div class="bump start">Empezar</div></div>
+      <div class="tk warn"><div class="th"><div><div class="mesa">M9</div><div class="who">Luis R. · curso 1</div></div><div class="tm">12:40</div></div>
+        <ul><li><b>3</b>Hamburguesa<em>sin cebolla · término medio</em></li></ul><div class="bump">Listo</div></div>
+      <div class="tk late"><div class="th"><div><div class="mesa">M11</div><div class="who">Ana G. · curso 1</div></div><div class="tm">22:31</div></div>
+        <ul><li><b>2</b>Pizza margarita</li><li class="void"><b>1</b>Alitas ×6<em class="al">anulado: cliente cambió</em></li></ul>
+        <div class="two"><div class="bump">Listo</div><div class="bump start undo">Visto</div></div></div>
     </div>
-  </div>
+  </div></div>
+  <div class="phone"><div class="off">SIN CONEXIÓN · reintentando · 2 acciones en cola</div><div class="kds" style="min-height:690px">
+    <div class="kbar" style="margin-bottom:12px"><h2>Cocina</h2><span class="live" style="margin-left:auto;color:#FFB4AE">hace 41 s</span></div>
+    <div class="empty"><b>Sin comandas nuevas</b>Última actualización 19:42:08</div>
+    <div class="col" style="margin-top:26px"><div class="tk"><div class="th"><div><div class="mesa">M7</div><div class="who">Cola local</div></div><div class="q">EN COLA</div></div>
+      <ul><li><b>1</b>Pargo frito<em>“Listo” pendiente de enviar</em></li></ul></div></div>
+  </div></div>
 </div>
-
-<script>
-const ic=n=>`<svg class="i"><use href="#${n}"/></svg>`;
-const item=(q,n,mods,nota,o={})=>`<div class="it ${o.void?'void':''} ${o.hold?'hold':''}"><span class="q">${q}</span><div><div class="n">${n}</div>${(mods||[]).map(m=>`<span class="mod">${m}</span>`).join('')}${nota?`<div class="note2">${nota}</div>`:''}${o.void?`<div class="note2">Anulado: “cliente cambió de idea”</div>`:''}</div>${o.tag?`<span class="tag ${o.tag[1]||''}">${o.tag[0]}</span>`:''}</div>`;
-const ticket=(mesa,who,time,lvl,items,btns)=>`<article class="ticket ${lvl}"><div class="th"><div><div class="mesa">Mesa ${mesa}</div><div class="who">${who}</div></div><div class="timer ${lvl}">${ic('clock')}${time}</div></div>${items}<div class="act">${btns}</div></article>`;
-const B={ini:`<button class="btn">${ic('play')}Iniciar</button>`,lis:`<button class="btn ok">${ic('check')}Listo</button>`,und:`<button class="btn ghost" aria-label="Deshacer">${ic('undo')}</button>`,vis:`<button class="btn" style="background:var(--crit)">Visto</button>`};
-const col=(t,c,n,body)=>`<section class="col"><div class="colh"><span>${t}</span><span class="n" style="background:${c}">${n}</span></div>${body}</section>`;
-const pend=[
- ticket(4,'María P. · 2 min','02:14','',item(2,'Pasta carbonara',['Extra queso'],'')+item(1,'Pargo frito',['Bien cocido'],'ALERGIA: sin maní')+item(1,'Tarta de queso','',null,{hold:1,tag:['Espera curso 1']}),B.ini),
- ticket(9,'Luis R. · 12 min','12:40','w',item(3,'Hamburguesa',['Sin cebolla','Término medio'],''),B.ini),
-];
-const prep=[
- ticket(2,'María P. · 9 min','09:05','',item(1,'Ensalada César',['Aderezo aparte'],''),B.lis+B.und),
- ticket(11,'Ana G. · 22 min','22:31','c',item(2,'Pizza margarita',[],'')+item(1,'Pizza 4 quesos',['Mitad champiñón'],'')+item(1,'Alitas x6','',null,{void:1,tag:['Anulado','void']}),B.lis+B.vis),
- ticket(6,'Luis R. · 6 min','06:10','',item(2,'Tequeños',[],''),B.lis+B.und),
-];
-const list=[
- ticket(5,'Juan C. · listo hace 1 min','01:02','ok',item(2,'Pasta pomodoro',[],''),`<button class="btn ghost" style="flex:1">Avisado al mesonero</button>`),
- ticket(2,'María P. · listo hace 3 min','03:20','ok',item(2,'Tequeños',['Sin picante'],''),`<button class="btn ghost" style="flex:1">Avisado al mesonero</button>`),
-];
-document.getElementById('board').innerHTML=col('Pendiente','var(--gray)',2,pend.join(''))+col('En preparación','var(--warn)',3,prep.join(''))+col('Listo','var(--ok)',2,list.join(''));
-document.getElementById('mcol').innerHTML=pend.join('')+prep[1];
-</script>
-</body>
-</html>
+</body></html>

@@ -1,6 +1,7 @@
 # PLAN — Fases R1 a R5 del módulo Restaurante
 
-Versión R0 | 2026-11-04 | Estado: PROPUESTA | Depende de `PRD_Restaurante.md` y `ADR_Modelo_Restaurante.md`
+Versión R0.1 | 2026-11-04 | Estado: PROPUESTA — **no se empieza R1 hasta que Carlos apruebe los mockups** | Depende de `PRD_Restaurante.md` y `ADR_Modelo_Restaurante.md`
+Rama sincronizada con `origin/main` (incluye `/pay` corregido y `/cargo`).
 Nota: `PLAN_Fase_Upgrade_10Nov2026.md` (F4/F5) no existe en este worktree ni en `origin/main`; este plan se apoya solo en el repo.
 
 ## Reglas comunes a todas las fases
@@ -102,17 +103,17 @@ Nota: `PLAN_Fase_Upgrade_10Nov2026.md` (F4/F5) no existe en este worktree ni en 
 
 ## R4 — Pedir cuenta, cobro, dividir, propina
 
-**Objetivo:** cerrar la cuenta con el POS actual. **Bloqueante:** decidir el hallazgo preexistente de `PATCH /api/sales/[id]/pay` (confía en montos del cliente, commit `1ffb851`): o se corrige aparte antes, o el cobro de mesa arma todo en servidor y lo declara (ADR §8 #6).
+**Objetivo:** cerrar la cuenta con el POS actual. **Desbloqueada:** `/pay` quedó corregido en `main` (`e288f22` pay-seguro, `d9c7f65` pay-integridad). El cobro de mesa crea la `Sale` pendiente en servidor, usa `PATCH /api/sales/[id]/cargo` si el cajero lo aplica y `PATCH /api/sales/[id]/pay` tal cual (ADR §5). No se copia ni se modifica la lógica de `/pay`.
 
 **Crear**
 - Migración `<ts>_restaurante_cobro` (`Sale.table_order_id`, `SaleTip`, `OrderTable`)
-- `src/lib/restaurante-cobro.ts` (armar `Sale` desde `OrderItem`, dividir, cerrar cuenta) y extracción de la lógica de pago compartida desde `sales/[id]/pay` **sin cambiar su contrato**
+- `src/lib/restaurante-cobro.ts` (armar la `Sale` `pending` desde `OrderItem` con `pendingSaleTotals`, dividir, cerrar cuenta cuando todas las ventas hijas están `paid`). **No** se extrae ni se duplica la lógica de `/pay`
 - `src/app/api/restaurante/cuentas/[id]/{pedir-cuenta,cobrar,dividir,juntar,transferir}/route.ts`
 - `src/app/api/restaurante/propinas/route.ts`
 - UI: `PreCuenta.tsx`, `DividirCuenta.tsx`, `Propina.tsx`; reutilizar el cobro del POS (no reescribirlo)
 - `tests/restaurante-cobro.spec.ts`; escenario nuevo en `test:consistency` (mesa dividida + propina)
 
-**Tocar:** `src/lib/sales-returns.ts` (`cashTipTotals`) · `src/app/api/sales/[id]/pay/route.ts` (solo si se extrae la función compartida, con regresión) · recibo y ticket (`src/lib/ticket.ts`, `thermal-print.ts`: mesa, mesonero, propina) · caja (efectivo esperado)
+**Tocar:** `src/lib/sales-returns.ts` (`cashTipTotals`) · **`/pay` y `/cargo` NO se tocan** (ya corregidos en `main`) · recibo y ticket (`src/lib/ticket.ts`, `thermal-print.ts`: mesa, mesonero, propina) · caja (efectivo esperado)
 
 **E2E**
 1. Pago mixto $10 efectivo + Bs por $20 → 1 `Sale paid`, 2 `SalePayment`, stock descontado, cuenta `closed`, mesa `por_limpiar`.
@@ -123,6 +124,9 @@ Nota: `PLAN_Fase_Upgrade_10Nov2026.md` (F4/F5) no existe en este worktree ni en 
 6. Juntar 2 mesas → 1 cuenta; transferir mesa y mesonero dejan `TableEvent`.
 7. Devolución posterior sobre una venta de mesa: reportes y `test:consistency` en verde.
 8. Cancelar una venta reabre la cuenta solo con admin. Sin caja abierta: mismo bloqueo del POS.
+9. Integridad con el `/pay` actual: un body con `cargo_pct` o `discount_pct` se descarta; un pago cuyo `amount_bs` no cuadra con la tasa → 400; más de 10 pagos → 400; un `cashier` ajeno a la venta → 403; si la tasa cambia entre crear y pagar, `total_bs` y `rate_used` salen de la misma tasa y coinciden con la suma de pagos.
+10. `/cargo` sobre la venta de mesa recalcula el total en servidor; con Cashea vivo exige aprobar de nuevo.
+11. El `waiter` recibe 403 en `/pay`, `/cargo` y `/api/sales`.
 
 **DoD específico:** `security-reviewer` aprueba (dinero + auth); `npm run test:consistency` en 0; ningún endpoint replica filtros de `status` (todo por `sales-returns.ts`).
 
@@ -135,14 +139,14 @@ Nota: `PLAN_Fase_Upgrade_10Nov2026.md` (F4/F5) no existe en este worktree ni en 
 **Crear**
 - `src/app/api/restaurante/reportes/route.ts` (ventas por mesonero y área, rotación, tiempos por estación p50/p90, propinas por mesonero)
 - `src/app/(dashboard)/restaurante/reportes/page.tsx` + css
-- Ruteo de pedidos de WhatsApp/catálogo a estaciones (si Carlos aprueba la pregunta #5)
+- Ruteo de pedidos de WhatsApp/catálogo a estaciones (aprobado: el KDS actual sigue igual para esos pedidos y conviven con las estaciones)
 - `tests/restaurante-reportes.spec.ts`; `tests/restaurante-flujo-completo.spec.ts` (abrir → enviar → cocinar → servir → pedir cuenta → dividir → cobrar → liberar)
 
 **Tocar:** `src/lib/sales-returns.ts` (agrupaciones por mesonero/área si hacen falta, sin tocar las reglas) · exportaciones (CSV/PDF) · `src/lib/help-content.ts` (ayuda) · `.doc/SYSTEM_MAP.md`, `.doc/DB_SCHEMA.md`
 
 **E2E:** flujo completo en 375 y 1280; reportes concuerdan con `test:consistency`; la exportación incluye propinas por separado; negocio sin flag sin cambios.
 
-**DoD específico:** documentación actualizada, guía de activación por SQL, checklist de deploy en VPS (`migrate deploy`, lock del healthcheck, `pm2 stop` antes del build) y reporte de "qué quedó fuera" (impresión térmica por estación, reservas con calendario, cargo por servicio si no se aprobó).
+**DoD específico:** documentación actualizada, guía de activación por SQL, checklist de deploy en VPS (`migrate deploy`, lock del healthcheck, `pm2 stop` antes del build) y reporte de "qué quedó fuera" (impresión térmica por estación, reservas de mesa con calendario, cargo por servicio propio del módulo).
 
 ---
 
@@ -153,7 +157,7 @@ Nota: `PLAN_Fase_Upgrade_10Nov2026.md` (F4/F5) no existe en este worktree ni en 
 | R1 | Plano + áreas + mesas | `restaurante_base` | enums nuevos |
 | R2 | Cuenta del mesonero | `restaurante_cuenta` | precio solo en servidor |
 | R3 | Estaciones + KDS | — | convivencia con el KDS actual |
-| R4 | Cobro, dividir, propina | `restaurante_cobro` | dinero y hallazgo de `pay` |
+| R4 | Cobro, dividir, propina | `restaurante_cobro` | dinero; límite de 10 pagos por venta |
 | R5 | Reportes + flujo completo | — | consistencia contable |
 
 Orden estricto R1→R5: cada fase se aprueba visualmente por Carlos antes de empezar la siguiente.

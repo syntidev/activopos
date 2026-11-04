@@ -12,7 +12,7 @@ const SLUG = 'boutique-demo'
 const TAG = String(Date.now()).slice(-6)
 const CON = `ZZ Divisa Con ${TAG}`
 const SIN = `ZZ Divisa Sin ${TAG}`
-const MOCKUP = 'file:///C:/laragon/www/activopos/.doc/mockups/precio_divisa_opcionC.html'
+const MOCKUP = 'file:///C:/laragon/www/activopos/.doc/mockups/precio_divisa_opcionC_v2.html'
 
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
@@ -60,39 +60,59 @@ test.afterAll(async () => {
   expect(Number(sql(`SELECT COUNT(*) FROM payment_methods WHERE business_id=${BID} AND name LIKE 'ZZ Divisa %'`))).toBe(0)
 })
 
-test('ficha con Divisa: abre en Divisa, pastilla compacta; Divisa sin Pago Móvil; Bs sin Bancamiga', async ({ page }) => {
+test('ficha con Divisa: radios abren en Divisa con badge y ahorro; Divisa→Bs cambia precio y chips', async ({ page }) => {
   await page.goto(`/catalogo-premium/${SLUG}/p/${idCon}`)
   const bloque = page.getByTestId('precio-divisa')
-  const grupo = bloque.getByRole('group', { name: 'Moneda de pago' })
-  await expect(grupo.getByRole('button', { name: /\$ Divisa/ })).toHaveAttribute('aria-pressed', 'true')
+  const grupo = bloque.getByRole('radiogroup', { name: '¿Cómo vas a pagar?' })
+  await expect(grupo.getByRole('radio')).toHaveCount(2)
+  const rDivisa = grupo.getByRole('radio', { name: /\$ Divisa/ })
+  const rBs = grupo.getByRole('radio', { name: /Bolívares/ })
+  await expect(rDivisa).toHaveAttribute('aria-checked', 'true')
+  await expect(rBs).toHaveAttribute('aria-checked', 'false')
+  // cada tarjeta muestra SU precio; badge solo en Divisa; ahorro frente al Full
+  await expect(rDivisa).toContainText('$30.00')
+  await expect(rBs).toContainText('$40.00')
+  await expect(rDivisa).toContainText('MEJOR PRECIO')
+  await expect(rBs).not.toContainText('MEJOR PRECIO')
   await expect(bloque.getByTestId('precio-principal')).toHaveText('$30.00')
+  await expect(bloque).toContainText('Ahorras $10.00 frente al pago en bolívares')
+  await expect(bloque).toContainText('Paga con')
 
-  // La pastilla mide menos que el contenedor (no es de ancho completo).
-  const wGrupo = (await grupo.boundingBox())?.width ?? 0
-  const wBloque = (await bloque.boundingBox())?.width ?? 0
-  expect(wGrupo).toBeGreaterThan(0)
-  expect(wGrupo).toBeLessThan(wBloque)
+  // grilla de dos columnas iguales
+  const a = await rDivisa.boundingBox()
+  const b = await rBs.boundingBox()
+  expect(Math.abs((a?.width ?? 0) - (b?.width ?? 1))).toBeLessThan(2)
+  expect(Math.abs((a?.y ?? 0) - (b?.y ?? 1))).toBeLessThan(2)
 
+  // chips: solo lo que hay en la BD (settings + métodos activos); sin Pago Móvil ni Cashea en Divisa
   const divisa = bloque.getByRole('list', { name: 'Formas de pago en divisa' })
   for (const n of ['Binance', 'Zelle', 'Efectivo USD', 'Bancamiga Cash']) await expect(divisa).toContainText(n)
   await expect(divisa).not.toContainText('Pago Móvil')
   await expect(divisa).not.toContainText('Cashea')
   await page.screenshot({ path: 'tests/__capturas__/selector-ficha-1280-divisa.png' })
 
-  await grupo.getByRole('button', { name: /Bolívares/ }).click()
-  await expect(grupo.getByRole('button', { name: /Bolívares/ })).toHaveAttribute('aria-pressed', 'true')
+  await rBs.click()
+  await expect(rBs).toHaveAttribute('aria-checked', 'true')
+  await expect(rDivisa).toHaveAttribute('aria-checked', 'false')
   await expect(bloque.getByTestId('precio-principal')).toContainText('Bs')
   await expect(bloque).toContainText('Equivale a $40.00')
+  await expect(bloque).not.toContainText('Ahorras')
   const bs = bloque.getByRole('list', { name: 'Formas de pago en bolívares' })
   await expect(bs).toContainText('Pago Móvil')
   await expect(bs).toContainText('Transferencia')
   await expect(bs.locator('img[src*="cashea"]')).toHaveCount(1)
   await expect(bs).not.toContainText('Bancamiga')
   await expect(page.getByText('Recibimos bolívares a tasa BCV')).toBeVisible()
+  await page.screenshot({ path: 'tests/__capturas__/selector-ficha-1280-bs.png' })
+
+  // teclado: flecha izquierda vuelve a Divisa
+  await rBs.press('ArrowLeft')
+  await expect(rDivisa).toHaveAttribute('aria-checked', 'true')
 
   // El default no se recuerda: al recargar vuelve a Divisa.
+  await rBs.click()
   await page.reload()
-  await expect(page.getByTestId('precio-divisa').getByRole('button', { name: /\$ Divisa/ })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByTestId('precio-divisa').getByRole('radio', { name: /\$ Divisa/ })).toHaveAttribute('aria-checked', 'true')
 })
 
 test('ficha sin Divisa: Full como principal, sin selector', async ({ page }) => {
@@ -126,7 +146,7 @@ test('375 px: sin scroll horizontal, orden foto > selector > precio y capturas d
     return {
       fotoBottom: rects.length > 0 ? rects[0].bottom + window.scrollY : 0,
       nombre: y(document.querySelector('h1')),
-      selector: y(document.querySelector('[data-testid="precio-divisa"] [role="group"]')),
+      selector: y(document.querySelector('[data-testid="precio-divisa"] [role="radiogroup"]')),
       precio: y(document.querySelector('[data-testid="precio-principal"]')),
       pastillas: y(document.querySelector('[data-testid="precio-divisa"] ul')),
     }
@@ -136,7 +156,7 @@ test('375 px: sin scroll horizontal, orden foto > selector > precio y capturas d
   expect(orden.selector).toBeLessThan(orden.precio)
   expect(orden.precio).toBeLessThan(orden.pastillas)
   await page.screenshot({ path: 'tests/__capturas__/selector-ficha-375-divisa.png', fullPage: true })
-  await bloque.getByRole('button', { name: /Bolívares/ }).click()
+  await bloque.getByRole('radio', { name: /Bolívares/ }).click()
   await page.screenshot({ path: 'tests/__capturas__/selector-ficha-375-bs.png', fullPage: true })
 })
 

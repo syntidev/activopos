@@ -204,6 +204,25 @@
   --pay-sky-fg:         #075985;
   --pay-neutral-bg:     #F3F4F6;
   --pay-neutral-fg:     #374151;
+  /* Selector v2 (tarjetas-botón): azules de la opción activa, sombras, radio y colores del ícono de cada medio */
+  --sel-blue-50:        #EEF4FF;
+  --sel-blue-100:       #DCE7FF;
+  --sel-blue-top:       #F5F8FF;
+  --sel-border:         #E2E8F0;
+  --sel-border-hover:   #94A3B8;
+  --sel-radio-border:   #CBD5E1;
+  --sel-text:           #334155;
+  --sel-shadow-1:       0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --sel-shadow-hover:   0 4px 10px -2px rgba(15, 23, 42, 0.10);
+  --sel-shadow-active:  0 6px 16px -4px rgba(11, 79, 204, 0.28), 0 2px 4px rgba(11, 79, 204, 0.12);
+  --sel-badge-shadow:   0 2px 6px rgba(21, 128, 61, 0.35);
+  --sel-pricebox-top:   #F8FAFF;
+  --pay-ico-binance:    #F0B90B;
+  --pay-ico-zelle:      #6D1ED4;
+  --pay-ico-cash:       #15803D;
+  --pay-ico-bank:       #0B6B3A;
+  --pay-ico-bs:         #1E3A8A;
+  --pay-ico-transfer:   #475569;
   --form-max-width:     1200px;
   --touch-comfy:        48px;
   --touch-large:        56px;

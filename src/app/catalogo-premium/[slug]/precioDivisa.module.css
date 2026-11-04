@@ -1,44 +1,121 @@
-/* Selector de moneda de la ficha (catálogo premium). Referencia: .doc/mockups/precio_divisa_opcionC.html, sección C. */
+/* Selector de moneda de la ficha (catálogo premium). Referencia: .doc/mockups/precio_divisa_opcionC_v2.html */
 .root {
   display:        flex;
   flex-direction: column;
-  gap:            var(--space-2);
+  gap:            var(--space-3);
   min-width:      0;
 }
 
-/* Pastilla compacta: NO ocupa todo el ancho. */
-.toggle {
-  display:       inline-flex;
-  width:         fit-content;
-  max-width:     100%;
-  border:        1px solid var(--color-border-subtle);
-  border-radius: var(--radius-toggle);
-  overflow:      hidden;
+.question {
+  margin:      0;
+  font-size:   13px;
+  font-weight: var(--weight-semibold);
+  color:       var(--sel-text);
+}
+
+/* ===== Dos tarjetas-botón ===== */
+.seg {
+  display:               grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap:                   10px;
 }
 
 .opt {
-  display:     flex;
-  align-items: center;
-  gap:         6px;
-  min-height:  var(--touch-min);
-  padding:     0 var(--space-3);
-  border:      none;
-  background:  var(--color-white);
-  color:       var(--pay-neutral-fg);
-  font:        inherit;
-  font-size:   var(--text-sm);
-  font-weight: var(--weight-semibold);
-  cursor:      pointer;
+  position:       relative;
+  display:        flex;
+  flex-direction: column;
+  align-items:    flex-start;
+  gap:            6px;
+  min-width:      0;
+  min-height:     var(--touch-min);
+  padding:        12px 14px 12px 42px;
+  border:         1.5px solid var(--sel-border);
+  border-radius:  14px;
+  background:     var(--color-white);
+  box-shadow:     var(--sel-shadow-1);
+  font:           inherit;
+  text-align:     left;
+  cursor:         pointer;
+  transition:     transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s, border-color 0.18s, background 0.18s;
 }
 
-.opt[aria-pressed="true"] {
-  background: var(--onbike-blue);
-  color:      var(--color-white);
+.opt:hover {
+  border-color: var(--sel-border-hover);
+  transform:    translateY(-1px);
+  box-shadow:   var(--sel-shadow-hover);
+}
+
+.opt:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.opt:focus-visible {
+  outline:        3px solid var(--sel-blue-100);
+  outline-offset: 2px;
+}
+
+.radio {
+  position:      absolute;
+  left:          14px;
+  top:           14px;
+  width:         18px;
+  height:        18px;
+  border-radius: 50%;
+  border:        2px solid var(--sel-radio-border);
+  background:    var(--color-white);
+  transition:    all 0.18s;
+}
+
+.opt[aria-checked="true"] {
+  border-color: var(--onbike-blue);
+  background:   linear-gradient(180deg, var(--sel-blue-top) 0%, var(--sel-blue-50) 100%);
+  box-shadow:   var(--sel-shadow-active);
+}
+
+.opt[aria-checked="true"] .radio {
+  border-color: var(--onbike-blue);
+  background:   var(--onbike-blue);
+  box-shadow:   inset 0 0 0 3px var(--color-white);
+}
+
+.oname {
+  display:     flex;
+  flex-wrap:   wrap;
+  align-items: center;
+  gap:         6px;
+  font-size:   14px;
+  font-weight: var(--weight-bold);
+  color:       var(--color-text-primary);
+}
+
+.oprice {
+  font-size:            15px;
+  font-weight:          var(--weight-extrabold);
+  font-variant-numeric: tabular-nums;
+  color:                var(--sel-text);
+}
+
+.opt[aria-checked="true"] .oprice {
+  color: var(--onbike-blue);
+}
+
+.badge {
+  position:       absolute;
+  top:            -9px;
+  right:          10px;
+  padding:        3px 8px;
+  border-radius:  20px;
+  background:     var(--pay-green-fg);
+  box-shadow:     var(--sel-badge-shadow);
+  color:          var(--color-white);
+  font-size:      10px;
+  font-weight:    var(--weight-extrabold);
+  letter-spacing: 0.04em;
 }
 
 .badgeBs {
-  padding:       1px 4px;
-  border-radius: var(--radius-sm);
+  padding:       2px 5px;
+  border-radius: 5px;
   background:    var(--badge-bs-bg);
   color:         var(--color-white);
   font-size:     10px;
@@ -50,11 +127,24 @@
   width:  auto;
 }
 
+/* ===== Caja de precio ===== */
+.pricebox {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+  padding:        16px 18px;
+  border:         1px solid var(--sel-blue-100);
+  border-radius:  16px;
+  background:     linear-gradient(180deg, var(--color-white) 0%, var(--sel-pricebox-top) 100%);
+}
+
 .price {
-  font-size:   34px;
-  font-weight: var(--weight-extrabold);
-  color:       var(--color-text-primary);
-  line-height: 1;
+  font-size:            40px;
+  font-weight:          var(--weight-extrabold);
+  letter-spacing:       -0.03em;
+  line-height:          1;
+  font-variant-numeric: tabular-nums;
+  color:                var(--color-text-primary);
 }
 
 .sub {
@@ -63,33 +153,60 @@
 }
 
 .sub b {
-  color:       var(--pay-neutral-fg);
-  font-weight: var(--weight-semibold);
+  color: var(--pay-green-fg);
 }
 
-.pills {
+.payt {
+  margin-top:  8px;
+  font-size:   12px;
+  font-weight: var(--weight-bold);
+  color:       var(--sel-text);
+}
+
+.pays {
   display:    flex;
   flex-wrap:  wrap;
-  gap:        5px;
+  gap:        8px;
   margin:     0;
   padding:    0;
   list-style: none;
 }
 
-/* Pastillas pastel, sin borde. */
-.pill {
+.pay {
   display:       inline-flex;
   align-items:   center;
-  gap:           var(--space-1);
-  padding:       3px 7px;
-  border:        none;
-  border-radius: 20px;
-  font-size:     10.5px;
+  gap:           6px;
+  padding:       7px 11px;
+  border:        1px solid var(--sel-border);
+  border-radius: 10px;
+  background:    var(--color-white);
+  box-shadow:    var(--sel-shadow-1);
+  color:         var(--pay-neutral-fg);
+  font-size:     12.5px;
   font-weight:   var(--weight-bold);
 }
 
-.toneAmber   { background: var(--pay-amber-bg);   color: var(--pay-amber-fg); }
-.toneViolet  { background: var(--pay-violet-bg);  color: var(--pay-violet-fg); }
-.toneGreen   { background: var(--pay-green-bg);   color: var(--pay-green-fg); }
-.toneSky     { background: var(--pay-sky-bg);     color: var(--pay-sky-fg); }
-.toneNeutral { background: var(--pay-neutral-bg); color: var(--pay-neutral-fg); }
+/* Ícono genérico: inicial del medio sobre su color. */
+.ico {
+  display:       grid;
+  place-items:   center;
+  width:         18px;
+  height:        18px;
+  border-radius: 6px;
+  color:         var(--color-white);
+  font-size:     11px;
+  font-style:    normal;
+  font-weight:   var(--weight-extrabold);
+}
+
+.icoBinance  { background: var(--pay-ico-binance); color: var(--color-text-primary); }
+.icoZelle    { background: var(--pay-ico-zelle); }
+.icoCash     { background: var(--pay-ico-cash); }
+.icoBank     { background: var(--pay-ico-bank); }
+.icoBs       { background: var(--pay-ico-bs); }
+.icoTransfer { background: var(--pay-ico-transfer); }
+
+@media (max-width: 400px) {
+  .opt   { padding-left: 38px; }
+  .price { font-size: 34px; }
+}

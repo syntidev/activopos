@@ -23,8 +23,6 @@ const paySchema = z.object({
     )
     .min(1),
   client_cedula: z.string().max(20).optional(),
-  // Cargo global vigente en pantalla: el servidor no lo guarda, así que si viene se recalcula el total (líneas × descuento autorizado × cargo).
-  cargo_pct: z.number().min(0).max(100).optional(),
 })
 
 export async function PATCH(
@@ -122,12 +120,10 @@ export async function PATCH(
       await assertPaymentMatchesFinancing(tx, session.businessId, current.financing_status, body.payments.map(p => p.payment_method_id),
         { priceMode: current.price_mode, productIds: current.items.map(i => i.product_id) })
 
-      // Total autoritativo: con cargo_pct se recalcula desde las líneas, el descuento ya autorizado (PIN) y el cargo vigente.
-      const cargoPct   = body.cargo_pct
-      const recompute  = cargoPct !== undefined
-      const itemsUsd   = current.items.reduce((s, i) => s + Number(i.subtotal_usd), 0)
-      const totalUsd   = recompute ? Math.round(itemsUsd * (1 - current.discount_pct / 100) * (1 + cargoPct / 100) * 100) / 100 : Number(current.total_usd)
-      const totalBs    = recompute ? Math.round(totalUsd * rate * 100) / 100 : Number(current.total_bs)
+      // Total autoritativo: SOLO lo guardado en la venta (líneas, descuento autorizado y cargo fijados por el flujo autenticado).
+      // El body no puede cambiarlo: cargo_pct / discount_pct enviados aquí se descartan en el esquema.
+      const totalUsd = Number(current.total_usd)
+      const totalBs  = Number(current.total_bs)
       if (payTotalBs < totalBs - 0.01) {
         throw new SaleStateError(400, `Pago insuficiente. Total: ${totalBs.toFixed(2)} Bs. Recibido: ${payTotalBs.toFixed(2)} Bs`)
       }
@@ -141,7 +137,6 @@ export async function PATCH(
           status:             'paid',
           sold_at:            new Date(),
           rate_used:          rate,
-          ...(recompute ? { total_usd: totalUsd, total_bs: totalBs } : {}),
           monto_recibido_usd: montoRecibidoUsd,
           vuelto_usd:         vueltoUsd,
           client_cedula:      clientCedula,

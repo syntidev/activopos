@@ -512,6 +512,7 @@ export async function POST(req: NextRequest) {
             : {}),
           total_usd,
           total_bs,
+          cargo_pct:          cargoPct,
           rate_used:          rate,
           client_id:          clientId,
           client_name:        body.client_name,

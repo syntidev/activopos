@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkAndIncrementPinAttempts, clearPinAttempts } from '@/lib/pin-rate-limit'
 import { prisma } from '@/lib/prisma'
+import { pendingSaleTotals } from '@/lib/sale-totals'
 import { FinancingError, reconcileFinancingAfterItemsChangeTx } from '@/lib/ticket-financing'
 
 /** Resultado de aplicar el descuento dentro de la transacción: o los totales nuevos o el motivo del rechazo (409). */
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       const current = await tx.sale.findFirst({
         where:  { id: saleId, business_id: session.businessId },
         select: {
-          status: true, discount_pct: true, rate_used: true, price_mode: true, financing_status: true,
+          status: true, discount_pct: true, cargo_pct: true, rate_used: true, price_mode: true, financing_status: true,
           items: { select: { product_id: true, subtotal_usd: true } },
         },
       })
@@ -118,8 +119,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
       // Compute original total from item subtotals — immune to prior total_usd mutations
       const originalTotalUsd = current.items.reduce((sum, i) => sum + Number(i.subtotal_usd), 0)
-      const newTotalUsd = Math.round(originalTotalUsd * (1 - body.discount_pct / 100) * 100) / 100
-      const newTotalBs  = Math.round(newTotalUsd * Number(current.rate_used) * 100) / 100
+      const { total_usd: newTotalUsd, total_bs: newTotalBs } = pendingSaleTotals(originalTotalUsd, body.discount_pct, current.cargo_pct, Number(current.rate_used))
 
       // Atomic update: WHERE discount_pct = 0 prevents compounding under race condition
       const result = await tx.sale.updateMany({

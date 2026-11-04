@@ -206,13 +206,14 @@ test('d) P0-2: descuento con PIN y DESPUÉS cargo: total pantalla == sales.total
   const r = await cobrarUnMetodo(page, 'Efectivo USD')
   const cuerpo = (await payReq).postData() ?? ''
   console.log(`P0-2 PATCH /pay body: ${cuerpo}`)
-  expect(cuerpo, 'el cobro de la venta pendiente debe mandar el cargo vigente').toContain('"cargo_pct":10')
+  expect(cuerpo, '/pay no debe recibir el cargo: lo guarda la venta').not.toContain('cargo_pct')
   const v = ultimaVenta()
   const dbTotal = Number(sql(`SELECT total_usd FROM sales WHERE id=${v}`))
   const neto = Number(sql(`SELECT ROUND(SUM(p.amount_usd) - s.vuelto_usd, 2) FROM sale_payments p JOIN sales s ON s.id = p.sale_id WHERE p.sale_id=${v}`))
   console.log(`P0-2 ui=${r.uiTotalUsd.trim()} db.total_usd=${dbTotal} pagos-vuelto=${neto}`)
   expect(r.uiTotalUsd).toContain('15.84')
   expect(dbTotal, 'la venta debe guardar descuento Y cargo').toBe(15.84)
+  expect(Number(sql(`SELECT cargo_pct FROM sales WHERE id=${v}`)), 'el cargo queda guardado en la venta').toBe(10)
   expect(neto, 'lo cobrado menos el vuelto debe ser el total').toBe(15.84)
 })
 
@@ -294,7 +295,7 @@ test('j) cierre: ventas del recorrido == reports/daily', async () => {
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' })
   const rep = (await (await admin.get(`/api/reports/daily?date=${hoy}`)).json()) as { total_usd: number }
   const db = Number(sql(`SELECT COALESCE(SUM(total_usd),0) FROM sales WHERE business_id=${BID} AND status IN ('paid','partial_return') AND DATE(CONVERT_TZ(sold_at,'+00:00','-04:00'))='${hoy}'`))
-  const ret = Number(sql(`SELECT COALESCE(SUM(total_usd),0) FROM returns WHERE business_id=${BID} AND status='approved' AND DATE(CONVERT_TZ(created_at,'+00:00','-04:00'))='${hoy}'`))
+  const ret = Number(sql(`SELECT COALESCE(SUM(r.total_usd),0) FROM returns r JOIN sales s ON s.id=r.sale_id WHERE r.business_id=${BID} AND r.status='approved' AND s.status='partial_return' AND DATE(CONVERT_TZ(s.sold_at,'+00:00','-04:00'))='${hoy}'`))
   console.log(`CIERRE reports/daily=${rep.total_usd} sql.bruto=${db} sql.devol=${ret}`)
   expect(rep.total_usd).toBeCloseTo(db - ret, 2)
 })

@@ -1678,17 +1678,6 @@
   font-variant-numeric:  tabular-nums;
 }
 
-/* Con precio Divisa principal: Bs, Cashea y el Full en una línea pequeña bajo el precio. */
-.priceFullLine {
-  display:               flex;
-  align-items:           center;
-  gap:                   6px;
-  font-size:             12px;
-  color:                 var(--color-text-secondary);
-  margin-top:            var(--space-1);
-  font-variant-numeric:  tabular-nums;
-}
-
 .badgeBs {
   padding:       1px 4px;
   border-radius: var(--radius-sm);
@@ -4986,8 +4975,18 @@ iframe.lsHeroMedia {
 .carteleraGrid {
   display:               grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows:    280px repeat(2, 160px);
-  gap:                   12px;
+  gap:                   var(--space-3);
+}
+
+/* 1 tarjeta hero + 4: móvil = hero arriba (2 columnas) y las 4 en 2×2; desktop = hero 2×2 a la izquierda */
+.carteleraHero { grid-column: span 2; }
+.carteleraHero > article,
+.carteleraCell > article { height: 100%; }
+.productCardHero .productImageWrap { aspect-ratio: 4 / 3; }
+.productCardHero .productName { font-size: var(--text-lg); }
+@media (min-width: 1024px) {
+  .productCardHero .productImageWrap { aspect-ratio: auto; flex: 1 1 0; min-height: 0; }
+  .productCardHero .productInfo { flex: 0 0 auto; }
 }
 
 .carteleraTile {
@@ -5093,10 +5092,9 @@ iframe.lsHeroMedia {
   .carteleraLink    { font-size: var(--text-sm); }
   .carteleraGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows:    repeat(2, 260px);
-    gap:                   20px;
+    gap:                   var(--space-5);
   }
-  .carteleraTileBig  { grid-column: span 2; grid-row: span 2; }
+  .carteleraHero { grid-column: span 2; grid-row: span 2; }
   .carteleraBadge    { top: 20px; left: 20px; }
   .carteleraLabel    { left: 20px; right: 20px; bottom: 20px; }
 }

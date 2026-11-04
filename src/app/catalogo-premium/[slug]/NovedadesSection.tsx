@@ -1,17 +1,13 @@
 import Link from 'next/link'
-import { ImageOff } from 'lucide-react'
 import type { CatalogProduct } from './CatalogoGrid'
-import { ImgWithFallback } from './ImgWithFallback'
+import { ProductCard } from './ProductCard'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import styles from './catalogo.module.css'
-import { fmtBs } from './catalogUtils'
 
 interface NovedadesSectionProps {
   products: CatalogProduct[]
   slug:     string
 }
-
-const PRICE_FORMAT: Intl.NumberFormatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 }
 
 /**
  * Sección "Novedades" — grid mixto de producto del mockup (artboard Desktop,
@@ -31,32 +27,7 @@ export function NovedadesSection({ products, slug }: NovedadesSectionProps) {
 
       <AdaptiveGrid>
         {products.map(p => (
-          <Link
-            key={p.id}
-            href={`/catalogo-premium/${slug}/p/${p.id}`}
-            className={styles.novedadesCard}
-          >
-            <div className={styles.novedadesMedia}>
-              <ImgWithFallback
-                src={p.image ?? ''}
-                className={styles.novedadesImg}
-                loading="lazy"
-                fallback={<ImageOff size={24} strokeWidth={1.5} aria-hidden="true" />}
-              />
-            </div>
-            {p.categoryName ? <div className={styles.novedadesCategory}>{p.categoryName}</div> : null}
-            <div className={styles.novedadesName}>{p.name}</div>
-            {p.priceUsd > 0 ? (
-              <>
-                <div className={styles.novedadesPrice}>${p.priceUsd.toLocaleString('en-US', PRICE_FORMAT)}</div>
-                {p.priceBs !== null ? (
-                  <div className={styles.novedadesPriceBs}>{fmtBs(p.priceBs)}</div>
-                ) : null}
-              </>
-            ) : (
-              <div className={styles.novedadesPrice}>Consultar precio</div>
-            )}
-          </Link>
+          <ProductCard key={p.id} p={{ ...p, hasVariants: p.variants.length > 0 }} href={`/catalogo-premium/${slug}/p/${p.id}`} />
         ))}
       </AdaptiveGrid>
     </section>

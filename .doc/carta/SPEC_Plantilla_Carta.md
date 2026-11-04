@@ -139,3 +139,29 @@ Sin código de producto, sin migraciones, sin tocar `synticorex`. Los mockups so
 - **Dirección visual:** A1 casual/parrilla es la dirección por defecto; A2 fine dining es opción por negocio (`settings.carta_style`). **Decidido.**
 - **Acento:** paleta acotada (`settings.carta_accent`), no color libre. Cada color de la paleta se valida con contraste AA sobre crema y sobre blanco (texto del botón y chips). La lista cerrada de acentos la define C1 y se muestra como selector de muestras en Configuración. **Decidido.**
 - **Migración de C2:** se decide junto con el plan de C2 (no se aprueba ahora). Hasta entonces C1 no depende de ella.
+
+## 13. C0 v2 — correcciones (2026-11-04) · prevalece sobre §5 y A5 donde difieran
+
+### 13.1 Fotos reales
+- Los mockups usan **fotos reales de Unsplash** (`images.unsplash.com/photo-…?w=&h=&q=80&auto=format&fit=crop`): hero a sangre 16:9, lista 4:5, combos 16:9, bandas de ambiente. Son solo referencia visual (Unsplash License); **en producción cada negocio sube sus fotos** (WebP con sharp). Sin SVG ni círculos de color.
+- Honestidad de las fotos de referencia: "Pabellón criollo" usa un plato de arroz, caraotas, aguacate y tajadas (sin carne); "Tequeños" usa bocados fritos con salsa; el postre se llama **"Torta de queso y caramelo"** porque no hay foto libre de quesillo.
+
+### 13.2 Tipografía
+- **IBM Plex Mono NO va en la Carta** (es del KDS). Serif de display cargada para platos y títulos (casual = Fraunces; fine dining = Cormorant Garamond, cursiva en títulos) + **Instrument Sans** para descripciones y **precios** (cifras tabulares; en fine dining el precio va en la serif).
+
+### 13.3 Precio limpio
+- En cada plato: **un precio grande en $** (Divisa si aplica, regla `0 < divisa < lista`) y **debajo el Bs pequeño** (precio de lista × tasa BCV). Mismo formato en lista, hero, combos, "De la casa", ficha y carrito.
+- **[Bs], [Cashea] y las formas de pago van UNA vez**: en la franja "Cómo pagas" bajo el hero ($ Divisa: efectivo, Zelle, Binance · Bs a tasa BCV · Cashea en cuotas) y en el selector de pago del carrito. Nunca por plato.
+- Implicación de componente: `PrecioDual` gana una variante `variant="carta"` (misma regla `divisaPriceOf`, render de dos líneas sin chips); el premium no cambia. El criterio A5 se lee: "cada plato muestra un precio grande en $ (Divisa si aplica) y el Bs pequeño debajo, sin chips por plato".
+
+### 13.4 Que no parezca app de delivery
+- **Escritorio, composición editorial:** hero; **"De la casa"** con tarjetas grandes de fotografía (una de 7/12 de ancho y dos apiladas); **bandas fotográficas de ambiente** a ancho completo (340 px) con una frase corta entre secciones; lista en 2 columnas con foto 4:5.
+- **Móvil, lista compacta y rápida:** foto 4:5 de 96 px, nombre, 2 líneas, tiempo/alérgenos en una línea, precio y botón. "De la casa" solo desde 1024 px (en móvil lo cubre el hero); las bandas bajan a 120 px.
+- El botón es de texto, **"Agregar"** (contorno), no el "+" circular típico de apps de delivery; el "+" queda para cantidades.
+- **Plato sin foto = tarjeta tipográfica** (se ven "Cachapa con queso" y "Papelón con limón").
+
+### 13.5 Criterios adicionales
+- E10. Ningún plato de la lista muestra chips [Bs]/[Cashea]; la franja "Cómo pagas" aparece una vez y el carrito tiene el selector de pago.
+- E11. `document.fonts` no contiene IBM Plex Mono en ninguna página de la Carta.
+- E12. A ≥ 1024 px existen la sección "De la casa" (3 tarjetas fotográficas) y al menos una banda de ambiente; a 375 px "De la casa" no se muestra.
+- E13. Todas las fotos cargan (0 imágenes rotas) y tienen texto alternativo.

@@ -134,3 +134,8 @@ Sin código de producto, sin migraciones, sin tocar `synticorex`. Los mockups so
 - E7. El botón flotante muestra cantidad y total en USD y Bs, y sube al agregar desde el hero, la lista y un combo.
 - E8. Se ve el tiempo de preparación y la línea de alérgenos cuando existen.
 - E9. Las dos direcciones (`carta_style`) renderizan sin overflow a 375 y 1280.
+
+### 12.9 Decisiones de Carlos (2026-11-04)
+- **Dirección visual:** A1 casual/parrilla es la dirección por defecto; A2 fine dining es opción por negocio (`settings.carta_style`). **Decidido.**
+- **Acento:** paleta acotada (`settings.carta_accent`), no color libre. Cada color de la paleta se valida con contraste AA sobre crema y sobre blanco (texto del botón y chips). La lista cerrada de acentos la define C1 y se muestra como selector de muestras en Configuración. **Decidido.**
+- **Migración de C2:** se decide junto con el plan de C2 (no se aprueba ahora). Hasta entonces C1 no depende de ella.

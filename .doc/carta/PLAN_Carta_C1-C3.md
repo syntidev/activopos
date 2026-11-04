@@ -11,7 +11,7 @@ Objetivo: un negocio con `catalog_template='carta'` muestra la Carta y el pedido
 - `.../p/[id]/page.tsx` y `PlatoFicha.tsx` (ficha sin modificadores todavía).
 - `src/lib/carta-hours.ts`: abierto/cerrado desde `settings.carta_hours`, zona `America/Caracas`, con "pausar pedidos".
 - Tokens `--carta-*` en `src/styles/tokens.css` antes de usarlos (regla de tokens).
-- **Addendum (SPEC §12):** `CartaHero.tsx` (slider de favoritos: scroll-snap, autoplay 5 s con pausa, `prefers-reduced-motion`), `PlatoFoto.tsx` (4:5 y 16:9, placeholder cálido, tarjeta tipográfica sin foto), `CartaFab.tsx` (botón flotante con contador animado y total USD/Bs), `CartaTabs.tsx` con scroll-spy, secciones Combos y Para compartir, tipografía con `next/font` (Fraunces o Cormorant Garamond + Instrument Sans) y las dos direcciones `casual`/`fine` por `settings.carta_style` y `settings.carta_accent`.
+- **Addendum (SPEC §12):** `CartaHero.tsx` (slider de favoritos: scroll-snap, autoplay 5 s con pausa, `prefers-reduced-motion`), `PlatoFoto.tsx` (4:5 y 16:9, placeholder cálido, tarjeta tipográfica sin foto), `CartaFab.tsx` (botón flotante con contador animado y total USD/Bs), `CartaTabs.tsx` con scroll-spy, secciones Combos y Para compartir, tipografía con `next/font` (Fraunces o Cormorant Garamond + Instrument Sans) y las dos direcciones `casual` (por defecto) y `fine` por `settings.carta_style`, con `settings.carta_accent` limitado a una **paleta acotada** (lista cerrada con contraste AA verificado; selector de muestras en Configuración).
 - **CLI-A para el hero:** función de servidor `favoritos(businessId)` (top por unidades en `sale_items` de ventas pagadas, 30 días; fallback a destacados con rótulo "Recomendados"), cacheada; sin migración.
 
 **Reutilizar, no copiar:** `PrecioDual`, `CartContext`, `CartDrawer`, `ImgWithFallback`, `AdaptiveGrid`, `catalogUtils`, `divisaPriceOf`, `ProductCard` (la tarjeta de plato extiende su patrón).
@@ -25,7 +25,7 @@ Objetivo: un negocio con `catalog_template='carta'` muestra la Carta y el pedido
 **DoD:** criterios A1–A9 del SPEC §10 en verde, capturas 375/1280, cero cambios de esquema.
 
 ## C2 — Platos completos: etiquetas, alérgenos, modificadores, combos, agotado · CLI-A + CLI-B
-Requiere migración: se aprueba con Carlos antes (SPEC §6).
+Requiere migración: **se decide con el plan de C2** (decisión de Carlos 2026-11-04); no se asume aprobada (SPEC §6 y §12.6).
 
 **CLI-A:** migración versionada con etiquetas y alérgenos en `Product`, `prep_minutes`, `carta_section`, foco de recorte opcional por imagen, `modifier_groups`, `modifier_options`, `product_modifier_groups`, `products.sold_out_date` y `order_items.modifiers` (snapshot). Endpoints admin para grupos. `POST /api/catalog/[slug]/order` pasa a aceptar `modifiers[]` por línea, **recalcula el precio en el servidor** (nunca del cliente), valida obligatorios y mín/máx, y rechaza platos agotados con 409. Si toca totales: `npm run test:consistency`.
 

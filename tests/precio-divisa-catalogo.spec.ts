@@ -102,7 +102,8 @@ test('ficha con Divisa: radios abren en Divisa con badge y ahorro; Divisa→Bs c
   await expect(bs).toContainText('Transferencia')
   await expect(bs.locator('img[src*="cashea"]')).toHaveCount(1)
   await expect(bs).not.toContainText('Bancamiga')
-  await expect(page.getByText('Recibimos bolívares a tasa BCV')).toBeVisible()
+  await expect(page.getByText('Recibimos bolívares a tasa BCV')).toHaveCount(0) // retoque: ya lo dice el selector
+  await expect(rBs.locator('img[src*="cashea"]')).toHaveCount(1) // el logo de Cashea queda dentro de la opción Bs
   await page.screenshot({ path: 'tests/__capturas__/selector-ficha-1280-bs.png' })
 
   // teclado: flecha izquierda vuelve a Divisa
@@ -168,4 +169,19 @@ test('captura del mockup C a 375 px (referencia)', async ({ page }) => {
   } catch {
     test.info().annotations.push({ type: 'mockup', description: 'no se pudo abrir el mockup local' })
   }
+})
+
+test('retoque ficha: "Comprar ahora" con degradado del mockup v2 y sube 1px al pasar', async ({ page }) => {
+  await page.goto(`/catalogo-premium/${SLUG}/p/${idCon}`)
+  const btn = page.getByRole('button', { name: /Comprar ahora/ })
+  const estilo = await btn.evaluate((el: HTMLElement) => { const s = getComputedStyle(el); return { img: s.backgroundImage, sombra: s.boxShadow } })
+  expect(estilo.img).toContain('linear-gradient')
+  expect(estilo.img).toContain('rgb(26, 95, 224)')
+  expect(estilo.img).toContain('rgb(11, 79, 204)')
+  expect(estilo.img).toContain('rgb(10, 67, 173)')
+  expect(estilo.sombra).not.toBe('none')
+  const y0 = (await btn.boundingBox())?.y ?? 0
+  await btn.hover()
+  await page.waitForTimeout(300)
+  expect(y0 - ((await btn.boundingBox())?.y ?? y0)).toBeGreaterThan(0.5)
 })

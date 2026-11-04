@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession, type SessionPayload } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { REF_RE, isValidEan13, normalizeSize } from '@/lib/label-capture-shared'
+import { DEFAULT_PROFILE, isProfileId } from '@/lib/label-profiles'
 import type { LabelCaptureDTO } from '@/types/label-capture'
 
 /**
@@ -128,6 +129,12 @@ interface LabelCaptureRow {
   gender: string
   units: number
   color_actual: string | null
+  profile: string
+  style: string
+  size_us: string
+  size_eu: string
+  size_uk: string
+  size_jp: string
   status: string
   notes: string | null
   created_at: Date
@@ -146,6 +153,12 @@ export function toDTO(row: LabelCaptureRow): LabelCaptureDTO {
     gender: row.gender,
     units: row.units,
     color_actual: row.color_actual,
+    profile: isProfileId(row.profile) ? row.profile : DEFAULT_PROFILE,
+    style: row.style,
+    size_us: row.size_us,
+    size_eu: row.size_eu,
+    size_uk: row.size_uk,
+    size_jp: row.size_jp,
     status: row.status === 'ok' ? 'ok' : 'review',
     notes: row.notes,
     created_at: row.created_at.toISOString(),

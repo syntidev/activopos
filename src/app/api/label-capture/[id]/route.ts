@@ -4,9 +4,11 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { evaluateCapture, requireLabelCapture, toDTO, withAutoNote } from '@/lib/label-capture'
 import { EAN_RE, normalizeSize } from '@/lib/label-capture-shared'
+import { DEFAULT_PROFILE } from '@/lib/label-profiles'
 
 const patchSchema = z.object({
   add_unit:     z.literal(true).optional(),
+  sub_unit:     z.literal(true).optional(),
   units:        z.number().int().min(1).max(9999).optional(),
   ean:          z.string().regex(EAN_RE).optional(),
   ref:          z.string().trim().max(10).transform(s => s.toUpperCase()).optional(),
@@ -16,6 +18,18 @@ const patchSchema = z.object({
   color_actual: z.string().trim().max(60).nullable().optional(),
   notes:        z.string().trim().max(500).nullable().optional(),
 }).strict()
+
+/** Deshacer una captura recién creada (perfil On). Acotado al negocio de la sesión. */
+export async function DELETE(_req: Request, { params }: { params: { id: string } }): Promise<NextResponse> {
+  const session = await requireLabelCapture()
+  if (session instanceof NextResponse) return session
+
+  const id = Number(params.id)
+  if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+
+  const { count } = await prisma.labelCapture.deleteMany({ where: { id, business_id: session.businessId } })
+  return count ? NextResponse.json({ ok: true }) : NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+}
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }): Promise<NextResponse> {
   const session = await requireLabelCapture()
@@ -32,6 +46,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const current = await prisma.labelCapture.findFirst({ where: { id, business_id: session.businessId } })
   if (!current) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+
+  // Deshacer un +1: baja una unidad sin pasar de 1 (quitar la captura entera es el DELETE).
+  if (body.sub_unit) {
+    await prisma.labelCapture.updateMany({ where: { id: current.id, business_id: session.businessId, units: { gt: 1 } }, data: { units: { decrement: 1 } } })
+    const row = await prisma.labelCapture.findFirst({ where: { id: current.id, business_id: session.businessId } })
+    return row ? NextResponse.json({ item: toDTO(row) }) : NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+  }
+  // Las capturas de otros perfiles solo cambian de unidades: sus reglas no son las de Safetti.
+  if (current.profile !== DEFAULT_PROFILE) {
+    const row = await prisma.labelCapture.update({
+      where: { id: current.id },
+      data: { units: body.add_unit ? { increment: 1 } : body.units ?? current.units },
+    })
+    return NextResponse.json({ item: toDTO(row) })
+  }
 
   const ean = body.ean ?? current.ean
   const ref = body.ref ?? current.ref

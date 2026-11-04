@@ -9,10 +9,6 @@ export type LabelSize = (typeof SIZES)[number]
 export const REF_RE = /^\d{5}[A-Z]$/
 export const EAN_RE = /^\d{13}$/
 
-/** Metas del conteo físico (27 productos Safetti: 61 variantes, 66 unidades). */
-export const GOAL_VARIANTS = 61
-export const GOAL_UNITS = 66
-
 /** EAN-13: 13 dígitos y el último es el dígito de control. */
 export function isValidEan13(ean: string): boolean {
   if (!EAN_RE.test(ean)) return false

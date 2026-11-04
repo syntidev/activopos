@@ -1536,6 +1536,13 @@ model LabelCapture {
   gender       String   @db.VarChar(10)
   units        Int      @default(1)
   color_actual String?  @db.VarChar(60)
+  // Perfil de marca (src/lib/label-profiles.ts). Safetti es el original; los demás usan style y las tallas US/EU/UK/JP.
+  profile      String   @default("safetti") @db.VarChar(20)
+  style        String   @default("") @db.VarChar(24)
+  size_us      String   @default("") @db.VarChar(8)
+  size_eu      String   @default("") @db.VarChar(8)
+  size_uk      String   @default("") @db.VarChar(8)
+  size_jp      String   @default("") @db.VarChar(8)
   status       String   @default("review") @db.VarChar(10)
   notes        String?  @db.Text
   created_at   DateTime @default(now())

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import sharp from 'sharp'
 import { labelOcrLimiter } from '@/lib/rate-limit'
 import { requireLabelCapture } from '@/lib/label-capture'
-import { VisionError, readLabel } from '@/lib/label-vision'
+import { DEFAULT_PROFILE, isProfileId } from '@/lib/label-profiles'
+import { VisionError, readLabel, readOnLabel } from '@/lib/label-vision'
 
 const MAX_SIZE = 3 * 1024 * 1024 // 3 MB
 const ALLOWED_FORMATS = new Set(['jpeg', 'png', 'webp'])
@@ -17,7 +18,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Demasiadas lecturas, espera un momento' }, { status: 429 })
   }
 
-  const file = (await req.formData().catch(() => null))?.get('file')
+  const form = await req.formData().catch(() => null)
+  const file = form?.get('file')
+  // Sin perfil = Safetti (comportamiento original); un perfil desconocido se rechaza.
+  const profile = form?.get('profile') ?? DEFAULT_PROFILE
+  if (!isProfileId(profile)) return NextResponse.json({ error: 'Perfil inválido' }, { status: 400 })
   if (!(file instanceof Blob)) return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 })
   if (file.size > MAX_SIZE) return NextResponse.json({ error: 'La imagen no puede superar 3 MB' }, { status: 400 })
 
@@ -29,7 +34,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
-    return NextResponse.json(await readLabel(buffer))
+    return NextResponse.json(profile === 'on' ? await readOnLabel(buffer) : await readLabel(buffer))
   } catch (err) {
     if (err instanceof VisionError) return NextResponse.json({ error: err.message }, { status: 502 })
     console.error('label-capture ocr error:', err instanceof Error ? err.message : err)

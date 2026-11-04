@@ -1,6 +1,7 @@
 import sharp from 'sharp'
 import { extractRef, normalizeSize } from '@/lib/label-capture-shared'
-import type { LabelOcrResult } from '@/types/label-capture'
+import { normalizeGender, normalizeOnStyle, normalizeShoeSize } from '@/lib/label-profiles'
+import type { LabelOcrResult, OnOcrResult } from '@/types/label-capture'
 
 /**
  * Lectura de la etiqueta con un modelo de visión de NVIDIA (chat/completions).
@@ -90,6 +91,30 @@ async function askVision(image: Buffer, prompt: string): Promise<string> {
 
 export async function readLabel(image: Buffer): Promise<LabelOcrResult> {
   return parseVisionReply(await askVision(image, PROMPT))
+}
+
+const ON_PROMPT =
+  'Lee la etiqueta del zapato. Responde solo JSON: {estilo, modelo, colorway, genero, us, eu, uk, jp}. ' +
+  'estilo = código de estilo impreso (ej. 3MD10110001); genero = M o W; us/eu/uk/jp = solo el número de talla. ' +
+  'No inventes. Si no estás seguro de un dato, déjalo vacío.'
+
+/** Respuesta del modelo → campos del perfil On, ya normalizados (lo ilegible queda vacío). */
+export function parseOnReply(text: string): OnOcrResult {
+  const clean = (s: string, max: number): string => s.replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max)
+  return {
+    estilo: normalizeOnStyle(field(text, 'estilo')),
+    modelo: clean(field(text, 'modelo'), MODEL_NAME_MAX),
+    colorway: clean(field(text, 'colorway'), 40),
+    genero: normalizeGender(field(text, 'genero')),
+    us: normalizeShoeSize(field(text, 'us')),
+    eu: normalizeShoeSize(field(text, 'eu')),
+    uk: normalizeShoeSize(field(text, 'uk')),
+    jp: normalizeShoeSize(field(text, 'jp')),
+  }
+}
+
+export async function readOnLabel(image: Buffer): Promise<OnOcrResult> {
+  return parseOnReply(await askVision(image, ON_PROMPT))
 }
 
 /** Título impreso en la caja ('' = no se leyó con certeza). Nunca se deduce de un EAN. */

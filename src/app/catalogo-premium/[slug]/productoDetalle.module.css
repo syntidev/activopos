@@ -514,13 +514,20 @@
   padding:   0 var(--space-4);
 }
 
+/* Mockup v2 (.btn): degradado, sombra, sube 1px al pasar, baja al tocar. */
 .btnPedir {
   border:     none;
-  background: var(--biz-color, var(--onbike-blue));
+  background: linear-gradient(180deg, var(--btn-buy-top) 0%, var(--btn-buy-mid) 55%, var(--btn-buy-bottom) 100%);
+  box-shadow: var(--sh-btn);
   color:      var(--color-white);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.btnPedir:hover {
-  background: color-mix(in srgb, var(--biz-color, var(--onbike-blue)) 85%, black);
+.btnPedir:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btnPedir:active:not(:disabled) {
+  transform:  translateY(1px);
+  box-shadow: var(--sh-btn-down);
 }
 
 .btnAddCart {

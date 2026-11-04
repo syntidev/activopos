@@ -223,6 +223,12 @@
   --pay-ico-bank:       #0B6B3A;
   --pay-ico-bs:         #1E3A8A;
   --pay-ico-transfer:   #475569;
+  /* Botón "Comprar ahora" de la ficha (mockup v2, clase .btn) */
+  --btn-buy-top:        #1A5FE0;
+  --btn-buy-mid:        #0B4FCC;
+  --btn-buy-bottom:     #0A43AD;
+  --sh-btn:             0 8px 18px -6px rgba(11, 79, 204, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --sh-btn-down:        0 3px 8px -3px rgba(11, 79, 204, 0.5);
   --form-max-width:     1200px;
   --touch-comfy:        48px;
   --touch-large:        56px;

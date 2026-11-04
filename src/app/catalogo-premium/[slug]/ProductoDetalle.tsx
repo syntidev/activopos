@@ -544,7 +544,7 @@ export function ProductoDetalle({
             </div>
           )}
 
-          {(showBs || financing) && (
+          {divisaUsd === null && (showBs || financing) && (
             <div className={styles.infoLine}>
               {showBs && <span className={styles.bcvNote}>Recibimos bolívares a tasa BCV</span>}
               <FinancingNote financing={financing} />

@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Plus, Search, ShoppingBag, Truck, X, DollarSign, Clock, Ban, Loader2 } from 'lucide-react'
@@ -349,7 +351,7 @@ function ComprasContent() {
 
   // ── Anular compra ──
   async function handleCancelPurchase(id: number) {
-    if (!confirm('¿Anular esta compra? Se revertirá el stock ingresado y se cerrará la cuenta por pagar asociada.')) return
+    if (!(await confirmAction({ title: 'Anular compra', message: '¿Anular esta compra? Se revertirá el stock ingresado y se cerrará la cuenta por pagar asociada.', confirmLabel: 'Anular compra' }))) return
     setActioningId(id)
     try {
       const res = await fetch(`/api/purchases/${id}`, {

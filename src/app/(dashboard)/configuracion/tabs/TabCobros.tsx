@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useCallback } from 'react'
 import {
   Banknote, ArrowLeftRight, Smartphone, Package,
@@ -488,6 +490,7 @@ export function TabCobros({ businessId: _businessId }: Props) {
   }
 
   const handleDeleteDevice = async (device: DeviceRecord) => {
+    if (!(await confirmAction({ title: 'Eliminar dispositivo', message: `¿Eliminar el dispositivo ${device.banco} (${device.tipo})? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar dispositivo' }))) return
     try {
       const res = await fetch(`/api/config/devices/${device.id}`, { method: 'DELETE' })
       if (!res.ok) { toast('Error al eliminar.', 'error'); return }

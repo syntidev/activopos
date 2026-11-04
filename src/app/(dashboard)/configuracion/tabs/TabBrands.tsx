@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -62,7 +64,7 @@ export function TabBrands({ businessId: _b }: Props) {
   }
 
   async function deleteBrand(b: BrandRow) {
-    if (!confirm(`¿Eliminar la marca "${b.name || 'sin nombre'}"?`)) return
+    if (!(await confirmAction({ title: 'Eliminar marca', message: `¿Eliminar la marca "${b.name || 'sin nombre'}"?`, confirmLabel: 'Eliminar marca' }))) return
     if (b.isNew) { setBrands(prev => prev.filter(x => x.id !== b.id)); return }
     setBusyId(b.id)
     try {

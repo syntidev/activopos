@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useCallback } from 'react'
 import { Tag, Lock, Pencil, X } from 'lucide-react'
 import { Button }   from '@/components/ui/Button'
@@ -106,7 +108,7 @@ export function TabCategorias({ businessId: _businessId }: Props) {
 
   async function handleDeactivate(cat: ExpenseCat) {
     if (cat.is_system) return
-    if (!window.confirm(`¿Desactivar "${cat.name}"? Ya no aparecerá al registrar gastos.`)) return
+    if (!(await confirmAction({ title: 'Desactivar categoría', message: `¿Desactivar "${cat.name}"? Ya no aparecerá al registrar gastos.`, confirmLabel: 'Desactivar categoría' }))) return
     const res = await fetch(`/api/finanzas/categorias/${cat.id}`, {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },

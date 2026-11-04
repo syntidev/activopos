@@ -1,8 +1,6 @@
 'use client'
 
-import { Modal } from './Modal'
-import { Button } from './Button'
-import styles from './UnsavedChangesModal.module.css'
+import { ConfirmDialog } from './ConfirmDialog'
 
 interface UnsavedChangesModalProps {
   open: boolean
@@ -11,21 +9,17 @@ interface UnsavedChangesModalProps {
   onCancel: () => void
 }
 
+/** "Cambios sin guardar": caso particular de ConfirmDialog (un solo camino de confirmación). */
 export function UnsavedChangesModal({ open, message, onConfirm, onCancel }: UnsavedChangesModalProps) {
   return (
-    <Modal
+    <ConfirmDialog
       open={open}
-      onClose={onCancel}
       title="Tienes cambios sin guardar"
-      size="sm"
-      footer={
-        <>
-          <Button variant="secondary" onClick={onCancel}>Seguir editando</Button>
-          <Button variant="danger" onClick={onConfirm}>Descartar y salir</Button>
-        </>
-      }
-    >
-      <p className={styles.text}>{message}</p>
-    </Modal>
+      message={message}
+      cancelLabel="Seguir editando"
+      confirmLabel="Descartar y salir"
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
   )
 }

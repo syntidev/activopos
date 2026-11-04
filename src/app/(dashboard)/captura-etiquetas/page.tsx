@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Camera, Download, Images } from 'lucide-react'
 import { EAN_RE } from '@/lib/label-capture-shared'
@@ -93,7 +95,7 @@ function SafettiCapture() {
 
   /** Nunca se suma sin preguntar: Aceptar suma 1, Cancelar ignora. */
   async function resolveDuplicate(id: number, units: number, desc: string): Promise<string> {
-    const again = window.confirm(`${desc} ya está registrada con ${units} unidad(es).\n¿Es otra unidad?\n\nAceptar = sumar 1 · Cancelar = ignorar`)
+    const again = await confirmAction({ title: 'Etiqueta ya registrada', message: `${desc} ya está registrada con ${units} unidad(es). ¿Es otra unidad?`, confirmLabel: 'Sumar 1 unidad', cancelLabel: 'Ignorar' })
     if (!again) return `${desc}: ignorada`
     const r = await call<{ item: LabelCaptureDTO }>(`/api/label-capture/${id}`, {
       method: 'PATCH',

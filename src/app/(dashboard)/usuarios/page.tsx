@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Pencil, Trash2, ShieldCheck, User } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
@@ -170,7 +172,7 @@ function UsuariosContent() {
   /* ── Delete (soft) ── */
 
   async function handleDelete(u: UserRecord) {
-    if (!window.confirm(`¿Eliminar a ${u.name}? El usuario perderá acceso al sistema.`)) return
+    if (!(await confirmAction({ title: 'Eliminar usuario', message: `¿Eliminar a ${u.name}? El usuario perderá acceso al sistema.`, confirmLabel: 'Eliminar usuario' }))) return
     try {
       const res = await fetch(`/api/users/${u.id}`, { method: 'DELETE' })
       const j   = await res.json() as { ok?: boolean; error?: string }

@@ -7,6 +7,7 @@ import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner'
 import { RateProvider } from '@/context/RateContext'
 import { CajaProvider } from '@/context/CajaContext'
 import { UnsavedChangesProvider } from '@/context/UnsavedChangesContext'
+import { ConfirmProvider } from '@/context/ConfirmContext'
 import type { ReactNode } from 'react'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
@@ -26,7 +27,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <RateProvider>
         <CajaProvider>
           <UnsavedChangesProvider>
-            <DashboardShell session={session} isImpersonating={impersonating}>{children}</DashboardShell>
+            <ConfirmProvider>
+              <DashboardShell session={session} isImpersonating={impersonating}>{children}</DashboardShell>
+            </ConfirmProvider>
           </UnsavedChangesProvider>
         </CajaProvider>
       </RateProvider>

@@ -26,6 +26,7 @@ import { VariantSelector } from '@/components/products/VariantSelector'
 import { HelpButton } from '@/components/help/HelpButton'
 import { generarCorteConsumoPDF } from '@/components/pos/CorteConsumoPDF'
 import { useToast } from '@/components/ui'
+import { useConfirm } from '@/context/ConfirmContext'
 import { useHardwareScanner } from '@/hooks/useHardwareScanner'
 import type { ProductForPOS } from '@/lib/pos'
 import styles from './pos.module.css'
@@ -42,6 +43,7 @@ export default function POSPage() {
 function POSView() {
   const pos = usePOS()
   const { toast } = useToast()
+  const confirm = useConfirm()
   const [weightProduct, setWeightProduct] = useState<ProductForPOS | null>(null)
   const [cartOpen, setCartOpen]           = useState(false)
   const isMobile                          = useMediaQuery('(max-width: 767px)')
@@ -159,10 +161,40 @@ function POSView() {
     pos.setTicketDirect(newTicket)
   }
 
-  const handleCloseTab = (id: string) => {
+  // Qué se perdería al cerrar/vaciar: "Ticket 2 · 3 productos · $45,00".
+  const describeTicket = (label: string, ticket: typeof pos.ticket): string => {
+    const n = ticket.items.length
+    const usd = calcularTotales(ticket).total_usd.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return `${label} · ${n} ${n === 1 ? 'producto' : 'productos'} · $${usd}`
+  }
+
+  // Con productos, cerrar la pestaña borra el borrador de la DB: se pide confirmar. Vacía: no se pierde nada.
+  const handleCloseTab = async (id: string) => {
+    const tab = drafts.tabs.find(t => t.id === id)
+    if (!tab) return
+    const ticket = id === drafts.activeId ? pos.ticket : tab.snapshot
+    if (!ticketVacio(ticket)) {
+      const ok = await confirm({
+        title: '¿Cerrar este ticket?',
+        message: <>Se borrará el ticket con todos sus productos y no se podrá recuperar.<br /><strong>{describeTicket(tab.label, ticket)}</strong></>,
+        confirmLabel: 'Cerrar y borrar ticket',
+      })
+      if (!ok) return
+    }
     const result = drafts.closeTab(id, pos.ticket)
     if (!result) return
     if (result.switched) pos.setTicketDirect(result.newTicket)
+  }
+
+  const handleClearTicket = async () => {
+    if (isEmpty) return
+    const label = drafts.tabs.find(t => t.id === drafts.activeId)?.label ?? 'Ticket'
+    const ok = await confirm({
+      title: '¿Vaciar el ticket?',
+      message: <>Se quitarán todos los productos del ticket.<br /><strong>{describeTicket(label, pos.ticket)}</strong></>,
+      confirmLabel: 'Vaciar ticket',
+    })
+    if (ok) pos.clearTicket()
   }
 
   const handlePaymentComplete = async () => {
@@ -199,7 +231,7 @@ function POSView() {
       loading={drafts.loading}
       onSwitch={handleSwitchTab}
       onNew={handleNewTab}
-      onClose={handleCloseTab}
+      onClose={(id) => { void handleCloseTab(id) }}
       onRename={drafts.renameTab}
     />
   )
@@ -246,7 +278,7 @@ function POSView() {
           isEmpty={isEmpty}
           onUpdateQty={pos.updateQty}
           onRemove={pos.removeItem}
-          onClear={pos.clearTicket}
+          onClear={() => { void handleClearTicket() }}
           onSelectClient={() => pos.setShowCliente(true)}
           onProcesarPago={openCobro}
           onVenderCredito={handleVenderCredito}

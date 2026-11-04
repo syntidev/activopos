@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -454,6 +456,7 @@ function PedidosContent() {
   }
 
   const handleCancelarOrder = async (order: Order) => {
+    if (!(await confirmAction({ title: 'Cancelar pedido', message: `¿Cancelar el pedido ${order.order_number}? El pedido saldrá de la lista de pendientes.`, confirmLabel: 'Cancelar pedido', cancelLabel: 'No, volver' }))) return
     // Optimistic remove
     setOrders(prev => prev.filter(o => o.id !== order.id))
     try {

@@ -6,6 +6,8 @@
   color: var(--color-text-primary);
 }
 
+.brandBar { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-3) var(--space-4) 0; }
+
 .header { margin-bottom: var(--space-4); }
 .title { font-family: var(--font-display); font-size: var(--text-2xl); margin: 0; }
 .subtitle { font-size: var(--text-sm); color: var(--color-text-secondary); margin: var(--space-1) 0 0; }

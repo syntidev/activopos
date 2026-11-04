@@ -2,22 +2,27 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Camera, Download, Images } from 'lucide-react'
-import { GOAL_UNITS, GOAL_VARIANTS, EAN_RE } from '@/lib/label-capture-shared'
+import { EAN_RE } from '@/lib/label-capture-shared'
+import { DEFAULT_PROFILE, LABEL_PROFILES, PROFILE_LIST, isProfileId } from '@/lib/label-profiles'
 import type {
   LabelCaptureDTO,
   LabelCaptureDuplicate,
   LabelCaptureList,
   LabelCapturePatch,
   LabelOcrResult,
+  LabelProfileId,
   PendingLabel,
 } from '@/types/label-capture'
 import { EditSheet } from './EditSheet'
+import { OnCapture } from './OnCapture'
 import { QuickAdd } from './QuickAdd'
 import { scanLabel } from './scan'
 import styles from './captura.module.css'
 import tabStyles from './alta.module.css'
 
 const LOG_LIMIT = 30
+const PROFILE_STORAGE_KEY = 'captura-etiquetas:perfil'
+const goals = LABEL_PROFILES.safetti.goals ?? { variants: 0, units: 0 }
 const EMPTY_OCR: LabelOcrResult = { ref: '', modelo: '', talla: '' }
 
 interface ApiResult<T> {
@@ -200,11 +205,11 @@ function SafettiCapture() {
         <section className={styles.card}>
           <div className={styles.counters}>
             <div className={styles.counter}>
-              <span className={styles.counterValue}>{totals.variants}<span className={styles.counterGoal}> / {GOAL_VARIANTS}</span></span>
+              <span className={styles.counterValue}>{totals.variants}<span className={styles.counterGoal}> / {goals.variants}</span></span>
               <span className={styles.counterLabel}>Variantes</span>
             </div>
             <div className={styles.counter}>
-              <span className={styles.counterValue}>{totals.units}<span className={styles.counterGoal}> / {GOAL_UNITS}</span></span>
+              <span className={styles.counterValue}>{totals.units}<span className={styles.counterGoal}> / {goals.units}</span></span>
               <span className={styles.counterLabel}>Unidades</span>
             </div>
           </div>
@@ -299,22 +304,45 @@ function SafettiCapture() {
   )
 }
 
-type Tab = 'safetti' | 'alta'
+type Tab = 'etiquetas' | 'alta'
 
-/** Dos modos en la misma ruta. Ambos quedan montados (el modo Safetti conserva su estado al cambiar de pestaña). */
+/** Dos modos en la misma ruta; el modo de etiquetas se rige por la marca elegida. Todo queda montado para conservar el estado. */
 export default function CapturaEtiquetasPage() {
-  const [tab, setTab] = useState<Tab>('safetti')
+  const [tab, setTab] = useState<Tab>('etiquetas')
+  const [profile, setProfile] = useState<LabelProfileId>(DEFAULT_PROFILE)
+
+  // Recuerda la última marca usada (solo en este navegador). Se lee tras montar para no desajustar el HTML del servidor.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(PROFILE_STORAGE_KEY)
+      if (isProfileId(saved)) setProfile(saved)
+    } catch { /* sin almacenamiento: se queda la marca por defecto */ }
+  }, [])
+
+  function pickProfile(id: LabelProfileId): void {
+    setProfile(id)
+    try { window.localStorage.setItem(PROFILE_STORAGE_KEY, id) } catch { /* sin almacenamiento */ }
+  }
+
   return (
     <>
+      <div className={styles.brandBar} role="group" aria-label="Marca">
+        {PROFILE_LIST.map(p => (
+          <button key={p.id} type="button" aria-pressed={profile === p.id} className={profile === p.id ? styles.chipActive : styles.chip} onClick={() => pickProfile(p.id)}>
+            {p.name}
+          </button>
+        ))}
+      </div>
       <div className={tabStyles.tabs} role="tablist" aria-label="Modo de captura">
-        <button type="button" role="tab" aria-selected={tab === 'safetti'} className={tab === 'safetti' ? tabStyles.tabActive : tabStyles.tab} onClick={() => setTab('safetti')}>
-          Etiquetas Safetti
+        <button type="button" role="tab" aria-selected={tab === 'etiquetas'} className={tab === 'etiquetas' ? tabStyles.tabActive : tabStyles.tab} onClick={() => setTab('etiquetas')}>
+          Etiquetas
         </button>
         <button type="button" role="tab" aria-selected={tab === 'alta'} className={tab === 'alta' ? tabStyles.tabActive : tabStyles.tab} onClick={() => setTab('alta')}>
           Alta rápida
         </button>
       </div>
-      <div hidden={tab !== 'safetti'}><SafettiCapture /></div>
+      <div hidden={tab !== 'etiquetas' || profile !== 'safetti'}><SafettiCapture /></div>
+      <div hidden={tab !== 'etiquetas' || profile !== 'on'}><OnCapture active={tab === 'etiquetas' && profile === 'on'} /></div>
       <div hidden={tab !== 'alta'}><QuickAdd active={tab === 'alta'} /></div>
     </>
   )

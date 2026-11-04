@@ -1435,13 +1435,9 @@ export function CatalogoGrid({
             {finalGridColumns.map((col, i) => (
               <div key={i} className={styles.finalMixedCol}>
                 <h2 className={styles.finalMixedColTitle}>{col.title}</h2>
-                <div className={styles.shelfTrack}>
-                  {col.items.map((p, j) => (
-                    <div key={p.id} className={styles.shelfCard}>
-                      {renderProductCard(p, j)}
-                    </div>
-                  ))}
-                </div>
+                <AdaptiveGrid max={{ mobile: 2, tablet: 2, desktop: 1 }}>
+                  {col.items.map((p, j) => renderProductCard(p, j))}
+                </AdaptiveGrid>
               </div>
             ))}
           </AdaptiveGrid>

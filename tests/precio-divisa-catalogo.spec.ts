@@ -125,9 +125,9 @@ test('ficha sin Divisa: Full como principal, sin selector', async ({ page }) => 
 
 test('tarjeta: Divisa grande y debajo [Bs] [cashea] $Full', async ({ page }) => {
   await page.goto(`/catalogo-premium/${SLUG}/productos`)
-  const card = page.locator('a, article, div').filter({ hasText: CON }).filter({ has: page.locator('[class*="priceUsd"]') }).last()
-  await expect(card.locator('[class*="priceUsd"]').first()).toContainText('30.00')
-  const linea = card.locator('[class*="priceFullLine"]').first()
+  const card = page.locator('article').filter({ hasText: CON }).filter({ has: page.getByTestId('precio-principal') }).last()
+  await expect(card.getByTestId('precio-principal')).toContainText('30.00')
+  const linea = card.getByTestId('precio-cashea')
   await expect(linea).toContainText('Bs')
   await expect(linea).toContainText('$40.00')
   await expect(linea.locator('img[alt="Cashea"]')).toHaveCount(1)

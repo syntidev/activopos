@@ -11,6 +11,8 @@ Objetivo: un negocio con `catalog_template='carta'` muestra la Carta y el pedido
 - `.../p/[id]/page.tsx` y `PlatoFicha.tsx` (ficha sin modificadores todavía).
 - `src/lib/carta-hours.ts`: abierto/cerrado desde `settings.carta_hours`, zona `America/Caracas`, con "pausar pedidos".
 - Tokens `--carta-*` en `src/styles/tokens.css` antes de usarlos (regla de tokens).
+- **Addendum (SPEC §12):** `CartaHero.tsx` (slider de favoritos: scroll-snap, autoplay 5 s con pausa, `prefers-reduced-motion`), `PlatoFoto.tsx` (4:5 y 16:9, placeholder cálido, tarjeta tipográfica sin foto), `CartaFab.tsx` (botón flotante con contador animado y total USD/Bs), `CartaTabs.tsx` con scroll-spy, secciones Combos y Para compartir, tipografía con `next/font` (Fraunces o Cormorant Garamond + Instrument Sans) y las dos direcciones `casual`/`fine` por `settings.carta_style` y `settings.carta_accent`.
+- **CLI-A para el hero:** función de servidor `favoritos(businessId)` (top por unidades en `sale_items` de ventas pagadas, 30 días; fallback a destacados con rótulo "Recomendados"), cacheada; sin migración.
 
 **Reutilizar, no copiar:** `PrecioDual`, `CartContext`, `CartDrawer`, `ImgWithFallback`, `AdaptiveGrid`, `catalogUtils`, `divisaPriceOf`, `ProductCard` (la tarjeta de plato extiende su patrón).
 
@@ -18,14 +20,14 @@ Objetivo: un negocio con `catalog_template='carta'` muestra la Carta y el pedido
 
 **Pedir a CLI-A (sin migración):** aceptar `carta` como valor de `catalog_template` (columna `VarChar(20)`) y guardar `settings.carta_hours` y `settings.carta_paused` (JSON dentro de `settings`).
 
-**E2E `tests/carta-c1.spec.ts`:** portada Abierto/Cerrado según horario; tab de categoría hace scroll y queda activa; buscador por nombre, ingrediente y etiqueta; PrecioDual con y sin Divisa (`0 < divisa < full`); "+" agrega al carrito y sube el contador; mensaje de WhatsApp con total USD y Bs; 375 y 1280 sin scroll horizontal; ninguna página contiene "Full".
+**E2E `tests/carta-c1.spec.ts` (incluye E1–E9 del SPEC §12.8 que no dependen de C2):** portada Abierto/Cerrado según horario; tab de categoría hace scroll y queda activa; buscador por nombre, ingrediente y etiqueta; PrecioDual con y sin Divisa (`0 < divisa < full`); "+" agrega al carrito y sube el contador; mensaje de WhatsApp con total USD y Bs; 375 y 1280 sin scroll horizontal; ninguna página contiene "Full".
 
 **DoD:** criterios A1–A9 del SPEC §10 en verde, capturas 375/1280, cero cambios de esquema.
 
 ## C2 — Platos completos: etiquetas, alérgenos, modificadores, combos, agotado · CLI-A + CLI-B
 Requiere migración: se aprueba con Carlos antes (SPEC §6).
 
-**CLI-A:** migración versionada con etiquetas y alérgenos en `Product`, `modifier_groups`, `modifier_options`, `product_modifier_groups`, `products.sold_out_date` y `order_items.modifiers` (snapshot). Endpoints admin para grupos. `POST /api/catalog/[slug]/order` pasa a aceptar `modifiers[]` por línea, **recalcula el precio en el servidor** (nunca del cliente), valida obligatorios y mín/máx, y rechaza platos agotados con 409. Si toca totales: `npm run test:consistency`.
+**CLI-A:** migración versionada con etiquetas y alérgenos en `Product`, `prep_minutes`, `carta_section`, foco de recorte opcional por imagen, `modifier_groups`, `modifier_options`, `product_modifier_groups`, `products.sold_out_date` y `order_items.modifiers` (snapshot). Endpoints admin para grupos. `POST /api/catalog/[slug]/order` pasa a aceptar `modifiers[]` por línea, **recalcula el precio en el servidor** (nunca del cliente), valida obligatorios y mín/máx, y rechaza platos agotados con 409. Si toca totales: `npm run test:consistency`.
 
 **CLI-B:** editor de platos en `productos/` (etiquetas, alérgenos, grupos, agotado hoy); `PlatoFicha` con grupos (radio o casillas, obligatorios, precio extra); líneas del carrito con modificadores. Referencia visual: mockups (b) y (c).
 

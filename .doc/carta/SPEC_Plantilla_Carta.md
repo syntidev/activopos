@@ -1,6 +1,6 @@
 # SPEC — Plantilla "Carta" (tercera plantilla del catálogo)
 
-Fase C0 · solo diseño · 2026-11-04 · CLI-B. Mockups en `.doc/carta/mockups/` (a portada y lista, b ficha de plato, c carrito y confirmación, d QR de mesa; capturas 375 y 1280 en `mockups/capturas/`). Los colores de los platos en los mockups son marcadores: el producto usa fotos reales.
+Fase C0 · solo diseño · 2026-11-04 · CLI-B. Mockups en `.doc/carta/mockups/` (**a1 casual/parrilla** y **a2 fine dining** para elegir; b ficha de plato, c carrito y confirmación, d QR de mesa, en la dirección por defecto = casual; capturas 375 y 1280 en `mockups/capturas/`). Las fotos de los mockups son escenas SVG de marcador: el producto usa fotos reales. **El §12 (addendum) prevalece sobre §3 y §4 donde difieran.**
 
 ## 1. Qué es y cuándo se usa
 `catalog_template` pasa de `'generic' | 'premium'` a `'generic' | 'premium' | 'carta'` (columna `VarChar(20)`, sin migración). La Carta es la cara pública de un restaurante, panadería o cafetería: platos, no inventario de tallas. Ruta propia, como el premium: `/catalogo-carta/[slug]`, con `notFound()` si el negocio no es `carta`.
@@ -82,3 +82,55 @@ URL `/catalogo-carta/[slug]?mesa=7&t=<firma>`. La firma (HMAC con el secreto del
 
 ## 11. Fuera de alcance de C0
 Sin código de producto, sin migraciones, sin tocar `synticorex`. Los mockups son HTML estático de referencia.
+
+## 12. ADENDUM — la Carta es comida, no un catálogo (nivel carta de autor / app de delivery top)
+
+### 12.1 Hero: "Los favoritos de la casa"
+- Slider a sangre completa. Contenido: top platos por **ventas reales** del negocio (`sale_items` de ventas pagadas, últimos 30 días, agrupado por producto, máx. 6, solo platos visibles y no agotados). Si no hay ventas suficientes, usa los marcados como destacados y el rótulo pasa a **"Recomendados"**. La consulta vive en el servidor (CLI-A), nunca se calcula en el cliente.
+- Cada slide: foto 16:9 con degradado para leer, "N.º 1 de la casa", nombre grande en serif, descripción (desde 1024 px), `PrecioDual` y botón **Agregar** (mismo handler del "+": con modificadores obligatorios abre la ficha).
+- Autoplay suave (5 s), **pausa al tocar, pasar el mouse o enfocar**, y se reanuda tras 6 s; swipe nativo en móvil (scroll-snap); puntos de posición. **`prefers-reduced-motion`: sin autoplay y sin animación de desplazamiento.** Accesible: `aria-roledescription="carrusel"`.
+- Decisión de proporción: 16:9 en todos los anchos (a 375 px son ~211 px de alto, con título, precio y botón superpuestos sobre el degradado); en escritorio se limita a 540 px de alto y la foto se recorta centrada.
+
+### 12.2 Fotografía primero
+- La foto es el producto. Proporciones fijas: **4:5 en la lista**, **16:9 en el hero y en los combos**, 4:5 en la ficha (móvil).
+- Recorte que centra el plato (`object-fit: cover` con foco centrado; si el plato queda descentrado, un foco `x,y` opcional por producto, dato opcional en §12.6). Degradado sutil donde hay texto encima. Mientras carga: color cálido de marcador (nunca blanco de catálogo). Sin fondos blancos.
+- **Plato sin foto = tarjeta tipográfica**: fondo cálido, nombre en serif grande, inicial como marca de agua; no un ícono genérico (ver "Cachapa con queso" en a1 y a2).
+
+### 12.3 Paleta y tipografía
+- Fondo crema/papel; acento **configurable por negocio** (`--acento`; por defecto brasa `#B8381A` en casual, oro viejo `#8A6A2F` en fine dining). Prohibido lavanda y azul de panel: el chip [Bs] pasa a marrón oscuro (`--bsc`); Cashea conserva su amarillo de marca.
+- Nombres de platos en **serif de display cargada con `next/font`**: casual = **Fraunces** (la display del proyecto); fine dining = **Cormorant Garamond** (cursiva en títulos). Descripciones y UI en **Instrument Sans**. Precios en sans con cifras tabulares (en fine dining, en serif).
+- Dos direcciones, a elección de Carlos (se guarda como `settings.carta_style: 'casual' | 'fine'`):
+  - **A1 casual/parrilla**: tarjetas elevadas, foto 4:5 a la izquierda, píldoras redondeadas, botón "+" circular.
+  - **A2 fine dining**: sin tarjetas, filas con filete, foto 4:5 pequeña a la derecha, categorías centradas en cursiva con filete dorado, tabs en versalitas con subrayado, botón cuadrado de contorno, formas rectas.
+- Los hex de los mockups pasan a `tokens.css` (`--carta-*`) antes de consumirse.
+
+### 12.4 Apetito en el texto
+- Descripción corta que antoja: ingredientes clave, máx. 2 líneas en lista, completa en la ficha.
+- Etiquetas visuales con texto: Picante, Vegetariano, Vegano, Sin gluten, Nuevo, **De la casa**.
+- **Alérgenos discretos pero claros**: línea "Contiene huevo, lácteos" con ícono de información (≥ 12 px, contraste AA) en la lista; bloque propio con aviso en la ficha.
+- **Tiempo de preparación** ("12 min") cuando el plato lo tiene; si no, no se muestra.
+
+### 12.5 Navegación de restaurante
+- Tabs fijas con **scroll-spy** (IntersectionObserver): la pestaña activa sigue la sección visible.
+- **Combos** y **Para compartir** son secciones propias, arriba de las categorías normales. Un combo es una tarjeta ancha 16:9 con sello "Ahorras $X.XX".
+- Búsqueda por plato **o ingrediente** (un solo input, convención híbrida del proyecto); sobre 1024 px el placeholder da ejemplos.
+- **Botón flotante del pedido** siempre visible (móvil y escritorio): cantidad, "Ver mi pedido" y total **USD + Bs**. En modo mesa dice "Enviar a cocina".
+
+### 12.6 Datos adicionales (se suman a §6; misma migración de C2, aprobación de Carlos)
+- `products.prep_minutes` (int, opcional) · `products.carta_section` (`'combo' | 'compartir' | null`) · foco de recorte opcional por imagen · `settings.carta_style` y `settings.carta_accent` (JSON en `settings`, sin migración).
+- Favoritos: sin tabla nueva; consulta agregada sobre `sale_items` filtrada por `business_id`, cacheada (p. ej. 10 min).
+
+### 12.7 Microinteracciones (con gusto, sin exceso)
+- Agregar: el botón pasa a verde con ✓ ~1 s ("Agregado" en el hero) y el contador del botón flotante hace un rebote corto; los totales se actualizan al instante.
+- Pulsar: escala 0,9–0,96. Hero: desplazamiento suave. Todo se desactiva con `prefers-reduced-motion` (queda solo el cambio de color/estado).
+
+### 12.8 Criterios de aceptación adicionales
+- E1. El hero muestra los platos con más unidades vendidas en 30 días (probado con ventas ZZ); sin ventas muestra "Recomendados" con los destacados.
+- E2. El hero avanza solo cada 5 s, se detiene al tocar o pasar el mouse, y **no avanza** con `prefers-reduced-motion`; el swipe cambia de slide.
+- E3. La foto de lista es 4:5 y la del hero y del combo 16:9 (medido con `boundingBox`); un plato sin foto muestra la tarjeta tipográfica, sin ícono genérico.
+- E4. Los nombres de platos usan la serif cargada (`document.fonts` lo confirma) y no hay fondo blanco de catálogo detrás de las fotos.
+- E5. "Combos" y "Para compartir" aparecen como secciones y como tabs, antes de las demás; el scroll-spy cambia la pestaña activa al desplazarse.
+- E6. Buscar un ingrediente ("aguacate") encuentra el plato aunque no esté en el nombre.
+- E7. El botón flotante muestra cantidad y total en USD y Bs, y sube al agregar desde el hero, la lista y un combo.
+- E8. Se ve el tiempo de preparación y la línea de alérgenos cuando existen.
+- E9. Las dos direcciones (`carta_style`) renderizan sin overflow a 375 y 1280.

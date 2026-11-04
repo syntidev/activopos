@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { pendingSaleTotals } from '@/lib/sale-totals'
 import type { Prisma } from '@prisma/client'
 import { PRICE_MODES, VARIANT_PRICING_SELECT, resolveLinePrice } from '@/lib/pricing'
 import type { PriceMode, PriceSource } from '@/lib/pricing'
@@ -144,8 +145,7 @@ export async function repriceSaleTx(
     })
   }
 
-  const total_usd = r2(lines.reduce((acc, l) => acc + l.subtotal_usd, 0))
-  const total_bs  = r2(total_usd * rate)
+  const { total_usd, total_bs } = pendingSaleTotals(lines.reduce((acc, l) => acc + l.subtotal_usd, 0), sale.discount_pct, sale.cargo_pct, rate)
   await tx.sale.update({
     where: { id: sale.id },
     data:  { price_mode: mode, total_usd, total_bs, rate_used: rate },

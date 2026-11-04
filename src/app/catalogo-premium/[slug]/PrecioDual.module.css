@@ -1,0 +1,57 @@
+.block {
+  display:        flex;
+  flex-direction: column;
+  gap:            1px;
+  min-width:      0;
+}
+
+.usd {
+  font-size:      var(--text-base);
+  font-weight:    900;
+  color:          var(--color-text-primary);
+  letter-spacing: -0.01em;
+  line-height:    1.2;
+}
+
+.row .usd   { font-size: var(--text-sm); }
+.modal .usd { font-size: var(--text-2xl); }
+
+.symbol {
+  font-size:    0.75em;
+  font-weight:  var(--weight-semibold);
+  opacity:      0.55;
+  margin-right: 1px;
+}
+
+.line {
+  display:              flex;
+  align-items:          center;
+  gap:                  6px;
+  font-size:            12px;
+  color:                var(--color-text-secondary);
+  margin-top:           var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.chipBs {
+  padding:       1px 4px;
+  border-radius: var(--radius-sm);
+  background:    var(--badge-bs-bg);
+  color:         var(--color-white);
+  font-size:     10px;
+  font-weight:   var(--weight-extrabold);
+}
+
+.cashea {
+  height: 14px;
+  width:  auto;
+}
+
+.consultar,
+.noDisponible {
+  font-size:   var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color:       var(--color-text-secondary);
+}
+
+.noDisponible { text-decoration: line-through; }

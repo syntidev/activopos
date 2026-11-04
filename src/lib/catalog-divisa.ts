@@ -1,21 +1,26 @@
 /**
  * Precio Divisa como principal en el catálogo premium (solo presentación).
- * - Precio Divisa del producto = wholesale_price_usd (por unidad) o wholesale_price_per_kg_usd (por kilo); sin valor > 0 → null.
+ * - Precio Divisa = wholesale_price_usd (unidad) o wholesale_price_per_kg_usd (kilo); válido solo si 0 < divisa < precio Cashea.
  * - Formas de pago en divisa: business.settings.catalog_divisa_methods = ids de payment_methods activos del negocio
  *   (dato de configuración, sin cambio de esquema). Nada de nombres escritos en el código.
  */
 
 interface DivisaPriced {
   price_per_unit_usd: { toString(): string } | null
+  price_per_kg_usd: { toString(): string } | null
   wholesale_price_usd: { toString(): string } | null
   wholesale_price_per_kg_usd: { toString(): string } | null
 }
 
 /** Mismo criterio de unidad/kilo que `priceUsd` de las tarjetas: si hay precio por unidad, su Divisa es la de unidad. */
 export function divisaPriceOf(p: DivisaPriced): number | null {
-  const raw = p.price_per_unit_usd !== null ? p.wholesale_price_usd : p.wholesale_price_per_kg_usd
+  const byUnit = p.price_per_unit_usd !== null
+  const raw  = byUnit ? p.wholesale_price_usd : p.wholesale_price_per_kg_usd
+  const full = byUnit ? p.price_per_unit_usd : p.price_per_kg_usd
   const n = raw === null ? 0 : Number(raw.toString())
-  return n > 0 ? n : null
+  const f = full === null ? 0 : Number(full.toString())
+  // Regla única: Divisa válida SOLO si 0 < divisa < precio Cashea (el mayor); si no, un solo precio.
+  return n > 0 && n < f ? n : null
 }
 
 export function readDivisaMethodIds(settings: unknown): number[] {

@@ -167,6 +167,8 @@ export interface CollectionGridProduct {
   image:     string | null
   priceUsd:  number
   priceBs:   number | null
+  divisaUsd: number | null
+  hasVariants: boolean
 }
 
 // Config enriquecida solo para el renderer (nunca se guarda así en DB): a

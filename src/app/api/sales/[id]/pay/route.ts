@@ -11,20 +11,29 @@ class SaleStateError extends Error {
   constructor(readonly status: number, message: string) { super(message) }
 }
 
+const r2 = (x: number): number => Math.round(x * 100) / 100
+
+/**
+ * Un pago cuadra si amount_usd y amount_bs son la misma plata a la tasa de la venta. El POS manda uno de los dos redondeado
+ * (USD a centavos en pagos en Bs; Bs a centésimas en pagos en USD), así que vale cualquiera de las dos lecturas:
+ * |usd x tasa - bs| <= 0.01 Bs  o  |bs / tasa - usd| <= 0.005 USD.
+ */
+function paymentAmountsMatch(amountUsd: number, amountBs: number, rate: number): boolean {
+  return Math.abs(amountUsd * rate - amountBs) <= 0.01 + 1e-9 || Math.abs(amountBs / rate - amountUsd) <= 0.005 + 1e-9
+}
+
 const paySchema = z.object({
   payments: z
     .array(
       z.object({
         payment_method_id: z.number().int().positive(),
-        amount_bs: z.number().positive(),
-        amount_usd: z.number().positive(),
+        amount_bs: z.number().positive().max(9_999_999_999),
+        amount_usd: z.number().positive().max(99_999_999),
         reference: z.string().optional(),
       })
     )
-    .min(1),
+    .min(1).max(10),
   client_cedula: z.string().max(20).optional(),
-  // Cargo global vigente en pantalla: el servidor no lo guarda, así que si viene se recalcula el total (líneas × descuento autorizado × cargo).
-  cargo_pct: z.number().min(0).max(100).optional(),
 })
 
 export async function PATCH(
@@ -67,6 +76,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'La venta está anulada' }, { status: 409 })
     }
 
+    // Propiedad: el admin cobra cualquier venta de su negocio (el tenant layer ya excluyó otros negocios: 404). El cajero
+    // solo cobra las suyas o las de la caja que él abrió (ventas creadas después de la apertura).
+    if (session.role === 'cashier' && sale.cashier_id !== session.userId) {
+      const register = await prisma.cashRegister.findFirst({
+        where:  { business_id: session.businessId, closed_at: null },
+        select: { cashier_id: true, opened_at: true },
+      })
+      const inMyRegister = register !== null && register.cashier_id === session.userId && sale.created_at >= register.opened_at
+      if (!inMyRegister) return NextResponse.json({ error: 'Esta venta no es tuya' }, { status: 403 })
+    }
+
     // SEC: payment_method_id debe pertenecer al mismo tenant — nunca confiar en el id del cliente
     const paymentMethodIds = Array.from(new Set(body.payments.map(p => p.payment_method_id)))
     const validMethods = await prisma.paymentMethod.count({
@@ -88,7 +108,8 @@ export async function PATCH(
     }
     const clientCedula = cedulaCheck.value
 
-    const { rate }     = await getActiveRate(session.businessId)
+    const { rate: rawRate } = await getActiveRate(session.businessId)
+    const rate = Math.round(rawRate * 10000) / 10000 // la columna es Decimal(10,4): total_bs, pagos y rate_used usan la misma tasa
     const payTotalBs   = body.payments.reduce((acc, p) => acc + p.amount_bs,  0)
     const payTotalUsd  = body.payments.reduce((acc, p) => acc + p.amount_usd, 0)
 
@@ -122,14 +143,27 @@ export async function PATCH(
       await assertPaymentMatchesFinancing(tx, session.businessId, current.financing_status, body.payments.map(p => p.payment_method_id),
         { priceMode: current.price_mode, productIds: current.items.map(i => i.product_id) })
 
-      // Total autoritativo: con cargo_pct se recalcula desde las líneas, el descuento ya autorizado (PIN) y el cargo vigente.
-      const cargoPct   = body.cargo_pct
-      const recompute  = cargoPct !== undefined
-      const itemsUsd   = current.items.reduce((s, i) => s + Number(i.subtotal_usd), 0)
-      const totalUsd   = recompute ? Math.round(itemsUsd * (1 - current.discount_pct / 100) * (1 + cargoPct / 100) * 100) / 100 : Number(current.total_usd)
-      const totalBs    = recompute ? Math.round(totalUsd * rate * 100) / 100 : Number(current.total_bs)
+      // Total autoritativo: SOLO lo guardado en la venta (líneas, descuento autorizado y cargo fijados por el flujo autenticado).
+      // El body no puede cambiarlo: cargo_pct / discount_pct enviados aquí se descartan en el esquema.
+      const totalUsd = Number(current.total_usd)
+
+      // Tasa única: total_bs y rate_used salen de la MISMA tasa. Si la tasa del día difiere de la guardada en la venta,
+      // se recalcula total_bs (y el Bs de las líneas) con la tasa del día y se guarda esa tasa; si no, queda lo guardado.
+      const storedRate = Number(current.rate_used)
+      const rateChanged = Math.abs(storedRate - rate) > 0.00005
+      const saleRate = rateChanged ? rate : storedRate
+      const totalBs  = rateChanged ? r2(totalUsd * saleRate) : Number(current.total_bs)
+
+      // Cada pago debe cuadrar amount_usd con amount_bs a la tasa de la venta (el cliente no fija su propia tasa).
+      if (body.payments.some(p => !paymentAmountsMatch(p.amount_usd, p.amount_bs, saleRate))) {
+        throw new SaleStateError(400, `Los montos del pago no cuadran con la tasa ${saleRate.toFixed(4)}: amount_usd x tasa debe ser amount_bs`)
+      }
       if (payTotalBs < totalBs - 0.01) {
         throw new SaleStateError(400, `Pago insuficiente. Total: ${totalBs.toFixed(2)} Bs. Recibido: ${payTotalBs.toFixed(2)} Bs`)
+      }
+      // También en USD: sin esto, muchos pagos chicos con amount_bs inflado cumplirían el total en Bs con poco dólar real.
+      if (payTotalUsd < totalUsd - (0.005 * body.payments.length + 0.01)) {
+        throw new SaleStateError(400, `Pago insuficiente. Total: ${totalUsd.toFixed(2)} USD. Recibido: ${payTotalUsd.toFixed(2)} USD`)
       }
       const montoRecibidoUsd = Math.round(payTotalUsd * 100) / 100
       const vueltoUsd        = Math.max(0, Math.round((payTotalUsd - totalUsd) * 100) / 100)
@@ -140,14 +174,19 @@ export async function PATCH(
         data: {
           status:             'paid',
           sold_at:            new Date(),
-          rate_used:          rate,
-          ...(recompute ? { total_usd: totalUsd, total_bs: totalBs } : {}),
+          rate_used:          saleRate,
+          total_bs:           totalBs,
           monto_recibido_usd: montoRecibidoUsd,
           vuelto_usd:         vueltoUsd,
           client_cedula:      clientCedula,
         },
       })
       if (claimed.count !== 1) throw new SaleStateError(409, 'La venta ya fue cobrada')
+      if (rateChanged) {
+        for (const it of current.items) {
+          await tx.saleItem.update({ where: { id: it.id }, data: { subtotal_bs: r2(Number(it.subtotal_usd) * saleRate), rate_used: saleRate } })
+        }
+      }
       await tx.salePayment.createMany({
         data: body.payments.map(p => ({
           sale_id:           saleId,
@@ -155,7 +194,7 @@ export async function PATCH(
           amount_bs:         p.amount_bs,
           amount_usd:        p.amount_usd,
           reference:         p.reference,
-          rate_used:         rate,
+          rate_used:         saleRate,
         })),
       })
       const paidSale = await tx.sale.findFirstOrThrow({
@@ -276,7 +315,7 @@ export async function PATCH(
           new_values: {
             ticket_number: current.ticket_number,
             total_bs: totalBs,
-            rate,
+            rate: saleRate,
           },
         },
       })

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { divisaPriceOf } from '@/lib/catalog-divisa'
 
 /** Tiles de la cartelera: 1 grande (2×2) + 4 normales (1×1). */
 export const CARTELERA_SIZE = 5
@@ -12,6 +13,8 @@ export interface CarteleraProduct {
   badge:        string | null
   priceUsd:     number
   priceBs:      number | null
+  divisaUsd:    number | null
+  hasVariants:  boolean
 }
 
 export interface CarteleraData {
@@ -45,8 +48,9 @@ export async function getCartelera(businessId: number, rate: number): Promise<Ca
         select: {
           product: {
             select: {
-              id: true, name: true, images: true, badge: true, sort_order: true,
+              id: true, name: true, images: true, badge: true, sort_order: true, has_variants: true,
               price_per_unit_usd: true, price_per_kg_usd: true,
+              wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
               active: true, catalog_visibility: true,
               category: { select: { name: true } },
             },
@@ -72,6 +76,8 @@ export async function getCartelera(businessId: number, rate: number): Promise<Ca
         badge:        p.badge && p.badge !== 'none' ? p.badge : null,
         priceUsd,
         priceBs:      priceUsd > 0 ? priceUsd * rate : null,
+        divisaUsd:    divisaPriceOf(p),
+        hasVariants:  p.has_variants,
       }
     })
 

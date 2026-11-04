@@ -17,6 +17,8 @@ import { LandingSections } from './LandingSections'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { ImgWithFallback } from './ImgWithFallback'
 import { NovedadesSection } from './NovedadesSection'
+import { ProductCard } from './ProductCard'
+import { PrecioDual } from './PrecioDual'
 import { pickDaily } from '@/lib/daily-rotation'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import { CarteleraGrid } from './CarteleraGrid'
@@ -144,30 +146,6 @@ export interface CatalogBrand {
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
-
-function getBadgeClass(badge: string | null | undefined): string {
-  switch (badge) {
-    case 'popular':     return styles.badgePopular
-    case 'nuevo':       return styles.badgeNuevo
-    case 'promo':       return styles.badgePromo
-    case 'recomendado': return styles.badgeRecomendado
-    default:            return ''
-  }
-}
-
-const BADGE_LABEL: Record<string, string> = {
-  popular:     'Popular',
-  nuevo:       'Nuevo',
-  promo:       'Promo',
-  recomendado: 'Recomendado',
-}
-
-const BADGE_ICON: Record<string, ReactNode> = {
-  popular:     <Flame size={10} aria-hidden="true" />,
-  nuevo:       <Sparkles size={10} aria-hidden="true" />,
-  promo:       <Tag size={10} aria-hidden="true" />,
-  recomendado: <ThumbsUp size={10} aria-hidden="true" />,
-}
 
 const FEATURED_KEY = '__destacados__'
 /** Cards de la sección Novedades (grid 4×2 del mockup: 8 productos). */
@@ -817,232 +795,15 @@ export function CatalogoGrid({
     ? selP!.variants.filter(v => v.combination_key!.startsWith(`${selectedDim1}-`))
     : []
 
-  // Card de producto — compartida entre secciones browse y grid filtrado.
-  // accentColor pinta el borde superior (--accent-cat); cae a --biz-color.
-  const renderProductCard = (p: CatalogProduct, i: number, accentColor?: string | null) => {
-    const isOut = p.outOfStock || p.availability === 'out_of_stock'
-    const cardStyle: CSSProperties = { '--card-index': Math.min(i, 12) } as CSSProperties
-    if (accentColor) (cardStyle as Record<string, string>)['--accent-cat'] = accentColor
-    return (
-      <article
-        key={p.id}
-        className={`${styles.productCard} ${isOut ? styles.productCardOutOfStock : ''}`}
-        style={cardStyle}
-        onClick={() => router.push(productHref(p.id))}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(productHref(p.id)) }
-        }}
-        tabIndex={0}
-        role="button"
-        aria-label={`Ver detalle: ${p.name}`}
-      >
-        {/* Hija directa de la card: con el inset de la imagen, dentro del wrap
-            la barra dejaría de ir al ancho completo del borde superior. */}
-        <span className={styles.productCardAccent} aria-hidden="true" />
-        <div className={styles.productImageWrap}>
-          {p.image ? (
-            <ImgWithFallback
-              src={p.image}
-              className={styles.productImage}
-              loading="lazy"
-              imgRef={img => { if (img?.complete) img.classList.add(styles.productImageLoaded) }}
-              onLoad={img => img.classList.add(styles.productImageLoaded)}
-              fallback={
-                <div className={`${styles.productImagePlaceholder} ${styles.gradDefault}`} aria-hidden="true">
-                  <span className={styles.productInitial}>{p.name.charAt(0).toUpperCase()}</span>
-                </div>
-              }
-            />
-          ) : (
-            <div className={`${styles.productImagePlaceholder} ${styles.gradDefault}`} aria-hidden="true">
-              <span className={styles.productInitial}>{p.name.charAt(0).toUpperCase()}</span>
-            </div>
-          )}
-
-          {/* Hover con 2da imagen — CSS-only (sin JS/estado), mismo criterio
-              de crossfade que el resto del catálogo. No hay ningún producto
-              de OnBike con 2+ imágenes hoy (verificado en DB): el mecanismo
-              queda listo, invisible hasta que se suba contenido real. */}
-          {p.images.length >= 2 && (
-            <img
-              src={p.images[1]}
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
-              className={styles.productImageHover}
-            />
-          )}
-
-          {p.availability === 'discontinued' ? (
-            <div className={styles.badgeDiscontinued} aria-label="Descontinuado">
-              <span><Archive size={10} aria-hidden="true" />&nbsp;Descontinuado</span>
-            </div>
-          ) : p.catalogVisibility === 'on_request' ? (
-            <div className={styles.badgeOnRequest} aria-label="Bajo pedido">Consultar</div>
-          ) : isOut ? (
-            <span className={styles.badgeSinStock}>Sin stock</span>
-          ) : p.availability === 'low_stock' ? (
-            <span className={styles.badgeLowStock}>Pocas unidades</span>
-          ) : p.isService ? (
-            <span className={styles.badgeDisponible}>Disponible</span>
-          ) : p.stockHidden ? (
-            <span className={styles.badgeDisponible}>Disponible</span>
-          ) : p.stockQty !== null && p.stockQty > 0 ? (
-            <span className={styles.badgeStock}>
-              {p.stockQty <= 5 ? `Últimas ${p.stockQty}` : `${p.stockQty} uds.`}
-            </span>
-          ) : null}
-
-          {p.isFeatured && p.catalogVisibility !== 'on_request' && !isOut && (
-            <span className={styles.badgeEspecial}>
-              <Star size={9} fill="currentColor" aria-hidden="true" />
-              Especial
-            </span>
-          )}
-
-          {p.catalogVisibility !== 'on_request' &&
-            !p.outOfStock &&
-            !p.isService &&
-            p.badge && p.badge !== 'none' &&
-            getBadgeClass(p.badge) && (
-            <span className={`${styles.productBadge} ${getBadgeClass(p.badge)}`}>
-              {BADGE_ICON[p.badge]}
-              {BADGE_LABEL[p.badge]}
-            </span>
-          )}
-
-          {/* Badge de categoría con color propio -- complementa "Especial" (que marca
-              isFeatured, otro dato): categoría siempre se distingue por color, "Especial"
-              solo aparece si el producto está marcado como tal. */}
-          {p.categoryName && p.catalogVisibility !== 'on_request' && (
-            <span
-              className={styles.categoryImgBadge}
-              style={{ '--badge-color': categoryBadgeColor(p.categoryName, categoryColors[p.categoryName]) } as CSSProperties}
-            >
-              {p.categoryName}
-            </span>
-          )}
-        </div>
-
-        <div className={styles.productInfo}>
-          {p.categoryName && <p className={styles.productCategory}>{p.categoryName}</p>}
-          <h2 className={styles.productName}>{p.name}</h2>
-
-          {/* Precio + CTA circular, alineados al pie de la info */}
-          <div className={styles.priceRow}>
-          <div className={styles.productPriceBlock}>
-            {p.catalogVisibility === 'on_request' ? (
-              <span className={styles.priceConsultar}>Consultar precio</span>
-            ) : p.availability === 'discontinued' ? (
-              <span className={styles.priceDiscontinued}>No disponible</span>
-            ) : p.priceUsd > 0 ? (
-              <>
-                {showUsd && (
-                  <>
-                    <span className={styles.priceUsd}>
-                      <span className={styles.priceSymbol}>$</span>
-                      {(p.divisaUsd ?? p.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  </>
-                )}
-                {showBs && p.priceBs && (
-                  p.divisaUsd ? (
-                    <span className={styles.priceFullLine}>
-                      <span className={styles.badgeBs}>Bs</span>
-                      <Image src="/brand/cashea.png" alt="Cashea" width={49} height={14} className={styles.casheaLogo} />
-                      ${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  ) : (
-                    <span className={styles.priceBs}>
-                      {fmtBs(p.priceBs)}
-                    </span>
-                  )
-                )}
-              </>
-            ) : (
-              <span className={styles.priceConsultar}>Consultar precio</span>
-            )}
-          </div>
-
-          {/* CTA circular — mismo handler que el botón full-width anterior:
-              con variantes abre el detalle, sin variantes agrega al carrito. */}
-          {p.catalogVisibility !== 'on_request' &&
-            p.availability !== 'discontinued' &&
-            !isOut &&
-            p.availability !== 'out_of_stock' &&
-            p.priceUsd > 0 && (
-            <button
-              type="button"
-              className={styles.addBtnCircle}
-              onClick={e => {
-                e.stopPropagation()
-                p.variants.length > 0
-                  ? router.push(productHref(p.id))
-                  : addToCart(p, 1)
-              }}
-              aria-label={
-                p.variants.length > 0
-                  ? `Ver opciones de ${p.name}`
-                  : `Agregar ${p.name} al carrito`
-              }
-            >
-              <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
-            </button>
-          )}
-          </div>
-        </div>
-      </article>
-    )
-  }
-
-  // Fila compacta — sección final "4 columnas con título" (patrón Flatsome
-  // Classic Shop: foto chica + nombre + precio, sin badges ni CTA propio,
-  // clic navega al detalle). Distinta a propósito de renderProductCard
-  // (esa es la card grande del resto del catálogo) -- acá el objetivo es una
-  // lista densa, no otra vitrina de cards.
-  const renderCompactRow = (p: CatalogProduct) => (
-    <a
+  const renderProductCard = (p: CatalogProduct, i: number, accentColor?: string | null) => (
+    <ProductCard
       key={p.id}
+      p={{ ...p, hasVariants: p.variants.length > 0 }}
+      index={i}
       href={productHref(p.id)}
-      className={styles.compactRow}
-      onClick={e => { e.preventDefault(); router.push(productHref(p.id)) }}
-    >
-      <span className={styles.compactThumb}>
-        {p.image ? (
-          <ImgWithFallback
-            src={p.image}
-            className={styles.compactThumbImg}
-            loading="lazy"
-            fallback={<span className={styles.compactThumbInitial}>{p.name.charAt(0).toUpperCase()}</span>}
-          />
-        ) : (
-          <span className={styles.compactThumbInitial}>{p.name.charAt(0).toUpperCase()}</span>
-        )}
-      </span>
-      <span className={styles.compactInfo}>
-        <span className={styles.compactName}>{p.name}</span>
-        {p.catalogVisibility === 'on_request' ? (
-          <span className={styles.compactPriceConsultar}>Consultar</span>
-        ) : p.priceUsd > 0 ? (
-          <span className={styles.compactPriceRow}>
-            {showUsd && (
-              <>
-                <span className={styles.compactPrice}>
-                  ${(p.divisaUsd ?? p.priceUsd).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-              </>
-            )}
-            {showBs && p.priceBs && (
-              <span className={styles.compactPriceBs}>
-                {fmtBs(p.priceBs)}{p.divisaUsd ? ` · Full $${p.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : ''}
-              </span>
-            )}
-          </span>
-        ) : (
-          <span className={styles.compactPriceConsultar}>Consultar</span>
-        )}
-      </span>
-    </a>
+      accentColor={accentColor}
+      categoryColor={p.categoryName ? categoryColors[p.categoryName] : null}
+    />
   )
 
   return (
@@ -1667,15 +1428,14 @@ export function CatalogoGrid({
           // ── SECCIÓN 9: 4 columnas con título, patrón Flatsome Classic Shop
           // (LATEST/BEST SELLING/FEATURED/TOP RATED) -- título propio por
           // criterio real disponible (nuevo/destacado/categorías), lista
-          // vertical compacta (foto chica+nombre+precio, renderCompactRow),
-          // no la card grande del resto del catálogo. ──
+          // de la misma tarjeta única (ProductCard) que el resto del catálogo. ──
           <AdaptiveGrid max={{ mobile: 1, tablet: 2, desktop: 4 }} className={styles.finalMixedGrid}>
             {finalGridColumns.map((col, i) => (
               <div key={i} className={styles.finalMixedCol}>
                 <h2 className={styles.finalMixedColTitle}>{col.title}</h2>
-                <div className={styles.finalMixedList}>
-                  {col.items.map(p => renderCompactRow(p))}
-                </div>
+                <AdaptiveGrid max={{ mobile: 2, tablet: 2, desktop: 1 }}>
+                  {col.items.map((p, j) => renderProductCard(p, j))}
+                </AdaptiveGrid>
               </div>
             ))}
           </AdaptiveGrid>
@@ -1854,26 +1614,8 @@ export function CatalogoGrid({
                   <span className={styles.priceDiscontinued}>No disponible</span>
                 ) : selP.catalogVisibility === 'on_request' ? (
                   <span className={styles.modalPriceConsultar}>Consultar precio</span>
-                ) : selP.priceUsd > 0 ? (
-                  <>
-                    {showUsd && (
-                      <div className={styles.modalPriceUsdCol}>
-                        <span>
-                          <span className={styles.modalPriceSymbol}>$</span>
-                          <span className={styles.modalPriceNumber}>
-                            {selP.priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </span>
-                        </span>
-                      </div>
-                    )}
-                    {showBs && selP.priceBs && (
-                      <span className={styles.modalPriceBs}>
-                        {fmtBs(selP.priceBs)}
-                      </span>
-                    )}
-                  </>
                 ) : (
-                  <span className={styles.modalPriceConsultar}>Consultar precio</span>
+                  <PrecioDual size="modal" priceUsd={selP.priceUsd} priceBs={selP.priceBs} divisaUsd={selP.divisaUsd} catalogVisibility={selP.catalogVisibility} availability={selP.availability} />
                 )}
               </div>
 

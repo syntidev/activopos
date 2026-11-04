@@ -652,6 +652,8 @@ model Sale {
   accounting_date    DateTime?  @db.Date
   sold_at            DateTime?
   discount_pct       Float      @default(0)
+  // Cargo global del ticket en %: lo fija quien crea/edita la venta pendiente (POST /api/sales, PATCH /api/sales/[id]/cargo). /pay no lo recibe.
+  cargo_pct          Float      @default(0)
   discount_auth_by   Int?
   // Modo de precio del ticket: 'bcv' (por defecto) | 'divisa'. Lo decide el ticket, no el tier del cliente.
   price_mode         String     @default("bcv") @db.VarChar(10)

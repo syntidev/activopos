@@ -403,11 +403,22 @@ export function usePOS() {
     let result: SaleResult
     const payId = pendingSaleId ?? financingSaleId
     if (payId) {
+      // Venta pendiente (descuento con PIN): el cargo de la pantalla se guarda en la venta por el flujo autenticado; /pay solo cobra lo guardado.
+      if (pendingSaleId) {
+        const cargoRes = await fetch(`/api/sales/${pendingSaleId}/cargo`, {
+          method:  'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ cargo_pct: ticket.cargo_global_pct }),
+        })
+        if (!cargoRes.ok) {
+          const cargoData = await cargoRes.json().catch(() => ({})) as { error?: string }
+          throw new Error(cargoData.error ?? 'No se pudo guardar el cargo de la venta')
+        }
+      }
       const res  = await fetch(`/api/sales/${payId}/pay`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        // Con una venta pendiente (descuento con PIN) el servidor no conoce el cargo de la pantalla: se manda para que entre en el total.
-        body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined, ...(pendingSaleId ? { cargo_pct: ticket.cargo_global_pct } : {}) }),
+        body:    JSON.stringify({ payments, client_cedula: clientCedula || undefined }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al procesar el pago')

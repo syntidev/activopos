@@ -9,7 +9,7 @@ import type {
 } from '@/lib/landing-sections'
 import { ImgWithFallback } from './ImgWithFallback'
 import { AnnouncementPopup } from './AnnouncementPopup'
-import { fmtUsd, fmtBs } from './catalogUtils'
+import { ProductCard } from './ProductCard'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 import styles from './catalogo.module.css'
 
@@ -248,18 +248,7 @@ function CollectionGridSection({ config, slug }: { config: CollectionGridRenderC
       <h2 className={styles.lsCollectionHeading}>{config.collection_name}</h2>
       <AdaptiveGrid>
         {config.products.map(p => (
-          <a key={p.id} href={`/catalogo-premium/${slug}/p/${p.id}`} className={styles.lsCollectionCard}>
-            {p.image ? (
-              <img src={p.image} alt="" className={styles.lsCollectionImg} loading="lazy" aria-hidden="true" />
-            ) : (
-              <div className={styles.lsCollectionImgPlaceholder} aria-hidden="true">
-                <span>{initialLetter(p.name, 'P')}</span>
-              </div>
-            )}
-            {/* Sin precio a propósito -- regla de negocio: un kit es "un todo",
-                sin precio total definido todavía. */}
-            <span className={styles.lsCollectionName}>{p.name}</span>
-          </a>
+          <ProductCard key={p.id} p={{ ...p, categoryName: null }} href={`/catalogo-premium/${slug}/p/${p.id}`} />
         ))}
       </AdaptiveGrid>
     </section>
@@ -278,22 +267,7 @@ function ProductListSection({ config, slug }: { config: ProductListRender; slug:
       {config.subtitulo && <p className={styles.lsCommunitySubheading}>{config.subtitulo}</p>}
       <AdaptiveGrid>
         {config.products.map(p => (
-          <a key={p.id} href={`/catalogo-premium/${slug}/p/${p.id}`} className={styles.lsCollectionCard}>
-            {p.image ? (
-              <img src={p.image} alt="" className={styles.lsCollectionImg} loading="lazy" aria-hidden="true" />
-            ) : (
-              <div className={styles.lsCollectionImgPlaceholder} aria-hidden="true">
-                <span>{initialLetter(p.name, 'P')}</span>
-              </div>
-            )}
-            <span className={styles.lsCollectionName}>{p.name}</span>
-            {p.priceUsd > 0 && (
-              <span className={styles.lsCollectionPrice}>
-                {fmtUsd(p.priceUsd)}
-                {p.priceBs != null && <span className={styles.lsCollectionPriceBs}>{fmtBs(p.priceBs)}</span>}
-              </span>
-            )}
-          </a>
+          <ProductCard key={p.id} p={{ ...p, categoryName: null }} href={`/catalogo-premium/${slug}/p/${p.id}`} />
         ))}
       </AdaptiveGrid>
     </section>

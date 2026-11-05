@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:own-business": "ts-node --project tests/tsconfig.json tests/helpers/own-business.ts",
+    "seed:demos": "ts-node -r ./scripts/register-paths.cjs --project tests/tsconfig.json scripts/seed-demos.ts",
     "test:consistency": "ts-node --project tests/tsconfig.json tests/consistency-ventas-netas.ts"
   },
   "prisma": {

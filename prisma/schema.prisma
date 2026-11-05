@@ -421,6 +421,12 @@ model Product {
   inventory_entries InventoryEntry[]
   sale_items        SaleItem[]
   variants          ProductVariant[]
+  // Carta (C2). Etiquetas y alergenos son listas cortas (vocabulario cerrado en src/lib/carta/vocab.ts); sold_out_date = dia de negocio
+  // (Caracas) en que el plato esta agotado: pasado ese dia deja de contar solo, sin cron.
+  carta_tags        Json?
+  allergens         Json?
+  sold_out_date     DateTime?        @db.Date
+  option_groups     ProductOptionGroup[]
   components        ProductComponent[]  @relation("ComboComponents")
   usedIn            ProductComponent[]  @relation("ComponentUsedIn")
   purchase_items    PurchaseItem[]
@@ -1023,6 +1029,9 @@ model OrderItem {
   subtotal_usd       Decimal @db.Decimal(10, 2)
   // Origen del precio aplicado: 'bcv' | 'divisa' | 'manual' | 'fallback_bcv'. NULL (filas viejas) = 'bcv'.
   price_source       String? @db.VarChar(15)
+  // Carta (C2): nota para la cocina de ESTA linea y snapshot de las opciones elegidas ([{group, option, price_usd}]). price_per_unit_usd ya incluye los extras.
+  note               String? @db.VarChar(200)
+  modifiers          Json?
 
   order   Order           @relation(fields: [order_id], references: [id])
   variant ProductVariant? @relation(fields: [variant_id], references: [id])
@@ -1616,4 +1625,37 @@ model SalesGoal {
   @@unique([business_id, scope, ref_id, period, metric])
   @@index([business_id, period])
   @@map("sales_goals")
+}
+
+// Carta (C2): grupos de opciones por producto ("Proteina: pavo | cochino", "Papas: fritas | air fryer").
+// required = hay que elegir; multiple = se pueden elegir varias (max_select las limita); el precio extra se suma al plato.
+model ProductOptionGroup {
+  id         Int     @id @default(autoincrement())
+  product_id Int
+  name       String  @db.VarChar(60)
+  required   Boolean @default(false)
+  multiple   Boolean @default(false)
+  max_select Int?
+  sort_order Int     @default(0)
+  is_active  Boolean @default(true)
+
+  product Product         @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  options ProductOption[]
+
+  @@index([product_id])
+  @@map("product_option_groups")
+}
+
+model ProductOption {
+  id              Int     @id @default(autoincrement())
+  group_id        Int
+  name            String  @db.VarChar(60)
+  price_extra_usd Decimal @default(0) @db.Decimal(10, 2)
+  sort_order      Int     @default(0)
+  is_active       Boolean @default(true)
+
+  group ProductOptionGroup @relation(fields: [group_id], references: [id], onDelete: Cascade)
+
+  @@index([group_id])
+  @@map("product_options")
 }

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { pendingSaleTotals } from '@/lib/sale-totals'
 import type { Prisma } from '@prisma/client'
 import { PRICE_MODES, VARIANT_PRICING_SELECT, resolveLinePrice } from '@/lib/pricing'
+import { modifiersExtraUsd } from '@/lib/carta/options'
 import type { PriceMode, PriceSource } from '@/lib/pricing'
 import { FINANCING_BLOCKS_DIVISA_MESSAGE, isFinancingActive } from '@/lib/ticket-financing'
 import { DivisaDisabledError, assertDivisaAllowed } from '@/lib/cobro-precios'
@@ -207,13 +208,16 @@ export async function repriceOrderTx(
     const product  = productMap.get(item.product_id)
     const quantity = Number(item.quantity)
     // Producto borrado desde que se creó el pedido: la línea conserva su precio y origen (igual que cobrar).
-    const { price, source } = product
+    const resolved = product
       ? resolveLinePrice(product, item.variant_id !== null ? variantMap.get(item.variant_id) : undefined, {
           mode,
           saleMode:    product.sale_mode,
           manualPrice: item.price_source === 'manual' ? Number(item.price_per_unit_usd) : null,
         })
       : { price: Number(item.price_per_unit_usd), source: (item.price_source ?? 'bcv') as PriceSource }
+    // Carta: las opciones elegidas (order_items.modifiers) suman al precio; sin esto, cobrar el pedido en el POS las perdería.
+    const price  = product && item.price_source !== 'manual' ? r2(resolved.price + modifiersExtraUsd(item.modifiers)) : resolved.price
+    const source = resolved.source
     if (price <= 0) throw new PriceModeError(422, `Precio no configurado para "${item.product_name}"`)
     const subtotal_usd = r2(quantity * price)
     await tx.orderItem.update({

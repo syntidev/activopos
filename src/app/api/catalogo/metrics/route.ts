@@ -67,7 +67,7 @@ export async function GET() {
     const monthLabel = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`
     const baseUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://activopos.com'
     const catalogUrl = business.catalog_slug
-      ? `${baseUrl}/${business.catalog_template === 'premium' ? 'catalogo-premium' : 'catalogo'}/${business.catalog_slug}`
+      ? `${baseUrl}/${business.catalog_template === 'premium' ? 'catalogo-premium' : business.catalog_template === 'carta' ? 'catalogo-carta' : 'catalogo'}/${business.catalog_slug}`
       : null
 
     const visibilityCounts = { total: 0, visible: 0, hidden: 0, on_request: 0 }

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { SuspendToggle, ImpersonateButton, PlanStatusForm } from '../../TenantActions'
+import { PlantillaPicker } from '../../PlantillaPicker'
+import { publicPath, readPlantilla } from '@/lib/plantillas'
 import styles from '../../admin.module.css'
 
 async function getTenantDetail(id: number) {
@@ -18,6 +20,8 @@ async function getTenantDetail(id: number) {
       segment:      true,
       catalog_slug: true,
       catalog_plan: true,
+      catalog_template: true,
+      settings:     true,
       active:       true,
       subscription_active:     true,
       subscription_expires_at: true,
@@ -75,6 +79,15 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
           plan={business.catalog_plan ?? 'gratis'}
           active={business.subscription_active}
           expiresAt={business.subscription_expires_at ? business.subscription_expires_at.toISOString().slice(0, 10) : null}
+        />
+      </div>
+
+      <div className={styles.detailSection}>
+        <h2 className={styles.sectionTitle}>Plantilla del catálogo</h2>
+        <PlantillaPicker
+          tenantId={business.id}
+          publicUrl={business.catalog_slug ? publicPath(business.catalog_slug) : null}
+          initial={readPlantilla(business)}
         />
       </div>
 

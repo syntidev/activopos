@@ -15,7 +15,7 @@
 
 import { test, expect, type APIRequestContext } from '@playwright/test'
 
-const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
+const BASE = process.env.E2E_BASE_URL ?? process.env.BASE_URL ?? 'http://localhost:3000'
 
 test.describe.serial('CIMAAD — Auditoría Ciclo Real', () => {
 

@@ -1,6 +1,6 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { ensureOwnBusiness, OWN_SLUG } from './helpers/own-business'
+import { ensureOwnBusiness, OWN_SLUG } from './helpers/own-business-carta'
 
 /**
  * Carta C2: opciones por producto (obligatorias/opcionales, precio extra), nota por línea, agotado del día, etiquetas, alérgenos,

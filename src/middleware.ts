@@ -178,7 +178,9 @@ export async function middleware(req: NextRequest) {
 
   if (SUPER_ADMIN_ONLY.some(p => pathname.startsWith(p))) {
     if (session.role !== 'super_admin') {
-      return NextResponse.redirect(new URL('/escritorio', req.url))
+      return pathname.startsWith('/api/')
+        ? NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+        : NextResponse.redirect(new URL('/escritorio', req.url))
     }
   }
 

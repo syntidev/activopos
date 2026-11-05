@@ -113,6 +113,7 @@ export default async function BusinessesPage({ searchParams }: PageProps) {
         <p className={styles.pageSubtitle}>
           {total} tenant{total !== 1 ? 's' : ''} registrado{total !== 1 ? 's' : ''}
         </p>
+        <Link href="/businesses/nuevo" className={`${styles.actionLink} ${styles.actionBtn}`} data-testid="nuevo-negocio-link">Nuevo negocio</Link>
       </div>
 
       <div className={styles.tableWrap}>

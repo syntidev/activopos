@@ -16,7 +16,7 @@
 
 import { test, expect, request as newRequest } from '@playwright/test'
 
-const BASE = 'http://localhost:3000'
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
 
 test.describe('Finanzas — Certificación Sprint 12', () => {
 

@@ -13,7 +13,7 @@
 
 import { test, expect } from '@playwright/test'
 
-const BASE = 'http://localhost:3000'
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
 
 test.describe('DT-023 — Expense Categories', () => {
 

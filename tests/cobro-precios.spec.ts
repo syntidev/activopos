@@ -211,3 +211,40 @@ test('pantalla: pestaña Cobro y precios, vista previa, guardar y auditoría (qu
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   await page.screenshot({ path: 'tests/__capturas__/cobro-panel-375.png', fullPage: true })
 })
+
+test('OnBike real (negocio 33): settings.financing ausente + catalog_financing_badge="cashea" → panel Cashea ON; guardar sin tocar deja badge y logos intactos', async ({ page }) => {
+  // Estado EXACTO de producción: sin settings.financing y solo el sello legacy.
+  sql(`UPDATE businesses SET settings=JSON_OBJECT('catalog_financing_badge','cashea'), catalog_template='premium' WHERE id=${BID}`)
+  expect(sql(`SELECT JSON_EXTRACT(settings,'$.financing') IS NULL FROM businesses WHERE id=${BID}`)).toBe('1')
+
+  // API: el panel lee Cashea ON (legacy) y no hay claves nuevas
+  const g = (await (await api.get('/api/config/cobro-precios')).json()) as { config: { cashea_enabled: boolean }; effective: { casheaActive: boolean }; financing: { enabled: boolean } }
+  expect(g.config.cashea_enabled).toBe(true)
+  expect(g.effective.casheaActive).toBe(true)
+  expect(g.financing.enabled).toBe(true)
+
+  // pantalla: Cashea ON y "Guardar cambios" deshabilitado (no se tocó nada)
+  await loginPos(page)
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/configuracion')
+  await page.getByRole('button', { name: 'Cobro y precios' }).click()
+  const tab = page.getByTestId('tab-cobro-precios')
+  await expect(tab.getByTestId('cp-cashea')).toHaveAttribute('aria-checked', 'true')
+  await expect(tab.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled()
+
+  const badge = () => sql(`SELECT JSON_UNQUOTE(JSON_EXTRACT(settings,'$.catalog_financing_badge')) FROM businesses WHERE id=${BID}`)
+  const logos = async () => { await page.goto(fichaUrl()); await expect(page.getByTestId('precio-divisa')).toBeVisible(); return page.locator('img[src*="cashea"]').count() }
+  expect(await logos()).toBeGreaterThan(0)
+
+  // "guardar" un cambio ajeno a Cashea (valor igual al actual): no materializa financing ni toca el sello
+  expect(await patch({ divisa_enabled: true })).toBe(200)
+  expect(badge()).toBe('cashea')
+  expect(sql(`SELECT JSON_EXTRACT(settings,'$.financing') IS NULL FROM businesses WHERE id=${BID}`)).toBe('1')
+  expect(await logos()).toBeGreaterThan(0)
+
+  // guardar Cashea ON explícito: sigue ON, sello intacto, logos intactos
+  expect(await patch({ cashea_enabled: true })).toBe(200)
+  expect(badge()).toBe('cashea')
+  expect(sql(`SELECT JSON_EXTRACT(settings,'$.financing.enabled') FROM businesses WHERE id=${BID}`)).toBe('true')
+  expect(await logos()).toBeGreaterThan(0)
+})

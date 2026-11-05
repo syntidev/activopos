@@ -50,12 +50,14 @@ function POSView() {
   const [scannerOpen, setScannerOpen]     = useState(false)
   const [businessName, setBusinessName]   = useState('')
   const [maxOpenTickets, setMaxOpenTickets] = useState(5)
+  const [divisaActive, setDivisaActive]   = useState(true)
   const [userRole, setUserRole]           = useState<'admin' | 'super_admin' | 'cashier'>('cashier')
 
   useEffect(() => {
     fetch('/api/config/business')
       .then(r => r.json())
-      .then((j: { business?: { name?: string; max_open_tickets?: number } }) => {
+      .then((j: { business?: { name?: string; max_open_tickets?: number; cobro?: { divisaActive?: boolean } } }) => {
+        if (j.business?.cobro?.divisaActive === false) setDivisaActive(false)
         if (j.business?.name) setBusinessName(j.business.name)
         if (j.business?.max_open_tickets) setMaxOpenTickets(j.business.max_open_tickets)
       })
@@ -294,6 +296,7 @@ function POSView() {
           allowCashierPriceOverride={pos.allowCashierPriceOverride}
           pendingSaleActive={pos.pendingSaleId !== null}
           onPriceMode={(mode) => { void pos.setPriceMode(mode, /^\d+$/.test(drafts.activeId) ? Number(drafts.activeId) : undefined) }}
+          divisaActive={divisaActive}
           priceModeBusy={pos.priceModeBusy}
           priceModeError={pos.priceModeError}
           cashea={{ canRequest: hasFinancier, onAction: financing.act, busy: financing.busy, error: financing.error, blocked: financing.blocked }}

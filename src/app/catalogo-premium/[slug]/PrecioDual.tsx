@@ -1,4 +1,7 @@
+'use client'
+
 import Image from 'next/image'
+import { useCobroFlags } from '@/components/catalog/CobroFlags'
 import { fmtBs } from './catalogUtils'
 import styles from './PrecioDual.module.css'
 
@@ -21,6 +24,7 @@ const fmtNum = (n: number): string => n.toLocaleString('en-US', { minimumFractio
  * Línea 2: chip [Bs] + logo Cashea + ($ Cashea con Divisa | monto en Bs sin Divisa).
  */
 export function PrecioDual({ priceUsd, priceBs, divisaUsd = null, catalogVisibility, availability, size = 'card' }: PrecioDualProps) {
+  const { casheaActive } = useCobroFlags()
   const cls = `${styles.block} ${styles[size]}`
   if (catalogVisibility === 'on_request') return <div className={cls}><span className={styles.consultar}>Consultar precio</span></div>
   if (availability === 'discontinued') return <div className={cls}><span className={styles.noDisponible}>No disponible</span></div>
@@ -35,7 +39,7 @@ export function PrecioDual({ priceUsd, priceBs, divisaUsd = null, catalogVisibil
       {segunda !== null && (
         <span className={styles.line} data-testid="precio-cashea">
           <span className={styles.chipBs}>Bs</span>
-          <Image src="/brand/cashea.png" alt="Cashea" width={49} height={14} className={styles.cashea} />
+          {casheaActive && <Image src="/brand/cashea.png" alt="Cashea" width={49} height={14} className={styles.cashea} />}
           {segunda}
         </span>
       )}

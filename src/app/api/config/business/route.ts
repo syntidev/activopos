@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { storeManualRate, releaseManualRate } from '@/lib/bcv'
+import { readCobroEffective } from '@/lib/cobro-precios'
 
 const RATE_MIN = 10
 const RATE_MAX = 10_000
@@ -103,10 +104,14 @@ export async function GET() {
       catalog_cover_path: true,
       catalog_cover_path_2: true,
       catalog_cover_path_3: true,
+      settings: true,
     },
   })
 
   if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
+
+  const { settings, ...publicBusiness } = business
+  const cobro = readCobroEffective(settings)
 
   const latestRate = await prisma.dollarRate.findFirst({
     orderBy: { created_at: 'desc' },
@@ -115,7 +120,7 @@ export async function GET() {
 
   const current_rate = latestRate ? Number(latestRate.rate) : 36.50
 
-  return NextResponse.json({ ok: true, business, current_rate })
+  return NextResponse.json({ ok: true, business: { ...publicBusiness, cobro }, current_rate })
 }
 
 export async function PATCH(request: Request) {

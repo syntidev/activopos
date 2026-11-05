@@ -1,4 +1,5 @@
-import { divisaPriceOf, readDivisaMethodIds, splitPayMethods } from '@/lib/catalog-divisa'
+import { divisaPriceOf } from '@/lib/catalog-divisa'
+import { chipMethods, readCobroEffective } from '@/lib/cobro-precios'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
@@ -174,7 +175,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
   const imgs      = parseImages(product.images)
   const priceUsd     = Number(product.price_per_unit_usd ?? product.price_per_kg_usd ?? 0)
   const priceBs      = priceUsd > 0 ? priceUsd * rate : null
-  const payMethods   = splitPayMethods(paymentMethods, readDivisaMethodIds(business.settings))
+  const payMethods   = chipMethods(paymentMethods, business.settings)
   const location  = [business.city, business.state].filter(Boolean).join(', ')
 
   const relatedRaw = await prisma.product.findMany({
@@ -227,7 +228,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
         subcategory={product.subcategory ?? null}
         categoryColor={product.category?.color ?? null}
         priceUsd={priceUsd}
-        divisaUsd={divisaPriceOf(product)}
+        divisaUsd={readCobroEffective(business.settings).divisaActive ? divisaPriceOf(product) : null}
         divisaMethods={payMethods.divisa}
         bsMethods={payMethods.bs}
         priceBs={priceBs}

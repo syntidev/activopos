@@ -3,6 +3,7 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 import Image from 'next/image'
 import { fmtUsd, fmtBs } from './catalogUtils'
+import { useCobroFlags } from '@/components/catalog/CobroFlags'
 import styles from './precioDivisa.module.css'
 
 export interface PayPill { id: number; name: string; type: string; is_financing: boolean }
@@ -49,6 +50,7 @@ function PayChip({ method }: { method: PayPill }) {
  */
 export function PrecioDivisa({ divisaUsd, fullUsd, rate, divisaMethods, bsMethods }: PrecioDivisaProps) {
   const [mode, setMode] = useState<Mode>('divisa')
+  const { casheaActive } = useCobroFlags()
   const divisaRef = useRef<HTMLButtonElement>(null)
   const bsRef = useRef<HTMLButtonElement>(null)
   const isDivisa = mode === 'divisa'
@@ -78,7 +80,7 @@ export function PrecioDivisa({ divisaUsd, fullUsd, rate, divisaMethods, bsMethod
         <button ref={bsRef} type="button" role="radio" aria-checked={!isDivisa} tabIndex={isDivisa ? -1 : 0} className={styles.opt} onClick={() => setMode('bs')}>
           <span className={styles.radio} aria-hidden="true" />
           <span className={styles.oname}>
-            <span className={styles.badgeBs}>Bs</span> Bolívares / <Image src="/brand/cashea.png" alt="Cashea" width={49} height={14} className={styles.logo} />
+            <span className={styles.badgeBs}>Bs</span> Bolívares{casheaActive && <> / <Image src="/brand/cashea.png" alt="Cashea" width={49} height={14} className={styles.logo} /></>}
           </span>
           <span className={styles.oprice}>{fmtUsd(fullUsd)}</span>
         </button>

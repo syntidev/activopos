@@ -11,6 +11,7 @@ import type { CatalogProduct, PaymentMethod } from '../CatalogoGrid'
 import { CatalogFooter } from '../CatalogFooter'
 import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf } from '@/lib/catalog'
 import styles from '../catalogo.module.css'
+import { readCobroEffective } from '@/lib/cobro-precios'
 
 interface PageProps {
   params: { slug: string }
@@ -145,7 +146,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
       brandId:           p.brand_id ?? null,
       brandName:         p.brand?.name ?? null,
       priceUsd,
-      divisaUsd: divisaPriceOf(p),
+      divisaUsd: readCobroEffective(business.settings).divisaActive ? divisaPriceOf(p) : null,
       priceBs,
       isService:         p.sale_mode === 'service',
       stockQty:          hideStock || p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),

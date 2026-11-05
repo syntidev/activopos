@@ -30,7 +30,7 @@ export function CartaFicha({ dish, slug, rate }: CartaFichaProps) {
   const [ok, setOk] = useState(false)
 
   const unit = size ? size.priceUsd : dish.priceUsd
-  const agotado = dish.outOfStock || (sizes.length > 0 && !size)
+  const agotado = dish.outOfStock || dish.onRequest || (sizes.length > 0 && !size)
 
   const agregar = (): void => {
     add(dish, { size, qty, note })
@@ -90,7 +90,7 @@ export function CartaFicha({ dish, slug, rate }: CartaFichaProps) {
             <button type="button" className={cx(styles.paso, styles.pasoMas)} onClick={() => setQty(q => Math.min(20, q + 1))} aria-label="Una más">+</button>
           </div>
           <button type="button" className={styles.btn} onClick={agregar} disabled={agotado} data-testid="ficha-agregar">
-            {agotado ? 'Agotado hoy' : 'Agregar · ' + fmtUsd(unit * qty)}
+            {agotado ? (dish.onRequest ? 'Consultar precio' : 'Agotado hoy') : 'Agregar · ' + fmtUsd(unit * qty)}
           </button>
         </div>
       </div>

@@ -55,7 +55,7 @@ export function PlatoCard({ dish, slug, priority = false }: PlatoCardProps) {
           </div>
           {dish.outOfStock ? (
             <span className={styles.nTam}>Agotado hoy</span>
-          ) : (
+          ) : dish.onRequest ? null : (
             <button type="button" className={cx(styles.add, ok && styles.addOk)} onClick={onAdd} data-testid="plato-agregar"
               aria-label={(conTamanos ? 'Elegir tamaño de ' : 'Agregar ') + dish.name}>
               {ok ? 'Agregado' : conTamanos ? 'Elegir' : 'Agregar'}

@@ -21,6 +21,8 @@ export interface CartaDish {
   sizes:        CartaSize[]
   tags:         CartaTag[]
   isFeatured:   boolean
+  /** catalog_visibility = on_request: sin precio ni botón de agregar ("Consultar precio"), igual que el premium. */
+  onRequest:    boolean
   outOfStock:   boolean
 }
 

@@ -85,20 +85,22 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
   const { divisa } = splitPayMethods(methods, divisaIds)
 
   const dishOf = (p: (typeof products)[number]): CartaDish => {
-    const sizes: CartaSize[] = p.variants.map(v => ({
+    const onRequest = p.catalog_visibility === 'on_request'
+    const sizes: CartaSize[] = onRequest ? [] : p.variants.map(v => ({
       id: v.id, label: v.valor, priceUsd: resolveUnitPriceUsd(p, v), soldOut: v.stock <= 0,
     }))
     const base = Number(p.price_per_unit_usd ?? p.price_per_kg_usd ?? 0)
-    const priceUsd = sizes.length > 0 ? Math.min(...sizes.map(s => s.priceUsd)) : base
+    const priceUsd = onRequest ? 0 : sizes.length > 0 ? Math.min(...sizes.map(s => s.priceUsd)) : base
     const netQty = stockMap.get(p.id)
     const stockInput = { has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }
     return {
       id: p.id, name: p.name, description: p.description, image: firstImage(p.images), categoryName: p.category?.name ?? null,
       priceUsd, priceBs: priceUsd > 0 ? priceUsd * rate : null,
-      divisaUsd: sizes.length === 0 && divisa.length > 0 ? divisaPriceOf(p) : null,
+      divisaUsd: !onRequest && sizes.length === 0 && divisa.length > 0 ? divisaPriceOf(p) : null,
       sizes,
       tags: TAGS.filter(t => t === p.badge),
       isFeatured: p.is_featured,
+      onRequest,
       outOfStock: isOutOfStock({ sale_mode: p.sale_mode, ...stockInput }) || effectiveStock(stockInput) <= 0,
     }
   }
@@ -116,7 +118,7 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
   // Hero: event_slider del negocio; si no hay, favoritos (30 días) y, sin ventas, destacados ("Recomendados").
   const hero = await buildHero(business.id, sliderRow?.config ?? null, dishes)
   const heroIds = new Set<number>(hero.slides.flatMap(s => (s.dish ? [s.dish.id] : linkedDishId(s.cta?.href))))
-  const featured = dishes.filter(d => d.isFeatured && !heroIds.has(d.id) && !d.outOfStock)
+  const featured = dishes.filter(d => d.isFeatured && !heroIds.has(d.id) && !d.outOfStock && !d.onRequest)
 
   const bsMethods = methods.filter(m => !m.is_financing && !divisaIds.includes(m.id))
   const pagos: CartaPagos = { divisa: divisa.map(m => m.name), bs: bsMethods.length > 0 || divisa.length === 0, cashea: methods.some(m => m.is_financing) }
@@ -149,7 +151,7 @@ async function buildHero(businessId: number, sliderConfig: unknown, dishes: Cart
     }))
     return { kind: 'slides', kicker: 'Hoy en la casa', slides }
   }
-  const eligible = dishes.filter(d => !d.outOfStock)
+  const eligible = dishes.filter(d => !d.outOfStock && !d.onRequest)
   const topIds = await topSellerIds(businessId, FAVORITOS_MAX).catch(() => [] as number[])
   const top = topIds.map(id => eligible.find(d => d.id === id)).filter((d): d is CartaDish => !!d)
   const picked = top.length > 0 ? top : eligible.filter(d => d.isFeatured).slice(0, FAVORITOS_MAX)

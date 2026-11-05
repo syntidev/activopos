@@ -39,7 +39,7 @@ function firstImage(raw: string | null): string | null {
  * visibles: un grid 1+4 incompleto queda con huecos, así que el llamador cae al
  * bloque anterior en vez de pintar algo roto.
  */
-export async function getCartelera(businessId: number, rate: number): Promise<CarteleraData | null> {
+export async function getCartelera(businessId: number, rate: number, divisaActive = true): Promise<CarteleraData | null> {
   const collection = await prisma.collection.findFirst({
     where:  { business_id: businessId, active: true, is_cartelera_activa: true },
     select: {
@@ -76,7 +76,7 @@ export async function getCartelera(businessId: number, rate: number): Promise<Ca
         badge:        p.badge && p.badge !== 'none' ? p.badge : null,
         priceUsd,
         priceBs:      priceUsd > 0 ? priceUsd * rate : null,
-        divisaUsd:    divisaPriceOf(p),
+        divisaUsd:    divisaActive ? divisaPriceOf(p) : null,
         hasVariants:  p.has_variants,
       }
     })

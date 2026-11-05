@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { CartProvider } from './CartContext'
 import { CheckoutFinancingProvider } from '@/components/catalog/CheckoutFinancing'
-import { loadCheckoutFinancing } from '@/lib/catalog-checkout-financing'
+import { loadCheckoutFinancing, loadCobroFlags } from '@/lib/catalog-checkout-financing'
+import { CobroFlagsProvider } from '@/components/catalog/CobroFlags'
 import PulsoTracker from '@/components/pulso/PulsoTracker'
 
 interface LayoutProps {
@@ -15,12 +16,15 @@ interface LayoutProps {
 export default async function CatalogoSlugLayout({ children, params }: LayoutProps) {
   // Cashea en el checkout: solo si el negocio tiene financiamiento activo; los excluidos se cruzan con el carrito.
   const { financing, excludedIds } = await loadCheckoutFinancing(params.slug)
+  const { casheaActive } = await loadCobroFlags(params.slug)
   return (
     <CheckoutFinancingProvider financing={financing} excludedIds={excludedIds}>
-      <CartProvider slug={params.slug}>
-        <PulsoTracker slug={params.slug} />
-        {children}
-      </CartProvider>
+      <CobroFlagsProvider casheaActive={casheaActive}>
+        <CartProvider slug={params.slug}>
+          <PulsoTracker slug={params.slug} />
+          {children}
+        </CartProvider>
+      </CobroFlagsProvider>
     </CheckoutFinancingProvider>
   )
 }

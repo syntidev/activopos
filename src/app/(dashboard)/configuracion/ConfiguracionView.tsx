@@ -16,6 +16,7 @@ import {
   Tag,
   Ticket,
   Truck,
+  Wallet,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -28,6 +29,7 @@ import { TabUsuarios }        from './tabs/TabUsuarios'
 import { TabModulos }         from './tabs/TabModulos'
 import { TabNotificaciones }  from './tabs/TabNotificaciones'
 import { TabCobros }          from './tabs/TabCobros'
+import { TabCobroPrecios }    from './tabs/TabCobroPrecios'
 import { TabPlan }            from './tabs/TabPlan'
 import { TabLanding }         from './tabs/TabLanding'
 import { TabColecciones }     from './tabs/TabColecciones'
@@ -35,7 +37,7 @@ import { TabBrands }          from './tabs/TabBrands'
 import { TabKit200k }         from './tabs/TabKit200k'
 import { TabEnvios }          from './tabs/TabEnvios'
 
-type TabKey = 'envios' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'cobroprecios' | 'envios' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -48,6 +50,7 @@ const NEGOCIO_TABS: Tab[] = [
   { key: 'empresa',   label: 'Empresa',         Icon: Building2  },
   { key: 'impresion', label: 'Impresión',       Icon: Printer    },
   { key: 'cobros',    label: 'Medios de Cobro', Icon: CreditCard },
+  { key: 'cobroprecios', label: 'Cobro y precios', Icon: Wallet  },
   { key: 'envios',    label: 'Envíos',          Icon: Truck      },
 ]
 
@@ -139,6 +142,7 @@ export function ConfiguracionView({ session, landingSectionsEnabled, kitEnabled 
         {activeTab === 'empresa'        && <TabEmpresa        businessId={session.businessId} />}
         {activeTab === 'impresion'      && <TabImpresion      businessId={session.businessId} />}
         {activeTab === 'cobros'         && <TabCobros         businessId={session.businessId} />}
+        {activeTab === 'cobroprecios'   && <TabCobroPrecios   businessId={session.businessId} />}
         {activeTab === 'envios'         && <TabEnvios         businessId={session.businessId} />}
         {activeTab === 'tema'           && <TabTema          businessId={session.businessId} />}
         {activeTab === 'landing'     && landingSectionsEnabled && <TabLanding     businessId={session.businessId} />}

@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client'
 import { PRICE_MODES, VARIANT_PRICING_SELECT, resolveLinePrice } from '@/lib/pricing'
 import type { PriceMode, PriceSource } from '@/lib/pricing'
 import { FINANCING_BLOCKS_DIVISA_MESSAGE, isFinancingActive } from '@/lib/ticket-financing'
+import { DivisaDisabledError, assertDivisaAllowed } from '@/lib/cobro-precios'
 
 /**
  * Cambio del modo de precio (bcv | divisa) de un ticket ABIERTO: venta (draft / pending / quote) o pedido sin cobrar.
@@ -86,6 +87,16 @@ function ticketOf(
   return { ...base, fallback_lines: items.filter(i => i.price_source === 'fallback_bcv').length, items }
 }
 
+/** Configuración › Cobro y precios: con el precio Divisa apagado el modo Divisa no existe (lo impone el servidor). */
+async function assertDivisaOn(tx: Prisma.TransactionClient, businessId: number): Promise<void> {
+  try {
+    await assertDivisaAllowed(tx, businessId)
+  } catch (e) {
+    if (e instanceof DivisaDisabledError) throw new PriceModeError(e.status, e.message)
+    throw e
+  }
+}
+
 /** Venta abierta: draft (pestaña del POS), pending o quote. `business_id` siempre el de la sesión. */
 export async function repriceSaleTx(
   tx: Prisma.TransactionClient,
@@ -122,6 +133,7 @@ export async function repriceSaleTx(
 
   // Exclusión mutua con el financiamiento (Cashea se cobra a precio BCV completo): se RECHAZA, nada cambia solo.
   if (mode === 'divisa' && isFinancingActive(sale.financing_status)) throw new PriceModeError(409, FINANCING_BLOCKS_DIVISA_MESSAGE)
+  if (mode === 'divisa') await assertDivisaOn(tx, actor.businessId)
 
   const lines: RepricedLine[] = []
   for (const item of sale.items) {
@@ -177,6 +189,7 @@ export async function repriceOrderTx(
   if (order.status === 'delivered') throw new PriceModeError(409, 'Este pedido ya fue entregado; no se puede cambiar el modo de precio.')
 
   if (mode === 'divisa' && isFinancingActive(order.financing_status)) throw new PriceModeError(409, FINANCING_BLOCKS_DIVISA_MESSAGE)
+  if (mode === 'divisa') await assertDivisaOn(tx, actor.businessId)
 
   const products = await tx.product.findMany({
     where:  { id: { in: Array.from(new Set(order.items.map(i => i.product_id))) }, business_id: actor.businessId },

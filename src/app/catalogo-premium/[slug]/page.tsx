@@ -16,6 +16,7 @@ import { CONFIG_SCHEMAS, isSectionType } from '@/lib/landing-sections'
 import type { RenderableLandingSection, CollectionGridProduct } from '@/lib/landing-sections'
 import { CATALOG_WHERE_FILTER, computeAvailability, effectiveStock, isOutOfStock, isCatalogLive , stockDisplayOf } from '@/lib/catalog'
 import styles from './catalogo.module.css'
+import { readCobroEffective } from '@/lib/cobro-precios'
 
 interface PageProps {
   params: { slug: string }
@@ -48,6 +49,7 @@ async function resolveCollectionGridSections(
   sections: RenderableLandingSection[],
   businessId: number,
   rate: number,
+  divisaActive: boolean,
 ): Promise<RenderableLandingSection[]> {
   const collectionIds = Array.from(new Set(
     sections
@@ -87,7 +89,7 @@ async function resolveCollectionGridSections(
           image:    parseImages(p.images)[0] ?? null,
           priceUsd,
           priceBs:  priceUsd > 0 ? priceUsd * rate : null,
-          divisaUsd: divisaPriceOf(p),
+          divisaUsd: divisaActive ? divisaPriceOf(p) : null,
           hasVariants: p.has_variants,
         }
       })
@@ -263,12 +265,12 @@ export default async function CatalogoPage({ params }: PageProps) {
   // autenticado y no aplica a un visitante anónimo). Una query batched (in:) en
   // vez de N+1 por sección. Colección sin productos activos o inexistente -> la
   // sección se descarta, no rompe el resto del catálogo.
-  const landingSections = await resolveCollectionGridSections(parsedSections, business.id, rate)
+  const landingSections = await resolveCollectionGridSections(parsedSections, business.id, rate, readCobroEffective(business.settings).divisaActive)
 
   // Cartelera de campaña (grid premium 1+4): null si no hay una activa o si le
   // faltan productos. Un fallo acá nunca tumba el catálogo: se registra (para
   // que quede evidencia) y se cae al bloque de colección de siempre.
-  const cartelera = await getCartelera(business.id, rate).catch((error: unknown) => {
+  const cartelera = await getCartelera(business.id, rate, readCobroEffective(business.settings).divisaActive).catch((error: unknown) => {
     console.error('[catalogo-premium] cartelera falló, se usa el bloque de colección', { slug: params.slug, business_id: business.id, error })
     return null
   })
@@ -299,7 +301,7 @@ export default async function CatalogoPage({ params }: PageProps) {
       brandId:      p.brand_id ?? null,
       brandName:    p.brand?.name ?? null,
       priceUsd,
-      divisaUsd: divisaPriceOf(p),
+      divisaUsd: readCobroEffective(business.settings).divisaActive ? divisaPriceOf(p) : null,
       priceBs,
       isService:    p.sale_mode === 'service',
       stockQty:     hideStock || p.sale_mode === 'service' ? null : effectiveStock({ has_variants: p.has_variants, variants: p.variants, net_stock: netQty ?? null }),

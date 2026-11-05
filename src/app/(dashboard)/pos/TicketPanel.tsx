@@ -45,6 +45,8 @@ interface TicketPanelProps {
   allowCashierPriceOverride?: boolean
   pendingSaleActive?: boolean
   onPriceMode: (mode: PriceMode) => void
+  /** Configuración › Cobro y precios: false = un solo precio (Full), sin selector BCV/Divisa. */
+  divisaActive?: boolean
   priceModeBusy?: boolean
   priceModeError?: string
   cashea: TicketCasheaProps
@@ -60,7 +62,7 @@ export function TicketPanel({
   onUpdateQty, onRemove, onClear, onSelectClient,
   onProcesarPago, onVenderCredito, onCotizar, onDescuento, onCargo, onImprimirCuenta,
   userRole, onPriceOverride, allowCashierPriceOverride, pendingSaleActive,
-  onPriceMode, priceModeBusy, priceModeError, cashea,
+  onPriceMode, divisaActive = true, priceModeBusy, priceModeError, cashea,
   mobile = false, onCloseSheet, tabsSlot,
 }: TicketPanelProps) {
   const router = useRouter()
@@ -111,7 +113,7 @@ export function TicketPanel({
     />
   )
 
-  const priceNode = (
+  const priceNode = !divisaActive ? null : (
     <PriceModeSwitch
       mode={ticket.price_mode}
       onChange={casheaLive ? undefined : onPriceMode}

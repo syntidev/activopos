@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCartaBusiness, loadCarta, resolveCartaBusiness } from '@/lib/carta/load'
 import { cartaDishMeta } from '@/lib/carta/seo'
+import { relatedIds } from '@/lib/carta/favoritos'
 import { CartaFicha } from '../../CartaFicha'
 import { CartaPedido } from '../../CartaPedido'
+import type { CartaDish } from '@/types/carta'
 
 interface PageProps {
   params: { slug: string; id: string }
@@ -30,10 +32,16 @@ export default async function PlatoPage({ params }: PageProps) {
   const data = await loadCarta(business)
   const dish = data.dishes.find(d => d.id === id)
   if (!dish) notFound()
+  const RELATED_MAX = 4
+  const byId = new Map(data.dishes.map(d => [d.id, d]))
+  const ids = (await relatedIds(business.id, dish.id, RELATED_MAX)).filter(i => i !== dish.id)
+  const picked = ids.map(i => byId.get(i)).filter((d): d is CartaDish => !!d && !d.soldOutToday && !d.outOfStock && !d.onRequest)
+  const fill = data.dishes.filter(d => d.id !== dish.id && d.categoryName === dish.categoryName && !picked.includes(d) && !d.soldOutToday && !d.outOfStock && !d.onRequest)
+  const related = [...picked, ...fill].slice(0, RELATED_MAX)
   return (
     <>
-      <CartaFicha dish={dish} slug={params.slug} rate={data.rate} />
-      <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} />
+      <CartaFicha dish={dish} slug={params.slug} rate={data.rate} related={related} />
+      <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} businessName={business.catalog_title ?? business.name} whatsapp={data.whatsapp} acepta={data.acepta} dishes={data.dishes} />
     </>
   )
 }

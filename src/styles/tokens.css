@@ -1112,3 +1112,69 @@
   --carta-sombra-fab: 0 12px 32px rgba(0, 0, 0, 0.35);
   --carta-abierto: #5BE08F;
 }
+
+/* Carta C2: presets Cafe, Mar y Verde (mismos tokens; AA verificado por scripts/check-carta-contrast.mjs). */
+[data-carta-preset="cafe"] {
+  --carta-papel: #F4ECE2;   --carta-card: #FFFAF3;   --carta-strip: #EADFCF;   --carta-linea: #DDCDB6;
+  --carta-tinta: #2A1E16;   --carta-tinta-2: #5E4B3C; --carta-muted: #6B5646;
+  --carta-acento: #7A4A2A;  --carta-sobre-acento: #FFFFFF;
+  --carta-ok: #256A40;      --carta-ok-soft: #E3F1E4;
+  --carta-aji: #A32A22;     --carta-aji-soft: #F9E3DF;
+  --carta-oro: #7A5200;     --carta-oro-soft: #FFEFC9;
+  --carta-neutro: #55463A;  --carta-neutro-soft: #EBE2D5;
+  --carta-fab: #2A1E16;     --carta-sobre-fab: #FFFFFF;
+  --carta-sombra: 0 2px 12px rgba(60, 40, 20, 0.12), 0 0 1px rgba(60, 40, 20, 0.1);
+  --carta-radio: 14px;
+  --carta-font-display: var(--font-carta-fraunces), Georgia, serif;
+  --carta-font-sans: var(--font-carta-sans), system-ui, sans-serif;
+  --carta-peso-display: 700;
+}
+[data-carta-preset="mar"] {
+  --carta-papel: #F1F7F8;   --carta-card: #FFFFFF;   --carta-strip: #E3EEF0;   --carta-linea: #D2E1E4;
+  --carta-tinta: #10262C;   --carta-tinta-2: #3F5A62; --carta-muted: #4F6A72;
+  --carta-acento: #0F6A78;  --carta-sobre-acento: #FFFFFF;
+  --carta-ok: #1F6B45;      --carta-ok-soft: #E1F3E8;
+  --carta-aji: #B3261E;     --carta-aji-soft: #FBE4E1;
+  --carta-oro: #7A5200;     --carta-oro-soft: #FFF0CC;
+  --carta-neutro: #3F5A62;  --carta-neutro-soft: #E3EEF0;
+  --carta-fab: #10262C;     --carta-sobre-fab: #FFFFFF;
+  --carta-sombra: 0 2px 12px rgba(60, 40, 20, 0.12), 0 0 1px rgba(60, 40, 20, 0.1);
+  --carta-radio: 20px;
+  --carta-font-display: var(--font-carta-cormorant), Georgia, serif;
+  --carta-font-sans: var(--font-carta-sans), system-ui, sans-serif;
+  --carta-peso-display: 600;
+}
+[data-carta-preset="verde"] {
+  --carta-papel: #F2F5EC;   --carta-card: #FCFDF8;   --carta-strip: #E5EBD9;   --carta-linea: #D5DEC6;
+  --carta-tinta: #1D2A18;   --carta-tinta-2: #4A5C42; --carta-muted: #566A4C;
+  --carta-acento: #2F6B3A;  --carta-sobre-acento: #FFFFFF;
+  --carta-ok: #1F6B45;      --carta-ok-soft: #E1F0DC;
+  --carta-aji: #A32A22;     --carta-aji-soft: #F9E3DF;
+  --carta-oro: #7A5200;     --carta-oro-soft: #FFF0CC;
+  --carta-neutro: #4A5C42;  --carta-neutro-soft: #E5EBD9;
+  --carta-fab: #1D2A18;     --carta-sobre-fab: #FFFFFF;
+  --carta-sombra: 0 2px 12px rgba(60, 40, 20, 0.12), 0 0 1px rgba(60, 40, 20, 0.1);
+  --carta-radio: 16px;
+  --carta-font-display: var(--font-carta-fraunces), Georgia, serif;
+  --carta-font-sans: var(--font-carta-sans), system-ui, sans-serif;
+  --carta-peso-display: 700;
+}
+[data-carta-preset="cafe"][data-carta-accent="rojo"] { --carta-acento: #B8381A; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="cafe"][data-carta-accent="vino"] { --carta-acento: #8E2236; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="cafe"][data-carta-accent="verde"] { --carta-acento: #2F6B3A; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="cafe"][data-carta-accent="azul"] { --carta-acento: #1F5FA8; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="cafe"][data-carta-accent="oro"] { --carta-acento: #7D5F1F; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="mar"][data-carta-accent="rojo"] { --carta-acento: #B8381A; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="mar"][data-carta-accent="vino"] { --carta-acento: #8E2236; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="mar"][data-carta-accent="verde"] { --carta-acento: #2F6B3A; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="mar"][data-carta-accent="azul"] { --carta-acento: #1F5FA8; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="mar"][data-carta-accent="oro"] { --carta-acento: #7D5F1F; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="verde"][data-carta-accent="rojo"] { --carta-acento: #B8381A; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="verde"][data-carta-accent="vino"] { --carta-acento: #8E2236; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="verde"][data-carta-accent="verde"] { --carta-acento: #2F6B3A; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="verde"][data-carta-accent="azul"] { --carta-acento: #1F5FA8; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="verde"][data-carta-accent="oro"] { --carta-acento: #7D5F1F; --carta-sobre-acento: #FFFFFF; }
+
+/* Carta · fine dining sobre Brasa sin acento elegido: oro viejo (5.0:1 sobre blanco, AA). Con acento explícito manda el acento. */
+[data-carta-preset="brasa"][data-carta-style="fine"]:not([data-carta-accent]) { --carta-acento: #8A6A2F; --carta-sobre-acento: #FFFFFF; }
+[data-carta-preset="brasa"][data-carta-style="fine"] { --carta-font-display: var(--font-carta-cormorant), Georgia, serif; }

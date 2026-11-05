@@ -30,7 +30,7 @@ export default async function CartaPage({ params }: PageProps) {
   return (
     <>
       <CartaHome slug={params.slug} businessName={business.catalog_title ?? business.name} hoursText={business.catalog_hours} city={business.city} data={data} />
-      <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} />
+      <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} businessName={business.catalog_title ?? business.name} whatsapp={data.whatsapp} acepta={data.acepta} dishes={data.dishes} />
     </>
   )
 }

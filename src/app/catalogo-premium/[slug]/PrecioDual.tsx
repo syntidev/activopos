@@ -18,6 +18,8 @@ interface PrecioDualProps {
   variant?:           'premium' | 'carta'
   /** Solo variante carta: antepone "Desde" (plato con tamaños). */
   desde?:             boolean
+  /** Solo variante carta: data-testid del precio en $ y del Bs (contrato de la suite E2E de la Carta). */
+  testids?:           { usd: string; bs: string }
 }
 
 const fmtNum = (n: number): string => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -27,7 +29,7 @@ const fmtNum = (n: number): string => n.toLocaleString('en-US', { minimumFractio
  * Línea 1: Divisa en $ (o el precio Cashea en $ si no hay Divisa válida).
  * Línea 2: chip [Bs] + logo Cashea + ($ Cashea con Divisa | monto en Bs sin Divisa).
  */
-export function PrecioDual({ priceUsd, priceBs, divisaUsd = null, catalogVisibility, availability, size = 'card', variant = 'premium', desde = false }: PrecioDualProps) {
+export function PrecioDual({ priceUsd, priceBs, divisaUsd = null, catalogVisibility, availability, size = 'card', variant = 'premium', desde = false, testids }: PrecioDualProps) {
   const { casheaActive } = useCobroFlags()
   if (variant === 'carta') {
     if (!(priceUsd > 0)) return <div className={styles.carta}><span className={styles.cartaConsultar}>Consultar precio</span></div>
@@ -35,8 +37,8 @@ export function PrecioDual({ priceUsd, priceBs, divisaUsd = null, catalogVisibil
     return (
       <div className={`${styles.carta} ${styles['carta_' + size]}`}>
         {desde && <span className={styles.cartaDesde}>Desde</span>}
-        <span className={styles.cartaUsd} data-testid="precio-principal"><span className={styles.cartaSimbolo}>$</span>{fmtNum(principal)}</span>
-        {priceBs !== null && <span className={styles.cartaBs} data-testid="precio-bs">{fmtBs(priceBs)}</span>}
+        <span className={styles.cartaUsd} data-testid={testids?.usd ?? 'precio-principal'}>{'$' + fmtNum(principal)}</span>
+        {priceBs !== null && <span className={styles.cartaBs} data-testid={testids?.bs ?? 'precio-bs'}>{'Bs. ' + fmtNum(priceBs)}</span>}
       </div>
     )
   }

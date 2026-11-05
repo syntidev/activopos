@@ -24,6 +24,7 @@ export default async function CartaLayout({ children, params }: CartaLayoutProps
   return (
     <div
       className={cx(styles.root, fraunces.variable, cormorant.variable, sans.variable)}
+      data-testid="carta-root"
       data-carta-preset={settings.preset}
       data-carta-accent={settings.accent ?? undefined}
       data-carta-style={settings.style}

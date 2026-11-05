@@ -12,7 +12,7 @@ export function CartaPagos({ pagos, rate }: CartaPagosProps) {
   const tasa = fmtRate(rate)
   const soloBs = pagos.divisa.length === 0 && !pagos.cashea
   return (
-    <div className={styles.pagos} data-testid="pagos">
+    <div className={styles.pagos} data-testid="carta-franja-pago">
       <div className={cx(styles.wrap, styles.pagosIn)}>
         {soloBs ? (
           <span className={styles.pagosC}>Precios en $ · pagas en Bs a tasa BCV {tasa}</span>

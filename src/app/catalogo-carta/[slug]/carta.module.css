@@ -1,5 +1,6 @@
 /* Plantilla Carta. Solo tokens --carta-* (styles/tokens.css): presets Brasa y Noche, acentos cerrados, estilo casual o fine. */
 .root {
+  --acento: var(--carta-acento); /* alias del contrato de pruebas (.doc/carta/TESTIDS.md) */
   min-height: 100vh;
   background: var(--carta-papel);
   color: var(--carta-tinta);
@@ -244,3 +245,20 @@ textarea.input { min-height: 84px; resize: vertical; }
 .foto { object-fit: cover; }
 /* El precio sobre foto se lee en blanco: se reasignan los tokens de texto dentro del hero y de las tarjetas de la casa. */
 .herorow, .hcardRow { --carta-tinta: var(--carta-sobre-foto); --carta-muted: var(--carta-sobre-foto); }
+
+/* C2: opciones, alérgenos, horario, edición de línea, relacionados */
+.reqOpc { background: var(--carta-neutro-soft); color: var(--carta-neutro); }
+.segUno { grid-template-columns: minmax(0, 1fr); }
+.alerg { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--carta-tinta-2); }
+.alergBloque { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: var(--carta-radio); background: var(--carta-oro-soft); color: var(--carta-tinta); font-size: 14px; }
+.alergBloque svg { flex: none; margin-top: 2px; color: var(--carta-oro); }
+.horario { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 13px; color: var(--carta-tinta-2); }
+.horarioDia b { color: var(--carta-tinta); font-weight: 650; }
+.banda { position: relative; height: 140px; margin: 28px 0; border-radius: var(--carta-radio); overflow: hidden; }
+.lineaBloque { border-bottom: 1px solid var(--carta-linea); }
+.lineaBloque .linea { border-bottom: 0; }
+.editor { padding: 0 0 16px; }
+.confirmar { margin: 0 0 14px; padding: 12px 14px; border-radius: var(--carta-radio); background: var(--carta-aji-soft); color: var(--carta-tinta); }
+.confirmarBtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.cerradoAviso { margin-top: 16px; padding: 12px 14px; border-radius: var(--carta-radio); background: var(--carta-oro-soft); color: var(--carta-tinta); font-size: 14px; display: grid; gap: 10px; }
+.relacionados { margin-top: 32px; }

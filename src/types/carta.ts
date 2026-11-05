@@ -1,10 +1,27 @@
 /** Tipos de la plantilla Carta (catalogo-carta). Datos ya serializados: nada de Decimal ni Date. */
+import type { CartaAllergen, CartaTag } from '@/lib/carta/vocab'
 
 export interface CartaSize {
-  id:      number
-  label:   string
+  id:       number
+  label:    string
   priceUsd: number
-  soldOut: boolean
+  soldOut:  boolean
+}
+
+export interface CartaOption {
+  id:            number
+  name:          string
+  priceExtraUsd: number
+}
+
+/** Grupo de opciones de un plato ("Proteína: pavo | cochino"). required = hay que elegir; multiple = varias (maxSelect las limita). */
+export interface CartaOptionGroup {
+  id:        number
+  name:      string
+  required:  boolean
+  multiple:  boolean
+  maxSelect: number | null
+  options:   CartaOption[]
 }
 
 export interface CartaDish {
@@ -13,23 +30,28 @@ export interface CartaDish {
   description:  string | null
   image:        string | null
   categoryName: string | null
-  /** Precio de lista en USD (con tamaños: el menor). */
+  /** Precio de lista en USD (con tamaños: el menor; "Consultar precio" = 0). */
   priceUsd:     number
   priceBs:      number | null
   /** Precio Divisa ya validado por divisaPriceOf; null si no aplica o el negocio no cobra en Divisa. */
   divisaUsd:    number | null
   sizes:        CartaSize[]
+  groups:       CartaOptionGroup[]
   tags:         CartaTag[]
+  allergens:    CartaAllergen[]
   isFeatured:   boolean
+  /** Sin existencias. */
+  outOfStock:   boolean
+  /** Agotado del día (se limpia solo al cambiar el día de negocio de Caracas). */
+  soldOutToday: boolean
   /** catalog_visibility = on_request: sin precio ni botón de agregar ("Consultar precio"), igual que el premium. */
   onRequest:    boolean
-  outOfStock:   boolean
 }
 
-export type CartaTag = 'nuevo' | 'popular' | 'promo' | 'recomendado'
-
 export interface CartaCategory {
-  name:  string
+  name:   string
+  /** Nombre en minúsculas, sin acentos y con guiones: lo usan los data-testid (carta-tab-{slug}). */
+  slug:   string
   dishes: CartaDish[]
 }
 
@@ -69,4 +91,9 @@ export interface CartaPayOption {
 export interface CartaOpenState {
   open:  boolean
   label: string
+}
+
+export interface CartaHorarioDia {
+  day:  string
+  text: string
 }

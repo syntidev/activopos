@@ -82,10 +82,12 @@ export function limpiarCarta(slug: string): void {
   sql(`DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE business_id=${id})`)
   sql(`DELETE FROM orders WHERE business_id=${id}`)
   sql(`DELETE FROM clients WHERE business_id=${id}`)
+  sql(`DELETE FROM inventory_entries WHERE business_id=${id}`)
   sql(`DELETE FROM product_variants WHERE product_id IN (SELECT id FROM products WHERE business_id=${id})`)
   sql(`DELETE FROM products WHERE business_id=${id}`)
   sql(`DELETE FROM categories WHERE business_id=${id}`)
   sql(`DELETE FROM payment_methods WHERE business_id=${id}`)
+  sql(`DELETE FROM users WHERE business_id=${id}`)
   sql(`DELETE FROM businesses WHERE id=${id}`)
 }
 
@@ -96,19 +98,25 @@ export function limpiarCarta(slug: string): void {
 export function sembrarCarta(o: SiembraOpciones): number {
   limpiarCarta(o.slug)
   const settings = { carta_hours: o.abierto === false ? horarioCerrado() : horarioTodoElDia(), carta_paused: false, carta_style: o.style ?? 'casual' }
-  sql(`INSERT INTO businesses (name, updated_at, catalog_slug, catalog_active, catalog_template, catalog_title, whatsapp, settings, segment) VALUES (${q('ZZ Carta E2E')}, NOW(3), ${q(o.slug)}, 1, 'carta', ${q('Café con Bike')}, ${q(WHATSAPP)}, ${q(JSON.stringify(settings))}, 'restaurante')`)
+  sql(`INSERT INTO businesses (name, updated_at, catalog_slug, catalog_active, catalog_template, catalog_title, whatsapp, settings, segment, catalog_plan, subscription_active, catalog_cover_path) VALUES (${q('ZZ Carta E2E')}, NOW(3), ${q(o.slug)}, 1, 'carta', ${q('Café con Bike')}, ${q(WHATSAPP)}, ${q(JSON.stringify(settings))}, 'restaurante', 'negocio_activo', 1, '/brand/cashea.png')`)
   const bid = Number(sql(`SELECT id FROM businesses WHERE catalog_slug=${q(o.slug)}`))
+  // El pedido atribuye las reservas al admin del negocio; los platos simples necesitan existencias (inventory_entries).
+  sql(`INSERT INTO users (business_id, name, email, role, is_active, password, updated_at) VALUES (${bid}, 'ZZ Admin Carta', 'zz-admin-${bid}@zz-carta.invalid', 'admin', 1, 'x', NOW(3))`)
   CATEGORIAS.forEach((c, i) => sql(`INSERT INTO categories (business_id, name, sort_order) VALUES (${bid}, ${q(c)}, ${i})`))
   const metodos = o.soloBs ? [['Pago móvil', 'transfer', 0]] : [['Zelle', 'zelle', 0], ['Pago móvil', 'transfer', 0], ['Cashea', 'other', 1]]
   metodos.forEach(([n, t, f], i) => sql(`INSERT INTO payment_methods (business_id, name, type, is_financing, sort_order, is_active) VALUES (${bid}, ${q(String(n))}, ${q(String(t))}, ${f}, ${i}, 1)`))
+  if (!o.soloBs) sql(`UPDATE businesses SET settings=JSON_SET(settings, '$.catalog_divisa_methods', JSON_ARRAY((SELECT id FROM payment_methods WHERE business_id=${bid} AND name='Zelle'))) WHERE id=${bid}`)
   PLATOS.forEach((p, i) => {
     const etiquetas = p.etiquetas.includes('nuevo') ? 'new' : 'none'
     const divisa = !o.soloBs && p.nombre === 'Pechuga de Pollo Asada' ? 12 : 'NULL'
     const cashea = !o.soloBs ? 1 : 0
     const base = p.tamanos ? Math.min(...tamanosDe(p.nombre).map(t => t.precio), p.precio) : p.precio
-    sql(`INSERT INTO products (business_id, name, updated_at, description, price_per_unit_usd, precio_divisa, category_id, show_in_catalog, is_featured, badge, has_variants, sort_order, financing_eligible, notes, images)
-         VALUES (${bid}, ${q(p.nombre)}, NOW(3), ${q(p.descripcion)}, ${base}, ${divisa}, (SELECT id FROM categories WHERE business_id=${bid} AND name=${q(p.categoria)}), 1, ${p.destacado ? 1 : 0}, ${q(etiquetas)}, ${p.tamanos ? 1 : 0}, ${i}, ${cashea}, ${q(p.nota)}, ${p.foto ? q(JSON.stringify([p.foto])) : 'NULL'})`)
-    if (!p.tamanos) return
+    sql(`INSERT INTO products (business_id, name, updated_at, description, price_per_unit_usd, precio_divisa, wholesale_price_usd, category_id, show_in_catalog, is_featured, badge, has_variants, sort_order, financing_eligible, notes, images)
+         VALUES (${bid}, ${q(p.nombre)}, NOW(3), ${q(p.descripcion)}, ${base}, ${divisa}, ${divisa}, (SELECT id FROM categories WHERE business_id=${bid} AND name=${q(p.categoria)}), 1, ${p.destacado ? 1 : 0}, ${q(etiquetas)}, ${p.tamanos ? 1 : 0}, ${i}, ${cashea}, ${q(p.nota)}, ${p.foto ? q(JSON.stringify([p.foto])) : 'NULL'})`)
+    if (!p.tamanos) {
+      sql(`INSERT INTO inventory_entries (business_id, product_id, quantity, entry_type, notes, created_by, created_at) VALUES (${bid}, (SELECT id FROM products WHERE business_id=${bid} AND name=${q(p.nombre)}), 999, 'adjustment', 'ZZ seed', (SELECT id FROM users WHERE business_id=${bid} LIMIT 1), NOW(3))`)
+      return
+    }
     tamanosDe(p.nombre).forEach((t, j) => {
       sql(`INSERT INTO product_variants (product_id, tipo, valor, variant_group, price_usd, stock, sort_order, is_active) VALUES ((SELECT id FROM products WHERE business_id=${bid} AND name=${q(p.nombre)}), 'tamano', ${q(t.tamano)}, 'tamano', ${t.precio}, 999, ${j}, 1)`)
     })

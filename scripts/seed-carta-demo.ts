@@ -31,7 +31,7 @@ const adapter = new PrismaMariaDb({
 })
 const prisma = new PrismaClient({ adapter })
 
-export const CARTA_DEMO_SLUG = 'cafeconbike-carta'
+export const CARTA_DEMO_SLUG = 'zzb-pruebas'
 /** Existencias simbolicas: un plato de cocina no lleva inventario, pero el catalogo y el pedido validan stock. */
 const STOCK_PLATO = 999
 
@@ -43,7 +43,7 @@ interface ProductoJson {
 interface MenuJson { categorias: string[]; productos: ProductoJson[] }
 
 const HORARIO_DIA: [string, string][] = [['07:00', '22:00']]
-const HORARIO = { mon: HORARIO_DIA, tue: HORARIO_DIA, wed: HORARIO_DIA, thu: HORARIO_DIA, fri: HORARIO_DIA, sat: HORARIO_DIA, sun: HORARIO_DIA }
+const HORARIO = { lun: HORARIO_DIA, mar: HORARIO_DIA, mie: HORARIO_DIA, jue: HORARIO_DIA, vie: HORARIO_DIA, sab: HORARIO_DIA, dom: HORARIO_DIA }
 
 async function ensurePaymentMethod(businessId: number, name: string, type: 'cash' | 'transfer' | 'zelle', order: number): Promise<number> {
   const found = await prisma.paymentMethod.findFirst({ where: { business_id: businessId, name } })
@@ -51,15 +51,39 @@ async function ensurePaymentMethod(businessId: number, name: string, type: 'cash
   return (await prisma.paymentMethod.create({ data: { business_id: businessId, name, type, sort_order: order, is_active: true } })).id
 }
 
+interface GrupoSeed { name: string; required: boolean; multiple: boolean; max: number | null; options: [string, number][] }
+const GRUPOS_SMASH: GrupoSeed[] = [
+  { name: 'Proteína', required: true, multiple: false, max: null, options: [['Pavo', 0], ['Cochino', 0]] },
+  { name: 'Papas', required: true, multiple: false, max: null, options: [['Fritas', 0], ['Air fryer', 1]] },
+  { name: 'Extras', required: false, multiple: true, max: 2, options: [['Tocineta', 1.5], ['Queso extra', 1]] },
+]
+
+/** Datos C2 del plato Carbonara (grupos de opciones, etiquetas y alérgenos). Idempotente: rehace los grupos de ese plato. */
+async function seedOpciones(bid: number): Promise<void> {
+  const plato = await prisma.product.findFirst({ where: { business_id: bid, name: 'Carbonara' }, select: { id: true } })
+  if (!plato) return
+  await prisma.productOptionGroup.deleteMany({ where: { product: { business_id: bid } } })
+  for (let i = 0; i < GRUPOS_SMASH.length; i++) {
+    const g = GRUPOS_SMASH[i]
+    await prisma.productOptionGroup.create({
+      data: {
+        product_id: plato.id, name: g.name, required: g.required, multiple: g.multiple, max_select: g.max, sort_order: i,
+        options: { create: g.options.map(([name, extra], j) => ({ name, price_extra_usd: extra, sort_order: j })) },
+      },
+    })
+  }
+  await prisma.product.update({ where: { id: plato.id }, data: { carta_tags: ['picante', 'de_la_casa'], allergens: ['gluten', 'lacteos'], sold_out_date: null } })
+}
+
 async function main(): Promise<void> {
   const menu = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'cafeconbike.json'), 'utf-8')) as MenuJson
 
   const existing = await prisma.business.findFirst({ where: { catalog_slug: CARTA_DEMO_SLUG } })
   const base = {
-    name: 'Cafe con Bike (demo carta)', catalog_title: 'Cafe con Bike', catalog_slug: CARTA_DEMO_SLUG, catalog_active: true,
+    name: 'ZZ B Pruebas', catalog_title: 'Cafe con Bike', catalog_slug: CARTA_DEMO_SLUG, catalog_active: true,
     catalog_template: 'carta', catalog_plan: 'negocio_activo', subscription_active: true, phone: '04145550123', city: 'Porlamar',
     catalog_desc: 'Hamburguesas, ciabattas y cortes a las brasas. Pide desde tu telefono y te escribimos por WhatsApp.',
-    catalog_hours: 'Todos los dias de 7:00 am a 10:00 pm', segment: 'restaurante',
+    catalog_hours: 'Todos los dias de 7:00 am a 10:00 pm', segment: 'restaurante', whatsapp: '584145550123',
   }
   const business = existing
     ? await prisma.business.update({ where: { id: existing.id }, data: base })
@@ -71,7 +95,7 @@ async function main(): Promise<void> {
   const admin = await prisma.user.findFirst({ where: { business_id: bid, role: 'admin' }, select: { id: true } })
   if (!admin) {
     await prisma.user.create({
-      data: { business_id: bid, name: 'Admin Carta demo', email: 'admin@cafeconbike-carta.invalid', role: 'admin', is_active: true, password: hashSync(crypto.randomBytes(24).toString('hex'), 10) },
+      data: { business_id: bid, name: 'Admin Carta demo', email: 'admin@zzb-pruebas.invalid', role: 'admin', is_active: true, password: hashSync(crypto.randomBytes(24).toString('hex'), 10) },
     })
   }
 
@@ -129,6 +153,7 @@ async function main(): Promise<void> {
       }
     }
   }
+  await seedOpciones(bid)
   console.log('Carta demo lista: negocio ' + bid + ' (/catalogo-carta/' + CARTA_DEMO_SLUG + '), ' + menu.productos.length + ' platos, ' + conTamanos + ' con tamanos (' + tamanos + ' tamanos).')
 }
 

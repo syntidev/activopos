@@ -1,0 +1,665 @@
+{
+ "fuente": "CafeConBike_menu_normalizado.xlsx",
+ "categorias": [
+  {
+   "orden": 1,
+   "nombre": "Hamburguesas"
+  },
+  {
+   "orden": 2,
+   "nombre": "Ciabattas"
+  },
+  {
+   "orden": 3,
+   "nombre": "Cortes de carne"
+  },
+  {
+   "orden": 4,
+   "nombre": "Pollo"
+  },
+  {
+   "orden": 5,
+   "nombre": "Pescado y mar"
+  },
+  {
+   "orden": 6,
+   "nombre": "Ensaladas"
+  },
+  {
+   "orden": 7,
+   "nombre": "Keto"
+  },
+  {
+   "orden": 8,
+   "nombre": "Acompañantes"
+  },
+  {
+   "orden": 9,
+   "nombre": "Menú infantil"
+  },
+  {
+   "orden": 10,
+   "nombre": "Banquetes y eventos"
+  }
+ ],
+ "productos": [
+  {
+   "id": 1,
+   "categoria": "Hamburguesas",
+   "nombre": "Cheez Burger Clásica Americana",
+   "descripcion": "Doble carne, doble queso, tocineta, BBQ-mayonesa, rúgula y tomate, pan brioche",
+   "precio_usd": 10,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 2,
+   "categoria": "Hamburguesas",
+   "nombre": "Pollo Crispy",
+   "descripcion": "180 Gr de pechuga de pollo a la broster o asado, doble queso, tocineta (pavo y cochino), rúgula, tomate, BBQ, mayonesa",
+   "precio_usd": 10,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 3,
+   "categoria": "Hamburguesas",
+   "nombre": "Smash Burger",
+   "descripcion": "Pan brioche, doble carne tipo smash, mix de salsas y cebolla cruda/pepinillo, doble queso, tocineta",
+   "precio_usd": 11,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 4,
+   "categoria": "Hamburguesas",
+   "nombre": "Carbonara",
+   "descripcion": "Doble carne con salsa carbonara en hamburguesa artesanal",
+   "precio_usd": 12,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 5,
+   "categoria": "Hamburguesas",
+   "nombre": "Doble Burger Extra Cheese",
+   "descripcion": "Pan brioche, doble carne, triple queso, doble tocineta, BBQ-mayonesa, vegetales al gusto",
+   "precio_usd": 14,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 6,
+   "categoria": "Hamburguesas",
+   "nombre": "Cabra Miel",
+   "descripcion": "Hamburguesa artesanal con mezcla de queso de cabra y miel",
+   "precio_usd": 14,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 7,
+   "categoria": "Hamburguesas",
+   "nombre": "T-Burger",
+   "descripcion": "Doble capa de tequeño con mucho queso, doble carne 200 Gr., extra queso Gouda y tocineta, vegetales al gusto",
+   "precio_usd": 14,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Pan de tequeño",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 8,
+   "categoria": "Hamburguesas",
+   "nombre": "Sea Food Burger",
+   "descripcion": "150 Gr de camarones asados o fritos, salsa especial, pan brioche",
+   "precio_usd": 18,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Camarones",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 9,
+   "categoria": "Hamburguesas",
+   "nombre": "4to Piso",
+   "descripcion": "4 piezas de carne (300 Gr), triple queso, doble tocineta (pavo o cochino), huevo, vegetales al gusto, pan brioche",
+   "precio_usd": 19,
+   "destacado": true,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": "https://cafeconbike.ordena.menu/storage/tenants/37/menu/items/item-VHMC.webp",
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 10,
+   "categoria": "Hamburguesas",
+   "nombre": "Beef Burger",
+   "descripcion": "La única burguer con 2 tipos de carne: 150 Gr de carne + 150 Gr de lomito, doble queso, huevo, tocineta (pavo o cochino), BBQ-mayonesa, vegetales al gusto",
+   "precio_usd": 19,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "2 tipos de carne",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 11,
+   "categoria": "Hamburguesas",
+   "nombre": "Punta Burger",
+   "descripcion": "punta trasera asada con su Grasita, doble queso gouda, salsa mayoajo, vegetales al gusto y tocineta",
+   "precio_usd": 20,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": [
+    {
+     "nombre": "150 g",
+     "precio_usd": 20,
+     "descripcion": "150-200 Gr punta trasera asada con su Grasita, doble queso gouda, salsa mayoajo, vegetales al gusto y tocineta"
+    },
+    {
+     "nombre": "200 g",
+     "precio_usd": 24,
+     "descripcion": "150-200 Gr punta trasera asada con su Grasita, doble queso gouda, salsa mayoajo, vegetales al gusto y tocineta"
+    }
+   ]
+  },
+  {
+   "id": 12,
+   "categoria": "Hamburguesas",
+   "nombre": "La Matatan",
+   "descripcion": "5 piezas de carne, 3 quesos Gouda o cheddar, 2 tocinetas (pavo o cochino), 1 huevo, vegetales al gusto",
+   "precio_usd": 22,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "La más cargada",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 13,
+   "categoria": "Hamburguesas",
+   "nombre": "La Vieja",
+   "descripcion": "200 Gr. de carne madurada (14-21-30 días), armada a tu gusto o al del Chef. Incluye papa y cerveza italiana",
+   "precio_usd": 25,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Incluye papa + cerveza italiana",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 14,
+   "categoria": "Hamburguesas",
+   "nombre": "Baconise Doble",
+   "descripcion": "Doble carne, extra tocino y salsa secreta",
+   "precio_usd": 12,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 15,
+   "categoria": "Hamburguesas",
+   "nombre": "Baconise Triple",
+   "descripcion": "Triple carne, extra tocino y salsa secreta",
+   "precio_usd": 16,
+   "destacado": true,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": "https://cafeconbike.ordena.menu/storage/tenants/37/menu/items/item-YRDU.webp",
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 16,
+   "categoria": "Ciabattas",
+   "nombre": "Ciabatta Clásica",
+   "descripcion": "Pechuga  de pollo o lomito, base de Gouda, rúgula, tomate, mayoajo, aguacate, aceite de oliva, sal/pimienta",
+   "precio_usd": 22,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": [
+    {
+     "nombre": "200 g",
+     "precio_usd": 22,
+     "descripcion": "200 Gr. Pechuga  de pollo o lomito, base de Gouda, rúgula, tomate, mayoajo, aguacate, aceite de oliva, sal/pimienta"
+    },
+    {
+     "nombre": "250 g",
+     "precio_usd": 28,
+     "descripcion": "250 Gr. Pechuga de pollo o lomito, base de Gouda, rúgula, tomate, mayoajo, aguacate, aceite de oliva, sal/pimienta"
+    },
+    {
+     "nombre": "300 g",
+     "precio_usd": 30,
+     "descripcion": "300 Gr. Pechuga de pollo o lomito, base de Gouda, rúgula, tomate, mayoajo, aguacate, aceite de oliva, sal/pimienta"
+    }
+   ]
+  },
+  {
+   "id": 17,
+   "categoria": "Ciabattas",
+   "nombre": "Ciabatta Italiana",
+   "descripcion": "200 Gr. prosciutto o 200 Gr. mortadela, queso buffala/bocconcini, rúgula, tomate, oliva, balsámico",
+   "precio_usd": 30,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 18,
+   "categoria": "Ciabattas",
+   "nombre": "Ciabatta Mixta",
+   "descripcion": "150 Gr. camarones + 100 Gr prosciutto, queso buffala/bocconcini, rúgula, tomate, oliva, balsámico",
+   "precio_usd": 30,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Mar y tierra",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 19,
+   "categoria": "Cortes de carne",
+   "nombre": "Punta Trasera",
+   "descripcion": "Asada acompañada de ensalada",
+   "precio_usd": 28,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": [
+    {
+     "nombre": "250 g",
+     "precio_usd": 28,
+     "descripcion": "250 Gr. Asada acompañada de ensalada"
+    },
+    {
+     "nombre": "300 g",
+     "precio_usd": 32,
+     "descripcion": "300 Gr. Asada acompañada de ensalada"
+    }
+   ]
+  },
+  {
+   "id": 20,
+   "categoria": "Cortes de carne",
+   "nombre": "Lomito de Res",
+   "descripcion": "Lomito de res a la parrilla",
+   "precio_usd": 22,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": [
+    {
+     "nombre": "200 g",
+     "precio_usd": 22,
+     "descripcion": "200 Gr. Lomito de res a la parrilla"
+    },
+    {
+     "nombre": "250 g",
+     "precio_usd": 26,
+     "descripcion": "250 Gr. Lomito de res a la parrilla"
+    },
+    {
+     "nombre": "300 g",
+     "precio_usd": 28,
+     "descripcion": "300 Gr. Lomito de res a la parrilla"
+    }
+   ]
+  },
+  {
+   "id": 21,
+   "categoria": "Pollo",
+   "nombre": "Pechuga de Pollo Asada",
+   "descripcion": "Pechuga de pollo asada",
+   "precio_usd": 14,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": [
+    {
+     "nombre": "200 g",
+     "precio_usd": 14,
+     "descripcion": "200 Gr. Pechuga de pollo asada"
+    },
+    {
+     "nombre": "300 g",
+     "precio_usd": 22,
+     "descripcion": "300 Gr. Pechuga de pollo asada"
+    }
+   ]
+  },
+  {
+   "id": 22,
+   "categoria": "Pescado y mar",
+   "nombre": "Salmón Asado",
+   "descripcion": "Salmón asado",
+   "precio_usd": 32,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 23,
+   "categoria": "Pescado y mar",
+   "nombre": "Ceviche de Cochino",
+   "descripcion": "Ceviche de cochino",
+   "precio_usd": 16,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": "Está en \"Pescado\" pero es cochino",
+   "tamanos": [
+    {
+     "nombre": "200 g",
+     "precio_usd": 16,
+     "descripcion": "200 Gr. Ceviche de cochino"
+    },
+    {
+     "nombre": "300 g",
+     "precio_usd": 18,
+     "descripcion": "300 Gr.Ceviche de cochino"
+    }
+   ]
+  },
+  {
+   "id": 24,
+   "categoria": "Ensaladas",
+   "nombre": "Ensalada",
+   "descripcion": "Lechuga, rúgula, tomate, aguacate y 200 Gr de lomito o pechuga de pollo asado",
+   "precio_usd": 16,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 25,
+   "categoria": "Keto",
+   "nombre": "Keto Lechuga",
+   "descripcion": "Cama de lechuga romana o americana, extra aguacate, tomate y rúgula, doble queso y tocineta",
+   "precio_usd": 16,
+   "destacado": false,
+   "etiquetas": [
+    "keto"
+   ],
+   "nota": "Opción Keto",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 26,
+   "categoria": "Keto",
+   "nombre": "Ketomate",
+   "descripcion": "Doble capa de tomate margariteño, rúgula, lechuga, aguacate, doble carne y tocineta de pavo o cochino",
+   "precio_usd": 16,
+   "destacado": false,
+   "etiquetas": [
+    "keto"
+   ],
+   "nota": "Opción Keto",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 27,
+   "categoria": "Keto",
+   "nombre": "Keto Almendra",
+   "descripcion": "Pan a base de harina de almendra, rúgula, tomate, doble carne y tocineta de pavo o cochino",
+   "precio_usd": 16,
+   "destacado": false,
+   "etiquetas": [
+    "keto"
+   ],
+   "nota": "Opción Keto",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 28,
+   "categoria": "Keto",
+   "nombre": "Keto Cabra",
+   "descripcion": "Doble capa de queso de cabra artesanal, doble carne, doble queso, tocineta y vegetales al gusto",
+   "precio_usd": 16,
+   "destacado": false,
+   "etiquetas": [
+    "keto"
+   ],
+   "nota": "Opción Keto",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 29,
+   "categoria": "Acompañantes",
+   "nombre": "Papas Fritas o Air Fryer",
+   "descripcion": "Papas fritas o preparadas al Air Fryer",
+   "precio_usd": 3.5,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 30,
+   "categoria": "Acompañantes",
+   "nombre": "Tequeños de Queso",
+   "descripcion": "Ración de 6 tequeños de queso",
+   "precio_usd": 7,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 31,
+   "categoria": "Acompañantes",
+   "nombre": "Papas Fritas con Extra Queso y Tocineta",
+   "descripcion": "Papas fritas con queso y tocineta extra",
+   "precio_usd": 8,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": null,
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 32,
+   "categoria": "Acompañantes",
+   "nombre": "Papas Trufadas",
+   "descripcion": "Papas con aroma de trufa, mermelada de tocineta (dulce-salado), salsa especial cremosa y hierbas frescas",
+   "precio_usd": 9,
+   "destacado": false,
+   "etiquetas": [
+    "nuevo"
+   ],
+   "nota": "Especialidad nueva",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 33,
+   "categoria": "Acompañantes",
+   "nombre": "Porciones de Papas (Banquete)",
+   "descripcion": "10 porciones de papas para banquete",
+   "precio_usd": 25,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Para banquetes",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 34,
+   "categoria": "Menú infantil",
+   "nombre": "Cajita Kids - Hamburguesa Jr",
+   "descripcion": "Hamburguesa Jr (carne, queso, tocineta, salsas) + papas + juguito + juguete",
+   "precio_usd": 12,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Incluye juguete",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 35,
+   "categoria": "Menú infantil",
+   "nombre": "Cajita Kids - Nuggets",
+   "descripcion": "100 Gr nuggets de pechuga de pollo + papas + juguito + juguete",
+   "precio_usd": 12,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Incluye juguete",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 36,
+   "categoria": "Menú infantil",
+   "nombre": "Cajita Kids - Tequeños",
+   "descripcion": "Tequeños + papas + juguito + juguete",
+   "precio_usd": 12,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Incluye juguete",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 37,
+   "categoria": "Banquetes y eventos",
+   "nombre": "Banquete Burger - 10 Clásicas",
+   "descripcion": "10 Burgers Clásicas para eventos y Grupos",
+   "precio_usd": 70,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Pedido mínimo",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  },
+  {
+   "id": 38,
+   "categoria": "Banquetes y eventos",
+   "nombre": "Banquete Burger - 10 Pollo Crispy",
+   "descripcion": "10 Pollo Crispy para eventos y Grupos",
+   "precio_usd": 80,
+   "destacado": false,
+   "etiquetas": [],
+   "nota": "Pedido mínimo",
+   "foto_url": null,
+   "activo": true,
+   "revisar": null,
+   "tamanos": []
+  }
+ ]
+}

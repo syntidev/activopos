@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -89,7 +91,7 @@ export function TabEnvios({ businessId: _b }: Props) {
 
   async function remove(r: MethodRow) {
     if (r.isNew) { setRows(prev => prev.filter(x => x.id !== r.id)); return }
-    if (!confirm(`¿Eliminar el método "${r.label}"?`)) return
+    if (!(await confirmAction({ title: 'Eliminar método de envío', message: `¿Eliminar el método "${r.label}"?`, confirmLabel: 'Eliminar método' }))) return
     setBusyId(r.id)
     try {
       const res = await fetch(`/api/shipping-methods/${r.id}`, { method: 'DELETE' })

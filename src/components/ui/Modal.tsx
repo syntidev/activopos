@@ -3,7 +3,7 @@
 import { X } from 'lucide-react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import styles from './Modal.module.css'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -15,6 +15,10 @@ export interface ModalProps {
   size?: ModalSize
   children: ReactNode
   footer?: ReactNode
+  /** 'alertdialog' para confirmaciones de acciones destructivas (ConfirmDialog). */
+  role?: 'dialog' | 'alertdialog'
+  /** Elemento que recibe el foco al abrir (por defecto, el primero enfocable). */
+  initialFocusRef?: RefObject<HTMLElement>
 }
 
 const OVERLAY_VARIANTS = {
@@ -32,7 +36,7 @@ const MODAL_VARIANTS_REDUCED = {
   visible: { opacity: 1 },
 }
 
-export function Modal({ open, onClose, title, size = 'md', children, footer }: ModalProps) {
+export function Modal({ open, onClose, title, size = 'md', children, footer, role, initialFocusRef }: ModalProps) {
   const prefersReduced = useReducedMotion()
 
   return (
@@ -55,7 +59,15 @@ export function Modal({ open, onClose, title, size = 'md', children, footer }: M
                 exit="hidden"
                 transition={{ duration: prefersReduced ? 0 : 0.15 }}
               >
-                <Dialog.Content asChild>
+                <Dialog.Content
+                  asChild
+                  {...(role ? { role } : {})}
+                  onOpenAutoFocus={(e) => {
+                    if (!initialFocusRef?.current) return
+                    e.preventDefault()
+                    initialFocusRef.current.focus()
+                  }}
+                >
                   <motion.div
                     className={`${styles.modal} ${styles[`size-${size}`]}`}
                     variants={prefersReduced ? MODAL_VARIANTS_REDUCED : MODAL_VARIANTS}

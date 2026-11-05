@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Receipt, Tag, Pencil, Trash2, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -93,7 +95,7 @@ export function GastosSection({ month, rate }: { month: string; rate: number }) 
   }, [load])
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este gasto?')) return
+    if (!(await confirmAction({ title: 'Eliminar gasto', message: '¿Eliminar este gasto?', confirmLabel: 'Eliminar gasto' }))) return
     const res = await fetch(`/api/gastos/${id}`, { method: 'DELETE' })
     if (res.ok) void load()
   }

@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useScrollLock } from '@/hooks/useScrollLock'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -593,6 +595,7 @@ export function ProductModal({
 
   const handleDeleteVar = async (variantId: number) => {
     if (!editProduct?.id) return
+    if (!(await confirmAction({ title: 'Eliminar variante', message: '¿Eliminar esta variante del producto? Esta acción no se puede deshacer.', confirmLabel: 'Eliminar variante' }))) return
     try {
       await fetch(`/api/products/${editProduct.id}/variants/${variantId}`, { method: 'DELETE' })
       await fetchDbVariants(editProduct.id)

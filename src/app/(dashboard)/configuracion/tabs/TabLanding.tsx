@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useEffect, useId, useRef, useState } from 'react'
 import {
   Plus, Trash2, ChevronUp, ChevronDown, Eye, EyeOff, LayoutTemplate,
@@ -152,7 +154,7 @@ export function TabLanding({ businessId: _b }: Props) {
   }
 
   async function deleteSection(id: number, isNew?: boolean) {
-    if (!confirm('¿Eliminar esta sección del catálogo?')) return
+    if (!(await confirmAction({ title: 'Eliminar sección', message: '¿Eliminar esta sección del catálogo?', confirmLabel: 'Eliminar sección' }))) return
     if (isNew) { setSections(prev => prev.filter(s => s.id !== id)); return }
     setBusyId(id)
     try {

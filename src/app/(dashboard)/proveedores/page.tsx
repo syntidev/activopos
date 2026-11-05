@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, Search, Truck } from 'lucide-react'
@@ -110,7 +112,7 @@ export default function ProveedoresPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este proveedor? Esta acción no se puede deshacer.')) return
+    if (!(await confirmAction({ title: 'Eliminar proveedor', message: '¿Eliminar este proveedor? Esta acción no se puede deshacer.', confirmLabel: 'Eliminar proveedor' }))) return
 
     try {
       const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' })

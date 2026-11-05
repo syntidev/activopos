@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, Layers, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -141,7 +143,7 @@ export function TabColecciones({ businessId: _b }: Props) {
   }
 
   async function remove(c: CollectionRow) {
-    if (!confirm(`¿Eliminar la colección "${c.name}"? Los productos no se borran, solo dejan de estar agrupados acá.`)) return
+    if (!(await confirmAction({ title: 'Eliminar colección', message: `¿Eliminar la colección "${c.name}"? Los productos no se borran, solo dejan de estar agrupados acá.`, confirmLabel: 'Eliminar colección' }))) return
     setBusy(true)
     try {
       const res = await fetch(`/api/collections/${c.slug}`, { method: 'DELETE' })

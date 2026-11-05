@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useMemo } from 'react'
 import { Users, Pencil, History, Trash2, Search, UserPlus, ChevronUp, ChevronDown, Wallet, BadgeDollarSign } from 'lucide-react'
 import { normalizePhone } from '@/lib/utils'
@@ -109,7 +111,7 @@ export function ClientesView({ initialClients, isAdmin }: ClientesViewProps) {
       toast('No se puede eliminar: el cliente tiene saldo pendiente.', 'error')
       return
     }
-    if (!confirm(`¿Eliminar a ${client.name}? Esta acción no se puede deshacer.`)) return
+    if (!(await confirmAction({ title: 'Eliminar cliente', message: `¿Eliminar a ${client.name}? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar cliente' }))) return
 
     setDeleting(client.id)
     try {

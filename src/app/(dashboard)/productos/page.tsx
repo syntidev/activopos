@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -503,7 +505,7 @@ export default function ProductosPage() {
   }, [editCategoryData, fetchCategories])
 
   const handleDeleteCategory = useCallback(async (cat: Category) => {
-    if (!window.confirm(`¿Eliminar la categoría "${cat.name}"?`)) return
+    if (!(await confirmAction({ title: 'Eliminar categoría', message: `¿Eliminar la categoría "${cat.name}"?`, confirmLabel: 'Eliminar categoría' }))) return
     const res = await fetch(`/api/categories/${cat.id}`, { method: 'DELETE' })
     const j = await res.json().catch(() => ({})) as { ok?: boolean; error?: string }
     if (res.ok && j.ok) {

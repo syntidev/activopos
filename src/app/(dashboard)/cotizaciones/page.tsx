@@ -1,5 +1,7 @@
 'use client'
 
+
+import { confirmAction } from '@/context/ConfirmContext'
 import { useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
@@ -181,7 +183,7 @@ function CotizacionesContent() {
   }
 
   async function handleDelete(q: Quotation) {
-    if (!confirm(`¿Eliminar la cotización ${q.number}? Esta acción no se puede deshacer.`)) return
+    if (!(await confirmAction({ title: 'Eliminar cotización', message: `¿Eliminar la cotización ${q.number}? Esta acción no se puede deshacer.`, confirmLabel: 'Eliminar cotización' }))) return
     setBusy(q.id)
     try {
       const r = await fetch(`/api/quotations/${q.id}`, { method: 'DELETE' })

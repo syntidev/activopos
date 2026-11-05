@@ -15,7 +15,11 @@ interface Ticket { kind: string; id: number; status: string; price_mode: string;
 interface SaleResp { id: number; status: string; price_mode: string; total_usd: number | string; items: Array<{ product_id: number; price_per_unit_usd: number | string; price_source: string | null }> }
 
 const CASH_ID = Number(sql(`SELECT id FROM payment_methods WHERE business_id=${BUSINESS_ID} AND is_active=1 AND is_financing=0 ORDER BY id LIMIT 1`))
-const PAGO = [{ payment_method_id: CASH_ID, amount_bs: 9_000_000, amount_usd: 10_000 }]
+/** Pago grande a la tasa ACTIVA del negocio (el servidor exige que amount_usd x tasa cuadre con amount_bs). */
+async function pagoGrande(api: APIRequestContext): Promise<{ payment_method_id: number; amount_bs: number; amount_usd: number }[]> {
+  const { rate } = (await (await api.get('/api/rates/bcv')).json()) as { rate: number }
+  return [{ payment_method_id: CASH_ID, amount_bs: Math.round(10_000 * Math.round(rate * 10_000) / 10_000 * 100) / 100, amount_usd: 10_000 }]
+}
 
 const ids = { a: 0, b: 0, kilo: 0, variante: 0, varS: 0, varM: 0, cliente: 0 }
 
@@ -170,7 +174,7 @@ test('venta pendiente: cambia de modo, se cobra y entonces el cambio se bloquea 
   expect(Number(sale.total_usd)).toBe(100)
 
   expect(((await (await cambiarModo(api, 'sales', sale.id, 'divisa')).json()).ticket as Ticket).total_usd).toBe(80)
-  const pay = await api.patch(`/api/sales/${sale.id}/pay`, { data: { payments: PAGO } })
+  const pay = await api.patch(`/api/sales/${sale.id}/pay`, { data: { payments: await pagoGrande(api) } })
   expect(pay.status(), JSON.stringify(await pay.json().catch(() => ({})))).toBe(200)
   expect(sql(`SELECT CONCAT(status,'|',price_mode,'|',total_usd) FROM sales WHERE id=${sale.id}`)).toBe('paid|divisa|80.00')
 
@@ -184,7 +188,7 @@ test('checkout: el servidor recalcula desde la DB según price_mode y guarda el 
   const api = await apiAs()
   const crear = async (extra: Record<string, unknown>): Promise<SaleResp> => {
     const r = await api.post('/api/sales', {
-      data: { status: 'paid', origin: 'pos', payments: PAGO, items: [
+      data: { status: 'paid', origin: 'pos', payments: await pagoGrande(api), items: [
         { product_id: ids.a, quantity: 1, sale_mode: 'unit' }, { product_id: ids.b, quantity: 1, sale_mode: 'unit' },
       ], ...extra },
     })

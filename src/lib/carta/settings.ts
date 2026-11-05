@@ -1,7 +1,7 @@
 import type { CartaOpenState } from '@/types/carta'
 
 /** Presets de la Carta: son tokens (--carta-*) en styles/tokens.css, elegidos por atributo data-carta-preset. */
-export const CARTA_PRESETS = ['brasa', 'noche'] as const
+export const CARTA_PRESETS = ['brasa', 'noche', 'cafe', 'mar', 'verde'] as const
 export type CartaPreset = (typeof CARTA_PRESETS)[number]
 
 /** Paleta cerrada de acentos (no hay color libre): cada una pasa contraste AA en cada preset (scripts/check-carta-contrast.mjs). */
@@ -35,7 +35,11 @@ export function readCartaSettings(settings: unknown): CartaSettings {
 
 /* ── Horario: settings.carta_hours = { mon: [["11:00","22:00"]], ... } en hora de Caracas ── */
 
-const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
+/** Claves de settings.carta_hours (contrato de la suite E2E): semana de lunes a domingo. */
+export const DAY_KEYS = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'] as const
+/** Orden de Date.getUTCDay(): 0 = domingo. */
+const DAYS = ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'] as const
+export const DAY_LABEL: Record<(typeof DAYS)[number], string> = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb', dom: 'Dom' }
 type Span = [string, string]
 export type CartaHours = Partial<Record<(typeof DAYS)[number], Span[]>>
 
@@ -74,7 +78,7 @@ export function openState(hours: CartaHours | null, paused: boolean, now: Date =
   const { day, minutes } = caracasNow(now)
   const today = hours[DAYS[day]] ?? []
   const current = today.find(([a, b]) => minutes >= toMin(a) && minutes < toMin(b))
-  if (current) return { open: true, label: 'Abierto · hasta las ' + hourLabel(current[1]) }
+  if (current) return { open: true, label: 'Abierto · cierra a las ' + hourLabel(current[1]) }
   const next = today.find(([a]) => toMin(a) > minutes)
   if (next) return { open: false, label: 'Cerrado · abre a las ' + hourLabel(next[0]) }
   for (let i = 1; i <= 7; i++) {
@@ -82,6 +86,15 @@ export function openState(hours: CartaHours | null, paused: boolean, now: Date =
     if (spans.length > 0) return { open: false, label: 'Cerrado · abre ' + (i === 1 ? 'mañana' : 'pronto') + ' a las ' + hourLabel(spans[0][0]) }
   }
   return { open: false, label: 'Cerrado' }
+}
+
+/** Horario completo por día, para mostrarlo en la portada ("Lun 11:00 am – 10:00 pm", "Dom Cerrado"). */
+export function formatHours(hours: CartaHours | null): { day: string; text: string }[] {
+  if (!hours) return []
+  return DAY_KEYS.map(d => ({
+    day:  DAY_LABEL[d],
+    text: (hours[d] ?? []).map(([a, b]) => hourLabel(a) + ' – ' + hourLabel(b)).join(', ') || 'Cerrado',
+  }))
 }
 
 export function isCartaPaused(settings: unknown): boolean {

@@ -8,6 +8,8 @@ import { z } from 'zod'
 import { cleanSubcategory } from '@/lib/subcategory'
 import { Prisma } from '@prisma/client'
 import { logError } from '@/lib/safe-log'
+import { CARTA_ALLERGENS, CARTA_TAGS } from '@/lib/carta/vocab'
+import { todayDateValue } from '@/lib/carta/options'
 
 const patchSchema = z.object({
   name:               z.string().min(1).max(120).optional(),
@@ -41,6 +43,10 @@ const patchSchema = z.object({
   subcategory:        z.string().max(60).nullable().optional()
     .transform(v => (v == null ? v : cleanSubcategory(v) || null)),
   is_featured:        z.boolean().optional(),
+  // Carta: etiquetas y alérgenos (vocabulario cerrado) y "agotado hoy" (true = hoy, false = quitar).
+  carta_tags:         z.array(z.enum(CARTA_TAGS)).max(CARTA_TAGS.length).nullable().optional(),
+  allergens:          z.array(z.enum(CARTA_ALLERGENS)).max(CARTA_ALLERGENS.length).nullable().optional(),
+  sold_out_today:     z.boolean().optional(),
   is_fixed_price:     z.boolean().optional(),
   cost_unknown:       z.boolean().optional(),
   active:             z.boolean().optional(),
@@ -125,7 +131,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (!id) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const body = await req.json()
-    const { margin, is_active, stock_quantity, ...data } = patchSchema.parse(body)
+    const { margin, is_active, stock_quantity, sold_out_today, carta_tags, allergens, ...data } = patchSchema.parse(body)
     if (is_active !== undefined) data.active = is_active
 
     const existing = await db.product.findFirst({
@@ -147,6 +153,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     // Recalculate price if margin provided and no explicit price override
     const { images, ...rest } = data
     const patchData: Record<string, unknown> = { ...rest }
+    if (carta_tags !== undefined) patchData.carta_tags = carta_tags === null ? Prisma.DbNull : carta_tags
+    if (allergens !== undefined) patchData.allergens = allergens === null ? Prisma.DbNull : allergens
+    if (sold_out_today !== undefined) patchData.sold_out_date = sold_out_today ? todayDateValue() : null
     if (margin !== undefined && rest.price_per_unit_usd === undefined) {
       const cost = rest.cost_per_unit_usd ?? Number(existing.cost_per_unit_usd ?? 0)
       patchData.price_per_unit_usd = cost / (1 - margin / 100)

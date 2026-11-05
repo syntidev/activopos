@@ -21,7 +21,7 @@
 
 import { test, expect, request as newRequest } from '@playwright/test'
 
-const BASE = 'http://localhost:3000'
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
 
 /** Chequea si un endpoint Prisma está disponible (no afectado por .next cache stale) */
 async function prismaEndpointAvailable(

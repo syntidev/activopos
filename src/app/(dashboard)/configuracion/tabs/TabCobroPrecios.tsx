@@ -11,6 +11,8 @@ interface Props { businessId: number }
 
 interface MethodRow { id: number; name: string; type: string; is_financing: boolean }
 interface Preview { name: string; full_usd: number; divisa_usd: number | null }
+const TEMPLATE_LABEL = { generic: 'Clásica', premium: 'Premium', carta: 'Carta' } as const
+
 interface Loaded { config: CobroPrecios; methods: MethodRow[]; preview: Preview | null; rate: number; carta_available: boolean }
 
 const COLLECT_OPTIONS: Array<{ key: CollectIn; label: string }> = [
@@ -200,13 +202,10 @@ export function TabCobroPrecios({ businessId: _b }: Props) {
         <h3 className={styles.formCardTitle}>5. Plantilla del catálogo</h3>
         <p className={styles.formCardHint}>El diseño que ven tus clientes. «Premium» muestra el selector de moneda y la ficha completa.</p>
         <div className={own.options} role="radiogroup" aria-label="Plantilla del catálogo">
-          {(['generic', 'premium'] as const).map(t => (
+          {(['generic', 'premium', 'carta'] as const).filter(t => t !== 'carta' || loaded.carta_available).map(t => (
             <button key={t} type="button" role="radio" aria-checked={form.template === t} className={own.option}
-              data-testid={`cp-template-${t}`} onClick={() => set({ template: t })}>{t === 'generic' ? 'Clásica' : 'Premium'}</button>
+              data-testid={`cp-template-${t}`} onClick={() => set({ template: t })}>{TEMPLATE_LABEL[t]}</button>
           ))}
-          <button type="button" role="radio" aria-checked={false} className={own.option} disabled={!loaded.carta_available} data-testid="cp-template-carta">
-            Carta<span className={own.soon}>Próximamente</span>
-          </button>
         </div>
       </section>
 

@@ -137,3 +137,19 @@ test('PATCH /api/config/carta es solo para el admin del negocio', async ({ reque
   const res = await request.patch('/api/config/carta', { data: { carta_paused: true }, maxRedirects: 0 })
   expect([301, 302, 303, 307, 308, 401, 403]).toContain(res.status())
 })
+
+test('Divisa: encendida la lista muestra el precio Divisa; apagada en "Cobro y precios", un solo precio (lista)', async ({ page }) => {
+  q("UPDATE products SET wholesale_price_usd=10 WHERE business_id=@BID AND name='Smash Burger'")
+  const precio = async (): Promise<string> => {
+    await page.goto('/catalogo-carta/' + OWN_SLUG)
+    return page.getByTestId('carta-plato').filter({ hasText: 'Smash Burger' }).getByTestId('carta-plato-precio-usd').innerText()
+  }
+  try {
+    expect(await precio()).toBe('$10.00') // Divisa vigente (0 < divisa < lista)
+    q("UPDATE businesses SET settings=JSON_SET(settings, '$.cobro_precios', JSON_OBJECT('divisa_enabled', false)) WHERE id=@BID")
+    expect(await precio()).toBe('$11.00') // Divisa apagada: un solo precio
+  } finally {
+    q("UPDATE businesses SET settings=JSON_REMOVE(settings, '$.cobro_precios') WHERE id=@BID")
+    q("UPDATE products SET wholesale_price_usd=NULL WHERE business_id=@BID AND name='Smash Burger'")
+  }
+})

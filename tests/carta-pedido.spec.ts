@@ -102,6 +102,8 @@ test('E7: la barra sube al agregar desde el hero', async ({ page }) => {
 
 test('el carrito persiste al recargar la página', async ({ page }) => {
   await armarPedido(page)
+  await expect(page.getByTestId('carta-barra-cantidad')).toHaveText('3')
+  await page.waitForFunction(() => Object.keys(localStorage).some(k => (localStorage.getItem(k) ?? '').includes('Tequeños'))) // el guardado corre en un efecto tras el render
   await page.reload()
   await expect(page.getByTestId('carta-barra-cantidad')).toHaveText('3')
 })
@@ -177,7 +179,7 @@ test('A9 + C1: enviar crea el Order origin=catalog y abre WhatsApp con el mensaj
   const negocio = `(SELECT id FROM businesses WHERE catalog_slug='${SLUG}')`
   const [numero, origen, totalUsd, totalBs, notas] = sql(`SELECT order_number, origin, total_usd, total_bs, notes FROM orders WHERE business_id=${negocio} ORDER BY id DESC LIMIT 1`).split('\t')
   expect(origen).toBe('catalog')
-  expect(numero).toMatch(/^CT-\d{4,}$/)
+  expect(numero).toMatch(/^[A-Z]+-\d{5}$/) // formato del sistema (ACT-00001)
   expect(Number(totalUsd)).toBe(59)
   expect(Math.abs(Number(totalBs) - redondeo(59 * tasa()))).toBeLessThanOrEqual(0.01)
   expect(notas).toContain(NOTA)

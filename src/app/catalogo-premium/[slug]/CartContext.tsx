@@ -11,6 +11,13 @@ export interface CartItem {
   image_url:      string | null
   variant_id?:    number
   variant_label?: string
+  /** Nota para la cocina de la Carta (opcional); dos notas distintas del mismo plato son líneas distintas. */
+  note?:          string
+}
+
+/** Identidad de línea: producto + variante + nota (sin nota = undefined o vacío). */
+function sameLine(i: CartItem, productId: number, variantId: number | undefined, note: string | undefined): boolean {
+  return i.product_id === productId && i.variant_id === variantId && (i.note ?? '') === (note ?? '')
 }
 
 interface CartContextValue {
@@ -23,7 +30,8 @@ interface CartContextValue {
   setCheckoutOpen: (open: boolean) => void
   cartBumping:     boolean
   addToCart:       (item: CartItem) => void
-  updateCartQty:   (productId: number, variantId: number | undefined, delta: number) => void
+  updateCartQty:   (productId: number, variantId: number | undefined, delta: number, note?: string) => void
+  removeFromCart:  (productId: number, variantId: number | undefined, note?: string) => void
   clearCart:       () => void
 }
 
@@ -73,13 +81,9 @@ export function CartProvider({ slug, children }: Props) {
   const addToCart = (item: CartItem) => {
     track({ type: 'add_to_cart', product_id: item.product_id })
     setCart(prev => {
-      const existing = prev.find(i => i.product_id === item.product_id && i.variant_id === item.variant_id)
+      const existing = prev.find(i => sameLine(i, item.product_id, item.variant_id, item.note))
       if (existing) {
-        return prev.map(i =>
-          (i.product_id === item.product_id && i.variant_id === item.variant_id)
-            ? { ...i, qty: i.qty + item.qty }
-            : i,
-        )
+        return prev.map(i => sameLine(i, item.product_id, item.variant_id, item.note) ? { ...i, qty: i.qty + item.qty } : i)
       }
       return [...prev, item]
     })
@@ -87,14 +91,18 @@ export function CartProvider({ slug, children }: Props) {
     setTimeout(() => setCartBumping(false), 300)
   }
 
-  const updateCartQty = (productId: number, variantId: number | undefined, delta: number) => {
+  const updateCartQty = (productId: number, variantId: number | undefined, delta: number, note?: string) => {
     setCart(prev => {
-      const item = prev.find(i => i.product_id === productId && i.variant_id === variantId)
+      const item = prev.find(i => sameLine(i, productId, variantId, note))
       if (!item) return prev
       const newQty = item.qty + delta
-      if (newQty <= 0) return prev.filter(i => !(i.product_id === productId && i.variant_id === variantId))
-      return prev.map(i => (i.product_id === productId && i.variant_id === variantId) ? { ...i, qty: newQty } : i)
+      if (newQty <= 0) return prev.filter(i => !sameLine(i, productId, variantId, note))
+      return prev.map(i => sameLine(i, productId, variantId, note) ? { ...i, qty: newQty } : i)
     })
+  }
+
+  const removeFromCart = (productId: number, variantId: number | undefined, note?: string) => {
+    setCart(prev => prev.filter(i => !sameLine(i, productId, variantId, note)))
   }
 
   const clearCart = () => setCart([])
@@ -108,7 +116,7 @@ export function CartProvider({ slug, children }: Props) {
       cartOpen, setCartOpen,
       checkoutOpen, setCheckoutOpen,
       cartBumping,
-      addToCart, updateCartQty, clearCart,
+      addToCart, updateCartQty, removeFromCart, clearCart,
     }}>
       {children}
     </CartContext.Provider>

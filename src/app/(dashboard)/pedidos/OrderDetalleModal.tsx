@@ -90,6 +90,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   const [modeBusy, setModeBusy]   = useState(false)
   const [modeError, setModeError] = useState('')
   const [financing, setFinancing]     = useState<TicketFinancing | null>(null)
+  const [divisaActive, setDivisaActive] = useState(true)
   const [finBusy, setFinBusy]         = useState(false)
   const [finError, setFinError]       = useState('')
   const [finBlocked, setFinBlocked]   = useState<BlockedProduct[]>([])
@@ -141,8 +142,9 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
 
     fetch('/api/config/business')
       .then((r) => r.json())
-      .then((j: { business?: { name?: string } }) => {
+      .then((j: { business?: { name?: string; cobro?: { divisaActive?: boolean } } }) => {
         if (j.business?.name) setBusinessName(j.business.name)
+        setDivisaActive(j.business?.cobro?.divisaActive !== false)
       })
       .catch(() => {})
   }, [open, orderId])
@@ -469,14 +471,14 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
               )}
             </div>
 
-            <PriceModeSwitch
+            {divisaActive && <PriceModeSwitch
               mode={priceMode}
               onChange={modeEditable && !isFinancingLive(financing) ? handlePriceMode : undefined}
               readOnly={!modeEditable || isFinancingLive(financing)}
               busy={modeBusy}
               error={modeError}
               fallbackLines={items.filter((i) => i.price_source === 'fallback_bcv').length}
-            />
+            />}
             {isFinancingLive(financing) && (
               <p className={styles.cartEmpty} role="note" data-testid="financing-bcv-note">{FINANCING_BCV_NOTE}</p>
             )}

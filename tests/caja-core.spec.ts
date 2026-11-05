@@ -15,7 +15,7 @@
 
 import { test, expect, request as newRequestCtx } from '@playwright/test'
 
-const BASE = 'http://localhost:3000'
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
 
 test.beforeAll(async ({ request }) => {
   // Tasa BCV activa

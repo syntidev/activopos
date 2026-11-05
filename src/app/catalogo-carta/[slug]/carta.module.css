@@ -7,11 +7,14 @@
   font-size: 15px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  /* clip, no hidden: hidden crea un contenedor de scroll y rompe el position: sticky de la barra de pestañas. */
+  overflow-x: clip;
 }
 :where(.root) a { color: inherit; text-decoration: none; }
 :where(.root) button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
 .root h1, .root h2, .root h3 { color: inherit; margin: 0; }
+/* El CSS global deja html y body con overflow-x hidden: eso los vuelve contenedores de scroll y rompe el sticky de la barra de pestañas. Solo en la Carta. */
+:global(html):has(.root), :global(body):has(.root) { overflow-x: clip; }
 .wrap { max-width: 1280px; margin: 0 auto; }
 .fotoWrap { position: relative; overflow: hidden; background: var(--carta-foto-fondo); }
 
@@ -54,7 +57,7 @@
 .chipCashea { background: var(--carta-oro-soft); color: var(--carta-oro); font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 5px; }
 
 /* ── Barra pegajosa: buscador + pestañas ──────────────── */
-.sticky { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--carta-papel) 95%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--carta-linea); }
+.sticky { display: flow-root; position: sticky; top: 0; z-index: 20; background: var(--carta-papel); border-bottom: 1px solid var(--carta-linea); }
 .search { display: flex; align-items: center; gap: 10px; margin: 10px 16px 0; background: var(--carta-card); border-radius: var(--carta-radio); padding: 0 14px; box-shadow: var(--carta-sombra); min-height: 46px; color: var(--carta-muted); }
 .searchInput { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font: inherit; font-size: 15px; color: var(--carta-tinta); min-height: 44px; }
 .searchInput::placeholder { color: var(--carta-muted); }

@@ -111,6 +111,10 @@ test('A3 pestañas: al tocar una se llega a su sección y queda activa; con scro
   await expect.poll(async () => (await seccion.boundingBox())?.y ?? 9999, { timeout: 5000 }).toBeLessThan(260)
   await page.evaluate(() => document.getElementById('cat-6')?.scrollIntoView({ block: 'start' }))
   await expect(tabs.nth(6)).toHaveAttribute('aria-current', 'true')
+  // la barra (buscador + pestañas) queda fija arriba mientras se hace scroll
+  const barra = await page.getByRole('navigation', { name: 'Categorías' }).boundingBox()
+  expect(barra?.y ?? 9999).toBeGreaterThanOrEqual(0)
+  expect(barra?.y ?? 9999).toBeLessThan(130)
 })
 
 test('A4 / E6 buscador: nombre, ingrediente (rúgula) sin acentos ni mayúsculas, y sin resultados', async ({ page }) => {
@@ -143,6 +147,19 @@ test('A5 / E10 precio: $ grande + Bs pequeño, Divisa si aplica, "Desde" con tam
   await expect(page.getByTestId('pagos')).toContainText('Cómo pagas')
   await expect(page.getByTestId('pagos')).toContainText('Divisa')
   await expect(page.getByTestId('pagos')).toContainText('tasa BCV')
+})
+
+test('plato "Consultar precio" (on_request): sin precio, sin botón de agregar y no se puede pedir desde la ficha', async ({ page }) => {
+  q("UPDATE products SET catalog_visibility='on_request' WHERE business_id=@BID AND name='Smash Burger'")
+  await page.goto(URL_CARTA)
+  const smash = plato(page, 'Smash Burger')
+  await expect(smash).toContainText('Consultar precio')
+  await expect(smash.getByTestId('precio-principal')).toHaveCount(0)
+  await expect(smash.getByTestId('plato-agregar')).toHaveCount(0)
+  await page.goto(URL_CARTA + '/p/' + idPlato('Smash Burger'))
+  await expect(page.getByTestId('ficha-agregar')).toBeDisabled()
+  await expect(page.getByTestId('ficha-agregar')).toContainText('Consultar precio')
+  q("UPDATE products SET catalog_visibility='visible' WHERE business_id=@BID AND name='Smash Burger'")
 })
 
 test('E10 si el negocio cobra solo en Bs: "Precios en $ · pagas en Bs a tasa BCV", sin Divisa ni Cashea', async ({ page }) => {
@@ -347,6 +364,11 @@ for (const ancho of [375, 1280]) {
       await page.waitForLoadState('networkidle')
       expect(await sinScrollHorizontal(page), url + ' @' + ancho).toBe(true)
     }
+    await page.goto(URL_CARTA)
+    await page.evaluate(() => document.getElementById('cat-4')?.scrollIntoView({ block: 'start' }))
+    await page.waitForTimeout(300)
+    const barra = await page.getByRole('navigation', { name: 'Categorías' }).boundingBox()
+    expect(barra?.y ?? 9999, 'barra fija @' + ancho).toBeLessThan(130)
     await page.getByTestId('fab-pedido').click()
     await expect(page.getByTestId('carrito')).toBeVisible()
     expect(await sinScrollHorizontal(page), 'carrito @' + ancho).toBe(true)

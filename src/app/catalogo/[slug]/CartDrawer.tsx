@@ -204,16 +204,6 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
         .then(r => r.ok ? r.json() : null)
         .then((j: SavedAddressResponse | null) => {
           if (j?.has_saved_address === true) setHasSaved(true)
-          // Dispositivo nuevo: el servidor solo manda `prefill` si cédula Y teléfono son del mismo cliente.
-          if (j?.prefill) {
-            const { name, address } = j.prefill
-            setCName(prev => prev || name)
-            if (address) {
-              const m = /^Oficina: (.+?) \| (.*)$/.exec(address)
-              setBranchOffice(prev => prev || (m ? m[1] : ''))
-              setDeliveryAddress(prev => prev || (m ? m[2] : address))
-            }
-          }
         })
         .catch(() => {})
     }, 400)

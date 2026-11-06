@@ -22,7 +22,14 @@ export interface ShippingMethodDTO extends PublicShippingMethod {
   updated_at: string
 }
 
-/** Respuesta ÚNICA de /saved-address: misma forma exista o no la cédula. */
+/** Datos para precargar el checkout en un dispositivo nuevo: SOLO cuando cédula Y teléfono son del mismo cliente. */
+export interface CheckoutPrefill {
+  name:    string
+  address: string | null
+}
+
+/** Respuesta ÚNICA de /saved-address: misma forma exista o no la cédula (`prefill` solo con cédula Y teléfono coincidentes). */
 export interface SavedAddressResponse {
   has_saved_address: boolean
+  prefill?: CheckoutPrefill
 }

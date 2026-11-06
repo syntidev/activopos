@@ -17,6 +17,8 @@ export interface CartaWaInput {
   orderNumber: string | null
   business:    string
   modalidad:   string
+  /** Delivery: zona, dirección y referencia ya armadas en un texto (opcional). */
+  address?:    string
   client:      string
   phone:       string
   pago:        string
@@ -40,6 +42,7 @@ export function buildCartaMessage(a: CartaWaInput): string {
     'Modalidad: ' + a.modalidad,
     'Cliente: ' + a.client + ' · ' + a.phone,
     'Pago: ' + a.pago,
+    ...(a.address ? ['Dirección: ' + a.address] : []),
     '',
     ...lines,
     '',

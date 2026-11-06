@@ -34,8 +34,8 @@ export interface ResolvedWebClient extends ClientRow {
 
 export interface ResolveWebClientInput {
   businessId: number
-  /** Cédula YA normalizada (V-12345678). */
-  cedula: string
+  /** Cédula YA normalizada (V-12345678), o null si no la dio / vino mal: entonces el cliente se busca por teléfono + nombre. */
+  cedula: string | null
   phone: string
   name: string
   /** Dirección que se guarda SOLO si el cliente se crea ahora. */
@@ -48,8 +48,8 @@ const EMPTY_CEDULA = [{ cedula: null }, { cedula: '' }]
 const CLIENT_SELECT = { id: true, name: true, address: true, phone: true } as const
 
 /** Llaves de serialización de un pedido web: una por cédula y otra por teléfono (el tope cuenta por ambas). */
-export function webCheckoutKeys(cedula: string, phone: string): string[] {
-  return [`ced:${cedula}`, `tel:${normalizeClientPhone(phone)}`]
+export function webCheckoutKeys(cedula: string | null, phone: string): string[] {
+  return [...(cedula ? [`ced:${cedula}`] : []), `tel:${normalizeClientPhone(phone)}`]
 }
 
 /**
@@ -112,7 +112,27 @@ export async function lockWebCheckout(tx: Tx, businessId: number, keys: string[]
 }
 
 export async function resolveWebClient(tx: Tx, input: ResolveWebClientInput): Promise<ResolvedWebClient | null> {
-  const { businessId, cedula } = input
+  const { businessId } = input
+  const cedula = input.cedula
+
+  // Sin cédula (checkout sin fricción): solo un cliente del MISMO teléfono Y nombre; nunca se adopta ni se pisa nada.
+  if (cedula === null) {
+    const byPhone = await tx.client.findFirst({
+      where:   { business_id: businessId, phone: { in: phoneLookupVariants(input.phone) } },
+      orderBy: [{ verified: 'desc' }, { id: 'asc' }],
+      select:  CLIENT_SELECT,
+    })
+    if (byPhone && sameName(input.name, byPhone.name)) return { ...byPhone, created: false, nameMismatch: false }
+    if (!input.canCreate) return null
+    const createdNoId = await tx.client.create({
+      data: {
+        business_id: businessId, name: input.name, phone: normalizeClientPhone(input.phone) || input.phone,
+        cedula: null, origin: 'web', verified: false, address: input.newAddress,
+      },
+      select: CLIENT_SELECT,
+    })
+    return { ...createdNoId, created: true, nameMismatch: false }
+  }
 
   // Con duplicados históricos: primero el verificado, luego el más antiguo.
   const found: ClientRow | null = await tx.client.findFirst({

@@ -7,8 +7,8 @@ import { generateTicketNumber } from '@/lib/ticket'
 import { VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { PriceModeError, priceModeSchema, repriceOrderTx } from '@/lib/price-mode'
 import { FinancingError, assertPaymentMatchesFinancing } from '@/lib/ticket-financing'
-import { checkCedula } from '@/lib/cedula'
-import { validateShipping } from '@/lib/shipping'
+import { checkCedula, type CedulaCheck } from '@/lib/cedula'
+import { lenientCheckoutCedula } from '@/lib/customer-identity'
 
 type Context = { params: { id: string } }
 
@@ -68,17 +68,11 @@ export async function POST(req: NextRequest, { params }: Context) {
 
       // Cédula: obligatoria (V/E natural) si el método es financiadora. Snapshot
       // en la venta y el pedido; Client.cedula solo si estaba nula.
-      const isDelivery = order.delivery_type === 'delivery'
-      if (isDelivery) {
-        const shippingError = validateShipping({
-          recipient: order.recipient_name || order.client_name,
-          cedula:    body.cedula ?? order.client_cedula,
-          phone:     order.client_phone,
-          address:   order.delivery_address,
-        })
-        if (shippingError) throw new Error(`CEDULA_REQUIRED:${shippingError}`)
-      }
-      const cedulaCheck = checkCedula(body.cedula ?? order.client_cedula, pm.is_financing ? pm.name : null, isDelivery)
+      // Checkout sin fricción: la cédula y los datos de envío ya no bloquean el cobro; solo la financiadora exige V/E válida.
+      const rawCedula = body.cedula ?? order.client_cedula
+      const cedulaCheck: CedulaCheck = pm.is_financing
+        ? checkCedula(rawCedula, pm.name, false)
+        : { ok: true, value: lenientCheckoutCedula(rawCedula).value }
       if (!cedulaCheck.ok) throw new Error(`CEDULA_REQUIRED:${cedulaCheck.message}`)
       const clientCedula = cedulaCheck.value
 

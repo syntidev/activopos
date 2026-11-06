@@ -6,11 +6,11 @@ import { X, MessageCircle, ShoppingBag, Plus, Minus, CheckCircle, Loader2, MapPi
 import { useCart } from './CartContext'
 import { fmtUsd, fmtBs, isValidVePhone, currencyVisibility } from './catalogUtils'
 import type { PaymentMethod } from './CatalogoGrid'
-import { checkCedula } from '@/lib/cedula'
+import { checkCedula, normalizeCedula } from '@/lib/cedula'
 import { CheckoutPaymentKind } from '@/components/catalog/CheckoutPaymentKind'
 import { useCheckoutFinancing } from '@/components/catalog/CheckoutFinancing'
 import type { PaymentKind } from '@/types/financing'
-import { validateShipping } from '@/lib/shipping'
+import { clearCheckoutMemory, loadCheckoutMemory, saveCheckoutMemory } from '@/lib/checkout-memory'
 import type { PublicShippingMethod, SavedAddressResponse } from '@/types/shipping'
 import styles from './catalogo.module.css'
 
@@ -107,6 +107,8 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
   const [useSaved,       setUseSaved]       = useState(false)
   // Oficina de destino (solo con requires_branch): viaja como branch_office, aparte de la dirección.
   const [branchOffice,   setBranchOffice]   = useState('')
+  // Aviso "Usamos tus datos del último pedido" (memoria de ESTE dispositivo).
+  const [memoryNotice,   setMemoryNotice]   = useState(false)
 
   const nameRef = useRef<HTMLInputElement>(null)
   const selectedMethod = methods.find(m => m.id === methodId) ?? null
@@ -147,6 +149,26 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
     return () => clearTimeout(t)
   }, [checkoutOpen])
 
+  // Mismo dispositivo: precarga los datos del último pedido (solo localStorage; "No soy yo" los borra).
+  useEffect(() => {
+    if (!checkoutOpen) return
+    const m = loadCheckoutMemory(slug)
+    if (!m) return
+    setCName(prev => prev || m.name)
+    setCPhone(prev => prev || m.phone)
+    setCCedula(prev => prev || m.cedula)
+    if (m.methodId !== null) setMethodId(prev => prev ?? m.methodId)
+    setBranchOffice(prev => prev || m.branchOffice)
+    setDeliveryAddress(prev => prev || m.address)
+    setMemoryNotice(true)
+  }, [checkoutOpen, slug])
+
+  const handleNotMe = () => {
+    clearCheckoutMemory(slug)
+    setCName(''); setCPhone(''); setCCedula(''); setCedulaError(null); setPhoneError(false)
+    setMethodId(null); setBranchOffice(''); setDeliveryAddress(''); setMemoryNotice(false)
+  }
+
   // Zona de delivery — se consulta cada vez que se abre "Antes de enviar"
   useEffect(() => {
     if (!checkoutOpen) return
@@ -169,18 +191,30 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
   useEffect(() => {
     setHasSaved(false)
     setUseSaved(false)
-    const ced = checkCedula(cCedula, null, true)
-    if (!checkoutOpen || !ced.ok || !isValidVePhone(cPhone)) return
+    const cedNorm = normalizeCedula(cCedula)
+    if (!checkoutOpen || !cedNorm || !isValidVePhone(cPhone)) return
     const ctrl = new AbortController()
     const t = setTimeout(() => {
       fetch(`/api/catalog/${slug}/saved-address`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ customer_cedula: ced.value, customer_phone: cPhone.trim() }),
+        body:    JSON.stringify({ customer_cedula: cedNorm, customer_phone: cPhone.trim() }),
         signal:  ctrl.signal,
       })
         .then(r => r.ok ? r.json() : null)
-        .then((j: SavedAddressResponse | null) => { if (j?.has_saved_address === true) setHasSaved(true) })
+        .then((j: SavedAddressResponse | null) => {
+          if (j?.has_saved_address === true) setHasSaved(true)
+          // Dispositivo nuevo: el servidor solo manda `prefill` si cédula Y teléfono son del mismo cliente.
+          if (j?.prefill) {
+            const { name, address } = j.prefill
+            setCName(prev => prev || name)
+            if (address) {
+              const m = /^Oficina: (.+?) \| (.*)$/.exec(address)
+              setBranchOffice(prev => prev || (m ? m[1] : ''))
+              setDeliveryAddress(prev => prev || (m ? m[2] : address))
+            }
+          }
+        })
         .catch(() => {})
     }, 400)
     return () => { clearTimeout(t); ctrl.abort() }
@@ -221,34 +255,15 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
     if (!cName.trim() || !cPhone.trim() || !effectivePayment.trim() || cart.length === 0) return
     if (isCashea && blockedNames.length > 0) return
     if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
-    if (deliveryType === 'delivery' && hasZones && zoneIdx < 0) return
     const isDelivery = deliveryType === 'delivery'
-    // Cédula obligatoria SIEMPRE (retiro y envío); con financiadora, solo V/E.
-    const cedulaCheck = checkCedula(cCedula, financingMethod?.name ?? null, true)
-    if (!cedulaCheck.ok || !cedulaCheck.value) {
-      setCedulaError(cedulaCheck.ok ? 'La cédula es obligatoria.' : cedulaCheck.message)
-      setCheckoutStep(1)
-      return
-    }
-    if (isDelivery && methods.length > 0 && !selectedMethod) {
-      setCheckoutError('Selecciona un método de envío.')
-      setCheckoutStep(2)
-      return
-    }
-    const branchNeeded = isDelivery && !!selectedMethod?.requires_branch
-    if (branchNeeded && (branchOffice.trim().length < 3 || branchOffice.trim().length > 120)) {
-      setCheckoutError('Indica la oficina de destino (entre 3 y 120 caracteres).')
-      setCheckoutStep(2)
-      return
-    }
-    // Con dirección guardada el servidor la copia; el resto del envío se valida igual.
+    // Cédula opcional (solo Cashea la exige, V/E): se manda lo escrito; el servidor la normaliza y, si viene mal, marca el pedido para revisar.
+    const cedulaCheck = financingMethod
+      ? checkCedula(cCedula, financingMethod.name, false)
+      : { ok: true as const, value: cCedula.trim() }
+    if (!cedulaCheck.ok) { setCedulaError(cedulaCheck.message); setCheckoutStep(1); return }
+    // Envío sin bloqueo: método, oficina y dirección se piden, pero si faltan el pedido entra "por completar" y el negocio los confirma.
+    const branchNeeded = isDelivery && !!selectedMethod?.requires_branch && branchOffice.trim().length >= 3
     const useSavedNow = isDelivery && useSaved
-    if (isDelivery && !useSavedNow) {
-      const shippingError = validateShipping({
-        recipient: recipientName || cName, cedula: cedulaCheck.value, phone: cPhone, address: deliveryAddress,
-      })
-      if (shippingError) { setCheckoutError(shippingError); setCheckoutStep(2); return }
-    }
     setCedulaError(null)
     setSubmitting(true)
     setCheckoutError(null)
@@ -272,17 +287,18 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           customer_reference: referenceWithZone,
           payment_method:     effectivePayment,
           payment_kind:       isCashea ? 'cashea' : cKind,
-          customer_cedula:    cedulaCheck.value,
+          customer_cedula:    cedulaCheck.value || null,
           delivery_type:      deliveryType,
           recipient_name:     recipientName.trim() || null,
           delivery_address:   useSavedNow ? null : deliveryAddress.trim() || null,
           ...(useSavedNow ? { use_saved_address: true } : {}),
           ...(isDelivery && methods.length > 0 ? { shipping_method_id: selectedMethod?.id ?? null } : {}),
-          ...(branchNeeded ? { branch_office: branchOffice.trim() } : {}),
+          ...(branchNeeded ? { branch_office: branchOffice.trim().slice(0, 120) } : {}),
         }),
       })
 
       if (res.ok) {
+        saveCheckoutMemory(slug, { name: cName.trim(), cedula: cedulaCheck.value ?? '', phone: cPhone.trim(), methodId: selectedMethod?.id ?? null, branchOffice: branchOffice.trim(), address: deliveryAddress.trim() })
         const data = await res.json() as { whatsapp_url: string | null }
         if (!data.whatsapp_url) {
           // Pedido creado pero el negocio no tiene WhatsApp configurado -> sin este aviso
@@ -302,7 +318,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           setCPayment(regularMethods[0]?.name ?? ''); setCKind('bs')
           setZoneIdx(-1)
           setCheckoutStep(1); setDeliveryType('pickup'); setRecipientName(''); setDeliveryAddress('')
-          setMethodId(null); setHasSaved(false); setUseSaved(false); setBranchOffice('')
+          setMethodId(null); setHasSaved(false); setUseSaved(false); setBranchOffice(''); setMemoryNotice(false)
         }, 3000)
       } else {
         // 409 stock, 422 validación, 429 límite: mensajes del contrato (no revelan si la cédula existe).
@@ -489,6 +505,13 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
               <>
                 <p className={styles.checkoutStepLabel}>Paso 1</p>
                 <h3 className={styles.checkoutStepTitle}>Contacto</h3>
+                {memoryNotice && (
+                  <p className={styles.checkoutMemory} role="status" data-testid="checkout-memory-notice">
+                    Usamos tus datos del último pedido ·{' '}
+                    <button type="button" className={styles.checkoutMemoryBtn} onClick={() => setMemoryNotice(false)}>Cambiar</button>{' '}·{' '}
+                    <button type="button" className={styles.checkoutMemoryBtn} data-testid="checkout-not-me" onClick={handleNotMe}>No soy yo</button>
+                  </p>
+                )}
                 <div className={styles.checkoutFields}>
                   <div className={styles.checkoutFieldGroup}>
                     <label className={styles.checkoutLabel} htmlFor="co-name">
@@ -524,24 +547,24 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                     />
                     {phoneError && (
                       <span className={styles.checkoutFieldError}>
-                        Número inválido. Usa un celular venezolano (0412, 0414, 0416, 0424, 0426).
+                        Escribe tu teléfono con 10 u 11 dígitos, por ejemplo 04241234567.
                       </span>
                     )}
                   </div>
                   <div className={styles.checkoutFieldGroup}>
                     <label className={styles.checkoutLabel} htmlFor="co-cedula">
-                      Cédula <span className={styles.checkoutRequired}>*</span>
+                      Cédula <span className={styles.checkoutOptional}>(opcional)</span>
                     </label>
                     <input
                       id="co-cedula"
                       data-testid="checkout-cedula"
                       type="text"
-                      inputMode="text"
+                      inputMode="numeric"
                       autoComplete="off"
                       className={`${styles.checkoutInput} ${cedulaError ? styles.checkoutInputError : ''}`}
                       value={cCedula}
                       onChange={e => { setCCedula(e.target.value); if (cedulaError) setCedulaError(null) }}
-                      placeholder="V-12345678"
+                      placeholder="21222819"
                       aria-invalid={cedulaError !== null}
                       disabled={submitting}
                     />
@@ -551,7 +574,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                     >
                       {cedulaError ?? (financingMethod
                         ? `${financingMethod.name} necesita tu cédula para crear el enlace de pago.`
-                        : 'Obligatoria. Formato V-12345678 (también E, J o G).')}
+                        : 'Opcional. Con los números alcanza (V por defecto).')}
                     </span>
                   </div>
                   <div className={styles.checkoutFieldGroup}>
@@ -585,11 +608,13 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                     type="button"
                     className={styles.btnNext}
                     data-testid="checkout-next-1"
-                    disabled={!cName.trim() || !cPhone.trim() || !cCedula.trim()}
+                    disabled={!cName.trim() || !cPhone.trim()}
                     onClick={() => {
                       if (!isValidVePhone(cPhone)) { setPhoneError(true); return }
-                      const ced = checkCedula(cCedula, null, true)
-                      if (!ced.ok) { setCedulaError(ced.message); return }
+                      if (financingMethod) {
+                        const ced = checkCedula(cCedula, financingMethod.name, false)
+                        if (!ced.ok) { setCedulaError(ced.message); return }
+                      }
                       setCheckoutStep(2)
                     }}
                   >
@@ -779,7 +804,6 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                     type="button"
                     className={styles.btnNext}
                     data-testid="checkout-next-2"
-                    disabled={deliveryType === 'delivery' && ((hasZones && zoneIdx < 0) || (methods.length > 0 && !selectedMethod))}
                     onClick={() => { setCheckoutError(null); setCheckoutStep(3) }}
                   >
                     Continuar →

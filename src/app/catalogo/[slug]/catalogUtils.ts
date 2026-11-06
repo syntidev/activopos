@@ -1,3 +1,4 @@
+import { hasUsablePhone } from '@/lib/customer-identity'
 export function fmtUsd(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
@@ -32,8 +33,7 @@ export function catalogNav(slug: string): { href: string; label: string }[] {
   ]
 }
 
-// Validación simple de celular venezolano: acepta 0412…, 412…, 58412…
+// Teléfono del checkout: 10-11 dígitos (con o sin el 0 inicial o el 58); la misma regla que aplica el servidor.
 export function isValidVePhone(raw: string): boolean {
-  const digits = raw.replace(/\D/g, '')
-  return /^(?:58|0)?(412|414|416|422|424|426)\d{7}$/.test(digits)
+  return hasUsablePhone(raw)
 }

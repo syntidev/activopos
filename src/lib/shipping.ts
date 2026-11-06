@@ -2,7 +2,6 @@
 // texto listo para pegar en el portal de la empresa. Sin dependencias de DB.
 
 import { checkCedula } from './cedula'
-import { isValidWaPhone } from './whatsapp-message'
 
 export interface ShippingData {
   orderNumber: string
@@ -32,19 +31,21 @@ export function validateAddress(address: string | null | undefined): string | nu
   return null
 }
 
-/** Mensaje de error si faltan datos obligatorios para un envío, o null si está completo. */
-export function validateShipping(d: {
-  recipient: string | null | undefined
-  cedula:    string | null | undefined
-  phone:     string | null | undefined
-  address:   string | null | undefined
-}): string | null {
-  const name = (d.recipient ?? '').trim()
-  if (name.split(/\s+/).filter(Boolean).length < 2) return 'Para envíos indica nombre y apellido del destinatario.'
+/**
+ * Avisos (NO bloqueos) de un envío: lo que falta para despacharlo. Nombre y teléfono ya los exige el checkout;
+ * aquí solo cédula y destino. Con oficina escrita la dirección no hace falta. Lista vacía = envío completo.
+ */
+export function shippingIssues(d: {
+  cedula:  string | null | undefined
+  address: string | null | undefined
+  branch?: string | null | undefined
+}): string[] {
+  const issues: string[] = []
   const ced = checkCedula(d.cedula, null, true)
-  if (!ced.ok) return ced.message
-  if (!isValidWaPhone(d.phone)) return 'Para envíos indica un teléfono válido del destinatario.'
-  return validateAddress(d.address)
+  if (!ced.ok) issues.push('Falta una cédula válida del destinatario.')
+  const hasBranch = (d.branch ?? '').trim().length >= 3
+  if (!hasBranch && validateAddress(d.address) !== null) issues.push('Falta la oficina o la dirección de destino.')
+  return issues
 }
 
 /** Bloque de texto en orden fijo, listo para pegar en el portal de la empresa de encomienda. */

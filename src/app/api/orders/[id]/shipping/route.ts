@@ -4,8 +4,8 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getClientIp } from '@/lib/rate-limit'
 import { logError } from '@/lib/safe-log'
-import { checkCheckoutCedula, hasUsablePhone, normalizeClientPhone } from '@/lib/customer-identity'
-import { validateAddress, validateShipping } from '@/lib/shipping'
+import { hasUsablePhone, lenientCheckoutCedula, normalizeClientPhone } from '@/lib/customer-identity'
+import { shippingIssues } from '@/lib/shipping'
 
 // PATCH /api/orders/[id]/shipping — corrige el snapshot de envío (ship_*) de un pedido ANTES de
 // imprimir la etiqueta. Mismo permiso que el resto de Pedidos (sin guard de rol, sellado en
@@ -46,9 +46,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     let cedula = order.ship_cedula ?? order.client_cedula ?? ''
     if (body.ship_cedula !== undefined) {
-      const check = checkCheckoutCedula(body.ship_cedula)
-      if (!check.ok) return fail(check.message, 'ship_cedula')
-      cedula = check.value
+      // Sin bloqueo: se guarda lo escrito y el pedido queda "por completar" si no es una cédula válida.
+      const len = lenientCheckoutCedula(body.ship_cedula)
+      cedula = len.value ?? len.typed ?? ''
     }
     let phone = order.ship_telefono ?? order.client_phone ?? ''
     if (body.ship_telefono !== undefined) {
@@ -56,15 +56,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       phone = normalizeClientPhone(body.ship_telefono)
     }
     let address = order.ship_direccion ?? order.delivery_address ?? ''
-    if (body.ship_direccion !== undefined) {
-      const addressError = validateAddress(body.ship_direccion)
-      if (addressError) return fail(addressError, 'ship_direccion')
-      address = body.ship_direccion
-    }
+    if (body.ship_direccion !== undefined) address = body.ship_direccion
     const recipient = body.ship_nombre ?? order.ship_nombre ?? order.recipient_name ?? order.client_name ?? ''
-
-    const shippingError = validateShipping({ recipient, cedula, phone, address })
-    if (shippingError) return fail(shippingError, 'delivery')
+    // Lo que falte NO bloquea: se recalcula la marca "por completar".
+    const incomplete = shippingIssues({ cedula, address, branch: address.startsWith('Oficina:') ? address : '' }).length > 0
 
     // Método: cambiarlo re-congela etiqueta y tipo en el pedido (quitarlo los deja en null).
     let methodSnapshot: { ship_metodo_label: string | null; ship_metodo_kind: string | null } | null = null
@@ -90,6 +85,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           ...(body.ship_telefono  !== undefined && { ship_telefono: phone }),
           ...(body.ship_direccion !== undefined && { ship_direccion: address, delivery_address: address }),
           ...(body.ship_metodo_id !== undefined && { ship_metodo_id: body.ship_metodo_id, ...methodSnapshot }),
+          shipping_incomplete: incomplete,
         },
         select: {
           id: true, order_number: true, ship_nombre: true, ship_cedula: true, ship_telefono: true,

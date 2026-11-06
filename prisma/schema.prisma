@@ -960,6 +960,8 @@ model Order {
   ship_metodo_kind  String?    @db.VarChar(20)
   // true = la cédula del pedido ya pertenece a un cliente registrado con OTRO nombre (aviso para el negocio).
   cedula_alert     Boolean?    @default(false)
+  // true = envío con datos por completar (oficina/dirección/cédula): el pedido entra igual y el negocio los confirma por WhatsApp.
+  shipping_incomplete Boolean  @default(false)
   created_at       DateTime    @default(now())
   updated_at       DateTime    @updatedAt
 

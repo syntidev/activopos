@@ -5,6 +5,9 @@ import { X } from 'lucide-react'
 import { optionsKeyOf, useCart, type CartItem } from '@/app/catalogo-premium/[slug]/CartContext'
 import { getPulsoOrderContext } from '@/lib/pulso-client'
 import { buildCartaMessage } from '@/lib/carta/whatsapp'
+import { checkCedula, normalizeCedula } from '@/lib/cedula'
+import { clearCheckoutMemory, loadCheckoutMemory, saveCheckoutMemory } from '@/lib/checkout-memory'
+import { hasUsablePhone } from '@/lib/customer-identity'
 import { CartaOpciones, elegidasDeCarrito, gruposFaltantes, opcionesDeCarrito, type Elegidas } from './CartaOpciones'
 import { cx, fmtBs, fmtUsd } from './util'
 import styles from './carta.module.css'
@@ -45,6 +48,9 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
   const [telefono, setTelefono] = useState('')
   const [cedula, setCedula] = useState('')
   const [direccion, setDireccion] = useState('')
+  const [zona, setZona] = useState('')
+  const [referencia, setReferencia] = useState('')
+  const [memoria, setMemoria] = useState(false) // aviso "Usamos tus datos del último pedido"
   const [pago, setPago] = useState<CartaPayOption['kind']>(payOptions[0]?.kind ?? 'bs')
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<{ campo: string; mensaje: string } | null>(null)
@@ -62,7 +68,46 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
     return () => window.removeEventListener('keydown', onKey)
   }, [cartOpen, setCartOpen])
 
+  // Mismo dispositivo: precarga los datos del último pedido (solo localStorage; "No soy yo" los borra).
+  useEffect(() => {
+    if (!cartOpen) return
+    const m = loadCheckoutMemory(slug)
+    if (!m) return
+    setNombre(prev => prev || m.name)
+    setTelefono(prev => prev || m.phone)
+    setCedula(prev => prev || m.cedula)
+    setDireccion(prev => prev || m.address)
+    setMemoria(true)
+  }, [cartOpen, slug])
+
+  // Dispositivo nuevo: con cédula Y teléfono del mismo cliente el servidor devuelve nombre y dirección (con solo la cédula, nada).
+  useEffect(() => {
+    const ced = normalizeCedula(cedula)
+    if (!cartOpen || !ced || !hasUsablePhone(telefono)) return
+    const ctrl = new AbortController()
+    const t = setTimeout(() => {
+      fetch('/api/catalog/' + slug + '/saved-address', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
+        body: JSON.stringify({ customer_cedula: ced, customer_phone: telefono.trim() }),
+      })
+        .then(r => (r.ok ? r.json() : null))
+        .then((j: { prefill?: { name: string; address: string | null } } | null) => {
+          const prefill = j?.prefill
+          if (!prefill) return
+          setNombre(prev => prev || prefill.name)
+          if (prefill.address) setDireccion(prev => prev || (prefill.address ?? ''))
+        })
+        .catch(() => undefined)
+    }, 400)
+    return () => { clearTimeout(t); ctrl.abort() }
+  }, [cartOpen, slug, cedula, telefono])
+
   if (!cartOpen) return null
+
+  const noSoyYo = (): void => {
+    clearCheckoutMemory(slug)
+    setNombre(''); setTelefono(''); setCedula(''); setDireccion(''); setZona(''); setReferencia(''); setMemoria(false)
+  }
 
   const label = MODALIDAD_LABEL[modalidad] + (modalidad === 'aqui' && mesa.trim() ? ' · Mesa ' + mesa.trim() : '')
   const opcion = payOptions.find(o => o.kind === pago) ?? payOptions[0]
@@ -96,15 +141,21 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
   }
 
   const validar = (): { campo: string; mensaje: string } | null => {
-    if (nombre.trim().length < 2) return { campo: 'nombre', mensaje: 'Escribe tu nombre.' }
-    if (telefono.replace(/\D/g, '').length < 7) return { campo: 'telefono', mensaje: 'Escribe tu teléfono con al menos 7 números.' }
-    if (cedula.trim().length < 5) return { campo: 'cedula', mensaje: 'Escribe tu cédula, por ejemplo V12345678.' }
-    if (modalidad === 'delivery' && direccion.trim().length < 5) return { campo: 'direccion', mensaje: 'Escribe la dirección de entrega.' }
+    // Solo bloquean nombre (cualquier texto) y teléfono (10-11 dígitos). La cédula la exige únicamente Cashea; el delivery nunca bloquea.
+    if (nombre.trim().length < 1) return { campo: 'nombre', mensaje: 'Escribe tu nombre.' }
+    if (!hasUsablePhone(telefono)) return { campo: 'telefono', mensaje: 'Escribe tu teléfono con 10 u 11 dígitos, por ejemplo 04241234567.' }
+    if (pago === 'cashea') {
+      const ced = checkCedula(cedula, 'Cashea', false)
+      if (!ced.ok) return { campo: 'cedula', mensaje: ced.message }
+    }
     return null
   }
 
+  // Delivery = zona + dirección + referencia (todo opcional: nada bloquea; lo que falte lo confirma el negocio por WhatsApp).
+  const direccionCompleta = [zona.trim(), direccion.trim(), referencia.trim() ? 'Ref: ' + referencia.trim() : ''].filter(Boolean).join(' · ')
+
   const mensaje = (numero: string | null): string => buildCartaMessage({
-    orderNumber: numero, business: businessName, modalidad: label, client: nombre.trim(), phone: telefono.trim(), pago: opcion?.label ?? '', rate,
+    orderNumber: numero, business: businessName, modalidad: label, address: modalidad === 'delivery' ? direccionCompleta : undefined, client: nombre.trim(), phone: telefono.trim(), pago: opcion?.label ?? '', rate,
     lines: cart.map(i => ({
       qty: i.qty, name: i.name, detail: [i.variant_label, ...(i.options ?? []).map(o => o.name)].filter(Boolean).join(', ') || undefined,
       subtotalUsd: Math.round(i.price_usd * i.qty * 100) / 100, note: i.note,
@@ -139,14 +190,15 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
           customer_reference: label,
           payment_method:     opcion?.method ?? 'Bs',
           payment_kind:       opcion?.kind ?? 'bs',
-          customer_cedula:    cedula.trim(),
+          customer_cedula:    cedula.trim() || null,
           delivery_type:      modalidad === 'delivery' ? 'delivery' : 'pickup',
           recipient_name:     modalidad === 'delivery' ? nombre.trim() : null,
-          delivery_address:   modalidad === 'delivery' ? direccion.trim() : null,
+          delivery_address:   modalidad === 'delivery' ? (direccionCompleta || null) : null,
           pulso:              getPulsoOrderContext() ?? undefined,
         }),
       })
       if (res.ok) {
+        saveCheckoutMemory(slug, { name: nombre.trim(), cedula: cedula.trim(), phone: telefono.trim(), methodId: null, branchOffice: '', address: direccion.trim() })
         const data = await res.json() as { ticket_number: string }
         terminar(data.ticket_number, false)
       } else if (res.status >= 500) {
@@ -248,6 +300,13 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
               </div>
             </div>
 
+            {memoria && (
+              <p className={styles.aviso} role="status" data-testid="carta-memoria">
+                Usamos tus datos del último pedido ·{' '}
+                <button type="button" className={styles.quitar} onClick={() => setMemoria(false)}>Cambiar</button>{' '}·{' '}
+                <button type="button" className={styles.quitar} data-testid="carta-no-soy-yo" onClick={noSoyYo}>No soy yo</button>
+              </p>
+            )}
             <div className={styles.campo}>
               <label id="lbl-modalidad">¿Cómo lo quieres?</label>
               <div className={styles.seg} role="radiogroup" aria-labelledby="lbl-modalidad">
@@ -261,9 +320,13 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
             )}
             <div className={styles.campo}><label htmlFor="c-nombre">Tu nombre</label><input id="c-nombre" className={styles.input} value={nombre} onChange={e => setNombre(e.target.value)} autoComplete="name" data-testid="carta-nombre-cliente" />{err('nombre')}</div>
             <div className={styles.campo}><label htmlFor="c-tel">Teléfono</label><input id="c-tel" className={styles.input} value={telefono} onChange={e => setTelefono(e.target.value)} inputMode="tel" autoComplete="tel" data-testid="carta-telefono" />{err('telefono')}{err('customer_phone')}</div>
-            <div className={styles.campo}><label htmlFor="c-ced">Cédula</label><input id="c-ced" className={styles.input} value={cedula} onChange={e => setCedula(e.target.value)} placeholder="V12345678" autoComplete="off" data-testid="carta-cedula" />{err('cedula')}{err('customer_cedula')}</div>
+            <div className={styles.campo}><label htmlFor="c-ced">Cédula (opcional)</label><input id="c-ced" className={styles.input} value={cedula} onChange={e => setCedula(e.target.value)} placeholder="21222819" inputMode="numeric" autoComplete="off" data-testid="carta-cedula" />{err('cedula')}{err('customer_cedula')}</div>
             {modalidad === 'delivery' && (
-              <div className={styles.campo}><label htmlFor="c-dir">Dirección de entrega</label><textarea id="c-dir" className={styles.input} value={direccion} onChange={e => setDireccion(e.target.value)} data-testid="carta-direccion" />{err('direccion')}{err('delivery_address')}</div>
+              <>
+                <div className={styles.campo}><label htmlFor="c-zona">Zona (opcional)</label><input id="c-zona" className={styles.input} value={zona} onChange={e => setZona(e.target.value)} maxLength={60} data-testid="carta-zona" /></div>
+                <div className={styles.campo}><label htmlFor="c-dir">Dirección de entrega (opcional)</label><textarea id="c-dir" className={styles.input} value={direccion} onChange={e => setDireccion(e.target.value)} data-testid="carta-direccion" />{err('delivery_address')}</div>
+                <div className={styles.campo}><label htmlFor="c-ref">Punto de referencia (opcional)</label><input id="c-ref" className={styles.input} value={referencia} onChange={e => setReferencia(e.target.value)} maxLength={80} data-testid="carta-referencia" /></div>
+              </>
             )}
             <div className={styles.campo}>
               <label id="lbl-pago">¿Cómo vas a pagar?</label>

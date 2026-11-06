@@ -9,11 +9,13 @@ const GENERAL_RE = /^([VEJG])-(\d{5,10})$/
 
 export const CEDULA_FORMAT_HINT = 'Usa el formato V-12345678 o E-12345678.'
 
-/** Quita espacios, puntos y guiones y devuelve "L-dígitos" en mayúscula, o null si no calza. */
+/** Quita espacios, puntos y guiones y devuelve "L-dígitos" en mayúscula (solo dígitos = V), o null si no calza. */
 export function normalizeCedula(raw: string | null | undefined): string | null {
   const compact = (raw ?? '').toUpperCase().replace(/[\s.\-_]/g, '')
   const m = /^([A-Z])(\d+)$/.exec(compact)
-  return m ? `${m[1]}-${m[2]}` : null
+  if (m) return `${m[1]}-${m[2]}`
+  // Solo dígitos ("21.222.819" o "21222819"): sin letra se asume V.
+  return /^\d+$/.test(compact) ? `V-${compact}` : null
 }
 
 export function isNaturalCedula(normalized: string): boolean {

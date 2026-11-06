@@ -6,7 +6,8 @@ import { normalizeCedula } from './cedula'
 
 const CHECKOUT_CEDULA_RE = /^([VEJG])-(\d{5,10})$/
 const ALL_ZEROS_RE = /^[A-Z]-0+$/
-const MIN_PHONE_DIGITS = 7
+const MIN_PHONE_DIGITS = 10 // teléfono venezolano: 10-11 dígitos (con o sin el 0 inicial)
+const MAX_PHONE_DIGITS = 11
 
 export const CHECKOUT_CEDULA_MESSAGE =
   'Indica una cédula o RIF válido, por ejemplo V-12345678 (V, E, J o G).'
@@ -20,6 +21,18 @@ export type CheckoutCedula =
  * 5 a 10 dígitos; se rechazan solo vacíos, formatos inválidos y cédulas de solo ceros.
  * Devuelve el valor normalizado "V-12345678".
  */
+/**
+ * Cédula del checkout SIN fricción: nunca bloquea. `value` = cédula normalizada válida (V/E/J/G, 5-10 dígitos, no solo ceros) o null;
+ * `typed` = lo que escribió (se guarda tal cual si no es válida); `review` = vino mal (no vacía e inválida) → el pedido se marca para revisar.
+ */
+export function lenientCheckoutCedula(raw: string | null | undefined): { value: string | null; typed: string | null; review: boolean } {
+  const typed = (raw ?? '').trim()
+  if (!typed) return { value: null, typed: null, review: false }
+  const check = checkCheckoutCedula(typed)
+  if (check.ok) return { value: check.value, typed: check.value, review: false }
+  return { value: null, typed: typed.slice(0, 20), review: true }
+}
+
 export function checkCheckoutCedula(raw: string | null | undefined): CheckoutCedula {
   const n = normalizeCedula(raw)
   if (!n || !CHECKOUT_CEDULA_RE.test(n) || ALL_ZEROS_RE.test(n)) {
@@ -41,7 +54,8 @@ export function normalizeClientPhone(raw: string | null | undefined): string {
 }
 
 export function hasUsablePhone(raw: string | null | undefined): boolean {
-  return normalizeClientPhone(raw).length >= MIN_PHONE_DIGITS
+  const n = normalizeClientPhone(raw).length
+  return n >= MIN_PHONE_DIGITS && n <= MAX_PHONE_DIGITS
 }
 
 /**

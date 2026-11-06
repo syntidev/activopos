@@ -12,10 +12,10 @@ import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
 import { checkCedula } from '@/lib/cedula'
 import { FinancingError, PAYMENT_KINDS, assertFinancingEligible } from '@/lib/ticket-financing'
 import type { PaymentKind } from '@/lib/ticket-financing'
-import { validateAddress, validateShipping } from '@/lib/shipping'
+import { shippingIssues, validateAddress } from '@/lib/shipping'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import {
-  checkCheckoutCedula, hasUsablePhone, normalizeClientPhone, phoneLookupVariants, sameName,
+  hasUsablePhone, lenientCheckoutCedula, normalizeClientPhone, phoneLookupVariants, sameName,
 } from '@/lib/customer-identity'
 import {
   ensureWebCheckoutLocks, lockWebCheckout, resolveWebClient, WebCheckoutBusyError, webCheckoutKeys,
@@ -39,7 +39,7 @@ const ItemSchema = z.object({
 const BodySchema = z.object({
   items:              z.array(ItemSchema).min(1).max(50),
   customer_name:      z.string().min(1).max(120).trim(),
-  customer_phone:     z.string().min(7).max(20).trim(),
+  customer_phone:     z.string().min(1).max(30).trim(), // la validez (10-11 dígitos) se responde con field 'customer_phone'
   customer_reference: z.string().min(1).max(200).trim(),
   payment_method:     z.string().min(1).max(60).trim(),
   // Método declarado por el cliente: cashea (financiamiento, exige elegibilidad) | bs | divisa. Si falta y el método elegido
@@ -47,7 +47,7 @@ const BodySchema = z.object({
   payment_kind:       z.enum(PAYMENT_KINDS).optional(),
   // OBLIGATORIA siempre (retiro y envío). Va nullable/optional en el schema solo para que la falta
   // salga como 422 con field 'customer_cedula' (mensaje claro) y no como "Datos inválidos" genérico.
-  customer_cedula:    z.string().max(20).trim().nullable().optional(),
+  customer_cedula:    z.string().max(40).trim().nullable().optional(),
   notes:              z.string().max(500).trim().optional(),
   delivery_type:      z.enum(['pickup', 'delivery']).default('pickup'),
   // .nullable() además de .optional(): CartDrawer manda `null` explícito
@@ -207,12 +207,10 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
   const isDelivery = body.delivery_type === 'delivery'
   const useSaved   = isDelivery && body.use_saved_address === true
 
-  // Cédula OBLIGATORIA siempre (retiro y envío): V/E/J/G, sin ceros. Es la llave del cliente.
-  const idCheck = checkCheckoutCedula(body.customer_cedula)
-  if (!idCheck.ok) {
-    return NextResponse.json({ error: idCheck.message, field: 'customer_cedula' }, { status: 422 })
-  }
-  const clientCedula = idCheck.value
+  // Checkout sin fricción: la cédula NUNCA bloquea (solo la exige Cashea). Válida = llave del cliente; vacía o mal escrita =
+  // el pedido pasa igual, se guarda lo que escribió y va marcado para revisar (cedula_alert).
+  const idLenient = lenientCheckoutCedula(body.customer_cedula)
+  const clientCedula: string | null = idLenient.value
   const paymentKind: PaymentKind | null = body.payment_kind ?? (chosenMethod?.is_financing ? 'cashea' : null)
   // Financiadora o Cashea declarado: además exige persona natural (V/E).
   if (chosenMethod?.is_financing || paymentKind === 'cashea') {
@@ -223,24 +221,17 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
   }
 
   if (!hasUsablePhone(body.customer_phone)) {
-    return NextResponse.json({ error: 'Indica un teléfono válido.', field: 'customer_phone' }, { status: 422 })
+    return NextResponse.json({ error: 'Escribe un teléfono de 10 u 11 dígitos.', field: 'customer_phone' }, { status: 422 })
   }
   const clientPhone = normalizeClientPhone(body.customer_phone)
 
-  // Todo envío sale por encomienda nacional: nombre y apellido, cédula, teléfono y dirección completa
-  // son obligatorios (regla de servidor). Con "misma dirección" la dirección real se valida más
-  // abajo, ya leída del Client; aquí solo nombre, cédula y teléfono.
-  if (isDelivery) {
-    const shippingError = validateShipping({
-      recipient: body.recipient_name || body.customer_name,
-      cedula:    clientCedula,
-      phone:     body.customer_phone,
-      address:   useSaved ? ADDRESS_PLACEHOLDER : body.delivery_address,
-    })
-    if (shippingError) {
-      return NextResponse.json({ error: shippingError, field: 'delivery' }, { status: 422 })
-    }
-  }
+  // Envío: lo que falte (cédula, oficina, dirección) NO bloquea: el pedido entra con shipping_incomplete y el negocio lo confirma
+  // por WhatsApp. Con oficina escrita la dirección no hace falta.
+  let shippingIncomplete = isDelivery && shippingIssues({
+    cedula:  clientCedula,
+    address: useSaved ? ADDRESS_PLACEHOLDER : body.delivery_address,
+    branch:  body.branch_office,
+  }).length > 0
 
   // Método de envío: si el negocio configuró métodos activos, el envío debe elegir uno suyo.
   let shippingMethod: ChosenMethod | null = null
@@ -251,19 +242,15 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     })
     if (methods.length > 0) {
       shippingMethod = methods.find(m => m.id === body.shipping_method_id) ?? null
-      if (!shippingMethod) {
-        return NextResponse.json({ error: 'Elige un método de envío.', field: 'shipping_method_id' }, { status: 422 })
-      }
+      if (!shippingMethod) shippingIncomplete = true // sin método elegido: no bloquea, queda por completar
       // Un método de retiro en tienda no lleva dirección de envío (y todo envío exige una).
-      if (shippingMethod.kind === 'pickup') {
+      if (shippingMethod?.kind === 'pickup') {
         return NextResponse.json(
           { error: 'Ese método es retiro en tienda: elige "Retirar en tienda" en lugar de envío.', field: 'shipping_method_id' },
           { status: 422 },
         )
       }
-      if (shippingMethod.requires_branch && (body.branch_office ?? '').length < MIN_BRANCH_CHARS) {
-        return NextResponse.json({ error: 'Indica la oficina de destino.', field: 'branch_office' }, { status: 422 })
-      }
+      if (shippingMethod?.requires_branch && (body.branch_office ?? '').length < MIN_BRANCH_CHARS) shippingIncomplete = true
     }
   }
   // La oficina solo cuenta si el método la pide; el servidor la antepone a la dirección.
@@ -353,7 +340,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
       where: {
         business_id: business.id,
         status:      'received',
-        OR: [{ client_cedula: clientCedula }, { client_phone: { in: phoneLookupVariants(body.customer_phone) } }],
+        OR: [...(clientCedula ? [{ client_cedula: clientCedula }] : []), { client_phone: { in: phoneLookupVariants(body.customer_phone) } }],
       },
     })
     if (openOrders >= OPEN_ORDERS_LIMIT) {
@@ -486,13 +473,13 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         client_name:    body.customer_name,
         client_phone:   clientPhone,
         client_address: body.customer_reference,
-        client_cedula:  clientCedula,
+        client_cedula:  clientCedula ?? idLenient.typed,
         delivery_type:    body.delivery_type,
         recipient_name:   isDelivery ? (body.recipient_name || body.customer_name) : (body.recipient_name ?? null),
         delivery_address: shipAddress,
         // Snapshot de envío: lo capturado en ESTE pedido (el Client puede cambiar después).
         ship_nombre:     isDelivery ? (body.recipient_name || body.customer_name) : null,
-        ship_cedula:     isDelivery ? clientCedula : null,
+        ship_cedula:     isDelivery ? (clientCedula ?? idLenient.typed) : null,
         ship_telefono:   isDelivery ? clientPhone : null,
         ship_direccion:  isDelivery ? shipAddress : null,
         ship_metodo_id:  isDelivery ? (shippingMethod?.id ?? null) : null,
@@ -500,7 +487,8 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         ship_metodo_label: isDelivery ? (shippingMethod?.label ?? null) : null,
         ship_metodo_kind:  isDelivery ? (shippingMethod?.kind ?? null) : null,
         // La cédula ya existía con OTRO nombre: aviso para el negocio, nunca visible al público.
-        cedula_alert:    client.nameMismatch,
+        cedula_alert:    client.nameMismatch || idLenient.review,
+        shipping_incomplete: isDelivery && shippingIncomplete,
         notes:          noteLines,
         total_usd:      totalUsd,
         total_bs:       totalBs,
@@ -537,7 +525,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     // (ítems, método, stock, tope, dirección guardada): un tercero no puede agotar los puntos de una víctima
     // con pedidos inválidos.
     try {
-      await catalogOrderCedulaLimiter.consume(`${parsedSlug.data}:${clientCedula}`)
+      if (clientCedula) await catalogOrderCedulaLimiter.consume(`${parsedSlug.data}:${clientCedula}`)
       await catalogOrderPhoneLimiter.consume(`${parsedSlug.data}:${clientPhone}`)
     } catch {
       throw new CheckoutError(429, 'Demasiados intentos. Intenta más tarde.')
@@ -635,7 +623,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     orderNumber:  order.order_number,
     clientName:   body.customer_name,
     clientPhone:  body.customer_phone,
-    clientCedula,
+    clientCedula:  clientCedula ?? idLenient.typed,
     sector:       body.customer_reference,
     lines:        resolvedItems.map(i => ({
       name:         i.product_name,
@@ -656,6 +644,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
           address: withBranch(useSaved ? 'Misma dirección de pedidos anteriores' : (body.delivery_address ?? null)),
           // Solo en este mensaje al negocio; el ticket de envío (shippingCopyText) sigue con sus 4 datos.
           method:  shippingMethod?.label ?? null,
+          incomplete: shippingIncomplete,
         }
       : { type: 'pickup' },
     notes:        body.notes,

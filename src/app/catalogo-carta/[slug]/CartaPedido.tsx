@@ -12,13 +12,15 @@ interface CartaPedidoProps {
   whatsapp:   string | null
   acepta:     boolean
   dishes:     CartaDish[]
+  /** En la ficha solo va la barra "Agregar": la de pedido vuelve al cerrar la ficha. */
+  hideFab?:   boolean
 }
 
 /** Barra fija del pedido + hoja del carrito: se monta en la carta y en la ficha. */
-export function CartaPedido({ slug, rate, payOptions, businessName, whatsapp, acepta, dishes }: CartaPedidoProps) {
+export function CartaPedido({ slug, rate, payOptions, businessName, whatsapp, acepta, dishes, hideFab = false }: CartaPedidoProps) {
   return (
     <>
-      <CartaFab rate={rate} />
+      {!hideFab && <CartaFab rate={rate} />}
       <CartaCarrito slug={slug} rate={rate} payOptions={payOptions} businessName={businessName} whatsapp={whatsapp} acepta={acepta} dishes={dishes} />
     </>
   )

@@ -122,10 +122,10 @@
 .fabTot small { font-size: 11.5px; opacity: 0.85; }
 
 /* ── Ficha ────────────────────────────────────────────── */
-.ficha { max-width: 1100px; margin: 0 auto; background: var(--carta-card); padding-bottom: 140px; }
+.ficha { max-width: 1100px; margin: 0 auto; background: var(--carta-card); padding-bottom: 120px; }
 .fichaFoto { position: relative; aspect-ratio: 4 / 5; background: var(--carta-foto-fondo); overflow: hidden; }
-.fichaTipo { display: grid; place-items: center; background: linear-gradient(135deg, var(--carta-oro-soft), var(--carta-card)); }
-.fichaTipo .wm { font-family: var(--carta-font-display); font-weight: 800; font-size: 160px; color: var(--carta-acento); opacity: 0.2; }
+.fichaTipo { display: grid; place-items: center; aspect-ratio: auto; height: 188px; background: linear-gradient(135deg, var(--carta-oro-soft), var(--carta-card)); }
+.fichaTipo .wm { font-family: var(--carta-font-display); font-weight: 800; font-size: 80px; line-height: 1; color: var(--carta-acento); opacity: 0.2; }
 .volver { position: absolute; left: 12px; top: 12px; z-index: 2; width: 44px; height: 44px; border-radius: 50%; background: var(--carta-card); color: var(--carta-tinta); display: grid; place-items: center; box-shadow: var(--carta-sombra); font-size: 24px; }
 .fichaBody { padding: 20px 16px; }
 .fichaBody h1 { font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
@@ -147,7 +147,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 .input:focus-visible, .tam:focus-visible, .add:focus-visible, .tab:focus-visible, .btn:focus-visible, .paso:focus-visible, .fab:focus-visible { outline: 3px solid var(--carta-acento); outline-offset: 2px; }
 .error { color: var(--carta-aji); font-size: 13px; margin-top: 4px; }
 .aviso { color: var(--carta-oro); font-size: 13px; }
-.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--carta-card); border-top: 1px solid var(--carta-linea); padding: 10px 16px 84px; display: flex; gap: 12px; align-items: center; }
+.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--carta-card); border-top: 1px solid var(--carta-linea); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: center; }
 .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; border-radius: var(--carta-radio); background: var(--carta-acento); color: var(--carta-sobre-acento); font-size: 16px; font-weight: 700; padding: 12px 16px; text-align: center; }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btnAlt { background: var(--carta-card); color: var(--carta-tinta); box-shadow: inset 0 0 0 1.5px var(--carta-linea); }
@@ -206,6 +206,7 @@ textarea.input { min-height: 84px; resize: vertical; }
   .hcardBig { grid-row: span 2; }
   .ficha { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); margin: 24px auto; border-radius: 24px; overflow: hidden; box-shadow: var(--carta-sombra); padding-bottom: 0; }
   .fichaFoto { aspect-ratio: auto; min-height: 760px; }
+  .fichaTipo { min-height: 304px; height: auto; }
   .fichaBody { padding: 36px 40px 40px; }
   .fichaBody h1 { font-size: 40px; }
   .barra { position: static; border: 0; padding: 22px 0 0; margin-top: 22px; background: transparent; }
@@ -252,7 +253,14 @@ textarea.input { min-height: 84px; resize: vertical; }
 .alerg { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; color: var(--carta-tinta-2); }
 .alergBloque { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: var(--carta-radio); background: var(--carta-oro-soft); color: var(--carta-tinta); font-size: 14px; }
 .alergBloque svg { flex: none; margin-top: 2px; color: var(--carta-oro); }
-.horario { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 13px; color: var(--carta-tinta-2); }
+.horario { margin: 0; padding: 0 16px; background: var(--carta-card); border-bottom: 1px solid var(--carta-linea); font-size: 13px; color: var(--carta-tinta-2); }
+.horarioResumen { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; color: var(--carta-tinta); font-weight: 600; }
+.horarioResumen::-webkit-details-marker { display: none; }
+.horarioLinea { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.horarioFlecha { flex: none; transition: transform 0.2s; }
+.horario[open] .horarioFlecha { transform: rotate(180deg); }
+.horarioLista { list-style: none; margin: 0; padding: 0 0 12px; display: grid; gap: 4px; }
+.horarioDia { display: flex; justify-content: space-between; gap: 12px; }
 .horarioDia b { color: var(--carta-tinta); font-weight: 650; }
 .banda { position: relative; height: 140px; margin: 28px 0; border-radius: var(--carta-radio); overflow: hidden; }
 .lineaBloque { border-bottom: 1px solid var(--carta-linea); }

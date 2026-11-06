@@ -202,8 +202,8 @@ test('pantalla: pestaña Cobro y precios, vista previa, guardar y auditoría (qu
   const tab = page.getByTestId('tab-cobro-precios')
   await expect(tab).toBeVisible()
   await expect(tab.getByTestId('cp-preview')).toContainText('Vista previa')
-  await expect(tab.getByTestId('cp-template-carta')).toBeDisabled()
-  await expect(tab.getByTestId('cp-template-carta')).toContainText('Próximamente')
+  await expect(tab.getByTestId('cp-template-carta')).toBeEnabled()
+  await expect(tab.getByTestId('cp-template-carta')).toContainText('Carta')
   await page.screenshot({ path: 'tests/__capturas__/cobro-panel-1280.png' })
 
   await tab.getByTestId('cp-divisa').click()

@@ -125,7 +125,7 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
     return {
       id: p.id, name: p.name, description: p.description, image: firstImage(p.images), categoryName: p.category?.name ?? null,
       priceUsd, priceBs: priceUsd > 0 ? priceUsd * rate : null,
-      divisaUsd: !onRequest && sizes.length === 0 && divisaOn ? divisaPriceOf(p) : null,
+      divisaUsd: !onRequest && divisaOn ? divisaPriceOf(p) : null,
       sizes, groups, tags, allergens: readAllergens(p.allergens),
       isFeatured: p.is_featured,
       onRequest,

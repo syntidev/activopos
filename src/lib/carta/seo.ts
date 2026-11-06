@@ -29,13 +29,15 @@ export interface DishMeta {
   name:        string
   description: string | null
   image:       string | null
+  /** updated_at en ms: versiona la URL de la tarjeta para compartir. */
+  updatedAt:   number
 }
 
 /** Datos mínimos de un plato para el SEO de su ficha (sin cargar toda la carta). */
 export async function cartaDishMeta(businessId: number, productId: number): Promise<DishMeta | null> {
   const p = await prisma.product.findFirst({
     where:  { id: productId, business_id: businessId, active: true, available_in_pos: true, ...CATALOG_WHERE_FILTER },
-    select: { name: true, description: true, images: true },
+    select: { name: true, description: true, images: true, updated_at: true },
   })
-  return p ? { name: p.name, description: p.description, image: firstImage(p.images) } : null
+  return p ? { name: p.name, description: p.description, image: firstImage(p.images), updatedAt: p.updated_at.getTime() } : null
 }

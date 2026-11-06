@@ -9,6 +9,7 @@ const PUBLIC_PREFIXES = [
   '/catalogo/',
   '/api/catalog/',
   '/api/public/',
+  '/api/og/',                             // tarjetas para compartir (WhatsApp/Facebook las piden sin sesión)
   '/api/marketing/',                      // contenido público de marketing (planes, segmentos)
   '/para-',                               // landings SEO por segmento (/para-carniceria, etc.) — públicas
   '/blog/',                               // posts individuales del blog público (/blog está en PUBLIC_EXACT)

@@ -26,7 +26,7 @@ export function getCartaBusiness(slug: string) {
       id: true, name: true, logo_path: true, phone: true, whatsapp: true, city: true,
       catalog_title: true, catalog_desc: true, catalog_hours: true, catalog_template: true, catalog_plan: true,
       catalog_cover_path: true, catalog_cover_path_2: true, catalog_cover_path_3: true,
-      subscription_active: true, subscription_expires_at: true, settings: true,
+      subscription_active: true, subscription_expires_at: true, settings: true, updated_at: true,
     },
   })
 }

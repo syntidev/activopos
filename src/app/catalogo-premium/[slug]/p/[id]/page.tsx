@@ -3,6 +3,7 @@ import { chipMethods, readCobroEffective } from '@/lib/cobro-precios'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+import { shareMetadata } from '@/lib/og/metadata'
 import { getActiveRate } from '@/lib/bcv'
 import { subcategoryKey } from '@/lib/subcategory'
 import { brandSlug, resolveVitrinaBrand } from '@/lib/vitrina'
@@ -40,19 +41,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const product = await prisma.product.findFirst({
     where: { id: productId, business_id: business.id, active: true, ...CATALOG_WHERE_FILTER },
-    select: { name: true, description: true, images: true },
+    select: { name: true, description: true, updated_at: true },
   })
   if (!product) return { title: 'Producto no encontrado' }
 
-  const imgs = parseImages(product.images)
-  return {
+  // Tarjeta 1200×630 generada (JPEG liviano, URL absoluta); ?v= cambia al editar el producto y WhatsApp renueva la vista previa.
+  return shareMetadata({
     title:       product.name,
     description: product.description ?? `Ver ${product.name} en el catálogo`,
-    openGraph: {
-      title:  product.name,
-      images: imgs[0] ? [{ url: imgs[0] }] : [],
-    },
-  }
+    path:        `/c/${params.slug}/p/${productId}`,
+    imagePath:   `/api/og/producto/${params.slug}/${productId}?v=${product.updated_at.getTime()}`,
+    imageAlt:    product.name,
+    kind:        'product',
+  })
 }
 
 const RELATED_MAX = 4

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCartaBusiness, loadCarta, resolveCartaBusiness } from '@/lib/carta/load'
 import { cartaDishMeta } from '@/lib/carta/seo'
+import { shareMetadata } from '@/lib/og/metadata'
 import { relatedIds } from '@/lib/carta/favoritos'
 import { CartaFicha } from '../../CartaFicha'
 import { CartaPedido } from '../../CartaPedido'
@@ -21,8 +22,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!dish) return { title: 'Plato no encontrado' }
   const title = dish.name + ' — ' + (biz.catalog_title ?? biz.name)
   const description = dish.description ?? 'Pide ' + dish.name + ' en ' + (biz.catalog_title ?? biz.name) + '.'
-  const images = dish.image ? [{ url: dish.image, alt: dish.name }] : []
-  return { title, description, robots: 'index, follow', openGraph: { title, description, type: 'website', images }, twitter: { card: images.length > 0 ? 'summary_large_image' : 'summary', title, description, images: images.map(i => i.url) } }
+  return shareMetadata({
+    title, description, robots: 'index, follow', kind: 'product',
+    path:      `/c/${params.slug}/p/${id}`,
+    imagePath: `/api/og/producto/${params.slug}/${id}?v=${dish.updatedAt}`,
+    imageAlt:  dish.name,
+  })
 }
 
 export default async function PlatoPage({ params }: PageProps) {

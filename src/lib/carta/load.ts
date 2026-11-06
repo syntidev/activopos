@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { getActiveRate } from '@/lib/bcv'
 import { divisaPriceOf, readDivisaMethodIds } from '@/lib/catalog-divisa'
-import { CATALOG_WHERE_FILTER, effectiveStock, isCatalogLive, isOutOfStock } from '@/lib/catalog'
+import { CATALOG_WHERE_FILTER, isCatalogLive, isOutOfStock, tracksStock } from '@/lib/catalog'
 import { chipMethods, readCobroEffective } from '@/lib/cobro-precios'
 import { CONFIG_SCHEMAS } from '@/lib/landing-sections'
 import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
@@ -23,7 +23,7 @@ export function getCartaBusiness(slug: string) {
   return prisma.business.findFirst({
     where:  { catalog_slug: slug, catalog_active: true, active: true },
     select: {
-      id: true, name: true, logo_path: true, phone: true, whatsapp: true, city: true,
+      id: true, name: true, logo_path: true, phone: true, whatsapp: true, city: true, address: true,
       catalog_title: true, catalog_desc: true, catalog_hours: true, catalog_template: true, catalog_plan: true,
       catalog_cover_path: true, catalog_cover_path_2: true, catalog_cover_path_3: true,
       subscription_active: true, subscription_expires_at: true, settings: true, updated_at: true,
@@ -69,6 +69,8 @@ export interface CartaPageData {
   horario:    CartaHorarioDia[]
   /** Fotos de ambiente (portadas del negocio) para las bandas entre secciones. */
   bandas:     string[]
+  /** Encabezado del negocio: portada(s) a lo ancho, logo en círculo, nombre y dirección. */
+  brand:      { covers: string[]; logo: string | null; address: string | null }
   /** WhatsApp del negocio en formato internacional (solo dígitos); null si no hay uno válido. */
   whatsapp:   string | null
   /** Negocio abierto para recibir pedidos (false = cerrado o en pausa). */
@@ -111,7 +113,7 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
   const dishOf = (p: (typeof products)[number]): CartaDish => {
     const onRequest = p.catalog_visibility === 'on_request'
     const sizes: CartaSize[] = onRequest ? [] : p.variants.map(v => ({
-      id: v.id, label: v.valor, priceUsd: resolveUnitPriceUsd(p, v), soldOut: v.stock <= 0,
+      id: v.id, label: v.valor, priceUsd: resolveUnitPriceUsd(p, v), soldOut: tracksStock(p.sale_mode) && v.stock <= 0,
     }))
     const groups: CartaOptionGroup[] = onRequest ? [] : p.option_groups.filter(g => g.options.length > 0).map(g => ({
       id: g.id, name: g.name, required: g.required, multiple: g.multiple, maxSelect: g.max_select,
@@ -130,7 +132,7 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
       isFeatured: p.is_featured,
       onRequest,
       soldOutToday: isSoldOutToday(p.sold_out_date),
-      outOfStock: isOutOfStock({ sale_mode: p.sale_mode, ...stockInput }) || effectiveStock(stockInput) <= 0,
+      outOfStock: isOutOfStock({ sale_mode: p.sale_mode, ...stockInput }), // regla única: el servicio nunca se agota por stock
     }
   }
 
@@ -166,6 +168,11 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
   return {
     settings, rate, categories, dishes, hero, featured, pagos, payOptions, open,
     horario: formatHours(hours),
+    brand: {
+      covers:  [business.catalog_cover_path, business.catalog_cover_path_2, business.catalog_cover_path_3].filter((x): x is string => !!x),
+      logo:    business.logo_path || null,
+      address: [business.address, business.city].filter(Boolean).join(', ') || null,
+    },
     bandas:  [business.catalog_cover_path, business.catalog_cover_path_2, business.catalog_cover_path_3].filter((x): x is string => !!x),
     whatsapp: isValidWaPhone(wa) ? wa : null,
     acepta:  open === null ? true : open.open,

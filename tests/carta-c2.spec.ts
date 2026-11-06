@@ -158,7 +158,8 @@ test('pulido 375: horario en una línea con detalle al tocar; barra de pedido so
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto('/catalogo-carta/' + OWN_SLUG)
   const horario = page.getByTestId('carta-horario')
-  await expect(horario.locator('summary')).toContainText(/Abierto · cierra a las/)
+  await expect(page.getByTestId('carta-estado')).toContainText(/Abierto · cierra a las/)
+  await expect(horario.locator('summary')).toContainText('Ver horario')
   const alto = (await horario.locator('summary').boundingBox())?.height ?? 999
   expect(alto, 'resumen del horario en una línea').toBeLessThanOrEqual(56)
   await expect(horario.getByText('Dom', { exact: false }).first()).toBeHidden()

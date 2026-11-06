@@ -1,27 +1,23 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
 import { CartaFoto } from './CartaFoto'
 import { useAddDish } from './useAddDish'
 import { cx } from './util'
 import styles from './carta.module.css'
-import type { CartaHero, CartaHorarioDia, CartaOpenState } from '@/types/carta'
+import type { CartaHero } from '@/types/carta'
 
 const AUTOPLAY_MS = 5000
 const RESUME_MS = 6000
 
 interface CartaPortadaProps {
-  hero:         CartaHero
-  slug:         string
-  businessName: string
-  open:         CartaOpenState | null
-  horario:      CartaHorarioDia[]
+  hero: CartaHero
+  slug: string
 }
 
-/** Portada: slider a sangre completa (event_slider del negocio, o favoritos/recomendados), estado abierto/cerrado, horario y marca. */
-export function CartaPortada({ hero, slug, businessName, open, horario }: CartaPortadaProps) {
+/** Hero de favoritos/recomendados (o el event_slider del negocio): va DEBAJO del encabezado del negocio. */
+export function CartaPortada({ hero, slug }: CartaPortadaProps) {
   const track = useRef<HTMLDivElement>(null)
   const paused = useRef(false)
   const [index, setIndex] = useState(0)
@@ -46,38 +42,8 @@ export function CartaPortada({ hero, slug, businessName, open, horario }: CartaP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced, n, index])
 
-  const initials = businessName.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
-  const top = (
-    <div className={styles.herotop}>
-      <div className={styles.brand}><span className={styles.logo}>{initials}</span><span className={styles.bn} data-testid="carta-nombre">{businessName}</span></div>
-      {open && (
-        <span className={cx(styles.estado, !open.open && styles.estadoCerrado)} data-testid="carta-estado">
-          <i /><span className={styles.sm}>{open.label.split(' · ')[0]}</span><span className={styles.lg}>{open.label}</span>
-        </span>
-      )}
-    </div>
-  )
-  // Una línea: estado + hora ("Abierto · cierra a las 10:00 pm"); el horario completo se abre al tocar.
-  const horarioBlock = horario.length > 0 && (
-    <details className={styles.horario} data-testid="carta-horario">
-      <summary className={styles.horarioResumen}>
-        <span className={styles.horarioLinea}>{open ? open.label : 'Horario'}</span>
-        <ChevronDown size={16} aria-hidden="true" className={styles.horarioFlecha} />
-      </summary>
-      <ul className={styles.horarioLista}>
-        {horario.map(h => <li key={h.day} className={styles.horarioDia}><b>{h.day}</b><span>{h.text}</span></li>)}
-      </ul>
-    </details>
-  )
-
-  if (n === 0) {
-    return (
-      <div data-testid="carta-portada">
-        <section className={cx(styles.hero, styles.heroSolo)} data-testid="carta-hero">{top}</section>
-        {horarioBlock}
-      </div>
-    )
-  }
+  // Sin slides no hay hero: el encabezado del negocio (CartaEncabezado) ya muestra portada, logo, estado y dirección.
+  if (n === 0) return <div data-testid="carta-portada" />
 
   return (
     <div data-testid="carta-portada">
@@ -128,11 +94,9 @@ export function CartaPortada({ hero, slug, businessName, open, horario }: CartaP
             </div>
           ))}
         </div>
-        {top}
         <div className={styles.kicker} data-testid="carta-hero-titulo">{hero.kicker}</div>
         {n > 1 && <div className={styles.dots} aria-hidden="true">{hero.slides.map((s, i) => <i key={s.key} className={cx(styles.dot, i === index && styles.dotOn)} />)}</div>}
       </section>
-      {horarioBlock}
     </div>
   )
 }

@@ -41,13 +41,16 @@ export function effectiveStock(product: {
   return product.net_stock ?? 0
 }
 
+/** Un producto de tipo servicio (sale_mode = 'service') no lleva inventario: nunca se agota por stock (solo por sold_out_date). */
+export const tracksStock = (saleMode: string): boolean => saleMode !== 'service'
+
 export function isOutOfStock(product: {
   sale_mode:     string
   has_variants?: boolean
   variants?:     { stock: number }[] | null
   net_stock?:    number | null
 }): boolean {
-  if (product.sale_mode === 'service') return false
+  if (!tracksStock(product.sale_mode)) return false
   return effectiveStock(product) <= 0
 }
 

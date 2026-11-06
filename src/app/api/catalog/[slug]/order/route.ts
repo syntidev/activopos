@@ -7,7 +7,7 @@ import {
   catalogLimiter, catalogOrderCedulaLimiter, catalogOrderIpLimiter, catalogOrderPhoneLimiter, getClientIp,
 } from '@/lib/rate-limit'
 import { logError } from '@/lib/safe-log'
-import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
+import { isCatalogLive, CATALOG_WHERE_FILTER, tracksStock } from '@/lib/catalog'
 import { buildWhatsAppMessage, whatsappUrl } from '@/lib/whatsapp-message'
 import { checkCedula } from '@/lib/cedula'
 import { FinancingError, PAYMENT_KINDS, assertFinancingEligible } from '@/lib/ticket-financing'
@@ -368,7 +368,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         : null
       if (variant) {
         variantLabel = variant.valor
-        if (variant.stock < item.qty) {
+        if (tracksStock(p.sale_mode) && variant.stock < item.qty) {
           throw new Error(`STOCK_INSUFICIENTE:${p.name} (${variant.valor})`)
         }
       }
@@ -421,7 +421,7 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     // un producto con tallas, aunque las tallas tuvieran unidades. Misma regla
     // que effectiveStock() en lib/catalog.ts.
     for (const item of resolvedItems) {
-      if (item.variant_id !== null) continue
+      if (item.variant_id !== null || !tracksStock(productMap.get(item.product_id)!.sale_mode)) continue
       const available = stockMap.get(item.product_id) ?? 0
       if (available < item.qty) {
         throw new Error(`STOCK_INSUFICIENTE:${item.product_name}`)
@@ -567,8 +567,9 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
       })
     }
 
+    // Los servicios no llevan inventario: no se reservan.
     await tx.inventoryEntry.createMany({
-      data: resolvedItems.map(item => ({
+      data: resolvedItems.filter(item => tracksStock(productMap.get(item.product_id)!.sale_mode)).map(item => ({
         business_id: business.id,
         product_id:  item.product_id,
         quantity:    -Number(item.qty),

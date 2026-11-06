@@ -8,13 +8,15 @@ import styles from './admin.module.css'
 interface PlantillaPickerProps {
   tenantId:  number
   publicUrl: string | null
+  /** Por qué el enlace público no está disponible (null = publicado). */
+  unavailableReason: string | null
   initial:   { template: PlantillaKey; carta_preset: CartaPresetKey; carta_style: CartaStyleKey }
 }
 
 const STYLE_LABELS: Record<CartaStyleKey, string> = { casual: 'Casual', fine: 'Fine dining' }
 
 /** Plantilla del catálogo de un negocio (solo superadmin). El enlace público no cambia al cambiar de plantilla. */
-export function PlantillaPicker({ tenantId, publicUrl, initial }: PlantillaPickerProps) {
+export function PlantillaPicker({ tenantId, publicUrl, unavailableReason, initial }: PlantillaPickerProps) {
   const router = useRouter()
   const [template, setTemplate] = useState<PlantillaKey>(initial.template)
   const [preset, setPreset]     = useState<CartaPresetKey>(initial.carta_preset)
@@ -71,6 +73,7 @@ export function PlantillaPicker({ tenantId, publicUrl, initial }: PlantillaPicke
         <div className={styles.planStatusField}>
           <span className={styles.infoLabel}>Enlace público (único)</span>
           <a href={publicUrl} target="_blank" rel="noopener noreferrer" className={styles.actionLink} data-testid="plantilla-public-url">{publicUrl}</a>
+          {unavailableReason && <span className={styles.unavailableReason} role="status" data-testid="public-url-reason">No disponible. {unavailableReason}</span>}
         </div>
       )}
       <div className={styles.planStatusActions}>

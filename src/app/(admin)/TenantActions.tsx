@@ -51,14 +51,16 @@ interface PlanStatusFormProps {
   plan:      string          // catalog_plan
   active:    boolean         // subscription_active (distinto de Business.active del SuspendToggle)
   expiresAt: string | null   // YYYY-MM-DD, null = indefinido
+  catalogActive: boolean     // businesses.catalog_active: valor REAL de la DB
 }
 
 /* Sección "Plan y estado" del detalle de tenant. Conecta al endpoint existente
  * tenants/[id]/plan, que escribe catalog_plan + subscription_active +
  * subscription_expires_at. Estado 'active'|'suspended' (el endpoint también
  * acepta 'expired', pero acá el admin solo activa o suspende). */
-export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt }: PlanStatusFormProps) {
+export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt, catalogActive }: PlanStatusFormProps) {
   const router = useRouter()
+  const [published, setPublished] = useState(catalogActive)
   const [plan, setPlan]       = useState<PlanTier>(initialPlan === 'negocio_activo' ? 'negocio_activo' : 'gratis')
   const [status, setStatus]   = useState<'active' | 'suspended'>(active ? 'active' : 'suspended')
   const [expires, setExpires] = useState(expiresAt ?? '')
@@ -72,10 +74,13 @@ export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt 
       const res = await fetch(`/api/admin/tenants/${tenantId}/plan`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ plan, status, expires_at: expires || null }),
+        // El interruptor solo viaja si el admin lo movió: si no, el servidor decide (plan con catálogo + Activo = publicar).
+        body:    JSON.stringify({ plan, status, expires_at: expires || null, ...(published !== catalogActive ? { catalog_active: published } : {}) }),
       })
       if (res.ok) {
-        setMsg('Cambios guardados.')
+        const out = await res.json() as { catalog_published_auto?: boolean; business?: { catalog_active?: boolean } }
+        if (out.business?.catalog_active !== undefined) setPublished(out.business.catalog_active)
+        setMsg(out.catalog_published_auto ? 'Cambios guardados. Catálogo publicado.' : 'Cambios guardados.')
         router.refresh()
       } else {
         setMsg('No se pudo guardar.')
@@ -109,6 +114,15 @@ export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt 
         <input id="ps-expires" type="date" className={styles.planSelect} value={expires}
           onChange={e => setExpires(e.target.value)} disabled={saving} />
         <span className={styles.planStatusHint}>Vacío = plan indefinido (no vence).</span>
+      </div>
+      <div className={styles.planStatusField}>
+        <span className={styles.infoLabel} id="ps-published-label">Catálogo publicado</span>
+        <button id="ps-published" type="button" role="switch" aria-checked={published} aria-labelledby="ps-published-label"
+          className={`${styles.publishSwitch} ${published ? styles.publishSwitchOn : ''}`}
+          onClick={() => setPublished(v => !v)} disabled={saving}>
+          {published ? 'Publicado' : 'Apagado'}
+        </button>
+        <span className={styles.planStatusHint}>Apagado = /c/[slug] da &quot;no disponible&quot;.</span>
       </div>
       <div className={styles.planStatusActions}>
         <button type="button" className={`${styles.actionLink} ${styles.actionBtn}`}

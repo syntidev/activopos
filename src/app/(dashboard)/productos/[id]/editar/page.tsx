@@ -10,6 +10,7 @@ import { usePlanGate } from '@/hooks/usePlanGate'
 import { UpgradeModal } from '@/components/ui/UpgradeModal'
 import { CategoryModal } from '@/components/products/CategoryModal'
 import { ProductFormLayout } from '@/components/products/ProductFormLayout'
+import { ProductOptionsEditor } from '@/components/products/ProductOptionsEditor'
 import { SaveBar } from '@/components/products/SaveBar'
 import type { ProductFormData, ModalCategory, EditableProduct } from '@/components/products/ProductModal'
 import m from '@/components/products/modals.module.css'
@@ -336,6 +337,12 @@ export default function EditarProductoPage({ params }: { params: { id: string } 
               </button>
             </div>
           )}
+
+          {/* Opciones del plato (grupos "Tocineta: Pavo / Cochino", extras): fuera del <form> principal, con su propio PUT
+              /api/products/[id]/options (reemplazo completo). Solo existe con el producto ya guardado. */}
+          <div className={s.card}>
+            <ProductOptionsEditor productId={Number(productId)} />
+          </div>
         </>
       )}
 

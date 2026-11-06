@@ -46,7 +46,7 @@ export default async function PlatoPage({ params }: PageProps) {
   return (
     <>
       <CartaFicha dish={dish} slug={params.slug} rate={data.rate} related={related} />
-      <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} businessName={business.catalog_title ?? business.name} whatsapp={data.whatsapp} acepta={data.acepta} dishes={data.dishes} />
+      <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} businessName={business.catalog_title ?? business.name} whatsapp={data.whatsapp} acepta={data.acepta} dishes={data.dishes} hideFab />
     </>
   )
 }

@@ -1,0 +1,23 @@
+{
+  "_nota": "Grupos de opciones de Café con Bike deducidos de las descripciones de su carta (ordena.menu). Precio extra 0 salvo indicación. Revisar con el negocio.",
+  "grupos": [
+    {"producto": "Pollo Crispy", "grupo": "Preparación del pollo", "obligatorio": true, "multiple": false, "opciones": ["A la broster", "Asado"]},
+    {"producto": "Pollo Crispy", "grupo": "Tocineta", "obligatorio": true, "multiple": false, "opciones": ["Pavo", "Cochino"]},
+    {"producto": "Ketomate", "grupo": "Tocineta", "obligatorio": true, "multiple": false, "opciones": ["Pavo", "Cochino"]},
+    {"producto": "Keto Almendra", "grupo": "Tocineta", "obligatorio": true, "multiple": false, "opciones": ["Pavo", "Cochino"]},
+    {"producto": "4to Piso", "grupo": "Tocineta", "obligatorio": true, "multiple": false, "opciones": ["Pavo", "Cochino"]},
+    {"producto": "Beef Burger", "grupo": "Tocineta", "obligatorio": true, "multiple": false, "opciones": ["Pavo", "Cochino"]},
+    {"producto": "La Matatan", "grupo": "Tocineta", "obligatorio": true, "multiple": false, "opciones": ["Pavo", "Cochino"]},
+    {"producto": "La Matatan", "grupo": "Queso", "obligatorio": true, "multiple": false, "opciones": ["Gouda", "Cheddar"]},
+    {"producto": "Sea Food Burger", "grupo": "Camarones", "obligatorio": true, "multiple": false, "opciones": ["Asados", "Fritos"]},
+    {"producto": "La Vieja", "grupo": "Maduración de la carne", "obligatorio": true, "multiple": false, "opciones": ["14 días", "21 días", "30 días"]},
+    {"producto": "La Vieja", "grupo": "Armado", "obligatorio": true, "multiple": false, "opciones": ["A mi gusto", "Al gusto del Chef"]},
+    {"producto": "Ciabatta Clásica", "grupo": "Proteína", "obligatorio": true, "multiple": false, "opciones": ["Pechuga de pollo", "Lomito"]},
+    {"producto": "Ciabatta Italiana", "grupo": "Embutido", "obligatorio": true, "multiple": false, "opciones": ["Prosciutto", "Mortadela"]},
+    {"producto": "Ciabatta Italiana", "grupo": "Queso", "obligatorio": true, "multiple": false, "opciones": ["Buffala", "Bocconcini"]},
+    {"producto": "Ciabatta Mixta", "grupo": "Queso", "obligatorio": true, "multiple": false, "opciones": ["Buffala", "Bocconcini"]},
+    {"producto": "Ensalada", "grupo": "Proteína", "obligatorio": true, "multiple": false, "opciones": ["Lomito", "Pechuga de pollo asada"]},
+    {"producto": "Keto Lechuga", "grupo": "Lechuga", "obligatorio": true, "multiple": false, "opciones": ["Romana", "Americana"]},
+    {"producto": "Papas Fritas o Air Fryer", "grupo": "Preparación", "obligatorio": true, "multiple": false, "opciones": ["Fritas", "Air Fryer"]}
+  ]
+}

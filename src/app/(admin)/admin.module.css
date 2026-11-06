@@ -481,6 +481,29 @@
   .planStatusForm { grid-template-columns: 1fr; }
 }
 
+/* Interruptor "Catálogo publicado" (touch target 44px) y motivo de no disponibilidad del enlace público */
+.publishSwitch {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  background: #18181b;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  color: #a1a1aa;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.publishSwitchOn {
+  color: #4ade80;
+  border-color: rgba(74,222,128,0.4);
+}
+.publishSwitch:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.unavailableReason {
+  font-size: var(--text-xs);
+  color: #fbbf24;
+}
+
 /* ── Empty / Error state ── */
 .emptyState {
   padding: var(--space-12) var(--space-6);

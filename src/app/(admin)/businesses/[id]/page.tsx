@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { catalogUnavailableReason } from '@/lib/catalog'
 import { SuspendToggle, ImpersonateButton, PlanStatusForm } from '../../TenantActions'
 import { PlantillaPicker } from '../../PlantillaPicker'
 import { publicPath, readPlantilla } from '@/lib/plantillas'
@@ -20,6 +21,7 @@ async function getTenantDetail(id: number) {
       segment:      true,
       catalog_slug: true,
       catalog_plan: true,
+      catalog_active: true,
       catalog_template: true,
       settings:     true,
       active:       true,
@@ -79,6 +81,7 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
           plan={business.catalog_plan ?? 'gratis'}
           active={business.subscription_active}
           expiresAt={business.subscription_expires_at ? business.subscription_expires_at.toISOString().slice(0, 10) : null}
+          catalogActive={business.catalog_active}
         />
       </div>
 
@@ -87,6 +90,7 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
         <PlantillaPicker
           tenantId={business.id}
           publicUrl={business.catalog_slug ? publicPath(business.catalog_slug) : null}
+          unavailableReason={catalogUnavailableReason(business)}
           initial={readPlantilla(business)}
         />
       </div>

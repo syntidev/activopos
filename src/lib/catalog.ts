@@ -20,6 +20,21 @@ export function isCatalogLive(business: {
   return true
 }
 
+/** Por qué /c/[slug] da "no disponible" (null = está publicado). Mismas condiciones que las páginas: catalog_active + isCatalogLive, en orden de causa. */
+export function catalogUnavailableReason(business: {
+  catalog_active:          boolean
+  catalog_plan:            string | null
+  subscription_active:     boolean
+  subscription_expires_at: Date | null
+}): string | null {
+  if (!business.catalog_active) return 'Catálogo apagado: activa "Catálogo publicado".'
+  const plan = (business.catalog_plan as PlanTier | null) ?? 'gratis'
+  if (!(PLAN_LIMITS[plan] ?? PLAN_LIMITS.gratis).catalog) return 'Plan sin catálogo: cambia el plan a uno que lo incluya.'
+  if (!business.subscription_active) return 'Suscripción suspendida: pon el estado en Activo.'
+  if (business.subscription_expires_at && new Date() > business.subscription_expires_at) return 'Suscripción vencida: renueva la fecha de vencimiento.'
+  return null
+}
+
 // Un producto es UN producto, tenga variantes o no. Su stock real vive en UN
 // solo lugar según su forma: con variantes activas, en product_variants; sin
 // ellas, en inventory_entries. `net_stock` (la suma de inventory_entries del

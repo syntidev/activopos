@@ -2,6 +2,7 @@ import { divisaPriceOf } from '@/lib/catalog-divisa'
 import { redirect, notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+import { shareMetadata } from '@/lib/og/metadata'
 import { parseKitConfig } from '@/lib/kit-config'
 import { getSession } from '@/lib/auth'
 import { getActiveRate } from '@/lib/bcv'
@@ -148,26 +149,23 @@ async function getBusiness(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const biz = await prisma.business.findFirst({
     where:  { catalog_slug: params.slug, active: true },
-    select: { name: true, catalog_title: true, catalog_desc: true, logo_path: true },
+    select: { name: true, catalog_title: true, catalog_desc: true, updated_at: true },
   })
   if (!biz) return { title: 'Catálogo no encontrado' }
 
   const title       = biz.catalog_title ?? biz.name
   const description = biz.catalog_desc ?? `Catálogo de productos de ${biz.name}`
-  const ogImages    = biz.logo_path ? [{ url: biz.logo_path, alt: title }] : []
 
-  return {
+  // Portada 1200×630 generada (imagen de portada o color de marca + logo + nombre); URL absoluta.
+  return shareMetadata({
     title:       `${title} — Catálogo`,
     description,
+    path:        `/c/${params.slug}`,
+    imagePath:   `/api/og/portada/${params.slug}?v=${biz.updated_at.getTime()}`,
+    imageAlt:    title,
+    kind:        'website',
     robots:      'index, follow',
-    openGraph:   { title, description, type: 'website', images: ogImages },
-    twitter: {
-      card:        ogImages.length ? 'summary_large_image' : 'summary',
-      title,
-      description,
-      images:      ogImages.map(i => i.url),
-    },
-  }
+  })
 }
 
 export default async function CatalogoPage({ params }: PageProps) {

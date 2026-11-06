@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isCatalogLive } from '@/lib/catalog'
 import { coverFill, loadImageBytes, logoPng } from '@/lib/og/images'
-import { brandAccent, DARK, jpegResponse, LIGHT, renderCoverCard } from '@/lib/og/image'
+import { brandAccent, jpegResponse, LIGHT, renderCoverCard } from '@/lib/og/image'
+import { cartaPalette } from '@/lib/og/carta-palette'
+import { cartaOgImage } from '@/lib/carta/seo'
 import { OG_HEIGHT, OG_WIDTH } from '@/lib/og/metadata'
 
 export const runtime = 'nodejs'
@@ -17,16 +19,18 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     where:  { catalog_slug: params.slug, catalog_active: true, active: true },
     select: {
       id: true, name: true, theme_color: true, logo_path: true, catalog_template: true, catalog_title: true, catalog_desc: true,
-      catalog_cover_path: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true,
+      catalog_cover_path: true, settings: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true,
     },
   })
   if (!business || !isCatalogLive(business)) return new NextResponse('No encontrado', { status: 404 })
 
-  const base = business.catalog_template === 'carta' ? DARK : LIGHT
-  const palette = { ...base, accent: brandAccent(business.theme_color, base.accent) }
+  const isCarta = business.catalog_template === 'carta'
+  const palette = isCarta ? cartaPalette(business.settings) : { ...LIGHT, accent: brandAccent(business.theme_color, LIGHT.accent) }
+  // Carta: sin portada propia, el fondo es la imagen que ya compartía antes (hero configurado o plato destacado).
+  const coverSrc = business.catalog_cover_path ?? (isCarta ? await cartaOgImage(business.id) : null)
 
   const [coverBytes, logoBytes] = await Promise.all([
-    business.catalog_cover_path ? loadImageBytes(business.catalog_cover_path, business.id) : Promise.resolve(null),
+    coverSrc ? loadImageBytes(coverSrc, business.id) : Promise.resolve(null),
     business.logo_path ? loadImageBytes(business.logo_path, business.id) : Promise.resolve(null),
   ])
   const [background, logo] = await Promise.all([

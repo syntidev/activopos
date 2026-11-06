@@ -14,7 +14,6 @@ const PHOTO = OG_HEIGHT
 export interface Palette { bg: string; panel: string; text: string; muted: string; accent: string }
 
 export const LIGHT: Palette = { bg: '#FFFFFF', panel: '#FFFFFF', text: '#1B1B2B', muted: '#5B5B70', accent: '#0038BD' }
-export const DARK: Palette = { bg: '#1A1210', panel: '#241A16', text: '#F6EBDD', muted: '#BFA995', accent: '#E9A24B' }
 
 const HEX_RE = /^#[0-9a-f]{6}$/i
 /** Color de marca del negocio si es un hex válido; si no, el acento de la paleta. */

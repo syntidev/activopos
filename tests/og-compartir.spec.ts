@@ -10,6 +10,7 @@ import { ownBusiness } from './helpers/own-business'
  * Datos propios (negocio de pruebas ZZA, prefijo "ZZA OG"); del negocio 87 (OnBike) solo se LEE.
  * Capturas en tests/__capturas__/zza-og-*.jpg (no se versionan).
  */
+test.setTimeout(120_000) // la primera petición a cada ruta compila en `next dev` y puede tardar
 const UA = { 'User-Agent': 'WhatsApp/2.23.20.0 A' }
 const MAX_BYTES = 250 * 1024
 const { businessId: BID, slug: SLUG } = ownBusiness()
@@ -87,16 +88,30 @@ test('producto sin foto: tarjeta tipográfica con nombre y precio', async ({ req
   writeFileSync(path.join(CAPTURAS, 'zza-og-sin-foto.jpg'), buf)
 })
 
-test('plantilla carta: tarjeta con paleta oscura', async ({ request }) => {
-  sql(`UPDATE businesses SET catalog_template='carta' WHERE id=${BID}`)
+test('plantilla carta: metadatos absolutos y tarjeta con la paleta del preset noche', async ({ request }) => {
+  sql(`UPDATE businesses SET catalog_template='carta', settings=JSON_SET(COALESCE(settings,JSON_OBJECT()),'$.carta_preset','noche') WHERE id=${BID}`)
   try {
-    const res = await request.get(`/api/og/producto/${SLUG}/${withPhoto}`, { headers: UA })
+    const page = await request.get(`/c/${SLUG}/p/${withPhoto}`, { headers: UA })
+    expect(page.status()).toBe(200)
+    const html = await page.text()
+    const image = metaOf(html, 'og:image')
+    expect(image).toMatch(new RegExp(`^https?://[^/]+/api/og/producto/${SLUG}/${withPhoto}\\?v=\\d+$`))
+    expect(metaOf(html, 'og:url')).toMatch(new RegExp(`/c/${SLUG}/p/${withPhoto}$`))
+    expect(metaOf(html, 'twitter:card')).toBe('summary_large_image')
+
+    const res = await request.get(image as string, { headers: UA })
     expect(res.status()).toBe(200)
     const buf = await res.body()
     await checkJpeg(buf)
+    // Esquina superior izquierda = franja de la foto en "contain": debe ser el papel oscuro de "noche" (#16120E), no blanco.
+    const px = await sharp(buf).extract({ left: 2, top: 2, width: 1, height: 1 }).raw().toBuffer()
+    expect(px[0]).toBeLessThan(60)
     writeFileSync(path.join(CAPTURAS, 'zza-og-carta.jpg'), buf)
+
+    const home = await (await request.get(`/c/${SLUG}`, { headers: UA })).text()
+    expect(metaOf(home, 'og:image')).toMatch(new RegExp(`/api/og/portada/${SLUG}\\?v=\\d+$`))
   } finally {
-    sql(`UPDATE businesses SET catalog_template='${originalTemplate}' WHERE id=${BID}`)
+    sql(`UPDATE businesses SET catalog_template='${originalTemplate}', settings=JSON_REMOVE(settings,'$.carta_preset') WHERE id=${BID}`)
   }
 })
 

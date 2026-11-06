@@ -5,7 +5,8 @@ import { divisaPriceOf } from '@/lib/catalog-divisa'
 import { readCobroEffective } from '@/lib/cobro-precios'
 import { isCatalogLive, CATALOG_WHERE_FILTER } from '@/lib/catalog'
 import { firstReadable, loadImageBytes, logoPng, photoSquare } from '@/lib/og/images'
-import { brandAccent, DARK, jpegResponse, LIGHT, renderProductCard } from '@/lib/og/image'
+import { brandAccent, jpegResponse, LIGHT, renderProductCard } from '@/lib/og/image'
+import { cartaPalette } from '@/lib/og/carta-palette'
 import { OG_HEIGHT } from '@/lib/og/metadata'
 
 export const runtime = 'nodejs'
@@ -41,7 +42,8 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
   if (!business || !isCatalogLive(business)) return new NextResponse('No encontrado', { status: 404 })
 
   const product = await prisma.product.findFirst({
-    where:  { id: productId, business_id: business.id, active: true, ...CATALOG_WHERE_FILTER },
+    // Mismo filtro que las fichas (premium, genérica y carta): lo que la página no muestra, la tarjeta tampoco.
+    where:  { id: productId, business_id: business.id, active: true, available_in_pos: true, ...CATALOG_WHERE_FILTER },
     select: {
       name: true, images: true, catalog_visibility: true,
       price_per_unit_usd: true, price_per_kg_usd: true, wholesale_price_usd: true, wholesale_price_per_kg_usd: true,
@@ -49,9 +51,10 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
   })
   if (!product) return new NextResponse('No encontrado', { status: 404 })
 
-  const isCarta = business.catalog_template === 'carta'
-  const base = isCarta ? DARK : LIGHT
-  const palette = { ...base, accent: isCarta ? base.accent : brandAccent(business.theme_color, base.accent) }
+  // Carta: paleta de su preset/acento; las demás plantillas: fondo claro con el color de marca del negocio.
+  const palette = business.catalog_template === 'carta'
+    ? cartaPalette(business.settings)
+    : { ...LIGHT, accent: brandAccent(business.theme_color, LIGHT.accent) }
 
   // Regla única de precio: principal = Divisa (solo premium con Divisa activa) o precio completo; Bs = completo × tasa activa.
   const full = Number((product.price_per_unit_usd ?? product.price_per_kg_usd)?.toString() ?? 0)

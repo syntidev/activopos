@@ -174,15 +174,15 @@ test('E10 si el negocio cobra solo en Bs: "Precios en $ · pagas en Bs a tasa BC
 
 test('A6 / E7 "Agregar" suma al pedido; con tamaños abre la ficha; la barra muestra cantidad y total en $ y Bs', async ({ page }) => {
   await page.goto(URL_CARTA)
-  await expect(page.getByTestId('carta-barra-pedido')).toBeVisible()
-  expect(await cuenta(page)).toBe(0)
+  await expect(page.getByTestId('carta-barra-pedido')).toHaveCount(0) // carrito vacío: la barra no se muestra
   await plato(page, 'Smash Burger').getByTestId('carta-plato-agregar').click()
   await expect.poll(() => cuenta(page)).toBe(1)
   await expect(page.getByTestId('carta-barra-total-usd')).toHaveText('$11.00')
   await expect(page.getByTestId('carta-barra-total-bs')).toContainText('Bs.')
   await plato(page, 'Punta Burger').getByTestId('carta-plato-agregar').click()
   await expect(page).toHaveURL(new RegExp('/p/' + idPlato('Punta Burger')))
-  await expect(page.getByTestId('carta-barra-pedido')).toBeVisible()
+  await expect(page.getByTestId('carta-ficha')).toBeVisible()
+  await expect(page.getByTestId('carta-barra-pedido')).toHaveCount(0) // en la ficha solo va la barra "Agregar"
 })
 
 test('ficha: tamaños como botones (el menor por defecto, el total se actualiza), cantidad, nota y toques de 44 px', async ({ page }) => {
@@ -202,7 +202,6 @@ test('ficha: tamaños como botones (el menor por defecto, el total se actualiza)
   }
   await page.getByTestId('carta-ficha-agregar').click()
   await expect(page.getByTestId('carta-agregado')).toBeVisible()
-  expect(await cuenta(page)).toBe(2)
 })
 
 test('carrito y pedido: editar cantidad, quitar con confirmación, tamaño y nota visibles, WhatsApp completo y POST /order con origin catalog', async ({ page }) => {
@@ -252,7 +251,7 @@ test('carrito y pedido: editar cantidad, quitar con confirmación, tamaño y not
   expect(mensaje).toContain('sin cebolla')
   await expect(page.getByTestId('carta-abrir-wa')).toHaveAttribute('href', /^https:\/\/wa\.me\/58/)
   expect(q("SELECT origin FROM orders WHERE business_id=@BID AND client_name='ZZB Prueba Carta'")).toBe('catalog')
-  expect(await cuenta(page)).toBe(0)
+  await expect(page.getByTestId('carta-barra-pedido')).toHaveCount(0)
 })
 
 test('E1 hero: sin ventas = Recomendados; con ventas pagadas de 30 días = favoritos; el plato del hero no se repite en De la casa', async ({ page }) => {
@@ -355,6 +354,7 @@ for (const ancho of [375, 1280]) {
       expect(await sinScrollHorizontal(page), url + ' @' + ancho).toBe(true)
     }
     await page.goto(URL_CARTA)
+    await plato(page, 'Smash Burger').getByTestId('carta-plato-agregar').click() // la barra de pedido aparece con el primer plato
     await page.evaluate(() => document.getElementById('cat-4')?.scrollIntoView({ block: 'start' }))
     await page.waitForTimeout(300)
     const barra = await page.getByTestId('carta-tabs').boundingBox()

@@ -105,7 +105,7 @@ test('carrito: opciones y nota visibles y editables, y el mensaje de WhatsApp la
   await opcion(page, 'Papas', 'Fritas').click()
   await page.getByTestId('carta-nota').fill('sin cebolla')
   await page.getByTestId('carta-ficha-agregar').click()
-  await page.getByTestId('carta-barra-pedido').click()
+  await page.getByTestId('carta-agregado').getByRole('button', { name: 'Ver mi pedido' }).click() // en la ficha no hay barra de pedido
   await expect(page.getByTestId('carta-linea-detalle')).toContainText('Pavo')
   await expect(page.getByTestId('carta-linea-detalle')).toContainText('sin cebolla')
   await expect(page.getByTestId('carta-total-usd')).toHaveText('$12.00')
@@ -152,4 +152,28 @@ test('Divisa: encendida la lista muestra el precio Divisa; apagada en "Cobro y p
     q("UPDATE businesses SET settings=JSON_REMOVE(settings, '$.cobro_precios') WHERE id=@BID")
     q("UPDATE products SET wholesale_price_usd=NULL WHERE business_id=@BID AND name='Smash Burger'")
   }
+})
+
+test('pulido 375: horario en una línea con detalle al tocar; barra de pedido solo con carrito y fuera de la ficha; ficha sin foto compacta', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/catalogo-carta/' + OWN_SLUG)
+  const horario = page.getByTestId('carta-horario')
+  await expect(horario.locator('summary')).toContainText(/Abierto · cierra a las/)
+  const alto = (await horario.locator('summary').boundingBox())?.height ?? 999
+  expect(alto, 'resumen del horario en una línea').toBeLessThanOrEqual(56)
+  await expect(horario.getByText('Dom', { exact: false }).first()).toBeHidden()
+  await horario.locator('summary').click()
+  await expect(horario.getByText('Dom', { exact: false }).first()).toBeVisible()
+
+  await expect(page.getByTestId('carta-barra-pedido')).toHaveCount(0)
+  await page.getByTestId('carta-plato').filter({ hasText: 'Smash Burger' }).getByTestId('carta-plato-agregar').click()
+  await expect(page.getByTestId('carta-barra-pedido')).toBeVisible()
+
+  await page.goto('/catalogo-carta/' + OWN_SLUG + '/p/' + smashId())
+  await expect(page.getByTestId('carta-barra-pedido')).toHaveCount(0)
+  const cabecera = (await page.locator('[data-testid="carta-ficha"] > div').first().boundingBox())?.height ?? 999
+  expect(cabecera, 'cabecera tipográfica ≈ 40 % de 469 px').toBeLessThanOrEqual(200)
+  await expect(page.getByTestId('carta-ficha-agregar')).toBeInViewport()
+  await expect(page.getByTestId('carta-ficha-precio')).toBeInViewport()
+  await page.evaluate(() => window.localStorage.clear())
 })

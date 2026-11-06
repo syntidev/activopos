@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
 import { CartaFoto } from './CartaFoto'
 import { useAddDish } from './useAddDish'
@@ -56,11 +57,17 @@ export function CartaPortada({ hero, slug, businessName, open, horario }: CartaP
       )}
     </div>
   )
+  // Una línea: estado + hora ("Abierto · cierra a las 10:00 pm"); el horario completo se abre al tocar.
   const horarioBlock = horario.length > 0 && (
-    <div className={styles.horario} data-testid="carta-horario">
-      <span className={styles.pagosK}>Horario</span>
-      {horario.map(h => <span key={h.day} className={styles.horarioDia}><b>{h.day}</b> {h.text}</span>)}
-    </div>
+    <details className={styles.horario} data-testid="carta-horario">
+      <summary className={styles.horarioResumen}>
+        <span className={styles.horarioLinea}>{open ? open.label : 'Horario'}</span>
+        <ChevronDown size={16} aria-hidden="true" className={styles.horarioFlecha} />
+      </summary>
+      <ul className={styles.horarioLista}>
+        {horario.map(h => <li key={h.day} className={styles.horarioDia}><b>{h.day}</b><span>{h.text}</span></li>)}
+      </ul>
+    </details>
   )
 
   if (n === 0) {

@@ -55,3 +55,14 @@
 }
 
 .noDisponible { text-decoration: line-through; }
+
+/* Variante carta: un precio grande en $ (Divisa si aplica) y el Bs de lista pequeño debajo. Tokens de la Carta. */
+.carta { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-family: var(--carta-font-sans, inherit); }
+.cartaDesde { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--carta-muted, var(--color-text-secondary)); }
+.cartaUsd { font-size: 21px; font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--carta-tinta, var(--color-text-primary)); }
+.cartaSimbolo { font-size: 0.72em; opacity: 0.6; margin-right: 1px; }
+.cartaBs { font-size: 12px; font-weight: 500; color: var(--carta-muted, var(--color-text-secondary)); font-variant-numeric: tabular-nums; }
+.cartaConsultar { font-size: var(--text-sm); font-weight: 600; color: var(--carta-muted, var(--color-text-secondary)); }
+.carta_modal .cartaUsd { font-size: 30px; }
+.carta_modal .cartaBs { font-size: 14px; }
+.carta_row .cartaUsd { font-size: 17px; }

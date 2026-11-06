@@ -11,6 +11,9 @@ export interface WaLine {
   qty:          number
   subtotalUsd:  number
   variantLabel?: string | null
+  /** Carta: opciones elegidas ("Pavo", "Papas fritas") y nota para la cocina de esta línea. */
+  options?:      string[]
+  note?:         string | null
 }
 
 export type WaFulfillment =
@@ -84,6 +87,8 @@ export function buildWhatsAppMessage(m: WaMessageInput): string {
   for (const l of m.lines) {
     const variant = clean(l.variantLabel) ? ` (${clean(l.variantLabel)})` : ''
     lines.push(`- ${l.name}${variant} x${qtyLabel(l.qty)}: ${waUsd(l.subtotalUsd)} / ${waBs(l.subtotalUsd, m.rate)}`)
+    if (l.options && l.options.length > 0) lines.push(`   Opciones: ${l.options.map(clean).filter(Boolean).join(', ')}`)
+    if (clean(l.note)) lines.push(`   Nota: ${clean(l.note)}`)
   }
 
   if ((m.deliveryFeeUsd ?? 0) > 0) {

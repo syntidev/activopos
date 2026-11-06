@@ -22,6 +22,7 @@ import {
 } from '@/lib/web-client'
 import { PulsoOrderSchema, cleanAttribution } from '@/lib/pulso-events'
 import { pulsoRequestContext } from '@/lib/pulso-ua'
+import { isSoldOutToday, OptionError, resolveOptions, type ChosenOption } from '@/lib/carta/options'
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 
@@ -30,6 +31,9 @@ const ItemSchema = z.object({
   product_id: z.number().int().positive(),
   qty:        z.number().positive().max(9999),
   variant_id: z.number().int().positive().optional(),
+  // Carta (C2): solo ids de opciones y texto de la nota; el precio de cada opción lo pone el servidor.
+  options:    z.array(z.number().int().positive()).max(20).optional(),
+  note:       z.string().trim().max(140).optional(),
 })
 
 const BodySchema = z.object({
@@ -105,6 +109,8 @@ interface ResolvedItem {
   subtotal_usd:  number
   variant_id:    number | null
   variant_label: string | null
+  note:          string | null
+  modifiers:     ChosenOption[]
 }
 
 /** Número que sigue a `last` (o el primero). Mismo formato de siempre: PREFIJO-00001. */
@@ -283,6 +289,8 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
       price_per_unit_usd: true,
       price_per_kg_usd:   true,
       category:           { select: { requires_preparation: true } },
+      catalog_visibility: true,
+      sold_out_date:      true,
     },
   })
 
@@ -374,7 +382,21 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         }
       }
       // Regla única en lib/pricing.ts (catálogo público = precio detal).
-      const finalPrice = resolveUnitPriceUsd(p, variant ?? undefined)
+      const basePrice = resolveUnitPriceUsd(p, variant ?? undefined)
+
+      // Un plato "Consultar precio" no se pide por el catálogo, y uno agotado hoy (día de negocio de Caracas) tampoco.
+      if (p.catalog_visibility === 'on_request') throw new CheckoutError(422, 'Consulta el precio de ' + p.name + ' con el negocio.', 'items')
+      if (isSoldOutToday(p.sold_out_date)) throw new CheckoutError(409, 'Agotado hoy: ' + p.name)
+
+      // Opciones del plato (Carta): validadas contra SUS grupos y con el precio extra del servidor.
+      let picked: { chosen: ChosenOption[]; extraUsd: number }
+      try {
+        picked = await resolveOptions(tx, item.product_id, item.options ?? [])
+      } catch (err) {
+        if (err instanceof OptionError) throw new CheckoutError(err.status, err.message, err.field)
+        throw err
+      }
+      const finalPrice = Math.round((basePrice + picked.extraUsd) * 100) / 100
 
       items.push({
         product_id:    item.product_id,
@@ -384,6 +406,8 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
         subtotal_usd:  Math.round(item.qty * finalPrice * 100) / 100,
         variant_id:    item.variant_id ?? null,
         variant_label: variantLabel,
+        note:          item.note ? item.note : null,
+        modifiers:     picked.chosen,
       })
     }
     resolvedItems = items
@@ -448,6 +472,8 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     const noteLines = [
       `Método de pago: ${body.payment_method}`,
       body.notes ?? '',
+      // Resumen para cocina; el dato canónico por línea queda en order_items.note.
+      ...items.filter(i => i.note).map(i => `Nota (${i.product_name}): ${i.note}`),
     ].filter(Boolean).join('\n')
 
     const createWithNumber = (order_number: string) => tx.order.create({
@@ -491,6 +517,8 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
             product_name:       item.product_name,
             variant_id:         item.variant_id,
             variant_label:      item.variant_label,
+            note:               item.note,
+            modifiers:          item.modifiers.length > 0 ? item.modifiers : undefined,
             quantity:           item.qty,
             price_per_unit_usd: item.price_usd,
             subtotal_usd:       item.subtotal_usd,
@@ -614,6 +642,8 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
       qty:          i.qty,
       subtotalUsd:  i.subtotal_usd,
       variantLabel: i.variant_label,
+      options:      i.modifiers.map(m => m.option),
+      note:         i.note,
     })),
     totalUsd:     Number(order.total_usd),
     rate,

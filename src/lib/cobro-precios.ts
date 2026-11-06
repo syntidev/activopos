@@ -17,10 +17,10 @@ import { readDivisaMethodIds, splitPayMethods } from '@/lib/catalog-divisa'
 export const COLLECT_IN = ['both', 'bs', 'usd'] as const
 export type CollectIn = (typeof COLLECT_IN)[number]
 
-export const SELECTABLE_TEMPLATES = ['generic', 'premium'] as const
+export const SELECTABLE_TEMPLATES = ['generic', 'premium', 'carta'] as const
 export type CatalogTemplate = (typeof SELECTABLE_TEMPLATES)[number]
-/** 'carta' no existe todavía en el código: la pantalla lo muestra deshabilitado ("Próximamente"). */
-export const CARTA_AVAILABLE = false
+/** La plantilla Carta ya existe (/catalogo-carta): la pantalla la ofrece como tercera opción. */
+export const CARTA_AVAILABLE = true
 
 export interface CobroPrecios {
   /** "Precios en": hoy siempre USD (regla sellada: el catálogo muestra USD y Bs a la vez). */
@@ -78,7 +78,7 @@ export function readCobroPrecios(business: BusinessLike, businessId?: number): C
     divisa_enabled: s.divisa_enabled !== false,
     cashea_enabled: typeof s.cashea_enabled === 'boolean' ? s.cashea_enabled : financing.enabled,
     divisa_method_ids: readDivisaMethodIds(business.settings),
-    template:       business.catalog_template === 'premium' ? 'premium' : 'generic',
+    template:       business.catalog_template === 'premium' || business.catalog_template === 'carta' ? business.catalog_template : 'generic',
   }
 }
 

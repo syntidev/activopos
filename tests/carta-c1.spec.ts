@@ -119,6 +119,7 @@ test('A3 pestañas: al tocar una se llega a su sección y queda activa; con scro
 
 test('A4 / E6 buscador: nombre, ingrediente (rúgula) sin acentos ni mayúsculas, y sin resultados', async ({ page }) => {
   await page.goto(URL_CARTA)
+  await page.getByTestId('carta-buscar-btn').click()
   const buscador = page.getByTestId('carta-buscador')
   await buscador.fill('RUGULA')
   await expect(plato(page, 'Cheez Burger Clásica Americana')).toBeVisible()
@@ -287,7 +288,7 @@ test('hero configurado: reutiliza el event_slider de landing_sections (2–8 sli
   await expect(page.getByTestId('carta-hero-slide')).toHaveCount(2)
   await expect(page.getByTestId('carta-hero-slide').first()).toContainText('Hoy: smash')
   await expect(page.getByTestId('carta-hero-slide').first().getByRole('link', { name: 'Pedir' })).toBeVisible()
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /zz-carta-hero\.png/)
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /\/api\/og\/portada\/zzb-pruebas/)
   await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /.+/)
   await expect(page).toHaveTitle(/Cafe con Bike/)
 })

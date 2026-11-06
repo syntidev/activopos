@@ -41,7 +41,7 @@
 .estado i { width: 8px; height: 8px; border-radius: 50%; background: var(--carta-abierto); }
 .estadoCerrado i { background: var(--carta-aji); }
 .estado .lg { display: none; }
-.kicker { position: absolute; left: 16px; top: 56px; color: var(--carta-sobre-acento); background: var(--carta-acento); font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 10px; border-radius: 99px; white-space: nowrap; }
+.kicker { position: absolute; left: 16px; top: 12px; color: var(--carta-sobre-acento); background: var(--carta-acento); font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 10px; border-radius: 99px; white-space: nowrap; }
 .dots { position: absolute; right: 16px; bottom: 10px; display: flex; gap: 6px; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--carta-sobre-foto); opacity: 0.5; transition: all 0.25s; }
 .dotOn { opacity: 1; width: 20px; border-radius: 4px; }
@@ -59,10 +59,10 @@
 
 /* ── Barra pegajosa: buscador + pestañas ──────────────── */
 .sticky { display: flow-root; position: sticky; top: 0; z-index: 20; background: var(--carta-papel); border-bottom: 1px solid var(--carta-linea); }
-.search { display: flex; align-items: center; gap: 10px; margin: 10px 16px 0; background: var(--carta-card); border-radius: var(--carta-radio); padding: 0 14px; box-shadow: var(--carta-sombra); min-height: 46px; color: var(--carta-muted); }
+.search { display: flex; align-items: center; gap: 10px; margin: 0 12px; background: var(--carta-card); border-radius: var(--carta-radio); padding: 0 14px; box-shadow: var(--carta-sombra); min-height: 46px; color: var(--carta-muted); }
 .searchInput { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font: inherit; font-size: 15px; color: var(--carta-tinta); min-height: 44px; }
 .searchInput::placeholder { color: var(--carta-muted); }
-.tabs { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px 12px; scrollbar-width: none; }
+.tabs { display: flex; flex: 1; min-width: 0; gap: 8px; overflow-x: auto; padding: 0 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: none; font-size: 14px; font-weight: 600; padding: 0 16px; border-radius: 99px; background: var(--carta-card); color: var(--carta-tinta-2); box-shadow: inset 0 0 0 1px var(--carta-linea); min-height: 44px; display: inline-flex; align-items: center; }
 .tabOn { background: var(--carta-tinta); color: var(--carta-papel); box-shadow: none; }
@@ -70,13 +70,13 @@
 
 /* ── Lista ────────────────────────────────────────────── */
 .main { padding: 0 16px 150px; }
-.cat { font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 24px; letter-spacing: -0.01em; margin: 28px 0 4px; display: flex; align-items: baseline; gap: 10px; scroll-margin-top: 130px; }
+.cat { font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 24px; letter-spacing: -0.01em; margin: 28px 0 4px; display: flex; align-items: baseline; gap: 10px; scroll-margin-top: calc(var(--carta-bar-h, 64px) + 8px); }
 .cat small { font-family: var(--carta-font-sans); font-weight: 500; font-size: 13px; color: var(--carta-muted); }
 .items { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 12px; }
 .vacio { margin: 40px 0; text-align: center; color: var(--carta-tinta-2); }
-.dish { position: relative; min-width: 0; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 10px; background: var(--carta-card); border-radius: var(--carta-radio); box-shadow: var(--carta-sombra); }
-.photo { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--carta-foto-fondo); align-self: start; display: block; }
-.info { display: flex; flex-direction: column; min-width: 0; }
+.dish { position: relative; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; padding: 10px; background: var(--carta-card); border-radius: var(--carta-radio); border: 1px solid var(--carta-linea); box-shadow: var(--carta-sombra); transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.photo { grid-column: 2; grid-row: 1; position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--carta-foto-fondo); align-self: start; display: block; }
+.info { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; min-width: 0; }
 .nombre { font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 17px; line-height: 1.15; overflow-wrap: anywhere; }
 .desc { font-size: 13px; color: var(--carta-tinta-2); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -94,8 +94,7 @@
 .agot { position: absolute; left: 8px; top: 8px; background: var(--carta-tinta); color: var(--carta-papel); font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 99px; }
 .typo { grid-template-columns: minmax(0, 1fr); overflow: hidden; background: linear-gradient(135deg, var(--carta-oro-soft), var(--carta-card)); padding: 18px 16px; }
 .typo .nombre { font-size: 24px; }
-.typo .wm { position: absolute; right: 10px; top: -14px; font-family: var(--carta-font-display); font-weight: 800; font-size: 120px; line-height: 1; color: var(--carta-acento); opacity: 0.1; pointer-events: none; }
-.typo .info { position: relative; }
+.typo .wm { position: absolute; right: 10px; top: -14px; font-family: var(--carta-font-display); font-weight: 800; font-size: 120px; line-height: 1; color: var(--carta-acento); opacity: 0.1; pointer-events: none; z-index: -1; }
 
 /* "De la casa": solo escritorio */
 .house { display: none; }
@@ -193,11 +192,11 @@ textarea.input { min-height: 84px; resize: vertical; }
   .btnHero { min-height: 48px; padding: 0 28px; font-size: 16px; }
   .pagosIn { padding: 10px 48px; }
   .main { padding: 0 48px 150px; }
-  .search { margin: 12px 48px 0; max-width: 560px; }
-  .tabs { padding: 10px 48px 12px; }
+  .search { margin: 0 48px; max-width: 560px; }
+  .tabs { padding: 0 8px; }
   .items { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .cat { font-size: 30px; }
-  .dish { grid-template-columns: 132px minmax(0, 1fr); padding: 12px; }
+  .dish { grid-template-columns: minmax(0, 1fr) 132px; padding: 12px; }
   .typo { grid-template-columns: minmax(0, 1fr); }
   .nombre { font-size: 20px; }
   .desc { font-size: 14px; }
@@ -270,3 +269,38 @@ textarea.input { min-height: 84px; resize: vertical; }
 .confirmarBtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
 .cerradoAviso { margin-top: 16px; padding: 12px 14px; border-radius: var(--carta-radio); background: var(--carta-oro-soft); color: var(--carta-tinta); font-size: 14px; display: grid; gap: 10px; }
 .relacionados { margin-top: 32px; }
+
+/* ── Paridad con ordena.menu: encabezado, barra con íconos y tarjeta tocable ── */
+.enc { background: var(--carta-papel); }
+.portadaNegocio { position: relative; width: 100%; height: clamp(185px, 28vw, 260px); background: linear-gradient(135deg, var(--carta-oro-soft), var(--carta-foto-fondo)); overflow: hidden; }
+.portadaSlides { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.portadaSlides::-webkit-scrollbar { display: none; }
+.portadaSlide { position: relative; flex: 0 0 100%; height: 100%; scroll-snap-align: start; }
+.portadaDots { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); display: flex; gap: 6px; }
+.encInfo { position: relative; max-width: 1280px; margin: 0 auto; padding: 56px 16px 12px; }
+.encLogo { position: absolute; top: -48px; left: 16px; z-index: 2; width: 96px; height: 96px; border-radius: 50%; overflow: hidden; background: var(--carta-card); border: 4px solid var(--carta-card); box-shadow: 0 0 0 1px var(--carta-linea), var(--carta-sombra); display: grid; place-items: center; }
+.encLogo b { font-family: var(--carta-font-display); font-weight: 800; font-size: 40px; color: var(--carta-acento); }
+.encNombre { font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 26px; line-height: 1.1; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.encEstado { display: inline-flex; align-items: center; gap: 7px; margin: 6px 0 0; font-size: 13px; font-weight: 700; color: var(--carta-ok); }
+.encEstado i { width: 8px; height: 8px; border-radius: 50%; background: var(--carta-abierto); }
+.encEstadoCerrado { color: var(--carta-aji); }
+.encEstadoCerrado i { background: var(--carta-aji); }
+.encDir { display: flex; align-items: flex-start; gap: 6px; margin: 6px 0 0; font-size: 14px; color: var(--carta-tinta-2); }
+.encDir svg { flex: none; margin-top: 3px; color: var(--carta-muted); }
+
+.barRow { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.barBtn { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--carta-card); color: var(--carta-tinta-2); box-shadow: inset 0 0 0 1px var(--carta-linea); }
+.barBtn:focus-visible { outline: 3px solid var(--carta-acento); outline-offset: 2px; }
+.barBtnOn { background: var(--carta-tinta); color: var(--carta-papel); box-shadow: none; }
+.searchPanel { padding-bottom: 10px; }
+.catMenu { position: absolute; left: 12px; top: 100%; z-index: 25; width: min(320px, calc(100% - 24px)); max-height: 60vh; overflow-y: auto; margin: 4px 0 0; padding: 6px; list-style: none; background: var(--carta-card); border: 1px solid var(--carta-linea); border-radius: var(--carta-radio); box-shadow: var(--carta-sombra); }
+.catMenuItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 15px; font-weight: 600; text-align: left; color: var(--carta-tinta); }
+.catMenuItem small { color: var(--carta-muted); font-weight: 500; }
+.catMenuItemOn { background: var(--carta-neutro-soft); }
+
+/* Tarjeta completa tocable: el enlace del nombre se estira sobre toda la tarjeta; "Agregar" queda aparte, por encima. */
+.nombre a::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: var(--carta-radio); }
+.add { position: relative; z-index: 2; }
+.dish { isolation: isolate; }
+.dish:active { transform: translateY(2px); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .dish { transition: none; } .dish:active { transform: none; } }

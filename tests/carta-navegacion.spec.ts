@@ -56,6 +56,7 @@ test('A3: el carril de tabs scrollea por dentro, no la página (375 px)', async 
 for (const consulta of ['pollo', 'aguacate', 'POLLO', 'tequeno', 'queso tocineta']) {
   test(`A4/E6: buscar "${consulta}" devuelve exactamente los platos que coinciden (sin acentos ni mayúsculas, AND entre palabras)`, async ({ page }) => {
     await page.goto(urlCarta())
+    await page.getByTestId('carta-buscar-btn').click()
     await page.getByTestId('carta-buscador').fill(consulta)
     const esperados = platosQueCoinciden(consulta).map(p => p.nombre).sort()
     expect(esperados.length, 'el oráculo del xlsx debe tener resultados').toBeGreaterThan(0)
@@ -67,6 +68,7 @@ for (const consulta of ['pollo', 'aguacate', 'POLLO', 'tequeno', 'queso tocineta
 
 test('E6: "aguacate" encuentra platos que lo tienen solo en la descripción (ingrediente, no en el nombre)', async ({ page }) => {
   await page.goto(urlCarta())
+  await page.getByTestId('carta-buscar-btn').click()
   await page.getByTestId('carta-buscador').fill('aguacate')
   const nombres = (await visibles(page).getByTestId('carta-plato-nombre').allInnerTexts()).map(s => s.trim())
   expect(nombres).toEqual(expect.arrayContaining(['Ensalada', 'Ciabatta Clásica', 'Ketomate']))
@@ -75,6 +77,7 @@ test('E6: "aguacate" encuentra platos que lo tienen solo en la descripción (ing
 
 test('A4: "picante" no coincide con ningún plato del xlsx → estado vacío, y al borrar vuelve el menú completo', async ({ page }) => {
   await page.goto(urlCarta())
+  await page.getByTestId('carta-buscar-btn').click()
   await page.getByTestId('carta-buscador').fill('picante')
   expect(platosQueCoinciden('picante')).toHaveLength(0)
   await expect(visibles(page)).toHaveCount(0)

@@ -1,8 +1,9 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Menu, Search, X } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
+import { CartaEncabezado } from './CartaEncabezado'
 import { CartaFoto } from './CartaFoto'
 import { CartaPagos } from './CartaPagos'
 import { CartaPortada } from './CartaPortada'
@@ -22,8 +23,8 @@ interface CartaHomeProps {
 }
 
 const MAX_WORDS = 5
-/** Alto aproximado de la barra fija (buscador + pestañas): una sección es "la actual" al cruzar este borde. */
-const SPY_OFFSET = 160
+/** Alto de respaldo de la barra fija mientras no se mide. */
+const BAR_FALLBACK = 64
 
 function haystack(d: CartaDish): string {
   return plano([d.name, d.description ?? '', d.categoryName ?? '', d.sizes.map(s => s.label).join(' '), d.tags.join(' '), d.groups.map(g => g.name + ' ' + g.options.map(o => o.name).join(' ')).join(' ')].join(' '))
@@ -53,6 +54,12 @@ function CasaCard({ dish, slug, big }: { dish: CartaDish; slug: string; big: boo
 export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHomeProps) {
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
+  const [buscando, setBuscando] = useState(false)
+  const [menuAbierto, setMenuAbierto] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const barRef = useRef<HTMLDivElement>(null)
+  const tabRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const barH = useRef(BAR_FALLBACK)
 
   const words = useMemo(() => plano(query).split(/\s+/).filter(Boolean).slice(0, MAX_WORDS), [query])
   const categories = useMemo(() => {
@@ -62,14 +69,27 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
       .filter(c => c.dishes.length > 0)
   }, [data.categories, words])
 
-  // Scroll-spy: la pestaña activa sigue la sección visible.
+  const reducedMotion = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  // Alto real de la barra fija: separa el scroll-spy, el scroll al tocar un chip y el margen de las secciones.
+  const measureBar = useCallback((): void => {
+    const h = barRef.current?.offsetHeight ?? BAR_FALLBACK
+    barH.current = h
+    rootRef.current?.style.setProperty('--carta-bar-h', h + 'px')
+  }, [])
   useEffect(() => {
-    // Activa = la última sección cuyo borde superior ya pasó la barra fija (o la última, al llegar al fondo).
+    measureBar()
+    window.addEventListener('resize', measureBar)
+    return () => window.removeEventListener('resize', measureBar)
+  }, [measureBar, buscando])
+
+  // Scroll-spy: activa = la última sección cuyo borde superior ya pasó la barra fija (o la última, al llegar al fondo).
+  useEffect(() => {
     const onScroll = (): void => {
       const secs = Array.from(document.querySelectorAll<HTMLElement>('[data-cat-index]'))
       const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
       let idx = 0
-      secs.forEach((el, i) => { if (el.getBoundingClientRect().top <= SPY_OFFSET) idx = i })
+      secs.forEach((el, i) => { if (el.getBoundingClientRect().top <= barH.current + 16) idx = i })
       setActive(atBottom && secs.length > 0 ? secs.length - 1 : idx)
     }
     onScroll()
@@ -77,32 +97,77 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
     return () => window.removeEventListener('scroll', onScroll)
   }, [categories])
 
+  // La barra de chips se desplaza sola para CENTRAR el chip activo (suave; sin animación con reduced-motion).
+  useEffect(() => {
+    tabRefs.current[active]?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', inline: 'center', block: 'nearest' })
+  }, [active])
+
+  // Menú de categorías: se cierra con Escape o al tocar fuera.
+  useEffect(() => {
+    if (!menuAbierto) return
+    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') setMenuAbierto(false) }
+    const onDown = (e: PointerEvent): void => { if (!barRef.current?.contains(e.target as Node)) setMenuAbierto(false) }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('pointerdown', onDown)
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('pointerdown', onDown) }
+  }, [menuAbierto])
+
   const goTo = (i: number): void => {
+    const el = document.getElementById('cat-' + i)
+    if (!el) return
     setActive(i)
-    document.getElementById('cat-' + i)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const top = el.getBoundingClientRect().top + window.scrollY - barH.current - 8
+    window.scrollTo({ top, behavior: reducedMotion() ? 'auto' : 'smooth' })
+  }
+
+  const toggleBuscar = (): void => {
+    setBuscando(v => { if (v) setQuery(''); return !v })
+    setMenuAbierto(false)
   }
 
   return (
-    <>
-      <CartaPortada hero={data.hero} slug={slug} businessName={businessName} open={data.open} horario={data.horario} />
+    <div ref={rootRef}>
+      <CartaEncabezado businessName={businessName} covers={data.brand.covers} logo={data.brand.logo} address={data.brand.address} open={data.open} horario={data.horario} />
+      <CartaPortada hero={data.hero} slug={slug} />
       <CartaPagos pagos={data.pagos} rate={data.rate} />
 
-      <div className={styles.sticky}>
-        <div className={styles.wrap}>
-          <div className={styles.search} role="search">
-            <Search size={18} aria-hidden="true" />
-            <input type="search" className={styles.searchInput} value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Busca un plato o ingrediente" aria-label="Buscar un plato o ingrediente" data-testid="carta-buscador" />
-          </div>
+      <div className={styles.sticky} ref={barRef} data-testid="carta-barra-categorias">
+        <div className={cx(styles.wrap, styles.barRow)}>
+          <button type="button" className={cx(styles.barBtn, buscando && styles.barBtnOn)} onClick={toggleBuscar} aria-label={buscando ? 'Cerrar búsqueda' : 'Buscar un plato'} aria-expanded={buscando} data-testid="carta-buscar-btn">
+            {buscando ? <X size={20} aria-hidden="true" /> : <Search size={20} aria-hidden="true" />}
+          </button>
+          <button type="button" className={cx(styles.barBtn, menuAbierto && styles.barBtnOn)} onClick={() => { setMenuAbierto(v => !v); setBuscando(false) }} aria-label="Menú de categorías" aria-expanded={menuAbierto} data-testid="carta-menu-btn">
+            <Menu size={20} aria-hidden="true" />
+          </button>
           <nav className={styles.tabs} aria-label="Categorías" role="tablist" data-testid="carta-tabs">
             {categories.map((c, i) => (
-              <a key={c.name} href={'#cat-' + i} role="tab" className={cx(styles.tab, active === i && styles.tabOn)} data-testid={'carta-tab-' + c.slug} aria-selected={active === i}
+              <a key={c.name} href={'#cat-' + i} role="tab" ref={el => { tabRefs.current[i] = el }} className={cx(styles.tab, active === i && styles.tabOn)} data-testid={'carta-tab-' + c.slug} aria-selected={active === i}
                 onClick={e => { e.preventDefault(); goTo(i) }}>
                 {c.name}<small>{c.dishes.length}</small>
               </a>
             ))}
           </nav>
         </div>
+        {buscando && (
+          <div className={cx(styles.wrap, styles.searchPanel)}>
+            <div className={styles.search} role="search">
+              <Search size={18} aria-hidden="true" />
+              <input type="search" className={styles.searchInput} value={query} onChange={e => setQuery(e.target.value)} autoFocus
+                placeholder="Busca un plato o ingrediente" aria-label="Buscar un plato o ingrediente" data-testid="carta-buscador" />
+            </div>
+          </div>
+        )}
+        {menuAbierto && (
+          <ul className={styles.catMenu} role="menu" aria-label="Categorías" data-testid="carta-menu-categorias">
+            {categories.map((c, i) => (
+              <li key={c.name} role="none">
+                <button type="button" role="menuitem" className={cx(styles.catMenuItem, active === i && styles.catMenuItemOn)} onClick={() => { setMenuAbierto(false); goTo(i) }}>
+                  <span>{c.name}</span><small>{c.dishes.length}</small>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <main className={cx(styles.main, styles.wrap)}>
@@ -135,6 +200,6 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
         <strong>{businessName}</strong>{city ? ' · ' + city : ''}
         {hoursText && <div>{hoursText}</div>}
       </footer>
-    </>
+    </div>
   )
 }

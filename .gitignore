@@ -60,3 +60,9 @@ pos-*.png
 # Carpeta temporal de referencia (Socialia / OpenCarrusel) — contiene .env.local de terceros
 TempSocialia/
 scripts/_out/
+
+# Respaldos del importador de fotos (rutas locales; no se versionan)
+scripts/backups/
+
+# Enlace local solo para dev: sirve /storage como lo hace Nginx en el VPS
+public/storage

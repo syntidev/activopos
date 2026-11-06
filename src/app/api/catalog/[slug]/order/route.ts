@@ -211,6 +211,10 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
   // el pedido pasa igual, se guarda lo que escribió y va marcado para revisar (cedula_alert).
   const idLenient = lenientCheckoutCedula(body.customer_cedula)
   const clientCedula: string | null = idLenient.value
+  // "Misma dirección" exige cédula Y teléfono (la llave del cliente): sin cédula válida, el mismo 422 genérico de siempre.
+  if (useSaved && clientCedula === null) {
+    return NextResponse.json({ error: SAVED_ADDRESS_MESSAGE, field: 'delivery_address' }, { status: 422 })
+  }
   const paymentKind: PaymentKind | null = body.payment_kind ?? (chosenMethod?.is_financing ? 'cashea' : null)
   // Financiadora o Cashea declarado: además exige persona natural (V/E).
   if (chosenMethod?.is_financing || paymentKind === 'cashea') {

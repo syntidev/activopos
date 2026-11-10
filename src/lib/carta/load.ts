@@ -162,7 +162,9 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
   if (casheaMethod) payOptions.push({ kind: 'cashea', label: 'Cashea', method: casheaMethod.name })
 
   const hours = readCartaHours(business.settings)
-  const open = openState(hours, isCartaPaused(business.settings))
+  // Sin carta_hours: se usa el texto libre de catalog_hours si existe; si tampoco, no hay estado (nunca "Cerrado" por falta de datos).
+  const hoursText = business.catalog_hours?.trim() ?? ''
+  const open = openState(hours, isCartaPaused(business.settings)) ?? (hoursText ? { open: true, label: hoursText.slice(0, 70) } : null)
   const wa = normalizePhone(business.whatsapp ?? business.phone ?? '')
 
   return {

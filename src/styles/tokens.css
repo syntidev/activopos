@@ -1181,3 +1181,5 @@
 
 /* Carta: separación entre el último contenido y las barras fijas (Agregar / Mi pedido). */
 [data-carta-preset] { --carta-gap-barra: 16px; }
+
+[data-carta-preset] { --carta-compacta-h: 44px; }

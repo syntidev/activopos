@@ -58,7 +58,7 @@
 .chipCashea { background: var(--carta-oro-soft); color: var(--carta-oro); font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 5px; }
 
 /* ── Barra pegajosa: buscador + pestañas ──────────────── */
-.sticky { display: flow-root; position: sticky; top: 0; z-index: 20; background: var(--carta-papel); border-bottom: 1px solid var(--carta-linea); }
+.sticky { display: flow-root; position: sticky; top: var(--carta-top, 0px); transition: top 0.2s ease; z-index: 20; background: var(--carta-papel); border-bottom: 1px solid var(--carta-linea); }
 .search { display: flex; align-items: center; gap: 10px; margin: 0 12px; background: var(--carta-card); border-radius: var(--carta-radio); padding: 0 14px; box-shadow: var(--carta-sombra); min-height: 46px; color: var(--carta-muted); }
 .searchInput { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font: inherit; font-size: 15px; color: var(--carta-tinta); min-height: 44px; }
 .searchInput::placeholder { color: var(--carta-muted); }
@@ -92,9 +92,7 @@
 .sold .photo { filter: grayscale(1) opacity(0.55); }
 .sold .nombre, .sold .desc { opacity: 0.6; }
 .agot { position: absolute; left: 8px; top: 8px; background: var(--carta-tinta); color: var(--carta-papel); font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 99px; }
-.typo { grid-template-columns: minmax(0, 1fr); overflow: hidden; background: linear-gradient(135deg, var(--carta-oro-soft), var(--carta-card)); padding: 18px 16px; }
-.typo .nombre { font-size: 24px; }
-.typo .wm { position: absolute; right: 10px; top: -14px; font-family: var(--carta-font-display); font-weight: 800; font-size: 120px; line-height: 1; color: var(--carta-acento); opacity: 0.1; pointer-events: none; z-index: -1; }
+.typo { grid-template-columns: minmax(0, 1fr); border-left: 4px solid var(--carta-acento); padding: 12px 14px; }
 
 /* "De la casa": solo escritorio */
 .house { display: none; }
@@ -125,8 +123,9 @@
 /* Margen inferior MEDIDO: alto real de la barra fija + zona segura + separación (token). En escritorio la barra no es fija. */
 .fichaPagina { padding-bottom: calc(var(--carta-barra-h, 0px) + env(safe-area-inset-bottom) + var(--carta-gap-barra, 16px)); }
 .fichaFoto { position: relative; aspect-ratio: 4 / 5; background: var(--carta-foto-fondo); overflow: hidden; }
-.fichaTipo { display: grid; place-items: center; aspect-ratio: auto; height: 188px; background: linear-gradient(135deg, var(--carta-oro-soft), var(--carta-card)); }
-.fichaTipo .wm { font-family: var(--carta-font-display); font-weight: 800; font-size: 80px; line-height: 1; color: var(--carta-acento); opacity: 0.2; }
+.fichaFranja { position: relative; display: flex; align-items: center; min-height: 64px; padding: 10px 16px 10px 64px; background: var(--carta-acento); color: var(--carta-sobre-acento); }
+.fichaFranja h1 { font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 22px; line-height: 1.1; color: inherit; overflow-wrap: anywhere; }
+.volverFranja { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: inherit; background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
 .volver { position: absolute; left: 12px; top: 12px; z-index: 2; width: 44px; height: 44px; border-radius: 50%; background: var(--carta-card); color: var(--carta-tinta); display: grid; place-items: center; box-shadow: var(--carta-sombra); font-size: 24px; }
 .fichaBody { padding: 20px 16px; }
 .fichaBody h1 { font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
@@ -207,7 +206,6 @@ textarea.input { min-height: 84px; resize: vertical; }
   .hcardBig { grid-row: span 2; }
   .ficha { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); margin: 24px auto; border-radius: 24px; overflow: hidden; box-shadow: var(--carta-sombra); padding-bottom: 0; }
   .fichaFoto { aspect-ratio: auto; min-height: 760px; }
-  .fichaTipo { min-height: 304px; height: auto; }
   .fichaBody { padding: 36px 40px 40px; }
   .fichaBody h1 { font-size: 40px; }
   .barra { position: static; border: 0; padding: 22px 0 0; margin-top: 22px; background: transparent; }
@@ -230,7 +228,6 @@ textarea.input { min-height: 84px; resize: vertical; }
 :global([data-carta-style="fine"]) .dish .photo { order: 2; border-radius: 2px; }
 :global([data-carta-style="fine"]) .typo { grid-template-columns: minmax(0, 1fr); background: transparent; text-align: center; }
 :global([data-carta-style="fine"]) .typo .info { align-items: center; }
-:global([data-carta-style="fine"]) .typo .wm { display: none; }
 :global([data-carta-style="fine"]) .typo .pricerow { width: 100%; }
 :global([data-carta-style="fine"]) .add { border-radius: 2px; color: var(--carta-tinta); box-shadow: inset 0 0 0 1px var(--carta-tinta); }
 :global([data-carta-style="fine"]) .tag, :global([data-carta-style="fine"]) .agot { border-radius: 2px; }
@@ -306,3 +303,13 @@ textarea.input { min-height: 84px; resize: vertical; }
 .dish { isolation: isolate; }
 .dish:active { transform: translateY(2px); box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .dish { transition: none; } .dish:active { transform: none; } }
+
+/* Encabezado compacto al bajar: barra fija con logo pequeño, nombre y estado; la barra de categorías queda justo debajo. */
+.compacta { position: fixed; top: 0; left: 0; right: 0; z-index: 22; height: var(--carta-compacta-h, 44px); display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--carta-card); border-bottom: 1px solid var(--carta-linea); transform: translateY(-100%); opacity: 0; pointer-events: none; transition: transform 0.2s ease, opacity 0.2s ease; }
+.compactaOn { transform: none; opacity: 1; pointer-events: auto; }
+.compactaLogo { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; overflow: hidden; background: var(--carta-papel); box-shadow: 0 0 0 1px var(--carta-linea); display: grid; place-items: center; }
+.compactaLogo b { font-family: var(--carta-font-display); font-size: 15px; color: var(--carta-acento); }
+.compactaNombre { min-width: 0; flex: 1; font-family: var(--carta-font-display); font-weight: var(--carta-peso-display); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compactaEstado { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 45%; font-size: 12px; font-weight: 700; color: var(--carta-ok); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compactaEstado i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--carta-abierto); }
+@media (prefers-reduced-motion: reduce) { .compacta, .sticky { transition: none; } }

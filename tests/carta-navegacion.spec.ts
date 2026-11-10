@@ -90,12 +90,11 @@ test('A4: "picante" no coincide con ningún plato del xlsx → estado vacío, y 
 test('E3: plato sin foto = tarjeta tipográfica (inicial como marca de agua), no un ícono genérico; plato con foto muestra imagen', async ({ page }) => {
   await page.goto(urlCarta())
   const sinFoto = page.getByTestId('carta-plato').filter({ hasText: 'Smash Burger' })
-  await expect(sinFoto.getByTestId('carta-plato-sin-foto')).toBeVisible()
-  await expect(sinFoto.getByTestId('carta-plato-sin-foto')).toContainText('S')
+  await expect(sinFoto.first()).toHaveAttribute('data-sin-foto', 'true') // tarjeta compacta sin letra gigante
   await expect(sinFoto.locator('img, svg[data-lucide]')).toHaveCount(0)
 
   const conFoto = page.getByTestId('carta-plato').filter({ hasText: '4to Piso' })
-  await expect(conFoto.getByTestId('carta-plato-sin-foto')).toHaveCount(0)
+  await expect(conFoto).not.toHaveAttribute('data-sin-foto', 'true')
   await expect(conFoto.locator('img')).toHaveCount(1)
 })
 

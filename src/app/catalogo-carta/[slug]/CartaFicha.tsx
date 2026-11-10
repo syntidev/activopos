@@ -10,7 +10,7 @@ import { CartaFoto } from './CartaFoto'
 import { CartaOpciones, gruposFaltantes, opcionesDeCarrito, type Elegidas } from './CartaOpciones'
 import { PlatoCard } from './PlatoCard'
 import { useAddDish } from './useAddDish'
-import { allergenText, cx, fmtUsd, initialOf, TAG_CLASS } from './util'
+import { allergenText, cx, fmtUsd, TAG_CLASS } from './util'
 import styles from './carta.module.css'
 import type { CartaDish, CartaSize } from '@/types/carta'
 
@@ -68,16 +68,25 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
   return (
     <div ref={paginaRef} className={styles.fichaPagina}>
       <article className={styles.ficha} data-testid="carta-ficha">
-        <div className={cx(styles.fichaFoto, !dish.image && styles.fichaTipo)}>
-          <Link href={'/catalogo-carta/' + slug} className={styles.volver} aria-label="Volver a la carta">‹</Link>
-          {dish.image ? <CartaFoto src={dish.image} alt={dish.name} sizes="(min-width: 1024px) 560px, 100vw" priority /> : <span className={styles.wm} aria-hidden="true">{initialOf(dish.name)}</span>}
-          {dish.soldOutToday && <span className={styles.agot} data-testid="carta-agotado-hoy">Agotado hoy</span>}
-        </div>
+        {dish.image ? (
+          <div className={styles.fichaFoto}>
+            <Link href={'/catalogo-carta/' + slug} className={styles.volver} aria-label="Volver a la carta">‹</Link>
+            <CartaFoto src={dish.image} alt={dish.name} sizes="(min-width: 1024px) 560px, 100vw" priority />
+            {dish.soldOutToday && <span className={styles.agot} data-testid="carta-agotado-hoy">Agotado hoy</span>}
+          </div>
+        ) : (
+          // Sin foto: una franja del color del preset con el nombre (sin letra gigante).
+          <div className={styles.fichaFranja} data-testid="carta-ficha-franja">
+            <Link href={'/catalogo-carta/' + slug} className={styles.volverFranja} aria-label="Volver a la carta">‹</Link>
+            <h1>{dish.name}</h1>
+            {dish.soldOutToday && <span className={styles.agot} data-testid="carta-agotado-hoy">Agotado hoy</span>}
+          </div>
+        )}
         <div className={styles.fichaBody}>
           {dish.tags.length > 0 && (
             <div className={styles.tags}>{dish.tags.map(t => <span key={t} className={cx(styles.tag, styles[TAG_CLASS[t]])} data-testid="carta-etiqueta" data-etiqueta={t}>{CARTA_TAG_LABEL[t]}</span>)}</div>
           )}
-          <h1>{dish.name}</h1>
+          {dish.image && <h1>{dish.name}</h1>}
           <div className={styles.campo}>
             <PrecioDual variant="carta" size="modal" priceUsd={unit} priceBs={unit * rate} divisaUsd={size || opciones.length > 0 ? null : dish.divisaUsd}
               testids={{ usd: 'carta-ficha-precio', bs: 'carta-ficha-precio-bs' }} />

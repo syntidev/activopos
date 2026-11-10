@@ -146,3 +146,58 @@ test('fotos de /storage: el HTML trae <img src="/storage/...">, nunca /_next/ima
     q('UPDATE businesses SET logo_path=NULL, catalog_cover_path=NULL WHERE id=@BID')
   }
 })
+
+test('identidad: encabezado compacto al bajar (aparece, queda sobre la barra de categorías y desaparece al volver)', async ({ page }) => {
+  await page.goto('/catalogo-carta/' + OWN_SLUG)
+  const compacta = page.getByTestId('carta-barra-compacta')
+  await expect(compacta).toHaveAttribute('data-visible', 'false')
+  await page.evaluate(() => window.scrollTo(0, 900))
+  await expect(compacta).toHaveAttribute('data-visible', 'true')
+  const alto = (await compacta.boundingBox())!.height
+  expect(alto).toBeGreaterThanOrEqual(40)
+  await expect.poll(async () => Math.round((await page.getByTestId('carta-barra-categorias').boundingBox())!.y)).toBe(Math.round(alto))
+  const logo = (await compacta.locator('span').first().boundingBox())!
+  expect(logo.width).toBeGreaterThanOrEqual(28)
+  expect(logo.width).toBeLessThanOrEqual(32)
+  await expect(compacta).toContainText('Abierto')
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await expect(compacta).toHaveAttribute('data-visible', 'false')
+})
+
+test('identidad: crédito "Desarrollado por ActivoPOS.com" en Carta, genérico y premium, con utm del slug', async ({ request }) => {
+  const esperado = 'https://activopos.com/?utm_source=' + OWN_SLUG + '&amp;utm_medium=catalogo'
+  try {
+    for (const [plantilla, ruta] of [['carta', '/catalogo-carta/'], ['generic', '/catalogo/'], ['premium', '/catalogo-premium/']] as const) {
+      q("UPDATE businesses SET catalog_template='" + plantilla + "' WHERE id=@BID")
+      const html = await (await request.get(ruta + OWN_SLUG)).text()
+      expect(html, plantilla).toContain('Desarrollado por')
+      expect(html, plantilla).toContain(esperado)
+      expect(html, plantilla).toMatch(/rel="noopener"/)
+    }
+  } finally {
+    q("UPDATE businesses SET catalog_template='carta' WHERE id=@BID")
+  }
+})
+
+test('identidad: tarjeta sin foto compacta (sin letra gigante, acento en el borde) y ficha sin foto con franja del preset', async ({ page }) => {
+  await page.goto('/catalogo-carta/' + OWN_SLUG)
+  const tarjeta = page.locator('[data-testid="carta-plato"][data-sin-foto="true"]').first()
+  expect(await tarjeta.evaluate(el => getComputedStyle(el).borderLeftWidth)).toBe('4px')
+  expect(await tarjeta.locator('[aria-hidden="true"]').filter({ hasText: /^[A-Z]$/ }).count()).toBe(0)
+  await ficha(page, idOf('Smash Burger'))
+  const franja = page.getByTestId('carta-ficha-franja')
+  await expect(franja).toContainText('Smash Burger')
+  expect((await franja.boundingBox())!.height).toBeLessThanOrEqual(90)
+  await expect(page.locator('h1')).toHaveCount(1)
+})
+
+test('identidad: estado sin carta_hours usa el texto de catalog_hours; sin ninguno, no muestra estado', async ({ page }) => {
+  q("UPDATE businesses SET settings=JSON_REMOVE(settings,'$.carta_hours'), catalog_hours='Lunes a domingo de 7am a 10pm' WHERE id=@BID")
+  await page.goto('/catalogo-carta/' + OWN_SLUG)
+  await expect(page.getByTestId('carta-estado')).toContainText('Lunes a domingo de 7am a 10pm')
+  await expect(page.getByTestId('carta-estado')).not.toContainText('Cerrado')
+  q('UPDATE businesses SET catalog_hours=NULL WHERE id=@BID')
+  await page.goto('/catalogo-carta/' + OWN_SLUG)
+  await expect(page.getByTestId('carta-estado')).toHaveCount(0)
+  ensureOwnBusiness() // repone horario y texto del seed
+})

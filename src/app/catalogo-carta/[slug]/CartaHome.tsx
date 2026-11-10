@@ -3,6 +3,8 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Menu, Search, X } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
+import { PlatformCredit } from '@/components/catalog/PlatformCredit'
+import { CartaBarraCompacta } from './CartaBarraCompacta'
 import { CartaEncabezado } from './CartaEncabezado'
 import { CartaFoto } from './CartaFoto'
 import { CartaPagos } from './CartaPagos'
@@ -59,7 +61,11 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
   const rootRef = useRef<HTMLDivElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const compactaRef = useRef<HTMLDivElement>(null)
   const barH = useRef(BAR_FALLBACK)
+  const [compacto, setCompacto] = useState(false)
+  // La barra compacta es fixed (su contenedor mide 0): se mide el hijo.
+  const compactaAlto = (): number => (compactaRef.current?.firstElementChild as HTMLElement | null)?.offsetHeight ?? 0
 
   const words = useMemo(() => plano(query).split(/\s+/).filter(Boolean).slice(0, MAX_WORDS), [query])
   const categories = useMemo(() => {
@@ -72,16 +78,31 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
   const reducedMotion = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   // Alto real de la barra fija: separa el scroll-spy, el scroll al tocar un chip y el margen de las secciones.
+  // Las DOS barras fijas cuentan: compacta (nombre/estado) + categorías; el salto a una sección queda bajo ambas.
   const measureBar = useCallback((): void => {
-    const h = barRef.current?.offsetHeight ?? BAR_FALLBACK
+    const compactaH = compactaAlto()
+    const h = (barRef.current?.offsetHeight ?? BAR_FALLBACK) + compactaH
     barH.current = h
     rootRef.current?.style.setProperty('--carta-bar-h', h + 'px')
+    rootRef.current?.style.setProperty('--carta-compacta-alto', compactaH + 'px')
   }, [])
   useEffect(() => {
     measureBar()
     window.addEventListener('resize', measureBar)
     return () => window.removeEventListener('resize', measureBar)
   }, [measureBar, buscando])
+
+  // Encabezado compacto: aparece cuando el encabezado grande sale por arriba y desaparece al volver.
+  useEffect(() => {
+    const enc = document.querySelector('[data-testid="carta-encabezado"]')
+    if (!enc) return
+    const io = new IntersectionObserver(([e]) => setCompacto(!e.isIntersecting && e.boundingClientRect.bottom <= 0))
+    io.observe(enc)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => {
+    rootRef.current?.style.setProperty('--carta-top', compacto ? compactaAlto() + 'px' : '0px')
+  }, [compacto])
 
   // Scroll-spy: activa = la última sección cuyo borde superior ya pasó la barra fija (o la última, al llegar al fondo).
   useEffect(() => {
@@ -127,6 +148,7 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
 
   return (
     <div ref={rootRef}>
+      <div ref={compactaRef}><CartaBarraCompacta businessName={businessName} logo={data.brand.logo} open={data.open} visible={compacto} /></div>
       <CartaEncabezado businessName={businessName} covers={data.brand.covers} logo={data.brand.logo} address={data.brand.address} open={data.open} horario={data.horario} />
       <CartaPortada hero={data.hero} slug={slug} />
       <CartaPagos pagos={data.pagos} rate={data.rate} />
@@ -199,6 +221,7 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
       <footer className={styles.footer}>
         <strong>{businessName}</strong>{city ? ' · ' + city : ''}
         {hoursText && <div>{hoursText}</div>}
+        <PlatformCredit slug={slug} />
       </footer>
     </div>
   )

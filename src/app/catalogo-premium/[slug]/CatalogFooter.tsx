@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { MapPin, Phone, AtSign, Clock, MessageCircle } from 'lucide-react'
 import { catalogNav } from './catalogUtils'
 import styles from './catalogo.module.css'
+import { PlatformCredit } from '@/components/catalog/PlatformCredit'
 
 interface CatalogFooterProps {
   slug:             string
@@ -180,17 +181,7 @@ export function CatalogFooter({
             ))}
           </nav>
         )}
-        <span>
-          Impulsado por{' '}
-          <a
-            href="https://activopos.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.footerActivoLink}
-          >
-            ActivoPOS
-          </a>
-        </span>
+        <PlatformCredit slug={slug} />
       </div>
     </footer>
   )

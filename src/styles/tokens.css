@@ -1178,3 +1178,6 @@
 /* Carta · fine dining sobre Brasa sin acento elegido: oro viejo (5.0:1 sobre blanco, AA). Con acento explícito manda el acento. */
 [data-carta-preset="brasa"][data-carta-style="fine"]:not([data-carta-accent]) { --carta-acento: #8A6A2F; --carta-sobre-acento: #FFFFFF; }
 [data-carta-preset="brasa"][data-carta-style="fine"] { --carta-font-display: var(--font-carta-cormorant), Georgia, serif; }
+
+/* Carta: separación entre el último contenido y las barras fijas (Agregar / Mi pedido). */
+[data-carta-preset] { --carta-gap-barra: 16px; }

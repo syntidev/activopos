@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Info } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
@@ -34,6 +34,21 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
   const [qty, setQty] = useState(1)
   const [note, setNote] = useState('')
   const [ok, setOk] = useState(false)
+  const paginaRef = useRef<HTMLDivElement>(null)
+  const barraRef = useRef<HTMLDivElement>(null)
+
+  // Alto REAL de la barra fija "Agregar" → margen inferior de la página (--carta-barra-h), para que ninguna tarjeta quede detrás.
+  useEffect(() => {
+    const barra = barraRef.current
+    const pagina = paginaRef.current
+    if (!barra || !pagina) return
+    const medir = (): void => { pagina.style.setProperty('--carta-barra-h', (getComputedStyle(barra).position === 'fixed' ? barra.offsetHeight : 0) + 'px') }
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(barra)
+    window.addEventListener('resize', medir)
+    return () => { ro.disconnect(); window.removeEventListener('resize', medir) }
+  }, [])
 
   const opciones = opcionesDeCarrito(dish.groups, elegidas)
   const extra = opciones.reduce((s, o) => s + o.price_usd, 0)
@@ -51,7 +66,7 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
   }
 
   return (
-    <>
+    <div ref={paginaRef} className={styles.fichaPagina}>
       <article className={styles.ficha} data-testid="carta-ficha">
         <div className={cx(styles.fichaFoto, !dish.image && styles.fichaTipo)}>
           <Link href={'/catalogo-carta/' + slug} className={styles.volver} aria-label="Volver a la carta">‹</Link>
@@ -106,7 +121,7 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
           )}
           {faltan.length > 0 && !agotado && <p className={styles.aviso} data-testid="carta-faltan" role="status">Elige {faltan.map(g => g.name).join(' y ')} para poder agregar.</p>}
 
-          <div className={styles.barra}>
+          <div className={styles.barra} ref={barraRef}>
             <div className={styles.pasos}>
               <button type="button" className={styles.paso} onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Una menos" data-testid="carta-cantidad-menos">−</button>
               <span className={styles.cant} data-testid="carta-cantidad-valor">{qty}</span>
@@ -125,6 +140,6 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
           <div className={styles.items}>{related.map(d => <PlatoCard key={d.id} dish={d} slug={slug} />)}</div>
         </section>
       )}
-    </>
+    </div>
   )
 }

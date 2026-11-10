@@ -24,7 +24,7 @@ export default async function ConfiguracionPage() {
   // vez de mostrarla y bloquear recién al guardar.
   const business = await prisma.business.findUnique({
     where:  { id: session.businessId },
-    select: { catalog_plan: true, reservas_enabled: true },
+    select: { catalog_plan: true, reservas_enabled: true, catalog_template: true },
   })
   const plan = (business?.catalog_plan as PlanTier | null) ?? 'gratis'
   const landingSectionsEnabled = PLAN_LIMITS[plan]?.landing_sections ?? false
@@ -34,6 +34,7 @@ export default async function ConfiguracionPage() {
       session={session}
       landingSectionsEnabled={landingSectionsEnabled}
       kitEnabled={business?.reservas_enabled ?? false}
+      isCarta={business?.catalog_template === 'carta'}
     />
   )
 }

@@ -127,3 +127,22 @@ test('tarjeta completa tocable: tocar cualquier parte (no solo el título) abre 
   await expect(page.getByTestId('carta-barra-pedido')).toBeVisible()
   await page.evaluate(() => window.localStorage.clear())
 })
+
+test('fotos de /storage: el HTML trae <img src="/storage/...">, nunca /_next/image (Nginx sirve /storage, no Next)', async ({ request }) => {
+  const id = idOf('Smash Burger')
+  q("UPDATE products SET images='[\"/storage/tenants/217/products/zzb-prueba.webp\"]' WHERE id=" + id)
+  q("UPDATE businesses SET logo_path='/storage/tenants/217/logo/zzb-logo.webp', catalog_cover_path='/storage/tenants/217/catalog_cover/zzb-portada.webp' WHERE id=@BID")
+  try {
+    for (const url of ['/catalogo-carta/' + OWN_SLUG, '/catalogo-carta/' + OWN_SLUG + '/p/' + id]) {
+      const html = await (await request.get(url)).text()
+      expect(html, url).toContain('src="/storage/tenants/217/products/zzb-prueba.webp"')
+      expect(html, url).not.toContain('/_next/image')
+    }
+    const lista = await (await request.get('/catalogo-carta/' + OWN_SLUG)).text()
+    expect(lista).toContain('src="/storage/tenants/217/logo/zzb-logo.webp"')
+    expect(lista).toContain('src="/storage/tenants/217/catalog_cover/zzb-portada.webp"')
+  } finally {
+    q('UPDATE products SET images=NULL WHERE id=' + id)
+    q('UPDATE businesses SET logo_path=NULL, catalog_cover_path=NULL WHERE id=@BID')
+  }
+})

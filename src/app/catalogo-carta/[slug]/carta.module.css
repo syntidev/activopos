@@ -244,7 +244,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 }
 
 /* Foto de next/image (fill): recorte que centra el plato. */
-.foto { object-fit: cover; }
+.foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 /* El precio sobre foto se lee en blanco: se reasignan los tokens de texto dentro del hero y de las tarjetas de la casa. */
 .herorow, .hcardRow { --carta-tinta: var(--carta-sobre-foto); --carta-muted: var(--carta-sobre-foto); }
 

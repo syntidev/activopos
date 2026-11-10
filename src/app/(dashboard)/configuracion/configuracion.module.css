@@ -75,6 +75,21 @@
   color: var(--ctl-accent);
 }
 
+.configVolver {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-min);
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-3) 0 var(--space-1);
+  background: transparent;
+  border: 0;
+  color: var(--ctl-accent);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
 .tabDivider {
   height: 1px;
   background: var(--color-border-subtle);
@@ -1611,14 +1626,20 @@
     grid-template-rows: auto 1fr;
   }
 
+  /* Móvil: UNA columna. Primero el menú (grupos uno debajo de otro, filas de 44 px); al elegir una opción se ve solo su contenido
+     con la flecha "Volver a Configuración". Sin scroll horizontal. */
   .configSidebar {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--color-border);
-    flex-direction: row;
-    overflow-x: auto;
-    padding: var(--space-2);
+    flex-direction: column;
+    overflow: visible;
+    padding: var(--space-3);
   }
+  .configTab { min-height: var(--touch-min); white-space: normal; }
+  .configLayout[data-vista='menu'] .configContent { display: none; }
+  .configLayout[data-vista='tab'] .configSidebar { display: none; }
+  .configLayout[data-vista='tab'] .configVolver { display: inline-flex; }
 
   .configContent {
     padding: var(--space-4);

@@ -4,6 +4,8 @@ import { useState, type ReactNode } from 'react'
 
 interface Props {
   src:       string
+  /** Texto alternativo (la Carta lo usa para fotos de platos y logo). Sin él la imagen es decorativa, como siempre. */
+  alt?:      string
   className: string
   fallback:  ReactNode
   loading?:  'lazy' | 'eager'
@@ -18,7 +20,7 @@ interface Props {
 // criterio que ya usan las cards de producto/colección) — data de prueba con
 // paths que 404 mostraba el ícono feo del navegador. `fallback` es JSX libre
 // para que cada sección use su propio patrón (letra+fondo, textura, etc).
-export function ImgWithFallback({ src, className, fallback, loading, onLoad, imgRef }: Props) {
+export function ImgWithFallback({ src, alt = '', className, fallback, loading, onLoad, imgRef }: Props) {
   const [broken, setBroken] = useState(false)
 
   if (broken || !src) return <>{fallback}</>
@@ -26,10 +28,10 @@ export function ImgWithFallback({ src, className, fallback, loading, onLoad, img
   return (
     <img
       src={src}
-      alt=""
+      alt={alt}
       className={className}
       loading={loading}
-      aria-hidden="true"
+      aria-hidden={alt ? undefined : 'true'}
       onError={() => setBroken(true)}
       onLoad={onLoad ? e => onLoad(e.currentTarget) : undefined}
       // Páginas server-renderizadas: el <img src> ya está en el HTML inicial,

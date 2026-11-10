@@ -8,7 +8,7 @@ import { isCatalogLive } from '@/lib/catalog'
 import { logError } from '@/lib/safe-log'
 import { checkCheckoutCedula, hasUsablePhone, normalizeClientPhone, phoneLookupVariants } from '@/lib/customer-identity'
 import { validateAddress } from '@/lib/shipping'
-import type { CheckoutPrefill, SavedAddressResponse } from '@/types/shipping'
+import type { SavedAddressResponse } from '@/types/shipping'
 
 /**
  * POST /api/catalog/[slug]/saved-address  { customer_cedula, customer_phone }  →  { has_saved_address: boolean }
@@ -18,7 +18,8 @@ import type { CheckoutPrefill, SavedAddressResponse } from '@/types/shipping'
  *    cédula no revela nada, ni siquiera que existe);
  *  - responde SIEMPRE 200 con la misma forma: cédula o teléfono inválidos, negocio inexistente, cliente
  *    sin dirección, cédula desconocida o teléfono que no coincide dan exactamente { has_saved_address: false };
- *  - solo devuelve `prefill` (nombre y dirección) cuando cédula Y teléfono son del MISMO cliente; en cualquier otro caso, nada;
+ *  - NUNCA devuelve datos personales (ni nombre ni dirección): solo el booleano. La precarga en un dispositivo nuevo se quitó
+ *    porque cédula + teléfono son datos que otros pueden conocer; en el mismo dispositivo la precarga viene de localStorage;
  *  - tiempo de respuesta con piso fijo (la rama "existe" y la "no existe" no se distinguen por latencia);
  *  - limitada por IP, por slug+cédula y por slug+teléfono (RateLimiterMemory: por proceso, ver rate-limit.ts).
  * El POST del pedido hace la comprobación definitiva (nombre y dirección válida): aquí "true" solo
@@ -29,10 +30,10 @@ const slugSchema = z.string().regex(/^[a-z0-9-]{3,50}$/)
 const bodySchema = z.object({ customer_cedula: z.string().max(20), customer_phone: z.string().max(20) })
 const MIN_RESPONSE_MS = 150
 
-async function respond(startedAt: number, has: boolean, prefill?: CheckoutPrefill): Promise<NextResponse> {
+async function respond(startedAt: number, has: boolean): Promise<NextResponse> {
   const wait = startedAt + MIN_RESPONSE_MS - Date.now()
   if (wait > 0) await new Promise<void>(resolve => setTimeout(resolve, wait))
-  const body: SavedAddressResponse = prefill ? { has_saved_address: has, prefill } : { has_saved_address: has }
+  const body: SavedAddressResponse = { has_saved_address: has }
   return NextResponse.json(body)
 }
 
@@ -72,11 +73,12 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const client = await prisma.client.findFirst({
       where:   { business_id: business.id, cedula: cedula.value, phone: { in: phoneVariants } },
       orderBy: [{ verified: 'desc' }, { id: 'asc' }],
-      select:  { name: true, address: true },
+      select:  { address: true },
     })
     if (!client) return respond(startedAt, false)
-    // Precarga (nombre y dirección/oficina) SOLO porque cédula Y teléfono coinciden en el MISMO cliente; con solo la cédula: nada.
-    return respond(startedAt, validateAddress(client.address) === null, { name: client.name, address: client.address })
+    // SOLO un booleano: esta consulta pública se apoya en datos que se conocen (cédula, teléfono), no en prueba de posesión, así que
+    // nunca devuelve nombre ni dirección. Si el cliente elige "misma dirección", el servidor la copia al crear el pedido.
+    return respond(startedAt, validateAddress(client.address) === null)
   } catch (err) {
     logError('saved-address error', err)
     return respond(startedAt, false)

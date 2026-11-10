@@ -84,10 +84,14 @@ test('API: cédula mal escrita no bloquea: se guarda lo escrito y el pedido qued
   expect(ultimo("CONCAT(client_cedula,'|',cedula_alert)")).toBe('abc|1')
 })
 
-test('saved-address: precarga SOLO con cédula Y teléfono del mismo cliente (cédula sola o con otro teléfono: nada)', async ({ request }) => {
+test('saved-address: solo { has_saved_address }, nunca nombre ni dirección (ni con cédula y teléfono correctos)', async ({ request }) => {
   const consulta = (cedula: string, phone: string) => request.post('/api/catalog/' + OWN_SLUG + '/saved-address', { data: { customer_cedula: cedula, customer_phone: phone } })
-  const ok = await (await consulta('21222819', '04241795757')).json() as { prefill?: { name: string } }
-  expect(ok.prefill?.name).toBe('ZZB Daniela API')
+  const res = await consulta('21222819', '04241795757')
+  const raw = await res.text()
+  expect(res.status()).toBe(200)
+  // El cliente sembrado por la API puede o no tener dirección válida (eso lo cubre el test de UI de "misma dirección"); aquí importa la FORMA.
+  expect(Object.keys(JSON.parse(raw) as Record<string, unknown>)).toEqual(['has_saved_address'])
+  expect(raw.replace('has_saved_address', '')).not.toMatch(/ZZB Daniela|name|address|prefill|Oficina/i)
   const otroTel = await (await consulta('21222819', '04149998877')).json() as { has_saved_address: boolean; prefill?: unknown }
   expect(otroTel).toEqual({ has_saved_address: false })
   const sinTel = await (await consulta('21222819', '')).json() as Record<string, unknown>

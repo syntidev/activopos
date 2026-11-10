@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { optionsKeyOf, useCart, type CartItem } from '@/app/catalogo-premium/[slug]/CartContext'
 import { getPulsoOrderContext } from '@/lib/pulso-client'
 import { buildCartaMessage } from '@/lib/carta/whatsapp'
-import { checkCedula, normalizeCedula } from '@/lib/cedula'
+import { checkCedula } from '@/lib/cedula'
 import { clearCheckoutMemory, loadCheckoutMemory, saveCheckoutMemory } from '@/lib/checkout-memory'
 import { hasUsablePhone } from '@/lib/customer-identity'
 import { CartaOpciones, elegidasDeCarrito, gruposFaltantes, opcionesDeCarrito, type Elegidas } from './CartaOpciones'
@@ -81,26 +81,6 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
   }, [cartOpen, slug])
 
   // Dispositivo nuevo: con cédula Y teléfono del mismo cliente el servidor devuelve nombre y dirección (con solo la cédula, nada).
-  useEffect(() => {
-    const ced = normalizeCedula(cedula)
-    if (!cartOpen || !ced || !hasUsablePhone(telefono)) return
-    const ctrl = new AbortController()
-    const t = setTimeout(() => {
-      fetch('/api/catalog/' + slug + '/saved-address', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
-        body: JSON.stringify({ customer_cedula: ced, customer_phone: telefono.trim() }),
-      })
-        .then(r => (r.ok ? r.json() : null))
-        .then((j: { prefill?: { name: string; address: string | null } } | null) => {
-          const prefill = j?.prefill
-          if (!prefill) return
-          setNombre(prev => prev || prefill.name)
-          if (prefill.address) setDireccion(prev => prev || (prefill.address ?? ''))
-        })
-        .catch(() => undefined)
-    }, 400)
-    return () => { clearTimeout(t); ctrl.abort() }
-  }, [cartOpen, slug, cedula, telefono])
 
   if (!cartOpen) return null
 

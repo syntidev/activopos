@@ -1,4 +1,5 @@
 import type { CartaOpenState } from '@/types/carta'
+import { clampFocus, readShowOn, type ShowOn } from '@/lib/slide-media'
 
 /** Presets de la Carta: son tokens (--carta-*) en styles/tokens.css, elegidos por atributo data-carta-preset. */
 export const CARTA_PRESETS = ['brasa', 'noche', 'cafe', 'mar', 'verde'] as const
@@ -95,6 +96,22 @@ export function formatHours(hours: CartaHours | null): { day: string; text: stri
     day:  DAY_LABEL[d],
     text: (hours[d] ?? []).map(([a, b]) => hourLabel(a) + ' – ' + hourLabel(b)).join(', ') || 'Cerrado',
   }))
+}
+
+/* ── Portadas: settings.carta_cover_meta = { "1": { mobile_path, focus_x, focus_y, show_on }, "2": …, "3": … } ── */
+
+export interface CartaCoverMeta { mobile_path: string | null; focus_x: number; focus_y: number; show_on: ShowOn }
+
+/** Metadatos de las portadas 1..3 (índice 0..2); null = sin datos (enfoque centrado, sin imagen móvil, se muestra siempre). */
+export function readCoverMeta(settings: unknown): (CartaCoverMeta | null)[] {
+  const raw = ((settings ?? {}) as Record<string, unknown>).carta_cover_meta
+  const rec = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  return ['1', '2', '3'].map(k => {
+    const m = rec[k]
+    if (!m || typeof m !== 'object') return null
+    const o = m as Record<string, unknown>
+    return { mobile_path: typeof o.mobile_path === 'string' && o.mobile_path ? o.mobile_path : null, focus_x: clampFocus(o.focus_x), focus_y: clampFocus(o.focus_y), show_on: readShowOn(o.show_on) }
+  })
 }
 
 export function isCartaPaused(settings: unknown): boolean {

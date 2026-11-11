@@ -61,6 +61,11 @@ const SlideSchema = z.object({
   // Leído del slide, nunca asumido fijo -- fondos claros con texto blanco
   // vuelven el CTA ilegible.
   text_theme: z.enum(['light', 'dark']).optional(),
+  // Imagen: imagen móvil opcional (4:5), punto de enfoque en % y dónde mostrar el slide. Sin cambio de esquema de DB: viven en este JSON.
+  mobile_path: imagePath().optional(),
+  focus_x:     z.number().min(0).max(100).optional(),
+  focus_y:     z.number().min(0).max(100).optional(),
+  show_on:     z.enum(['all', 'desktop', 'mobile']).optional(),
 }).strict()
 
 const CommunityItemSchema = z.object({

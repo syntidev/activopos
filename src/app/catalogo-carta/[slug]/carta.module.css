@@ -313,3 +313,12 @@ textarea.input { min-height: 84px; resize: vertical; }
 .compactaEstado { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 45%; font-size: 12px; font-weight: 700; color: var(--carta-ok); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .compactaEstado i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--carta-abierto); }
 @media (prefers-reduced-motion: reduce) { .compacta, .sticky { transition: none; } }
+
+/* Portadas y slides: en móvil la portada es 4:5 (imagen móvil por <picture>); "Mostrar en" también cubre el SSR. */
+@media (max-width: 640px) {
+  .portadaNegocio { height: auto; aspect-ratio: 4 / 5; }
+  .portadaSlide[data-show='desktop'], .slide[data-show='desktop'] { display: none; }
+}
+@media (min-width: 641px) {
+  .portadaSlide[data-show='mobile'], .slide[data-show='mobile'] { display: none; }
+}

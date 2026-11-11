@@ -5461,3 +5461,12 @@ iframe.lsHeroMedia {
 /* Checkout sin fricción: aviso de datos recordados en este dispositivo */
 .checkoutMemory { margin: 0 0 12px; font-size: 13px; color: var(--text-muted); }
 .checkoutMemoryBtn { min-height: 44px; padding: 0 6px; background: none; border: 0; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* Slider de la landing: en móvil 4:5 (la imagen móvil opcional se sirve por <picture>); "Mostrar en" también cubre el SSR. */
+@media (max-width: 640px) {
+  .lsSlider { height: auto; aspect-ratio: 4 / 5; }
+  .lsSlideLayer[data-show='desktop'] { display: none; }
+}
+@media (min-width: 641px) {
+  .lsSlideLayer[data-show='mobile'] { display: none; }
+}

@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { ImageField } from '@/components/ui/ImageField'
+import { SlideMediaEditor } from '@/components/ui/SlideMediaEditor'
+import { clampFocus, readShowOn } from '@/lib/slide-media'
 import { SECTION_TYPES, PRODUCT_LIST_SLOTS } from '@/lib/landing-sections'
 import type {
   SectionType, HeroConfig, EventSliderConfig, CommunityConfig, StoryConfig, CollectionGridConfig,
@@ -453,6 +455,23 @@ function EventSliderForm({ config, onChange }: { config: EventSliderConfig; onCh
               </select>
             </div>
             <ImageField label={`Imagen slide ${i + 1}`} value={slide.image_url} onChange={v => setSlide(i, { image_url: v ?? '' })} uploadType="landing" compress boxClassName={styles.imageFieldDropZone} imgClassName={styles.imageFieldPreview} labelClassName={styles.label} />
+            {slide.image_url && (
+              <SlideMediaEditor
+                idPrefix={`slide-${i + 1}`}
+                image={slide.image_url}
+                mobile={slide.mobile_path ?? null}
+                focusX={clampFocus(slide.focus_x)}
+                focusY={clampFocus(slide.focus_y)}
+                showOn={readShowOn(slide.show_on)}
+                uploadType="landing"
+                onChange={p => setSlide(i, {
+                  ...(p.mobile !== undefined && { mobile_path: p.mobile ?? undefined }),
+                  ...(p.focusX !== undefined && { focus_x: p.focusX }),
+                  ...(p.focusY !== undefined && { focus_y: p.focusY }),
+                  ...(p.showOn !== undefined && { show_on: p.showOn }),
+                })}
+              />
+            )}
           </div>
         </div>
       ))}

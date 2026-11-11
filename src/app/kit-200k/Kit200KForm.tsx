@@ -5,6 +5,7 @@ import { ImageOff } from 'lucide-react'
 import { CatalogHeader } from '../catalogo-premium/[slug]/CatalogHeader'
 import { CatalogFooter } from '../catalogo-premium/[slug]/CatalogFooter'
 import styles from './kit200k.module.css'
+import { franelaKey, type FranelaCorte } from '@/lib/kit-config'
 
 const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'] as const
 const TALLAS_NINOS = ['4', '6', '8', '10', '12', '14'] as const
@@ -52,12 +53,14 @@ function ImgOrPlaceholder({ src, alt, className }: { src: string | null; alt: st
 
 interface KitConfig {
   maillotTalla: string
+  /** Nombre del corte de franela (config): Dama, Caballero… */
+  franelaCorte: string
   franelaTalla: string
 }
 
-const DEFAULT_KIT: KitConfig = { maillotTalla: 'L', franelaTalla: 'S' }
-
 interface Props {
+  /** Cortes de franela del kit con sus tallas (kit200k_config.franela_cortes). */
+  cortes: FranelaCorte[]
   slug:             string
   kitId:            number
   kitImage:         string | null
@@ -117,7 +120,7 @@ function Stepper({ value, onChange, max = 20 }: { value: number; onChange: (v: n
 }
 
 export function Kit200KForm({
-  slug, kitId, kitImage, badgeHero, showKitLink, componentes, businessName, businessLogo, businessCity,
+  slug, kitId, kitImage, badgeHero, cortes, showKitLink, componentes, businessName, businessLogo, businessCity,
   catalogDesc, rif, address, location, waPhone, phone, catalogInstagram, catalogHours,
   franelaDamas, franelaCaballeros, franelaNinos,
 }: Props) {
@@ -141,10 +144,11 @@ export function Kit200KForm({
   // principal (sección 2), con botón "+ Agregar otro kit" debajo del
   // último y "Quitar" individual en cada uno (si hay más de 1). El wizard
   // NUNCA arma este estado -- solo lo lee (Paso 2 es resumen de lectura).
-  const [kits, setKits] = useState<KitConfig[]>([DEFAULT_KIT])
+  const nuevoKit = (): KitConfig => ({ maillotTalla: 'L', franelaCorte: cortes[0].nombre, franelaTalla: cortes[0].tallas[0] })
+  const [kits, setKits] = useState<KitConfig[]>(() => [nuevoKit()])
 
   const addKit = () => {
-    setKits(prev => (prev.length >= MAX_KITS ? prev : [...prev, { ...DEFAULT_KIT }]))
+    setKits(prev => (prev.length >= MAX_KITS ? prev : [...prev, nuevoKit()]))
   }
   const removeKit = (idx: number) => {
     setKits(prev => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)))
@@ -218,7 +222,7 @@ export function Kit200KForm({
           cliente_cedula:   clienteCedula.trim(),
           cliente_correo:   clienteCorreo.trim(),
           kit_id:           kitId,
-          kits: kits.map(k => ({ componentes_tallas: { maillot: k.maillotTalla, franela: k.franelaTalla } })),
+          kits: kits.map(k => ({ componentes_tallas: { maillot: k.maillotTalla, [franelaKey(k.franelaCorte)]: k.franelaTalla } })),
           extras,
         }),
       })
@@ -338,8 +342,24 @@ export function Kit200KForm({
                 <TallaChips tallas={TALLAS_ROPA} value={k.maillotTalla} onChange={v => updateKit(i, { maillotTalla: v })} />
               </div>
               <div className={styles.tallaCol}>
-                <div className={styles.tallaLabel}>TALLA FRANELA (del kit)</div>
-                <TallaChips tallas={TALLAS_ROPA} value={k.franelaTalla} onChange={v => updateKit(i, { franelaTalla: v })} />
+                <div className={styles.tallaLabel}>CORTE DE LA FRANELA (del kit)</div>
+                <div className={styles.tallaGrid} role="radiogroup" aria-label={`Corte de la franela del Kit ${i + 1}`}>
+                  {cortes.map(c => (
+                    <button
+                      key={c.nombre}
+                      type="button"
+                      role="radio"
+                      aria-checked={k.franelaCorte === c.nombre}
+                      data-testid={`kit-${i + 1}-corte-${franelaKey(c.nombre)}`}
+                      className={`${styles.tallaChip} ${k.franelaCorte === c.nombre ? styles.tallaChipActive : ''}`}
+                      onClick={() => updateKit(i, { franelaCorte: c.nombre, franelaTalla: c.tallas.includes(k.franelaTalla) ? k.franelaTalla : c.tallas[0] })}
+                    >
+                      {c.nombre}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.tallaLabel}>TALLA FRANELA</div>
+                <TallaChips tallas={(cortes.find(c => c.nombre === k.franelaCorte) ?? cortes[0]).tallas} value={k.franelaTalla} onChange={v => updateKit(i, { franelaTalla: v })} />
               </div>
             </div>
           </div>
@@ -526,7 +546,7 @@ export function Kit200KForm({
                 {kits.map((k, i) => (
                   <div key={i} className={styles.summaryRow}>
                     <span>Kit {i + 1}</span>
-                    <span className={styles.summaryRowRight}>Maillot {k.maillotTalla} · Franela {k.franelaTalla}</span>
+                    <span className={styles.summaryRowRight}>Maillot {k.maillotTalla} · Franela {k.franelaCorte} {k.franelaTalla}</span>
                   </div>
                 ))}
 

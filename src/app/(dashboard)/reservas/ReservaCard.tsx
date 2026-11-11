@@ -4,6 +4,7 @@ import { AlertTriangle, Camera, Check, Phone } from 'lucide-react'
 import type { ReservaDTO } from '@/types/reservas'
 import { formatBs, formatShortDate, formatUsd } from './format'
 import styles from './reservas.module.css'
+import { componenteLabel } from '@/lib/kit-config'
 
 /**
  * Bandera independiente: ✓ (hecha) o ⚠ (pendiente). Cada una hace su propio
@@ -100,7 +101,7 @@ export function ReservaCard({
         <div className={styles.extras}>
           {Object.entries(r.componentes_tallas).map(([componente, talla]) => (
             <span key={componente} className={styles.extraChip}>
-              {componente}: {talla}
+              {componenteLabel(componente)}: {talla}
             </span>
           ))}
         </div>

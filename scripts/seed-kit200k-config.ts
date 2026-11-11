@@ -1,5 +1,5 @@
 import { prisma } from '../src/lib/prisma'
-import { KitConfigSchema, type KitConfig } from '../src/lib/kit-config'
+import { DEFAULT_FRANELA_CORTES, KitConfigSchema, type KitConfig } from '../src/lib/kit-config'
 
 // Siembra kit200k_config para OnBike con los valores HOY hardcodeados (para
 // que nada cambie visualmente cuando CLI-B rewiree Kit200KForm.tsx/page.tsx
@@ -18,6 +18,7 @@ const SEED_DATA: Record<string, KitConfig> = {
     seo_description:   'Reserva tu Kit Oficial 200K del Gran Fondo Virgen del Valle — Maillot y Medias oficiales del evento, franela incluida.',
     activo:            true,
     mostrar_en_header: true,
+    franela_cortes:    DEFAULT_FRANELA_CORTES,
   },
 }
 

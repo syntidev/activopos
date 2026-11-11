@@ -10,20 +10,29 @@ import {
   reservasByCollection,
 } from '@/lib/reservas'
 import type { DemandaExtra, DemandaItem, DemandaResponse } from '@/types/reservas'
+import { componenteLabel, parseKitConfig } from '@/lib/kit-config'
+import { prisma } from '@/lib/prisma'
 
-const TALLA_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+// XS < S < M < L < XL < XXL (=2XL) < XXXL (=3XL) < 4XL; después las numéricas (niños) ascendentes: 4, 6, 8, 10, 12, 14.
+const TALLA_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL']
+const TALLA_ALIAS: Record<string, string> = { '2XL': 'XXL', '3XL': 'XXXL' }
 
-/** XS < S < M < L < XL...; tallas fuera de la lista van después, alfabéticas; sin talla al final. */
+/** Letras primero (en su orden), luego numéricas ascendentes, luego lo desconocido alfabético; sin talla al final. */
 function compareTalla(a: string | null, b: string | null): number {
   if (a === b) return 0
   if (a === null) return 1
   if (b === null) return -1
-  const ia = TALLA_ORDER.indexOf(a.toUpperCase())
-  const ib = TALLA_ORDER.indexOf(b.toUpperCase())
-  if (ia !== -1 && ib !== -1) return ia - ib
-  if (ia !== -1) return -1
-  if (ib !== -1) return 1
-  return a.localeCompare(b)
+  const ua = a.trim().toUpperCase()
+  const ub = b.trim().toUpperCase()
+  const rank = (t: string): [number, number] => {
+    const i = TALLA_ORDER.indexOf(TALLA_ALIAS[t] ?? t)
+    if (i !== -1) return [0, i]
+    if (/^\d+$/.test(t)) return [1, Number(t)]
+    return [2, 0]
+  }
+  const [ga, na] = rank(ua)
+  const [gb, nb] = rank(ub)
+  return ga - gb || na - nb || ua.localeCompare(ub)
 }
 
 interface Bucket {
@@ -88,11 +97,15 @@ export async function GET(req: NextRequest) {
     })
     const kitName = new Map(kits.map(k => [k.id, k.name]))
 
+    const biz = await prisma.business.findUnique({ where: { id: session.businessId }, select: { kit200k_config: true } })
+    const cortes = parseKitConfig(biz?.kit200k_config ?? null).franela_cortes
+
     const items: DemandaItem[] = Array.from(buckets.values())
       .map(b => ({
         kit_id:     b.kit_id,
         kit_nombre: kitName.get(b.kit_id) ?? `Kit #${b.kit_id}`,
         componente: b.componente,
+        componente_label: b.componente ? componenteLabel(b.componente, cortes) : null,
         talla:      b.talla,
         unidades:   b.unidades,
         reservas:   b.reservas,

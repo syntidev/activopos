@@ -151,6 +151,7 @@ export default async function Kit200KPage() {
       kitId={kit.id}
       kitImage={firstInternalImage(kit.images)}
       badgeHero={config.badge_hero}
+      cortes={config.franela_cortes}
       showKitLink={config.activo && config.mostrar_en_header}
       componentes={componentes}
       businessName={displayTitle}

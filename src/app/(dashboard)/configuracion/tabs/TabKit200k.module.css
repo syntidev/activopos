@@ -1,0 +1,9 @@
+/* Editor de cortes de franela del Kit 200K: nombre + chips de tallas. Móvil primero, controles de 44 px. */
+.corte { display: grid; gap: var(--space-2); padding: var(--space-3); margin-bottom: var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); }
+.corteCab { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-2); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip { display: inline-flex; align-items: center; gap: var(--space-1); min-height: var(--touch-min); padding: 0 var(--space-3); border-radius: 99px; background: var(--ctl-accent-soft); color: var(--ctl-accent); font-weight: var(--weight-semibold); border: 0; cursor: pointer; font-family: inherit; }
+.agregarTalla { display: flex; gap: var(--space-2); }
+.agregarTalla input { flex: 1; min-width: 0; min-height: var(--touch-min); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); font: inherit; }
+.mini { min-height: var(--touch-min); padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border); background: transparent; color: var(--color-text-primary); font: inherit; cursor: pointer; }
+.error { margin: 0; font-size: var(--text-sm); color: var(--color-danger, var(--color-text-primary)); }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { handleReservaError, requireReservasAccess } from '@/lib/reservas'
-import { KitConfigSchema, EMPTY_KIT_CONFIG } from '@/lib/kit-config'
+import { KitConfigSchema, parseKitConfig } from '@/lib/kit-config'
 
 // Admin GET/PATCH de la config del microsite /kit-200k. business_id SIEMPRE
 // de getSession() (vía requireReservasAccess) -- nunca de body/query (regla
@@ -26,11 +26,7 @@ export async function GET() {
       select: { kit200k_config: true },
     })
 
-    const stored = business?.kit200k_config
-    const isValid = stored !== null && typeof stored === 'object' && !Array.isArray(stored) &&
-      KitConfigSchema.safeParse(stored).success
-
-    return NextResponse.json({ ok: true, config: isValid ? stored : EMPTY_KIT_CONFIG })
+    return NextResponse.json({ ok: true, config: parseKitConfig(business?.kit200k_config ?? null) })
   } catch (err) {
     return handleReservaError(err, 'GET /api/config/kit200k')
   }

@@ -5,14 +5,16 @@ import { Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
-import type { KitConfig } from '@/lib/kit-config'
+import { MAX_CORTES, MAX_TALLAS_CORTE, type FranelaCorte, type KitConfig } from '@/lib/kit-config'
 import styles from '../configuracion.module.css'
+import own from './TabKit200k.module.css'
 
 interface Props { businessId: number }
 
 const EMPTY: KitConfig = {
   nombre_evento: '', fecha_texto: '', badge_hero: '', seo_title: '', seo_description: '',
   activo: false, mostrar_en_header: false,
+  franela_cortes: [{ nombre: 'Dama', tallas: ['S', 'M', 'L'] }, { nombre: 'Caballero', tallas: ['S', 'M', 'L', 'XL', 'XXL'] }],
 }
 
 type TextField = 'nombre_evento' | 'fecha_texto' | 'badge_hero' | 'seo_title'
@@ -24,6 +26,42 @@ function serverMessage(data: ServerError | null): string {
   const issue = data?.issues?.[0]
   if (issue) return issue.path?.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message
   return data?.error ?? 'No se pudo guardar la configuración del Kit.'
+}
+
+/** Cortes de la franela del kit: nombre + chips de tallas (tocar un chip lo quita). */
+function CortesEditor({ cortes, onChange }: { cortes: FranelaCorte[]; onChange: (c: FranelaCorte[]) => void }) {
+  const setCorte = (i: number, patch: Partial<FranelaCorte>): void => onChange(cortes.map((c, j) => (j === i ? { ...c, ...patch } : c)))
+  const addTalla = (i: number, raw: string): void => {
+    const t = raw.trim().toUpperCase()
+    if (!t || cortes[i].tallas.some(x => x.toUpperCase() === t) || cortes[i].tallas.length >= MAX_TALLAS_CORTE) return
+    setCorte(i, { tallas: [...cortes[i].tallas, t] })
+  }
+  return (
+    <div>
+      {cortes.map((c, i) => (
+        <div key={i} className={own.corte} data-testid={'kit-corte-' + i}>
+          <div className={own.corteCab}>
+            <Input id={'kit-corte-nombre-' + i} label={'Corte ' + (i + 1)} value={c.nombre} onChange={e => setCorte(i, { nombre: e.target.value })} maxLength={30} />
+            <button type="button" className={own.mini} onClick={() => onChange(cortes.filter((_, j) => j !== i))} disabled={cortes.length <= 1} aria-label={'Quitar corte ' + c.nombre}>Quitar</button>
+          </div>
+          <div className={own.chips}>
+            {c.tallas.map(t => (
+              <button key={t} type="button" className={own.chip} onClick={() => setCorte(i, { tallas: c.tallas.filter(x => x !== t) })} aria-label={'Quitar talla ' + t + ' del corte ' + c.nombre}>{t} ×</button>
+            ))}
+          </div>
+          {c.tallas.length < MAX_TALLAS_CORTE && (
+            <form className={own.agregarTalla} onSubmit={e => { e.preventDefault(); const inp = e.currentTarget.elements.namedItem('talla') as HTMLInputElement; addTalla(i, inp.value); inp.value = '' }}>
+              <input name="talla" placeholder="Agregar talla (ej. 3XL)" maxLength={20} aria-label={'Nueva talla del corte ' + c.nombre} />
+              <button type="submit" className={own.mini}>Agregar</button>
+            </form>
+          )}
+        </div>
+      ))}
+      {cortes.length < MAX_CORTES && (
+        <button type="button" className={own.mini} onClick={() => onChange([...cortes, { nombre: '', tallas: ['S', 'M', 'L'] }])} data-testid="kit-agregar-corte">Agregar corte</button>
+      )}
+    </div>
+  )
 }
 
 export function TabKit200k({ businessId: _b }: Props) {
@@ -107,6 +145,12 @@ export function TabKit200k({ businessId: _b }: Props) {
             hint="Se muestra sobre el título del Kit. Si lo dejas vacío, no se muestra."
           />
         </div>
+      </div>
+
+      <div className={styles.formCard}>
+        <h3 className={styles.formCardTitle}>Franela del kit: cortes y tallas</h3>
+        <p className={styles.colorDesc}>Cada kit lleva una franela de UN corte. Las tallas de cada corte cambian por edición (hasta {MAX_CORTES} cortes y {MAX_TALLAS_CORTE} tallas cada uno).</p>
+        <CortesEditor cortes={config.franela_cortes} onChange={c => setConfig(prev => ({ ...prev, franela_cortes: c }))} />
       </div>
 
       <div className={styles.formCard}>

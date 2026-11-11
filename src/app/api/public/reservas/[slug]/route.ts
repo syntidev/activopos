@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { sendReservaConfirmationEmail } from '@/lib/mail'
 import { reservaPublicLimiter, getClientIp } from '@/lib/rate-limit'
+import { parseKitConfig, validateFranelaCorte } from '@/lib/kit-config'
 import {
   RESERVA_INCLUDE,
   TICKET_MAX_RETRIES,
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
   const business = await prisma.business.findFirst({
     where:  { catalog_slug: parsedSlug.data, active: true },
-    select: { id: true, reservas_enabled: true },
+    select: { id: true, reservas_enabled: true, kit200k_config: true },
   })
   if (!business || !business.reservas_enabled) {
     return NextResponse.json({ error: 'Reservas no disponibles' }, { status: 404 })
@@ -57,6 +58,13 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const parsed = createReservaBatchSchema.safeParse(json)
     if (!parsed.success) return badRequest(parsed.error)
     const data = parsed.data
+
+    // Franela del kit: un solo corte, que exista en config, con una talla de ese corte.
+    const cortes = parseKitConfig(business.kit200k_config).franela_cortes
+    for (let i = 0; i < data.kits.length; i++) {
+      const mensaje = validateFranelaCorte(data.kits[i].componentes_tallas, cortes)
+      if (mensaje) return NextResponse.json({ error: 'Kit ' + (i + 1) + ': ' + mensaje }, { status: 400 })
+    }
 
     const kit = await prisma.product.findFirst({
       where: { id: data.kit_id, business_id: business.id, product_type: 'combo', active: true },

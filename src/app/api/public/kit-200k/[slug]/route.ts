@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { catalogLimiter, getClientIp } from '@/lib/rate-limit'
-import { KitConfigSchema, EMPTY_KIT_CONFIG } from '@/lib/kit-config'
+import { parseKitConfig } from '@/lib/kit-config'
 
 // GET público (sin sesión) — componentes reales del Kit 200K + config editable.
 // Reemplaza los paths estáticos hardcodeados de Kit200KForm.tsx: el consumidor
@@ -67,11 +67,8 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       imagen:     firstInternalImage(l.component.images),
     }))
 
-  const stored = business.kit200k_config
-  const config = stored !== null && typeof stored === 'object' && !Array.isArray(stored) &&
-    KitConfigSchema.safeParse(stored).success
-    ? stored
-    : EMPTY_KIT_CONFIG
+  // parseKitConfig: una config vieja (sin franela_cortes) se completa con el default; nunca queda inválida.
+  const config = parseKitConfig(business.kit200k_config)
 
   return NextResponse.json({
     ok: true,

@@ -31,7 +31,7 @@ export function DemandaPanel({ demanda }: { demanda: DemandaResponse | null }) {
           <div className={styles.chips}>
             {demanda.items.map(i => (
               <span key={`${i.kit_id}-${i.componente ?? ''}-${i.talla ?? 'sin'}`} className={styles.chip}>
-                {i.kit_nombre}{i.componente ? ` · ${i.componente}` : ''}{i.talla ? ` · ${i.talla}` : ' · sin talla'}
+                {i.kit_nombre}{i.componente ? ` · ${i.componente_label ?? i.componente}` : ''}{i.talla ? ` · ${i.talla}` : ' · sin talla'}
                 <span className={styles.chipQty}>{i.unidades}</span>
               </span>
             ))}

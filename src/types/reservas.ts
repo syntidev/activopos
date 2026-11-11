@@ -49,6 +49,8 @@ export interface DemandaItem {
   kit_id:     number
   kit_nombre: string
   componente: string | null
+  /** Etiqueta legible del componente ("Franela Dama"); null si no hay componente. */
+  componente_label?: string | null
   talla:      string | null
   /** Suma de `cantidad` de todas las reservas de esta combinación. */
   unidades:   number

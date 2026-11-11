@@ -1,10 +1,10 @@
 import { headers } from 'next/headers'
-import { catalogLink, matchHost, type CustomDomain, type DomainKind } from './custom-domains'
+import { catalogLink, matchHost, requestHost, type CustomDomain, type DomainKind } from './custom-domains'
 
 /** Dominio propio de la petición actual (por el host que pone el proxy), o null en activopos.com y en local. */
 export function currentCustomDomain(): CustomDomain | null {
   const h = headers()
-  return matchHost(h.get('x-forwarded-host') ?? h.get('host'))?.domain ?? null
+  return matchHost(requestHost(name => h.get(name)))?.domain ?? null
 }
 
 /** ¿Esta petición va al catálogo `slug`/`kind` por su dominio propio? (el slug sale del mapa: no se confía en la URL) */

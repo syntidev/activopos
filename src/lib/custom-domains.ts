@@ -52,6 +52,14 @@ export function normalizeHost(raw: string | null | undefined): string {
   return (raw ?? '').split(',')[0].trim().toLowerCase().replace(/:\d{1,5}$/, '').replace(/\.$/, '')
 }
 
+/**
+ * Host de la petición. En PRODUCCIÓN solo cuenta el `Host` real (nginx debe pasar `proxy_set_header Host $host;`): `x-forwarded-host`
+ * lo puede mandar cualquier cliente y no es fuente fiable. En desarrollo y pruebas se acepta para simular dominios con curl/Playwright.
+ */
+export function requestHost(get: (name: string) => string | null): string | null {
+  return process.env.NODE_ENV === 'production' ? get('host') : (get('x-forwarded-host') ?? get('host'))
+}
+
 export interface DomainMatch { domain: CustomDomain; www: boolean }
 
 /** Dominio propio al que pertenece el host (o su variante www). null = no es un dominio propio. */

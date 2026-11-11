@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PANEL_ORIGIN, legacyToClean, matchHost, nativeToClean, redirectFlagOn, rewriteTarget, getCustomDomains, KIT_CLEAN, KIT_NATIVE } from './custom-domains'
+import { PANEL_ORIGIN, legacyToClean, matchHost, nativeToClean, redirectFlagOn, requestHost, rewriteTarget, getCustomDomains, KIT_CLEAN, KIT_NATIVE } from './custom-domains'
 
 /**
  * Dominios propios en el middleware (Edge, sin DB):
@@ -46,14 +46,15 @@ function legacyRedirect(pathname: string, search: string): NextResponse | null {
 
 export function handleCustomDomains(req: NextRequest): NextResponse | null {
   const { pathname, search } = req.nextUrl
-  const match = matchHost(req.headers.get('x-forwarded-host') ?? req.headers.get('host'))
+  const match = matchHost(requestHost(name => req.headers.get(name)))
 
   if (!match) return redirectFlagOn() ? legacyRedirect(pathname, search) : null
 
   const { domain, www } = match
   if (www) return NextResponse.redirect(`https://${domain.host}${pathname}${search}`, 301)
 
-  if (PASS_EXACT.has(pathname) || PASS_PREFIXES.some(p => pathname.startsWith(p))) return NextResponse.next()
+  // Rutas de paso: NO se cortocircuita el pipeline (null = sigue por las reglas normales de auth y roles del middleware).
+  if (PASS_EXACT.has(pathname) || PASS_PREFIXES.some(p => pathname.startsWith(p))) return null
   if (PANEL_PREFIXES.some(p => is(pathname, p))) return NextResponse.redirect(`${PANEL_ORIGIN}${pathname}${search}`, 301)
 
   const target = rewriteTarget(domain, pathname)

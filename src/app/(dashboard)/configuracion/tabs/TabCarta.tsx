@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { ImageUp, Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { ImageField } from '@/components/ui/ImageField'
+import { SlideMediaEditor, type SlideMediaPatch } from '@/components/ui/SlideMediaEditor'
+import { clampFocus, readShowOn, type ShowOn } from '@/lib/slide-media'
 import { CARTA_ACCENTS, CARTA_PRESETS, CARTA_STYLES, DAY_KEYS, type CartaAccent, type CartaPreset, type CartaStyle } from '@/lib/carta/settings'
 import styles from '../configuracion.module.css'
 import own from './TabCarta.module.css'
@@ -14,8 +16,9 @@ type Horario = Record<Dia, Tramo[]>
 
 interface CartaConfigResponse {
   ok: boolean
-  config: { preset: CartaPreset; accent: CartaAccent | null; style: CartaStyle; hours: Partial<Record<Dia, Tramo[]>> | null; paused: boolean }
+  config: { preset: CartaPreset; accent: CartaAccent | null; style: CartaStyle; hours: Partial<Record<Dia, Tramo[]>> | null; paused: boolean; cover_meta?: (CoverMeta | null)[] }
 }
+interface CoverMeta { mobile_path: string | null; focus_x: number; focus_y: number; show_on: ShowOn }
 interface ImagenesNegocio {
   logo_path: string | null
   catalog_cover_path: string | null
@@ -48,6 +51,7 @@ export function TabCarta() {
   const [horario, setHorario] = useState<Horario>(horarioVacio())
   const [errorDia, setErrorDia] = useState<Dia | null>(null)
   const [guardandoHorario, setGuardandoHorario] = useState(false)
+  const [coverMeta, setCoverMeta] = useState<(CoverMeta | null)[]>([null, null, null])
   const [imagenes, setImagenes] = useState<ImagenesNegocio>({ logo_path: null, catalog_cover_path: null, catalog_cover_path_2: null, catalog_cover_path_3: null })
 
   const cargar = useCallback(async () => {
@@ -58,6 +62,7 @@ export function TabCarta() {
       const negocio = await b.json() as { business: ImagenesNegocio }
       setPreset(carta.config.preset); setAccent(carta.config.accent); setStyle(carta.config.style); setPaused(carta.config.paused)
       setHorario(desdeApi(carta.config.hours))
+      setCoverMeta(carta.config.cover_meta ?? [null, null, null])
       setImagenes({
         logo_path: negocio.business.logo_path, catalog_cover_path: negocio.business.catalog_cover_path,
         catalog_cover_path_2: negocio.business.catalog_cover_path_2, catalog_cover_path_3: negocio.business.catalog_cover_path_3,
@@ -100,6 +105,21 @@ export function TabCarta() {
     setGuardandoHorario(true)
     await patchCarta({ carta_hours: horario }, 'Horario guardado.')
     setGuardandoHorario(false)
+  }
+
+  // Enfoque, imagen móvil y "mostrar en" de cada portada (settings.carta_cover_meta); se guarda al instante.
+  const guardarMeta = async (i: number, patch: SlideMediaPatch): Promise<void> => {
+    const prev: CoverMeta = coverMeta[i] ?? { mobile_path: null, focus_x: 50, focus_y: 50, show_on: 'all' }
+    const next: CoverMeta = {
+      mobile_path: patch.mobile !== undefined ? patch.mobile : prev.mobile_path,
+      focus_x:     patch.focusX !== undefined ? patch.focusX : prev.focus_x,
+      focus_y:     patch.focusY !== undefined ? patch.focusY : prev.focus_y,
+      show_on:     patch.showOn ?? prev.show_on,
+    }
+    const todas = coverMeta.map((m, j) => (j === i ? next : m))
+    setCoverMeta(todas)
+    const cuerpo = Object.fromEntries(todas.flatMap((m, j) => (m ? [[String(j + 1), m]] : [])))
+    await patchCarta({ carta_cover_meta: cuerpo }, 'Portada guardada.')
   }
 
   const guardarImagen = async (campo: CampoImagen, url: string | null): Promise<void> => {
@@ -203,6 +223,11 @@ export function TabCarta() {
           <div key={campo} className={own.portada}>
             <ImageField label={'Portada ' + (i + 1)} value={imagenes[campo]} onChange={u => guardarImagen(campo, u)} uploadType="catalog_cover" removable
               boxClassName={own.portadaCaja} alt={'Portada ' + (i + 1)} emptyContent={<span className={own.vacio}>Subir portada {i + 1}</span>} />
+            {imagenes[campo] && (
+              <SlideMediaEditor idPrefix={'portada-' + (i + 1)} image={imagenes[campo] as string} mobile={coverMeta[i]?.mobile_path ?? null}
+                focusX={clampFocus(coverMeta[i]?.focus_x)} focusY={clampFocus(coverMeta[i]?.focus_y)} showOn={readShowOn(coverMeta[i]?.show_on)}
+                uploadType="catalog_cover" onChange={p => guardarMeta(i, p)} />
+            )}
           </div>
         ))}
         <p className={own.ayuda}>Recomendado: horizontal, ~1200 × 480 px, hasta 5 MB (JPG, PNG o WebP).</p>

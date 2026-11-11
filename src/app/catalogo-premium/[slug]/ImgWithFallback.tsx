@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 
 interface Props {
   src:       string
@@ -9,6 +9,10 @@ interface Props {
   className: string
   fallback:  ReactNode
   loading?:  'lazy' | 'eager'
+  /** Slides/portadas: object-position dinámico (punto de enfoque); dato de contenido, no estilo de diseño. */
+  style?:    CSSProperties
+  /** "high" en la primera imagen de la pantalla. */
+  fetchPriority?: 'high' | 'low' | 'auto'
   // Opcionales — el grid principal de productos anima un fade-in on-load
   // (opacity:0 → clase agregada en onLoad/ya-cacheada); el resto de usos
   // (Landing Sections) los omite y se comporta igual que antes.
@@ -20,7 +24,7 @@ interface Props {
 // criterio que ya usan las cards de producto/colección) — data de prueba con
 // paths que 404 mostraba el ícono feo del navegador. `fallback` es JSX libre
 // para que cada sección use su propio patrón (letra+fondo, textura, etc).
-export function ImgWithFallback({ src, alt = '', className, fallback, loading, onLoad, imgRef }: Props) {
+export function ImgWithFallback({ src, alt = '', className, fallback, loading, style, fetchPriority, onLoad, imgRef }: Props) {
   const [broken, setBroken] = useState(false)
 
   if (broken || !src) return <>{fallback}</>
@@ -31,6 +35,8 @@ export function ImgWithFallback({ src, alt = '', className, fallback, loading, o
       alt={alt}
       className={className}
       loading={loading}
+      style={style}
+      fetchPriority={fetchPriority}
       aria-hidden={alt ? undefined : 'true'}
       onError={() => setBroken(true)}
       onLoad={onLoad ? e => onLoad(e.currentTarget) : undefined}

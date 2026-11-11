@@ -1,3 +1,4 @@
+import type { SlideMedia } from '@/lib/slide-media'
 /** Tipos de la plantilla Carta (catalogo-carta). Datos ya serializados: nada de Decimal ni Date. */
 import type { CartaAllergen, CartaTag } from '@/lib/carta/vocab'
 
@@ -65,6 +66,8 @@ export interface CartaHeroSlide {
   /** CTA propio de un slide configurado en landing_sections. */
   cta:      { text: string; href: string } | null
   dark:     boolean
+  /** Imagen del slide con enfoque/imagen móvil/dónde mostrar (slides configurados en landing_sections). */
+  media?:   SlideMedia | null
 }
 
 export interface CartaHero {

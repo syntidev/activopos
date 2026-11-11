@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
-import { CartaFoto } from './CartaFoto'
+import { SlideImage, useMobileViewport } from '@/components/catalog/SlideImage'
+import { isVisibleOn, mediaOf } from '@/lib/slide-media'
 import { useAddDish } from './useAddDish'
 import { cx } from './util'
 import styles from './carta.module.css'
@@ -24,7 +25,10 @@ export function CartaPortada({ hero, slug }: CartaPortadaProps) {
   const [reduced, setReduced] = useState(false)
   const [okKey, setOkKey] = useState<string | null>(null)
   const { quickAdd } = useAddDish(slug)
-  const n = hero.slides.length
+  const mobile = useMobileViewport()
+  // "Mostrar en": los puntos del carrusel cuentan solo los slides visibles en este viewport.
+  const slides = hero.slides.filter(s => isVisibleOn(s.media?.showOn ?? 'all', mobile))
+  const n = slides.length
 
   useEffect(() => { setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches) }, [])
 
@@ -64,9 +68,9 @@ export function CartaPortada({ hero, slug }: CartaPortadaProps) {
         onPointerUp={() => { setTimeout(() => { paused.current = false }, RESUME_MS) }}
       >
         <div className={styles.slides} ref={track} onScroll={e => setIndex(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}>
-          {hero.slides.map((s, i) => (
-            <div key={s.key} className={cx(styles.slide, !s.image && styles.slideTipo, s.dark && styles.oscuro)} data-testid="carta-hero-slide" data-activo={i === index ? 'true' : 'false'}>
-              {s.image && <CartaFoto src={s.image} alt={s.title} sizes="100vw" priority={i === 0} />}
+          {slides.map((s, i) => (
+            <div key={s.key} className={cx(styles.slide, !s.image && styles.slideTipo, s.dark && styles.oscuro)} data-testid="carta-hero-slide" data-activo={i === index ? 'true' : 'false'} data-show={s.media?.showOn ?? 'all'}>
+              {s.image && <SlideImage media={s.media ?? mediaOf(s.image, null)} alt={s.title} className={styles.foto} />}
               <div className={styles.shade} />
               <div className={styles.cap}>
                 {hero.kind === 'dishes' && <span className={styles.rank}>{hero.kicker === 'Recomendados' ? 'Recomendado' : 'N.º ' + (i + 1) + ' de la casa'}</span>}
@@ -95,7 +99,7 @@ export function CartaPortada({ hero, slug }: CartaPortadaProps) {
           ))}
         </div>
         <div className={styles.kicker} data-testid="carta-hero-titulo">{hero.kicker}</div>
-        {n > 1 && <div className={styles.dots} aria-hidden="true">{hero.slides.map((s, i) => <i key={s.key} className={cx(styles.dot, i === index && styles.dotOn)} />)}</div>}
+        {n > 1 && <div className={styles.dots} aria-hidden="true">{slides.map((s, i) => <i key={s.key} className={cx(styles.dot, i === index && styles.dotOn)} />)}</div>}
       </section>
     </div>
   )

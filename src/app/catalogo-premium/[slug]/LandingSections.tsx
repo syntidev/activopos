@@ -8,6 +8,8 @@ import type {
   CollectionGridRenderConfig,
 } from '@/lib/landing-sections'
 import { ImgWithFallback } from './ImgWithFallback'
+import { SlideImage, useMobileViewport } from '@/components/catalog/SlideImage'
+import { isVisibleOn, mediaOf } from '@/lib/slide-media'
 import { AnnouncementPopup } from './AnnouncementPopup'
 import { ProductCard } from './ProductCard'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
@@ -108,7 +110,10 @@ function HeroSection({ config }: { config: HeroConfig }) {
 function EventSlider({ config }: { config: EventSliderConfig }) {
   const [idx, setIdx]       = useState(0)
   const [paused, setPaused] = useState(false)
-  const total                = config.slides.length
+  const mobile               = useMobileViewport()
+  // "Mostrar en": solo los slides visibles en este viewport (los puntos del carrusel cuentan solo esos).
+  const slides               = config.slides.filter(s => isVisibleOn(s.show_on ?? 'all', mobile))
+  const total                = slides.length
   const reducedMotion        = useReducedMotion()
   const fadeDuration          = reducedMotion ? 0 : 0.7
 
@@ -118,7 +123,9 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
     return () => clearInterval(t)
   }, [paused, total])
 
-  const slide = config.slides[idx]
+  if (total === 0) return null
+  const slide = slides[idx % total]
+  const first = idx % total === 0
 
   return (
     <section
@@ -134,13 +141,15 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
         <motion.div
           key={idx}
           className={styles.lsSlideLayer}
+          data-show={slide.show_on ?? 'all'}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: fadeDuration, ease: 'easeInOut' }}
         >
-          <ImgWithFallback
-            src={slide.image_url}
+          <SlideImage
+            media={mediaOf(slide.image_url, slide)}
+            priority={first}
             className={styles.lsSliderImg}
             fallback={
               <div className={styles.lsSliderImgPlaceholder} aria-hidden="true">
@@ -190,7 +199,7 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
             <ChevronRight size={18} aria-hidden="true" />
           </button>
           <div className={styles.lsSliderDots} aria-hidden="true">
-            {config.slides.map((_, i) => (
+            {slides.map((_, i) => (
               <span key={i} className={`${styles.lsSliderDot} ${i === idx ? styles.lsSliderDotActive : ''}`} />
             ))}
           </div>

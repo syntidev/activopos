@@ -1,0 +1,2 @@
+/* <picture> no genera caja propia: la <img> se posiciona respecto al contenedor del slide/portada. */
+.picture { display: contents; }

@@ -10,7 +10,8 @@ import { resolveUnitPriceUsd, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { isValidWaPhone, normalizePhone } from '@/lib/whatsapp-message'
 import { topSellerIds } from '@/lib/carta/favoritos'
 import { isSoldOutToday } from '@/lib/carta/options'
-import { formatHours, isCartaPaused, openState, readCartaHours, readCartaSettings, type CartaSettings } from '@/lib/carta/settings'
+import { formatHours, isCartaPaused, openState, readCartaHours, readCartaSettings, readCoverMeta, type CartaSettings } from '@/lib/carta/settings'
+import { mediaOf, type SlideMedia } from '@/lib/slide-media'
 import { readAllergens, readTags, type CartaTag } from '@/lib/carta/vocab'
 import type {
   CartaCategory, CartaDish, CartaHero, CartaHeroSlide, CartaHorarioDia, CartaOpenState, CartaOptionGroup, CartaPagos, CartaPayOption, CartaSize,
@@ -70,7 +71,7 @@ export interface CartaPageData {
   /** Fotos de ambiente (portadas del negocio) para las bandas entre secciones. */
   bandas:     string[]
   /** Encabezado del negocio: portada(s) a lo ancho, logo en círculo, nombre y dirección. */
-  brand:      { covers: string[]; logo: string | null; address: string | null }
+  brand:      { covers: SlideMedia[]; logo: string | null; address: string | null }
   /** WhatsApp del negocio en formato internacional (solo dígitos); null si no hay uno válido. */
   whatsapp:   string | null
   /** Negocio abierto para recibir pedidos (false = cerrado o en pausa). */
@@ -171,7 +172,7 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
     settings, rate, categories, dishes, hero, featured, pagos, payOptions, open,
     horario: formatHours(hours),
     brand: {
-      covers:  [business.catalog_cover_path, business.catalog_cover_path_2, business.catalog_cover_path_3].filter((x): x is string => !!x),
+      covers:  coverMedia(business),
       logo:    business.logo_path || null,
       address: [business.address, business.city].filter(Boolean).join(', ') || null,
     },
@@ -184,6 +185,12 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
 /** Solo rutas internas o http(s): nunca javascript: ni data: en un href (el esquema Zod ya lo exige; aquí se repite antes de renderizar). */
 const safeHref = (h: string): boolean => /^(https?:\/\/|\/(?!\/)|#)/i.test(h.trim())
 
+/** Portadas del negocio (hasta 3) con su enfoque, imagen móvil y dónde mostrarlas (settings.carta_cover_meta). */
+function coverMedia(b: { catalog_cover_path: string | null; catalog_cover_path_2: string | null; catalog_cover_path_3: string | null; settings: unknown }): SlideMedia[] {
+  const meta = readCoverMeta(b.settings)
+  return [b.catalog_cover_path, b.catalog_cover_path_2, b.catalog_cover_path_3].flatMap((src, i) => (src ? [mediaOf(src, meta[i])] : []))
+}
+
 function linkedDishId(href: string | undefined): number[] {
   const m = href ? /\/p\/(\d+)/.exec(href) : null
   return m ? [Number(m[1])] : []
@@ -194,7 +201,7 @@ async function buildHero(businessId: number, sliderConfig: unknown, dishes: Cart
   if (parsed?.success) {
     const slides: CartaHeroSlide[] = parsed.data.slides.map((s, i) => ({
       key: 'slide-' + i, image: s.image_url, title: s.title ?? '', subtitle: s.subtitle ?? null, dish: null,
-      cta: safeHref(s.cta_link) ? { text: s.cta_text, href: s.cta_link } : null, dark: s.text_theme === 'dark',
+      cta: safeHref(s.cta_link) ? { text: s.cta_text, href: s.cta_link } : null, dark: s.text_theme === 'dark', media: mediaOf(s.image_url, s),
     }))
     return { kind: 'slides', kicker: 'Hoy en la casa', slides }
   }

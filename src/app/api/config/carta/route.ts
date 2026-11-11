@@ -3,8 +3,10 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidateCatalogCache } from '@/lib/catalog'
-import { CARTA_ACCENTS, CARTA_PRESETS, CARTA_STYLES, DAY_KEYS, isCartaPaused, readCartaHours, readCartaSettings } from '@/lib/carta/settings'
+import { CARTA_ACCENTS, CARTA_PRESETS, CARTA_STYLES, DAY_KEYS, isCartaPaused, readCartaHours, readCartaSettings, readCoverMeta } from '@/lib/carta/settings'
 import { logError } from '@/lib/safe-log'
+import { imagePath } from '@/lib/landing-sections'
+import { SHOW_ON } from '@/lib/slide-media'
 
 /**
  * Configuración de la Carta (preset, acento, estilo, horario y pausa). Solo admin; business_id SIEMPRE de la sesión.
@@ -22,12 +24,21 @@ const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 const span = z.tuple([z.string().regex(TIME), z.string().regex(TIME)]).refine(([a, b]) => a < b, { message: 'La hora de cierre debe ser posterior a la de apertura' })
 const hoursSchema = z.strictObject(Object.fromEntries(DAY_KEYS.map(d => [d, z.array(span).max(4).optional()])) as Record<(typeof DAY_KEYS)[number], z.ZodOptional<z.ZodArray<typeof span>>>)
 
+const coverMeta = z.strictObject({
+  mobile_path: imagePath().nullable().optional(),
+  focus_x:     z.number().min(0).max(100),
+  focus_y:     z.number().min(0).max(100),
+  show_on:     z.enum(SHOW_ON),
+})
+
 const patchSchema = z.strictObject({
   carta_preset: z.enum(CARTA_PRESETS).optional(),
   carta_accent: z.enum(CARTA_ACCENTS).nullable().optional(),
   carta_style:  z.enum(CARTA_STYLES).optional(),
   carta_hours:  hoursSchema.optional(),
   carta_paused: z.boolean().optional(),
+  // Portadas 1..3: imagen móvil, punto de enfoque (%) y dónde mostrar. Reemplaza el bloque completo.
+  carta_cover_meta: z.strictObject({ '1': coverMeta.optional(), '2': coverMeta.optional(), '3': coverMeta.optional() }).optional(),
 }).refine(d => Object.values(d).some(v => v !== undefined), { message: 'Nada que guardar' })
 
 export async function GET() {
@@ -37,7 +48,7 @@ export async function GET() {
   if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
   return NextResponse.json({
     ok: true,
-    config: { ...readCartaSettings(business.settings), hours: readCartaHours(business.settings), paused: isCartaPaused(business.settings) },
+    config: { ...readCartaSettings(business.settings), hours: readCartaHours(business.settings), paused: isCartaPaused(business.settings), cover_meta: readCoverMeta(business.settings) },
     presets: CARTA_PRESETS, accents: CARTA_ACCENTS, styles: CARTA_STYLES,
   })
 }

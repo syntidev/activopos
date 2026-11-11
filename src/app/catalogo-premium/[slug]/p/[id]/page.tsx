@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { shareMetadata } from '@/lib/og/metadata'
 import { parseKitConfig } from '@/lib/kit-config'
 import { GUIDE_MODELS, garminGuideEnabled, isGarminBrand, matchModelIndex } from '@/lib/garmin-guide'
-import { catalogHref } from '../../catalogUtils'
+import { serverCatalogHref } from '@/lib/catalog-links-server'
 import { getActiveRate } from '@/lib/bcv'
 import { subcategoryKey } from '@/lib/subcategory'
 import { brandSlug, resolveVitrinaBrand } from '@/lib/vitrina'
@@ -113,7 +113,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
   const vitrinaBrand = searchParams.vitrina ? await resolveVitrinaBrand(business.id, searchParams.vitrina) : null
   const vitrina: VitrinaContext | undefined = vitrinaBrand && product.brand_id === vitrinaBrand.id
     ? {
-        href:       `/catalogo-premium/${params.slug}/marca/${brandSlug(vitrinaBrand.name)}`,
+        href:       serverCatalogHref('premium', params.slug, `/marca/${brandSlug(vitrinaBrand.name)}`),
         marca:      brandSlug(vitrinaBrand.name),
         brandName:  vitrinaBrand.name,
         brandImage: vitrinaBrand.image_url,
@@ -255,9 +255,9 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
         rate={rate}
         currency={business.catalog_default_currency}
         paymentMethods={paymentMethods as PaymentMethod[]}
-        catalogUrl={catalogHref(params.slug)}
+        catalogUrl={serverCatalogHref('premium', params.slug)}
         showKitLink={(() => { const k = parseKitConfig(business.kit200k_config); return k.activo && k.mostrar_en_header })()}
-        garminGuideHref={isGarminProduct && garminGuideEnabled(business.settings) ? catalogHref(params.slug, `/guia/garmin?producto=${product.id}`) : null}
+        garminGuideHref={isGarminProduct && garminGuideEnabled(business.settings) ? serverCatalogHref('premium', params.slug, `/guia/garmin?producto=${product.id}`) : null}
         garminModelName={garminModelIdx !== null ? GUIDE_MODELS[garminModelIdx].name : product.name}
         relatedProducts={relatedProducts}
         prevProduct={prevRaw}

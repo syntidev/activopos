@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { CatalogLinksProvider } from '@/components/catalog/CatalogLinks'
+import { isCleanFor } from '@/lib/catalog-links-server'
 import { Cormorant_Garamond, Fraunces, Instrument_Sans } from 'next/font/google'
 import { CartProvider } from '@/app/catalogo-premium/[slug]/CartContext'
 import { ConfirmProvider } from '@/context/ConfirmContext'
@@ -30,7 +32,7 @@ export default async function CartaLayout({ children, params }: CartaLayoutProps
       data-carta-style={settings.style}
     >
       <ConfirmProvider>
-        <CartProvider slug={params.slug}>{children}</CartProvider>
+        <CartProvider slug={params.slug}><CatalogLinksProvider kind="carta" clean={isCleanFor('carta', params.slug)}>{children}</CatalogLinksProvider></CartProvider>
       </ConfirmProvider>
     </div>
   )

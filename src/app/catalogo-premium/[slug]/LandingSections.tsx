@@ -1,5 +1,6 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
@@ -241,6 +242,7 @@ function CommunitySection({ config }: { config: CommunityConfig }) {
 /* ── COLLECTION GRID — carrusel horizontal, productos de la colección ──── */
 
 function CollectionGridSection({ config, slug }: { config: CollectionGridRenderConfig; slug: string }) {
+  const href = useCatalogHref(slug)
   if (config.products.length === 0) {
     return (
       <section className={styles.lsCollection}>
@@ -258,7 +260,7 @@ function CollectionGridSection({ config, slug }: { config: CollectionGridRenderC
       <h2 className={styles.lsCollectionHeading}>{config.collection_name}</h2>
       <AdaptiveGrid>
         {config.products.map(p => (
-          <ProductCard key={p.id} p={{ ...p, categoryName: null }} href={`/catalogo-premium/${slug}/p/${p.id}`} />
+          <ProductCard key={p.id} p={{ ...p, categoryName: null }} href={href(`/p/${p.id}`)} />
         ))}
       </AdaptiveGrid>
     </section>
@@ -271,13 +273,14 @@ type ProductListRender = Extract<RenderableLandingSection, { type: 'product_list
 type CategoryListRender = Extract<RenderableLandingSection, { type: 'category_list' }>['config']
 
 function ProductListSection({ config, slug }: { config: ProductListRender; slug: string }) {
+  const href = useCatalogHref(slug)
   return (
     <section className={styles.lsCollection}>
       {config.titulo && <h2 className={styles.lsCollectionHeading}>{config.titulo}</h2>}
       {config.subtitulo && <p className={styles.lsCommunitySubheading}>{config.subtitulo}</p>}
       <AdaptiveGrid>
         {config.products.map(p => (
-          <ProductCard key={p.id} p={{ ...p, categoryName: null }} href={`/catalogo-premium/${slug}/p/${p.id}`} />
+          <ProductCard key={p.id} p={{ ...p, categoryName: null }} href={href(`/p/${p.id}`)} />
         ))}
       </AdaptiveGrid>
     </section>
@@ -287,6 +290,7 @@ function ProductListSection({ config, slug }: { config: ProductListRender; slug:
 /* ── CATEGORY LIST — mismas tarjetas foto+nombre que "Comprá por marca" ── */
 
 function CategoryListSection({ config, slug }: { config: CategoryListRender; slug: string }) {
+  const href = useCatalogHref(slug)
   return (
     <section className={styles.lsCollection}>
       {config.titulo && <h2 className={styles.lsCollectionHeading}>{config.titulo}</h2>}
@@ -295,7 +299,7 @@ function CategoryListSection({ config, slug }: { config: CategoryListRender; slu
         {config.categories.map(c => (
           <a
             key={c.name}
-            href={`/catalogo-premium/${slug}/productos?categoria=${encodeURIComponent(c.name)}`}
+            href={href(`/productos?categoria=${encodeURIComponent(c.name)}`)}
             className={styles.brandCard}
           >
             <span className={styles.brandCardMedia}>

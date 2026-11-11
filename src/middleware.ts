@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { handleCustomDomains } from '@/lib/custom-domains-middleware'
 
 // Prefijos públicos — todos con slash final para evitar bypass tipo /catalogo-admin
 const PUBLIC_PREFIXES = [
@@ -126,6 +127,10 @@ function operadorAllows(pathname: string, method: string): boolean {
 
 
 export async function middleware(req: NextRequest) {
+  // Dominios propios de tenants (onbikemargarita.com, cafeconbike.com…): rewrite/redirect según CUSTOM_DOMAINS, antes de cualquier otra regla.
+  const custom = handleCustomDomains(req)
+  if (custom) return custom
+
   const { pathname } = req.nextUrl
 
   // Rutas exactas (raíz, landing estático)

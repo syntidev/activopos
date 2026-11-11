@@ -1,5 +1,6 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Info } from 'lucide-react'
@@ -26,6 +27,7 @@ interface CartaFichaProps {
 
 /** Ficha del plato: tamaños y opciones como botones grandes (las obligatorias bloquean "Agregar"), cantidad, nota para la cocina. */
 export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
+  const href = useCatalogHref(slug, 'carta')
   const { add } = useAddDish(slug)
   const { setCartOpen } = useCart()
   const sizes = [...dish.sizes].sort((a, b) => a.priceUsd - b.priceUsd)
@@ -70,14 +72,14 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
       <article className={styles.ficha} data-testid="carta-ficha">
         {dish.image ? (
           <div className={styles.fichaFoto}>
-            <Link href={'/catalogo-carta/' + slug} className={styles.volver} aria-label="Volver a la carta">‹</Link>
+            <Link href={href()} className={styles.volver} aria-label="Volver a la carta">‹</Link>
             <CartaFoto src={dish.image} alt={dish.name} sizes="(min-width: 1024px) 560px, 100vw" priority />
             {dish.soldOutToday && <span className={styles.agot} data-testid="carta-agotado-hoy">Agotado hoy</span>}
           </div>
         ) : (
           // Sin foto: una franja del color del preset con el nombre (sin letra gigante).
           <div className={styles.fichaFranja} data-testid="carta-ficha-franja">
-            <Link href={'/catalogo-carta/' + slug} className={styles.volverFranja} aria-label="Volver a la carta">‹</Link>
+            <Link href={href()} className={styles.volverFranja} aria-label="Volver a la carta">‹</Link>
             <h1>{dish.name}</h1>
             {dish.soldOutToday && <span className={styles.agot} data-testid="carta-agotado-hoy">Agotado hoy</span>}
           </div>
@@ -124,7 +126,7 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
           {ok && (
             <div className={styles.listo} role="status" data-testid="carta-agregado">
               <span>Agregado a tu pedido.</span>
-              <Link href={'/catalogo-carta/' + slug}>Seguir viendo la carta</Link>
+              <Link href={href()}>Seguir viendo la carta</Link>
               <button type="button" onClick={() => setCartOpen(true)}>Ver mi pedido</button>
             </div>
           )}

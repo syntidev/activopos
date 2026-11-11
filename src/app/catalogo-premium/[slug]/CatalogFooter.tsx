@@ -1,9 +1,9 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { MapPin, Phone, AtSign, Clock, MessageCircle } from 'lucide-react'
-import { catalogNav } from './catalogUtils'
 import styles from './catalogo.module.css'
 import { PlatformCredit } from '@/components/catalog/PlatformCredit'
 
@@ -27,6 +27,8 @@ export function CatalogFooter({
   slug, displayTitle, logoPath, catalogDesc, rif, address, location,
   waPhone, phone, catalogInstagram, catalogHours, hideNav = false,
 }: CatalogFooterProps) {
+  const href = useCatalogHref(slug)
+  const footerNav = [{ href: href(), label: 'Inicio' }, { href: href('/productos'), label: 'Catálogo' }]
   const [expanded, setExpanded]   = useState(false)
   const [overflows, setOverflows] = useState(false)
   const descRef = useRef<HTMLParagraphElement>(null)
@@ -174,7 +176,7 @@ export function CatalogFooter({
         <span>© {displayTitle} · {new Date().getFullYear()}</span>
         {!hideNav && (
           <nav className={styles.footerNav} aria-label="Navegación del catálogo">
-            {catalogNav(slug).map(l => (
+            {footerNav.map(l => (
               <Link key={l.href} href={l.href} className={styles.footerNavLink}>
                 {l.label}
               </Link>

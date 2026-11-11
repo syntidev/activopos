@@ -1,5 +1,6 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Info } from 'lucide-react'
@@ -7,7 +8,7 @@ import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
 import { CARTA_TAG_LABEL } from '@/lib/carta/vocab'
 import { CartaFoto } from './CartaFoto'
 import { useAddDish } from './useAddDish'
-import { allergenText, cx, dishHref, TAG_CLASS } from './util'
+import { allergenText, cx, TAG_CLASS } from './util'
 import styles from './carta.module.css'
 import type { CartaDish } from '@/types/carta'
 
@@ -22,7 +23,7 @@ interface PlatoCardProps {
 export function PlatoCard({ dish, slug, priority = false }: PlatoCardProps) {
   const { quickAdd } = useAddDish(slug)
   const [ok, setOk] = useState(false)
-  const href = dishHref(slug, dish.id)
+  const href = useCatalogHref(slug, 'carta')(`/p/${dish.id}`)
   const conTamanos = dish.sizes.length > 0
   const agotado = dish.soldOutToday || dish.outOfStock
 

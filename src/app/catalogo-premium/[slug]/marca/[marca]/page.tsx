@@ -1,4 +1,5 @@
 import { divisaPriceOf } from '@/lib/catalog-divisa'
+import { serverCatalogHref } from '@/lib/catalog-links-server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
@@ -77,7 +78,7 @@ export default async function VitrinaMarcaPage({ params, searchParams }: PagePro
   if (!brand) notFound()
 
   const vitrina: VitrinaContext = {
-    href:       `/catalogo-premium/${params.slug}/marca/${brandSlug(brand.name)}`,
+    href:       serverCatalogHref('premium', params.slug, `/marca/${brandSlug(brand.name)}`),
     marca:      brandSlug(brand.name),
     brandName:  brand.name,
     brandImage: brand.image_url,

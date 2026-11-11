@@ -1,10 +1,11 @@
 'use client'
 
+import { useCatalogHref, useKitHref } from '@/components/catalog/CatalogLinks'
 import { forwardRef } from 'react'
 import Link from 'next/link'
 import { Search, Info } from 'lucide-react'
 import { CartHeaderButton } from './CartHeaderButton'
-import { catalogHref, getInitials } from './catalogUtils'
+import { getInitials } from './catalogUtils'
 import styles from './catalogo.module.css'
 
 // Extraído de CatalogoGrid.tsx -- mismo componente, reusado en /kit-200k
@@ -35,11 +36,13 @@ export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(functio
   ref,
 ) {
   const initials = getInitials(businessName)
+  const href = useCatalogHref(slug)
+  const kitHref = useKitHref()
 
   return (
     <header ref={ref} className={`${styles.stickyHeader} ${isScrolled ? styles.stickyHeaderScrolled : ''}`}>
       <Link
-        href={vitrinaHref ?? catalogHref(slug)}
+        href={vitrinaHref ?? href()}
         className={styles.headerLogo}
         aria-label={`Ir al inicio de ${businessName}`}
       >
@@ -58,11 +61,11 @@ export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(functio
       </Link>
 
       {!vitrinaHref && <nav className={styles.headerNav} aria-label="Navegación principal">
-        <Link href={catalogHref(slug)} className={styles.headerNavLink}>Inicio</Link>
-        <Link href={catalogHref(slug, '/productos')} className={styles.headerNavLink}>Tienda</Link>
-        {showKitLink && <Link href="/kit-200k" className={styles.headerNavLink}>200K</Link>}
+        <Link href={href()} className={styles.headerNavLink}>Inicio</Link>
+        <Link href={href('/productos')} className={styles.headerNavLink}>Tienda</Link>
+        {showKitLink && <Link href={kitHref} className={styles.headerNavLink}>200K</Link>}
         <Link
-          href={catalogHref(slug, '#marcas')}
+          href={href('#marcas')}
           className={styles.headerNavLink}
           onClick={(e) => {
             const target = document.getElementById('marcas')

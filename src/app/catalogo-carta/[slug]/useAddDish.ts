@@ -1,8 +1,9 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useRouter } from 'next/navigation'
 import { useCart, type CartLineOption } from '@/app/catalogo-premium/[slug]/CartContext'
-import { dishHref, needsFicha } from './util'
+import { needsFicha } from './util'
 import type { CartaDish, CartaSize } from '@/types/carta'
 
 interface AddOptions {
@@ -14,6 +15,7 @@ interface AddOptions {
 
 /** Un solo camino para agregar un plato al pedido (hero, lista, "De la casa", relacionados y ficha). */
 export function useAddDish(slug: string) {
+  const toHref = useCatalogHref(slug, 'carta')
   const router = useRouter()
   const { addToCart } = useCart()
 
@@ -39,7 +41,7 @@ export function useAddDish(slug: string) {
   const quickAdd = (dish: CartaDish): boolean => {
     if (dish.onRequest || dish.soldOutToday || dish.outOfStock) return false
     if (needsFicha(dish)) {
-      router.push(dishHref(slug, dish.id))
+      router.push(toHref(`/p/${dish.id}`))
       return false
     }
     add(dish)

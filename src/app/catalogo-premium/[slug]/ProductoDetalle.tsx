@@ -1,5 +1,6 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -19,10 +20,9 @@ import { FinancingNote } from '@/components/catalog/FinancingNote'
 import type { PublicFinancing } from '@/lib/financing'
 import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { descripcionSinDeportes, parseDeportes } from '@/lib/catalog-deportes'
-import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, catalogHref } from './catalogUtils'
+import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor } from './catalogUtils'
 import { PrecioDivisa, type PayPill } from './PrecioDivisa'
 import { normalizePhone } from '@/lib/utils'
-import { productosHref } from '@/lib/subcategory'
 import type { VitrinaContext } from '@/types/vitrina'
 import { availabilityWaUrl, questionWaUrl } from '@/lib/availability-message'
 import styles from './productoDetalle.module.css'
@@ -106,15 +106,16 @@ export function ProductoDetalle({
   vitrina,
 }: Props) {
   const router = useRouter()
+  const href = useCatalogHref(slug)
   // Destinos que en vitrina nunca salen de la marca: "inicio"/volver, fichas hermanas (?vitrina=) y categorías.
   const homeHref = vitrina?.href ?? catalogUrl
   const descripcionTexto = description ? descripcionSinDeportes(description) : ''
   const deportesFicha = parseDeportes(description)
   const productHref = (id: number): string =>
-    catalogHref(slug, `/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`)
+    href(`/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`)
   const categoryHref = (category: string, sub?: string | null): string => vitrina
     ? `${vitrina.href}?categoria=${encodeURIComponent(category)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}`
-    : productosHref(catalogUrl, category, sub)
+    : href(`/productos?categoria=${encodeURIComponent(category)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}`)
   const { showUsd, showBs } = currencyVisibility(currency)
   const { addToCart, cartOpen, checkoutOpen, setCartOpen, setCheckoutOpen } = useCart()
   const [imageIndex,        setImageIndex]        = useState(0)
@@ -159,7 +160,7 @@ export function ProductoDetalle({
 
   const submitSearch = () => {
     const q = searchQuery.trim()
-    router.push(`${vitrina ? vitrina.href : catalogHref(slug, '/productos')}${q ? `?buscar=${encodeURIComponent(q)}` : ''}`)
+    router.push(`${vitrina ? vitrina.href : href('/productos')}${q ? `?buscar=${encodeURIComponent(q)}` : ''}`)
   }
 
   // Scroll lock — el drawer/checkout del carrito puede abrirse desde esta página también
@@ -728,7 +729,7 @@ export function ProductoDetalle({
                   {deportesFicha.map(d => (
                     <Link
                       key={d.slug}
-                      href={catalogHref(slug, `/productos?deporte=${d.slug}`)}
+                      href={href(`/productos?deporte=${d.slug}`)}
                       className={styles.deporteFichaChip}
                     >
                       {d.label}

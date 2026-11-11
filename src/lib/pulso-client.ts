@@ -6,6 +6,7 @@ import {
   type PulsoOrderContext,
 } from '@/types/pulso'
 import { mergeAttribution, nextSession } from '@/lib/pulso-attribution'
+import { cleanToNative } from '@/lib/custom-domains'
 
 const SESSION_KEY = 'activopos_pulso_session'
 const ATTR_KEY = 'activopos_pulso_attr'
@@ -18,6 +19,16 @@ const SEARCH_REPLACE_MS = 10_000 // una consulta que sigue a la anterior dentro 
 export type PulsoTrackInput = Omit<PulsoEventInput, 'path'> & { path?: string }
 
 let slug: string | null = null
+
+/**
+ * El contrato de eventos usa rutas nativas (/catalogo-premium/<slug>/…). En un dominio propio el navegador muestra la ruta limpia
+ * (/p/5, /tienda): se traduce a la nativa del tenant antes de encolar, o la analítica del dominio propio se perdería.
+ */
+function nativePath(path: string): string {
+  if (path.startsWith('/catalogo-premium/') || !slug) return path
+  const native = cleanToNative('premium', path.split('?')[0])
+  return `/catalogo-premium/${slug}${native ?? path}`
+}
 let sessionId: string | null = null
 let attribution: PulsoAttribution | null = null
 let queue: PulsoEventInput[] = []
@@ -170,7 +181,7 @@ export function track(event: PulsoTrackInput): void {
   try {
     if (!slug || isDnt()) return
     touchSession()
-    queue.push({ ...event, path: event.path ?? window.location.pathname })
+    queue.push({ ...event, path: nativePath(event.path ?? window.location.pathname) })
     if (queue.length >= PULSO_MAX_BATCH) flush()
     else if (!timer) timer = setTimeout(() => flush(), FLUSH_DELAY_MS)
   } catch {
@@ -198,7 +209,7 @@ export function trackSearch(query: string, resultsCount: number): void {
     } else if (pendingSearch) {
       clearTimeout(pendingSearch.timer)
     }
-    const event: PulsoEventInput = { type: 'search', path: window.location.pathname, query, results_count: resultsCount }
+    const event: PulsoEventInput = { type: 'search', path: nativePath(window.location.pathname), query, results_count: resultsCount }
     pendingSearch = { event, at: now, timer: setTimeout(() => { releaseSearch(); if (!timer) timer = setTimeout(() => flush(), FLUSH_DELAY_MS) }, SEARCH_REPLACE_MS) }
   } catch {
     // analítica nunca debe romper el catálogo

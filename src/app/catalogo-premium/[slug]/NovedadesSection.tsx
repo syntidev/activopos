@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import type { CatalogProduct } from './CatalogoGrid'
 import { ProductCard } from './ProductCard'
 import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
@@ -16,18 +17,19 @@ interface NovedadesSectionProps {
  * Precio en USD y Bs juntos (regla monetaria sellada del proyecto).
  */
 export function NovedadesSection({ products, slug }: NovedadesSectionProps) {
+  const href = useCatalogHref(slug)
   return (
     <section className={styles.novedadesSection} aria-label="Novedades" data-section="novedades">
       <div className={styles.novedadesHeader}>
         <h2 className={styles.novedadesTitle}>Novedades</h2>
-        <Link href={`/catalogo-premium/${slug}/productos`} className={styles.novedadesLink}>
+        <Link href={href(`/productos`)} className={styles.novedadesLink}>
           Ver todos →
         </Link>
       </div>
 
       <AdaptiveGrid>
         {products.map(p => (
-          <ProductCard key={p.id} p={{ ...p, hasVariants: p.variants.length > 0 }} href={`/catalogo-premium/${slug}/p/${p.id}`} />
+          <ProductCard key={p.id} p={{ ...p, hasVariants: p.variants.length > 0 }} href={href(`/p/${p.id}`)} />
         ))}
       </AdaptiveGrid>
     </section>

@@ -1,10 +1,10 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, Store, Search, ShoppingBag, User } from 'lucide-react'
 import { useCart } from './CartContext'
-import { catalogHref } from './catalogUtils'
 import styles from './catalogo.module.css'
 
 interface Props {
@@ -31,6 +31,7 @@ interface TabItem {
 // CartHeaderButton, para que el badge nunca se desincronice entre los dos.
 export function MobileTabBar({ slug, onSearchClick, onAccountClick, vitrinaHref }: Props) {
   const pathname = usePathname()
+  const href     = useCatalogHref(slug)
   const router   = useRouter()
   const barRef   = useRef<HTMLElement>(null)
 
@@ -52,8 +53,8 @@ export function MobileTabBar({ slug, onSearchClick, onAccountClick, vitrinaHref 
   }, [])
   const { totalItems, cartOpen, setCartOpen } = useCart()
 
-  const homeHref   = vitrinaHref ?? catalogHref(slug)
-  const tiendaHref = catalogHref(slug, '/productos')
+  const homeHref   = vitrinaHref ?? href()
+  const tiendaHref = href('/productos')
   const isHome     = pathname === homeHref
   const isTienda   = pathname.startsWith(tiendaHref)
 

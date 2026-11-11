@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { CatalogLinksProvider } from '@/components/catalog/CatalogLinks'
+import { currentCustomDomain } from '@/lib/catalog-links-server'
 import { DM_Sans } from 'next/font/google'
 
 // Fraunces ya se carga globalmente en app/layout.tsx (--font-fraunces, 700/800) —
@@ -12,5 +14,7 @@ const dmSans = DM_Sans({
 })
 
 export default function Kit200KLayout({ children }: { children: ReactNode }) {
-  return <div className={dmSans.variable}>{children}</div>
+  // En el dominio propio premium, los enlaces del catálogo salen limpios (/, /tienda…); el kit es de OnBike (slug fijo).
+  const clean = currentCustomDomain()?.kind === 'premium'
+  return <div className={dmSans.variable}><CatalogLinksProvider kind="premium" clean={clean}>{children}</CatalogLinksProvider></div>
 }

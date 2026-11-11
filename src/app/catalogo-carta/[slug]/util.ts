@@ -2,7 +2,6 @@ import { CARTA_ALLERGEN_LABEL, type CartaAllergen, type CartaTag } from '@/lib/c
 
 export const cx = (...parts: Array<string | false | null | undefined>): string => parts.filter(Boolean).join(' ')
 
-export const dishHref = (slug: string, id: number): string => '/catalogo-carta/' + slug + '/p/' + id
 
 /** Clase CSS de cada etiqueta (picante = rojo, vegetariano = verde, keto = neutro, nuevo = oro, de la casa = acento). */
 export const TAG_CLASS: Record<CartaTag, 'tagPicante' | 'tagVeg' | 'tagKeto' | 'tagNuevo' | 'tagCasa'> = {

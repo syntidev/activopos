@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { siteOrigin } from './site-url'
+import { currentCustomDomain } from '@/lib/catalog-links-server'
+import { nativeToClean } from '@/lib/custom-domains'
 
 /** Tamaño fijo de la tarjeta (el estándar de Open Graph / WhatsApp). */
 export const OG_WIDTH = 1200
@@ -17,6 +19,14 @@ export interface ShareInput {
   robots?:     string
 }
 
+/** `/c/<slug>[/p/5…]` → su ruta limpia si la petición llega por el dominio propio de ese tenant; si no, la misma ruta. */
+function publicPath(path: string): string {
+  const d = currentCustomDomain()
+  const m = d ? /^\/c\/([^/?#]+)(.*)$/.exec(path) : null
+  if (!d || !m || m[1] !== d.slug) return path
+  return nativeToClean(d.kind, m[2] || '') ?? path
+}
+
 /**
  * Metadatos para compartir un catálogo/ficha: og:image ABSOLUTA y con dimensiones, og:url, og:type y tarjeta grande de Twitter.
  * `metadataBase` queda fijado al host real, así cualquier otra ruta relativa que Next resuelva también sale absoluta.
@@ -24,15 +34,18 @@ export interface ShareInput {
 export function shareMetadata(i: ShareInput): Metadata {
   const origin = siteOrigin()
   const abs = (p: string): string => `${origin}${p}`
+  // En un dominio propio, la URL pública y el canonical son la ruta LIMPIA (/p/5, /tienda…), no la canónica /c/<slug>/….
+  const pageUrl = abs(publicPath(i.path))
   return {
     metadataBase: new URL(origin),
     title:        i.title,
     description:  i.description,
+    alternates:   { canonical: pageUrl },
     ...(i.robots ? { robots: i.robots } : {}),
     openGraph: {
       title:       i.title,
       description: i.description,
-      url:         abs(i.path),
+      url:         pageUrl,
       // Next 14 lanza "Invalid OpenGraph type: product" (solo acepta website/article/…): el tipo producto sale por `other`.
       ...(i.kind === 'website' ? { type: 'website' as const } : {}),
       images:      [{ url: abs(i.imagePath), width: OG_WIDTH, height: OG_HEIGHT, type: 'image/jpeg', alt: i.imageAlt }],

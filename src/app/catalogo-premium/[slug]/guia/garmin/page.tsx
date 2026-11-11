@@ -9,7 +9,8 @@ import { parseKitConfig } from '@/lib/kit-config'
 import { normalizePhone } from '@/lib/utils'
 import { firstImage, garminGuideEnabled, matchModelIndex } from '@/lib/garmin-guide'
 import type { GuideProduct } from '@/types/garmin-guide'
-import { catalogHref, fmtBs, fmtUsd } from '../../catalogUtils'
+import { fmtBs, fmtUsd } from '../../catalogUtils'
+import { serverCatalogHref } from '@/lib/catalog-links-server'
 import { CatalogFooter } from '../../CatalogFooter'
 import { GarminGuide } from './GarminGuide'
 import styles from '../../catalogo.module.css'
@@ -74,7 +75,7 @@ export default async function GuiaGarminPage({ params, searchParams }: PageProps
       id: p.id, name: p.name, image: firstImage(p.images), modelIndex: matchModelIndex(p.name), consult,
       priceUsd: consult ? null : fmtUsd(main),
       priceBs:  consult || !(rate > 0) ? null : fmtBs(full * rate),
-      href:     catalogHref(params.slug, `/p/${p.id}`),
+      href:     serverCatalogHref('premium', params.slug, `/p/${p.id}`),
     }
   })
 

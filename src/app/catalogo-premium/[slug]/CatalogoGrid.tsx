@@ -1,5 +1,6 @@
 'use client'
 
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import Image from 'next/image'
 import { useState, useMemo, useRef, useEffect, type CSSProperties, type ReactNode } from 'react'
 import Link from 'next/link'
@@ -204,11 +205,12 @@ export function CatalogoGrid({
   trustStrip = DEFAULT_TRUST_STRIP,
   dayKey = '',
 }: Props) {
+  const href = useCatalogHref(slug)
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
   // Ficha de producto: en vitrina conserva el contexto de marca (?vitrina=) para que la ficha siga acotada.
   const productHref = (id: number): string =>
-    `/catalogo-premium/${slug}/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`
+    href(`/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`)
   const { cart, cartOpen, setCartOpen, checkoutOpen, addToCart: addItemToCart } = useCart()
 
   // Valores de la URL (?categoria=&sub=): si no existen en el catálogo se ignoran.
@@ -923,7 +925,7 @@ export function CatalogoGrid({
                 <div className={styles.catMenuBackdrop} onClick={() => setCatMenuOpen(false)} aria-hidden="true" />
                 <div className={styles.catMenuDropdown} role="menu" aria-label="Menú">
                   <Link
-                    href={vitrina?.href ?? `/catalogo-premium/${slug}`}
+                    href={vitrina?.href ?? href()}
                     role="menuitem"
                     className={styles.catMenuItem}
                     onClick={() => setCatMenuOpen(false)}
@@ -932,7 +934,7 @@ export function CatalogoGrid({
                   </Link>
                   {!vitrina && (
                     <Link
-                      href={`/catalogo-premium/${slug}/productos`}
+                      href={href(`/productos`)}
                       role="menuitem"
                       className={styles.catMenuItem}
                       onClick={() => setCatMenuOpen(false)}
@@ -1102,7 +1104,7 @@ export function CatalogoGrid({
             className={`${styles.heroBanner} ${styles.heroBannerClickable}`}
             role="region"
             aria-label="Banner del negocio"
-            onClick={() => router.push(`/catalogo-premium/${slug}/productos`)}
+            onClick={() => router.push(href(`/productos`))}
           >
             {covers.map((src, idx) => (
               <img
@@ -1165,7 +1167,7 @@ export function CatalogoGrid({
             {brands.map(brand => (
               <Link
                 key={brand.name}
-                href={`/catalogo-premium/${slug}/productos${brand.search_term.trim() ? `?buscar=${encodeURIComponent(brand.search_term.trim())}` : ''}`}
+                href={href(`/productos${brand.search_term.trim() ? `?buscar=${encodeURIComponent(brand.search_term.trim())}` : ''}`)}
                 className={styles.brandCard}
               >
                 <span className={styles.brandCardMedia}>
@@ -1193,7 +1195,7 @@ export function CatalogoGrid({
             {deportes.map(d => (
               <Link
                 key={d.slug}
-                href={`/catalogo-premium/${slug}/productos?deporte=${d.slug}`}
+                href={href(`/productos?deporte=${d.slug}`)}
                 className={styles.deporteChip}
                 onClick={() => track({ type: 'deporte_select', deporte: d.slug })}
               >
@@ -1271,7 +1273,7 @@ export function CatalogoGrid({
               <button
                 type="button"
                 className={styles.shelfVerTodos}
-                onClick={() => router.push(`/catalogo-premium/${slug}/productos?categoria=${encodeURIComponent(topCategorySection.key)}`)}
+                onClick={() => router.push(href(`/productos?categoria=${encodeURIComponent(topCategorySection.key)}`))}
               >
                 Ver todos →
               </button>

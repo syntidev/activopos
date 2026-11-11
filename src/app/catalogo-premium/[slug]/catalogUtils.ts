@@ -35,22 +35,6 @@ export function getInitials(name: string): string {
     .join('')
 }
 
-/* Links de navegación del catálogo — fuente única para el nav superior
-   (CatalogoGrid) y la barra de cierre del footer, que si no los repetiría
-   hardcodeados y podrían quedar desincronizados. */
-export function catalogNav(slug: string): { href: string; label: string }[] {
-  return [
-    { href: catalogHref(slug),              label: 'Inicio' },
-    { href: catalogHref(slug, '/productos'), label: 'Catálogo' },
-  ]
-}
-
-/* ÚNICA función que construye enlaces del catálogo premium: logo, Inicio, menú y pie salen de aquí, así que cambiar la
-   ruta pública (hoy /catalogo-premium/[slug]; /c/[slug] redirige a ella) se hace en UN sitio. `ruta` empieza con "/" o "#". */
-export function catalogHref(slug: string, ruta = ''): string {
-  return `/catalogo-premium/${slug}${ruta}`
-}
-
 // Teléfono del checkout: 10-11 dígitos (con o sin el 0 inicial o el 58); la misma regla que aplica el servidor.
 export function isValidVePhone(raw: string): boolean {
   return hasUsablePhone(raw)

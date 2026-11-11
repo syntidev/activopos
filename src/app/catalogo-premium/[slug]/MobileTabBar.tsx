@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, Store, Search, ShoppingBag, User } from 'lucide-react'
 import { useCart } from './CartContext'
@@ -31,6 +32,24 @@ interface TabItem {
 export function MobileTabBar({ slug, onSearchClick, onAccountClick, vitrinaHref }: Props) {
   const pathname = usePathname()
   const router   = useRouter()
+  const barRef   = useRef<HTMLElement>(null)
+
+  // Reserva medida (como CartaFicha): alto real que la barra ocupa desde el borde inferior (alto + separación + safe-area).
+  // .root la usa como padding-bottom (+16px) para que ni el último contenido ni los botones de compra queden debajo de la barra.
+  useEffect(() => {
+    const bar = barRef.current
+    if (!bar) return
+    const root = bar.closest<HTMLElement>('[data-theme]')
+    const medir = (): void => {
+      const oculta = getComputedStyle(bar).display === 'none'
+      root?.style.setProperty('--tab-reserva', `${oculta ? 0 : Math.ceil(window.innerHeight - bar.getBoundingClientRect().top)}px`)
+    }
+    medir()
+    const ro = new ResizeObserver(medir)
+    ro.observe(bar)
+    window.addEventListener('resize', medir)
+    return () => { ro.disconnect(); window.removeEventListener('resize', medir); root?.style.removeProperty('--tab-reserva') }
+  }, [])
   const { totalItems, cartOpen, setCartOpen } = useCart()
 
   const homeHref   = vitrinaHref ?? catalogHref(slug)
@@ -48,7 +67,7 @@ export function MobileTabBar({ slug, onSearchClick, onAccountClick, vitrinaHref 
   const items = vitrinaHref ? allItems.filter(i => i.key !== 'tienda') : allItems
 
   return (
-    <nav className={styles.mobileTabBar} aria-label="Navegación móvil">
+    <nav ref={barRef} className={styles.mobileTabBar} aria-label="Navegación móvil">
       {items.map(({ key, label, Icon, active, onClick, badge }) => (
         <button
           key={key}

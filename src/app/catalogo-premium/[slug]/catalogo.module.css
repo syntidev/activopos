@@ -4832,7 +4832,8 @@ iframe.lsHeroMedia {
    de la tab bar fija — solo bajo 1024px, mismo breakpoint que arriba.
    76px = 14px (separación del borde) + 62px (alto de la barra). */
 @media (max-width: 1023px) {
-  .root { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  /* --tab-reserva la mide MobileTabBar (alto real de la barra desde el borde inferior); 76px + safe-area es el respaldo antes de medir. */
+  .root { padding-bottom: calc(var(--tab-reserva, calc(76px + env(safe-area-inset-bottom, 0px))) + var(--space-4)); }
 
   .waFab {
     bottom: calc(76px + env(safe-area-inset-bottom, 0px) + var(--space-3));

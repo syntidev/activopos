@@ -69,6 +69,7 @@ test.afterAll(() => {
 
 /** En local no hay nginx que sirva /storage/…: se responde la foto de prueba desde disco, como en producción. */
 const servirFotos = (page: Page): Promise<void> => page.route('**/storage/tenants/**', route => route.fulfill({ path: FIXTURE_FILE }))
+const sinMarca = (n: string): string => n.replace(/^\s*Garmin\s+/i, '')
 const movil = (page: Page): Promise<void> => page.setViewportSize({ width: 375, height: 812 })
 const abrir = async (page: Page, k: Clave): Promise<void> => { await servirFotos(page); await page.goto(`${GUIA}?producto=${ids[k]}`) }
 const navLinks = (page: Page): Promise<string[]> =>
@@ -107,8 +108,8 @@ test('punto 1: ?producto=<id> arranca directo con la foto, el nombre y "N pasos 
   const casos: Array<[Clave, string]> = [['forerunner', 'Forerunner 170 Music'], ['fenix', 'fēnix 9'], ['instinct', 'Instinct Crossover AMOLED']]
   for (const [k, modelo] of casos) {
     await abrir(page, k)
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(NOMBRES[k])
-    await expect(page.getByText(/Guía de configuración · \d+ pasos · ~15 min/)).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(sinMarca(NOMBRES[k]))
+    await expect(page.getByText(/Guía · \d+ pasos · ~15 min/)).toBeVisible()
     await expect(page.getByRole('heading', { name: `Vamos a dejar tu ${modelo} listo` }), NOMBRES[k]).toBeVisible()
     expect(await page.getByAltText(NOMBRES[k]).first().getAttribute('src')).toContain('zza-garmin-fixture')
   }
@@ -244,7 +245,7 @@ test('punto 7: la ficha de un producto Garmin ofrece "Configura tu <modelo> paso
   await btn.evaluate(el => el.scrollIntoView({ block: 'center' }))
   await page.screenshot({ path: path.join(CAPTURAS, 'zza-garmin-ficha-375.png') })
   await btn.click()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(NOMBRES.forerunner)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(sinMarca(NOMBRES.forerunner))
   await page.goto(`${HOME}/p/${ids.inreach}`)
   await expect(page.getByRole('link', { name: 'Configura tu inReach Mini 3 Plus paso a paso' })).toBeVisible()
   await page.goto(`${HOME}/p/${ids.plain}`)
@@ -276,6 +277,34 @@ test('punto 8: barras fijas premium al 92 % con blur(12px) (encabezado, menú in
   const g = await estilo(page.getByRole('button', { name: 'Siguiente', exact: true }).locator('xpath=../..'))
   expect(alfa(g.bg), `barra de la guía: ${g.bg}`).toBeCloseTo(0.92, 2)
   expect(g.filter).toContain('blur(12px)')
+})
+
+test('punto 5: la barra inferior móvil no tapa el contenido (ficha, home y tienda) y el botón de compra queda clicable a 375×812', async ({ page }) => {
+  await movil(page)
+  await servirFotos(page)
+  // Reserva = alto real que la barra ocupa desde el borde inferior (alto + separación + safe-area) + 16 px.
+  const reserva = () => page.evaluate(() => {
+    const bar = document.querySelector('nav[aria-label="Navegación móvil"]') as HTMLElement
+    const root = bar.closest('[data-theme]') as HTMLElement
+    return { ocupado: Math.ceil(window.innerHeight - bar.getBoundingClientRect().top), padding: parseFloat(getComputedStyle(root).paddingBottom) }
+  })
+  for (const r of [`${HOME}/p/${ids.forerunner}`, HOME, `${HOME}/productos`]) {
+    await page.goto(r)
+    await expect(page.locator('nav[aria-label="Navegación móvil"]')).toBeVisible()
+    await expect.poll(async () => { const m = await reserva(); return m.padding - (m.ocupado + 16) }, { message: `reserva en ${r}` }).toBeGreaterThanOrEqual(0)
+  }
+  // Ficha: el último botón de compra (WhatsApp / Agregar / Agotado) se puede ver y pulsar sobre la barra.
+  await page.goto(`${HOME}/p/${ids.forerunner}`)
+  const compra = page.getByRole('link', { name: /Consultar disponibilidad/ })
+  await expect(compra).toBeVisible()
+  await compra.evaluate(el => el.scrollIntoView({ block: 'end' }))
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await compra.scrollIntoViewIfNeeded()
+  await compra.click({ trial: true }) // falla si otro elemento (la barra) recibe el toque
+  const bar = await page.locator('nav[aria-label="Navegación móvil"]').boundingBox()
+  const caja = await compra.boundingBox()
+  expect((caja?.y ?? 0) + (caja?.height ?? 0)).toBeLessThanOrEqual((bar?.y ?? 0) + 1)
+  await page.screenshot({ path: path.join(CAPTURAS, 'zza-garmin-ficha-compra-375.png') })
 })
 
 test('activable por negocio: con garmin_guide apagado no hay guía (404) ni botón en la ficha', async ({ page }) => {

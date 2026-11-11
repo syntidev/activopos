@@ -137,8 +137,8 @@ export function GarminGuide({ slug, businessName, businessLogo, businessCity, wh
                 <ImgWithFallback src={photo ?? ''} alt={sel.product?.name ?? model.name} className={styles.fotoImg} fallback={<ModelIllustration kind={model.kind} name={model.name} />} />
               </div>
               <div className={styles.heroTexto}>
-                <h1 className={styles.h1}>{sel.product?.name ?? model.name}</h1>
-                <p className={styles.meta}>Guía de configuración · {steps.length} pasos · ~{GUIDE_MINUTES} min</p>
+                <h1 className={`${styles.h1} ${styles.heroNombre}`}>{(sel.product?.name ?? model.name).replace(/^\s*Garmin\s+/i, '')}</h1>
+                <p className={styles.meta}>Guía · {steps.length} pasos · ~{GUIDE_MINUTES} min</p>
                 <button type="button" className={styles.linkBtn} onClick={reset}><Icono nombre="izq" tamano="boton" /> Elegir otro equipo</button>
               </div>
             </section>

@@ -78,6 +78,16 @@ export function matchHost(rawHost: string | null | undefined, list: readonly Cus
    carta:   /  /p/:id
    "nativa" = lo que va después de /catalogo-premium/<slug> o /catalogo-carta/<slug> ('' = inicio). */
 
+
+/** Rutas que viven solo en activopos.com (mantener alineada con PROTECTED_PREFIXES de middleware.ts). En un dominio propio la plantilla gana
+ *  cualquier colisión (hoy solo /productos, que es de la tienda premium); el resto se manda al panel con un 301. */
+export const PANEL_PREFIXES: readonly string[] = [
+  '/analytics', '/ayuda', '/caja', '/catalogo-digital', '/clientes', '/configuracion', '/cotizaciones', '/devoluciones', '/escritorio',
+  '/finanzas', '/inventario', '/kds', '/metricas', '/onboarding', '/pedidos', '/pos', '/productos', '/proveedores', '/reportes',
+  '/reservas', '/tu-dia', '/usuarios', '/ventas', '/admin', '/blog-admin', '/businesses', '/invoices', '/settings', '/stats', '/tickets',
+  '/login', '/registro',
+]
+
 export const KIT_NATIVE = '/kit-200k'
 export const KIT_CLEAN = '/200k'
 
@@ -90,10 +100,30 @@ export function cleanToNative(kind: DomainKind, pathname: string): string | null
   const id = /^\/p\/([^/]+)$/.exec(p)
   if (id) return ID_RE.test(id[1]) ? `/p/${id[1]}` : null
   if (kind === 'carta') return null
-  if (p === '/tienda') return '/productos'
+  // /productos y /marca/:m son rutas nativas de la tienda premium: también se sirven (200) en el dominio propio, aunque colisionen con el panel.
+  if (p === '/tienda' || p === '/productos') return '/productos'
   if (p === '/guia/garmin') return '/guia/garmin'
-  const marca = /^\/tienda\/marca\/([^/]+)$/.exec(p)
+  const marca = /^\/(?:tienda\/)?marca\/([^/]+)$/.exec(p)
   return marca && MARCA_RE.test(marca[1]) ? `/marca/${marca[1]}` : null
+}
+
+/**
+ * Enlace GUARDADO en la DB (cta_link de slides/hero…) → relativo y limpio cuando se está en el dominio propio de ese tenant.
+ * Convierte /c/<slug>…, /catalogo-premium|carta/<slug>…, /kit-200k y las absolutas a activopos.com o al propio dominio.
+ * Lo demás (wa.me, redes, rutas ya limpias, otros slugs) queda igual. Sin migrar datos.
+ */
+export function normalizeStoredHref(d: CustomDomain, href: string): string {
+  let path = href.trim()
+  const abs = /^https?:\/\/([^/?#]+)(.*)$/i.exec(path)
+  if (abs) {
+    const host = normalizeHost(abs[1])
+    if (host !== d.host && host !== 'activopos.com' && host !== 'www.activopos.com') return href
+    path = abs[2] || '/'
+  }
+  if (!path.startsWith('/')) return href
+  const m = /^([^?#]*)([?#].*)?$/.exec(path)
+  const clean = legacyToClean(d, m?.[1] || '/')
+  return clean ? `${clean}${m?.[2] ?? ''}` : href
 }
 
 /** Ruta nativa (sufijo) → ruta limpia. null = no tiene equivalente limpio. Admite query/hash al final. */

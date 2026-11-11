@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PANEL_ORIGIN, legacyToClean, matchHost, nativeToClean, redirectFlagOn, requestHost, rewriteTarget, getCustomDomains, KIT_CLEAN, KIT_NATIVE } from './custom-domains'
+import { PANEL_ORIGIN, PANEL_PREFIXES, legacyToClean, matchHost, nativeToClean, redirectFlagOn, requestHost, rewriteTarget, getCustomDomains, KIT_CLEAN, KIT_NATIVE } from './custom-domains'
 
 /**
  * Dominios propios en el middleware (Edge, sin DB):
@@ -10,14 +10,6 @@ import { PANEL_ORIGIN, legacyToClean, matchHost, nativeToClean, redirectFlagOn, 
  *  - todo lo demás → 404 (ruta inexistente: lo resuelve el not-found de Next, no el panel).
  * Con CUSTOM_DOMAINS_REDIRECT=on, en cualquier OTRO host (activopos.com) las rutas viejas de esos tenants → 301 al dominio propio.
  */
-
-/** Rutas que viven solo en activopos.com (mantener alineada con PROTECTED_PREFIXES de middleware.ts). */
-const PANEL_PREFIXES = [
-  '/analytics', '/ayuda', '/caja', '/catalogo-digital', '/clientes', '/configuracion', '/cotizaciones', '/devoluciones', '/escritorio',
-  '/finanzas', '/inventario', '/kds', '/metricas', '/onboarding', '/pedidos', '/pos', '/productos', '/proveedores', '/reportes',
-  '/reservas', '/tu-dia', '/usuarios', '/ventas', '/admin', '/blog-admin', '/businesses', '/invoices', '/settings', '/stats', '/tickets',
-  '/login', '/registro',
-]
 
 /** Pasan sin tocar en un dominio propio (el catálogo las necesita tal cual). */
 const PASS_PREFIXES = ['/api/', '/_next/', '/storage/', '/uploads/', '/icons/', '/fonts/']
@@ -55,14 +47,15 @@ export function handleCustomDomains(req: NextRequest): NextResponse | null {
 
   // Rutas de paso: NO se cortocircuita el pipeline (null = sigue por las reglas normales de auth y roles del middleware).
   if (PASS_EXACT.has(pathname) || PASS_PREFIXES.some(p => pathname.startsWith(p))) return null
-  if (PANEL_PREFIXES.some(p => is(pathname, p))) return NextResponse.redirect(`${PANEL_ORIGIN}${pathname}${search}`, 301)
-
   const target = rewriteTarget(domain, pathname)
   if (target) {
     const url = req.nextUrl.clone()
     url.pathname = target
     return NextResponse.rewrite(url)
   }
+
+  // Solo lo que NO es de la plantilla (la plantilla ya se resolvió arriba) va al panel.
+  if (PANEL_PREFIXES.some(p => is(pathname, p))) return NextResponse.redirect(`${PANEL_ORIGIN}${pathname}${search}`, 301)
 
   const clean = legacyToClean(domain, pathname)
   if (clean) return NextResponse.redirect(`https://${domain.host}${clean}${search}`, 301)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCatalogHref } from '@/components/catalog/CatalogLinks'
+import { useCatalogHref, useStoredHref } from '@/components/catalog/CatalogLinks'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, PackageSearch } from 'lucide-react'
@@ -73,6 +73,7 @@ function youtubeEmbedUrl(url: string): string | null {
 
 function HeroSection({ config }: { config: HeroConfig }) {
   const youtubeUrl = config.video_url ? youtubeEmbedUrl(config.video_url) : null
+  const stored = useStoredHref()
   return (
     <section className={styles.lsHero}>
       {youtubeUrl ? (
@@ -100,7 +101,7 @@ function HeroSection({ config }: { config: HeroConfig }) {
       <div className={styles.lsHeroContent}>
         <h1 className={styles.lsHeroTitle}>{config.title}</h1>
         <p className={styles.lsHeroSubtitle}>{config.subtitle}</p>
-        <a href={config.cta_link} className={styles.lsHeroCta}>{config.cta_text}</a>
+        <a href={stored(config.cta_link)} className={styles.lsHeroCta}>{config.cta_text}</a>
       </div>
     </section>
   )
@@ -111,6 +112,7 @@ function HeroSection({ config }: { config: HeroConfig }) {
 function EventSlider({ config }: { config: EventSliderConfig }) {
   const [idx, setIdx]       = useState(0)
   const [paused, setPaused] = useState(false)
+  const stored               = useStoredHref()
   const mobile               = useMobileViewport()
   // "Mostrar en": solo los slides visibles en este viewport (los puntos del carrusel cuentan solo esos).
   const slides               = config.slides.filter(s => isVisibleOn(s.show_on ?? 'all', mobile))
@@ -173,7 +175,7 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
             <h2 className={styles.lsSliderTitle}>{slide.title}</h2>
             <p className={styles.lsSliderSubtitle}>{slide.subtitle}</p>
             <a
-              href={slide.cta_link}
+              href={stored(slide.cta_link)}
               className={`${styles.lsSliderCta} ${slide.text_theme === 'dark' ? styles.lsSliderCtaDark : ''}`}
             >
               {slide.cta_text}

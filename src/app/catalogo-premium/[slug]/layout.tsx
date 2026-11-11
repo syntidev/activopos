@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { CatalogLinksProvider } from '@/components/catalog/CatalogLinks'
-import { isCleanFor } from '@/lib/catalog-links-server'
+import { currentCustomDomain, isCleanFor } from '@/lib/catalog-links-server'
 import { CartProvider } from './CartContext'
 import { CheckoutFinancingProvider } from '@/components/catalog/CheckoutFinancing'
 import { loadCheckoutFinancing, loadCobroFlags } from '@/lib/catalog-checkout-financing'
@@ -24,7 +24,7 @@ export default async function CatalogoSlugLayout({ children, params }: LayoutPro
       <CobroFlagsProvider casheaActive={casheaActive}>
         <CartProvider slug={params.slug}>
           <PulsoTracker slug={params.slug} />
-          <CatalogLinksProvider kind="premium" clean={isCleanFor('premium', params.slug)}>{children}</CatalogLinksProvider>
+          <CatalogLinksProvider kind="premium" clean={isCleanFor('premium', params.slug)} domain={isCleanFor('premium', params.slug) ? currentCustomDomain() : null}>{children}</CatalogLinksProvider>
         </CartProvider>
       </CobroFlagsProvider>
     </CheckoutFinancingProvider>

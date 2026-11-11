@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { X } from 'lucide-react'
 import type { AnnouncementPopupConfig } from '@/lib/landing-sections'
+import { useStoredHref } from '@/components/catalog/CatalogLinks'
 import { ImgWithFallback } from './ImgWithFallback'
 import styles from './catalogo.module.css'
 
@@ -18,6 +19,7 @@ interface Props {
 export function AnnouncementPopup({ config, businessId, sectionId }: Props) {
   const [open, setOpen]   = useState(false)
   const reducedMotion     = useReducedMotion()
+  const stored            = useStoredHref()
   const storageKey        = `popup_seen_${businessId}_${sectionId}`
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { sql } from './alta-helpers'
 import { ownBusiness } from './helpers/own-business'
+import { PANEL_PREFIXES, normalizeStoredHref, rewriteTarget } from '../src/lib/custom-domains'
 
 /**
  * Dominios propios (CUSTOM_DOMAINS) con cabecera Host simulada (x-forwarded-host) contra `next dev` en :3001. Arranque:
@@ -68,6 +69,45 @@ test.describe('bandera apagada (por defecto)', () => {
     for (const p of ['/escritorio', '/login', '/pos', '/configuracion/tienda', '/admin']) {
       const r = await get(request, PREMIUM, p)
       expect([r.status, r.location], p).toEqual([301, `https://activopos.com${p}`])
+    }
+  })
+
+  test('colisiones plantilla/panel: la plantilla gana en el dominio propio (solo /productos) y activopos.com no cambia', async ({ request }) => {
+    const premium = { host: PREMIUM, slug: SLUG, kind: 'premium' as const }
+    const carta = { host: CARTA, slug: SLUG, kind: 'carta' as const }
+    const colisiones = PANEL_PREFIXES.filter(p => rewriteTarget(premium, p) !== null || rewriteTarget(carta, p) !== null)
+    expect(colisiones).toEqual(['/productos'])
+    // premium: /productos (con query) y /marca/:m responden 200 en el dominio propio
+    for (const p of ['/productos', '/productos?buscar=zza', '/marca/zza-marca', '/tienda/marca/zza-marca']) {
+      expect((await get(request, PREMIUM, p)).status, p).toBe(200)
+    }
+    // carta no tiene tienda: /productos sigue siendo panel → 301 a activopos.com
+    const c = await get(request, CARTA, '/productos')
+    expect([c.status, c.location]).toEqual([301, 'https://activopos.com/productos'])
+    // el resto del panel sigue yendo a activopos.com en el dominio premium
+    for (const p of PANEL_PREFIXES.filter(x => !colisiones.includes(x))) {
+      const r = await get(request, PREMIUM, p)
+      expect([r.status, r.location], p).toEqual([301, `https://activopos.com${p}`])
+    }
+    // activopos.com (host sin mapear): /productos es el panel, pide sesión
+    const panel = await get(request, null, '/productos')
+    expect(panel.status).toBe(307)
+    expect(panel.location ?? '').toContain('/login')
+  })
+
+  test('enlaces guardados en la DB (cta_link) se convierten a la ruta limpia en el dominio propio', () => {
+    const d = { host: PREMIUM, slug: SLUG, kind: 'premium' as const }
+    const casos: Array<[string, string]> = [
+      [`/catalogo-premium/${SLUG}/productos`, '/tienda'],
+      [`/c/${SLUG}/productos?buscar=x`, '/tienda?buscar=x'],
+      [`https://activopos.com/c/${SLUG}`, '/'],
+      [`https://${PREMIUM}/catalogo-premium/${SLUG}/p/5`, '/p/5'],
+      ['/kit-200k', '/200k'],
+      [`/catalogo-premium/${SLUG}/marca/garmin`, '/tienda/marca/garmin'],
+    ]
+    for (const [entrada, salida] of casos) expect(normalizeStoredHref(d, entrada), entrada).toBe(salida)
+    for (const intacto of ['https://wa.me/584141234567', 'https://instagram.com/x', '/tienda', '/catalogo-premium/otro/productos', 'https://activopos.com/precios']) {
+      expect(normalizeStoredHref(d, intacto), intacto).toBe(intacto)
     }
   })
 

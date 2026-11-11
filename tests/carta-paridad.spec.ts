@@ -182,8 +182,11 @@ test('identidad: crédito "Desarrollado por ActivoPOS.com" en Carta, genérico y
 test('identidad: tarjeta sin foto compacta (sin letra gigante, acento en el borde) y ficha sin foto con franja del preset', async ({ page }) => {
   await page.goto('/catalogo-carta/' + OWN_SLUG)
   const tarjeta = page.locator('[data-testid="carta-plato"][data-sin-foto="true"]').first()
-  expect(await tarjeta.evaluate(el => getComputedStyle(el).borderLeftWidth)).toBe('4px')
-  expect(await tarjeta.locator('[aria-hidden="true"]').filter({ hasText: /^[A-Z]$/ }).count()).toBe(0)
+  expect(await tarjeta.evaluate(el => getComputedStyle(el).borderLeftWidth)).toBe('1px') // sin el borde izquierdo de acento
+  const vacia = tarjeta.getByTestId('carta-plato-foto-vacia') // recuadro con ícono, del mismo tamaño que una foto (96 px de ancho en móvil)
+  await expect(vacia).toBeVisible()
+  expect((await vacia.boundingBox())!.width).toBe(96)
+  expect(await vacia.locator('svg').count()).toBe(1)
   await ficha(page, idOf('Smash Burger'))
   const franja = page.getByTestId('carta-ficha-franja')
   await expect(franja).toContainText('Smash Burger')

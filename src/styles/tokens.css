@@ -1194,3 +1194,11 @@
 [data-carta-preset] { --carta-gap-barra: 16px; }
 
 [data-carta-preset] { --carta-compacta-h: 44px; }
+
+/* Carta: tarjeta de plato (reposo y hover) comunes a todas las paletas. */
+[data-carta-preset] {
+  --carta-sombra: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.06);
+  --carta-sombra-hover: 0 8px 24px rgb(0 0 0 / 0.12), 0 0 8px color-mix(in srgb, var(--carta-acento) 30%, transparent);
+  --carta-borde-hover: color-mix(in srgb, var(--carta-acento) 40%, transparent);
+  --carta-fondo-hover: color-mix(in srgb, var(--carta-card) 94%, var(--carta-acento) 6%);
+}

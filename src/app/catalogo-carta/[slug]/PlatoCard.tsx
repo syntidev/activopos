@@ -3,7 +3,7 @@
 import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Info } from 'lucide-react'
+import { Info, Utensils } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
 import { CARTA_TAG_LABEL } from '@/lib/carta/vocab'
 import { CartaFoto } from './CartaFoto'
@@ -41,7 +41,13 @@ export function PlatoCard({ dish, slug, priority = false }: PlatoCardProps) {
           <CartaFoto src={dish.image} alt={dish.name} sizes="(min-width: 1024px) 132px, 96px" priority={priority} />
           {agotado && <span className={styles.agot} data-testid="carta-agotado-hoy">{dish.soldOutToday ? 'Agotado hoy' : 'Agotado'}</span>}
         </Link>
-      ) : null}
+      ) : (
+        // Sin foto: recuadro del mismo tamaño que la foto, con ícono de cubiertos; también abre la ficha.
+        <Link href={href} className={cx(styles.photo, styles.photoVacia)} aria-label={'Ver ' + dish.name} data-testid="carta-plato-foto-vacia">
+          <Utensils size={28} aria-hidden="true" />
+          {agotado && <span className={styles.agot} data-testid="carta-agotado-hoy">{dish.soldOutToday ? 'Agotado hoy' : 'Agotado'}</span>}
+        </Link>
+      )}
       <div className={styles.info}>
         <h3 className={styles.nombre}><Link href={href} data-testid="carta-plato-nombre">{dish.name}</Link></h3>
         {dish.description && <p className={styles.desc}>{dish.description}</p>}
@@ -59,9 +65,7 @@ export function PlatoCard({ dish, slug, priority = false }: PlatoCardProps) {
               testids={{ usd: 'carta-plato-precio-usd', bs: 'carta-plato-precio-bs' }} />
             {conTamanos && <span className={styles.nTam}>{dish.sizes.length} tamaños</span>}
           </div>
-          {agotado ? (
-            dish.image ? null : <span className={styles.nTam} data-testid="carta-agotado-hoy">{dish.soldOutToday ? 'Agotado hoy' : 'Agotado'}</span>
-          ) : dish.onRequest ? null : (
+          {agotado ? null : dish.onRequest ? null : (
             <button type="button" className={cx(styles.add, ok && styles.addOk)} onClick={onAdd} data-testid="carta-plato-agregar" aria-label={'Agregar ' + dish.name}>
               {ok ? 'Agregado' : 'Agregar'}
             </button>

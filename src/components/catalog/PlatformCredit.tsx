@@ -16,7 +16,7 @@ export function PlatformCredit({ slug }: PlatformCreditProps) {
   return (
     <p className={styles.credit} data-testid="platform-credit">
       <a href={href} target="_blank" rel="noopener" className={styles.link}>
-        <img src={PLATFORM_ICON} alt="" width={14} height={14} className={styles.icon} aria-hidden="true" />
+        <img src={PLATFORM_ICON} alt="Logo de ActivoPOS" width={14} height={14} className={styles.icon} />
         <span>Desarrollado por <b>{PLATFORM_NAME}</b></span>
       </a>
     </p>

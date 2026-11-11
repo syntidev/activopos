@@ -28,7 +28,7 @@ export function CartaEncabezado({ businessName, covers, logo, address, open, hor
 
   return (
     <header className={styles.enc} data-testid="carta-encabezado">
-      <div className={styles.portadaNegocio} data-testid="carta-portada-negocio">
+      <div className={styles.portadaNegocio} data-testid="carta-portada-negocio" data-movil={visibles.some(c => c.mobile) ? 'true' : undefined}>
         {visibles.length > 0 && (
           <div className={styles.portadaSlides} onScroll={e => setIndex(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}>
             {visibles.map((c, i) => (

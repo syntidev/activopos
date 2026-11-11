@@ -70,9 +70,11 @@ test('panel: clic en la miniatura marca el enfoque (cruz), vista previa teléfon
   await expect(page.getByTestId('portada-1-previa-movil')).toBeVisible()
   await expect(page.getByTestId('portada-1-previa-escritorio')).toBeVisible()
   await expect(page.getByTestId('portada-1-aviso-escritorio')).toContainText('1920×800')
+  await expect(page.getByTestId('portada-2-aviso-vertical')).toContainText('1080×1350') // sin imagen móvil: aviso de subir la vertical
+  await expect(page.getByTestId('portada-1-aviso-vertical')).toHaveCount(0)
 })
 
-test('slider premium: "Mostrar en" filtra slides y puntos, 4:5 en móvil', async ({ page }) => {
+test('slider premium: "Mostrar en" filtra slides y puntos; sin imagen móvil conserva su proporción (no 4:5)', async ({ page }) => {
   const slide = (n: number, show: string, img: string) => "JSON_OBJECT('title','S" + n + "','subtitle','x','cta_text','Ver','cta_link','/catalogo-premium/" + OWN_SLUG + "','image_url','" + img + "','show_on','" + show + "')"
   q("DELETE FROM landing_sections WHERE business_id=@BID AND type='event_slider'")
   q("INSERT INTO landing_sections (business_id,type,`order`,visible,config,created_at,updated_at) VALUES (@BID,'event_slider',1,1,JSON_OBJECT('slides',JSON_ARRAY(" + [slide(1, 'all', '/storage/tenants/217/x.webp'), slide(2, 'desktop', '/storage/tenants/217/y.webp'), slide(3, 'mobile', '/storage/tenants/217/z.webp')].join(',') + ")),NOW(3),NOW(3))")
@@ -83,7 +85,7 @@ test('slider premium: "Mostrar en" filtra slides y puntos, 4:5 en móvil', async
   await expect(slider).toBeVisible()
   await expect(slider.locator('[class*="lsSliderDots"] span')).toHaveCount(2) // móvil: slides 1 y 3
   const caja = (await slider.boundingBox())!
-  expect(Math.abs(caja.width / caja.height - 0.8)).toBeLessThan(0.03) // 4:5
+  expect(caja.width / caja.height, 'sin mobile_path NO pasa a 4:5').toBeGreaterThan(1.5)
   await page.setViewportSize({ width: 1280, height: 900 })
   await expect(slider.locator('[class*="lsSliderDots"] span')).toHaveCount(2) // escritorio: slides 1 y 2
   q("UPDATE businesses SET catalog_template='carta' WHERE id=@BID")

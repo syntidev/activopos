@@ -316,7 +316,8 @@ textarea.input { min-height: 84px; resize: vertical; }
 
 /* Portadas y slides: en móvil la portada es 4:5 (imagen móvil por <picture>); "Mostrar en" también cubre el SSR. */
 @media (max-width: 640px) {
-  .portadaNegocio { height: auto; aspect-ratio: 4 / 5; }
+  /* 4:5 solo si hay imagen móvil; sin ella se conserva la proporción de siempre (con el punto de enfoque). */
+  .portadaNegocio[data-movil='true'] { height: auto; aspect-ratio: 4 / 5; }
   .portadaSlide[data-show='desktop'], .slide[data-show='desktop'] { display: none; }
 }
 @media (min-width: 641px) {

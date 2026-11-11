@@ -5464,7 +5464,8 @@ iframe.lsHeroMedia {
 
 /* Slider de la landing: en móvil 4:5 (la imagen móvil opcional se sirve por <picture>); "Mostrar en" también cubre el SSR. */
 @media (max-width: 640px) {
-  .lsSlider { height: auto; aspect-ratio: 4 / 5; }
+  /* 4:5 solo si algún slide tiene imagen móvil; sin ella, la altura de siempre (con el punto de enfoque). */
+  .lsSlider[data-movil='true'] { height: auto; aspect-ratio: 4 / 5; }
   .lsSlideLayer[data-show='desktop'] { display: none; }
 }
 @media (min-width: 641px) {

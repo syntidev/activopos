@@ -90,7 +90,11 @@ export function SlideMediaEditor({ idPrefix, image, mobile, focusX, focusY, show
           Tu foto móvil mide {mobileSize.w}×{mobileSize.h} px; se recomienda {RECOMMENDED.mobile.w}×{RECOMMENDED.mobile.h}. Puede verse borrosa.
         </p>
       )}
-      {!mobile && <p className={styles.ayuda}>Sin imagen móvil se usa la de escritorio, recortada alrededor del enfoque.</p>}
+      {!mobile && (
+        <p className={styles.aviso} role="status" data-testid={idPrefix + '-aviso-vertical'}>
+          Sube una imagen vertical (1080×1350) para que se vea completa en teléfonos. Mientras tanto se usa la de escritorio, recortada alrededor del enfoque.
+        </p>
+      )}
     </div>
   )
 }

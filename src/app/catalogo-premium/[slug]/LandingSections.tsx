@@ -130,6 +130,7 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
   return (
     <section
       className={styles.lsSlider}
+      data-movil={slides.some(s => s.mobile_path) ? 'true' : undefined}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carrusel"

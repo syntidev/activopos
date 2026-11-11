@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, Store, Search, ShoppingBag, User } from 'lucide-react'
 import { useCart } from './CartContext'
+import { catalogHref } from './catalogUtils'
 import styles from './catalogo.module.css'
 
 interface Props {
@@ -32,8 +33,8 @@ export function MobileTabBar({ slug, onSearchClick, onAccountClick, vitrinaHref 
   const router   = useRouter()
   const { totalItems, cartOpen, setCartOpen } = useCart()
 
-  const homeHref   = vitrinaHref ?? `/catalogo-premium/${slug}`
-  const tiendaHref = `/catalogo-premium/${slug}/productos`
+  const homeHref   = vitrinaHref ?? catalogHref(slug)
+  const tiendaHref = catalogHref(slug, '/productos')
   const isHome     = pathname === homeHref
   const isTienda   = pathname.startsWith(tiendaHref)
 

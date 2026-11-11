@@ -1179,6 +1179,17 @@
 [data-carta-preset="brasa"][data-carta-style="fine"]:not([data-carta-accent]) { --carta-acento: #8A6A2F; --carta-sobre-acento: #FFFFFF; }
 [data-carta-preset="brasa"][data-carta-style="fine"] { --carta-font-display: var(--font-carta-cormorant), Georgia, serif; }
 
+/* ── Barras fijas de las tres plantillas (encabezado, menú inferior móvil, barras de categorías y de pedido de la Carta,
+   barra Anterior/Siguiente de la guía): UN solo estilo. Superficie al 92 % + blur de 12px; sin soporte de blur o de color-mix,
+   fondo sólido (nunca transparente: deja ver el texto de atrás). `--bar-bg` se resuelve en cada contenedor con tema/preset. ── */
+:root { --bar-opacity: 92%; --bar-blur: 12px; }
+:root, [data-theme] { --bar-bg: var(--color-surface); --bar-filter: none; }
+[data-carta-preset] { --bar-bg: var(--carta-card); --bar-filter: none; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and (color: color-mix(in srgb, red 50%, blue)) {
+  :root, [data-theme] { --bar-bg: color-mix(in srgb, var(--color-surface) var(--bar-opacity), transparent); --bar-filter: blur(var(--bar-blur)); }
+  [data-carta-preset] { --bar-bg: color-mix(in srgb, var(--carta-card) var(--bar-opacity), transparent); --bar-filter: blur(var(--bar-blur)); }
+}
+
 /* Carta: separación entre el último contenido y las barras fijas (Agregar / Mi pedido). */
 [data-carta-preset] { --carta-gap-barra: 16px; }
 

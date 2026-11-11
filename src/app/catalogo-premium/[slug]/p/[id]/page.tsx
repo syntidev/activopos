@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { shareMetadata } from '@/lib/og/metadata'
 import { parseKitConfig } from '@/lib/kit-config'
-import { garminGuideEnabled, isGarminBrand } from '@/lib/garmin-guide'
+import { GUIDE_MODELS, garminGuideEnabled, isGarminBrand, matchModelIndex } from '@/lib/garmin-guide'
 import { catalogHref } from '../../catalogUtils'
 import { getActiveRate } from '@/lib/bcv'
 import { subcategoryKey } from '@/lib/subcategory'
@@ -106,6 +106,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
   ])
   if (!product) notFound()
   const isGarminProduct = isGarminBrand(product.brand?.name)
+  const garminModelIdx = isGarminProduct ? matchModelIndex(product.name) : null
 
   // Contexto vitrina: solo vale si la marca existe, es visible y es la del producto; si no, ficha normal
   // (un ?vitrina= ajeno nunca acota ni cambia nada).
@@ -256,7 +257,8 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
         paymentMethods={paymentMethods as PaymentMethod[]}
         catalogUrl={catalogHref(params.slug)}
         showKitLink={(() => { const k = parseKitConfig(business.kit200k_config); return k.activo && k.mostrar_en_header })()}
-        garminGuideHref={isGarminProduct && garminGuideEnabled(business.settings) ? catalogHref(params.slug, `/guia/garmin?modelo=${encodeURIComponent(product.name)}`) : null}
+        garminGuideHref={isGarminProduct && garminGuideEnabled(business.settings) ? catalogHref(params.slug, `/guia/garmin?producto=${product.id}`) : null}
+        garminModelName={garminModelIdx !== null ? GUIDE_MODELS[garminModelIdx].name : product.name}
         relatedProducts={relatedProducts}
         prevProduct={prevRaw}
         nextProduct={nextRaw}

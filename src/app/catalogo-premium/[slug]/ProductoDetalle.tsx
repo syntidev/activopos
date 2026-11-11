@@ -79,6 +79,8 @@ interface Props {
   showKitLink?:  boolean
   /** Guía Garmin del negocio (solo si es producto de marca Garmin y el negocio la activó): enlace con ?modelo=. */
   garminGuideHref?: string | null
+  /** Nombre del modelo para el texto del botón de la guía ("Configura tu <modelo> paso a paso"). */
+  garminModelName?: string | null
   relatedProducts: RelatedProduct[]
   prevProduct:   AdjacentProduct | null
   nextProduct:   AdjacentProduct | null
@@ -99,7 +101,7 @@ interface Props {
 export function ProductoDetalle({
   productId, name, description, images, categoryName, subcategory, categoryColor,
   priceUsd, priceBs, divisaUsd = null, divisaMethods = [], bsMethods = [], variants, businessName,
-  catalogUrl, showKitLink = false, garminGuideHref = null, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
+  catalogUrl, showKitLink = false, garminGuideHref = null, garminModelName = null, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   outOfStock, financing, stockHidden, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
   vitrina,
 }: Props) {
@@ -711,7 +713,7 @@ export function ProductoDetalle({
           {garminGuideHref && (
             <Link href={garminGuideHref} className={styles.garminBtn}>
               <Watch size={18} aria-hidden="true" />
-              Configura tu Garmin paso a paso
+              Configura tu {garminModelName ?? 'Garmin'} paso a paso
             </Link>
           )}
 

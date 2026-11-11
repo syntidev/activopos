@@ -58,7 +58,7 @@
 .chipCashea { background: var(--carta-oro-soft); color: var(--carta-oro); font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 5px; }
 
 /* ── Barra pegajosa: buscador + pestañas ──────────────── */
-.sticky { display: flow-root; position: sticky; top: var(--carta-top, 0px); transition: top 0.2s ease; z-index: 20; background: var(--carta-papel); border-bottom: 1px solid var(--carta-linea); }
+.sticky { display: flow-root; position: sticky; top: var(--carta-top, 0px); transition: top 0.2s ease; z-index: 20; background: var(--bar-bg); backdrop-filter: var(--bar-filter); -webkit-backdrop-filter: var(--bar-filter); border-bottom: 1px solid var(--carta-linea); }
 .search { display: flex; align-items: center; gap: 10px; margin: 0 12px; background: var(--carta-card); border-radius: var(--carta-radio); padding: 0 14px; box-shadow: var(--carta-sombra); min-height: 46px; color: var(--carta-muted); }
 .searchInput { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font: inherit; font-size: 15px; color: var(--carta-tinta); min-height: 44px; }
 .searchInput::placeholder { color: var(--carta-muted); }
@@ -147,7 +147,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 .input:focus-visible, .tam:focus-visible, .add:focus-visible, .tab:focus-visible, .btn:focus-visible, .paso:focus-visible, .fab:focus-visible { outline: 3px solid var(--carta-acento); outline-offset: 2px; }
 .error { color: var(--carta-aji); font-size: 13px; margin-top: 4px; }
 .aviso { color: var(--carta-oro); font-size: 13px; }
-.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--carta-card); border-top: 1px solid var(--carta-linea); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: center; }
+.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bar-bg); backdrop-filter: var(--bar-filter); -webkit-backdrop-filter: var(--bar-filter); border-top: 1px solid var(--carta-linea); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 12px; align-items: center; }
 .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; border-radius: var(--carta-radio); background: var(--carta-acento); color: var(--carta-sobre-acento); font-size: 16px; font-weight: 700; padding: 12px 16px; text-align: center; }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btnAlt { background: var(--carta-card); color: var(--carta-tinta); box-shadow: inset 0 0 0 1.5px var(--carta-linea); }
@@ -305,7 +305,7 @@ textarea.input { min-height: 84px; resize: vertical; }
 @media (prefers-reduced-motion: reduce) { .dish { transition: none; } .dish:active { transform: none; } }
 
 /* Encabezado compacto al bajar: barra fija con logo pequeño, nombre y estado; la barra de categorías queda justo debajo. */
-.compacta { position: fixed; top: 0; left: 0; right: 0; z-index: 22; height: var(--carta-compacta-h, 44px); display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--carta-card); border-bottom: 1px solid var(--carta-linea); transform: translateY(-100%); opacity: 0; pointer-events: none; transition: transform 0.2s ease, opacity 0.2s ease; }
+.compacta { position: fixed; top: 0; left: 0; right: 0; z-index: 22; height: var(--carta-compacta-h, 44px); display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--bar-bg); backdrop-filter: var(--bar-filter); -webkit-backdrop-filter: var(--bar-filter); border-bottom: 1px solid var(--carta-linea); transform: translateY(-100%); opacity: 0; pointer-events: none; transition: transform 0.2s ease, opacity 0.2s ease; }
 .compactaOn { transform: none; opacity: 1; pointer-events: auto; }
 .compactaLogo { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; overflow: hidden; background: var(--carta-papel); box-shadow: 0 0 0 1px var(--carta-linea); display: grid; place-items: center; }
 .compactaLogo b { font-family: var(--carta-font-display); font-size: 15px; color: var(--carta-acento); }

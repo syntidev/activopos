@@ -69,9 +69,9 @@
   position:          sticky;
   top:               0;
   z-index:           var(--z-sticky);
-  background:        color-mix(in srgb, var(--color-white) 95%, transparent);
-  backdrop-filter:   blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background:        var(--bar-bg);
+  backdrop-filter:   var(--bar-filter);
+  -webkit-backdrop-filter: var(--bar-filter);
   border-bottom:     1px solid var(--color-border-subtle);
   box-shadow:        0 1px 3px rgba(0, 0, 0, 0.08);
   padding:           0 var(--space-4);
@@ -671,9 +671,9 @@
   height:          48px;
   flex-shrink:     0;
   padding:         0 var(--space-3);
-  background:      color-mix(in srgb, var(--color-white) 95%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background:      var(--bar-bg);
+  backdrop-filter: var(--bar-filter);
+  -webkit-backdrop-filter: var(--bar-filter);
   border-bottom:   1px solid var(--color-border-subtle);
 }
 
@@ -4737,10 +4737,10 @@ iframe.lsHeroMedia {
   align-items:     center;
   justify-content: space-around;
   padding:         0 4px;
-  background:      rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border:          1px solid rgba(255, 255, 255, 0.5);
+  background:      var(--bar-bg);
+  backdrop-filter: var(--bar-filter);
+  -webkit-backdrop-filter: var(--bar-filter);
+  border:          1px solid var(--color-border-subtle);
   /* Sombra con tinte del color de marca (no gris plano) — esto es lo que la
      hace sentir "premium". #0B4FCC hardcodeado a propósito, igual que
      .constellationDark más arriba: un box-shadow no puede leer var() para

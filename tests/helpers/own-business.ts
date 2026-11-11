@@ -59,6 +59,17 @@ function fileValues(): Record<string, string> {
 
 /** Para los specs de la carpeta A: el negocio propio si existe; si no, el 80 con su admin 79 (comportamiento de siempre). */
 export function ownBusiness(): OwnBusiness {
+  // .env.test.local lo comparte la carpeta B (su helper lo reescribe con SU negocio ZZ B): el de la carpeta A se resuelve por slug,
+  // así un spec de A nunca escribe en datos de otra letra aunque ese archivo apunte a otro negocio.
+  const ownA = Number(sql(`SELECT COALESCE(MAX(id),0) FROM businesses WHERE catalog_slug='${SLUG_A}'`))
+  if (ownA > 0) {
+    return {
+      businessId: ownA,
+      adminId:    Number(sql(`SELECT id FROM users WHERE business_id=${ownA} AND role='admin' ORDER BY id LIMIT 1`)),
+      cashierId:  Number(sql(`SELECT id FROM users WHERE business_id=${ownA} AND role='cashier' ORDER BY id LIMIT 1`)),
+      slug:       SLUG_A,
+    }
+  }
   const v: Record<string, string | undefined> = { ...fileValues(), ...(process.env.E2E_BUSINESS_ID ? { E2E_BUSINESS_ID: process.env.E2E_BUSINESS_ID } : {}) }
   const businessId = Number(v.E2E_BUSINESS_ID ?? DEFAULT_BUSINESS)
   const isOwn = v.E2E_BUSINESS_ID !== undefined && businessId !== DEFAULT_BUSINESS

@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { shareMetadata } from '@/lib/og/metadata'
+import { parseKitConfig } from '@/lib/kit-config'
+import { garminGuideEnabled, isGarminBrand } from '@/lib/garmin-guide'
+import { catalogHref } from '../../catalogUtils'
 import { getActiveRate } from '@/lib/bcv'
 import { subcategoryKey } from '@/lib/subcategory'
 import { brandSlug, resolveVitrinaBrand } from '@/lib/vitrina'
@@ -69,7 +72,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
       catalog_plan: true, catalog_template: true, subscription_active: true, subscription_expires_at: true,
       city: true, state: true, catalog_desc: true, catalog_instagram: true,
       catalog_hours: true, legal_name: true, rif: true, address: true,
-      catalog_default_currency: true, settings: true,
+      catalog_default_currency: true, settings: true, kit200k_config: true,
     },
   })
   if (!business || !isCatalogLive(business)) notFound()
@@ -87,6 +90,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
       },
       include: {
         category: { select: { name: true, color: true } },
+        brand:    { select: { name: true } },
         variants: {
           where:  { is_active: true },
           select: { id: true, tipo: true, valor: true, stock: true, precio_extra: true, combination_key: true, variant_group: true, sku: true },
@@ -101,6 +105,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
     }),
   ])
   if (!product) notFound()
+  const isGarminProduct = isGarminBrand(product.brand?.name)
 
   // Contexto vitrina: solo vale si la marca existe, es visible y es la del producto; si no, ficha normal
   // (un ?vitrina= ajeno nunca acota ni cambia nada).
@@ -249,7 +254,9 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
         rate={rate}
         currency={business.catalog_default_currency}
         paymentMethods={paymentMethods as PaymentMethod[]}
-        catalogUrl={`/catalogo-premium/${params.slug}`}
+        catalogUrl={catalogHref(params.slug)}
+        showKitLink={(() => { const k = parseKitConfig(business.kit200k_config); return k.activo && k.mostrar_en_header })()}
+        garminGuideHref={isGarminProduct && garminGuideEnabled(business.settings) ? catalogHref(params.slug, `/guia/garmin?modelo=${encodeURIComponent(product.name)}`) : null}
         relatedProducts={relatedProducts}
         prevProduct={prevRaw}
         nextProduct={nextRaw}

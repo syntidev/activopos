@@ -4,13 +4,14 @@ import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, ArrowRight, Share2, Plus, Minus, Zap, ShoppingBag, Ruler,
-  Search, Info, X, MessageCircle, AtSign, Phone,
+  Search, X, MessageCircle, AtSign, Phone, Watch,
 } from 'lucide-react'
 import Link from 'next/link'
 import type { CatalogProductVariant, PaymentMethod } from './CatalogoGrid'
 import { useCart } from './CartContext'
 import { track } from '@/lib/pulso-client'
-import { CartHeaderButton } from './CartHeaderButton'
+import { CatalogHeader } from './CatalogHeader'
+import { MobileTabBar } from './MobileTabBar'
 import { CartDrawer } from './CartDrawer'
 import { SizeGuideModal } from './SizeGuideModal'
 import { hasSizeGuide } from '@/lib/size-guide'
@@ -18,7 +19,7 @@ import { FinancingNote } from '@/components/catalog/FinancingNote'
 import type { PublicFinancing } from '@/lib/financing'
 import { PRESET_GROUPS } from '@/lib/variantPresets'
 import { descripcionSinDeportes, parseDeportes } from '@/lib/catalog-deportes'
-import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor } from './catalogUtils'
+import { fmtUsd, fmtBs, capitalize, currencyVisibility, categoryBadgeColor, catalogHref } from './catalogUtils'
 import { PrecioDivisa, type PayPill } from './PrecioDivisa'
 import { normalizePhone } from '@/lib/utils'
 import { productosHref } from '@/lib/subcategory'
@@ -74,6 +75,10 @@ interface Props {
   currency:      string
   paymentMethods: PaymentMethod[]
   catalogUrl:    string
+  /** Link "200K" del menú, igual que en la home (kit activo y con "mostrar en header"). */
+  showKitLink?:  boolean
+  /** Guía Garmin del negocio (solo si es producto de marca Garmin y el negocio la activó): enlace con ?modelo=. */
+  garminGuideHref?: string | null
   relatedProducts: RelatedProduct[]
   prevProduct:   AdjacentProduct | null
   nextProduct:   AdjacentProduct | null
@@ -94,7 +99,7 @@ interface Props {
 export function ProductoDetalle({
   productId, name, description, images, categoryName, subcategory, categoryColor,
   priceUsd, priceBs, divisaUsd = null, divisaMethods = [], bsMethods = [], variants, businessName,
-  catalogUrl, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
+  catalogUrl, showKitLink = false, garminGuideHref = null, rate, currency, slug, paymentMethods, relatedProducts, prevProduct, nextProduct, businessLogo,
   outOfStock, financing, stockHidden, businessCity, businessDesc, businessPhone, businessInstagram, businessHours,
   vitrina,
 }: Props) {
@@ -104,7 +109,7 @@ export function ProductoDetalle({
   const descripcionTexto = description ? descripcionSinDeportes(description) : ''
   const deportesFicha = parseDeportes(description)
   const productHref = (id: number): string =>
-    `/catalogo-premium/${slug}/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`
+    catalogHref(slug, `/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`)
   const categoryHref = (category: string, sub?: string | null): string => vitrina
     ? `${vitrina.href}?categoria=${encodeURIComponent(category)}${sub ? `&sub=${encodeURIComponent(sub)}` : ''}`
     : productosHref(catalogUrl, category, sub)
@@ -152,7 +157,7 @@ export function ProductoDetalle({
 
   const submitSearch = () => {
     const q = searchQuery.trim()
-    router.push(`${vitrina ? vitrina.href : `/catalogo-premium/${slug}/productos`}${q ? `?buscar=${encodeURIComponent(q)}` : ''}`)
+    router.push(`${vitrina ? vitrina.href : catalogHref(slug, '/productos')}${q ? `?buscar=${encodeURIComponent(q)}` : ''}`)
   }
 
   // Scroll lock — el drawer/checkout del carrito puede abrirse desde esta página también
@@ -236,50 +241,18 @@ export function ProductoDetalle({
       {/* Header idéntico a Home/productos -- mismas clases de catalogo.module.css,
           mismo comportamiento (glass-on-scroll, búsqueda expandible, panel de
           info), solo cambia qué hace "buscar" (acá navega, no filtra in-place). */}
-      <header ref={headerRef} className={`${catStyles.stickyHeader} ${isScrolled ? catStyles.stickyHeaderScrolled : ''}`}>
-        <Link href={homeHref} className={catStyles.headerLogo} aria-label={`Ir al inicio de ${businessName}`}>
-          {businessLogo ? (
-            <img src={businessLogo} alt={businessName} className={catStyles.headerLogoImg} />
-          ) : (
-            <span className={catStyles.headerLogoInitials} aria-hidden="true">{initials}</span>
-          )}
-          <span className={catStyles.headerInfo}>
-            <span className={catStyles.headerNameRow}>
-              <span className={catStyles.headerName}>{businessName}</span>
-              <span className={catStyles.headerStatusDot} aria-label="Abierto" title="Abierto" />
-            </span>
-            {(vitrina?.brandName ?? businessCity) && <span className={catStyles.headerCity}>{vitrina?.brandName ?? businessCity}</span>}
-          </span>
-        </Link>
-
-        {!vitrina && (
-          <nav className={catStyles.headerNav} aria-label="Navegación principal">
-            <Link href={catalogUrl} className={catStyles.headerNavLink}>Inicio</Link>
-            <Link href={`/catalogo-premium/${slug}/productos`} className={catStyles.headerNavLink}>Tienda</Link>
-            <Link href={`${catalogUrl}#marcas`} className={catStyles.headerNavLink}>Marcas</Link>
-          </nav>
-        )}
-
-        <div className={catStyles.iconCluster}>
-          <button
-            type="button"
-            className={catStyles.desktopSearchBtn}
-            onClick={() => setSearchExpanded(true)}
-            aria-label="Buscar productos"
-          >
-            <Search size={18} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={catStyles.infoBtn}
-            onClick={() => setInfoOpen(true)}
-            aria-label="Información del negocio"
-          >
-            <Info size={20} aria-hidden="true" />
-          </button>
-          <CartHeaderButton />
-        </div>
-      </header>
+      <CatalogHeader
+        ref={headerRef}
+        slug={slug}
+        businessName={businessName}
+        businessLogo={businessLogo}
+        businessCity={vitrina?.brandName ?? businessCity}
+        isScrolled={isScrolled}
+        onSearchClick={() => setSearchExpanded(true)}
+        onInfoClick={() => setInfoOpen(true)}
+        showKitLink={showKitLink}
+        vitrinaHref={vitrina?.href}
+      />
 
       {searchExpanded && (
         <div className={catStyles.navBar}>
@@ -735,6 +708,13 @@ export function ProductoDetalle({
             </>
           )}
 
+          {garminGuideHref && (
+            <Link href={garminGuideHref} className={styles.garminBtn}>
+              <Watch size={18} aria-hidden="true" />
+              Configura tu Garmin paso a paso
+            </Link>
+          )}
+
           {description && (descripcionTexto || deportesFicha.length > 0) && (
             <div className={styles.productDescSection}>
               <h3 className={styles.productDescTitle}>Descripción</h3>
@@ -746,7 +726,7 @@ export function ProductoDetalle({
                   {deportesFicha.map(d => (
                     <Link
                       key={d.slug}
-                      href={`/catalogo-premium/${slug}/productos?deporte=${d.slug}`}
+                      href={catalogHref(slug, `/productos?deporte=${d.slug}`)}
                       className={styles.deporteFichaChip}
                     >
                       {d.label}
@@ -795,6 +775,12 @@ export function ProductoDetalle({
       )}
 
       <CartDrawer slug={slug} rate={rate} currency={currency} paymentMethods={paymentMethods} />
+      <MobileTabBar
+        slug={slug}
+        onSearchClick={() => setSearchExpanded(true)}
+        onAccountClick={() => setInfoOpen(true)}
+        vitrinaHref={vitrina?.href}
+      />
       {sizeGuideCategory && (
         <SizeGuideModal
           open={sizeGuideOpen}

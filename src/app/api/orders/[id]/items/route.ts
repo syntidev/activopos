@@ -4,7 +4,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { priceModeSchema } from '@/lib/price-mode'
 import { FinancingError, reconcileFinancingAfterItemsChangeTx } from '@/lib/ticket-financing'
-import { resolveLinePrice } from '@/lib/pricing'
+import { resolveLinePrice, VARIANT_PRICING_SELECT } from '@/lib/pricing'
 
 type Context = { params: { id: string } }
 
@@ -19,6 +19,8 @@ const itemSchema = z.object({
   product_id:    z.number().int().positive(),
   product_name:  z.string().min(1).max(120),
   variant_label: z.string().max(100).optional(),
+  // La línea conserva su variante: sin esto el precio_extra se perdía al editar el pedido y al cobrar.
+  variant_id:    z.number().int().positive().optional(),
   quantity:      z.number().positive(),
   // price_per_unit_usd NO se acepta del cliente — siempre se recalcula desde la DB
 })
@@ -65,12 +67,19 @@ export async function PATCH(req: NextRequest, { params }: Context) {
       // Con financiamiento vivo: los productos nuevos deben seguir siendo elegibles y un 'approved' vuelve a 'requested'.
       await reconcileFinancingAfterItemsChangeTx(tx, { businessId: session.businessId, userId: session.userId }, 'order', orderId, order, productIds)
       const productMap = new Map(products.map((p) => [p.id, p]))
+      // Variantes: deben pertenecer al producto de su línea (y este ya es del negocio).
+      const variantIds = Array.from(new Set(data.items.flatMap((i) => (i.variant_id ? [i.variant_id] : []))))
+      const variants = variantIds.length > 0
+        ? await tx.productVariant.findMany({ where: { id: { in: variantIds }, product_id: { in: productIds } }, select: { id: true, product_id: true, ...VARIANT_PRICING_SELECT } })
+        : []
+      const variantMap = new Map(variants.map((v) => [v.id, v]))
+      if (data.items.some((i) => i.variant_id && variantMap.get(i.variant_id)?.product_id !== i.product_id)) throw new Error('PRODUCT_NOT_FOUND')
       // Las líneas nuevas se precian con el modo que ya tiene el pedido (bcv | divisa).
       const mode = priceModeSchema.catch('bcv').parse(order.price_mode)
 
       const itemsWithPrices = data.items.map((item) => {
         const product  = productMap.get(item.product_id)!
-        const { price: priceUsd, source: price_source } = resolveLinePrice(product, undefined, { mode, saleMode: product.sale_mode })
+        const { price: priceUsd, source: price_source } = resolveLinePrice(product, item.variant_id ? variantMap.get(item.variant_id) : undefined, { mode, saleMode: product.sale_mode })
         if (priceUsd <= 0) throw new Error('PRICE_NOT_SET')
         const subtotal_usd = Number((item.quantity * priceUsd).toFixed(2))
         return { ...item, price_per_unit_usd: priceUsd, subtotal_usd, price_source }
@@ -140,6 +149,7 @@ export async function PATCH(req: NextRequest, { params }: Context) {
               product_id:         item.product_id,
               product_name:       item.product_name,
               variant_label:      item.variant_label,
+              variant_id:         item.variant_id,
               quantity:           item.quantity,
               price_per_unit_usd: item.price_per_unit_usd,
               subtotal_usd:       item.subtotal_usd,

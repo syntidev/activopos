@@ -6,7 +6,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import type { ReactNode, RefObject } from 'react'
 import styles from './Modal.module.css'
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'detail'
 
 export interface ModalProps {
   open: boolean

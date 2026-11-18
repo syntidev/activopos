@@ -361,3 +361,23 @@
   .removeText { display: none; }
   .removeBtn { padding: 0; }
 }
+
+/* Servicio: fila de tamaño = nombre / quitar / precio (sin stock, código de barras ni SKU). */
+.row.rowSvc {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "n r" "p p";
+  align-items: end;
+}
+.row.rowSvc > :nth-child(1) { grid-area: n; }
+.row.rowSvc > :nth-child(2) { grid-area: p; }
+.row.rowSvc > :nth-child(3) { grid-area: r; }
+
+@container (min-width: 760px) {
+  .headRow.headSvc,
+  .row.rowSvc {
+    grid-template-columns: minmax(120px, 1fr) minmax(200px, 1.6fr) auto;
+    grid-template-areas: none;
+    align-items: start;
+  }
+  .row.rowSvc > * { grid-area: auto; }
+}

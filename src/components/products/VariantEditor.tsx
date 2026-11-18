@@ -30,7 +30,9 @@ export function VariantEditor({ f }: VariantEditorProps) {
   const [extra, setExtra] = useState('')
   const [allStock, setAllStock] = useState('')
 
-  const type: SizeType | null = SIZE_TYPES.find(t => t.id === f.sizeTypeId) ?? null
+  // Servicio: tamaños/porciones sin inventario. Siempre tipo "personalizada", sin stock, código de barras ni SKU.
+  const isService = f.saleMode === 'service'
+  const type: SizeType | null = SIZE_TYPES.find(t => t.id === (isService ? 'personalizada' : f.sizeTypeId)) ?? null
   const taken = new Set(f.rows.map(r => r.valor.toLowerCase()))
   const basePrice = f.computed.displayPrice
   const productDivisa = parseFloat(f.wholesalePriceUsd) || 0
@@ -42,6 +44,7 @@ export function VariantEditor({ f }: VariantEditorProps) {
 
   return (
     <div className={s.root}>
+      {!isService && (
       <section className={s.step} aria-labelledby="ve-step1">
         <h3 id="ve-step1" className={s.stepTitle}><span className={s.stepNum}>1</span>¿Qué tipo de talla es?</h3>
         <div className={s.types} role="group" aria-labelledby="ve-step1">
@@ -59,12 +62,13 @@ export function VariantEditor({ f }: VariantEditorProps) {
           ))}
         </div>
       </section>
+      )}
 
       {type && (
         <section className={s.step} aria-labelledby="ve-step2">
           <h3 id="ve-step2" className={s.stepTitle}>
-            <span className={s.stepNum}>2</span>
-            {type.custom ? 'Escribe cada talla o variante' : 'Toca las que tienes'}
+            <span className={s.stepNum}>{isService ? 1 : 2}</span>
+            {isService ? 'Escribe cada tamaño o porción' : type.custom ? 'Escribe cada talla o variante' : 'Toca las que tienes'}
           </h3>
 
           {!type.custom && (
@@ -99,7 +103,7 @@ export function VariantEditor({ f }: VariantEditorProps) {
                 className={s.input}
                 value={extra}
                 maxLength={50}
-                placeholder={type.custom ? 'Ej: Grande, Azul, 500 ml' : 'Ej: 52'}
+                placeholder={isService ? 'Ej: 100gr, 200gr, Familiar' : type.custom ? 'Ej: Grande, Azul, 500 ml' : 'Ej: 52'}
                 onChange={e => setExtra(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addExtra() } }}
               />
@@ -116,11 +120,14 @@ export function VariantEditor({ f }: VariantEditorProps) {
 
       {f.rows.length > 0 && (
         <section className={s.step} aria-labelledby="ve-step3">
-          <h3 id="ve-step3" className={s.stepTitle}><span className={s.stepNum}>3</span>Cuántas tienes de cada una</h3>
+          <h3 id="ve-step3" className={s.stepTitle}><span className={s.stepNum}>{isService ? 2 : 3}</span>{isService ? 'Precio de cada tamaño' : 'Cuántas tienes de cada una'}</h3>
+          {!isService && (
           <p className={s.help}>
             Cada talla puede tener su propio código de barras: al escanearlo en la caja se vende esa talla.
           </p>
+          )}
 
+          {!isService && (
           <div className={s.bulk}>
             <label className={s.field}>
               <span className={s.label}>Mismo stock para todas</span>
@@ -145,6 +152,7 @@ export function VariantEditor({ f }: VariantEditorProps) {
             </button>
             <p className={s.total} aria-live="polite">Stock total: <strong>{f.variantStockTotal} und</strong></p>
           </div>
+          )}
 
           <p className={s.priceRef} data-testid="variant-price-ref">
             Si los dejas vacíos se usa el del producto:{' '}
@@ -154,12 +162,12 @@ export function VariantEditor({ f }: VariantEditorProps) {
           </p>
 
           <div className={s.table} role="table" aria-label="Tallas del producto">
-            <div className={s.headRow} role="row">
-              <span role="columnheader">Talla</span>
-              <span role="columnheader">Stock</span>
-              <span role="columnheader">Código de barras</span>
-              <span role="columnheader">SKU (opcional)</span>
-              <span role="columnheader">Precio propio (opcional): Full y Divisa</span>
+            <div className={`${s.headRow} ${isService ? s.headSvc : ''}`} role="row">
+              <span role="columnheader">{isService ? 'Tamaño' : 'Talla'}</span>
+              {!isService && <span role="columnheader">Stock</span>}
+              {!isService && <span role="columnheader">Código de barras</span>}
+              {!isService && <span role="columnheader">SKU (opcional)</span>}
+              <span role="columnheader">{isService ? 'Precio: Full y Divisa' : 'Precio propio (opcional): Full y Divisa'}</span>
               <span role="columnheader" className={s.srOnly}>Quitar</span>
             </div>
 
@@ -167,12 +175,13 @@ export function VariantEditor({ f }: VariantEditorProps) {
               const eq = equivalenceText(r)
               const errId = `ve-err-${r.key}`
               return (
-                <div key={r.key} className={s.row} role="row">
+                <div key={r.key} className={`${s.row} ${isService ? s.rowSvc : ''}`} role="row">
                   <div className={s.cellName} role="cell">
                     <span className={s.rowName}>{r.valor}</span>
                     {eq && <span className={s.rowEq}>{eq}</span>}
                   </div>
 
+                  {!isService && (<>
                   <label className={s.field} role="cell">
                     <span className={`${s.label} ${s.cellLabel}`}>Stock</span>
                     <input
@@ -225,6 +234,7 @@ export function VariantEditor({ f }: VariantEditorProps) {
                       onChange={e => f.updateRow(r.key, { sku: e.target.value })}
                     />
                   </label>
+                  </>)}
 
                   <div className={s.field} role="cell">
                     <div className={s.priceStack}>
@@ -269,7 +279,7 @@ export function VariantEditor({ f }: VariantEditorProps) {
                   <button
                     type="button"
                     className={s.removeBtn}
-                    aria-label={`Quitar talla ${r.valor}`}
+                    aria-label={`Quitar ${isService ? 'tamaño' : 'talla'} ${r.valor}`}
                     onClick={() => f.removeRow(r.key)}
                   >
                     <Trash2 size={18} aria-hidden="true" />

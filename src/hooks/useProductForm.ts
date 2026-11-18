@@ -339,9 +339,9 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
     populatedRef.current = true
   }, [editProduct])
 
-  /* ── Cargar variantes DB al editar un producto simple/peso existente ── */
+  /* ── Cargar variantes DB al editar un producto existente (simple, peso o servicio; el combo no tiene) ── */
   useEffect(() => {
-    if (editProduct?.id && (productKind === 'simple' || productKind === 'weight')) {
+    if (editProduct?.id && productKind !== 'combo') {
       void fetchDbVariants(editProduct.id, editProduct.price_per_unit_usd ?? 0)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -861,7 +861,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
 
       <div role="tabpanel" id={tabPanelId('inventario')} aria-labelledby={tabButtonId('inventario')} hidden={tab !== 'inventario'} className={s.panel}>
         {f.saleMode === 'service' && (
-          <p className={c.fixedPriceSub}>Un servicio no maneja inventario ni tallas.</p>
+          <p className={c.fixedPriceSub}>Un servicio no maneja inventario. Sí puede tener tamaños o porciones, cada uno con su precio.</p>
         )}
 
         {/* ── Card: Inventario (stock + alerta — sin variantes) ── */}
@@ -902,20 +902,20 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
         )}
 
         {/* ── Card: Variantes (toggle + chips/tabla — propia tarjeta) ── */}
-        {f.saleMode !== 'service' && (f.productKind === 'simple' || f.productKind === 'weight') && (
+        {f.productKind !== 'combo' && (
           <section className={s.card}>
-            <h2 className={s.cardTitle}>Variantes</h2>
+            <h2 className={s.cardTitle}>{f.saleMode === 'service' ? 'Tamaños' : 'Variantes'}</h2>
 
             {/* Toggle variantes */}
             <div className={c.fixedPriceRow}>
               <div className={c.fixedPriceLabel}>
                 <Layers size={14} className={c.toggleIcon} aria-hidden="true" />
                 <div>
-                  <span className={c.fixedPriceTitle}>Este producto tiene tallas o colores</span>
-                  <span className={c.fixedPriceSub}>El cajero elige la talla o el color al vender.</span>
+                  <span className={c.fixedPriceTitle}>{f.saleMode === 'service' ? 'Este servicio tiene tamaños o porciones' : 'Este producto tiene tallas o colores'}</span>
+                  <span className={c.fixedPriceSub}>{f.saleMode === 'service' ? 'El cliente elige el tamaño y paga el precio de ese tamaño.' : 'El cajero elige la talla o el color al vender.'}</span>
                 </div>
               </div>
-              <label className={c.toggle} aria-label="Este producto tiene tallas o colores">
+              <label className={c.toggle} aria-label={f.saleMode === 'service' ? 'Este servicio tiene tamaños o porciones' : 'Este producto tiene tallas o colores'}>
                 <input
                   type="checkbox"
                   className={c.toggleInput}
@@ -929,7 +929,7 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
               </label>
             </div>
 
-            {showSizeHint && (
+            {showSizeHint && f.saleMode !== 'service' && (
               <div className={c.sizeHint} role="note">
                 <p className={c.sizeHintText}>
                   {selectedCategoryName ? `"${selectedCategoryName}"` : 'Esta categoría'} normalmente se vende por talla.
@@ -945,16 +945,18 @@ export function ProductFormLayout({ f, categories, onNewCategory }: ProductFormL
 
             {f.hasVariants && !f.isEdit && (
               <div className={c.variantsSection}>
-                <label className={s.combineToggleRow}>
-                  <input
-                    type="checkbox"
-                    checked={f.combineVariants}
-                    onChange={(e) => f.setCombineVariants(e.target.checked)}
-                  />
-                  <span>Combinar dos tipos (ej. Talla + Color)</span>
-                </label>
+                {f.saleMode !== 'service' && (
+                  <label className={s.combineToggleRow}>
+                    <input
+                      type="checkbox"
+                      checked={f.combineVariants}
+                      onChange={(e) => f.setCombineVariants(e.target.checked)}
+                    />
+                    <span>Combinar dos tipos (ej. Talla + Color)</span>
+                  </label>
+                )}
 
-                {f.combineVariants ? (
+                {f.combineVariants && f.saleMode !== 'service' ? (
                   <div className={s.combineSection}>
                     <div className={s.combineDim}>
                       <p className={c.sectionLabel}>Tallas</p>

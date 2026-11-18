@@ -459,7 +459,7 @@ export function ProductModal({
 
   /* ── Fetch DB variants when editing an existing simple product ── */
   useEffect(() => {
-    if (isOpen && editProduct?.id && productKind === 'simple') {
+    if (isOpen && editProduct?.id && productKind !== 'combo') {
       void fetchDbVariants(editProduct.id)
     }
   }, [isOpen, editProduct?.id, productKind, fetchDbVariants])
@@ -1450,7 +1450,7 @@ export function ProductModal({
                     </>
                   )}
 
-                  {(productKind === 'simple' || productKind === 'weight') && (
+                  {productKind !== 'combo' && (
                     <>
                       <div className={mStyles.divider} />
 
@@ -1591,7 +1591,7 @@ export function ProductModal({
                   )}
 
                   {/* ── DB Variants (editing existing simple/weight products) ── */}
-                  {isEdit && editProduct?.id && (productKind === 'simple' || productKind === 'weight') && (
+                  {isEdit && editProduct?.id && productKind !== 'combo' && (
                     <div className={styles.dbVariantsSection}>
                       <div className={styles.dbVarsHeader}>
                         <p className={mStyles.label}>Variantes guardadas</p>

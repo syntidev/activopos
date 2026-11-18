@@ -132,8 +132,13 @@ export function VariantSelector({
     ? variants.filter(v => v.combination_key!.startsWith(`${selectedDim1}-`))
     : []
 
+  // Servicio con tamaños: no lleva inventario, nunca se agota ni muestra existencias.
+  const isService = product?.sale_mode === 'service'
+  const isOut = (v: ProductVariant): boolean => !isService && v.stock <= 0
+  const stockText = (v: ProductVariant): string => (isOut(v) ? 'Agotado' : isService ? '' : `${v.stock} und`)
+
   const handleSelect = (variant: ProductVariant) => {
-    if (variant.stock <= 0) return
+    if (isOut(variant)) return
     onSelect(variant)
     onClose()
   }
@@ -201,7 +206,7 @@ export function VariantSelector({
                       <p className={styles.chainedStepLabel}>2. {dim2Label}</p>
                       <div className={styles.variantGrid}>
                         {dim2Options.map((v) => {
-                          const outOfStock = v.stock <= 0
+                          const outOfStock = isOut(v)
                           const label = v.combination_key!.slice(selectedDim1.length + 1)
                           return (
                             <button
@@ -214,9 +219,11 @@ export function VariantSelector({
                             >
                               <span className={styles.variantName}>{label}</span>
                               {renderPrice(v)}
-                              <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
-                                {outOfStock ? 'Agotado' : `${v.stock} und`}
-                              </span>
+                              {stockText(v) && (
+                                <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
+                                  {stockText(v)}
+                                </span>
+                              )}
                             </button>
                           )
                         })}
@@ -227,7 +234,7 @@ export function VariantSelector({
               ) : (
                 <div className={styles.variantGrid}>
                   {variants.map((v) => {
-                    const outOfStock = v.stock <= 0
+                    const outOfStock = isOut(v)
                     return (
                       <button
                         key={v.id}
@@ -239,9 +246,11 @@ export function VariantSelector({
                       >
                         <span className={styles.variantName}>{v.name}{v.sku ? ` (${v.sku})` : ''}</span>
                         {renderPrice(v)}
-                        <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
-                          {outOfStock ? 'Agotado' : `${v.stock} und`}
-                        </span>
+                        {stockText(v) && (
+                          <span className={`${styles.variantStock} ${outOfStock ? styles.variantStockOut : ''}`}>
+                            {stockText(v)}
+                          </span>
+                        )}
                       </button>
                     )
                   })}

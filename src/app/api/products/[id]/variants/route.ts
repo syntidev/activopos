@@ -39,7 +39,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     // ProductVariant no tiene business_id — aislado por el chequeo de propiedad del producto
     const variants = await db.productVariant.findMany({
-      where:   { product_id: id },
+      // Solo activas: DELETE desactiva (is_active=false) y el editor y el POS no deben mostrar una talla dada de baja.
+      where:   { product_id: id, is_active: true },
       orderBy: [{ sort_order: 'asc' }, { valor: 'asc' }],
     })
 

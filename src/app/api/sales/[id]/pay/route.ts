@@ -128,6 +128,7 @@ export async function PATCH(
               product: {
                 select: {
                   product_type: true,
+                  sale_mode: true,
                   components: { select: { component_id: true, quantity: true } },
                 },
               },
@@ -235,7 +236,8 @@ export async function PATCH(
             const variant = await tx.productVariant.findUnique({
               where: { id: item.variant_id },
             })
-            if (!variant || variant.stock < Number(item.quantity)) {
+            // Un servicio con tamaños no lleva inventario: su variante tiene stock 0 y igual se cobra.
+            if (!variant || (item.product.sale_mode !== 'service' && variant.stock < Number(item.quantity))) {
               throw new InsufficientStockError(
                 `Stock insuficiente para variante ${item.variant_id}`
               )

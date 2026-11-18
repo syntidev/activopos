@@ -36,6 +36,7 @@ import { DEFAULT_TRUST_STRIP, type TrustItem } from '@/lib/trust-strip'
 import { normalizePhone } from '@/lib/utils'
 import type { VitrinaContext } from '@/types/vitrina'
 import styles from './catalogo.module.css'
+import { useHeaderSolid } from '@/components/catalog/useHeaderSolid'
 
 /* ── Public interfaces ───────────────────────────────────────── */
 
@@ -244,16 +245,46 @@ export function CatalogoGrid({
     [products],
   )
 
-  // La URL refleja el deporte activo para compartirla por WhatsApp (sin recargar ni apilar historial).
+  // La ÚLTIMA acción del usuario manda: el buscador y los filtros (categoría, subcategoría, marca, "¿Qué practicas?") no se combinan.
+  // Escribir en el buscador limpia los filtros; tocar un filtro limpia el texto.
+  const urlInicial = useRef(true) // la primera sincronización normaliza la URL sin apilar historial
+  const onSearchInput = (v: string): void => {
+    setQuery(v)
+    if (!v.trim()) return
+    setActiveCategory(null); setActiveSub(null); setDeporte(null); setFilterCategories([]); setFilterBrands([])
+  }
+
+  // El estado se refleja en la URL (?categoria= &sub= &buscar= &deporte=) para compartirla por WhatsApp: filtros nuevos APILAN historial
+  // (el botón atrás los deshace); teclear solo reescribe la entrada actual. popstate restaura el estado desde la URL.
   useEffect(() => {
     if (catalogMode !== 'productos' || vitrina) return
     const url = new URL(window.location.href)
+    const poner = (k: string, v: string | null): void => { if (v) url.searchParams.set(k, v); else url.searchParams.delete(k) }
+    poner('categoria', activeCategory); poner('sub', activeSub); poner('deporte', deporte); poner('buscar', query.trim() || null)
     // Solo si cambia: reescribir la query sin cambios la reserializaría (%20 → +).
-    if (url.searchParams.get('deporte') === deporte) return
-    if (deporte) url.searchParams.set('deporte', deporte)
-    else url.searchParams.delete('deporte')
-    window.history.replaceState(window.history.state, '', url)
-  }, [deporte, catalogMode, vitrina])
+    if (url.href === window.location.href) { urlInicial.current = false; return }
+    const sinBuscar = (u: URL): string => { const c = new URL(u.href); c.searchParams.delete('buscar'); return c.href }
+    const soloTecleo = urlInicial.current || sinBuscar(url) === sinBuscar(new URL(window.location.href))
+    urlInicial.current = false
+    if (soloTecleo) window.history.replaceState(window.history.state, '', url)
+    else window.history.pushState(window.history.state, '', url)
+  }, [activeCategory, activeSub, deporte, query, catalogMode, vitrina])
+
+  useEffect(() => {
+    if (catalogMode !== 'productos' || vitrina) return
+    const onPop = (): void => {
+      const sp = new URLSearchParams(window.location.search)
+      const cat = sp.get('categoria')
+      const sub = sp.get('sub')
+      const dep = sp.get('deporte')
+      setActiveCategory(cat && (cat === FEATURED_KEY || categories.includes(cat)) ? cat : null)
+      setActiveSub(cat && sub ? subcategoryKey(sub) : null)
+      setDeporte(dep && deportes.some(d => d.slug === dep) ? dep : null)
+      setQuery(sp.get('buscar') ?? '')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [catalogMode, vitrina, categories, deportes])
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
   const [modalQty,       setModalQty]       = useState(1)
   const [catMenuOpen,    setCatMenuOpen]    = useState(false)
@@ -318,7 +349,9 @@ export function CatalogoGrid({
   const searchRef = useRef<HTMLInputElement>(null)
   const categoryTrackRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
-  const [isScrolled, setIsScrolled] = useState(false)
+  // Transparente solo sobre el hero de la portada (la única ruta con portada de negocio); /tienda y /marca nacen sólidos.
+  const overHero = (heroCovers?.length ?? 0) > 0 || !!heroCover
+  const isScrolled = useHeaderSolid(headerRef, overHero)
 
   // El scroll vive en `.root` (page.tsx), no en window. El header es hijo directo
   // de `.root`, así que su parentElement es el contenedor scrolleable.
@@ -335,7 +368,6 @@ export function CatalogoGrid({
     if (!scroller) return
     const onScroll = () => {
       setShowBackTop(scroller.scrollTop > 600)
-      setIsScrolled(scroller.scrollTop > 8)
     }
     scroller.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
@@ -684,6 +716,7 @@ export function CatalogoGrid({
 
   // Entra en modo filtrado (Destacados / desde el menú de categorías)
   const selectCategory = (cat: string | null) => {
+    setQuery('')
     setActivePriceRange(null)
     setActiveCategory(cat)
     if (cat && cat !== FEATURED_KEY) centerChip(cat)
@@ -837,7 +870,7 @@ export function CatalogoGrid({
               type="search"
               className={styles.searchExpandedInput}
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => onSearchInput(e.target.value)}
               onKeyDown={onSearchEnter}
               onBlur={settleSearchSoon}
               placeholder="Buscar productos…"
@@ -1021,7 +1054,7 @@ export function CatalogoGrid({
                 className={styles.catalogSearchInput}
                 placeholder="Buscar productos..."
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={e => onSearchInput(e.target.value)}
               onKeyDown={onSearchEnter}
                 onBlur={settleSearchSoon}
                 aria-label="Buscar productos"
@@ -1059,6 +1092,7 @@ export function CatalogoGrid({
                     className={`${styles.deporteChip} ${deporte === d.slug ? styles.deporteChipActive : ''}`}
                     onClick={() => {
                       if (deporte !== d.slug) track({ type: 'deporte_select', deporte: d.slug })
+                      setQuery('')
                       setDeporte(deporte === d.slug ? null : d.slug)
                     }}
                   >
@@ -1352,7 +1386,7 @@ export function CatalogoGrid({
                 key={sub.key}
                 type="button"
                 className={`${styles.subcatPill} ${activeSub === sub.key ? styles.subcatPillActive : ''}`}
-                onClick={() => { if (subcatContext) { setActiveCategory(subcatContext); setActiveSub(sub.key) } }}
+                onClick={() => { if (subcatContext) { setQuery(''); setActiveCategory(subcatContext); setActiveSub(sub.key) } }}
               >
                 {sub.label}
               </button>
@@ -1411,6 +1445,7 @@ export function CatalogoGrid({
         selectedBrands={filterBrands}
         priceRange={activePriceRange}
         onApply={(next) => {
+          if (next.categories.length > 0 || next.brands.length > 0) setQuery('')
           setFilterCategories(next.categories)
           setFilterBrands(next.brands)
           setActivePriceRange(next.priceRange)

@@ -6,6 +6,7 @@ import { CatalogHeader } from '../catalogo-premium/[slug]/CatalogHeader'
 import { CatalogFooter } from '../catalogo-premium/[slug]/CatalogFooter'
 import styles from './kit200k.module.css'
 import { franelaKey, type FranelaCorte } from '@/lib/kit-config'
+import { useHeaderSolid } from '@/components/catalog/useHeaderSolid'
 
 const TALLAS_ROPA = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL'] as const
 const TALLAS_NINOS = ['4', '6', '8', '10', '12', '14'] as const
@@ -125,20 +126,7 @@ export function Kit200KForm({
   franelaDamas, franelaCaballeros, franelaNinos,
 }: Props) {
   const headerRef = useRef<HTMLElement>(null)
-  const [isScrolled, setIsScrolled] = useState(false)
-
-  // .page es el scroller real (mismo patrón que .root en CatalogoGrid) --
-  // overflow-x:hidden por sí solo vuelve sticky inerte sin un scroller con
-  // alto fijo (ver comentario en kit200k.module.css .page), por eso .page
-  // scrollea, no window.
-  useEffect(() => {
-    const scroller = headerRef.current?.parentElement
-    if (!scroller) return
-    const onScroll = () => setIsScrolled(scroller.scrollTop > 8)
-    onScroll()
-    scroller.addEventListener('scroll', onScroll, { passive: true })
-    return () => scroller.removeEventListener('scroll', onScroll)
-  }, [])
+  const isScrolled = useHeaderSolid(headerRef, false) // sin hero: sólido desde el primer píxel
 
   // Patrón "boletos de avión": cada kit es su propio bloque en la página
   // principal (sección 2), con botón "+ Agregar otro kit" debajo del

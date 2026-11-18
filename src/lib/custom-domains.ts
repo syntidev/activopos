@@ -99,6 +99,7 @@ export function cleanToNative(kind: DomainKind, pathname: string): string | null
   if (p === '/') return ''
   const id = /^\/p\/([^/]+)$/.exec(p)
   if (id) return ID_RE.test(id[1]) ? `/p/${id[1]}` : null
+  if (p === '/privacidad' || p === '/terminos') return p // páginas legales: premium y carta
   if (kind === 'carta') return null
   // /productos y /marca/:m son rutas nativas de la tienda premium: también se sirven (200) en el dominio propio, aunque colisionen con el panel.
   if (p === '/tienda' || p === '/productos') return '/productos'
@@ -134,6 +135,7 @@ export function nativeToClean(kind: DomainKind, suffix: string): string | null {
   if (base === '/') return `/${tail}`
   const id = /^\/p\/([^/]+)$/.exec(base)
   if (id) return ID_RE.test(id[1]) ? `/p/${id[1]}${tail}` : null
+  if (base === '/privacidad' || base === '/terminos') return `${base}${tail}`
   if (kind === 'carta') return null
   if (base === '/productos') return `/tienda${tail}`
   if (base === '/guia/garmin') return `/guia/garmin${tail}`

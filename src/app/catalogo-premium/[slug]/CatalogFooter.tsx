@@ -183,7 +183,7 @@ export function CatalogFooter({
             ))}
           </nav>
         )}
-        <PlatformCredit slug={slug} />
+        <PlatformCredit slug={slug} legal={{ privacidad: href('/privacidad'), terminos: href('/terminos') }} />
       </div>
     </footer>
   )

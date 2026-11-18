@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Menu, Search, X } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
 import { PlatformCredit } from '@/components/catalog/PlatformCredit'
+import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { CartaBarraCompacta } from './CartaBarraCompacta'
 import { CartaEncabezado } from './CartaEncabezado'
 import { CartaFoto } from './CartaFoto'
@@ -54,6 +55,7 @@ function CasaCard({ dish, slug, big }: { dish: CartaDish; slug: string; big: boo
 }
 
 export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHomeProps) {
+  const href = useCatalogHref(slug, 'carta')
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [buscando, setBuscando] = useState(false)
@@ -221,7 +223,7 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
       <footer className={styles.footer}>
         <strong>{businessName}</strong>{city ? ' · ' + city : ''}
         {hoursText && <div>{hoursText}</div>}
-        <PlatformCredit slug={slug} />
+        <PlatformCredit slug={slug} legal={{ privacidad: href('/privacidad'), terminos: href('/terminos') }} />
       </footer>
     </div>
   )

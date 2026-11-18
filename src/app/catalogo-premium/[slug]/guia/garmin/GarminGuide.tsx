@@ -9,6 +9,7 @@ import type { GuideProduct } from '@/types/garmin-guide'
 import { GuideExtras, GuideFaq, GuideFinal, GuideSelector, GuideStepCard, SatNotice } from './GuideScreens'
 import { Icono, ModelIllustration } from './GuideParts'
 import styles from './garminGuide.module.css'
+import { useHeaderSolid } from '@/components/catalog/useHeaderSolid'
 
 interface Props {
   slug:             string
@@ -42,8 +43,8 @@ export function GarminGuide({ slug, businessName, businessLogo, businessCity, wh
   const [done, setDone] = useState<ReadonlySet<string>>(new Set())
   const [os, setOs] = useState<Os>('iphone')
   const [copied, setCopied] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
   const headerRef = useRef<HTMLElement>(null)
+  const isScrolled = useHeaderSolid(headerRef, false) // sin hero: sólido desde el primer píxel
   const shellRef = useRef<HTMLDivElement>(null)
 
   const model = sel ? GUIDE_MODELS[sel.modelIndex] : null
@@ -71,15 +72,6 @@ export function GarminGuide({ slug, businessName, businessLogo, businessCity, wh
   }
 
   // El catálogo scrollea dentro de .root (dos niveles sobre el header), igual que la ficha de producto.
-  useEffect(() => {
-    const scroller = headerRef.current?.parentElement?.parentElement
-    if (!scroller) return
-    const onScroll = (): void => setIsScrolled(scroller.scrollTop > 8)
-    scroller.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => scroller.removeEventListener('scroll', onScroll)
-  }, [])
-
   useEffect(() => { shellRef.current?.parentElement?.scrollTo({ top: 0 }) }, [sel, tab, i])
 
   const waHref = (n: number, title: string): string | null => !whatsapp || !model ? null

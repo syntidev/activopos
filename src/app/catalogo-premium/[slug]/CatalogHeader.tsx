@@ -1,7 +1,8 @@
 'use client'
 
 import { useCatalogHref, useKitHref } from '@/components/catalog/CatalogLinks'
-import { forwardRef } from 'react'
+import { forwardRef, type MouseEvent } from 'react'
+import { subirAlTope } from '@/components/catalog/useHeaderSolid'
 import Link from 'next/link'
 import { Search, Info } from 'lucide-react'
 import { CartHeaderButton } from './CartHeaderButton'
@@ -29,6 +30,14 @@ export interface CatalogHeaderProps {
   showKitLink?:    boolean
   /** Modo vitrina de marca: el logo lleva a la vitrina y no hay nav (Inicio/Tienda/Marcas/200K). */
   vitrinaHref?:    string
+}
+
+/** INICIO: si ya estás en la portada, sube al tope (el scroll puede vivir en la ventana o en un contenedor, y el mismo enlace no hace nada); si no, navega con el enlace normal. */
+function irAlInicio(e: MouseEvent<HTMLAnchorElement>, destino: string): void {
+  const url = new URL(destino, window.location.href)
+  if (url.pathname.replace(/\/$/, '') !== window.location.pathname.replace(/\/$/, '')) return
+  e.preventDefault()
+  subirAlTope(e.currentTarget)
 }
 
 export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(function CatalogHeader(
@@ -61,7 +70,7 @@ export const CatalogHeader = forwardRef<HTMLElement, CatalogHeaderProps>(functio
       </Link>
 
       {!vitrinaHref && <nav className={styles.headerNav} aria-label="Navegación principal">
-        <Link href={href()} className={styles.headerNavLink}>Inicio</Link>
+        <Link href={href()} className={styles.headerNavLink} onClick={e => irAlInicio(e, href())}>Inicio</Link>
         <Link href={href('/productos')} className={styles.headerNavLink}>Tienda</Link>
         {showKitLink && <Link href={kitHref} className={styles.headerNavLink}>200K</Link>}
         <Link

@@ -20,6 +20,11 @@ const patchSchema = z.object({
   status: z.enum(['received', 'preparing', 'ready', 'dispatched', 'delivered', 'cancelled']),
 })
 
+function firstImage(raw: string | null): string | null {
+  if (!raw) return null
+  try { const a = JSON.parse(raw) as unknown; return Array.isArray(a) && typeof a[0] === 'string' ? a[0] : null } catch { return null }
+}
+
 /* ── GET /api/orders/[id] ── */
 
 export async function GET(
@@ -42,7 +47,17 @@ export async function GET(
 
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
 
-    return NextResponse.json({ ok: true, order })
+    // Miniatura y SKU por línea (aditivo): primera foto del producto y SKU de la variante (o del producto).
+    const [products, variants] = await Promise.all([
+      db.product.findMany({ where: { id: { in: order.items.map((i) => i.product_id) } }, select: { id: true, sku: true, images: true } }),
+      db.productVariant.findMany({ where: { id: { in: order.items.flatMap((i) => (i.variant_id ? [i.variant_id] : [])) } }, select: { id: true, sku: true } }),
+    ])
+    const items = order.items.map((i) => {
+      const p = products.find((x) => x.id === i.product_id)
+      return { ...i, image_url: firstImage(p?.images ?? null), sku: variants.find((v) => v.id === i.variant_id)?.sku ?? p?.sku ?? null }
+    })
+
+    return NextResponse.json({ ok: true, order: { ...order, items } })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
     throw e

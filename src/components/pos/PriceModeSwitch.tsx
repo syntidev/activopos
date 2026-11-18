@@ -20,13 +20,15 @@ interface PriceModeSwitchProps {
   error?: string
   /** Líneas pedidas en Divisa que no tienen precio Divisa y se cobran a BCV. */
   fallbackLines?: number
+  /** Total que tiene (o tendría) el ticket en cada modo, ya formateado; solo se muestran los modos presentes. */
+  totals?: Partial<Record<PriceMode, string>>
 }
 
 /**
  * Semáforo de precio del ticket: "BCV (Bs)" por defecto o "Divisa ($)". Va siempre junto al total del
  * carrito/pedido. Contrato: .doc/CONTRATO_PRECIO_DIVISA.md.
  */
-export function PriceModeSwitch({ mode, onChange, readOnly = false, busy = false, error, fallbackLines = 0 }: PriceModeSwitchProps) {
+export function PriceModeSwitch({ mode, onChange, readOnly = false, busy = false, error, fallbackLines = 0, totals }: PriceModeSwitchProps) {
   const interactive = !readOnly && onChange !== undefined
 
   return (
@@ -44,6 +46,7 @@ export function PriceModeSwitch({ mode, onChange, readOnly = false, busy = false
               disabled={busy}
             >
               {PRICE_MODE_LABEL[m]}
+              {totals?.[m] && <span className={styles.optionTotal}>{totals[m]}</span>}
             </button>
           ))}
         </div>

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Home, Store, Search, ShoppingBag, User } from 'lucide-react'
 import { useCart } from './CartContext'
 import styles from './catalogo.module.css'
+import { subirAlTope } from '@/components/catalog/useHeaderSolid'
 
 interface Props {
   slug:           string
@@ -59,7 +60,7 @@ export function MobileTabBar({ slug, onSearchClick, onAccountClick, vitrinaHref 
   const isTienda   = pathname.startsWith(tiendaHref)
 
   const allItems: TabItem[] = [
-    { key: 'inicio',  label: 'Inicio',  Icon: Home,       active: isHome,   onClick: () => router.push(homeHref) },
+    { key: 'inicio',  label: 'Inicio',  Icon: Home,       active: isHome,   onClick: () => (isHome ? subirAlTope(document.querySelector('header')) : router.push(homeHref)) },
     { key: 'tienda',  label: 'Tienda',  Icon: Store,      active: isTienda, onClick: () => router.push(tiendaHref) },
     { key: 'buscar',  label: 'Buscar',  Icon: Search,     active: false,    onClick: onSearchClick },
     { key: 'carrito', label: 'Carrito', Icon: ShoppingBag, active: cartOpen, onClick: () => setCartOpen(true), badge: totalItems },

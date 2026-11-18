@@ -4,23 +4,43 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { Search, Plus, Minus, Trash2, Printer } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useToast } from '@/components/ui/Toast'
 import { generarCorteConsumoPDF } from '@/components/pos/CorteConsumoPDF'
 import { PriceModeSwitch } from '@/components/pos/PriceModeSwitch'
 import { FinancingPanel } from '@/components/financing/FinancingPanel'
 import { FINANCING_BCV_NOTE, ITEMS_EDIT_WARNING, financingFromColumns, isFinancingLive, patchFinancing } from '@/lib/financing-ui'
 import type { PriceMode, PriceSource } from '@/lib/pos'
+import { priceForMode, variantBases } from '@/lib/pricing'
+import { bs, dual, usd } from './money'
 import type { BlockedProduct, FinancingAction, FinancingColumns, TicketFinancing } from '@/types/financing'
 import styles from './NuevoPedidoModal.module.css'
+import d from './OrderDetalleModal.module.css'
 
 /* ── Types ── */
+
+interface ProductVariant {
+  id: number
+  valor: string
+  sku: string | null
+  stock: number
+  precio_extra: number
+  price_usd: number | null
+  divisa_price_usd: number | null
+}
 
 interface ProductResult {
   id: number
   name: string
+  sku: string | null
   sale_mode: 'unit' | 'weight'
   price_per_unit_usd: number | null
   price_per_kg_usd: number | null
+  wholesale_price_usd: number | null
+  wholesale_price_per_kg_usd: number | null
+  images: string[] | null
+  variants: ProductVariant[]
+  stock?: { net_qty: number }
 }
 
 interface EditableItem {
@@ -28,7 +48,11 @@ interface EditableItem {
   id?: number
   product_id: number
   product_name: string
+  variant_id?: number | null
   variant_label?: string | null
+  /** Primera foto y SKU (de la variante o del producto), solo para mostrar. */
+  image_url?: string | null
+  sku?: string | null
   quantity: number
   price_per_unit_usd: number
   price_source?: PriceSource | null
@@ -57,7 +81,10 @@ export interface OrderDetail extends FinancingColumns {
     price_source?: PriceSource | null
     product_id: number
     product_name: string
+    variant_id?: number | null
     variant_label: string | null
+    image_url?: string | null
+    sku?: string | null
     quantity: number | string
     price_per_unit_usd: number | string
     subtotal_usd: number | string
@@ -74,7 +101,30 @@ interface Props {
 const EDITABLE_STATUSES = ['received', 'preparing', 'ready']
 const CLOSED_STATUSES = ['delivered', 'cancelled']
 
-const fmtUsd = (n: number) => `$${n.toFixed(2)}`
+const lineKey = (i: { product_id: number; variant_id?: number | null }): string => `${i.product_id}:${i.variant_id ?? 0}`
+
+/** Línea del servidor → línea editable; `prev` conserva foto/SKU, que el PATCH de ítems no devuelve. */
+function toEditable(i: OrderDetail['items'][number], prev?: EditableItem): EditableItem {
+  return {
+    id:                 i.id,
+    product_id:         i.product_id,
+    product_name:       i.product_name,
+    variant_id:         i.variant_id ?? null,
+    variant_label:      i.variant_label,
+    image_url:          i.image_url ?? prev?.image_url ?? null,
+    sku:                i.sku ?? prev?.sku ?? null,
+    quantity:           Number(i.quantity),
+    price_per_unit_usd: Number(i.price_per_unit_usd),
+    price_source:       i.price_source,
+  }
+}
+
+function Thumb({ url, name }: { url?: string | null; name: string }) {
+  return url
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={url} alt="" width={40} height={40} className={d.thumb} loading="lazy" />
+    : <span className={d.thumbEmpty} aria-hidden="true">{name.trim().charAt(0).toUpperCase() || '?'}</span>
+}
 
 /* ── Component ── */
 
@@ -96,6 +146,11 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   const [finBlocked, setFinBlocked]   = useState<BlockedProduct[]>([])
   // Sin método de pago financiador (Configuración > Cobros) no se ofrece pedir Cashea.
   const [hasFinancier, setHasFinancier] = useState(false)
+
+  const [pickingId, setPickingId] = useState<number | null>(null)
+  const [undo, setUndo] = useState<{ item: EditableItem; idx: number } | null>(null)
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [confirmClose, setConfirmClose] = useState(false)
 
   const [productSearch, setProductSearch]   = useState('')
   const [productResults, setProductResults] = useState<ProductResult[]>([])
@@ -120,17 +175,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
         }
         setOrder(data.order)
         setFinancing(financingFromColumns(data.order))
-        setItems(
-          data.order.items.map((i) => ({
-            id:                 i.id,
-            product_id:         i.product_id,
-            product_name:       i.product_name,
-            variant_label:      i.variant_label,
-            quantity:           Number(i.quantity),
-            price_per_unit_usd: Number(i.price_per_unit_usd),
-            price_source:       i.price_source,
-          }))
-        )
+        setItems(data.order.items.map((i) => toEditable(i)))
       })
       .catch(() => setError('Error de conexión'))
       .finally(() => setLoading(false))
@@ -159,6 +204,9 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
       setFinBlocked([])
       setProductSearch('')
       setProductResults([])
+      setPickingId(null)
+      setUndo(null)
+      setConfirmClose(false)
     }
   }, [open])
 
@@ -181,17 +229,23 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
     productTimer.current = setTimeout(() => fetchProducts(val), 300)
   }
 
-  const addProduct = (p: ProductResult) => {
-    const price = p.sale_mode === 'weight' ? (p.price_per_kg_usd ?? 0) : (p.price_per_unit_usd ?? 0)
+  const addProduct = (p: ProductResult, v?: ProductVariant) => {
+    // Precio estimado para mostrar; al guardar el servidor reprecia con la variante.
+    const price = priceForMode(variantBases(p, v, p.sale_mode), priceMode).price
+    const line: EditableItem = {
+      product_id: p.id, product_name: p.name, variant_id: v?.id ?? null, variant_label: v?.valor ?? null,
+      image_url: p.images?.[0] ?? null, sku: v?.sku ?? p.sku, quantity: 1, price_per_unit_usd: price,
+    }
     setItems((prev) => {
-      const idx = prev.findIndex((i) => i.product_id === p.id)
+      const idx = prev.findIndex((i) => lineKey(i) === lineKey(line))
       if (idx >= 0) {
         return prev.map((item, i) => (i === idx ? { ...item, quantity: item.quantity + 1 } : item))
       }
-      return [...prev, { product_id: p.id, product_name: p.name, quantity: 1, price_per_unit_usd: price }]
+      return [...prev, line]
     })
     setProductSearch('')
     setProductResults([])
+    setPickingId(null)
   }
 
   const changeQty = (idx: number, delta: number) => {
@@ -200,8 +254,19 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
     )
   }
 
+  // Eliminar no pide confirmación: avisa con "Deshacer" durante 5 s.
   const removeItem = (idx: number) => {
+    setUndo({ item: items[idx], idx })
     setItems((prev) => prev.filter((_, i) => i !== idx))
+    if (undoTimer.current) clearTimeout(undoTimer.current)
+    undoTimer.current = setTimeout(() => setUndo(null), 5000)
+  }
+
+  const undoRemove = () => {
+    if (!undo) return
+    if (undoTimer.current) clearTimeout(undoTimer.current)
+    setItems((prev) => { const next = [...prev]; next.splice(Math.min(undo.idx, next.length), 0, undo.item); return next })
+    setUndo(null)
   }
 
   const total = items.reduce((sum, item) => sum + item.quantity * item.price_per_unit_usd, 0)
@@ -209,7 +274,12 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   const priceMode: PriceMode = order?.price_mode === 'divisa' ? 'divisa' : 'bcv'
   // El servidor reprecia lo guardado: con cambios de ítems sin guardar el modo no se puede cambiar.
   const dirty = order !== null && (items.length !== order.items.length
-    || items.some((it, i) => it.product_id !== order.items[i].product_id || it.quantity !== Number(order.items[i].quantity)))
+    || items.some((it, i) => lineKey(it) !== lineKey(order.items[i]) || it.quantity !== Number(order.items[i].quantity)))
+
+  // Cerrar con cambios de ítems sin guardar pide confirmación.
+  const handleClose = () => { if (dirty && editable) setConfirmClose(true); else onClose() }
+  // Total del pedido en el modo activo (lo que ya sabemos sin llamar al servidor); el otro modo se ve al cambiarlo.
+  const modeTotals: Partial<Record<PriceMode, string>> = { [priceMode]: dual(total, rate) }
 
   /* ── Modo de precio (BCV / Divisa): el servidor reprecia el pedido y devuelve las líneas ── */
 
@@ -281,6 +351,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
           items: items.map((i) => ({
             product_id:    i.product_id,
             product_name:  i.product_name,
+            variant_id:    i.variant_id ?? undefined,
             variant_label: i.variant_label ?? undefined,
             quantity:      i.quantity,
           })),
@@ -295,15 +366,8 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
       // Un pedido aprobado por Cashea vuelve a "solicitado" al cambiar sus ítems.
       setFinancing(financingFromColumns(data.order))
       // El servidor recrea las líneas al guardar: se toman sus ids nuevos para poder mapear el cambio de modo por id.
-      setItems(data.order.items.map((i) => ({
-        id:                 i.id,
-        product_id:         i.product_id,
-        product_name:       i.product_name,
-        variant_label:      i.variant_label,
-        quantity:           Number(i.quantity),
-        price_per_unit_usd: Number(i.price_per_unit_usd),
-        price_source:       i.price_source,
-      })))
+      const prevByKey = new Map(items.map((i) => [lineKey(i), i]))
+      setItems(data.order.items.map((i) => toEditable(i, prevByKey.get(lineKey(i)))))
       onUpdated(data.order)
       toast('Pedido actualizado', 'success')
     } catch {
@@ -334,7 +398,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
 
   const footer = (
     <>
-      <Button variant="ghost" size="md" onClick={onClose}>
+      <Button variant="ghost" size="md" onClick={handleClose}>
         Cerrar
       </Button>
       <Button
@@ -361,11 +425,12 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
   )
 
   return (
+    <>
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={order ? `Pedido ${order.order_number}` : 'Pedido'}
-      size="md"
+      size="detail"
       footer={footer}
     >
       <div className={styles.form}>
@@ -395,17 +460,37 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
                   />
                 </div>
                 {productResults.length > 0 && (
-                  <ul className={styles.results} role="listbox" aria-label="Productos encontrados">
+                  <ul className={d.results} role="listbox" aria-label="Productos encontrados">
                     {productResults.map((p) => {
-                      const price = p.sale_mode === 'weight' ? p.price_per_kg_usd : p.price_per_unit_usd
+                      const hasVariants = p.variants.length > 0
+                      const base = priceForMode(variantBases(p, undefined, p.sale_mode), priceMode).price
+                      const sub = [p.sku ? `SKU ${p.sku}` : null, hasVariants ? `${p.variants.length} variantes: elige una` : p.stock ? `Stock ${p.stock.net_qty}` : null].filter(Boolean).join(' · ')
                       return (
                         <li key={p.id} role="option" aria-selected={false}>
-                          <button type="button" className={styles.resultBtn} onClick={() => addProduct(p)}>
-                            <span className={styles.resultName}>{p.name}</span>
-                            <span className={styles.resultPrice}>
-                              {price != null ? `$${price.toFixed(2)}` : '—'}
+                          <button type="button" className={d.result} onClick={() => (hasVariants ? setPickingId(pickingId === p.id ? null : p.id) : addProduct(p))}>
+                            <Thumb url={p.images?.[0]} name={p.name} />
+                            <span className={d.info}>
+                              <span className={d.name}>{p.name}</span>
+                              {sub && <span className={d.sub}>{sub}</span>}
+                              {!hasVariants && <span className={d.unit}>{base > 0 ? dual(base, rate) : '—'}</span>}
                             </span>
                           </button>
+                          {hasVariants && pickingId === p.id && (
+                            <div className={d.variantList}>
+                              {p.variants.map((v) => {
+                                const vp = priceForMode(variantBases(p, v, p.sale_mode), priceMode).price
+                                return (
+                                  <button key={v.id} type="button" className={d.variantBtn} onClick={() => addProduct(p, v)}>
+                                    <span>
+                                      <span className={d.variant}>{v.valor}</span>
+                                      {v.sku ? ` · SKU ${v.sku}` : ''} · {v.stock > 0 ? `Stock ${v.stock}` : <span className={d.stockOut}>Sin stock</span>}
+                                    </span>
+                                    <span className={d.unit}>{vp > 0 ? dual(vp, rate) : '—'}</span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
                         </li>
                       )
                     })}
@@ -419,55 +504,64 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
               {items.length > 0 ? (
                 <ul className={styles.cart} aria-label="Ítems del pedido">
                   {items.map((item, idx) => (
-                    <li key={`${item.product_id}-${idx}`} className={styles.cartRow}>
-                      <span className={styles.cartName}>{item.product_name}</span>
-                      <div className={styles.cartControls}>
-                        {editable ? (
-                          <>
-                            <button
-                              type="button"
-                              className={styles.qtyBtn}
-                              onClick={() => changeQty(idx, -1)}
-                              aria-label={`Disminuir cantidad de ${item.product_name}`}
-                            >
-                              <Minus size={11} aria-hidden="true" />
-                            </button>
-                            <span className={styles.qtyVal}>{item.quantity}</span>
-                            <button
-                              type="button"
-                              className={styles.qtyBtn}
-                              onClick={() => changeQty(idx, 1)}
-                              aria-label={`Aumentar cantidad de ${item.product_name}`}
-                            >
-                              <Plus size={11} aria-hidden="true" />
-                            </button>
-                          </>
-                        ) : (
-                          <span className={styles.qtyVal}>{item.quantity}</span>
+                    <li key={`${lineKey(item)}-${idx}`} className={d.row}>
+                      <Thumb url={item.image_url} name={item.product_name} />
+                      <div className={d.info}>
+                        <span className={d.name}>{item.product_name}</span>
+                        {(item.variant_label || item.sku) && (
+                          <span className={d.sub}>
+                            {item.variant_label && <span className={d.variant}>{item.variant_label}</span>}
+                            {item.variant_label && item.sku && ' · '}
+                            {item.sku && `SKU ${item.sku}`}
+                          </span>
                         )}
-                        {item.price_source === 'manual' && <span className={styles.lineTag}>Manual</span>}
-                        {item.price_source === 'fallback_bcv' && (
-                          <span className={styles.lineTag} title="Este producto no tiene precio Divisa: se cobra a precio BCV">Sin precio Divisa</span>
-                        )}
-                        <span className={styles.cartSubtotal}>
-                          {fmtUsd(item.quantity * item.price_per_unit_usd)}
+                        <span className={d.unit}>
+                          {usd(item.price_per_unit_usd)} c/u{rate > 0 && ` · ${bs(item.price_per_unit_usd * rate)}`}
                         </span>
-                        {editable && (
-                          <button
-                            type="button"
-                            className={styles.removeBtn}
-                            onClick={() => removeItem(idx)}
-                            aria-label={`Eliminar ${item.product_name} del pedido`}
-                          >
-                            <Trash2 size={13} aria-hidden="true" />
-                          </button>
+                        {(item.price_source === 'manual' || item.price_source === 'fallback_bcv') && (
+                          <span>
+                            {item.price_source === 'manual' && <span className={styles.lineTag}>Manual</span>}
+                            {item.price_source === 'fallback_bcv' && (
+                              <span className={styles.lineTag} title="Este producto no tiene precio Divisa: se cobra a precio BCV">Sin precio Divisa</span>
+                            )}
+                          </span>
                         )}
+                      </div>
+                      <div className={d.foot}>
+                        <div className={d.qty}>
+                          {editable ? (
+                            <>
+                              <button type="button" className={styles.qtyBtn} onClick={() => changeQty(idx, -1)} aria-label={`Disminuir cantidad de ${item.product_name} ${item.variant_label ?? ''}`}>
+                                <Minus size={11} aria-hidden="true" />
+                              </button>
+                              <span className={styles.qtyVal}>{item.quantity}</span>
+                              <button type="button" className={styles.qtyBtn} onClick={() => changeQty(idx, 1)} aria-label={`Aumentar cantidad de ${item.product_name} ${item.variant_label ?? ''}`}>
+                                <Plus size={11} aria-hidden="true" />
+                              </button>
+                              <button type="button" className={styles.removeBtn} onClick={() => removeItem(idx)} aria-label={`Eliminar ${item.product_name} ${item.variant_label ?? ''} del pedido`}>
+                                <Trash2 size={13} aria-hidden="true" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className={styles.qtyVal}>{item.quantity}×</span>
+                          )}
+                        </div>
+                        <span className={d.lineTotal} data-testid="line-total">
+                          {usd(item.quantity * item.price_per_unit_usd)}
+                          {rate > 0 && <span className={d.lineBs}>{bs(item.quantity * item.price_per_unit_usd * rate)}</span>}
+                        </span>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
                 <p className={styles.cartEmpty}>Sin ítems.</p>
+              )}
+              {undo && (
+                <div className={d.undo} role="status">
+                  <span>Quitaste {undo.item.product_name}{undo.item.variant_label ? ` · ${undo.item.variant_label}` : ''}</span>
+                  <button type="button" className={d.undoBtn} onClick={undoRemove}>Deshacer</button>
+                </div>
               )}
             </div>
 
@@ -478,6 +572,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
               busy={modeBusy}
               error={modeError}
               fallbackLines={items.filter((i) => i.price_source === 'fallback_bcv').length}
+              totals={modeTotals}
             />}
             {isFinancingLive(financing) && (
               <p className={styles.cartEmpty} role="note" data-testid="financing-bcv-note">{FINANCING_BCV_NOTE}</p>
@@ -497,8 +592,8 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
             <div className={styles.totalRow}>
               <span className={styles.totalLabel}>Total</span>
               <span className={styles.totalValue}>
-                {fmtUsd(total)}
-                {rate > 0 && <span className={styles.totalBs}>Bs. {(total * rate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+                {usd(total)}
+                {rate > 0 && <span className={styles.totalBs}>{bs(total * rate)}</span>}
               </span>
             </div>
           </>
@@ -511,5 +606,15 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
         )}
       </div>
     </Modal>
+    <ConfirmDialog
+      open={confirmClose}
+      title="Tienes cambios sin guardar"
+      message="Cambiaste los ítems de este pedido y no los guardaste. Si cierras ahora se pierden."
+      confirmLabel="Cerrar sin guardar"
+      cancelLabel="Seguir editando"
+      onConfirm={() => { setConfirmClose(false); onClose() }}
+      onCancel={() => setConfirmClose(false)}
+    />
+    </>
   )
 }

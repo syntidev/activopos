@@ -117,6 +117,7 @@ export async function GET(req: NextRequest) {
         return {
           id:                 p.id,
           name:               p.name,
+          sku:                p.sku,
           sale_mode:          p.sale_mode,
           base_unit_label:    p.base_unit_label,
           price_per_unit_usd: p.price_per_unit_usd ? Number(p.price_per_unit_usd) : null,

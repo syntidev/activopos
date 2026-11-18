@@ -28,6 +28,7 @@ import { OrderDetalleModal, type OrderDetail } from './OrderDetalleModal'
 import { FinancingBadge } from '@/components/financing/FinancingBadge'
 import { financingFromColumns } from '@/lib/financing-ui'
 import type { FinancingColumns } from '@/types/financing'
+import { bs, usd } from './money'
 import styles from './pedidos.module.css'
 
 /* ── Types ── */
@@ -37,6 +38,7 @@ type OrderStatus = 'received' | 'preparing' | 'ready' | 'dispatched'
 interface OrderItem {
   id: number
   product_name: string
+  variant_label?: string | null
   quantity: number | string
   subtotal_usd: number | string
 }
@@ -71,9 +73,6 @@ const STATUS_NEXT: Partial<Record<string, OrderStatus>> = {
 }
 
 /* ── Helpers ── */
-
-const fmtUsd = (n: number | string) =>
-  `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 // Unidades reales del pedido (suma de cantidades), no la cantidad de líneas.
 function fmtUnits(items: { quantity: number | string }[]): string {
@@ -153,10 +152,21 @@ function OrderCard({
         </p>
       )}
 
+      {order.items.length > 0 && (
+        <ul className={styles.orderLines} aria-label="Resumen de ítems">
+          {order.items.slice(0, 2).map((it) => (
+            <li key={it.id} className={styles.orderLine}>
+              {`${Number(it.quantity)}× ${it.product_name}${it.variant_label ? ` · ${it.variant_label}` : ''}`}
+            </li>
+          ))}
+          {order.items.length > 2 && <li className={styles.orderMore}>+{order.items.length - 2} más</li>}
+        </ul>
+      )}
+
       <div className={styles.orderMeta}>
         <span className={styles.orderTotal}>
           <DollarSign size={11} aria-hidden="true" />
-          {fmtUsd(order.total_usd)}
+          {usd(order.total_usd)} · {bs(order.total_bs)}
         </span>
         <span className={styles.orderItems}>
           <Package size={11} aria-hidden="true" />

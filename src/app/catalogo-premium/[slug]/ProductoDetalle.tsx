@@ -33,6 +33,7 @@ import { AdaptiveGrid } from '@/components/ui/AdaptiveGrid'
 // que rompía la consistencia pedida ("mismo logo, misma altura, mismo
 // comportamiento" en las 3 páginas reales del árbol catalogo-premium).
 import catStyles from './catalogo.module.css'
+import { useHeaderSolid } from '@/components/catalog/useHeaderSolid'
 
 function getInitials(name: string): string {
   return name
@@ -128,11 +129,11 @@ export function ProductoDetalle({
   // Estado del header compartido (mismo patrón que CatalogoGrid): glass-on-scroll,
   // búsqueda expandible, panel de info. Esta página no tiene lista de productos
   // que filtrar -- buscar navega a /productos?buscar= en vez de filtrar in-place.
-  const [isScrolled,     setIsScrolled]     = useState(false)
   const [searchExpanded, setSearchExpanded] = useState(false)
   const [searchQuery,    setSearchQuery]    = useState('')
   const [infoOpen,       setInfoOpen]       = useState(false)
   const headerRef = useRef<HTMLElement>(null)
+  const isScrolled = useHeaderSolid(headerRef, false) // sin hero: sólido desde el primer píxel
   const searchRef = useRef<HTMLInputElement>(null)
   const initials  = getInitials(businessName)
 
@@ -141,15 +142,6 @@ export function ProductoDetalle({
   // envuelve todo en su propio `.page` (productoDetalle.module.css), así que
   // hay que subir 2 niveles, no 1.
   useEffect(() => { track({ type: 'product_view', product_id: productId }) }, [productId])
-
-  useEffect(() => {
-    const scroller = headerRef.current?.parentElement?.parentElement
-    if (!scroller) return
-    const onScroll = () => setIsScrolled(scroller.scrollTop > 8)
-    scroller.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => scroller.removeEventListener('scroll', onScroll)
-  }, [])
 
   useEffect(() => {
     if (searchExpanded) {

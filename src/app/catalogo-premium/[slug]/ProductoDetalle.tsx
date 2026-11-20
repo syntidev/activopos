@@ -2,7 +2,8 @@
 
 import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useEffect, useState, useMemo, useRef, type CSSProperties } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { varianteEsTalla } from './tallas'
 import {
   ArrowLeft, ArrowRight, Share2, Plus, Minus, Zap, ShoppingBag, Ruler,
   Search, X, MessageCircle, AtSign, Phone, Watch,
@@ -161,6 +162,17 @@ export function ProductoDetalle({
     document.body.style.overflow = locked ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [cartOpen, checkoutOpen])
+
+  // Entrada desde un filtro de talla (?talla=EU+45): esa variante (con stock) viene preseleccionada.
+  const tallasUrl = useSearchParams().getAll('talla')
+  useEffect(() => {
+    if (tallasUrl.length === 0 || variants.length === 0) return
+    const v = variants.find(x => !x.soldOut && tallasUrl.some(t => varianteEsTalla(x, t)))
+    if (!v) return
+    if (isCombinedVariant) setSelectedDim1(v.combination_key!.split('-')[0])
+    else setSelectedVariantId(v.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al entrar
+  }, [])
 
   const [pageUrl, setPageUrl] = useState('')
   useEffect(() => { setPageUrl(window.location.href) }, [])

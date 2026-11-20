@@ -3708,6 +3708,29 @@
   margin:    0;
 }
 
+/* Chips de talla del panel de filtros: EU/ropa, US equivalente y conteo. */
+.tallaGroup { display: flex; flex-direction: column; gap: var(--space-2); }
+.tallaGroupLabel { font-size: var(--text-xs); color: var(--color-text-secondary); }
+.tallaChips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.tallaChip {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--space-1-5);
+  min-height:      var(--touch-min);
+  padding:         0 var(--space-3);
+  border-radius:   var(--radius-full);
+  border:          1px solid var(--color-border);
+  background:      var(--color-surface-2);
+  color:           var(--color-text-primary);
+  font-size:       var(--text-sm);
+  font-weight:     var(--weight-semibold);
+  cursor:          pointer;
+}
+.tallaChipOn { background: var(--biz-color, var(--onbike-blue)); border-color: var(--biz-color, var(--onbike-blue)); color: var(--color-text-on-brand); }
+.tallaChipUs { font-size: var(--text-2xs); font-weight: var(--weight-medium); opacity: 0.75; }
+.tallaChipCount { font-size: var(--text-2xs); font-weight: var(--weight-medium); opacity: 0.7; }
+
 .filterPriceInputs {
   display:     flex;
   align-items: center;

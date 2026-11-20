@@ -38,6 +38,7 @@ import { normalizePhone } from '@/lib/utils'
 import type { VitrinaContext } from '@/types/vitrina'
 import styles from './catalogo.module.css'
 import { useHeaderSolid } from '@/components/catalog/useHeaderSolid'
+import { chipsDeTallas, productoTieneTalla } from './tallas'
 
 /* ── Public interfaces ───────────────────────────────────────── */
 
@@ -125,6 +126,8 @@ interface Props {
   initialDeporte?:    string | null
   /** Marca preseleccionada (tile "Comprá por marca": ?marca=<id>). */
   initialBrandId?:    number | null
+  /** Tallas preseleccionadas (?talla=EU+45&talla=XL). */
+  initialTallas?:     string[]
   landingSections?:   RenderableLandingSection[]
   /** Cartelera de campaña activa (grid premium 1+4); null/omitida = bloque de colección de siempre */
   cartelera?:         CarteleraData | null
@@ -198,6 +201,7 @@ export function CatalogoGrid({
   initialQuery = null,
   initialDeporte = null,
   initialBrandId = null,
+  initialTallas = [],
   landingSections = [],
   cartelera = null,
   brands = [],
@@ -211,8 +215,13 @@ export function CatalogoGrid({
   const { showUsd, showBs } = currencyVisibility(currency)
   const router = useRouter()
   // Ficha de producto: en vitrina conserva el contexto de marca (?vitrina=) para que la ficha siga acotada.
-  const productHref = (id: number): string =>
-    href(`/p/${id}${vitrina ? `?vitrina=${encodeURIComponent(vitrina.marca)}` : ''}`)
+  const productHref = (id: number): string => {
+    const sp = new URLSearchParams()
+    if (vitrina) sp.set('vitrina', vitrina.marca)
+    filterTallas.forEach(t => sp.append('talla', t))
+    const qs = sp.toString()
+    return href(`/p/${id}${qs ? `?${qs}` : ''}`)
+  }
   const { cart, cartOpen, setCartOpen, checkoutOpen, addToCart: addItemToCart } = useCart()
 
   // Valores de la URL (?categoria=&sub=): si no existen en el catálogo se ignoran.
@@ -225,6 +234,7 @@ export function CatalogoGrid({
   const [activeCategory, setActiveCategory] = useState<string | null>(startCategory)
   const [activeSub,      setActiveSub]      = useState<string | null>(startSub)
   const [query,          setQuery]          = useState(initialQuery ?? '')
+  const [filterTallas, setFilterTallas] = useState<string[]>(initialTallas)
 
   // "¿Qué practicas?": deportes leídos de la línea "Deportes:" de la descripción. Sin esa línea
   // en ningún producto la lista queda vacía y no se muestra nada. En vitrina de marca no aplica.
@@ -252,7 +262,7 @@ export function CatalogoGrid({
   const onSearchInput = (v: string): void => {
     setQuery(v)
     if (!v.trim()) return
-    setActiveCategory(null); setActiveSub(null); setDeporte(null); setFilterCategories([]); setFilterBrands([])
+    setActiveCategory(null); setActiveSub(null); setDeporte(null); setFilterCategories([]); setFilterBrands([]); setFilterTallas([])
   }
 
   // El estado se refleja en la URL (?categoria= &sub= &buscar= &deporte=) para compartirla por WhatsApp: filtros nuevos APILAN historial
@@ -260,8 +270,12 @@ export function CatalogoGrid({
   useEffect(() => {
     if (catalogMode !== 'productos' || vitrina) return
     const url = new URL(window.location.href)
-    const poner = (k: string, v: string | null): void => { if (v) url.searchParams.set(k, v); else url.searchParams.delete(k) }
+    // Solo escribe si el valor cambia: set()/delete() reserializan la query entera (%20 → +) y ensucian la URL compartida.
+    const poner = (k: string, v: string | null): void => { if (url.searchParams.get(k) === v) return; if (v) url.searchParams.set(k, v); else url.searchParams.delete(k) }
     poner('categoria', activeCategory); poner('sub', activeSub); poner('deporte', deporte); poner('buscar', query.trim() || null)
+    if (url.searchParams.getAll('talla').join('|') !== filterTallas.join('|')) {
+      url.searchParams.delete('talla'); filterTallas.forEach(t => url.searchParams.append('talla', t))
+    }
     // Solo si cambia: reescribir la query sin cambios la reserializaría (%20 → +).
     if (url.href === window.location.href) { urlInicial.current = false; return }
     const sinBuscar = (u: URL): string => { const c = new URL(u.href); c.searchParams.delete('buscar'); return c.href }
@@ -269,7 +283,7 @@ export function CatalogoGrid({
     urlInicial.current = false
     if (soloTecleo) window.history.replaceState(window.history.state, '', url)
     else window.history.pushState(window.history.state, '', url)
-  }, [activeCategory, activeSub, deporte, query, catalogMode, vitrina])
+  }, [activeCategory, activeSub, deporte, query, filterTallas, catalogMode, vitrina])
 
   useEffect(() => {
     if (catalogMode !== 'productos' || vitrina) return
@@ -282,6 +296,7 @@ export function CatalogoGrid({
       setActiveSub(cat && sub ? subcategoryKey(sub) : null)
       setDeporte(dep && deportes.some(d => d.slug === dep) ? dep : null)
       setQuery(sp.get('buscar') ?? '')
+      setFilterTallas(sp.getAll('talla'))
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -345,6 +360,14 @@ export function CatalogoGrid({
   const [filterBrands,      setFilterBrands]      = useState<string[]>(
     () => brands.filter(b => b.id === initialBrandId).map(b => b.name),
   )
+
+  // Tallas (OR entre sí, AND con lo demás). Los chips salen de lo que hay en la categoría/sub activa.
+  const tallaChips = useMemo(() => {
+    const enCat = activeCategory === FEATURED_KEY ? products.filter(p => p.isFeatured)
+      : activeCategory ? products.filter(p => p.categoryName === activeCategory && (!activeSub || (p.subcategory != null && subcategoryKey(p.subcategory) === activeSub)))
+      : products
+    return chipsDeTallas(enCat)
+  }, [products, activeCategory, activeSub])
 
   const closeRef  = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -517,15 +540,17 @@ export function CatalogoGrid({
       result = result.filter(p => p.brandId != null && ids.has(p.brandId))
     }
 
+    if (filterTallas.length > 0) result = result.filter(p => productoTieneTalla(p, filterTallas))
+
     if (activePriceRange) {
       result = result.filter(p => p.priceUsd > 0 && p.priceUsd >= activePriceRange.min && p.priceUsd < activePriceRange.max)
     }
 
     return result
-  }, [products, brands, query, serverHits, searchText, searchSynonyms, deporte, activeCategory, activeSub, filterCategories, filterBrands, activePriceRange])
+  }, [products, brands, query, serverHits, searchText, searchSynonyms, deporte, activeCategory, activeSub, filterCategories, filterBrands, filterTallas, activePriceRange])
 
   // Reset paginación al cambiar filtro o búsqueda — patrón SYNTImeat
-  useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, deporte, activePriceRange, filterCategories, filterBrands])
+  useEffect(() => { setVisibleCount(10) }, [activeCategory, activeSub, query, deporte, activePriceRange, filterCategories, filterBrands, filterTallas])
 
   // Pulso: un evento `search` cuando la búsqueda se asienta (1500 ms sin teclear, Enter o salir del campo),
   // nunca por el initialQuery del montaje ni por cada tecla. trackSearch reemplaza la consulta anterior si esta empieza igual.
@@ -537,7 +562,7 @@ export function CatalogoGrid({
   // Con categoría/marca/precio activos `visible.length` no mide la búsqueda sola (un término que el catálogo SÍ tiene
   // saldría como "sin resultados"): en ese caso no se registra.
   const otherFiltersRef = useRef(false)
-  otherFiltersRef.current = activeCategory !== null || filterCategories.length > 0 || filterBrands.length > 0 || activePriceRange !== null
+  otherFiltersRef.current = activeCategory !== null || filterCategories.length > 0 || filterBrands.length > 0 || filterTallas.length > 0 || activePriceRange !== null
   const settleSearch = (): void => {
     const q = queryRef.current.trim()
     if (q.length < 2 || q === lastTrackedQuery.current) return
@@ -561,7 +586,7 @@ export function CatalogoGrid({
   // Activo solo sin filtro de categoría real, precio ni búsqueda; Destacados y
   // subcategorías siguen usando el grid filtrado único de arriba.
   const browseMode = activeCategory === null && !query.trim() && !activePriceRange && !deporte
-    && filterCategories.length === 0 && filterBrands.length === 0
+    && filterCategories.length === 0 && filterBrands.length === 0 && filterTallas.length === 0
 
   const ORPHAN_KEY = '__otros__'
 
@@ -1073,9 +1098,9 @@ export function CatalogoGrid({
             >
               <SlidersHorizontal size={14} aria-hidden="true" />
               Filtros
-              {(filterCategories.length + filterBrands.length + (activePriceRange ? 1 : 0)) > 0 && (
+              {(filterCategories.length + filterBrands.length + filterTallas.length + (activePriceRange ? 1 : 0)) > 0 && (
                 <span className={styles.catalogFiltrosBadge}>
-                  {filterCategories.length + filterBrands.length + (activePriceRange ? 1 : 0)}
+                  {filterCategories.length + filterBrands.length + filterTallas.length + (activePriceRange ? 1 : 0)}
                 </span>
               )}
             </button>
@@ -1399,7 +1424,7 @@ export function CatalogoGrid({
       )}
 
       {/* ── Chips de filtros aplicados — removibles, arriba del grid ── */}
-      {catalogMode === 'productos' && (filterCategories.length > 0 || filterBrands.length > 0 || activePriceRange) && (
+      {catalogMode === 'productos' && (filterCategories.length > 0 || filterBrands.length > 0 || filterTallas.length > 0 || activePriceRange) && (
         <div className={styles.filterChipsRow} role="group" aria-label="Filtros aplicados">
           {activePriceRange && (
             <button type="button" className={styles.filterChip} onClick={() => setActivePriceRange(null)}>
@@ -1429,10 +1454,21 @@ export function CatalogoGrid({
               <X size={12} aria-hidden="true" />
             </button>
           ))}
+          {filterTallas.map(t => (
+            <button
+              key={t}
+              type="button"
+              className={styles.filterChip}
+              onClick={() => setFilterTallas(prev => prev.filter(x => x !== t))}
+            >
+              Talla {t}
+              <X size={12} aria-hidden="true" />
+            </button>
+          ))}
           <button
             type="button"
             className={styles.filterChipsClear}
-            onClick={() => { setActivePriceRange(null); setFilterCategories([]); setFilterBrands([]) }}
+            onClick={() => { setActivePriceRange(null); setFilterCategories([]); setFilterBrands([]); setFilterTallas([]) }}
           >
             Limpiar todo
           </button>
@@ -1446,9 +1482,12 @@ export function CatalogoGrid({
         brands={brands}
         selectedCategories={filterCategories}
         selectedBrands={filterBrands}
+        tallaChips={tallaChips}
+        selectedTallas={filterTallas}
         priceRange={activePriceRange}
         onApply={(next) => {
-          if (next.categories.length > 0 || next.brands.length > 0) setQuery('')
+          if (next.categories.length > 0 || next.brands.length > 0 || next.tallas.length > 0) setQuery('')
+          setFilterTallas(next.tallas)
           setFilterCategories(next.categories)
           setFilterBrands(next.brands)
           setActivePriceRange(next.priceRange)

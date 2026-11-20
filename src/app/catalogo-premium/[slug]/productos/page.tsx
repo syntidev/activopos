@@ -15,7 +15,7 @@ import { readCobroEffective } from '@/lib/cobro-precios'
 
 interface PageProps {
   params: { slug: string }
-  searchParams: { categoria?: string; sub?: string; buscar?: string; marca?: string; deporte?: string }
+  searchParams: { categoria?: string; sub?: string; buscar?: string; marca?: string; deporte?: string; talla?: string | string[] }
 }
 
 function parseImages(raw: string | null): string[] {
@@ -243,6 +243,7 @@ export default async function CatalogoProductosPage({ params, searchParams }: Pa
         initialSub={searchParams.sub ?? null}
         initialQuery={searchParams.buscar ?? null}
         initialDeporte={searchParams.deporte ?? null}
+        initialTallas={[searchParams.talla ?? []].flat().map(t => t.slice(0, 12)).slice(0, 8)}
         initialBrandId={/^\d{1,9}$/.test(searchParams.marca ?? '') ? Number(searchParams.marca) : null}
       />
       <CatalogFooter

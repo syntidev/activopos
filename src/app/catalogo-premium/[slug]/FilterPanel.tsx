@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import type { CatalogBrand } from './CatalogoGrid'
+import type { ChipTalla } from './tallas'
 import styles from './catalogo.module.css'
 
 // Adaptación del patrón "Storefront Collection Filter" (shadcn.io) a nuestro
@@ -18,15 +19,19 @@ interface FilterPanelProps {
   brands:             CatalogBrand[]
   selectedCategories: string[]
   selectedBrands:     string[]
+  /** Chips de talla de la categoría activa (vacíos = la sección no se muestra). */
+  tallaChips:         { calzado: ChipTalla[]; ropa: ChipTalla[] }
+  selectedTallas:     string[]
   priceRange:         PriceRange | null
-  onApply: (next: { categories: string[]; brands: string[]; priceRange: PriceRange | null }) => void
+  onApply: (next: { categories: string[]; brands: string[]; tallas: string[]; priceRange: PriceRange | null }) => void
 }
 
 export function FilterPanel({
-  open, onClose, categories, brands, selectedCategories, selectedBrands, priceRange, onApply,
+  open, onClose, categories, brands, selectedCategories, selectedBrands, tallaChips, selectedTallas, priceRange, onApply,
 }: FilterPanelProps) {
   const [draftCategories, setDraftCategories] = useState<string[]>(selectedCategories)
   const [draftBrands,     setDraftBrands]     = useState<string[]>(selectedBrands)
+  const [draftTallas,     setDraftTallas]     = useState<string[]>(selectedTallas)
   const [draftMin,        setDraftMin]        = useState<string>(priceRange ? String(priceRange.min) : '')
   const [draftMax,        setDraftMax]        = useState<string>(priceRange ? String(priceRange.max) : '')
 
@@ -36,9 +41,10 @@ export function FilterPanel({
     if (!open) return
     setDraftCategories(selectedCategories)
     setDraftBrands(selectedBrands)
+    setDraftTallas(selectedTallas)
     setDraftMin(priceRange ? String(priceRange.min) : '')
     setDraftMax(priceRange ? String(priceRange.max) : '')
-  }, [open, selectedCategories, selectedBrands, priceRange])
+  }, [open, selectedCategories, selectedBrands, selectedTallas, priceRange])
 
   if (!open) return null
 
@@ -49,19 +55,24 @@ export function FilterPanel({
     setDraftBrands(prev => prev.includes(name) ? prev.filter(b => b !== name) : [...prev, name])
   }
 
+  const toggleTalla = (key: string) => {
+    setDraftTallas(prev => prev.includes(key) ? prev.filter(t => t !== key) : [...prev, key])
+  }
+
   const handleApply = () => {
     const min = parseFloat(draftMin)
     const max = parseFloat(draftMax)
     const nextPrice = !isNaN(min) && !isNaN(max) && max > min ? { min, max } : null
-    onApply({ categories: draftCategories, brands: draftBrands, priceRange: nextPrice })
+    onApply({ categories: draftCategories, brands: draftBrands, tallas: draftTallas, priceRange: nextPrice })
   }
 
   const handleClear = () => {
     setDraftCategories([])
     setDraftBrands([])
+    setDraftTallas([])
     setDraftMin('')
     setDraftMax('')
-    onApply({ categories: [], brands: [], priceRange: null })
+    onApply({ categories: [], brands: [], tallas: [], priceRange: null })
   }
 
   return (
@@ -102,6 +113,37 @@ export function FilterPanel({
               />
             </div>
           </section>
+
+          {(tallaChips.calzado.length > 0 || tallaChips.ropa.length > 0) && (
+            <section className={styles.filterSection} aria-labelledby="filtro-talla">
+              <h3 id="filtro-talla" className={styles.filterSectionTitle}>Talla</h3>
+              {[['Calzado (EU)', tallaChips.calzado], ['Ropa', tallaChips.ropa]].map(([titulo, chips]) => (
+                (chips as ChipTalla[]).length > 0 && (
+                  <div key={titulo as string} className={styles.tallaGroup}>
+                    {tallaChips.calzado.length > 0 && tallaChips.ropa.length > 0 && <span className={styles.tallaGroupLabel}>{titulo as string}</span>}
+                    <div className={styles.tallaChips}>
+                      {(chips as ChipTalla[]).map(c => {
+                        const on = draftTallas.includes(c.key)
+                        return (
+                          <button
+                            key={c.key}
+                            type="button"
+                            className={`${styles.tallaChip} ${on ? styles.tallaChipOn : ''}`}
+                            aria-pressed={on}
+                            onClick={() => toggleTalla(c.key)}
+                          >
+                            <span>{c.key}</span>
+                            {c.us && <span className={styles.tallaChipUs}>{c.us}</span>}
+                            <span className={styles.tallaChipCount}>{c.count}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              ))}
+            </section>
+          )}
 
           {brands.length > 0 && (
             <section className={styles.filterSection}>

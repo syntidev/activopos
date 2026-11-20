@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     })
     if (!business || !isCatalogLive(business)) return NextResponse.json({ error: 'Catálogo no encontrado' }, { status: 404 })
 
-    const where = productSearchWhere(parsed, readSynonyms(business.settings))
+    const where = productSearchWhere(parsed, readSynonyms(business.settings), { inStockOnly: true })
     if (!where) return NextResponse.json({ ok: true, q: '', results: [] })
 
     const products = await prisma.product.findMany({

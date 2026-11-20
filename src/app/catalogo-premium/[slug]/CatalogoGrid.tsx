@@ -31,6 +31,7 @@ import { capitalize, currencyVisibility, categoryBadgeColor, getConsultarWaUrl, 
 import { subcategoryChips, subcategoryKey } from '@/lib/subcategory'
 import { deportesDeProductos, parseDeportes, plano } from '@/lib/catalog-deportes'
 import { matchesWords, NO_SYNONYMS, type SynonymGroups } from '@/lib/search-synonyms'
+import { hasSizeQuery } from '@/lib/product-search'
 import { track, trackSearch } from '@/lib/pulso-client'
 import { DEFAULT_TRUST_STRIP, type TrustItem } from '@/lib/trust-strip'
 import { normalizePhone } from '@/lib/utils'
@@ -300,7 +301,7 @@ export function CatalogoGrid({
   const [serverHits, setServerHits] = useState<Map<number, { value: string | null }>>(() => new Map())
   useEffect(() => {
     const q = query.trim()
-    if (q.length < 3) { setServerHits(new Map()); return }
+    if (q.length < 3 && !hasSizeQuery(q)) { setServerHits(new Map()); return }
     const ctrl = new AbortController()
     const t = setTimeout(async () => {
       try {
@@ -490,7 +491,9 @@ export function CatalogoGrid({
 
     // Búsqueda por palabras: todas deben aparecer (en cualquier orden) en nombre + categoría + descripción.
     if (plano(query).trim()) {
-      result = result.filter(p => matchesWords(searchText.get(p.id) ?? '', query, searchSynonyms) || serverHits.has(p.id))
+      // Con talla ("XL", "talla 12,5") manda solo el servidor: el filtro local por substring traería "M" dentro de cualquier palabra.
+      const bySize = hasSizeQuery(query)
+      result = result.filter(p => serverHits.has(p.id) || (!bySize && matchesWords(searchText.get(p.id) ?? '', query, searchSynonyms)))
     }
 
     if (deporte) {

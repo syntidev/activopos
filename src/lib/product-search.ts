@@ -95,9 +95,10 @@ export function productSearchWhere(p: ParsedSearch, synonyms: SynonymGroups = []
       { barcode:     { contains: w } },
       { description: { contains: w } },   // "Ref: 11953H" vive en la descripción
       { variants:    { some: { is_active: true, sku: { contains: w } } } },
-      // Valor de la variante: un número solo cuenta como token exacto ("9" sí, "12" no trae 12.5); texto ("Arena") por contiene.
+      // Valor de la variante: un número suelto es talla (EU 34-50 en Venezuela, US ≤16): token exacto y, en el catálogo, con
+      // existencias ("45" no trae EU 45.5; "12" no trae 12.5). Texto ("Arena") por contiene.
       /^\d+$/.test(w)
-        ? { variants: { some: { is_active: true, OR: tokenClauses(w) } } }
+        ? sizeClause(w)
         : { variants: { some: { is_active: true, valor: { contains: w } } } },
     ],
   })

@@ -9,6 +9,7 @@ import { X, Plus, ImagePlus, Loader2, Layers, Globe, Star, Box, Scale, Wrench, B
 import { useScanner } from '@/hooks/useScanner'
 import { PRESET_GROUPS, categoryRequiresVariant } from '@/lib/variantPresets'
 import { suggestEquivalence } from '@/lib/size-guide'
+import { canonizarTalla, canonParaTipo, esTallaCanonica } from '@/lib/talla-canonica'
 import { CatalogUpgradeModal } from './CatalogUpgradeModal'
 import mStyles from './modals.module.css'
 import styles from './ProductModal.module.css'
@@ -528,9 +529,21 @@ export function ProductModal({
     setImages(prev => { const n = [...prev]; n[slot] = null; return n })
 
   /* ── Variant management ── */
+  // Talla canónica (lib/talla-canonica.ts): con el tipo Ropa o Calzado elegido, lo escrito se guarda canónico ("42" → "EU 42").
+  const canonOf = (raw: string) =>
+    selectedPresetGroup && raw
+      ? canonParaTipo({ id: selectedPresetGroup.startsWith('ropa-') ? 'ropa' : selectedPresetGroup, group: selectedPresetGroup }, raw)
+      : null
+  const canonNew = canonOf(newVarName.trim())
+  const canonDbVar = varFormTipo === 'talla' && varFormValor.trim() ? canonizarTalla(varFormValor.trim()) : null
+
   const addVariant = () => {
-    const name = newVarName.trim()
-    if (!name) return
+    const typed = newVarName.trim()
+    if (!typed) return
+    const canon = canonOf(typed)
+    if (canon && !esTallaCanonica(canon)) return
+    const name = canon ? canon.valor : typed
+    if (variants.some(v => v.name === name)) return
     setVariants(prev => [...prev, { name, price_extra_usd: parseFloat(newVarExtra) || 0, stock: parseInt(newVarStock, 10) || 0 }])
     setNewVarName(''); setNewVarExtra(''); setNewVarStock('0')
   }
@@ -538,10 +551,15 @@ export function ProductModal({
   const removeVariant = (idx: number) =>
     setVariants(prev => prev.filter((_, i) => i !== idx))
 
-  const addPreset = (name: string) => {
+  const presetName = (raw: string): string => {
+    const c = canonOf(raw)
+    return c && esTallaCanonica(c) ? c.valor : raw
+  }
+  const addPreset = (raw: string) => {
+    const name = presetName(raw)
     if (variants.some(v => v.name === name)) return
     const tipo = selectedPresetGroup === 'colores' ? 'color' : 'talla'
-    const suggestedSku = selectedPresetGroup ? suggestEquivalence(selectedPresetGroup, name) : null
+    const suggestedSku = selectedPresetGroup ? suggestEquivalence(selectedPresetGroup, raw) : null
     setVariants(prev => [...prev, {
       name, price_extra_usd: 0, stock: 0, tipo,
       variant_group: selectedPresetGroup,
@@ -562,10 +580,11 @@ export function ProductModal({
 
   const handleSaveVar = async () => {
     if (!editProduct?.id || !varFormValor.trim()) return
+    if (canonDbVar && !esTallaCanonica(canonDbVar)) return // el error ya se ve bajo el campo
     setVarFormSaving(true)
     try {
       const body = {
-        valor:        varFormValor.trim(),
+        valor:        canonDbVar && esTallaCanonica(canonDbVar) ? canonDbVar.valor : varFormValor.trim(),
         tipo:         varFormTipo,
         sku:          varFormSku.trim() || null,
         precio_extra: parseFloat(varFormExtra) || 0,
@@ -1509,7 +1528,7 @@ export function ProductModal({
                                 <button
                                   key={v}
                                   type="button"
-                                  className={`${styles.presetBtn} ${variants.some(va => va.name === v) ? styles.presetBtnActive : ''}`}
+                                  className={`${styles.presetBtn} ${variants.some(va => va.name === presetName(v)) ? styles.presetBtnActive : ''}`}
                                   onClick={() => addPreset(v)}
                                 >
                                   {v}
@@ -1585,6 +1604,12 @@ export function ProductModal({
                               <Plus size={15} aria-hidden="true" />
                             </button>
                           </div>
+                          {canonNew && esTallaCanonica(canonNew) && canonNew.valor !== newVarName.trim() && (
+                            <p className={styles.fixedPriceSub} role="status" data-testid="talla-canonica">Se guardará como: <strong>{canonNew.valor}</strong></p>
+                          )}
+                          {canonNew && !esTallaCanonica(canonNew) && (
+                            <p className={styles.variantMissingWarning} role="alert" data-testid="talla-canonica-error">{canonNew.error}</p>
+                          )}
                         </div>
                       )}
                     </>
@@ -1652,6 +1677,12 @@ export function ProductModal({
                               maxLength={80}
                               aria-label="Nombre de variante"
                             />
+                            {canonDbVar && esTallaCanonica(canonDbVar) && canonDbVar.valor !== varFormValor.trim() && (
+                              <p className={styles.fixedPriceSub} role="status" data-testid="talla-canonica-db">Se guardará como: <strong>{canonDbVar.valor}</strong></p>
+                            )}
+                            {canonDbVar && !esTallaCanonica(canonDbVar) && (
+                              <p className={styles.variantMissingWarning} role="alert" data-testid="talla-canonica-db-error">{canonDbVar.error}</p>
+                            )}
                             <input
                               type="text"
                               className={mStyles.input}
@@ -1697,7 +1728,7 @@ export function ProductModal({
                               type="button"
                               className={styles.dbVarSaveBtn}
                               onClick={() => void handleSaveVar()}
-                              disabled={varFormSaving || !varFormValor.trim()}
+                              disabled={varFormSaving || !varFormValor.trim() || (canonDbVar !== null && !esTallaCanonica(canonDbVar))}
                             >
                               {varFormSaving && <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} aria-hidden="true" />}
                               {editingVar ? 'Actualizar' : 'Guardar variante'}

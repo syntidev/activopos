@@ -14,12 +14,13 @@ const TAG = String(Date.now()).slice(-6).replace(/\d/g, d => 'abcdefghij'[Number
 const ZAP = `ZZ Zapato Canon ${TAG}`
 const CAMISA = `ZZ Camisa Canon ${TAG}`
 const EDIT = `ZZ Editor Canon ${TAG}`
+const REIMP = `ZZ Reimporta Canon ${TAG}`
 
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
 
 test.afterAll(() => {
-  for (const n of [ZAP, CAMISA, EDIT]) {
+  for (const n of [ZAP, CAMISA, EDIT, REIMP]) {
     const id = sql(`SELECT id FROM products WHERE business_id=${BID} AND name='${n}' LIMIT 1`)
     if (!id) continue
     sql(`DELETE FROM inventory_entries WHERE product_id=${id}`)
@@ -74,6 +75,23 @@ test('importador: canoniza tallas válidas y rechaza con error de fila claro las
   expect(valores(CAMISA)).toBe('talla:2XL | talla:M')
 })
 
+test('importador: reimportar con el valor viejo "US 9 · EU 42.5" no duplica la variante "EU 42.5 · US 9"', async ({ page }) => {
+  await login(page)
+  const subir = async (valor: string, stock: number): Promise<void> => {
+    const r = await page.request.post('/api/products/import-excel', {
+      multipart: {
+        file: { name: 'r.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: xlsx([[REIMP, 50, 20, stock, 'ZZ Canon', 'talla', valor]]) },
+        dry_run: 'false',
+      },
+    })
+    expect(r.status(), await r.text()).toBeLessThan(300)
+  }
+  await subir('EU 42.5 · US 9', 3)
+  await subir('US 9 · EU 42.5', 7) // el Excel viejo: mismo calzado, otro orden
+  expect(valores(REIMP)).toBe('talla:EU 42.5 · US 9')
+  expect(sql(`SELECT SUM(v.stock) FROM product_variants v JOIN products p ON p.id=v.product_id WHERE p.business_id=${BID} AND p.name='${REIMP}'`)).toBe('7')
+})
+
 test('editor: la talla escrita se muestra canónica antes de guardar y se guarda canónica', async ({ page }) => {
   await login(page)
   await page.goto('/productos/nuevo')
@@ -88,6 +106,7 @@ test('editor: la talla escrita se muestra canónica antes de guardar y se guarda
   await campo.fill('42,5')
   await expect(page.getByTestId('talla-canonica')).toContainText('EU 42.5')
   await page.getByRole('button', { name: 'Agregar' }).click()
+  await expect(page.getByRole('button', { name: /^45\.5(\s|$)/ })).toBeVisible() // medias tallas en los presets
   await page.getByRole('button', { name: /^45(\s|$)/ }).click() // chip del preset: se guarda "EU 45"
   await campo.fill('M9 / W10.5')
   await expect(page.getByTestId('talla-canonica-error')).toContainText('sin EU')

@@ -6,9 +6,14 @@ import type { SizeType } from '@/types/variantForm'
 // duplicados y el de ProductModal quedó desactualizado (5 grupos viejos,
 // sin variant_group) — ver commit c5532e2.
 
+// Calzado EU con medias tallas ("42", "42.5", "43"…). La guía de tallas (size-guide.ts) no se toca: una media talla sin entrada
+// solo muestra el chip sin equivalente US. En el editor el valor se guarda canónico ("EU 42.5", lib/talla-canonica.ts).
+const conMedias = (desde: number, hasta: number): string[] =>
+  Array.from({ length: (hasta - desde) * 2 + 1 }, (_, i) => String(desde + i / 2))
+
 export const PRESET_GROUPS = [
-  { id: 'zap-dama',       label: 'Zapato Dama',      values: ['35','36','37','38','39','40','41','42'] },
-  { id: 'zap-caballero',  label: 'Zapato Caballero', values: ['39','40','41','42','43','44','45','46','47','48','49','50','51'] },
+  { id: 'zap-dama',       label: 'Zapato Dama',      values: conMedias(35, 42) },
+  { id: 'zap-caballero',  label: 'Zapato Caballero', values: [...conMedias(39, 49), '50', '51'] },
   { id: 'zap-nino',       label: 'Zapato Niño',      values: ['28','29','30','31','32','33','34','35','36','37','38'] },
   { id: 'zap-nina',       label: 'Zapato Niña',      values: ['28','29','30','31','32','33','34','35','36','37','38'] },
   { id: 'ropa-dama',      label: 'Ropa Dama',        values: ['XS','S','M','L','XL','2XL'] },

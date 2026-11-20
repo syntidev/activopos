@@ -21,7 +21,9 @@ export const VALID_SALE_MODES = ['unit', 'weight', 'service', 'length', 'volume'
 export type SaleModeLiteral = typeof VALID_SALE_MODES[number]
 
 // Mismo conjunto que acepta POST /api/products/[id]/variants (Zod).
-export const VARIANT_TIPOS = ['talla', 'color', 'personalizado'] as const
+import { canonizarTalla, esTallaCanonica } from './talla-canonica'
+
+export const VARIANT_TIPOS =['talla', 'color', 'personalizado'] as const
 export type VariantTipo = typeof VARIANT_TIPOS[number]
 
 export interface ImportRow {
@@ -124,6 +126,7 @@ export interface ImportPlan {
 }
 
 const norm = (s: string): string => s.trim().toLowerCase()
+
 
 function sameScalar(field: string, a: Scalar, b: Scalar): boolean {
   if (a === null || b === null) return a === b
@@ -272,7 +275,11 @@ export function planImport(
           continue
         }
         seenVariants.add(vk)
-        const found = product?.variants.find(v => v.tipo === tipo && norm(v.valor) === norm(valor)) ?? null
+        // Se empareja por valor CANÓNICO: reimportar un Excel viejo ("US 9 · EU 42.5") encuentra la variante "EU 42.5 · US 9"
+        // en vez de duplicarla. Una variante vieja 'personalizado' que ES una talla también cuenta como talla.
+        const key = (s: string): string => { const c = canonizarTalla(s); return norm(esTallaCanonica(c) ? c.valor : s) }
+        const found = product?.variants.find(v =>
+          (v.tipo === tipo || (tipo === 'talla' && v.tipo === 'personalizado')) && (tipo === 'color' ? norm(v.valor) === norm(valor) : key(v.valor) === key(valor))) ?? null
 
         // Barcode de la variante: único en el archivo y en el negocio (productos y variantes). Si choca,
         // esa fila se rechaza con su motivo; las demás siguen.

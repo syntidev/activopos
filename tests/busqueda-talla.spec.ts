@@ -10,7 +10,8 @@ import { ownBusiness } from './helpers/own-business'
  */
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3001'
 const { businessId: BID, adminId: ADMIN, slug: SLUG } = ownBusiness()
-const TAG = String(Date.now()).slice(-6)
+// Solo letras: un número en el nombre ("45") haría coincidir el producto por nombre y falsearía los casos.
+const TAG = String(Date.now()).slice(-6).replace(/\d/g, d => 'abcdefghij'[Number(d)])
 const ZAPATO = `ZZ Tenis Ruta ${TAG}`
 const MAILLOT = `ZZ Maillot Ruta ${TAG}`
 
@@ -39,7 +40,7 @@ async function sembrar(request: APIRequestContext, name: string, variants: Array
 
 test.beforeAll(async ({ playwright }) => {
   const request = await playwright.request.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${await token()}` } })
-  ids.zapato = await sembrar(request, ZAPATO, [{ valor: 'US 9 · EU 42.5', stock: 3 }, { valor: 'US 12.5 · EU 47', stock: 2 }])
+  ids.zapato = await sembrar(request, ZAPATO, [{ valor: 'US 9 · EU 42.5', stock: 3 }, { valor: 'US 12.5 · EU 47', stock: 2 }, { valor: 'US 11.5 · EU 45', stock: 1 }, { valor: 'US 13 · EU 46', stock: 0 }])
   ids.maillot = await sembrar(request, MAILLOT, [{ valor: 'S', stock: 4 }, { valor: 'M', stock: 4 }, { valor: 'XL', stock: 0 }])
   await request.dispose()
 })
@@ -65,6 +66,12 @@ const casos: Array<[string, Ctx, string[]]> = [
   ['XL', 'pos', ['maillot']],
   ['L', 'pos', []],
   ['tenis 9', 'catalogo', ['zapato']],
+  // Talla EU (uso venezolano): número suelto 34-50 = EU, token exacto, con stock en el catálogo
+  ['45', 'catalogo', ['zapato']],
+  ['talla 47', 'catalogo', ['zapato']],
+  ['46', 'catalogo', []],
+  ['46', 'pos', ['zapato']],
+  ['42', 'catalogo', []],
 ]
 
 for (const [q, ctx, esperado] of casos) {

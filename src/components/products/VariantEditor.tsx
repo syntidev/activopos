@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Camera, Check, Plus, Trash2 } from 'lucide-react'
 import { SIZE_TYPES } from '@/lib/variantPresets'
 import { sizeInfo } from '@/lib/size-guide'
+import { canonParaTipo, esTallaCanonica, euDe } from '@/lib/talla-canonica'
 import type { useProductForm } from '@/hooks/useProductForm'
 import type { SizeType, VariantRow } from '@/types/variantForm'
 import s from './VariantEditor.module.css'
@@ -17,7 +18,7 @@ interface VariantEditorProps {
 /** "US 8.5 · 26.5 cm" para calzado; null si la talla no tiene dato publicado. */
 function equivalenceText(row: VariantRow): string | null {
   if (!row.group || !row.group.startsWith('zap-')) return null
-  const info = sizeInfo(row.group, row.valor)
+  const info = sizeInfo(row.group, euDe(row.valor) ?? row.valor)
   if (!info) return null
   return `US ${info.equivalent}${info.cm != null ? ` · ${info.cm} cm` : ''}`
 }
@@ -34,6 +35,13 @@ export function VariantEditor({ f }: VariantEditorProps) {
   const isService = f.saleMode === 'service'
   const type: SizeType | null = SIZE_TYPES.find(t => t.id === (isService ? 'personalizada' : f.sizeTypeId)) ?? null
   const taken = new Set(f.rows.map(r => r.valor.toLowerCase()))
+  // Talla canónica (lib/talla-canonica.ts): lo escrito se muestra tal como se va a guardar, y un error se ve antes de intentar agregar.
+  const typed = extra.trim()
+  const canon = type && typed ? canonParaTipo(type, typed) : null
+  const canonChip = (v: string): string => {
+    const c = type ? canonParaTipo(type, v) : null
+    return c && esTallaCanonica(c) ? c.valor : v
+  }
   const basePrice = f.computed.displayPrice
   const productDivisa = parseFloat(f.wholesalePriceUsd) || 0
   const money = (n: number) => `$${n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -74,7 +82,7 @@ export function VariantEditor({ f }: VariantEditorProps) {
           {!type.custom && (
             <div className={s.chips}>
               {type.values.map(v => {
-                const on = taken.has(v.toLowerCase())
+                const on = taken.has(v.toLowerCase()) || taken.has(canonChip(v).toLowerCase())
                 const eq = type.group?.startsWith('zap-') ? sizeInfo(type.group, v) : null
                 return (
                   <button
@@ -108,11 +116,17 @@ export function VariantEditor({ f }: VariantEditorProps) {
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addExtra() } }}
               />
             </label>
-            <button type="button" className={s.addBtn} onClick={addExtra} disabled={!extra.trim()}>
+            <button type="button" className={s.addBtn} onClick={addExtra} disabled={!typed || (canon !== null && !esTallaCanonica(canon))}>
               <Plus size={16} aria-hidden="true" />
               Agregar
             </button>
           </div>
+          {canon && esTallaCanonica(canon) && canon.valor !== typed && (
+            <p className={s.help} role="status" data-testid="talla-canonica">Se guardará como: <strong>{canon.valor}</strong></p>
+          )}
+          {canon && !esTallaCanonica(canon) && (
+            <p className={s.error} role="alert" data-testid="talla-canonica-error">{canon.error}</p>
+          )}
         </section>
       )}
 

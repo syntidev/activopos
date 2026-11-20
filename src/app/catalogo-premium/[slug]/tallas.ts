@@ -1,4 +1,5 @@
 import { valueHasToken } from '@/lib/product-search'
+import { euDe, usDe } from '@/lib/talla-canonica'
 
 /**
  * Filtro de TALLA del catálogo premium. Un chip es "EU 42.5" (calzado) o "XL" (ropa).
@@ -18,25 +19,7 @@ export interface ChipTalla {
   count: number
 }
 
-const EU = /\bEU\s*(\d{2}(?:[.,]\d)?)/i
-const US = /\bUS\s*(\d{1,2}(?:[.,]\d)?)/i
-const SOLO_NUM = /^(\d{2}(?:[.,]\d)?)$/
-const punto = (n: string): string => n.replace(',', '.')
-
 const esTalla = (v: VarianteTalla): boolean => v.tipo.toLowerCase().startsWith('talla')
-
-/** Talla de calzado EU de un valor: "US 9 · EU 42.5" → "42.5"; "42" → "42". Ropa/otros → null. */
-function euDe(valor: string): string | null {
-  const m = EU.exec(valor)
-  if (m) return punto(m[1])
-  const s = SOLO_NUM.exec(valor.trim())
-  return s ? punto(s[1]) : null
-}
-
-const usDe = (valor: string): string | null => {
-  const m = US.exec(valor)
-  return m ? `US ${punto(m[1])}` : null
-}
 
 const ropaDe = (valor: string): string | null => ROPA_ORDEN.find(l => valueHasToken(valor, l)) ?? null
 

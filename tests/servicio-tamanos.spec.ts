@@ -97,7 +97,7 @@ for (const [i, template] of PLANTILLAS.entries()) {
     await rowOf(page, '200gr').getByLabel('Precio Full propio de la talla 200gr').fill('9')
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
     await page.waitForURL('**/productos')
-    expect(variantsOf(id)).toBe(['100gr\t5.00\t4.00\t1', '200gr\t9.00\t7.00\t1', '300gr\t11.00\t10.00\t1'].join('\n'))
+    await expect.poll(() => variantsOf(id), { timeout: 15_000 }).toBe(['100gr\t5.00\t4.00\t1', '200gr\t9.00\t7.00\t1', '300gr\t11.00\t10.00\t1'].join('\n'))
     expect(sql(`SELECT has_variants FROM products WHERE id=${id}`)).toBe('1')
 
     // ── Cobro en POS: el tamaño elegido manda el precio; stock 0 no lo bloquea ──
@@ -122,7 +122,7 @@ for (const [i, template] of PLANTILLAS.entries()) {
     await rowOf(page, '300gr').getByRole('button', { name: 'Quitar tamaño 300gr' }).click()
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
     await page.waitForURL('**/productos')
-    expect(variantsOf(id)).toBe(['100gr\t5.00\t4.00\t1', '200gr\t9.00\t7.00\t1', '300gr\t11.00\t10.00\t0'].join('\n'))
+    await expect.poll(() => variantsOf(id), { timeout: 15_000 }).toBe(['100gr\t5.00\t4.00\t1', '200gr\t9.00\t7.00\t1', '300gr\t11.00\t10.00\t0'].join('\n'))
     await page.goto(`/productos/${id}/editar`)
     await page.getByRole('tab', { name: 'Inventario y variantes' }).click()
     await expect(rowOf(page, '200gr')).toBeVisible()

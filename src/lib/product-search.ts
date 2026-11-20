@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import { expandWord, type SynonymGroups } from '@/lib/search-synonyms'
+import { SIZE_LETTERS as CANON_LETTERS } from '@/lib/talla-canonica'
 
 /**
  * Búsqueda ÚNICA de productos (Productos, POS cámara/texto/pistola, catálogo público y Alta rápida).
@@ -16,7 +17,8 @@ export const SEARCH_MAX_WORDS = 5
 /** Un barcode exacto necesita señal suficiente: con menos de 4 caracteres solo se busca por texto. */
 export const MIN_CODE_CHARS = 4
 
-const SIZE_LETTERS = new Set(['xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', '2xl', '3xl', '4xl'])
+// Letras de ropa: las de la talla canónica + el alias que la gente escribe ("xxl")
+const SIZE_LETTERS = new Set(Array.from(CANON_LETTERS).concat('xxl'))
 const SIZE_NUM = /^\d{1,2}(?:[.,]\d)?$/
 const SIZE_DECIMAL = /^\d{1,2}[.,]\d$/
 /** Separadores entre tokens de un valor de variante: "US 9 · EU 42.5", "S/M", "M-Azul". */

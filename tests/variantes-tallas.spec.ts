@@ -110,7 +110,7 @@ test('calzado hombre: 4 tallas con equivalencia US/cm y mismo stock para todas',
   await page.getByRole('button', { name: /^Calzado hombre/ }).click()
   await expect(page.getByRole('button', { name: /^42\s*US 8\.5$/ })).toBeVisible()
   for (const t of ['40', '41', '42', '43']) await page.getByRole('button', { name: new RegExp(`^${t}\\s*US`) }).click()
-  await expect(rowOf(page, '42').getByText('US 8.5 · 26.5 cm')).toBeVisible()
+  await expect(rowOf(page, 'EU 42').getByText('US 8.5 · 26.5 cm')).toBeVisible()
 
   await page.getByLabel('Mismo stock para todas').fill('5')
   await page.getByRole('button', { name: 'Aplicar a todas' }).click()

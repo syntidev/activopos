@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useScanner } from '@/hooks/useScanner'
 import type { VariantRow, SizeType } from '@/types/variantForm'
 import { sizeTypeForGroup } from '@/lib/variantPresets'
+import { canonParaTipo, esTallaCanonica } from '@/lib/talla-canonica'
 import type {
   ProductFormData,
   EditableProduct,
@@ -439,8 +440,12 @@ export function useProductForm({ editProduct, hasCatalogPlan = false, onSave }: 
 
   /** Paso 2: tocar una talla la agrega como fila. Si ya está, no hace nada. */
   const addSize = (type: SizeType, valor: string) => {
-    const v = valor.trim()
-    if (!v) return false
+    const typed = valor.trim()
+    if (!typed) return false
+    // Ropa y calzado guardan la talla canónica ("42" → "EU 42", "xxl" → "2XL"); una talla irreconocible no se agrega.
+    const canon = canonParaTipo(type, typed)
+    if (canon && !esTallaCanonica(canon)) return false
+    const v = canon ? canon.valor : typed
     if (rows.some(r => r.valor.toLowerCase() === v.toLowerCase())) return false
     setRows(prev => [...prev, {
       key: newKey(), valor: v, tipo: type.tipo, group: type.group,

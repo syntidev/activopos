@@ -5,6 +5,7 @@ import type { SessionPayload } from '@/lib/auth'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import * as XLSX from 'xlsx'
 import { revalidateCatalogCache } from '@/lib/catalog'
+import { canonizarTalla, esTallaCanonica } from '@/lib/talla-canonica'
 import { releaseInactiveCategoryName } from '@/lib/categories'
 import {
   VALID_PRODUCT_TYPES, VALID_SALE_MODES, VARIANT_TIPOS, planImport, summarizePlan,
@@ -155,7 +156,7 @@ function validateRow(
 
   // Variante: el mismo producto en varias filas, una por talla/color. `stock`
   // de una fila de variante es el de ESA variante (ProductVariant.stock es Int).
-  const variantValor = toString(raw['variante_valor'] ?? '') || null
+  let variantValor = toString(raw['variante_valor'] ?? '') || null
   const variantTipoRaw = toString(raw['variante_tipo'] ?? '').toLowerCase()
   if (variantValor === null && variantTipoRaw !== '') {
     return { error: { row: rowNum, message: '"variante_tipo" sin "variante_valor" — escribe la talla/color o borra el tipo' } }
@@ -163,9 +164,16 @@ function validateRow(
   if (variantValor !== null && variantValor.length > 50) {
     return { error: { row: rowNum, message: '"variante_valor" supera 50 caracteres' } }
   }
-  const variantTipo = variantValor === null ? null : (variantTipoRaw || 'talla')
+  let variantTipo = variantValor === null ? null : (variantTipoRaw || 'talla')
   if (variantTipo !== null && !VARIANT_TIPOS.includes(variantTipo as VariantTipo)) {
     return { error: { row: rowNum, message: `"variante_tipo" inválido — usa: ${VARIANT_TIPOS.join(', ')}` } }
+  }
+  // Talla canónica (lib/talla-canonica.ts): con tipo 'talla' una talla irreconocible es error de fila y no se crea; con tipo vacío o
+  // 'personalizado' solo se canoniza si el valor ES una talla ("TALLA M" personalizado → "M" talla); un color no se toca.
+  if (variantValor !== null && variantTipo !== 'color') {
+    const c = canonizarTalla(variantValor)
+    if (esTallaCanonica(c)) { variantValor = c.valor; variantTipo = 'talla' }
+    else if (variantTipoRaw === 'talla') return { error: { row: rowNum, message: c.error } }
   }
   if (variantValor !== null && !Number.isInteger(stock)) {
     return { error: { row: rowNum, message: '"stock" de una variante debe ser un entero' } }

@@ -10,6 +10,7 @@ const BIZ = 217
 const SLUG = 'zzb-pruebas'
 const CALZADO = 'ZZB Calzado'
 const ROPA = 'ZZB Ropa'
+const HOKA = 'ZZB Hoka'
 
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] }, viewport: { width: 390, height: 844 } })
 test.describe.configure({ mode: 'serial', timeout: 120_000 })
@@ -20,7 +21,7 @@ function limpiar(): void {
   sql(`DELETE FROM product_variants WHERE product_id IN (SELECT id FROM products WHERE business_id=${BIZ} AND name LIKE 'ZZB T%')`)
   sql(`DELETE FROM products WHERE business_id=${BIZ} AND name LIKE 'ZZB T%'`)
   sql(`DELETE FROM brands WHERE business_id=${BIZ} AND name LIKE 'ZZB Marca%'`)
-  sql(`DELETE FROM categories WHERE business_id=${BIZ} AND name IN ('${CALZADO}','${ROPA}')`)
+  sql(`DELETE FROM categories WHERE business_id=${BIZ} AND name IN ('${CALZADO}','${ROPA}','${HOKA}')`)
 }
 
 const id = (q: string): number => Number(sql(q))
@@ -37,7 +38,7 @@ test.beforeAll(() => {
   limpiar()
   plantilla = sql(`SELECT catalog_template FROM businesses WHERE id=${BIZ}`)
   sql(`UPDATE businesses SET catalog_template='premium' WHERE id=${BIZ}`)
-  sql(`INSERT INTO categories (business_id, name) VALUES (${BIZ}, '${CALZADO}'), (${BIZ}, '${ROPA}')`)
+  sql(`INSERT INTO categories (business_id, name) VALUES (${BIZ}, '${CALZADO}'), (${BIZ}, '${ROPA}'), (${BIZ}, '${HOKA}')`)
   sql(`INSERT INTO brands (business_id, name, search_term) VALUES (${BIZ}, 'ZZB Marca A', 'zzb a'), (${BIZ}, 'ZZB Marca B', 'zzb b')`)
   const cal = id(`SELECT id FROM categories WHERE business_id=${BIZ} AND name='${CALZADO}'`)
   const rop = id(`SELECT id FROM categories WHERE business_id=${BIZ} AND name='${ROPA}'`)
@@ -46,7 +47,10 @@ test.beforeAll(() => {
   producto('ZZB Tenis Ruta',   cal, a, [['US 9 · EU 42', 2], ['US 9.5 · EU 42.5', 3], ['US 11 · EU 45', 4], ['US 12 · EU 46', 0]])
   producto('ZZB Tenis Trail',  cal, b, [['US 10 · EU 43', 2], ['US 11 · EU 45', 5]])
   producto('ZZB Tenis Pista',  cal, b, [['US 11.5 · EU 45.5', 1]])
-  producto('ZZB Tfranela',     rop, a, [['S', 0], ['M', 3], ['L', 2], ['XL', 4], ['2XL', 1]])
+  const hok = id(`SELECT id FROM categories WHERE business_id=${BIZ} AND name='${HOKA}'`)
+  // Hoka usa tercios (valores reales del negocio 33): cada uno es su propia talla
+  producto('ZZB Tmaraton Hoka',  hok, a, [['EU 41 1/3 · US 8', 2], ['EU 42 · US 8.5', 2], ['EU 42 2/3 · US 9', 3], ['EU 44 2/3 · US 10.5', 1], ['EU 45 1/3 · US 11', 0]])
+  producto('ZZB Tfranela',    rop, a, [['S', 0], ['M', 3], ['L', 2], ['XL', 4], ['2XL', 1]])
   producto('ZZB Tpantaloneta', rop, b, [['XL', 2], ['3XL', 1]])
 })
 
@@ -83,6 +87,19 @@ test('calzado: chips EU numéricos con US y conteo, solo con stock; EU 45 no tra
   await expect(total(page)).toHaveText('2 productos')
   await expect(page.getByText('ZZB Tenis Pista', { exact: true })).toHaveCount(0)
   await expect(page).toHaveURL(/talla=EU\+45/)
+})
+
+test('tercios (Hoka): "EU 42 2/3" es su propio chip, en orden; EU 42 no lo trae', async ({ page }) => {
+  await abrirPanel(page, ruta(HOKA))
+  // EU 45 1/3 sin stock no aparece; 41 1/3 < 42 < 42 2/3 < 44 2/3
+  expect(await nombres(page, /^EU /)).toEqual(['EU 41 1/3', 'EU 42', 'EU 42 2/3', 'EU 44 2/3'])
+  await expect(chip(page, 'EU 42 2/3')).toContainText('US 9')
+
+  await chip(page, 'EU 42 2/3').click()
+  await aplicar(page)
+  await expect(total(page)).toHaveText('1 producto')
+  await expect(page).toHaveURL(/talla=EU\+42\+2%2F3/)
+
 })
 
 test('multi-selección = OR entre tallas, AND con marca; la URL y "atrás" lo reflejan', async ({ page }) => {

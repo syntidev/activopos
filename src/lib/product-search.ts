@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import { expandWord, type SynonymGroups } from '@/lib/search-synonyms'
-import { SIZE_LETTERS as CANON_LETTERS } from '@/lib/talla-canonica'
+import { SIZE_LETTERS as CANON_LETTERS, pegarTercios } from '@/lib/talla-canonica'
 
 /**
  * Búsqueda ÚNICA de productos (Productos, POS cámara/texto/pistola, catálogo público y Alta rápida).
@@ -21,6 +21,7 @@ export const MIN_CODE_CHARS = 4
 const SIZE_LETTERS = new Set(Array.from(CANON_LETTERS).concat('xxl'))
 const SIZE_NUM = /^\d{1,2}(?:[.,]\d)?$/
 const SIZE_DECIMAL = /^\d{1,2}[.,]\d$/
+const TERCIO = /^[12]\/3$/
 /** Separadores entre tokens de un valor de variante: "US 9 · EU 42.5", "S/M", "M-Azul". */
 const DELIMS = [' ', '·', '/', '-'] as const
 
@@ -39,10 +40,16 @@ function extractSizes(tokens: string[]): { sizes: string[]; rest: string[] } {
   const sizes: string[] = []
   const rest: string[] = []
   const num = (t: string): string => t.replace(',', '.')
+  const tercio = (j: number): string | null => (tokens[j + 1] !== undefined && TERCIO.test(tokens[j + 1]) ? ` ${tokens[j + 1]}` : null)
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i].toLowerCase()
     const next = tokens[i + 1]
     const nextOk = next !== undefined && (SIZE_NUM.test(next) || SIZE_LETTERS.has(next.toLowerCase()))
+    // "eu 42 2/3" / "talla 42 2/3": el entero seguido de 1/3 o 2/3 es UNA talla
+    if ((t === 'talla' || t === 't.' || t === 'us' || t === 'eu' || t === 'uk') && next !== undefined && /^\d{1,2}$/.test(next) && tercio(i + 1)) {
+      sizes.push(next + tercio(i + 1)); i += 2; continue
+    }
+    if (/^\d{1,2}$/.test(t) && tercio(i)) { sizes.push(t + tercio(i)); i++; continue }
     if ((t === 'talla' || t === 't.') && nextOk) { sizes.push(num(next).toUpperCase()); i++; continue }
     if ((t === 'us' || t === 'eu' || t === 'uk') && next !== undefined && SIZE_NUM.test(next)) { sizes.push(num(next)); i++; continue }
     if (SIZE_DECIMAL.test(t)) { sizes.push(num(t)); continue }
@@ -79,7 +86,8 @@ const tokenClauses = (x: string): Prisma.ProductVariantWhereInput[] => [
 ]
 
 export function valueHasToken(valor: string, size: string): boolean {
-  return valor.toLowerCase().split(/[\s·/-]+/).includes(size.toLowerCase())
+  // "EU 42 2/3" es UN token ("42~2t"): la búsqueda "42" no lo trae, igual que no trae 42.5.
+  return pegarTercios(valor).toLowerCase().split(/[\s·/-]+/).includes(pegarTercios(size).toLowerCase())
 }
 
 export interface SearchOptions {
@@ -105,8 +113,12 @@ export function productSearchWhere(p: ParsedSearch, synonyms: SynonymGroups = []
     ],
   })
   const sizeClause = (x: string): Prisma.ProductWhereInput => {
+    // Un entero no trae el tercio que lo sigue ("42" ≠ "42 2/3"; "2" ≠ el "2/3" de "EU 42 2/3"), igual que valueHasToken.
+    const sinTercio: Prisma.ProductVariantWhereInput[] = /^\d+$/.test(x)
+      ? [`${x} 1/3`, `${x} 2/3`, ...(x === '1' || x === '2' ? [` ${x}/3`] : [])].map(t => ({ valor: { contains: t } }))
+      : []
     const some = (extra: Prisma.ProductVariantWhereInput): Prisma.ProductWhereInput =>
-      ({ variants: { some: { is_active: true, OR: tokenClauses(x), ...extra } } })
+      ({ variants: { some: { is_active: true, OR: tokenClauses(x), NOT: sinTercio, ...extra } } })
     return opts.inStockOnly ? { OR: [some({ stock: { gt: 0 } }), { sale_mode: 'service', ...some({}) }] } : some({})
   }
   // Con sinónimos, la palabra se cumple por cualquier término de su grupo; sin grupos expandWord devuelve [w] (+ normaliza).

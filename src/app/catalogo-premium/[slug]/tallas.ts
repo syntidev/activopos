@@ -1,5 +1,5 @@
 import { valueHasToken } from '@/lib/product-search'
-import { euDe, usDe } from '@/lib/talla-canonica'
+import { euDe, numeroTalla, usDe } from '@/lib/talla-canonica'
 
 /**
  * Filtro de TALLA del catálogo premium. Un chip es "EU 42.5" (calzado) o "XL" (ropa).
@@ -58,7 +58,7 @@ export function chipsDeTallas(products: ProductoTalla[]): { calzado: ChipTalla[]
   const entradas = Array.from(por.entries())
   const orden = (k: string): number => ROPA_ORDEN.indexOf(k as typeof ROPA_ORDEN[number])
   return {
-    calzado: entradas.filter(([k]) => k.startsWith('EU ')).map(chip).sort((a, b) => Number(a.key.slice(3)) - Number(b.key.slice(3))),
+    calzado: entradas.filter(([k]) => k.startsWith('EU ')).map(chip).sort((a, b) => numeroTalla(a.key.slice(3)) - numeroTalla(b.key.slice(3))),
     ropa:    entradas.filter(([k]) => !k.startsWith('EU ')).map(chip).sort((a, b) => orden(a.key) - orden(b.key)),
   }
 }

@@ -40,7 +40,7 @@ async function sembrar(request: APIRequestContext, name: string, variants: Array
 
 test.beforeAll(async ({ playwright }) => {
   const request = await playwright.request.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${await token()}` } })
-  ids.zapato = await sembrar(request, ZAPATO, [{ valor: 'US 9 · EU 42.5', stock: 3 }, { valor: 'US 12.5 · EU 47', stock: 2 }, { valor: 'US 11.5 · EU 45', stock: 1 }, { valor: 'US 13 · EU 46', stock: 0 }])
+  ids.zapato = await sembrar(request, ZAPATO, [{ valor: 'US 9 · EU 42.5', stock: 3 }, { valor: 'US 12.5 · EU 47', stock: 2 }, { valor: 'US 11.5 · EU 45', stock: 1 }, { valor: 'US 13 · EU 46', stock: 0 }, { valor: 'EU 42 2/3 · US 9', stock: 2 }])
   ids.maillot = await sembrar(request, MAILLOT, [{ valor: 'S', stock: 4 }, { valor: 'M', stock: 4 }, { valor: 'XL', stock: 0 }])
   await request.dispose()
 })
@@ -72,6 +72,11 @@ const casos: Array<[string, Ctx, string[]]> = [
   ['46', 'catalogo', []],
   ['46', 'pos', ['zapato']],
   ['42', 'catalogo', []],
+  // Tercios (Hoka): "EU 42 2/3" es su propio token; 42 y 2 no lo traen
+  ['eu 42 2/3', 'catalogo', ['zapato']],
+  ['42 2/3', 'catalogo', ['zapato']],
+  ['talla 42 2/3', 'pos', ['zapato']],
+  ['2', 'catalogo', []],
 ]
 
 for (const [q, ctx, esperado] of casos) {

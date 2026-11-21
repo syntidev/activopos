@@ -26,22 +26,36 @@ export const SIZE_LETTERS: ReadonlySet<string> = new Set(ROPA_TALLAS.map(t => t.
 const ALIAS_ROPA: Record<string, string> = { XXL: '2XL', XXXL: '3XL', XXXXL: '4XL', '2X': '2XL', '3X': '3XL', '4X': '4XL' }
 const UNICA = new Set(['UNICA', 'ÚNICA', 'UNICO', 'ÚNICO', 'U', 'UNICA TALLA', 'TALLA UNICA', 'ONE SIZE', 'OS'])
 
-const NUM = String.raw`\d{1,2}(?:[.,]\d)?`
+// Calzado con tercios (Hoka: "EU 41 1/3", "EU 42 2/3"): la fracción se conserva tal cual, no se redondea.
+const NUM = String.raw`\d{1,2}(?:[.,]\d|\s+[12]/3)?`
 const EU = new RegExp(String.raw`\bEU\s*(${NUM})(?!\d)`, 'i')
 const US = new RegExp(String.raw`\bUS\s*(${NUM})(?!\d)`, 'i')
 const MEN = new RegExp(String.raw`\bM\s*(${NUM})(?!\d)`, 'i')
 const WOMEN = new RegExp(String.raw`\bW\s*(${NUM})(?!\d)`, 'i')
 
 const punto = (n: string): string => n.replace(',', '.')
-/** "45.0" → "45"; "42.5" → "42.5". */
-const limpio = (n: string): string => String(Number(punto(n)))
+const TERCIO = /^(\d{1,2})\s+([12])\/3$/
+/** "45.0" → "45"; "42.5" → "42.5"; "41  1/3" → "41 1/3". */
+const limpio = (n: string): string => {
+  const t = TERCIO.exec(n.trim())
+  return t ? `${t[1]} ${t[2]}/3` : String(Number(punto(n)))
+}
 
-/** "EU 42.5" → "42.5"; "42" → "42"; ropa u otros → null. Para el filtro de talla del catálogo. */
+/** Valor numérico de una talla ("42.5" → 42.5, "41 1/3" → 41.33…): rangos y orden de chips. */
+export function numeroTalla(txt: string): number {
+  const t = TERCIO.exec(txt.trim())
+  return t ? Number(t[1]) + Number(t[2]) / 3 : Number(punto(txt))
+}
+
+/** Pega la fracción a su entero ("42 2/3" → "42~2t") para tratar la talla como UN token al partir por espacios y "/". */
+export const pegarTercios = (s: string): string => s.replace(/(\d)\s+([12])\/3/g, '$1~$2t')
+
+/** "EU 42.5" → "42.5"; "EU 42 2/3" → "42 2/3"; "42" → "42"; ropa u otros → null. Para el filtro de talla del catálogo. */
 export function euDe(valor: string): string | null {
   const m = EU.exec(valor)
-  if (m) return punto(m[1])
-  const s = /^\s*(\d{2}(?:[.,]\d)?)\s*$/.exec(valor)
-  return s ? punto(s[1]) : null
+  if (m) return limpio(m[1])
+  const s = /^\s*(\d{2}(?:[.,]\d|\s+[12]\/3)?)\s*$/.exec(valor)
+  return s ? limpio(s[1]) : null
 }
 
 /** "US 9" si el valor trae equivalente US. */
@@ -60,7 +74,7 @@ function calzado(raw: string): TallaCanonica | TallaError | null {
   const eu = EU.exec(raw), us = US.exec(raw), m = MEN.exec(raw), w = WOMEN.exec(raw)
   if (!eu && !us && !m && !w) return null
   if (!eu) return { error: `talla '${raw}' sin EU: escribe la talla EU (34–50), p. ej. "EU 42.5 · US 9"` }
-  const n = Number(punto(eu[1]))
+  const n = numeroTalla(eu[1])
   if (n < 17 || n > 52) return { error: `talla EU '${eu[1]}' fuera de rango (17–52)` }
   const partes = [`EU ${limpio(eu[1])}`]
   if (us) partes.push(`US ${limpio(us[1])}`)
@@ -89,7 +103,7 @@ export function canonizarTalla(entrada: string, contexto: ContextoTalla = {}): T
   }
 
   if (new RegExp(`^${NUM}$`).test(sinPrefijo)) {
-    const n = Number(punto(sinPrefijo))
+    const n = numeroTalla(sinPrefijo)
     const entero = Number.isInteger(n)
     if (n >= 34 && n <= 50) return { valor: `EU ${limpio(sinPrefijo)}`, tipo: 'talla', grupo: 'calzado' }
     if (contexto.calzado && n >= 17 && n <= 52) return { valor: `EU ${limpio(sinPrefijo)}`, tipo: 'talla', grupo: 'calzado' }

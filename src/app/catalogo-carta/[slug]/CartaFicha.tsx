@@ -3,7 +3,8 @@
 import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Info } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronLeft, Info, Utensils } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
 import { useCart } from '@/app/catalogo-premium/[slug]/CartContext'
 import { CARTA_TAG_LABEL } from '@/lib/carta/vocab'
@@ -28,6 +29,7 @@ interface CartaFichaProps {
 /** Ficha del plato: tamaños y opciones como botones grandes (las obligatorias bloquean "Agregar"), cantidad, nota para la cocina. */
 export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
   const href = useCatalogHref(slug, 'carta')
+  const router = useRouter()
   const { add } = useAddDish(slug)
   const { setCartOpen } = useCart()
   const sizes = [...dish.sizes].sort((a, b) => a.priceUsd - b.priceUsd)
@@ -59,6 +61,15 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
   const agotado = dish.outOfStock || dish.soldOutToday
   const bloqueado = agotado || dish.onRequest || (sizes.length > 0 && !size) || faltan.length > 0
 
+  // "Volver al menú": si venimos de la carta (misma origen) se retrocede en el historial → vuelve a la categoría y al scroll de origen;
+  // en una entrada directa (enlace compartido) el enlace lleva al menú.
+  const volver = (e: React.MouseEvent<HTMLAnchorElement>): void => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+    let mismaOrigen = false
+    try { mismaOrigen = !!document.referrer && new URL(document.referrer).origin === window.location.origin } catch { /* referrer inválido */ }
+    if (mismaOrigen && window.history.length > 1) { e.preventDefault(); router.back() }
+  }
+
   const agregar = (): void => {
     add(dish, { size, qty, note, options: opciones })
     setOk(true)
@@ -69,26 +80,29 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
 
   return (
     <div ref={paginaRef} className={styles.fichaPagina}>
-      <article className={styles.ficha} data-testid="carta-ficha">
+      <div className={styles.fichaContenedor}>
+      <nav className={styles.fichaNav} aria-label="Navegación de la ficha">
+        <Link href={href()} className={styles.volverMenu} onClick={volver} data-testid="carta-ficha-volver">
+          <ChevronLeft size={20} aria-hidden="true" />Volver al menú
+        </Link>
+      </nav>
+      <article className={cx(styles.ficha, !dish.image && styles.fichaSinFoto)} data-testid="carta-ficha">
         {dish.image ? (
           <div className={styles.fichaFoto}>
-            <Link href={href()} className={styles.volver} aria-label="Volver a la carta">‹</Link>
             <CartaFoto src={dish.image} alt={dish.name} sizes="(min-width: 1024px) 560px, 100vw" priority />
-            {dish.soldOutToday && <span className={styles.agot} data-testid="carta-agotado-hoy">Agotado hoy</span>}
           </div>
         ) : (
-          // Sin foto: una franja del color del preset con el nombre (sin letra gigante).
-          <div className={styles.fichaFranja} data-testid="carta-ficha-franja">
-            <Link href={href()} className={styles.volverFranja} aria-label="Volver a la carta">‹</Link>
-            <h1>{dish.name}</h1>
-            {dish.soldOutToday && <span className={styles.agot} data-testid="carta-agotado-hoy">Agotado hoy</span>}
-          </div>
+          // Sin foto: placeholder de cubiertos compacto (mismo lenguaje que la tarjeta del plato), sin bloque de acento vacío.
+          <div className={styles.fichaSinFotoIco} data-testid="carta-ficha-sin-foto" aria-hidden="true"><Utensils size={36} /></div>
         )}
         <div className={styles.fichaBody}>
-          {dish.tags.length > 0 && (
-            <div className={styles.tags}>{dish.tags.map(t => <span key={t} className={cx(styles.tag, styles[TAG_CLASS[t]])} data-testid="carta-etiqueta" data-etiqueta={t}>{CARTA_TAG_LABEL[t]}</span>)}</div>
+          {(dish.tags.length > 0 || dish.soldOutToday) && (
+            <div className={styles.tags}>
+              {dish.soldOutToday && <span className={styles.agotFicha} data-testid="carta-agotado-hoy">Agotado hoy</span>}
+              {dish.tags.map(t => <span key={t} className={cx(styles.tag, styles[TAG_CLASS[t]])} data-testid="carta-etiqueta" data-etiqueta={t}>{CARTA_TAG_LABEL[t]}</span>)}
+            </div>
           )}
-          {dish.image && <h1>{dish.name}</h1>}
+          <h1>{dish.name}</h1>
           <div className={styles.campo}>
             <PrecioDual variant="carta" size="modal" priceUsd={unit} priceBs={unit * rate} divisaUsd={size || opciones.length > 0 ? null : dish.divisaUsd}
               testids={{ usd: 'carta-ficha-precio', bs: 'carta-ficha-precio-bs' }} />
@@ -151,6 +165,7 @@ export function CartaFicha({ dish, slug, rate, related }: CartaFichaProps) {
           <div className={styles.items}>{related.map(d => <PlatoCard key={d.id} dish={d} slug={slug} />)}</div>
         </section>
       )}
+      </div>
     </div>
   )
 }

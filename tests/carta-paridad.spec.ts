@@ -179,7 +179,7 @@ test('identidad: crédito "Desarrollado por ActivoPOS.com" en Carta, genérico y
   }
 })
 
-test('identidad: tarjeta sin foto compacta (sin letra gigante, acento en el borde) y ficha sin foto con franja del preset', async ({ page }) => {
+test('identidad: tarjeta sin foto compacta (sin letra gigante, acento en el borde) y ficha sin foto con placeholder compacto (sin bloque de acento)', async ({ page }) => {
   await page.goto('/catalogo-carta/' + OWN_SLUG)
   const tarjeta = page.locator('[data-testid="carta-plato"][data-sin-foto="true"]').first()
   expect(await tarjeta.evaluate(el => getComputedStyle(el).borderLeftWidth)).toBe('1px') // sin el borde izquierdo de acento
@@ -188,9 +188,11 @@ test('identidad: tarjeta sin foto compacta (sin letra gigante, acento en el bord
   expect((await vacia.boundingBox())!.width).toBe(96)
   expect(await vacia.locator('svg').count()).toBe(1)
   await ficha(page, idOf('Smash Burger'))
-  const franja = page.getByTestId('carta-ficha-franja')
-  await expect(franja).toContainText('Smash Burger')
-  expect((await franja.boundingBox())!.height).toBeLessThanOrEqual(90)
+  const sinFoto = page.getByTestId('carta-ficha-sin-foto')
+  await expect(sinFoto).toBeVisible()
+  expect((await sinFoto.boundingBox())!.height).toBeLessThanOrEqual(160) // placeholder compacto, no una franja de acento de pantalla completa
+  await expect(sinFoto.locator('svg')).toHaveCount(1)
+  await expect(page.locator('h1')).toHaveText('Smash Burger')
   await expect(page.locator('h1')).toHaveCount(1)
 })
 

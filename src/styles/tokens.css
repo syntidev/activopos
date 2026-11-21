@@ -1193,6 +1193,10 @@
 /* Carta: separación entre el último contenido y las barras fijas (Agregar / Mi pedido). */
 [data-carta-preset] { --carta-gap-barra: 16px; }
 
+/* Carta: contenedor de la página de ficha (barra de volver + ficha + relacionados alineados al mismo borde). */
+[data-carta-preset] { --carta-contenedor: 1100px; --carta-gutter: 16px; }
+@media (min-width: 768px) { [data-carta-preset] { --carta-gutter: 24px; } }
+
 [data-carta-preset] { --carta-compacta-h: 44px; }
 
 /* Carta: tarjeta de plato (reposo y hover) comunes a todas las paletas. */

@@ -14,8 +14,14 @@ import { formatHours, isCartaPaused, openState, readCartaHours, readCartaSetting
 import { mediaOf, type SlideMedia } from '@/lib/slide-media'
 import { readAllergens, readTags, type CartaTag } from '@/lib/carta/vocab'
 import type {
-  CartaCategory, CartaDish, CartaHero, CartaHeroSlide, CartaHorarioDia, CartaOpenState, CartaOptionGroup, CartaPagos, CartaPayOption, CartaSize,
+  CartaCategory, CartaDish, CartaHero, CartaHeroSlide, CartaHorarioDia, CartaInfo, CartaOpenState, CartaOptionGroup, CartaPagos, CartaPayOption, CartaSize,
 } from '@/types/carta'
+
+/** Usuario de Instagram válido (sin @ ni URL); cualquier otra cosa → null, así el enlace nunca lleva texto arbitrario. */
+const instagramUser = (raw: string | null): string | null => {
+  const u = (raw ?? '').trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@+/, '').replace(/\/+$/, '')
+  return /^[A-Za-z0-9._]{1,30}$/.test(u) ? u : null
+}
 
 const FAVORITOS_MAX = 4
 const CASA_MAX = 3
@@ -24,7 +30,7 @@ export function getCartaBusiness(slug: string) {
   return prisma.business.findFirst({
     where:  { catalog_slug: slug, catalog_active: true, active: true },
     select: {
-      id: true, name: true, logo_path: true, phone: true, whatsapp: true, city: true, address: true,
+      id: true, name: true, logo_path: true, phone: true, whatsapp: true, city: true, address: true, catalog_instagram: true,
       catalog_title: true, catalog_desc: true, catalog_hours: true, catalog_template: true, catalog_plan: true,
       catalog_cover_path: true, catalog_cover_path_2: true, catalog_cover_path_3: true,
       subscription_active: true, subscription_expires_at: true, settings: true, updated_at: true,
@@ -76,6 +82,8 @@ export interface CartaPageData {
   whatsapp:   string | null
   /** Negocio abierto para recibir pedidos (false = cerrado o en pausa). */
   acepta:     boolean
+  /** Panel "Información del negocio" (botón ⓘ). */
+  info:       CartaInfo
 }
 
 export async function loadCarta(business: CartaBusiness): Promise<CartaPageData> {
@@ -165,8 +173,17 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
   const hours = readCartaHours(business.settings)
   // Sin carta_hours: se usa el texto libre de catalog_hours si existe; si tampoco, no hay estado (nunca "Cerrado" por falta de datos).
   const hoursText = business.catalog_hours?.trim() ?? ''
-  const open = openState(hours, isCartaPaused(business.settings)) ?? (hoursText ? { open: true, label: hoursText.slice(0, 70) } : null)
+  const estado = openState(hours, isCartaPaused(business.settings))
+  const open = estado ?? (hoursText ? { open: true, label: hoursText.slice(0, 70) } : null)
   const wa = normalizePhone(business.whatsapp ?? business.phone ?? '')
+  // Métodos que el cliente puede ver: solo nombres, y respetando "solo $" y Cashea apagado del panel de cobro.
+  const pagosVisibles = Array.from(new Set(methods
+    .filter(m => (m.is_financing ? eff.casheaActive : !(eff.hideBsMethods && divisaOn) || divisaIds.includes(m.id)))
+    .map(m => m.name.trim()).filter(Boolean)))
+  const info: CartaInfo = {
+    city: business.city?.trim() || null, estado, pagos: pagosVisibles, instagram: instagramUser(business.catalog_instagram),
+    hoursText: hoursText || null, address: [business.address, business.city].filter(Boolean).join(', ') || null,
+  }
 
   return {
     settings, rate, categories, dishes, hero, featured, pagos, payOptions, open,
@@ -179,6 +196,7 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
     bandas:  [business.catalog_cover_path, business.catalog_cover_path_2, business.catalog_cover_path_3].filter((x): x is string => !!x),
     whatsapp: isValidWaPhone(wa) ? wa : null,
     acepta:  open === null ? true : open.open,
+    info,
   }
 }
 

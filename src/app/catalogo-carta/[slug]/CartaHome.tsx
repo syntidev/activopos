@@ -1,13 +1,14 @@
 'use client'
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Menu, Search, X } from 'lucide-react'
+import { Info, Menu, Search, X } from 'lucide-react'
 import { PrecioDual } from '@/app/catalogo-premium/[slug]/PrecioDual'
 import { PlatformCredit } from '@/components/catalog/PlatformCredit'
 import { useCatalogHref } from '@/components/catalog/CatalogLinks'
 import { CartaBarraCompacta } from './CartaBarraCompacta'
 import { CartaEncabezado } from './CartaEncabezado'
 import { CartaFoto } from './CartaFoto'
+import { CartaInfoPanel } from './CartaInfoPanel'
 import { CartaPagos } from './CartaPagos'
 import { CartaPortada } from './CartaPortada'
 import { PlatoCard } from './PlatoCard'
@@ -23,6 +24,8 @@ interface CartaHomeProps {
   hoursText:    string | null
   city:         string | null
   data:         CartaPageData
+  /** URL canónica del host para "Compartir" (dominio propio o activopos.com). */
+  shareUrl:     string
 }
 
 const MAX_WORDS = 5
@@ -54,8 +57,10 @@ function CasaCard({ dish, slug, big }: { dish: CartaDish; slug: string; big: boo
   )
 }
 
-export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHomeProps) {
+export function CartaHome({ slug, businessName, hoursText, city, data, shareUrl }: CartaHomeProps) {
   const href = useCatalogHref(slug, 'carta')
+  const [infoAbierto, setInfoAbierto] = useState(false)
+  const cerrarInfo = useCallback(() => setInfoAbierto(false), [])
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [buscando, setBuscando] = useState(false)
@@ -163,6 +168,9 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
           <button type="button" className={cx(styles.barBtn, menuAbierto && styles.barBtnOn)} onClick={() => { setMenuAbierto(v => !v); setBuscando(false) }} aria-label="Menú de categorías" aria-expanded={menuAbierto} data-testid="carta-menu-btn">
             <Menu size={20} aria-hidden="true" />
           </button>
+          <button type="button" className={styles.barBtn} onClick={() => { setInfoAbierto(true); setMenuAbierto(false) }} aria-label="Información del negocio" aria-haspopup="dialog" aria-expanded={infoAbierto} data-testid="carta-info-btn">
+            <Info size={20} aria-hidden="true" />
+          </button>
           <nav className={styles.tabs} aria-label="Categorías" role="tablist" data-testid="carta-tabs">
             {categories.map((c, i) => (
               <a key={c.name} href={'#cat-' + i} role="tab" ref={el => { tabRefs.current[i] = el }} className={cx(styles.tab, active === i && styles.tabOn)} data-testid={'carta-tab-' + c.slug} aria-selected={active === i}
@@ -219,6 +227,8 @@ export function CartaHome({ slug, businessName, hoursText, city, data }: CartaHo
         ))}
         {categories.length === 0 && <p className={styles.vacio} data-testid="carta-sin-resultados">Sin resultados para &ldquo;{query}&rdquo;. Prueba con otro plato o ingrediente.</p>}
       </main>
+
+      {infoAbierto && <CartaInfoPanel businessName={businessName} logo={data.brand.logo} info={data.info} horario={data.horario} whatsapp={data.whatsapp} shareUrl={shareUrl} onClose={cerrarInfo} />}
 
       <footer className={styles.footer}>
         <strong>{businessName}</strong>{city ? ' · ' + city : ''}

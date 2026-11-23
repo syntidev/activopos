@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getCartaBusiness, loadCarta, resolveCartaBusiness } from '@/lib/carta/load'
-import { shareMetadata } from '@/lib/og/metadata'
+import { publicUrl, shareMetadata } from '@/lib/og/metadata'
 import { withSeo } from '@/lib/seo'
 import { StoreSchema } from '@/components/catalog/CatalogSeo'
 import { CartaHome } from './CartaHome'
@@ -30,7 +30,7 @@ export default async function CartaPage({ params }: PageProps) {
   return (
     <>
       <StoreSchema slug={params.slug} />
-      <CartaHome slug={params.slug} businessName={business.catalog_title ?? business.name} hoursText={business.catalog_hours} city={business.city} data={data} />
+      <CartaHome slug={params.slug} businessName={business.catalog_title ?? business.name} hoursText={business.catalog_hours} city={business.city} data={data} shareUrl={publicUrl(`/c/${params.slug}`)} />
       <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} businessName={business.catalog_title ?? business.name} whatsapp={data.whatsapp} acepta={data.acepta} dishes={data.dishes} />
     </>
   )

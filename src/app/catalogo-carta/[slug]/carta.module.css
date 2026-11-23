@@ -353,3 +353,32 @@ textarea.input { min-height: 84px; resize: vertical; }
 
 /* El enlace estirado cubre toda la tarjeta: al pasar el mouse el título no debe tomar el color de enlace global. */
 .nombre a, .nombre a:hover { color: inherit; text-decoration: none; }
+
+/* ── Panel ⓘ "Información del negocio" (reusa .velo/.hoja/.hojaH/.cerrar del carrito) ── */
+.infoHoja { display: grid; gap: 18px; align-content: start; }
+.infoCab { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.infoLogo { flex: none; position: relative; width: 56px; height: 56px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--carta-card); box-shadow: 0 0 0 1px var(--carta-linea); }
+.infoLogo b { font-family: var(--carta-font-display); font-weight: 800; font-size: 24px; color: var(--carta-acento); }
+.infoCabTxt { min-width: 0; display: grid; gap: 2px; }
+.infoCabTxt h2 { font-size: 20px; line-height: 1.15; overflow-wrap: anywhere; }
+.infoCiudad { font-size: 13px; color: var(--carta-muted); }
+.infoEstado { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: var(--carta-ok); }
+.infoEstado i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--carta-abierto); }
+.infoEstado.encEstadoCerrado { color: var(--carta-aji); }
+.infoEstado.encEstadoCerrado i { background: var(--carta-aji); }
+.infoSec { display: grid; gap: 10px; margin: 0; }
+.infoLabel { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--carta-muted); }
+.infoPills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.infoPill { padding: 6px 12px; border-radius: 99px; background: var(--carta-papel); box-shadow: inset 0 0 0 1px var(--carta-linea); font-size: 13px; font-weight: 600; color: var(--carta-tinta-2); }
+.infoContactos { display: flex; flex-wrap: wrap; gap: 8px; }
+.infoBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--carta-radio); background: var(--carta-papel); box-shadow: inset 0 0 0 1px var(--carta-linea); color: var(--carta-tinta); font-size: 14px; font-weight: 650; }
+.infoBtn:focus-visible, .infoDir:focus-visible { outline: 3px solid var(--carta-acento); outline-offset: 2px; }
+.infoTexto { margin: 0; font-size: 14px; color: var(--carta-tinta-2); white-space: pre-line; overflow-wrap: anywhere; }
+.infoDir { display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding: 10px 0; font-size: 14px; color: var(--carta-tinta); overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 3px; }
+.infoDir svg { flex: none; margin-top: 2px; color: var(--carta-acento); }
+.infoCompartir { width: 100%; background: var(--carta-acento); color: var(--carta-sobre-acento); box-shadow: none; }
+.infoAviso { margin: 0; text-align: center; font-size: 13px; color: var(--carta-ok); overflow-wrap: anywhere; }
+:global([data-carta-style="fine"]) .infoPill, :global([data-carta-style="fine"]) .infoBtn { border-radius: 2px; }
+@media (min-width: 1024px) {
+  .infoHoja { top: 50%; bottom: auto; transform: translate(-50%, -50%); max-height: 86vh; }
+}

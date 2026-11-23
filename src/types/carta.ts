@@ -96,6 +96,20 @@ export interface CartaOpenState {
   label: string
 }
 
+/** Panel "Información del negocio": solo datos ya públicos del negocio; cada campo null/[] = su sección no se muestra. */
+export interface CartaInfo {
+  city:       string | null
+  /** Estado calculado SOLO con carta_hours o pausa; sin horario es null (nunca "Cerrado" por falta de datos). */
+  estado:     CartaOpenState | null
+  /** Solo NOMBRES de los métodos activos (nunca datos de cuenta ni cobro_data). */
+  pagos:      string[]
+  instagram:  string | null
+  /** Texto libre (catalog_hours); se usa solo si no hay tabla por día. */
+  hoursText:  string | null
+  /** Dirección completa para mostrar y para el enlace a Google Maps. */
+  address:    string | null
+}
+
 export interface CartaHorarioDia {
   day:  string
   text: string

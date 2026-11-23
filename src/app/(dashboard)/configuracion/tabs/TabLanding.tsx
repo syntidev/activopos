@@ -70,8 +70,32 @@ const REPEATABLE_TYPES: SectionType[] = ['product_list', 'category_list']
 // inválido..."); solo cae al fallback genérico si el body no es el JSON
 // esperado. Compartido entre PATCH (sección existente) y POST (sección nueva)
 // -- antes cada uno tenía su propia copia y divergieron (ver patchSection).
-function extractErrorMessage(data: { error?: string; issues?: { message: string }[] } | null, fallback: string): string {
-  return data?.issues?.[0]?.message ?? data?.error ?? fallback
+interface ZodIssueLite { message: string; path?: (string | number)[]; code?: string; maximum?: number | bigint }
+
+const CAMPO_LABEL: Record<string, string> = {
+  title: 'Título', subtitle: 'Subtítulo', cta_text: 'Texto del botón', cta_link: 'Link del botón',
+  image_url: 'Imagen', mobile_path: 'Imagen móvil', video_url: 'Video', heading: 'Encabezado', subheading: 'Subtítulo',
+  eyebrow: 'Etiqueta pequeña', body: 'Texto', product_tag: 'Etiqueta del producto', slides: 'Slides', items: 'Fotos',
+  collection_id: 'Colección', category_ids: 'Categorías', product_ids: 'Productos', titulo: 'Título', subtitulo: 'Subtítulo',
+}
+
+// Zod habla inglés ("String must contain at least 1 character(s)"): se traduce y se nombra el campo que falla.
+function issueEnEspanol(i: ZodIssueLite): string {
+  const campo = CAMPO_LABEL[String(i.path?.[i.path.length - 1] ?? '')]
+  if (!campo) return i.message
+  switch (i.code) {
+    case 'too_small':
+    case 'invalid_type':  return `${campo} es obligatorio.`
+    case 'too_big':       return `${campo}: máximo ${i.maximum} caracteres.`
+    case 'invalid_union': return `${campo} no es válido: usa una ruta interna (/...) o una URL http(s).`
+    case 'custom':        return i.path?.includes('image_url') ? `${campo} debe ser una imagen subida desde el panel.` : i.message
+    default:              return `${campo} no es válido.`
+  }
+}
+
+function extractErrorMessage(data: { error?: string; issues?: ZodIssueLite[] } | null, fallback: string): string {
+  const issue = data?.issues?.[0]
+  return issue ? issueEnEspanol(issue) : data?.error ?? fallback
 }
 
 const EMPTY_SLIDE: SlideConfig = { title: '', subtitle: '', cta_text: '', cta_link: '', image_url: '' }

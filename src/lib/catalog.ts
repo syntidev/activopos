@@ -1,4 +1,4 @@
-import { revalidateTag } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { prisma } from './prisma'
 import { PLAN_LIMITS, type PlanTier } from './plan-limits'
 
@@ -109,6 +109,13 @@ export async function revalidateCatalogCache(businessId: number): Promise<void> 
     select: { catalog_slug: true },
   })
   if (business?.catalog_slug) revalidateTag(`catalog-${business.catalog_slug}`)
+}
+
+/** Landing editada: invalida el tag del catálogo y la portada (premium; el dominio propio reescribe a esta misma ruta). */
+export async function revalidateLanding(businessId: number): Promise<void> {
+  await revalidateCatalogCache(businessId)
+  const business = await prisma.business.findUnique({ where: { id: businessId }, select: { catalog_slug: true } })
+  if (business?.catalog_slug) revalidatePath(`/catalogo-premium/${business.catalog_slug}`)
 }
 
 // Ajuste por negocio (settings.catalog_stock_display): 'exact' (default) muestra la cantidad;

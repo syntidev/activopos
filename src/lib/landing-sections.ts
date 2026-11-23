@@ -40,6 +40,9 @@ const linkUrl = (max: number) =>
     try { return ['http:', 'https:'].includes(new URL(v).protocol) } catch { return false }
   }, 'Link inválido: debe ser una ruta interna o una URL http(s)')
 
+// Link opcional: vacío es válido (sin botón); si trae texto, debe pasar linkUrl.
+const optionalLink = (max: number) => z.union([z.string().trim().max(0), linkUrl(max)])
+
 const httpUrl = (max: number) =>
   trimmed(max).refine(v => {
     try { return ['http:', 'https:'].includes(new URL(v).protocol) } catch { return false }
@@ -77,10 +80,11 @@ const CommunityItemSchema = z.object({
 // patrón de whitelisting que catalog/[slug]/order).
 export const CONFIG_SCHEMAS = {
   hero: z.object({
-    title:     trimmed(120),
-    subtitle:  trimmed(200),
-    cta_text:  trimmed(40),
-    cta_link:  linkUrl(500),
+    // Texto decorativo opcional: sin título/subtítulo solo se ve la imagen; sin cta_text o cta_link no hay botón.
+    title:     optionalText(120),
+    subtitle:  optionalText(200),
+    cta_text:  optionalText(40),
+    cta_link:  optionalLink(500),
     image_url: imagePath(),
     video_url: httpUrl(500).optional(),
   }).strict(),
@@ -90,14 +94,14 @@ export const CONFIG_SCHEMAS = {
     slides: z.array(SlideSchema).min(2).max(8),
   }).strict(),
   community: z.object({
-    heading:    trimmed(120),
-    subheading: trimmed(200),
+    heading:    optionalText(120),
+    subheading: optionalText(200),
     items:      z.array(CommunityItemSchema).min(2).max(4),
   }).strict(),
   story: z.object({
-    eyebrow:   trimmed(60),
-    title:     trimmed(120),
-    body:      trimmed(2000),
+    eyebrow:   optionalText(60),
+    title:     optionalText(120),
+    body:      trimmed(2000), // el cuerpo es el contenido de la sección: sigue obligatorio
     image_url: imagePath(),
   }).strict(),
   // Solo guarda la referencia a la colección — el renderer resuelve nombre y
@@ -110,9 +114,9 @@ export const CONFIG_SCHEMAS = {
   // guardar desde el admin (nota de diseño del sprint).
   announcement_popup: z.object({
     image_url: imagePath(),
-    heading:   trimmed(80),
-    cta_text:  trimmed(40).optional(),
-    cta_link:  linkUrl(500).optional(),
+    heading:   optionalText(80),
+    cta_text:  optionalText(40).optional(),
+    cta_link:  optionalLink(500).optional(),
     delay_ms:  z.number().int().min(0).max(15000).default(2500),
   }).strict(),
   // modo='manual': product_ids en el orden exacto que el admin definió (el
@@ -131,8 +135,8 @@ export const CONFIG_SCHEMAS = {
     category_id:     z.number().int().positive().optional(),
     collection_id:   z.number().int().positive().optional(),
     cantidad_maxima: z.number().int().min(1).max(20).optional(),
-    titulo:          trimmed(120).optional(),
-    subtitulo:       trimmed(200).optional(),
+    titulo:          optionalText(120).optional(),
+    subtitulo:       optionalText(200).optional(),
     slot:            z.enum(PRODUCT_LIST_SLOTS).optional(),
   }).strict().refine(d => {
     if (d.modo === 'manual') return !!d.product_ids?.length
@@ -144,8 +148,8 @@ export const CONFIG_SCHEMAS = {
   // que guardar acá aparte del array.
   category_list: z.object({
     category_ids: z.array(z.number().int().positive()).min(1).max(12),
-    titulo:       trimmed(120).optional(),
-    subtitulo:    trimmed(200).optional(),
+    titulo:       optionalText(120).optional(),
+    subtitulo:    optionalText(200).optional(),
   }).strict(),
 } satisfies Record<SectionType, z.ZodTypeAny>
 

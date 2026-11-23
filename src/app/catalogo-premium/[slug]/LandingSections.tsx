@@ -74,13 +74,16 @@ function youtubeEmbedUrl(url: string): string | null {
 function HeroSection({ config }: { config: HeroConfig }) {
   const youtubeUrl = config.video_url ? youtubeEmbedUrl(config.video_url) : null
   const stored = useStoredHref()
+  // Sin texto ni botón: solo la imagen (sin bloque vacío ni degradado sobre nada).
+  const hayBoton = !!config.cta_text && !!config.cta_link
+  const hayTexto = !!config.title || !!config.subtitle || hayBoton
   return (
     <section className={styles.lsHero}>
       {youtubeUrl ? (
         <iframe
           className={styles.lsHeroMedia}
           src={youtubeUrl}
-          title={config.title}
+          title={config.title || 'Video'}
           allow="autoplay; encrypted-media"
           referrerPolicy="strict-origin-when-cross-origin"
         />
@@ -97,12 +100,14 @@ function HeroSection({ config }: { config: HeroConfig }) {
           }
         />
       )}
-      <div className={styles.lsHeroScrim} aria-hidden="true" />
-      <div className={styles.lsHeroContent}>
-        <h1 className={styles.lsHeroTitle}>{config.title}</h1>
-        <p className={styles.lsHeroSubtitle}>{config.subtitle}</p>
-        <a href={stored(config.cta_link)} className={styles.lsHeroCta}>{config.cta_text}</a>
-      </div>
+      {hayTexto && <div className={styles.lsHeroScrim} aria-hidden="true" />}
+      {hayTexto && (
+        <div className={styles.lsHeroContent}>
+          {config.title && <h1 className={styles.lsHeroTitle}>{config.title}</h1>}
+          {config.subtitle && <p className={styles.lsHeroSubtitle}>{config.subtitle}</p>}
+          {hayBoton && <a href={stored(config.cta_link)} className={styles.lsHeroCta}>{config.cta_text}</a>}
+        </div>
+      )}
     </section>
   )
 }
@@ -218,8 +223,8 @@ function EventSlider({ config }: { config: EventSliderConfig }) {
 function CommunitySection({ config }: { config: CommunityConfig }) {
   return (
     <section className={styles.lsCommunity}>
-      <h2 className={styles.lsCommunityHeading}>{config.heading}</h2>
-      <p className={styles.lsCommunitySubheading}>{config.subheading}</p>
+      {config.heading && <h2 className={styles.lsCommunityHeading}>{config.heading}</h2>}
+      {config.subheading && <p className={styles.lsCommunitySubheading}>{config.subheading}</p>}
       <AdaptiveGrid>
         {config.items.map((item, i) => (
           <div key={i} className={styles.lsCommunityItem}>
@@ -323,8 +328,8 @@ function StorySection({ config }: { config: StoryConfig }) {
   return (
     <section className={styles.lsStory}>
       <div className={styles.lsStoryText}>
-        <span className={styles.lsStoryEyebrow}>{config.eyebrow}</span>
-        <h2 className={styles.lsStoryTitle}>{config.title}</h2>
+        {config.eyebrow && <span className={styles.lsStoryEyebrow}>{config.eyebrow}</span>}
+        {config.title && <h2 className={styles.lsStoryTitle}>{config.title}</h2>}
         <p className={styles.lsStoryBody}>{config.body}</p>
       </div>
       <div className={styles.lsStoryMedia}>

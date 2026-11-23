@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { SECTION_TYPES, CONFIG_SCHEMAS } from '@/lib/landing-sections'
+import { revalidateLanding } from '@/lib/catalog'
 
 const postSchema = z.object({
   type:    z.enum(SECTION_TYPES),
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    await revalidateLanding(session.businessId)
     return NextResponse.json({ ok: true, section }, { status: 201 })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })

@@ -55,7 +55,7 @@ export function AnnouncementPopup({ config, businessId, sectionId }: Props) {
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-label={config.heading}
+            aria-label={config.heading || 'Anuncio'}
           >
             <button
               type="button"
@@ -73,10 +73,10 @@ export function AnnouncementPopup({ config, businessId, sectionId }: Props) {
             />
 
             <div className={styles.popupBody}>
-              <h2 className={styles.popupHeading}>{config.heading}</h2>
-              {config.cta_text && (
+              {config.heading && <h2 className={styles.popupHeading}>{config.heading}</h2>}
+              {config.cta_text && config.cta_link && (
                 <a
-                  href={config.cta_link ?? '#'}
+                  href={config.cta_link}
                   className={styles.popupCta}
                   onClick={dismiss}
                 >

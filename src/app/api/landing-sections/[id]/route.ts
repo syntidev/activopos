@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { CONFIG_SCHEMAS, isSectionType } from '@/lib/landing-sections'
+import { revalidateLanding } from '@/lib/catalog'
 
 const patchSchema = z.object({
   config:  z.record(z.string(), z.unknown()).optional(),
@@ -67,6 +68,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       },
     })
 
+    await revalidateLanding(session.businessId)
     return NextResponse.json({ ok: true, section })
   } catch (e) {
     if (e instanceof TenantError) return NextResponse.json({ error: e.message }, { status: e.status })
@@ -88,6 +90,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     await db.landingSection.delete({ where: { id } }) // business_id inyectado
+    await revalidateLanding(session.businessId)
 
     return NextResponse.json({ ok: true })
   } catch (e) {

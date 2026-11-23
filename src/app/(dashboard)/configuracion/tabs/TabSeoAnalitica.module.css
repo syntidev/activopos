@@ -1,0 +1,3 @@
+/* SEO y Analítica: contador de caracteres y barra de guardar. Solo tokens. */
+.contador { margin: var(--space-1) 0 0; font-size: var(--text-sm); color: var(--color-text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+.acciones { display: flex; justify-content: flex-end; margin-top: var(--space-3); }

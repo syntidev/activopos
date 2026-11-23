@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { shareMetadata } from '@/lib/og/metadata'
+import { ProductSchema } from '@/components/catalog/CatalogSeo'
 import { parseKitConfig } from '@/lib/kit-config'
 import { GUIDE_MODELS, garminGuideEnabled, isGarminBrand, matchModelIndex } from '@/lib/garmin-guide'
 import { serverCatalogHref } from '@/lib/catalog-links-server'
@@ -226,6 +227,7 @@ export default async function ProductoPage({ params, searchParams }: PageProps) 
         ? ({ '--biz-color': business.theme_color } as React.CSSProperties)
         : undefined}
     >
+      <ProductSchema slug={params.slug} id={product.id} />
       <ProductoDetalle
         productId={product.id}
         name={product.name}

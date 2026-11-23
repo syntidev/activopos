@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { identityMetadata, identityViewport } from '@/lib/web-identity'
+import { Ga4 } from '@/components/catalog/CatalogSeo'
 import { CatalogLinksProvider } from '@/components/catalog/CatalogLinks'
 import { currentCustomDomain, isCleanFor } from '@/lib/catalog-links-server'
 import { Cormorant_Garamond, Fraunces, Instrument_Sans } from 'next/font/google'
@@ -38,6 +39,7 @@ export default async function CartaLayout({ children, params }: CartaLayoutProps
       data-carta-style={settings.style}
     >
       <ConfirmProvider>
+        <Ga4 slug={params.slug} />
         <CartProvider slug={params.slug}><CatalogLinksProvider kind="carta" clean={isCleanFor('carta', params.slug)} domain={isCleanFor('carta', params.slug) ? currentCustomDomain() : null}>{children}</CatalogLinksProvider></CartProvider>
       </ConfirmProvider>
     </div>

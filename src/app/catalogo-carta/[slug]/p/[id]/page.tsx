@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getCartaBusiness, loadCarta, resolveCartaBusiness } from '@/lib/carta/load'
 import { cartaDishMeta } from '@/lib/carta/seo'
 import { shareMetadata } from '@/lib/og/metadata'
+import { ProductSchema } from '@/components/catalog/CatalogSeo'
 import { relatedIds } from '@/lib/carta/favoritos'
 import { CartaFicha } from '../../CartaFicha'
 import { CartaPedido } from '../../CartaPedido'
@@ -45,6 +46,7 @@ export default async function PlatoPage({ params }: PageProps) {
   const related = [...picked, ...fill].slice(0, RELATED_MAX)
   return (
     <>
+      <ProductSchema slug={params.slug} id={id} />
       <CartaFicha dish={dish} slug={params.slug} rate={data.rate} related={related} />
       <CartaPedido slug={params.slug} rate={data.rate} payOptions={data.payOptions} businessName={business.catalog_title ?? business.name} whatsapp={data.whatsapp} acepta={data.acepta} dishes={data.dishes} hideFab />
     </>

@@ -20,6 +20,7 @@ import {
   UtensilsCrossed,
   ChevronLeft,
   Globe,
+  BarChart3,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -41,8 +42,9 @@ import { TabKit200k }         from './tabs/TabKit200k'
 import { TabEnvios }          from './tabs/TabEnvios'
 import { TabCarta }           from './tabs/TabCarta'
 import { TabIdentidadWeb }    from './tabs/TabIdentidadWeb'
+import { TabSeoAnalitica }    from './tabs/TabSeoAnalitica'
 
-type TabKey = 'identidad' | 'cobroprecios' | 'envios' | 'carta' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'seo' | 'identidad' | 'cobroprecios' | 'envios' | 'carta' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -97,6 +99,7 @@ const KIT_TAB: Tab = { key: 'kit200k', label: 'Kit 200K', Icon: Ticket }
 const CARTA_TAB: Tab = { key: 'carta', label: 'Carta', Icon: UtensilsCrossed }
 
 const IDENTIDAD_TAB: Tab = { key: 'identidad', label: 'Identidad web', Icon: Globe }
+const SEO_TAB: Tab = { key: 'seo', label: 'SEO y Analítica', Icon: BarChart3 }
 
 export function ConfiguracionView({ session, landingSectionsEnabled, identidadEnabled, kitEnabled, isCarta }: ConfiguracionViewProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('general')
@@ -108,7 +111,7 @@ export function ConfiguracionView({ session, landingSectionsEnabled, identidadEn
   // completo de Catálogo Público ni aparece en el sidebar (no solo se
   // bloquea al guardar). Tema Visual queda fuera del gate (siempre visible).
   const planTabs     = isCarta ? [CARTA_TAB] : landingSectionsEnabled ? CATALOGO_TABS : CATALOGO_TABS.slice(0, 1)
-  const conIdentidad = identidadEnabled ? [...planTabs, IDENTIDAD_TAB] : planTabs
+  const conIdentidad = identidadEnabled ? [...planTabs, IDENTIDAD_TAB, SEO_TAB] : planTabs
   const catalogoTabs = kitEnabled ? [...conIdentidad, KIT_TAB] : conIdentidad
   const negocioTabs  = isCarta ? NEGOCIO_TABS.filter(t => t.key !== 'envios') : NEGOCIO_TABS
 
@@ -176,7 +179,8 @@ export function ConfiguracionView({ session, landingSectionsEnabled, identidadEn
         {activeTab === 'colecciones' && landingSectionsEnabled && <TabColecciones businessId={session.businessId} />}
         {activeTab === 'marcas'      && landingSectionsEnabled && <TabBrands      businessId={session.businessId} />}
         {activeTab === 'identidad'   && identidadEnabled       && <TabIdentidadWeb businessId={session.businessId} />}
-        {activeTab === 'kit200k'     && kitEnabled             && <TabKit200k     businessId={session.businessId} />}
+        {activeTab === 'seo'         && identidadEnabled       && <TabSeoAnalitica businessId={session.businessId} />}
+        {activeTab === 'kit200k'     && kitEnabled            && <TabKit200k     businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
         {activeTab === 'plan'           && <TabPlan     businessId={session.businessId} />}

@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { mkdir, rm, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
-import { PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
+import { requireAdminConCatalogo } from '@/lib/catalog-admin-auth'
 import { uploadLimiter } from '@/lib/rate-limit'
 import { revalidateCatalogCache } from '@/lib/catalog'
 import { FAVICON_SIZES, brandDir, faviconFile, newBase, ogFile, readBase, settingsKey, type IdentityKind } from '@/lib/web-identity'
@@ -13,18 +12,6 @@ import { IdentityImageError, MAX_BYTES, buildFavicon, buildOg } from '@/lib/web-
  * Identidad web del negocio (favicon + imagen para compartir). Solo admin y plan con catálogo; business_id SIEMPRE de la sesión.
  * Guarda los archivos en storage/tenants/{id}/brand/ y la ruta base en business.settings (web_favicon / web_og_image).
  */
-
-interface Auth { businessId: number }
-
-async function requireAdminConCatalogo(): Promise<Auth | NextResponse> {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (session.role !== 'admin' && session.role !== 'super_admin') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-  const business = await prisma.business.findUnique({ where: { id: session.businessId }, select: { catalog_plan: true } })
-  const plan = (business?.catalog_plan as PlanTier | null) ?? 'gratis'
-  if (!(PLAN_LIMITS[plan]?.catalog ?? false)) return NextResponse.json({ error: 'Disponible en el plan con catálogo' }, { status: 403 })
-  return { businessId: session.businessId }
-}
 
 const KINDS: readonly IdentityKind[] = ['favicon', 'og']
 const asKind = (v: unknown): IdentityKind | null => KINDS.find(k => k === v) ?? null

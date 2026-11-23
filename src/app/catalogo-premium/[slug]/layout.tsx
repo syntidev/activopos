@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { identityMetadata, identityViewport } from '@/lib/web-identity'
+import { Ga4 } from '@/components/catalog/CatalogSeo'
 import { CatalogLinksProvider } from '@/components/catalog/CatalogLinks'
 import { currentCustomDomain, isCleanFor } from '@/lib/catalog-links-server'
 import { CartProvider } from './CartContext'
@@ -30,6 +31,7 @@ export default async function CatalogoSlugLayout({ children, params }: LayoutPro
       <CobroFlagsProvider casheaActive={casheaActive}>
         <CartProvider slug={params.slug}>
           <PulsoTracker slug={params.slug} />
+          <Ga4 slug={params.slug} />
           <CatalogLinksProvider kind="premium" clean={isCleanFor('premium', params.slug)} domain={isCleanFor('premium', params.slug) ? currentCustomDomain() : null}>{children}</CatalogLinksProvider>
         </CartProvider>
       </CobroFlagsProvider>

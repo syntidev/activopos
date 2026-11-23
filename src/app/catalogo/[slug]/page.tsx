@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { shareMetadata } from '@/lib/og/metadata'
+import { withSeo } from '@/lib/seo'
+import { StoreSchema } from '@/components/catalog/CatalogSeo'
 import { getSession } from '@/lib/auth'
 import { getActiveRate } from '@/lib/bcv'
 import { CatalogoGrid } from './CatalogoGrid'
@@ -68,7 +70,7 @@ async function getBusiness(slug: string) {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const biz = await prisma.business.findFirst({
     where:  { catalog_slug: params.slug, active: true },
-    select: { name: true, catalog_title: true, catalog_desc: true, updated_at: true },
+    select: { name: true, catalog_title: true, catalog_desc: true, updated_at: true, settings: true },
   })
   if (!biz) return { title: 'Catálogo no encontrado' }
 
@@ -76,7 +78,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description = biz.catalog_desc ?? `Catálogo de productos de ${biz.name}`
 
   // Portada 1200×630 generada (imagen de portada o color de marca + logo + nombre); URL absoluta.
-  return shareMetadata({
+  // SEO del negocio (Configuración > SEO y Analítica): seo_title/seo_description mandan sobre el título y la descripción del catálogo.
+  return shareMetadata(withSeo({
     title:       `${title} — Catálogo`,
     description,
     path:        `/c/${params.slug}`,
@@ -84,7 +87,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     imageAlt:    title,
     kind:        'website',
     robots:      'index, follow',
-  })
+  }, biz.settings))
 }
 
 export default async function CatalogoPage({ params }: PageProps) {
@@ -236,6 +239,7 @@ export default async function CatalogoPage({ params }: PageProps) {
         ? { '--biz-color': business.theme_color } as React.CSSProperties
         : undefined}
     >
+      <StoreSchema slug={params.slug} />
       {/* ── CatalogoGrid: header + hero + search + tabs + grid + modals ── */}
       <CatalogoGrid
         searchSynonyms={readSynonyms(business.settings)}

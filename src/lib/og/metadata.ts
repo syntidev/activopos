@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { siteOrigin } from './site-url'
 import { currentCustomDomain } from '@/lib/catalog-links-server'
-import { nativeToClean } from '@/lib/custom-domains'
+import { getCustomDomains, nativeToClean } from '@/lib/custom-domains'
 
 /** Tamaño fijo de la tarjeta (el estándar de Open Graph / WhatsApp). */
 export const OG_WIDTH = 1200
@@ -19,13 +19,19 @@ export interface ShareInput {
   robots?:     string
 }
 
-/** `/c/<slug>[/p/5…]` → su ruta limpia si la petición llega por el dominio propio de ese tenant; si no, la misma ruta. */
-function publicPath(path: string): string {
-  const d = currentCustomDomain()
-  const m = d ? /^\/c\/([^/?#]+)(.*)$/.exec(path) : null
-  if (!d || !m || m[1] !== d.slug) return path
-  return nativeToClean(d.kind, m[2] || '') ?? path
+/**
+ * URL pública CANÓNICA de `/c/<slug>[/p/5…]`. Si el tenant tiene dominio propio, es SIEMPRE la ruta limpia en ese dominio, también
+ * cuando la petición llega por activopos.com/c/<slug> (evita contenido duplicado); si no, el host de la petición con la misma ruta.
+ */
+function canonicalUrl(origin: string, path: string): string {
+  const m = /^\/c\/([^/?#]+)(.*)$/.exec(path)
+  const d = m ? (currentCustomDomain() ?? getCustomDomains().find(x => x.slug === m[1])) : undefined
+  const clean = m && d && m[1] === d.slug ? nativeToClean(d.kind, m[2] || '') : null
+  return d && clean !== null ? `https://${d.host}${clean}` : `${origin}${path}`
 }
+
+/** URL canónica absoluta de una ruta `/c/<slug>…` para esta petición (canonical, og:url y url del JSON-LD). */
+export const publicUrl = (path: string): string => canonicalUrl(siteOrigin(), path)
 
 /**
  * Metadatos para compartir un catálogo/ficha: og:image ABSOLUTA y con dimensiones, og:url, og:type y tarjeta grande de Twitter.
@@ -35,10 +41,11 @@ export function shareMetadata(i: ShareInput): Metadata {
   const origin = siteOrigin()
   const abs = (p: string): string => `${origin}${p}`
   // En un dominio propio, la URL pública y el canonical son la ruta LIMPIA (/p/5, /tienda…), no la canónica /c/<slug>/….
-  const pageUrl = abs(publicPath(i.path))
+  const pageUrl = canonicalUrl(origin, i.path)
   return {
     metadataBase: new URL(origin),
-    title:        i.title,
+    // En un dominio propio el título es el del negocio, sin el sufijo "| ActivoPOS" del layout raíz.
+    title:        currentCustomDomain() ? { absolute: i.title } : i.title,
     description:  i.description,
     alternates:   { canonical: pageUrl },
     ...(i.robots ? { robots: i.robots } : {}),

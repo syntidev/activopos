@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
 import { shareMetadata } from '@/lib/og/metadata'
+import { ProductSchema } from '@/components/catalog/CatalogSeo'
 import { getActiveRate } from '@/lib/bcv'
 import { subcategoryKey } from '@/lib/subcategory'
 import { isCatalogLive, isOutOfStock, CATALOG_WHERE_FILTER , stockDisplayOf } from '@/lib/catalog'
@@ -159,6 +160,7 @@ export default async function ProductoPage({ params }: PageProps) {
         ? ({ '--biz-color': business.theme_color } as React.CSSProperties)
         : undefined}
     >
+      <ProductSchema slug={params.slug} id={product.id} />
       <ProductoDetalle
         productId={product.id}
         name={product.name}

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { identityMetadata, identityViewport } from '@/lib/web-identity'
+import { Ga4 } from '@/components/catalog/CatalogSeo'
 import { CartProvider } from './CartContext'
 import { CheckoutFinancingProvider } from '@/components/catalog/CheckoutFinancing'
 import { loadCheckoutFinancing } from '@/lib/catalog-checkout-financing'
@@ -22,7 +23,7 @@ export default async function CatalogoSlugLayout({ children, params }: LayoutPro
   const { financing, excludedIds } = await loadCheckoutFinancing(params.slug)
   return (
     <CheckoutFinancingProvider financing={financing} excludedIds={excludedIds}>
-      <CartProvider slug={params.slug}>{children}</CartProvider>
+      <CartProvider slug={params.slug}><Ga4 slug={params.slug} />{children}</CartProvider>
     </CheckoutFinancingProvider>
   )
 }

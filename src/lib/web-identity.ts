@@ -2,6 +2,7 @@ import { cache } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { prisma } from '@/lib/prisma'
 import { cartaPalette } from '@/lib/og/carta-palette'
+import { readSeo } from '@/lib/seo'
 
 /**
  * Identidad web por negocio: favicon e imagen para compartir propios. Vive en business.settings (sin cambio de esquema):
@@ -41,6 +42,15 @@ export interface IdentityBusiness {
   theme_color: string | null
   settings: unknown
   catalog_template: string | null
+  // Datos públicos del negocio que también usa el JSON-LD (Schema.org) de portada y ficha.
+  phone: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  logo_path: string | null
+  catalog_instagram: string | null
+  catalog_title: string | null
+  catalog_desc: string | null
 }
 
 /** Negocio de un catálogo público por slug (una sola consulta por petición: layout y páginas comparten el resultado). */
@@ -48,7 +58,10 @@ export const loadIdentityBusiness = cache(async (slug: string): Promise<Identity
   if (!SLUG_RE.test(slug)) return null
   return prisma.business.findFirst({
     where:  { catalog_slug: slug, catalog_active: true, active: true },
-    select: { id: true, name: true, theme_color: true, settings: true, catalog_template: true },
+    select: {
+      id: true, name: true, theme_color: true, settings: true, catalog_template: true,
+      phone: true, address: true, city: true, state: true, logo_path: true, catalog_instagram: true, catalog_title: true, catalog_desc: true,
+    },
   })
 })
 
@@ -58,20 +71,27 @@ export function accentOf(b: IdentityBusiness): string | null {
   return b.theme_color && HEX_RE.test(b.theme_color) ? b.theme_color : null
 }
 
-/** icons + manifest del negocio para los layouts de catálogo. {} si no subió favicon: queda el de ActivoPOS (layout raíz). */
+/**
+ * Metadatos de cabecera del negocio para los layouts de catálogo: icons + manifest (si subió favicon; si no queda el de ActivoPOS
+ * del layout raíz) y la verificación de Search Console (si guardó su token).
+ */
 export async function identityMetadata(slug: string): Promise<Metadata> {
   const b = await loadIdentityBusiness(slug)
-  const base = b ? readBase(b.settings, b.id, 'favicon') : null
-  if (!b || !base) return {}
+  if (!b) return {}
+  const base = readBase(b.settings, b.id, 'favicon')
+  const gsc = readSeo(b.settings).gsc_verification
   return {
-    icons: {
-      icon: [
-        { url: faviconFile(base, 32), sizes: '32x32', type: 'image/png' },
-        { url: faviconFile(base, 192), sizes: '192x192', type: 'image/png' },
-      ],
-      apple: [{ url: faviconFile(base, 180), sizes: '180x180' }],
-    },
-    manifest: `/api/web/manifest/${slug}`,
+    ...(base ? {
+      icons: {
+        icon: [
+          { url: faviconFile(base, 32), sizes: '32x32', type: 'image/png' },
+          { url: faviconFile(base, 192), sizes: '192x192', type: 'image/png' },
+        ],
+        apple: [{ url: faviconFile(base, 180), sizes: '180x180' }],
+      },
+      manifest: `/api/web/manifest/${slug}`,
+    } : {}),
+    ...(gsc ? { verification: { google: gsc } } : {}),
   }
 }
 

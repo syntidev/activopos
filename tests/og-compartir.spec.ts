@@ -64,7 +64,8 @@ test('ficha: og:image absoluta con dimensiones, og:url y tarjeta grande', async 
   expect(metaOf(html, 'og:image:width')).toBe('1200')
   expect(metaOf(html, 'og:image:height')).toBe('630')
   expect(metaOf(html, 'og:image:type')).toBe('image/jpeg')
-  expect(metaOf(html, 'og:url')).toMatch(new RegExp(`^https?://[^/]+/c/${SLUG}/p/${withPhoto}$`))
+  // /c/<slug>/p/N, o la URL limpia del dominio propio (https://<dominio>/p/N) si el negocio tiene uno en CUSTOM_DOMAINS
+  expect(metaOf(html, 'og:url')).toMatch(new RegExp(`^https?://[^/]+/(?:c/${SLUG}/)?p/${withPhoto}$`))
   expect(metaOf(html, 'og:type')).toBe('product')
   expect(metaOf(html, 'twitter:card')).toBe('summary_large_image')
   expect(metaOf(html, 'twitter:image')).toBe(image)
@@ -96,7 +97,7 @@ test('plantilla carta: metadatos absolutos y tarjeta con la paleta del preset no
     const html = await page.text()
     const image = metaOf(html, 'og:image')
     expect(image).toMatch(new RegExp(`^https?://[^/]+/api/og/producto/${SLUG}/${withPhoto}\\?v=\\d+$`))
-    expect(metaOf(html, 'og:url')).toMatch(new RegExp(`/c/${SLUG}/p/${withPhoto}$`))
+    expect(metaOf(html, 'og:url')).toMatch(new RegExp(`^https?://[^/]+/(?:c/${SLUG}/)?p/${withPhoto}$`))
     expect(metaOf(html, 'twitter:card')).toBe('summary_large_image')
 
     const res = await request.get(image as string, { headers: UA })

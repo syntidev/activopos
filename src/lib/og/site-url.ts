@@ -1,26 +1,37 @@
 import { headers } from 'next/headers'
+import { getCustomDomains, normalizeHost, requestHost, type CustomDomain } from '@/lib/custom-domains'
 
 /**
- * Origen ABSOLUTO del sitio para las etiquetas Open Graph. Sin esto Next resuelve las rutas relativas contra `http://localhost:<puerto>`
- * (el puerto interno del proceso) y WhatsApp/Facebook no pueden descargar la imagen: la vista previa sale sin foto.
+ * Origen ABSOLUTO CANÓNICO del sitio: canonical, og:url, og:image, JSON-LD, sitemap y robots. Sin él Next resuelve las rutas relativas
+ * contra `http://localhost:<puerto>` y WhatsApp/Facebook no pueden descargar la imagen.
  *
- * Orden: host de la petición (x-forwarded-host que pone el proxy, o host) con su protocolo; si ese host es interno/loopback o inválido
- * en producción, NEXT_PUBLIC_APP_URL y, al final, https://activopos.com. El host se valida (no se refleja cualquier cabecera).
+ * El host de la petición NUNCA se refleja tal cual (un `Host` falso envenenaría las respuestas cacheadas): solo se devuelve
+ * `https://<host>` si, sin "www." y en minúsculas, es activopos.com o un dominio propio de CUSTOM_DOMAINS. Cualquier otro host → https://activopos.com.
+ * www.<dominio> y <dominio> comparten el mismo origen canónico (el apex).
+ * Excepción de DESARROLLO (NODE_ENV ≠ production): localhost y direcciones internas se devuelven tal cual (`http://localhost:3001`) para poder probar.
  */
-const HOST_RE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d{1,5})?$/
-const LOOPBACK_RE = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.)/
+const APP_HOST = 'activopos.com'
+export const APP_ORIGIN = `https://${APP_HOST}`
+const DEV_HOST_RE = /^(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2})(?::\d{1,5})?$/
 
-const stripSlash = (u: string): string => u.replace(/\/+$/, '')
+export interface OriginOptions {
+  /** Por defecto NODE_ENV === 'production'. Se pasa explícito para probar la regla de producción. */
+  production?: boolean
+  /** Por defecto los dominios de CUSTOM_DOMAINS. */
+  domains?: readonly CustomDomain[]
+}
 
+export function catalogOrigin(rawHost: string | null | undefined, opts: OriginOptions = {}): string {
+  const production = opts.production ?? process.env.NODE_ENV === 'production'
+  const host = normalizeHost(rawHost).replace(/^www\./, '')
+  if (host === APP_HOST || (opts.domains ?? getCustomDomains()).some(d => d.host === host)) return `https://${host}`
+  const first = (rawHost ?? '').split(',')[0].trim().toLowerCase()
+  if (!production && DEV_HOST_RE.test(first)) return `http://${first}`
+  return APP_ORIGIN
+}
+
+/** Origen canónico para la petición en curso (host real en producción; en desarrollo también x-forwarded-host, ver requestHost). */
 export function siteOrigin(): string {
   const h = headers()
-  const host = (h.get('x-forwarded-host') ?? h.get('host') ?? '').split(',')[0].trim().toLowerCase()
-  const proto = (h.get('x-forwarded-proto') ?? '').split(',')[0].trim().toLowerCase()
-  const valid = HOST_RE.test(host)
-  const internal = !valid || LOOPBACK_RE.test(host)
-
-  if (internal && process.env.NODE_ENV === 'production') return stripSlash(process.env.NEXT_PUBLIC_APP_URL ?? 'https://activopos.com')
-  if (!valid) return 'http://localhost:3000'
-  const scheme = proto === 'https' || proto === 'http' ? proto : internal ? 'http' : 'https'
-  return `${scheme}://${host}`
+  return catalogOrigin(requestHost(name => h.get(name)))
 }

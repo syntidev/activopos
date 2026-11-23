@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCustomDomains } from '@/lib/custom-domains'
-import { catalogOrigin } from '@/lib/catalog-sitemap'
+import { siteOrigin } from '@/lib/og/site-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +11,6 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
   if (!SLUG_RE.test(params.slug)) return new NextResponse('No encontrado', { status: 404 })
   const own = getCustomDomains().find(d => d.slug === params.slug)
   if (own) return NextResponse.redirect(`https://${own.host}/robots.txt`, 308)
-  const body = ['User-agent: *', 'Allow: /', 'Disallow: /api/', '', `Sitemap: ${catalogOrigin()}/c/${params.slug}/sitemap.xml`, ''].join('\n')
+  const body = ['User-agent: *', 'Allow: /', 'Disallow: /api/', '', `Sitemap: ${siteOrigin()}/c/${params.slug}/sitemap.xml`, ''].join('\n')
   return new NextResponse(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=300' } })
 }

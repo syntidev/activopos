@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { CATALOG_WHERE_FILTER, isCatalogLive } from '@/lib/catalog'
 import { garminGuideEnabled } from '@/lib/garmin-guide'
 import { normalizeTemplate } from '@/lib/plantillas'
-import { siteOrigin } from '@/lib/og/site-url'
 
 /**
  * Sitemap de UN catálogo público (portada, tienda, categorías con productos, fichas visibles, guía y páginas legales).
@@ -14,12 +13,6 @@ import { siteOrigin } from '@/lib/og/site-url'
 
 const MAX_PRODUCTS = 5000
 
-/**
- * Origen de las URLs de sitemap/robots de activopos.com/c/<slug>. En producción es FIJO: estas respuestas se cachean (public) y un
- * Host/X-Forwarded-Host falso las envenenaría. En desarrollo sigue el host real para poder probar en localhost.
- */
-export const catalogOrigin = (): string =>
-  process.env.NODE_ENV === 'production' ? (process.env.NEXT_PUBLIC_APP_URL ?? 'https://activopos.com').replace(/\/+$/, '') : siteOrigin()
 
 export async function catalogSitemap(slug: string, toUrl: (nativeSuffix: string) => string | null, kitUrl?: string): Promise<MetadataRoute.Sitemap> {
   const business = await prisma.business.findFirst({

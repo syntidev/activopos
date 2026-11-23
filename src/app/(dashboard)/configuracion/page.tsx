@@ -33,6 +33,7 @@ export default async function ConfiguracionPage() {
     <ConfiguracionView
       session={session}
       landingSectionsEnabled={landingSectionsEnabled}
+      identidadEnabled={PLAN_LIMITS[plan]?.catalog ?? false}
       kitEnabled={business?.reservas_enabled ?? false}
       isCarta={business?.catalog_template === 'carta'}
     />

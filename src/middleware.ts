@@ -11,6 +11,7 @@ const PUBLIC_PREFIXES = [
   '/api/catalog/',
   '/api/public/',
   '/api/og/',                             // tarjetas para compartir (WhatsApp/Facebook las piden sin sesión)
+  '/api/web/',                            // manifest PWA del catálogo de cada negocio (lo pide el navegador sin sesión)
   '/api/marketing/',                      // contenido público de marketing (planes, segmentos)
   '/para-',                               // landings SEO por segmento (/para-carniceria, etc.) — públicas
   '/blog/',                               // posts individuales del blog público (/blog está en PUBLIC_EXACT)

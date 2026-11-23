@@ -19,6 +19,7 @@ import {
   Wallet,
   UtensilsCrossed,
   ChevronLeft,
+  Globe,
 } from 'lucide-react'
 import type { SessionUser } from '@/types'
 import { HelpButton } from '@/components/help/HelpButton'
@@ -39,8 +40,9 @@ import { TabBrands }          from './tabs/TabBrands'
 import { TabKit200k }         from './tabs/TabKit200k'
 import { TabEnvios }          from './tabs/TabEnvios'
 import { TabCarta }           from './tabs/TabCarta'
+import { TabIdentidadWeb }    from './tabs/TabIdentidadWeb'
 
-type TabKey = 'cobroprecios' | 'envios' | 'carta' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'identidad' | 'cobroprecios' | 'envios' | 'carta' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
 
 interface Tab {
   key: TabKey
@@ -81,6 +83,8 @@ const CUENTA_TABS: Tab[] = [
 interface ConfiguracionViewProps {
   session: SessionUser
   landingSectionsEnabled: boolean
+  /** Plan con catálogo: habilita "Identidad web" (favicon e imagen para compartir propios). */
+  identidadEnabled: boolean
   /** Kit 200K: mismo flag por negocio que /kit-200k (reservas_enabled). */
   kitEnabled: boolean
   /** catalog_template = 'carta': se ocultan las pestañas que no aplican y aparece "Carta". */
@@ -92,7 +96,9 @@ const KIT_TAB: Tab = { key: 'kit200k', label: 'Kit 200K', Icon: Ticket }
 // Negocio con plantilla Carta: su vitrina se configura en UNA pestaña "Carta"; no aplican Tema/Landing/Colecciones/Marcas (premium) ni Envíos por encomienda.
 const CARTA_TAB: Tab = { key: 'carta', label: 'Carta', Icon: UtensilsCrossed }
 
-export function ConfiguracionView({ session, landingSectionsEnabled, kitEnabled, isCarta }: ConfiguracionViewProps) {
+const IDENTIDAD_TAB: Tab = { key: 'identidad', label: 'Identidad web', Icon: Globe }
+
+export function ConfiguracionView({ session, landingSectionsEnabled, identidadEnabled, kitEnabled, isCarta }: ConfiguracionViewProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('general')
   // Móvil: 'menu' = lista de grupos; 'tab' = contenido de la opción elegida (con "Volver"). En escritorio se ven ambos y esto no aplica.
   const [vista, setVista] = useState<'menu' | 'tab'>('menu')
@@ -102,7 +108,8 @@ export function ConfiguracionView({ session, landingSectionsEnabled, kitEnabled,
   // completo de Catálogo Público ni aparece en el sidebar (no solo se
   // bloquea al guardar). Tema Visual queda fuera del gate (siempre visible).
   const planTabs     = isCarta ? [CARTA_TAB] : landingSectionsEnabled ? CATALOGO_TABS : CATALOGO_TABS.slice(0, 1)
-  const catalogoTabs = kitEnabled ? [...planTabs, KIT_TAB] : planTabs
+  const conIdentidad = identidadEnabled ? [...planTabs, IDENTIDAD_TAB] : planTabs
+  const catalogoTabs = kitEnabled ? [...conIdentidad, KIT_TAB] : conIdentidad
   const negocioTabs  = isCarta ? NEGOCIO_TABS.filter(t => t.key !== 'envios') : NEGOCIO_TABS
 
   const GROUPS: { label: string; tabs: Tab[] }[] = [
@@ -168,6 +175,7 @@ export function ConfiguracionView({ session, landingSectionsEnabled, kitEnabled,
         {activeTab === 'landing'     && landingSectionsEnabled && <TabLanding     businessId={session.businessId} />}
         {activeTab === 'colecciones' && landingSectionsEnabled && <TabColecciones businessId={session.businessId} />}
         {activeTab === 'marcas'      && landingSectionsEnabled && <TabBrands      businessId={session.businessId} />}
+        {activeTab === 'identidad'   && identidadEnabled       && <TabIdentidadWeb businessId={session.businessId} />}
         {activeTab === 'kit200k'     && kitEnabled             && <TabKit200k     businessId={session.businessId} />}
         {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}

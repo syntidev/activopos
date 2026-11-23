@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import type { Metadata, Viewport } from 'next'
+import { identityMetadata, identityViewport } from '@/lib/web-identity'
 import { CatalogLinksProvider } from '@/components/catalog/CatalogLinks'
 import { currentCustomDomain, isCleanFor } from '@/lib/catalog-links-server'
 import { CartProvider } from './CartContext'
@@ -11,6 +13,10 @@ interface LayoutProps {
   children: ReactNode
   params:   { slug: string }
 }
+
+// Identidad web del negocio (favicon/manifest/theme-color) para TODAS las rutas del catálogo; sin favicon propio: los de ActivoPOS.
+export const generateMetadata = ({ params }: LayoutProps): Promise<Metadata> => identityMetadata(params.slug)
+export const generateViewport = ({ params }: LayoutProps): Promise<Viewport> => identityViewport(params.slug)
 
 // Compartido por page.tsx (home), productos/page.tsx y p/[id]/page.tsx —
 // el CartProvider vive aquí para que el carrito no se resetee al navegar

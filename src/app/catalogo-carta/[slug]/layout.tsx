@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import type { Metadata, Viewport } from 'next'
+import { identityMetadata, identityViewport } from '@/lib/web-identity'
 import { CatalogLinksProvider } from '@/components/catalog/CatalogLinks'
 import { currentCustomDomain, isCleanFor } from '@/lib/catalog-links-server'
 import { Cormorant_Garamond, Fraunces, Instrument_Sans } from 'next/font/google'
@@ -18,6 +20,10 @@ interface CartaLayoutProps {
   children: ReactNode
   params:   { slug: string }
 }
+
+// Identidad web del negocio (favicon/manifest/theme-color); sin favicon propio quedan los de ActivoPOS.
+export const generateMetadata = ({ params }: CartaLayoutProps): Promise<Metadata> => identityMetadata(params.slug)
+export const generateViewport = ({ params }: CartaLayoutProps): Promise<Viewport> => identityViewport(params.slug)
 
 /** El carrito vive aquí para sobrevivir a la navegación carta ↔ ficha (mismo CartProvider que el catálogo premium). */
 export default async function CartaLayout({ children, params }: CartaLayoutProps) {

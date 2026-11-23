@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 import { prisma } from '@/lib/prisma'
+import { ogFile, readBase } from '@/lib/web-identity'
 import { isCatalogLive } from '@/lib/catalog'
 import { coverFill, loadImageBytes, logoPng } from '@/lib/og/images'
 import { brandAccent, jpegResponse, LIGHT, renderCoverCard } from '@/lib/og/image'
@@ -23,6 +26,16 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     },
   })
   if (!business || !isCatalogLive(business)) return new NextResponse('No encontrado', { status: 404 })
+
+  // Imagen para compartir subida por el dueño (Configuración > Identidad web): se sirve tal cual (ya es 1200×630 jpg).
+  const ogBase = readBase(business.settings, business.id, 'og')
+  if (ogBase) {
+    try {
+      return jpegResponse(await readFile(join(process.cwd(), ogFile(ogBase, 'jpg').replace(/^\//, ''))))
+    } catch {
+      // archivo ausente: se cae a la tarjeta generada
+    }
+  }
 
   const isCarta = business.catalog_template === 'carta'
   const palette = isCarta ? cartaPalette(business.settings) : { ...LIGHT, accent: brandAccent(business.theme_color, LIGHT.accent) }

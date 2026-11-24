@@ -10,6 +10,7 @@ import { fromBound, toBoundExclusive } from '@/lib/business-day'
 import { logError } from '@/lib/safe-log'
 import { resolveLinePrice } from '@/lib/pricing'
 import { priceModeSchema } from '@/lib/price-mode'
+import { ORDER_PAGO_INCLUDE, derivePago } from '@/lib/order-payment'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISOS — INTENCIONAL: Pedidos NO tiene guard de rol. cashier ve/crea/edita
@@ -85,6 +86,7 @@ export async function GET(req: NextRequest) {
         include: {
           items: true,
           client: { select: { id: true, name: true, phone: true } },
+          ...ORDER_PAGO_INCLUDE,
         },
         orderBy: { created_at: 'desc' },
         take: query.limit,
@@ -95,7 +97,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      orders,
+      // Estado de pago derivado (por_cobrar | cobrado | a_credito) y su desglose; la venta enlazada no se expone aquí.
+      orders: orders.map(({ sale, ...o }) => {
+        const pago = derivePago({ ...o, sale })
+        return { ...o, pago_estado: pago.pago_estado, pago }
+      }),
       pagination: {
         page: query.page,
         limit: query.limit,

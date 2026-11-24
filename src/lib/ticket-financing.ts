@@ -122,6 +122,8 @@ const TRANSITION_MESSAGE: Record<FinancingAction, string> = {
 }
 
 interface LoadedTicket extends FinancingColumns {
+  /** Pedido ya cobrado: id de su venta (solo para rechazar el financiamiento después de cobrar). */
+  saleId?:    number | null
   kind:       'sale' | 'order'
   id:         number
   number:     string
@@ -148,14 +150,23 @@ async function loadSale(tx: Prisma.TransactionClient, actor: FinancingActor, id:
   }
 }
 
-async function loadOrder(tx: Prisma.TransactionClient, actor: FinancingActor, id: number): Promise<LoadedTicket> {
+async function loadOrder(tx: Prisma.TransactionClient, actor: FinancingActor, id: number, action: FinancingAction): Promise<LoadedTicket> {
   await tx.$queryRaw`SELECT id FROM orders WHERE id = ${id} AND business_id = ${actor.businessId} FOR UPDATE`
   const o = await tx.order.findFirst({ where: { id, business_id: actor.businessId }, include: { items: { select: { product_id: true } } } })
   if (!o) throw new FinancingError(404, 'Pedido no encontrado')
-  if (o.sale_id !== null) throw new FinancingError(409, CHARGED_ORDER)
   if (o.status === 'cancelled') throw new FinancingError(409, 'Este pedido está cancelado; no se puede cambiar el financiamiento.')
-  if (o.status === 'delivered') throw new FinancingError(409, 'Este pedido ya fue entregado; no se puede cambiar el financiamiento.')
+  if (o.sale_id !== null) {
+    // Ya cobrado: lo único que se admite es RECHAZAR/retirar el financiamiento si el cobro llevó línea financiadora; ese saldo
+    // asignado a Cashea pasa a ser deuda del cliente (estado de pago derivado, sin mover ningún monto). No bloquea etapas.
+    const lineaFinanciadora = action === 'reject'
+      ? await tx.salePayment.count({ where: { sale_id: o.sale_id, payment_method: { is_financing: true } } })
+      : 0
+    if (lineaFinanciadora === 0) throw new FinancingError(409, CHARGED_ORDER)
+  } else if (o.status === 'delivered') {
+    throw new FinancingError(409, 'Este pedido ya fue entregado; no se puede cambiar el financiamiento.')
+  }
   return {
+    saleId: o.sale_id,
     kind: 'order', id: o.id, number: o.order_number, status: o.status, price_mode: o.price_mode,
     total_usd: Number(o.total_usd), total_bs: Number(o.total_bs), productIds: o.items.map(i => i.product_id),
     financing_status: o.financing_status, financing_provider: o.financing_provider, financing_phrase: o.financing_phrase,
@@ -178,7 +189,7 @@ export async function applyFinancingActionTx(
   id: number,
   action: FinancingAction,
 ): Promise<FinancingTicket> {
-  const t = kind === 'sale' ? await loadSale(tx, actor, id) : await loadOrder(tx, actor, id)
+  const t = kind === 'sale' ? await loadSale(tx, actor, id) : await loadOrder(tx, actor, id, action)
   const from = isStatus(t.financing_status) ? t.financing_status : null
   const next = nextStatus(from, action)
   if (next === 'invalid') throw new FinancingError(409, TRANSITION_MESSAGE[action])
@@ -200,6 +211,14 @@ export async function applyFinancingActionTx(
   if (kind === 'sale') await tx.sale.update({ where: { id }, data })
   else await tx.order.update({ where: { id }, data })
 
+  // Rechazo después de cobrar: la venta enlazada queda coherente y la bitácora deja el saldo que pasó a deuda del cliente.
+  let saldoADeuda: number | null = null
+  if (kind === 'order' && t.saleId) {
+    await tx.sale.update({ where: { id: t.saleId }, data: { financing_status: next } })
+    const agg = await tx.salePayment.aggregate({ where: { sale_id: t.saleId, payment_method: { is_financing: true } }, _sum: { amount_usd: true } })
+    saldoADeuda = Number(agg._sum.amount_usd ?? 0)
+  }
+
   await tx.activityLog.create({
     data: {
       business_id: actor.businessId,
@@ -207,8 +226,9 @@ export async function applyFinancingActionTx(
       action:      next === null ? 'financing_cleared' : from === null ? 'financing_requested' : 'financing_status_changed',
       model_type:  kind === 'sale' ? 'Sale' : 'Order',
       model_id:    id,
+      ...(saldoADeuda !== null ? { reason: 'Rechazado después de cobrar: el saldo asignado a Cashea pasa a deuda del cliente' } : {}),
       old_values:  { financing_status: from },
-      new_values:  { financing_status: next },
+      new_values:  { financing_status: next, ...(saldoADeuda !== null ? { deuda_cliente_usd: saldoADeuda } : {}) },
     },
   })
   return ticketOf(t, data)

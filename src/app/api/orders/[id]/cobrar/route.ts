@@ -6,7 +6,7 @@ import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { VARIANT_PRICING_SELECT } from '@/lib/pricing'
 import { PriceModeError, priceModeSchema, repriceOrderTx } from '@/lib/price-mode'
-import { FinancingError, assertPaymentMatchesFinancing } from '@/lib/ticket-financing'
+import { DIVISA_BLOCKS_FINANCING_MESSAGE, FinancingError, assertFinancingEligible } from '@/lib/ticket-financing'
 import { checkCedula, type CedulaCheck } from '@/lib/cedula'
 import { lenientCheckoutCedula } from '@/lib/customer-identity'
 
@@ -19,6 +19,12 @@ const cobrarSchema = z.object({
   cedula:            z.string().max(20).optional(),
   // Modo de precio con el que se cobra: si viene, se aplica y se guarda en el pedido; si no, el del pedido.
   price_mode:        priceModeSchema.optional(),
+  // Solo con método financiador (Cashea): la inicial que ENTRÓ, con un método real. El saldo (total − inicial) queda asignado a Cashea.
+  initial: z.object({
+    payment_method_id: z.number().int().positive(),
+    amount_usd:        z.number().positive().max(99_999_999),
+    reference:         z.string().max(100).optional(),
+  }).optional(),
 })
 
 // PERMISOS — INTENCIONAL: sin guard de rol. cashier cobra pedidos como admin (es la
@@ -47,6 +53,18 @@ export async function POST(req: NextRequest, { params }: Context) {
     })
     if (!pm) return NextResponse.json({ error: 'Método de pago inválido' }, { status: 400 })
 
+    // La inicial solo existe al cobrar con financiamiento y se recibe con un método REAL (activo, del negocio, no financiador).
+    if (body.initial && !pm.is_financing) {
+      return NextResponse.json({ error: 'La inicial solo aplica al cobrar con el método financiador.', field: 'initial' }, { status: 422 })
+    }
+    if (body.initial) {
+      const initialMethod = await db.paymentMethod.findFirst({
+        where: { id: body.initial.payment_method_id, is_active: true, is_financing: false }, // business_id inyectado
+        select: { id: true },
+      })
+      if (!initialMethod) return NextResponse.json({ error: 'La inicial debe recibirse con un método de pago real (no financiador).', field: 'initial' }, { status: 422 })
+    }
+
     // Network call must be outside the transaction
     const { rate } = await getActiveRate(session.businessId)
 
@@ -61,10 +79,12 @@ export async function POST(req: NextRequest, { params }: Context) {
 
       if (!order)                                          throw new Error('ORDER_NOT_FOUND')
       if (order.sale_id !== null)                          throw new Error('ALREADY_COBRADO')
-      if (['delivered', 'cancelled'].includes(order.status)) throw new Error('ORDER_TERMINAL')
-      // Financiamiento (Cashea): con la fila del pedido ya bloqueada, solo 'aprobado' se cobra con el método financiador.
-      await assertPaymentMatchesFinancing(tx, session.businessId, order.financing_status, [body.payment_method_id],
-        { priceMode: order.price_mode, productIds: order.items.map(i => i.product_id) })
+      if (order.status === 'cancelled')                    throw new Error('ORDER_TERMINAL')
+      // El método de pago es solo registro: cobrar se permite en CUALQUIER estado de financiamiento (Cashea no es compuerta de aprobación).
+      // Con el método financiador solo se exige que el financiamiento siga siendo posible (activo, productos elegibles, no rechazado, BCV).
+      if (pm.is_financing && order.financing_status === 'rejected') {
+        throw new FinancingError(409, 'El financiamiento fue rechazado: cobra con otro método de pago.')
+      }
 
       // Cédula: obligatoria (V/E natural) si el método es financiadora. Snapshot
       // en la venta y el pedido; Client.cedula solo si estaba nula.
@@ -113,6 +133,10 @@ export async function POST(req: NextRequest, { params }: Context) {
       const mode     = body.price_mode ?? priceModeSchema.catch('bcv').parse(order.price_mode)
       const repriced = await repriceOrderTx(tx, { businessId: session.businessId, userId: session.userId }, orderId, mode, rate)
       const lineById = new Map(repriced.items.map(l => [l.id, l]))
+      if (pm.is_financing && mode === 'divisa') throw new FinancingError(409, DIVISA_BLOCKS_FINANCING_MESSAGE)
+      const financingSnapshot = pm.is_financing
+        ? await assertFinancingEligible(tx, session.businessId, order.items.map(i => i.product_id))
+        : null
 
       const saleItems = order.items.map(item => {
         const p        = productMap.get(item.product_id)
@@ -162,6 +186,25 @@ export async function POST(req: NextRequest, { params }: Context) {
 
       const ticket_number = await generateTicketNumber(session.businessId, tx)
 
+      // Líneas de pago: método normal = una línea por el total; financiador = inicial recibida (método real) + saldo asignado a Cashea.
+      const inicialUsd = pm.is_financing && body.initial ? Math.round(body.initial.amount_usd * 100) / 100 : 0
+      if (inicialUsd > 0 && inicialUsd >= total_usd - 0.005) throw new Error('INITIAL_COVERS_TOTAL')
+      const inicialBs  = Math.round(inicialUsd * rate * 100) / 100
+      const paymentLines = pm.is_financing
+        ? [
+            ...(inicialUsd > 0 && body.initial
+              ? [{ payment_method_id: body.initial.payment_method_id, amount_bs: inicialBs, amount_usd: inicialUsd, reference: body.initial.reference ?? null, rate_used: rate }]
+              : []),
+            {
+              payment_method_id: body.payment_method_id,
+              amount_bs:         Math.round((total_bs - inicialBs) * 100) / 100,
+              amount_usd:        Math.round((total_usd - inicialUsd) * 100) / 100,
+              reference:         body.reference ?? null,
+              rate_used:         rate,
+            },
+          ]
+        : [{ payment_method_id: body.payment_method_id, amount_bs: total_bs, amount_usd: total_usd, reference: body.reference ?? null, rate_used: rate }]
+
       const newSale = await tx.sale.create({
         data: {
           business_id:   session.businessId,
@@ -170,10 +213,14 @@ export async function POST(req: NextRequest, { params }: Context) {
           status:        'paid',
           origin:        'catalog',
           price_mode:    mode,
-          // La venta hereda el financiamiento del pedido (snapshot de proveedor y frase).
-          financing_status:   order.financing_status,
-          financing_provider: order.financing_provider,
-          financing_phrase:   order.financing_phrase,
+          // Solo una venta con línea financiadora lleva financiamiento (los reportes la cuentan aparte); cobrar con método normal no hereda el del pedido.
+          ...(financingSnapshot
+            ? {
+                financing_status:   'approved',
+                financing_provider: order.financing_provider ?? financingSnapshot.provider,
+                financing_phrase:   order.financing_phrase ?? financingSnapshot.phrase,
+              }
+            : {}),
           total_usd,
           total_bs,
           rate_used:     rate,
@@ -184,15 +231,7 @@ export async function POST(req: NextRequest, { params }: Context) {
           notes:         order.notes,
           sold_at:       new Date(),
           items:         { create: saleItems },
-          payments: {
-            create: [{
-              payment_method_id: body.payment_method_id,
-              amount_bs:         total_bs,
-              amount_usd:        total_usd,
-              reference:         body.reference ?? null,
-              rate_used:         rate,
-            }],
-          },
+          payments: { create: paymentLines },
         },
         select: { id: true },
       })
@@ -260,10 +299,26 @@ export async function POST(req: NextRequest, { params }: Context) {
         })
       }
 
+      // Cobrar NO cambia la etapa: solo un pedido ya 'dispatched' se entrega al cobrar (el cobro era lo único que faltaba).
       await tx.order.update({
         where: { id: orderId },
-        data:  { sale_id: newSale.id, status: 'delivered', client_cedula: clientCedula },
+        data:  {
+          sale_id: newSale.id, client_cedula: clientCedula,
+          ...(order.status === 'dispatched' ? { status: 'delivered' as const } : {}),
+          ...(financingSnapshot && order.financing_status !== 'approved'
+            ? { financing_status: 'approved', financing_provider: order.financing_provider ?? financingSnapshot.provider, financing_phrase: order.financing_phrase ?? financingSnapshot.phrase }
+            : {}),
+        },
       })
+      if (financingSnapshot && order.financing_status !== 'approved') {
+        await tx.activityLog.create({
+          data: {
+            business_id: session.businessId, user_id: session.userId, action: 'financing_status_changed',
+            model_type: 'Order', model_id: orderId, reason: 'Cobro con el método financiador',
+            old_values: { financing_status: order.financing_status }, new_values: { financing_status: 'approved' },
+          },
+        })
+      }
 
       if (clientCedula && order.client_id !== null) {
         await tx.client.updateMany({
@@ -292,7 +347,8 @@ export async function POST(req: NextRequest, { params }: Context) {
       }
       if (err.message === 'ORDER_NOT_FOUND')   return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
       if (err.message === 'ALREADY_COBRADO')   return NextResponse.json({ error: 'Este pedido ya fue cobrado' }, { status: 409 })
-      if (err.message === 'ORDER_TERMINAL')    return NextResponse.json({ error: 'El pedido ya está entregado o cancelado' }, { status: 422 })
+      if (err.message === 'ORDER_TERMINAL')    return NextResponse.json({ error: 'El pedido está cancelado' }, { status: 422 })
+      if (err.message === 'INITIAL_COVERS_TOTAL') return NextResponse.json({ error: 'La inicial cubre el total: cobra con un método normal, sin financiamiento.', field: 'initial' }, { status: 422 })
       if (err.message === 'PRODUCTS_CHANGED')  return NextResponse.json({ error: 'Uno o más productos del pedido ya no están disponibles' }, { status: 422 })
     }
     console.error('cobrar POST error:', err)

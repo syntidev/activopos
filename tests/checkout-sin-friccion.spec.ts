@@ -59,13 +59,13 @@ test('API: sin teléfono o con teléfono corto → no pasa, con field customer_p
   }
 })
 
-test('API: cédula con puntos (21.222.819) → V-21222819; MRW con oficina y sin ciudad/dirección → envío completo', async ({ request }) => {
+test('API: cédula con puntos (12.345.678) → V-12345678; MRW con oficina y sin ciudad/dirección → envío completo', async ({ request }) => {
   const res = await pedir(request, {
-    customer_name: 'ZZB Daniela API', customer_phone: '0424-179-5757', customer_cedula: '21.222.819',
+    customer_name: 'ZZB Daniela API', customer_phone: '0414-0000000', customer_cedula: '12.345.678',
     delivery_type: 'delivery', shipping_method_id: mrwId, branch_office: 'MRW oficina Sebucan', delivery_address: null,
   })
   expect(res.status()).toBe(201)
-  expect(ultimo("CONCAT(client_cedula,'|',shipping_incomplete,'|',IFNULL(cedula_alert,0))")).toBe('V-21222819|0|0')
+  expect(ultimo("CONCAT(client_cedula,'|',shipping_incomplete,'|',IFNULL(cedula_alert,0))")).toBe('V-12345678|0|0')
 })
 
 test('API: envío MRW sin cédula ni oficina → pasa "por completar" y el WhatsApp lo dice', async ({ request }) => {
@@ -86,15 +86,15 @@ test('API: cédula mal escrita no bloquea: se guarda lo escrito y el pedido qued
 
 test('saved-address: solo { has_saved_address }, nunca nombre ni dirección (ni con cédula y teléfono correctos)', async ({ request }) => {
   const consulta = (cedula: string, phone: string) => request.post('/api/catalog/' + OWN_SLUG + '/saved-address', { data: { customer_cedula: cedula, customer_phone: phone } })
-  const res = await consulta('21222819', '04241795757')
+  const res = await consulta('12345678', '04140000000')
   const raw = await res.text()
   expect(res.status()).toBe(200)
   // El cliente sembrado por la API puede o no tener dirección válida (eso lo cubre el test de UI de "misma dirección"); aquí importa la FORMA.
   expect(Object.keys(JSON.parse(raw) as Record<string, unknown>)).toEqual(['has_saved_address'])
   expect(raw.replace('has_saved_address', '')).not.toMatch(/ZZB Daniela|name|address|prefill|Oficina/i)
-  const otroTel = await (await consulta('21222819', '04149998877')).json() as { has_saved_address: boolean; prefill?: unknown }
+  const otroTel = await (await consulta('12345678', '04149998877')).json() as { has_saved_address: boolean; prefill?: unknown }
   expect(otroTel).toEqual({ has_saved_address: false })
-  const sinTel = await (await consulta('21222819', '')).json() as Record<string, unknown>
+  const sinTel = await (await consulta('12345678', '')).json() as Record<string, unknown>
   expect(sinTel).toEqual({ has_saved_address: false })
 })
 
@@ -108,13 +108,13 @@ const abrirCheckout = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Finalizar por WhatsApp' }).click()
 }
 
-test('UI: Daniela Silva · 21.222.819 · 04241795757 · MRW oficina Sebucan (sin ciudad) → pedido enviado; segundo pedido precargado', async ({ page, context }) => {
+test('UI: Daniela Silva · 12.345.678 · 04140000000 · MRW oficina Sebucan (sin ciudad) → pedido enviado; segundo pedido precargado', async ({ page, context }) => {
   await context.route(/wa\.me|api\.whatsapp\.com/, route => route.fulfill({ status: 200, body: 'ok' }))
   await sembrarCarrito(page)
   await abrirCheckout(page)
   await page.getByTestId('checkout-name').fill('ZZB Daniela Silva')
-  await page.getByTestId('checkout-phone').fill('04241795757')
-  await page.getByTestId('checkout-cedula').fill('21.222.819')
+  await page.getByTestId('checkout-phone').fill('04140000000')
+  await page.getByTestId('checkout-cedula').fill('12.345.678')
   await page.getByTestId('checkout-next-1').click()
   await page.getByTestId('checkout-delivery-delivery').click()
   await page.getByTestId('checkout-methods').getByText('MRW').click()
@@ -122,7 +122,7 @@ test('UI: Daniela Silva · 21.222.819 · 04241795757 · MRW oficina Sebucan (sin
   await page.getByTestId('checkout-next-2').click()
   await page.getByTestId('checkout-submit').click()
   await expect(page.getByText('Tu pedido fue enviado por WhatsApp').first()).toBeVisible({ timeout: 30_000 })
-  expect(ultimo('client_cedula', "client_name='ZZB Daniela Silva'")).toBe('V-21222819')
+  expect(ultimo('client_cedula', "client_name='ZZB Daniela Silva'")).toBe('V-12345678')
 
   // Mismo navegador: el formulario sale precargado y solo hay que continuar.
   await page.goto('/catalogo/' + OWN_SLUG)
@@ -132,7 +132,7 @@ test('UI: Daniela Silva · 21.222.819 · 04241795757 · MRW oficina Sebucan (sin
   await page.getByRole('button', { name: 'Finalizar por WhatsApp' }).click()
   await expect(page.getByTestId('checkout-memory-notice')).toContainText('Usamos tus datos del último pedido')
   await expect(page.getByTestId('checkout-name')).toHaveValue('ZZB Daniela Silva')
-  await expect(page.getByTestId('checkout-phone')).toHaveValue('04241795757')
+  await expect(page.getByTestId('checkout-phone')).toHaveValue('04140000000')
   await expect(page.getByTestId('checkout-next-1')).toBeEnabled()
 
   // "No soy yo" limpia todo (formulario y memoria).

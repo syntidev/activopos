@@ -203,24 +203,20 @@ test('estados: solicitado → aprobado → rechazado → solicitado → retirado
   await api.dispose()
 })
 
-test('cobro del pedido: bloqueado sin aprobar; aprobado solo con el método financiador (todo o nada); rechazado libera', async () => {
+test('cobro del pedido: Cashea ya no es compuerta (se cobra en cualquier estado); el financiador sigue siendo BCV y un rechazado no se cobra con Cashea', async () => {
   const api = await apiAs()
   const r = await pedidoWeb([ids.a], { payment_kind: 'cashea' })
   const orderId = await orderIdOf(r)
 
-  const sinAprobar = await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: ids.finMethod } })
-  expect(sinAprobar.status()).toBe(409)
-  expect((await sinAprobar.json()).error).toContain('todavía no está aprobado')
-  const otroMetodo = await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: CASH_ID } })
-  expect(otroMetodo.status()).toBe(409)
-  expect((await otroMetodo.json()).error).toContain('apruébalo, recházalo o retíralo')
-
-  await accion(api, 'orders', orderId, 'approve')
-  const mezcla = await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: CASH_ID } })
-  expect(mezcla.status()).toBe(409)
-  expect((await mezcla.json()).error).toContain('todo o nada')
-  const divisa = await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: ids.finMethod, price_mode: 'divisa' } })
+  // solicitado y SIN aprobar: el cobro con el método financiador ya no se bloquea (la aprobación la lleva Cashea, no ActivoPOS)
+  const divisa = await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: ids.finMethod, price_mode: 'divisa', cedula: 'V-12345678' } })
   expect(divisa.status()).toBe(409) // Cashea nunca se cobra en Divisa
+
+  // y un pedido que pidió Cashea puede cobrarse con otro método: el método de pago es solo registro
+  const rNormal = await pedidoWeb([ids.a], { payment_kind: 'cashea' })
+  const normalId = await orderIdOf(rNormal)
+  expect((await api.post(`/api/orders/${normalId}/cobrar`, { data: { payment_method_id: CASH_ID } })).status()).toBe(200)
+  expect(sql(`SELECT IFNULL(financing_status,'NULL') FROM sales WHERE id=(SELECT sale_id FROM orders WHERE id=${normalId})`), 'cobrar con método normal no lleva financiamiento').toBe('NULL')
 
   const ok = await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: ids.finMethod, reference: 'CASH-123', cedula: 'V-12345678' } })
   expect(ok.status(), JSON.stringify(await ok.json().catch(() => ({})))).toBe(200)
@@ -230,11 +226,13 @@ test('cobro del pedido: bloqueado sin aprobar; aprobado solo con el método fina
   expect(tarde.status()).toBe(409)
   expect((await tarde.json()).error).toContain('ya fue cobrado')
 
-  // rechazado: libera para cobrar con otro método y bloquea el financiador
+  // rechazado (antes de cobrar): se cobra con otro método y ya no se admite el financiador
   const r2 = await pedidoWeb([ids.a], { payment_kind: 'cashea' })
   const orderId2 = await orderIdOf(r2)
   await accion(api, 'orders', orderId2, 'reject')
-  expect((await api.post(`/api/orders/${orderId2}/cobrar`, { data: { payment_method_id: ids.finMethod } })).status()).toBe(409)
+  const rechazado = await api.post(`/api/orders/${orderId2}/cobrar`, { data: { payment_method_id: ids.finMethod, cedula: 'V-12345678' } })
+  expect(rechazado.status()).toBe(409)
+  expect((await rechazado.json()).error).toContain('fue rechazado')
   expect((await api.post(`/api/orders/${orderId2}/cobrar`, { data: { payment_method_id: CASH_ID } })).status()).toBe(200)
   await api.dispose()
 })
@@ -299,8 +297,7 @@ test('cambiar los ítems con financiamiento vivo: producto excluido 409; un apro
   expect(bien.status()).toBe(200)
   expect(sql(`SELECT CONCAT(financing_status,'|',total_usd) FROM orders WHERE id=${orderId}`)).toBe('requested|200.00')
   expect(finLog('Order', orderId).slice(-1)).toEqual(['86|financing_status_changed|approved>requested'])
-  // y ya no se puede cobrar hasta aprobar de nuevo
-  expect((await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: ids.finMethod } })).status()).toBe(409)
+  // (en pedidos el cobro ya no depende de la aprobación: Cashea solo registra; ver "cobro del pedido: Cashea ya no es compuerta")
 
   // Borrador del POS: mismo comportamiento
   const d = await api.post('/api/pos/drafts', { data: { items: [{ product_id: ids.a, quantity: 1 }] } })

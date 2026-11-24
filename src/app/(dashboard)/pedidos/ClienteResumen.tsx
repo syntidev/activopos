@@ -57,8 +57,9 @@ function ClienteFichaPanel({ clientId, onClose }: { clientId: number; onClose: (
     const previo = document.activeElement as HTMLElement | null
     cerrarRef.current?.focus()
     const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
-    document.addEventListener('keydown', onKey, true)
-    return () => { document.removeEventListener('keydown', onKey, true); previo?.focus() }
+    // En window y en captura: corre antes que el cierre por Esc del Dialog de Radix (que escucha en document).
+    window.addEventListener('keydown', onKey, true)
+    return () => { window.removeEventListener('keydown', onKey, true); previo?.focus() }
   }, [onClose])
 
   const c = data?.client

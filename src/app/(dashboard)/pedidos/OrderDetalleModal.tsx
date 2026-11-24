@@ -13,6 +13,9 @@ import { FINANCING_BCV_NOTE, ITEMS_EDIT_WARNING, financingFromColumns, isFinanci
 import type { PriceMode, PriceSource } from '@/lib/pos'
 import { priceForMode, variantBases } from '@/lib/pricing'
 import { bs, dual, usd } from './money'
+import { ClienteResumen } from './ClienteResumen'
+import { PagoResumen } from './PagoBadge'
+import type { PedidoClienteResumen, PedidoPagoFields } from './pago'
 import type { BlockedProduct, FinancingAction, FinancingColumns, TicketFinancing } from '@/types/financing'
 import styles from './NuevoPedidoModal.module.css'
 import d from './OrderDetalleModal.module.css'
@@ -67,11 +70,15 @@ interface PricedLine {
   price_source: PriceSource
 }
 
-export interface OrderDetail extends FinancingColumns {
+export interface OrderDetail extends FinancingColumns, PedidoPagoFields {
   id: number
   order_number: string
   status: string
   client_name: string | null
+  client_phone?: string | null
+  client_cedula?: string | null
+  /** Resumen del cliente enlazado; null si el pedido no tiene cliente. */
+  client?: PedidoClienteResumen | null
   total_usd: number | string
   total_bs: number | string
   rate_used?: number | string
@@ -313,6 +320,15 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
 
   /* ── Financiamiento (Cashea): pedir, aprobar, rechazar o retirar; el servidor valida y devuelve el estado ── */
 
+  /** Vuelve a leer el pago y el cliente: rechazar Cashea tras cobrar cambia el saldo (pasa a deuda del cliente). */
+  const refreshPago = async (): Promise<Pick<OrderDetail, 'pago_estado' | 'pago' | 'client'>> => {
+    try {
+      const j = await (await fetch(`/api/orders/${orderId}`)).json() as { order?: OrderDetail }
+      if (j.order) return { pago_estado: j.order.pago_estado, pago: j.order.pago, client: j.order.client }
+    } catch { /* se queda con lo que ya se mostraba */ }
+    return {}
+  }
+
   const handleFinancing = async (action: FinancingAction) => {
     if (!order || finBusy) return
     setFinBusy(true)
@@ -326,12 +342,14 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
       return
     }
     setFinancing(result.financing)
+    const fresh = await refreshPago()
     const next: OrderDetail = {
       ...order,
       price_mode:         'bcv',
       financing_status:   result.financing?.status ?? null,
       financing_provider: result.financing?.provider ?? null,
       financing_phrase:   result.financing?.phrase ?? null,
+      ...fresh,
     }
     setOrder(next)
     onUpdated(next)
@@ -499,6 +517,8 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
               </div>
             )}
 
+            <ClienteResumen client={order.client ?? null} fallbackPhone={order.client_phone} fallbackCedula={order.client_cedula} rate={rate} />
+
             <div className={styles.field}>
               <span className={styles.label}>Ítems del pedido</span>
               {items.length > 0 ? (
@@ -578,7 +598,12 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
               <p className={styles.cartEmpty} role="note" data-testid="financing-bcv-note">{FINANCING_BCV_NOTE}</p>
             )}
 
+            {order.pago_estado && order.pago && <PagoResumen estado={order.pago_estado} pago={order.pago} rate={rate} />}
+
             <FinancingPanel
+              rejectQuestion={order.pago_estado === 'cobrado' && (order.pago?.cashea_asignado_usd ?? 0) > 0
+                ? `¿Rechazar Cashea? El saldo de ${usd(order.pago?.cashea_asignado_usd ?? 0)} asignado a Cashea vuelve a ser deuda del cliente.`
+                : undefined}
               financing={financing}
               onAction={handleFinancing}
               busy={finBusy}

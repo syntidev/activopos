@@ -20,7 +20,10 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
-import { CobrarPedidoModal } from './CobrarPedidoModal'
+import { CobrarPedidoModal, type InicialCobro } from './CobrarPedidoModal'
+import { DespachoBloqueadoModal } from './DespachoBloqueadoModal'
+import { PagoBadge } from './PagoBadge'
+import type { ApiErrorBody, PedidoPagoFields } from './pago'
 import { ShippingActions } from '@/components/comprobante/ShippingActions'
 import { ShippingEditor, CedulaAlertBadge, ShippingMethodTag } from '@/components/comprobante/ShippingEditor'
 import type { OrderShippingFields } from '@/types/pedidos'
@@ -43,7 +46,7 @@ interface OrderItem {
   subtotal_usd: number | string
 }
 
-interface Order extends OrderShippingFields, FinancingColumns {
+interface Order extends OrderShippingFields, FinancingColumns, PedidoPagoFields {
   id: number
   order_number: string
   status: string
@@ -198,6 +201,8 @@ function OrderCard({
 
       <CedulaAlertBadge show={order.cedula_alert} />
 
+      {order.pago_estado && <PagoBadge estado={order.pago_estado} pago={order.pago} />}
+
       {financingFromColumns(order) && <FinancingBadge financing={financingFromColumns(order)!} />}
 
       {order.delivery_type === 'delivery' && (
@@ -217,13 +222,16 @@ function OrderCard({
         >
           Cancelar
         </button>
-        <button
-          className={styles.cobrarBtn}
-          onClick={(e) => { e.stopPropagation(); onCobrar(order) }}
-          aria-label={`Cobrar pedido ${order.order_number}`}
-        >
-          Cobrar
-        </button>
+        {/* Cobrar en cualquier etapa, mientras esté por cobrar (con financiamiento rechazado tras cobrar ya hay venta: no se cobra de nuevo). */}
+        {(!order.pago_estado || order.pago_estado === 'por_cobrar') && !(order.pago && order.pago.deuda_cliente_usd > 0) && (
+          <button
+            className={styles.cobrarBtn}
+            onClick={(e) => { e.stopPropagation(); onCobrar(order) }}
+            aria-label={`Cobrar pedido ${order.order_number}`}
+          >
+            Cobrar
+          </button>
+        )}
       </div>
     </div>
   )
@@ -343,6 +351,16 @@ function PedidosContent() {
   const [detailOrderId, setDetailOrderId] = useState<number | null>(null)
   const [search, setSearch]         = useState('')
   const draggingRef = useRef<Order | null>(null)
+  // Solo un administrador puede despachar sin cobrar (el servidor lo vuelve a validar: 403 OVERRIDE_FORBIDDEN).
+  const [isAdmin, setIsAdmin]       = useState(false)
+  const [bloqueo, setBloqueo]       = useState<{ order: Order; message: string; error: string; busy: boolean } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json() as Promise<{ user?: { role?: string } }>)
+      .then(j => setIsAdmin(j.user?.role === 'admin' || j.user?.role === 'super_admin'))
+      .catch(() => {})
+  }, [])
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -396,30 +414,53 @@ function PedidosContent() {
 
   /* ── Status update ── */
 
-  const updateStatus = async (order: Order, newStatus: string) => {
-    // Optimistic update
-    setOrders((prev) =>
-      prev.map((o) => (o.id === order.id ? { ...o, status: newStatus } : o))
-    )
+  type Movido = { ok: true } | { ok: false; status: number; code?: string; message: string }
+
+  /** PATCH de etapa; el mensaje del servidor (422/403) viaja tal cual. override_reason solo lo acepta el admin. */
+  const moverPedido = async (order: Order, newStatus: string, overrideReason?: string): Promise<Movido> => {
     try {
       const res = await fetch(`/api/orders/${order.id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ status: newStatus }),
+        body:    JSON.stringify({ status: newStatus, ...(overrideReason ? { override_reason: overrideReason } : {}) }),
       })
-      if (!res.ok) {
-        // Rollback
-        setOrders((prev) =>
-          prev.map((o) => (o.id === order.id ? { ...o, status: order.status } : o))
-        )
-        toast('No se pudo actualizar el pedido', 'error')
-      }
+      if (res.ok) return { ok: true }
+      const body = await res.json().catch(() => null) as ApiErrorBody | null
+      return { ok: false, status: res.status, code: body?.code, message: body?.error ?? 'No se pudo actualizar el pedido' }
     } catch {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, status: order.status } : o))
-      )
-      toast('Error de conexión', 'error')
+      return { ok: false, status: 0, message: 'Error de conexión' }
     }
+  }
+
+  const setEtapa = (id: number, status: string) =>
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)))
+
+  const updateStatus = async (order: Order, newStatus: string) => {
+    // Despachar sin cobrar casi seguro es rechazado: no se mueve la tarjeta hasta que el servidor responda.
+    const sinCobro = newStatus === 'dispatched' && order.pago?.puede_avanzar === false
+    if (!sinCobro) setEtapa(order.id, newStatus)
+    const r = await moverPedido(order, newStatus)
+    if (r.ok) { if (sinCobro) setEtapa(order.id, newStatus); return }
+    if (!sinCobro) setEtapa(order.id, order.status) // rollback
+    if (r.status === 422 && r.code === 'PAYMENT_REQUIRED') {
+      setBloqueo({ order, message: r.message, error: '', busy: false })
+      return
+    }
+    toast(r.message, 'error')
+  }
+
+  const despacharSinCobrar = async (reason: string) => {
+    if (!bloqueo) return
+    const { order } = bloqueo
+    setBloqueo({ ...bloqueo, busy: true, error: '' })
+    const r = await moverPedido(order, 'dispatched', reason)
+    if (r.ok) {
+      setEtapa(order.id, 'dispatched')
+      setBloqueo(null)
+      toast(`Pedido ${order.order_number} despachado sin cobrar`, 'success')
+      return
+    }
+    setBloqueo({ order, message: bloqueo.message, error: r.message, busy: false })
   }
 
   const handleAdvance = (order: Order) => {
@@ -449,18 +490,19 @@ function PedidosContent() {
 
   // Devuelve el id de la venta: el modal pasa al paso Comprobante y se cierra
   // solo cuando el cajero pulsa "Listo".
-  const handleCobrarConfirm = async (paymentMethodId: number, reference: string, cedula: string | null): Promise<number> => {
+  const handleCobrarConfirm = async (paymentMethodId: number, reference: string, cedula: string | null, initial: InicialCobro | null): Promise<number> => {
     if (!cobrarOrder) throw new Error('No hay pedido seleccionado')
     const res = await fetch(`/api/orders/${cobrarOrder.id}/cobrar`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ payment_method_id: paymentMethodId, reference: reference || undefined, cedula: cedula || undefined }),
+      body:    JSON.stringify({ payment_method_id: paymentMethodId, reference: reference || undefined, cedula: cedula || undefined, ...(initial ? { initial } : {}) }),
     })
-    const data = await res.json() as { ok?: boolean; sale_id?: number; error?: string }
-    if (!res.ok || typeof data.sale_id !== 'number') {
-      throw new Error(data.error ?? 'Error al cobrar el pedido')
+    const data = await res.json().catch(() => null) as { ok?: boolean; sale_id?: number; error?: string } | null
+    if (!res.ok || typeof data?.sale_id !== 'number') {
+      throw new Error(data?.error ?? 'Error al cobrar el pedido') // 422/409 del servidor, tal cual
     }
-    setOrders(prev => prev.filter(o => o.id !== cobrarOrder.id))
+    // Cobrar ya no cambia la etapa: la tarjeta se queda y pasa a "Cobrado" (solo sale si estaba despachado y quedó entregado).
+    void fetchOrders()
     toast(`Pedido ${cobrarOrder.order_number} cobrado`, 'success')
     return data.sale_id
   }
@@ -500,6 +542,8 @@ function PedidosContent() {
               financing_status: updated.financing_status,
               financing_provider: updated.financing_provider,
               financing_phrase: updated.financing_phrase,
+              pago_estado: updated.pago_estado ?? o.pago_estado,
+              pago: updated.pago ?? o.pago,
             }
           : o
       )
@@ -623,6 +667,19 @@ function PedidosContent() {
         order={cobrarOrder}
         onClose={() => setCobrarOrder(null)}
         onConfirm={handleCobrarConfirm}
+      />
+
+      {/* Aviso: avanzar sin cobrar (422 PAYMENT_REQUIRED). Admin: despachar sin cobrar con motivo; cajero: solo cobrar. */}
+      <DespachoBloqueadoModal
+        open={bloqueo !== null}
+        orderNumber={bloqueo?.order.order_number ?? ''}
+        message={bloqueo?.message ?? ''}
+        isAdmin={isAdmin}
+        busy={bloqueo?.busy ?? false}
+        error={bloqueo?.error ?? ''}
+        onCobrar={() => { if (bloqueo) { setCobrarOrder(bloqueo.order); setBloqueo(null) } }}
+        onOverride={(reason) => { void despacharSinCobrar(reason) }}
+        onClose={() => setBloqueo(null)}
       />
 
       {/* Modal: Detalle de pedido */}

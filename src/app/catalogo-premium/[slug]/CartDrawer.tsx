@@ -556,7 +556,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                       className={`${styles.checkoutInput} ${cedulaError ? styles.checkoutInputError : ''}`}
                       value={cCedula}
                       onChange={e => { setCCedula(e.target.value); if (cedulaError) setCedulaError(null) }}
-                      placeholder="21222819"
+                      placeholder="12345678"
                       aria-invalid={cedulaError !== null}
                       disabled={submitting}
                     />

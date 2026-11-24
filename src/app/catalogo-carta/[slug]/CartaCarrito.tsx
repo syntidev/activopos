@@ -300,7 +300,7 @@ export function CartaCarrito({ slug, rate, payOptions, businessName, whatsapp, a
             )}
             <div className={styles.campo}><label htmlFor="c-nombre">Tu nombre</label><input id="c-nombre" className={styles.input} value={nombre} onChange={e => setNombre(e.target.value)} autoComplete="name" data-testid="carta-nombre-cliente" />{err('nombre')}</div>
             <div className={styles.campo}><label htmlFor="c-tel">Teléfono</label><input id="c-tel" className={styles.input} value={telefono} onChange={e => setTelefono(e.target.value)} inputMode="tel" autoComplete="tel" data-testid="carta-telefono" />{err('telefono')}{err('customer_phone')}</div>
-            <div className={styles.campo}><label htmlFor="c-ced">Cédula (opcional)</label><input id="c-ced" className={styles.input} value={cedula} onChange={e => setCedula(e.target.value)} placeholder="21222819" inputMode="numeric" autoComplete="off" data-testid="carta-cedula" />{err('cedula')}{err('customer_cedula')}</div>
+            <div className={styles.campo}><label htmlFor="c-ced">Cédula (opcional)</label><input id="c-ced" className={styles.input} value={cedula} onChange={e => setCedula(e.target.value)} placeholder="12345678" inputMode="numeric" autoComplete="off" data-testid="carta-cedula" />{err('cedula')}{err('customer_cedula')}</div>
             {modalidad === 'delivery' && (
               <>
                 <div className={styles.campo}><label htmlFor="c-zona">Zona (opcional)</label><input id="c-zona" className={styles.input} value={zona} onChange={e => setZona(e.target.value)} maxLength={60} data-testid="carta-zona" /></div>

@@ -90,7 +90,7 @@ export async function PATCH(
     // SEC: payment_method_id debe pertenecer al mismo tenant — nunca confiar en el id del cliente
     const paymentMethodIds = Array.from(new Set(body.payments.map(p => p.payment_method_id)))
     const validMethods = await prisma.paymentMethod.count({
-      where: { id: { in: paymentMethodIds }, business_id: session.businessId },
+      where: { id: { in: paymentMethodIds }, business_id: session.businessId, is_active: true },
     })
     if (validMethods !== paymentMethodIds.length) {
       return NextResponse.json({ error: 'Método de pago no válido para este negocio' }, { status: 403 })

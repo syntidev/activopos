@@ -104,7 +104,7 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
     }),
     prisma.inventoryEntry.groupBy({ by: ['product_id'], where: { business_id: business.id }, _sum: { quantity: true, waste: true } }),
     prisma.paymentMethod.findMany({
-      where: { business_id: business.id, is_active: true }, select: { id: true, name: true, type: true, is_financing: true }, orderBy: { sort_order: 'asc' },
+      where: { business_id: business.id, is_active: true }, select: { id: true, name: true, type: true, is_financing: true }, orderBy: [{ sort_order: 'asc' }, { id: 'asc' }],
     }),
     prisma.landingSection.findFirst({ where: { business_id: business.id, type: 'event_slider', visible: true }, orderBy: { order: 'asc' }, select: { config: true } })
       .catch(() => null),
@@ -163,11 +163,13 @@ export async function loadCarta(business: CartaBusiness): Promise<CartaPageData>
   const featured = [...pool.filter(d => d.isFeatured), ...pool.filter(d => !d.isFeatured && d.image), ...pool.filter(d => !d.isFeatured && !d.image)].slice(0, CASA_MAX)
 
   const casheaMethod = eff.casheaActive ? methods.find(m => m.is_financing) : undefined
-  const bsMethods = methods.filter(m => !m.is_financing && !divisaIds.includes(m.id))
+  // Métodos en Bs REALES: solo transferencia/pago móvil que no sean Divisa (nunca una financiadora ni "Efectivo USD" por no estar marcado).
+  const bsMethods = chips.bs.filter(m => !m.is_financing)
   const pagos: CartaPagos = { divisa: chips.divisa.map(m => m.name), bs: !eff.hideBsMethods || !divisaOn, cashea: !!casheaMethod }
   const payOptions: CartaPayOption[] = []
   if (divisaOn) payOptions.push({ kind: 'divisa', label: '$ Divisa', method: chips.divisa[0].name })
-  if (pagos.bs) payOptions.push({ kind: 'bs', label: bsMethods[0]?.name ?? 'Bs · tasa BCV', method: bsMethods[0]?.name ?? methods.find(m => !m.is_financing)?.name ?? 'Bs' })
+  // Sin método Bs real: etiqueta genérica y método 'Bs' (sin inventar uno de otro tipo).
+  if (pagos.bs) payOptions.push({ kind: 'bs', label: bsMethods[0]?.name ?? 'Bs · tasa BCV', method: bsMethods[0]?.name ?? 'Bs' })
   if (casheaMethod) payOptions.push({ kind: 'cashea', label: 'Cashea', method: casheaMethod.name })
 
   const hours = readCartaHours(business.settings)

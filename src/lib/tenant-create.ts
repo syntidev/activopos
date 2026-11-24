@@ -103,6 +103,10 @@ const EXPENSE_CATEGORIES = [
   { name: 'Otros',              color: '#94a3b8', is_system: true },
 ]
 
+const EFECTIVO_BS = 'Efectivo Bs'
+/** Tipos del wizard que son Divisa (dólares): su nombre sale de PM_META. */
+const DIVISA_PM_TYPES = ['efectivo_usd', 'zelle', 'binance'] as const
+
 const PAYMENT_METHODS = [
   { name: 'Efectivo Bs',  type: 'cash'     as const, sort_order: 1 },
   { name: 'Efectivo USD', type: 'cash'     as const, sort_order: 2 },
@@ -168,6 +172,7 @@ export async function createTenant(input: CreateTenantInput): Promise<CreateTena
   // Dedup por type: último gana si el wizard envía el mismo método repetido
   const dedupedMethods = Array.from(new Map((input.paymentMethods ?? []).map(pm => [pm.type, pm])).values())
   const extraMethods = dedupedMethods.filter(pm => !PM_META.get(pm.type)?.seeded)
+  const efectivoBsElegido = dedupedMethods.some(pm => pm.type === 'efectivo_bs')
   const cobroData = buildCobroData(dedupedMethods)
   const dedupedCategories = Array.from(new Set(input.categories ?? []))
 
@@ -211,7 +216,8 @@ export async function createTenant(input: CreateTenantInput): Promise<CreateTena
       // Métodos de pago: seed por defecto + extras del wizard (binance/transferencia) en una sola llamada
       await tx.paymentMethod.createMany({
         data: [
-          ...PAYMENT_METHODS.map(pm => ({ ...pm, business_id: biz.id })),
+          // Efectivo Bs nace INACTIVO (la mayoría cobra en $); solo queda activo si el wizard lo eligió (efectivo_bs).
+          ...PAYMENT_METHODS.map(pm => ({ ...pm, business_id: biz.id, ...(pm.name === EFECTIVO_BS ? { is_active: efectivoBsElegido } : {}) })),
           ...extraMethods.map((pm, i) => {
             const meta = PM_META.get(pm.type)
             return {
@@ -223,6 +229,19 @@ export async function createTenant(input: CreateTenantInput): Promise<CreateTena
           }),
         ],
       })
+
+      // Métodos Divisa del catálogo (settings.catalog_divisa_methods): Efectivo USD, Zelle y Binance Pay/USDT si se creó. Sin esto el catálogo
+      // trataba "Efectivo USD" como una opción en Bs. Solo tenants NUEVOS: los existentes no se migran.
+      const divisaNames = DIVISA_PM_TYPES.map(t => PM_META.get(t)?.name).filter((n): n is string => !!n)
+      const divisa = await tx.paymentMethod.findMany({
+        where: { business_id: biz.id, name: { in: divisaNames } }, select: { id: true }, orderBy: [{ sort_order: 'asc' }, { id: 'asc' }],
+      })
+      if (divisa.length > 0) {
+        await tx.business.update({
+          where: { id: biz.id },
+          data:  { settings: { ...((biz.settings ?? {}) as Record<string, unknown>), catalog_divisa_methods: divisa.map(m => m.id) } as Prisma.InputJsonObject },
+        })
+      }
 
       // Categorías creadas desde el wizard
       if (dedupedCategories.length > 0) {

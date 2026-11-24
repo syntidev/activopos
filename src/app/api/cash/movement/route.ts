@@ -71,6 +71,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // SEC: payment_method_id debe ser un método ACTIVO de este negocio — nunca confiar en el id del cliente (IDOR cross-tenant)
+    // (el campo es opcional: sin método no hay nada que validar)
+    if (body.payment_method_id !== undefined) {
+      const method = await prisma.paymentMethod.findFirst({
+        where:  { id: body.payment_method_id, business_id: session.businessId, is_active: true },
+        select: { id: true },
+      })
+      if (!method) return NextResponse.json({ error: 'Método de pago no válido para este negocio' }, { status: 403 })
+    }
+
     const movement = await prisma.cashMovement.create({
       data: {
         business_id: session.businessId,

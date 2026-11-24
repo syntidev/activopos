@@ -14,7 +14,7 @@ export function normalizeCedula(raw: string | null | undefined): string | null {
   const compact = (raw ?? '').toUpperCase().replace(/[\s.\-_]/g, '')
   const m = /^([A-Z])(\d+)$/.exec(compact)
   if (m) return `${m[1]}-${m[2]}`
-  // Solo dígitos ("21.222.819" o "21222819"): sin letra se asume V.
+  // Solo dígitos ("12.345.678" o "12345678"): sin letra se asume V.
   return /^\d+$/.test(compact) ? `V-${compact}` : null
 }
 

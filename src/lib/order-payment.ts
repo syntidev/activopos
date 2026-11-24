@@ -54,7 +54,8 @@ export interface PagoSource {
 
 const r2 = (x: number): number => Math.round(x * 100) / 100
 const sum = (xs: readonly { amount_usd: unknown }[]): number => r2(xs.reduce((a, x) => a + Number(x.amount_usd), 0))
-const COBRADAS: readonly string[] = [...REALIZED_SALE_STATUSES, 'returned']
+// Solo lo realizado cuenta como cobrado. Una venta 'returned' (devolución total) ya reembolsó todo: NO es cobrado ni deja avanzar el pedido.
+const COBRADAS: readonly string[] = REALIZED_SALE_STATUSES
 
 export function derivePago(o: PagoSource): OrderPago {
   const total = r2(Number(o.total_usd))

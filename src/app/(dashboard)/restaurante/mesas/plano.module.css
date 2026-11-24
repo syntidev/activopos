@@ -1,0 +1,94 @@
+/* Plano SVG (unidades = celdas). Todo valor visual sale de tokens --rs-* (tokens.css). */
+
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--rs-mono);
+  background: var(--rs-floor);
+  user-select: none;
+}
+.editable { touch-action: none; }
+
+.dot { fill: var(--rs-floor-dot); }
+.resA { fill: var(--rs-card); }
+.resB { fill: var(--rs-navy-soft); }
+.dirtyA { fill: var(--rs-dirty-a); }
+.dirtyB { fill: var(--rs-dirty-b); }
+
+/* ── Mobiliario fijo ── */
+.element { outline: none; }
+.hit { fill: transparent; }
+.shape { vector-effect: non-scaling-stroke; }
+.wall .shape { fill: var(--rs-wall); }
+.door .shape { fill: var(--rs-floor); stroke: var(--rs-floor-dot); stroke-width: 1px; stroke-dasharray: 3 3; }
+.bar .shape { fill: var(--rs-bar); stroke: var(--rs-bar-edge); stroke-width: 2px; }
+.pass .shape { fill: var(--rs-pass); }
+.elLabel { font-size: 0.3px; font-weight: 600; letter-spacing: 0.16em; fill: var(--rs-bar-ink); pointer-events: none; }
+.door .elLabel { fill: var(--rs-door-ink); }
+.pass .elLabel { fill: var(--rs-pass-ink); }
+.editable .element { cursor: grab; }
+.element:focus-visible .shape,
+.element.selected .shape { stroke: var(--rs-navy-2); stroke-width: 3px; stroke-dasharray: none; }
+
+/* ── Mesas ── */
+.table { outline: none; cursor: pointer; transition: opacity var(--rs-t-ui) var(--rs-ease); }
+.editable .table { cursor: grab; }
+.dim { opacity: 0.32; }
+
+.face { transform-box: fill-box; transform-origin: center; transition: transform var(--rs-t-press) var(--rs-ease); }
+.body { fill: var(--rs-card); stroke: var(--rs-table-edge); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.chair { fill: var(--rs-chair); }
+.num { font-size: 0.62px; font-weight: 700; fill: var(--rs-ink); pointer-events: none; }
+.numSm { font-size: 0.4px; font-weight: 700; fill: var(--rs-ink); pointer-events: none; }
+.sub { font-size: 0.27px; font-weight: 600; fill: var(--rs-muted); pointer-events: none; }
+
+.libre .body { fill: var(--rs-card); }
+
+.ocupada .body { fill: var(--rs-navy); stroke: var(--rs-navy); }
+.ocupada .num, .ocupada .numSm { fill: var(--rs-on-accent); }
+.ocupada .sub { fill: var(--rs-navy-tint); }
+.ocupada .chair { fill: var(--rs-navy-chair); }
+
+.por_cobrar .body { fill: var(--rs-amber); stroke: var(--rs-amber); }
+.por_cobrar .num, .por_cobrar .numSm, .por_cobrar .sub { fill: var(--rs-on-accent); }
+.por_cobrar .chair { fill: var(--rs-amber-chair); }
+
+.reservada .body { fill: url(#rs-res); stroke: var(--rs-res-edge); stroke-dasharray: 4 3; }
+.reservada .sub { fill: var(--rs-navy-2); }
+
+.por_limpiar .body { fill: url(#rs-dirty); }
+.por_limpiar .num, .por_limpiar .numSm { fill: var(--rs-muted); }
+
+/* Anillo de foco y selección: visibles también sobre navy y ámbar */
+.table:focus-visible .body,
+.table.selected .body { stroke: var(--rs-navy-2); stroke-width: 3px; stroke-dasharray: none; }
+.table.selected.ocupada .body { stroke: var(--rs-ink); }
+
+/* Único elemento animado del módulo: "por cobrar" pide atención. */
+.pulse {
+  fill: none;
+  stroke: var(--rs-amber);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0.5;
+  pointer-events: none;
+  animation: anillo var(--rs-pulso) ease-out infinite;
+}
+@keyframes anillo {
+  0%   { transform: scale(0.94); opacity: 0.6; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .table:hover .face { transform: translateY(-0.06px); }
+  .table:hover .body { filter: drop-shadow(0 0.1px 0.1px color-mix(in srgb, var(--rs-ink) 30%, transparent)); }
+}
+.table:active .face { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; opacity: 0.35; }
+  .face, .table { transition: none; }
+}

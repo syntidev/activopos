@@ -15,6 +15,10 @@ enum Role {
   // Acceso EXCLUSIVO a /reservas y /api/reservas* (ver middleware.ts). Para que
   // varias personas trabajen el evento sin ver nada más del negocio.
   operador_reservas
+  // Módulo Restaurante (restaurante_enabled): roles restringidos, deniegan por
+  // defecto en middleware.ts. Sin pantallas propias hasta R2/R3.
+  waiter
+  kitchen
 }
 
 enum SaleMode {
@@ -45,6 +49,8 @@ enum OrderOrigin {
   catalog
   phone
   pos
+  // Cuenta de mesa del módulo Restaurante (R2). Solo la emiten negocios con el flag.
+  table
 }
 
 enum PurchaseStatus {
@@ -212,6 +218,9 @@ model Business {
   // NO vive en modules_enabled: esa lista la reescribe el tenant desde
   // Configuración > Módulos (PATCH) y ahí se perdería o el tenant se lo autoactivaría.
   reservas_enabled             Boolean   @default(false)
+  // Feature flag por negocio del módulo Restaurante (mismo patrón que reservas_enabled):
+  // apagado por defecto, se enciende por SQL del equipo, nunca por una API del tenant.
+  restaurante_enabled          Boolean   @default(false)
   // Config editable del microsite /kit-200k (texto de evento, SEO, badge,
   // activo, link en header) -- mismo patrón que cobro_data: un solo blob
   // JSON por negocio, sin tabla aparte. Shape real en src/lib/kit-config.ts
@@ -259,8 +268,81 @@ model Business {
   brands               Brand[]
   reservas             Reserva[]
   shipping_methods     BusinessShippingMethod[]
+  service_areas        ServiceArea[]
+  dining_tables        DiningTable[]
+  floor_elements       FloorElement[]
 
   @@map("businesses")
+}
+
+// ── Restaurante R1: áreas, mesas y plano ───────────────────────────
+// El estado "ocupada / por cobrar" NO se guarda: se deriva de la cuenta abierta
+// (src/lib/restaurante.ts). Solo las marcas manuales viven en la mesa.
+
+model ServiceArea {
+  id          Int     @id @default(autoincrement())
+  business_id Int
+  name        String  @db.VarChar(60)
+  sort_order  Int     @default(0)
+  active      Boolean @default(true)
+
+  business Business       @relation(fields: [business_id], references: [id])
+  tables   DiningTable[]
+  elements FloorElement[]
+
+  @@unique([business_id, name])
+  @@map("service_areas")
+}
+
+model DiningTable {
+  id          Int     @id @default(autoincrement())
+  business_id Int
+  area_id     Int
+  label       String  @db.VarChar(20)
+  capacity    Int     @default(4)
+  // rect | round | stool. Las sillas no se guardan: se dibujan según capacity.
+  shape       String  @default("rect") @db.VarChar(10)
+  // Posición y tamaño en celdas de la cuadrícula del plano (no píxeles).
+  pos_x       Int     @default(0)
+  pos_y       Int     @default(0)
+  width       Int     @default(2)
+  height      Int     @default(2)
+  // 0 | 90 | 180 | 270
+  rotation    Int     @default(0)
+  active      Boolean @default(true)
+  // Marcas manuales: ocupada y por_cobrar se derivan de la cuenta, estas no.
+  cleaning_pending Boolean   @default(false)
+  reserved_for     String?   @db.VarChar(80)
+  reserved_phone   String?   @db.VarChar(30)
+  reserved_at      DateTime?
+
+  business Business    @relation(fields: [business_id], references: [id])
+  area     ServiceArea @relation(fields: [area_id], references: [id])
+
+  @@unique([business_id, area_id, label])
+  @@index([business_id, area_id])
+  @@map("dining_tables")
+}
+
+// Mobiliario fijo del plano de arquitecto. Los taburetes de barra son DiningTable (shape stool).
+model FloorElement {
+  id          Int     @id @default(autoincrement())
+  business_id Int
+  area_id     Int
+  // wall | door | bar | pass
+  kind        String  @db.VarChar(12)
+  label       String? @db.VarChar(40)
+  pos_x       Int
+  pos_y       Int
+  width       Int
+  height      Int
+  rotation    Int     @default(0)
+
+  business Business    @relation(fields: [business_id], references: [id])
+  area     ServiceArea @relation(fields: [area_id], references: [id])
+
+  @@index([business_id, area_id])
+  @@map("floor_elements")
 }
 
 // Secciones configurables del catálogo público (landing). Fase 1: hero,

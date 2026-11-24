@@ -245,6 +245,8 @@ const ROLE_LABELS: Record<SessionUser['role'], string> = {
   admin:       'Admin',
   cashier:     'Cajero',
   operador_reservas: 'Operador de reservas',
+  waiter:      'Mesonero',
+  kitchen:     'Cocina',
 }
 
 const ROLE_CLASSES: Record<SessionUser['role'], string> = {
@@ -252,6 +254,8 @@ const ROLE_CLASSES: Record<SessionUser['role'], string> = {
   cashier:     styles.roleCashier,
   super_admin: styles.roleSuperAdmin,
   operador_reservas: styles.roleCashier,
+  waiter:      styles.roleCashier,
+  kitchen:     styles.roleCashier,
 }
 
 export function Header({

@@ -1,0 +1,56 @@
+/* Editor de plano (solo admin). Reutiliza botones y campos de salon.module.css con composes. */
+
+.editor { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.btn { composes: btn from './salon.module.css'; }
+.btnPrimary { composes: btnPrimary from './salon.module.css'; }
+.btnDanger { composes: btnDanger from './salon.module.css'; }
+.field { composes: field from './salon.module.css'; }
+.input { composes: input from './salon.module.css'; }
+
+/* En pantallas angostas el plano no se edita: se explica y se ocultan las herramientas. */
+.mobileNote { margin: 0; padding: var(--space-4); border-radius: 14px; background: var(--rs-navy-soft); color: var(--rs-navy); font-size: 14px; line-height: 1.45; }
+.body { display: none; }
+@media (min-width: 760px) {
+  .mobileNote { display: none; }
+  .body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+}
+@media (min-width: 1100px) { .body { grid-template-columns: minmax(0, 1fr) 300px; } }
+
+.main { min-width: 0; }
+.tools { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.tool {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: 0 12px; border: 0;
+  border-radius: var(--rs-radio-ctl); background: var(--rs-card); color: var(--rs-ink); box-shadow: var(--rs-sombra);
+  font: 600 13px var(--rs-ui); cursor: pointer; transition: transform var(--rs-t-press) var(--rs-ease);
+}
+.tool:active { transform: scale(0.97); }
+.tool:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+
+.planCard { background: var(--rs-floor); border-radius: var(--rs-radio); box-shadow: var(--rs-sombra); overflow: hidden; }
+.tip { margin: var(--space-3) 0 0; font-size: 12.5px; line-height: 1.45; color: var(--rs-ink-2); }
+
+.panel { display: flex; flex-direction: column; gap: var(--space-3); }
+.card { background: var(--rs-card); border-radius: var(--rs-radio); box-shadow: var(--rs-sombra); padding: 14px 16px; display: flex; flex-direction: column; gap: var(--space-3); }
+.cardHead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+.cardTitle { font: 700 18px var(--rs-mono); }
+.card .tip { margin: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.readout { min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: var(--rs-radio-ctl); background: var(--rs-field); font: 600 14px var(--rs-mono); color: var(--rs-ink); }
+
+.stepper { display: flex; align-items: center; justify-content: space-between; min-height: 44px; border-radius: var(--rs-radio-ctl); background: var(--rs-field); }
+.stepBtn { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; color: var(--rs-ink-2); cursor: pointer; border-radius: var(--rs-radio-ctl); }
+.stepBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.stepBtn:active:not(:disabled) { transform: scale(0.94); }
+.stepBtn:focus-visible, .segBtn:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+.stepVal { font: 600 14px var(--rs-mono); color: var(--rs-ink); }
+
+.seg { display: flex; gap: 2px; padding: 3px; background: var(--rs-seg); border-radius: var(--rs-radio-ctl); }
+.segBtn { flex: 1; min-height: 44px; border: 0; border-radius: 8px; background: transparent; font: 600 13px var(--rs-ui); color: var(--rs-ink-2); cursor: pointer; transition: background var(--rs-t-ui) var(--rs-ease), color var(--rs-t-ui) var(--rs-ease); }
+.segOn { background: var(--rs-card); color: var(--rs-ink); box-shadow: var(--rs-sombra); }
+
+.footer { display: flex; justify-content: flex-end; gap: var(--space-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tool, .segBtn { transition: none; }
+}

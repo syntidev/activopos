@@ -1206,3 +1206,70 @@
   --carta-borde-hover: color-mix(in srgb, var(--carta-acento) 40%, transparent);
   --carta-fondo-hover: color-mix(in srgb, var(--carta-card) 94%, var(--carta-acento) 6%);
 }
+
+/* ============================================================
+   Restaurante — módulo opcional (flag por negocio) · "el color es atención"
+   Libre = sin color · ocupada = navy · por cobrar = ámbar + pulso (único
+   elemento animado) · reservada / por limpiar = rayado · listo = verde.
+   Aislado en [data-restaurante]: no cambia nada fuera del módulo.
+   Tipografías vía next/font (--font-rs-ui / --font-rs-mono), mismo elemento.
+   ============================================================ */
+[data-restaurante] {
+  --rs-ui:   var(--font-rs-ui), system-ui, sans-serif;
+  --rs-mono: var(--font-rs-mono), ui-monospace, monospace;
+
+  /* Paleta de atención */
+  --rs-navy:        #0B2A6B;
+  --rs-navy-2:      #123A8F;
+  --rs-navy-soft:   #E8EDF8;
+  --rs-navy-tint:   #B9C6EA;   /* texto secundario sobre navy */
+  --rs-navy-chair:  #9FB0DA;
+  --rs-amber:       #C26A00;
+  --rs-amber-bg:    #FFF3DF;
+  --rs-amber-chair: #E9B970;
+  --rs-green:       #127A3E;
+  --rs-green-bg:    #E4F5EA;
+  --rs-red:         #C4231B;
+  --rs-on-accent:   #FFFFFF;
+
+  /* Superficies y texto del módulo (el plano es físico: no cambia con el tema) */
+  --rs-page:        #EEEDF4;
+  --rs-card:        #FFFFFF;
+  --rs-ink:         #141824;
+  --rs-ink-2:       #4B5162;
+  --rs-muted:       #6B7183;   /* 4.7:1 sobre blanco (AA) */
+  --rs-line:        #E4E3EC;
+  --rs-field:       #F3F2F8;
+  --rs-seg:         #E2E1EA;
+  --rs-switch-off:  #CBD0DC;
+
+  /* Plano crema */
+  --rs-floor:       #FBFAF7;
+  --rs-floor-dot:   #E6E3DA;
+  --rs-wall:        #2B2F3A;
+  --rs-bar:         #E9E5DA;
+  --rs-bar-edge:    #CFC8B6;
+  --rs-bar-ink:     #857C63;
+  --rs-pass:        #F0C36B;
+  --rs-pass-ink:    #8F6A14;
+  --rs-door-ink:    #6B7183;
+  --rs-table-edge:  #CFCDD8;
+  --rs-chair:       #D9D7E0;
+  --rs-dirty-a:     #F3F2F6;
+  --rs-dirty-b:     #E6E5EC;
+  --rs-res-edge:    #8EA1D3;
+
+  /* Medidas */
+  --rs-radio:       16px;
+  --rs-radio-ctl:   10px;
+  --rs-sombra:        0 2px 8px rgba(47, 43, 61, 0.10), 0 0 1px rgba(47, 43, 61, 0.06);
+  --rs-sombra-hover:  0 8px 18px -8px rgba(20, 24, 36, 0.35);
+  --rs-sombra-modal:  0 20px 50px -20px rgba(20, 24, 36, 0.35);
+  --rs-pulso:       1.8s;
+
+  /* Movimiento: salida fuerte, rápido (solo transform/opacity) */
+  --rs-ease:        cubic-bezier(0.23, 1, 0.32, 1);
+  --rs-t-press:     140ms;
+  --rs-t-ui:        200ms;
+  --rs-anillo:      2px;       /* grosor del anillo de foco */
+}

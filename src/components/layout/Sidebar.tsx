@@ -34,6 +34,7 @@ import {
   Shield,
   ArrowRightLeft,
   FileText,
+  UtensilsCrossed,
   ChevronDown,
   type LucideIcon,
 } from 'lucide-react'
@@ -45,6 +46,8 @@ const ROLE_LABELS: Record<SessionUser['role'], string> = {
   admin:       'Admin',
   cashier:     'Cajero',
   operador_reservas: 'Operador de reservas',
+  waiter:      'Mesonero',
+  kitchen:     'Cocina',
 }
 
 const ROLE_BADGE_CLASSES: Record<SessionUser['role'], string> = {
@@ -52,6 +55,8 @@ const ROLE_BADGE_CLASSES: Record<SessionUser['role'], string> = {
   cashier:     styles.roleCashier,
   super_admin: styles.roleSuperAdmin,
   operador_reservas: styles.roleCashier,
+  waiter:      styles.roleCashier,
+  kitchen:     styles.roleCashier,
 }
 
 const ICON_COLOR_CLASSES: Record<string, string> = {
@@ -74,7 +79,7 @@ interface NavItem {
   /** Además del toggle en modules_enabled, requiere que el plan del tenant lo incluya */
   requiresCatalogPlan?: boolean
   /** Feature flag por negocio (columna propia en Business): oculto salvo confirmación del servidor */
-  featureFlag?: 'reservas'
+  featureFlag?: 'reservas' | 'restaurante'
 }
 
 interface NavGroup {
@@ -107,6 +112,8 @@ const NAV_GROUPS: NavGroup[] = [
       // Preventa/inscripción con logística propia (no pasa por Order/Sale). Solo admin Y solo
       // negocios con Business.reservas_enabled (hoy: OnBike). Sin el flag ni el link ni la ruta existen.
       { href: '/reservas', icon: ClipboardList, label: 'Reservas',                             colorKey: 'ventas', adminOnly: true, featureFlag: 'reservas' },
+      // Plano de mesas del módulo Restaurante. Visible para cajero y admin, solo con Business.restaurante_enabled.
+      { href: '/restaurante/mesas', icon: UtensilsCrossed, label: 'Salón',                         colorKey: 'ventas', featureFlag: 'restaurante' },
     ],
   },
   {
@@ -202,6 +209,7 @@ interface NavContentProps {
   enabledModules?: string[] | null
   catalogPlanAllowed?: boolean
   reservasEnabled?: boolean
+  restauranteEnabled?: boolean
   sidebarCounts?: SidebarCounts
   showMobileInfo?: boolean
   session?: SessionUser | null
@@ -224,6 +232,7 @@ function NavContent({
   enabledModules,
   catalogPlanAllowed = true,
   reservasEnabled = false,
+  restauranteEnabled = false,
   sidebarCounts,
   showMobileInfo = false,
   session,
@@ -278,7 +287,8 @@ function NavContent({
             (!item.moduleKey || !enabledModules || enabledModules.includes(item.moduleKey)) &&
             (!item.requiresCatalogPlan || catalogPlanAllowed) &&
             (!item.adminOnly || isAdmin) &&
-            (item.featureFlag !== 'reservas' || reservasEnabled)
+            (item.featureFlag !== 'reservas' || reservasEnabled) &&
+            (item.featureFlag !== 'restaurante' || restauranteEnabled)
           )
           if (visibleItems.length === 0) return null
 
@@ -485,6 +495,7 @@ interface SidebarProps {
   enabledModules?: string[] | null
   catalogPlanAllowed?: boolean
   reservasEnabled?: boolean
+  restauranteEnabled?: boolean
 }
 
 export function Sidebar({
@@ -497,6 +508,7 @@ export function Sidebar({
   enabledModules,
   catalogPlanAllowed,
   reservasEnabled,
+  restauranteEnabled,
 }: SidebarProps) {
   useScrollLock(isMobileOpen)
 
@@ -558,6 +570,7 @@ export function Sidebar({
     enabledModules,
     catalogPlanAllowed,
     reservasEnabled,
+    restauranteEnabled,
     sidebarCounts,
     session,
     isImpersonating,

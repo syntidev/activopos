@@ -56,7 +56,7 @@ const PROTECTED_PREFIXES = [
   '/analytics', '/ayuda', '/caja', '/catalogo-digital', '/clientes', '/configuracion',
   '/cotizaciones', '/devoluciones', '/escritorio', '/finanzas', '/inventario', '/kds',
   '/metricas', '/onboarding', '/pedidos', '/pos', '/productos', '/proveedores', '/reportes',
-  '/reservas', '/tu-dia', '/usuarios', '/ventas',
+  '/reservas', '/restaurante', '/tu-dia', '/usuarios', '/ventas',
   '/admin', '/blog-admin', '/businesses', '/invoices', '/settings', '/stats', '/tickets',
   '/api/',
 ]
@@ -117,8 +117,26 @@ const OPERADOR_ALLOWED: readonly OperadorRule[] = [
   { path: '/api/upload/image', exact: true, methods: ['POST'] },
 ]
 
-function operadorAllows(pathname: string, method: string): boolean {
-  return OPERADOR_ALLOWED.some(rule => {
+// Módulo Restaurante (Business.restaurante_enabled): mismos roles restringidos,
+// deniegan por defecto. Sin pantallas propias aún (MeseroShell en R2, KDSShell en R3);
+// la lista solo fija hasta dónde podrán llegar. Cada API revisa además el flag y el rol.
+const WAITER_ALLOWED: readonly OperadorRule[] = [
+  { path: '/restaurante' },
+  { path: '/api/restaurante' },
+]
+const KITCHEN_ALLOWED: readonly OperadorRule[] = [
+  { path: '/kds' },
+  { path: '/api/restaurante/kds' },
+]
+
+const RESTRICTED_ROLES: Record<string, { rules: readonly OperadorRule[]; home: string }> = {
+  operador_reservas: { rules: OPERADOR_ALLOWED, home: '/reservas' },
+  waiter:            { rules: WAITER_ALLOWED,   home: '/restaurante/mesas' },
+  kitchen:           { rules: KITCHEN_ALLOWED,  home: '/kds' },
+}
+
+function restrictedAllows(rules: readonly OperadorRule[], pathname: string, method: string): boolean {
+  return rules.some(rule => {
     const pathOk = rule.exact
       ? pathname === rule.path
       : pathname === rule.path || pathname.startsWith(rule.path + '/')
@@ -177,10 +195,11 @@ export async function middleware(req: NextRequest) {
 
   // Rol restringido: primero, antes de cualquier otra regla. Lo que no esté en
   // la lista blanca no existe para él.
-  if (session.role === 'operador_reservas' && !operadorAllows(pathname, req.method)) {
+  const restricted = RESTRICTED_ROLES[session.role]
+  if (restricted && !restrictedAllows(restricted.rules, pathname, req.method)) {
     return pathname.startsWith('/api/')
       ? NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
-      : NextResponse.redirect(new URL('/reservas', req.url))
+      : NextResponse.redirect(new URL(restricted.home, req.url))
   }
 
   if (SUPER_ADMIN_ONLY.some(p => pathname.startsWith(p))) {

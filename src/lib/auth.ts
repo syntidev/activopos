@@ -14,7 +14,7 @@ const EXPIRES_IN = '8h'
 export interface SessionPayload {
   userId: number
   businessId: number
-  role: 'super_admin' | 'admin' | 'cashier' | 'operador_reservas'
+  role: 'super_admin' | 'admin' | 'cashier' | 'operador_reservas' | 'waiter' | 'kitchen'
   name: string
   onboardingCompleted?: boolean
   modulesEnabled?: string

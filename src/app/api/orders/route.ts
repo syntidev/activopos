@@ -70,8 +70,8 @@ export async function GET(req: NextRequest) {
 
     const where = {
       // business_id inyectado por el tenant layer
-      // Las cuentas de mesa del módulo Restaurante (origin = 'table') no son pedidos: nacen con send_to_kds=false (el KDS actual
-      // no las ve) y aquí se excluyen para no ensuciar el tablero de Pedidos. Antes de R2 no existía ninguna fila así.
+      // Las cuentas de mesa del módulo Restaurante (origin = 'table') no son pedidos: nacen con send_to_kds=false y aquí se excluyen
+      // para no ensuciar el tablero de Pedidos. (/api/kds/orders no filtra por send_to_kds y tiene su propio filtro por origen.)
       origin: { not: 'table' as const },
       ...(query.status && { status: query.status }),
       ...(query.send_to_kds !== undefined && { send_to_kds: query.send_to_kds === 'true' }),

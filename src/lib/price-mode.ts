@@ -6,6 +6,7 @@ import { modifiersExtraUsd } from '@/lib/carta/options'
 import type { PriceMode, PriceSource } from '@/lib/pricing'
 import { FINANCING_BLOCKS_DIVISA_MESSAGE, isFinancingActive } from '@/lib/ticket-financing'
 import { DivisaDisabledError, assertDivisaAllowed } from '@/lib/cobro-precios'
+import { LIVE_ITEMS } from '@/lib/table-order-guard'
 
 /**
  * Cambio del modo de precio (bcv | divisa) de un ticket ABIERTO: venta (draft / pending / quote) o pedido sin cobrar.
@@ -182,7 +183,7 @@ export async function repriceOrderTx(
   await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${actor.businessId} FOR UPDATE`
   const order = await tx.order.findFirst({
     where:   { id: orderId, business_id: actor.businessId },
-    include: { items: true },
+    include: { items: LIVE_ITEMS },
   })
   if (!order) throw new PriceModeError(404, 'Pedido no encontrado')
   if (order.sale_id !== null) throw new PriceModeError(409, 'Este pedido ya fue cobrado; no se puede cambiar el modo de precio.')

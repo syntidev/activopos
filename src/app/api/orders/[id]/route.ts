@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 import { ORDER_PAGO_INCLUDE, derivePago } from '@/lib/order-payment'
 import { clientDebt } from '@/lib/client-credit'
 
@@ -106,6 +107,8 @@ export async function PATCH(
   try {
     const body = await req.json()
     const { status, override_reason } = patchSchema.parse(body)
+    const blocked = await rejectIfTableOrder(id)
+    if (blocked) return blocked
 
     const order = await prisma.order.findFirst({
       where: { id, business_id: session.businessId },

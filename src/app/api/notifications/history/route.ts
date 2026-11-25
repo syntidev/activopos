@@ -36,7 +36,7 @@ export async function GET() {
       }),
 
       db.order.findMany({
-        where:   { status: 'received' }, // business_id inyectado por el tenant layer
+        where:   { status: 'received', origin: { not: 'table' } }, // business_id inyectado por el tenant layer; sin cuentas de mesa
         select:  { id: true, order_number: true, client_name: true, created_at: true },
         orderBy: { created_at: 'desc' },
         take:    20,

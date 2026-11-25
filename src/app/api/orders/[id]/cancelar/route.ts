@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 
 type Context = { params: { id: string } }
 
@@ -14,6 +15,8 @@ export async function POST(_req: NextRequest, { params }: Context) {
 
   try {
     const { db } = await getAuthenticatedTenant()
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
 
     const order = await db.order.findFirst({
       where:  { id: orderId }, // business_id inyectado por el tenant layer

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 import { lenientCheckoutCedula } from '@/lib/customer-identity'
 import { findExistingClientId, phoneForClient } from '@/lib/order-client'
 
@@ -19,6 +20,8 @@ export async function POST(req: Request, { params }: Context) {
 
   try {
     const { session } = await getAuthenticatedTenant()
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
 
     const out = await prisma.$transaction(async (tx) => {
       // Cerrojo: dos clics no crean dos clientes.

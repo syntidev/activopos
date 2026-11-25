@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
     }),
     // Órdenes recibidas hoy
     db.order.count({
-      where: { created_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado
+      where: { origin: { not: 'table' }, created_at: { gte: todayStart, lt: tomorrowStart } }, // business_id inyectado; sin cuentas de mesa
     }),
   ])
 

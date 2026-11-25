@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     // Ventas netas del día -- fuente única (src/lib/sales-returns.ts).
     netSales(bid, todayStart, tomorrowStart),
     prisma.order.count({
-      where: { business_id: bid, status: { notIn: ['delivered', 'cancelled'] } },
+      where: { business_id: bid, origin: { not: 'table' }, status: { notIn: ['delivered', 'cancelled'] } }, // sin cuentas de mesa (no son pedidos)
     }),
     prisma.sale.count({
       where: { business_id: bid, status: 'credit', origin: 'credit', due_date: { lt: now } },

@@ -6,7 +6,7 @@ export async function GET() {
     const { db } = await getAuthenticatedTenant()
 
     const pendingOrders = await db.order.count({
-      where: { status: 'received' }, // business_id inyectado por el tenant layer
+      where: { status: 'received', origin: { not: 'table' } }, // business_id inyectado por el tenant layer; sin cuentas de mesa
     })
 
     const cxpVencidas = await db.gasto.count({

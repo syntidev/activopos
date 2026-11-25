@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 import { getActiveRate } from '@/lib/bcv'
 import { DebtPaymentError, payFinancingDebtTx } from '@/lib/financing-debt'
 
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest, { params }: Context) {
 
   try {
     const { session, db } = await getAuthenticatedTenant()
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
     const order = await db.order.findFirst({ where: { id: orderId }, select: { sale_id: true, financing_status: true } }) // business_id inyectado
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado', field: 'order', code: 'ORDER_NOT_FOUND' }, { status: 404 })
     if (order.sale_id === null || order.financing_status !== 'rejected') {

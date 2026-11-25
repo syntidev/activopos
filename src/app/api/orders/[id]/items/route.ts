@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 import { priceModeSchema } from '@/lib/price-mode'
 import { FinancingError, reconcileFinancingAfterItemsChangeTx } from '@/lib/ticket-financing'
 import { resolveLinePrice, VARIANT_PRICING_SELECT } from '@/lib/pricing'
@@ -44,6 +45,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
 
   try {
     const { session } = await getAuthenticatedTenant()
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
 
     const updated = await prisma.$transaction(async (tx) => {
       // Cerrojo de la fila del pedido (con business_id): serializa contra el cobro, el cambio de modo y el financiamiento.

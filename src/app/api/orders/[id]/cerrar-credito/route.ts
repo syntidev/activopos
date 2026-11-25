@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { LIVE_ITEMS, rejectIfTableOrder } from '@/lib/table-order-guard'
 import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { PriceModeError } from '@/lib/price-mode'
@@ -47,6 +48,8 @@ export async function POST(req: NextRequest, { params }: Context) {
 
   try {
     const { session } = await getAuthenticatedTenant()
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
     const { rate } = await getActiveRate(session.businessId) // red fuera del $transaction
 
     const now = Date.now()
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest, { params }: Context) {
     const result = await prisma.$transaction(async (tx) => {
       // Cerrojo del pedido: un cobro y un cierre a crédito (o dos cierres) no corren a la vez.
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${session.businessId} FOR UPDATE`
-      const order = await tx.order.findFirst({ where: { id: orderId, business_id: session.businessId }, include: { items: true } })
+      const order = await tx.order.findFirst({ where: { id: orderId, business_id: session.businessId }, include: { items: LIVE_ITEMS } })
       if (!order)                    throw new CreditError(404, 'Pedido no encontrado', 'order', 'ORDER_NOT_FOUND')
       if (order.sale_id !== null)    throw new CreditError(409, 'Este pedido ya fue cobrado o cerrado a crédito', 'order', 'ALREADY_COBRADO')
       if (order.status === 'cancelled') throw new CreditError(422, 'El pedido está cancelado', 'order', 'ORDER_TERMINAL')

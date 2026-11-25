@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 import { getClientIp } from '@/lib/rate-limit'
 import { logError } from '@/lib/safe-log'
 import { hasUsablePhone, lenientCheckoutCedula, normalizeClientPhone } from '@/lib/customer-identity'
@@ -29,6 +30,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { session, db } = await getAuthenticatedTenant()
 
     const id = Number(params.id)
+    const blocked = await rejectIfTableOrder(id)
+    if (blocked) return blocked
     if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const parsed = patchSchema.safeParse(await req.json().catch(() => null))

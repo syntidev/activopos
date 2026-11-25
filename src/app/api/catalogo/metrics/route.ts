@@ -31,13 +31,13 @@ export async function GET() {
         }),
 
         db.order.count({
-          where: { created_at: { gte: monthStart, lt: monthEnd } }, // business_id inyectado
+          where: { origin: { not: 'table' }, created_at: { gte: monthStart, lt: monthEnd } }, // business_id inyectado; sin cuentas de mesa
         }),
 
-        db.order.count(), // business_id inyectado por el tenant layer
+        db.order.count({ where: { origin: { not: 'table' } } }), // business_id inyectado por el tenant layer; sin cuentas de mesa
 
         db.order.findFirst({
-          // business_id inyectado por el tenant layer
+          where:   { origin: { not: 'table' } }, // business_id inyectado por el tenant layer; sin cuentas de mesa
           orderBy: { created_at: 'desc' },
           select:  { created_at: true },
         }),

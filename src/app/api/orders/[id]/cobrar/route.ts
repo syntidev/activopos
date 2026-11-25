@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
+import { LIVE_ITEMS, rejectIfTableOrder } from '@/lib/table-order-guard'
 import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
 import { PriceModeError, priceModeSchema } from '@/lib/price-mode'
@@ -45,6 +46,8 @@ export async function POST(req: NextRequest, { params }: Context) {
 
   try {
     const { session, db } = await getAuthenticatedTenant()
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
 
     // Validar método de pago (fuera del $transaction) → tenant layer
     const pm = await db.paymentMethod.findFirst({
@@ -74,7 +77,7 @@ export async function POST(req: NextRequest, { params }: Context) {
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${session.businessId} FOR UPDATE`
       const order = await tx.order.findFirst({
         where: { id: orderId, business_id: session.businessId },
-        include: { items: true },
+        include: { items: LIVE_ITEMS },
       })
 
       if (!order)                                          throw new Error('ORDER_NOT_FOUND')

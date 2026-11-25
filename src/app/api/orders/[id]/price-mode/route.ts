@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 import { getActiveRate } from '@/lib/bcv'
 import { PriceModeError, priceModeBodySchema, repriceOrderTx } from '@/lib/price-mode'
 import { logError } from '@/lib/safe-log'
@@ -22,6 +23,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
   if (!parsed.success) return NextResponse.json({ error: 'Modo de precio inválido' }, { status: 400 })
 
   try {
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
     // La tasa se consulta fuera de la transacción (puede llamar a la red).
     const { rate } = await getActiveRate(session.businessId)
     const ticket = await prisma.$transaction(tx =>

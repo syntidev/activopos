@@ -11,6 +11,9 @@ export async function GET() {
       where: {
         // business_id inyectado por el tenant layer
         status: { in: ['received', 'preparing', 'ready'] },
+        // Las cuentas de mesa (origin = 'table') nacen en 'received' pero no son pedidos de cocina de este KDS: las comandas de
+        // mesa se ven por estación en /api/restaurante/kds. Esta ruta NO filtra por send_to_kds, así que se excluyen por origen.
+        origin: { not: 'table' },
       },
       include: {
         items: {

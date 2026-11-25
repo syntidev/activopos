@@ -2,9 +2,9 @@
 // permanente, nunca vence) + negocio_activo (único plan pago, $19/mes).
 // -1 = ilimitado. Los flags booleanos gatean módulos completos.
 export const PLAN_LIMITS = {
-  // restaurante: DECISIÓN PENDIENTE de Carlos (aún no hay política de precios del módulo). Hoy `true` en ambos
-  // planes; ponerlo en `false` en gratis activa el aviso de mejora de plan y el 403 sin tocar más código.
-  gratis:         { products: 40, users: 1,  catalog: false, ai: false, suppliers: false, finanzas: false, exports: false, theme: false, landing_sections: false, analytics: false, restaurante: true },
+  // restaurante: módulo de pago. Solo negocio_activo puede ACTIVARLO (POST /api/restaurante/activacion → 403 PLAN_LIMIT en gratis y
+  // la tarjeta de Configuración › Módulos muestra el aviso de mejora). Desactivar y seguir usándolo (un negocio que ya lo tenía) no se bloquea.
+  gratis:         { products: 40, users: 1,  catalog: false, ai: false, suppliers: false, finanzas: false, exports: false, theme: false, landing_sections: false, analytics: false, restaurante: false },
   negocio_activo: { products: -1, users: 10, catalog: true,  ai: true,  suppliers: true,  finanzas: true,  exports: true,  theme: true,  landing_sections: true,  analytics: true,  restaurante: true },
 } as const
 

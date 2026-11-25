@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rejectIfTableOrder } from '@/lib/table-order-guard'
 import { FinancingError, applyFinancingActionTx, financingActionSchema } from '@/lib/ticket-financing'
 import { logError } from '@/lib/safe-log'
 
@@ -21,6 +22,8 @@ export async function PATCH(req: NextRequest, { params }: Context) {
   if (!parsed.success) return NextResponse.json({ error: 'Acción inválida' }, { status: 400 })
 
   try {
+    const blocked = await rejectIfTableOrder(orderId)
+    if (blocked) return blocked
     const ticket = await prisma.$transaction(tx =>
       applyFinancingActionTx(tx, { businessId: session.businessId, userId: session.userId, role: session.role }, 'order', orderId, parsed.data.action),
     )

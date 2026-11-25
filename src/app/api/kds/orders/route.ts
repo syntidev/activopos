@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
+import { guardEntitlement } from '@/lib/entitlements'
 
 /* ── GET /api/kds/orders — active kitchen orders for display ── */
 
 export async function GET() {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
+    // Enforcement al USAR (no solo al activar): derecho del plan/add-on + suscripción vigente + módulo encendido por el tenant.
+    const denied = await guardEntitlement(session.businessId, 'kds')
+    if (denied) return denied
 
     const orders = await db.order.findMany({
       where: {

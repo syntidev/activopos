@@ -4,10 +4,12 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PLAN_LIMITS, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import { planDenied } from '@/lib/plan-guard'
+import { ENTITLEMENT_SELECT, entitlementDeniedReason, entitlementsOf, hasEntitlement, parseAddons } from '@/lib/entitlements'
+import type { EntitlementKey } from '@/lib/plan-limits'
 
 const ALLOWED_MODULES = [
   'pos', 'inventory', 'caja', 'pedidos', 'catalog',
-  'finanzas', 'reportes', 'analytics', 'kds', 'delivery', 'suppliers',
+  'finanzas', 'reportes', 'analytics', 'kds', 'delivery', 'suppliers', 'restaurante',
 ] as const
 
 // core modules are always active — matches TabModulos.tsx alwaysOn:true.
@@ -28,6 +30,8 @@ const modulesSchema = z.object({
 // flags de PLAN_LIMITS ya resueltos, en vez de 4 llamadas que cada una vuelve
 // a consultar la DB.
 const GATED_MODULES = ['catalog', 'finanzas', 'analytics', 'suppliers'] as const
+// Módulos con derecho propio (plan O add-on): 'kds' y 'restaurante' (Planes v2). Se evalúan con lib/entitlements.
+const ENTITLED_MODULES = ['kds', 'restaurante'] as const satisfies readonly EntitlementKey[]
 const GATE_MESSAGE: Record<typeof GATED_MODULES[number], string> = {
   catalog:   `El catálogo digital requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
   finanzas:  `El módulo de finanzas requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
@@ -47,7 +51,7 @@ export async function PATCH(req: NextRequest) {
 
     const current = await prisma.business.findUnique({
       where:  { id: session.businessId },
-      select: { modules_enabled: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true },
+      select: ENTITLEMENT_SELECT,
     })
     if (!current) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
 
@@ -56,8 +60,10 @@ export async function PATCH(req: NextRequest) {
     // desactivar siempre se permite, sin importar el plan.
     const currentlyEnabled = new Set((current.modules_enabled ?? '').split(',').filter(Boolean))
     const newlyActivated = GATED_MODULES.filter(m => body.modules.includes(m) && !currentlyEnabled.has(m))
+    // kds y restaurante son DERECHOS: el flag del nivel O un add-on (businesses.addons, solo lo escribe el super_admin).
+    const newlyEntitled: EntitlementKey[] = ENTITLED_MODULES.filter(m => body.modules.includes(m) && !currentlyEnabled.has(m))
 
-    if (newlyActivated.length > 0) {
+    if (newlyActivated.length > 0 || newlyEntitled.length > 0) {
       if (!current.subscription_active) return planDenied('Tu suscripción está suspendida. Contacta a soporte.')
       if (current.subscription_expires_at && new Date() > current.subscription_expires_at) {
         return planDenied('Tu plan expiró. Renueva para continuar.')
@@ -66,6 +72,8 @@ export async function PATCH(req: NextRequest) {
       const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.gratis
       const blocked = newlyActivated.find(m => !limits[m])
       if (blocked) return planDenied(GATE_MESSAGE[blocked])
+      const blockedEntitlement = newlyEntitled.find(m => !hasEntitlement(current, m))
+      if (blockedEntitlement) return planDenied(entitlementDeniedReason(current, blockedEntitlement))
     }
 
     // Always include core modules — merge silently, never return error for missing core
@@ -98,7 +106,7 @@ export async function GET() {
 
   const business = await prisma.business.findUnique({
     where:  { id: session.businessId },
-    select: { modules_enabled: true, catalog_plan: true, reservas_enabled: true },
+    select: { ...ENTITLEMENT_SELECT, reservas_enabled: true },
   })
 
   if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
@@ -121,5 +129,8 @@ export async function GET() {
     // Flag por negocio (solo lectura acá). Va aparte de modules_enabled a propósito:
     // el PATCH de arriba reescribe esa lista completa y su enum no incluye "reservas".
     reservas_enabled: business.reservas_enabled,
+    // Derechos efectivos (plan vigente + add-ons): Sidebar y TabModulos deciden desde ESTA fuente (candado/mejora), no desde modules_enabled.
+    entitlements:     entitlementsOf(business),
+    addons:           parseAddons(business.addons),
   })
 }

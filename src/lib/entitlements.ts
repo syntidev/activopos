@@ -1,4 +1,6 @@
+import { NextResponse } from 'next/server'
 import { prisma } from './prisma'
+import { planDenied } from './plan-guard'
 import {
   ADDON_KEYS, ENTITLEMENT_KEYS, PLAN_LIMITS, PLAN_DISPLAY,
   type AddonKey, type EntitlementKey, type PlanTier,
@@ -78,4 +80,19 @@ export function entitlementDeniedReason(b: EntitlementSource, key: EntitlementKe
 /** Lee el negocio de la sesión (fuente: DB, nunca el JWT ni el body). null si no existe. */
 export async function loadEntitlementSource(businessId: number): Promise<EntitlementSource | null> {
   return prisma.business.findUnique({ where: { id: businessId }, select: ENTITLEMENT_SELECT })
+}
+
+/**
+ * Guard de USO para rutas del servidor. null = puede usar; si no, la respuesta 403 lista para devolver:
+ *   sin derecho (plan/add-on/suscripción) → planDenied() = 403 { code: 'PLAN_LIMIT' }  (el frontend muestra el paywall)
+ *   con derecho pero módulo apagado por el tenant → 403 { code: 'MODULE_DISABLED' }    (NO es un paywall: se enciende en Configuración)
+ */
+export async function guardEntitlement(businessId: number, key: EntitlementKey): Promise<NextResponse | null> {
+  const b = await loadEntitlementSource(businessId)
+  if (!b) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
+  if (!hasEntitlement(b, key)) return planDenied(entitlementDeniedReason(b, key))
+  if (!canUse(b, key)) {
+    return NextResponse.json({ error: 'Este módulo está apagado en Configuración > Módulos.', code: 'MODULE_DISABLED' }, { status: 403 })
+  }
+  return null
 }

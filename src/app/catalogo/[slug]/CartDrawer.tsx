@@ -155,7 +155,12 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
 
   useEffect(() => {
     if (!checkoutOpen) return
-    const t = setTimeout(() => nameRef.current?.focus(), 80)
+    // No le roba el foco a un campo que el cliente (o el autocompletado) ya enfocó: antes el texto del teléfono caía en el nombre.
+    const t = setTimeout(() => {
+      const a = document.activeElement
+      if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
+      nameRef.current?.focus()
+    }, 80)
     return () => clearTimeout(t)
   }, [checkoutOpen])
 

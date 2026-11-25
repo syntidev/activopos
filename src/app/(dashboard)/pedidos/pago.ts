@@ -27,6 +27,10 @@ export interface PedidoClienteResumen {
   saldo_cxc_usd:            number
   deuda_financiamiento_usd: number
   saldo_por_cobrar_usd:     number
+  /** Crédito del cliente (lo autoriza un admin en su ficha); disponible null = sin tope. */
+  credit_authorized?:       boolean
+  credit_limit_usd?:        number | null
+  credito_disponible_usd?:  number | null
 }
 
 /** Cuerpo de error de las rutas de pedidos: el mensaje viaja en español y se muestra tal cual. */

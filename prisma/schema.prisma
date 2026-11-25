@@ -774,6 +774,9 @@ model Client {
   // Dirección de envío guardada ("misma dirección" en el checkout). Solo la escribe el negocio o el
   // primer pedido web del cliente; un pedido público posterior NUNCA la sobrescribe.
   address     String?         @db.Text
+  // Crédito del cliente: solo un administrador lo autoriza. Tope NULL = sin límite; se compara contra su saldo por cobrar (CxC + deuda de financiamiento).
+  credit_authorized Boolean   @default(false)
+  credit_limit_usd  Decimal?  @db.Decimal(10, 2)
   created_at  DateTime        @default(now())
   updated_at  DateTime        @updatedAt
 

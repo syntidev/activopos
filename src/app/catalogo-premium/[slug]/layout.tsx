@@ -25,10 +25,10 @@ export const generateViewport = ({ params }: LayoutProps): Promise<Viewport> => 
 export default async function CatalogoSlugLayout({ children, params }: LayoutProps) {
   // Cashea en el checkout: solo si el negocio tiene financiamiento activo; los excluidos se cruzan con el carrito.
   const { financing, excludedIds } = await loadCheckoutFinancing(params.slug)
-  const { casheaActive } = await loadCobroFlags(params.slug)
+  const { casheaActive, pay } = await loadCobroFlags(params.slug)
   return (
     <CheckoutFinancingProvider financing={financing} excludedIds={excludedIds}>
-      <CobroFlagsProvider casheaActive={casheaActive}>
+      <CobroFlagsProvider casheaActive={casheaActive} pay={pay}>
         <CartProvider slug={params.slug}>
           <PulsoTracker slug={params.slug} />
           <Ga4 slug={params.slug} />

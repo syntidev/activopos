@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { saleClientName } from '@/lib/sale-client'
+import { prisma } from '@/lib/prisma'
+import { listFinancingDebts } from '@/lib/financing-debt'
 
 const DAYS_VENCER = 7
 const DAYS_LEGACY = 30  // fallback for sales without due_date
@@ -43,7 +45,7 @@ export async function GET(req: NextRequest) {
 
     const now = new Date()
 
-    const classified = allPending.map(s => {
+    const classifiedCredit = allPending.map(s => {
       const totalUsd   = Number(s.total_usd)
       const abonadoUsd = s.abonos.reduce((acc, a) => acc + Number(a.amount_usd), 0)
       const saldoUsd   = Math.max(0, Math.round((totalUsd - abonadoUsd) * 100) / 100)
@@ -68,8 +70,35 @@ export async function GET(req: NextRequest) {
         saldo_usd:     saldoUsd,
         dias_vencido:  diasVencido,
         bucket,
+        kind:          'credito' as 'credito' | 'financiamiento',
       }
     })
+
+    // Deuda de financiamiento (Cashea) rechazado ya cobrado: sin vencimiento propio, usa el mismo plazo legado (30 días desde la venta).
+    // Se abona por la misma ruta (finanzas/cxc/[id]/abono) sobre la venta ORIGINAL; no es una venta a crédito ni ingreso nuevo.
+    const debts = await listFinancingDebts(prisma, session.businessId)
+    const classifiedDebts = debts.map(d => {
+      const deadline = new Date(d.created_at.getTime() + DAYS_LEGACY * 86_400_000)
+      const bucket   = classifySale(null, d.created_at, now)
+      return {
+        sale_id:       d.sale_id,
+        ticket_number: d.ticket_number,
+        client_id:     d.client_id,
+        client_name:   d.client_name ?? 'Sin nombre',
+        client_phone:  d.client_phone,
+        created_at:    d.created_at.toISOString(),
+        due_date:      deadline.toISOString().split('T')[0],
+        credit_days:   null as number | null,
+        credit_notes:  'Financiamiento rechazado: saldo asignado a la financiadora' as string | null,
+        total_usd:     d.asignado_usd,
+        abonado_usd:   d.abonado_usd,
+        saldo_usd:     d.saldo_usd,
+        dias_vencido:  bucket === 'vencido' ? Math.floor((now.getTime() - deadline.getTime()) / 86_400_000) : 0,
+        bucket,
+        kind:          'financiamiento' as 'credito' | 'financiamiento',
+      }
+    })
+    const classified = [...classifiedCredit, ...classifiedDebts]
 
     // Aggregated totals (before pagination)
     const vencido_usd    = Math.round(classified.filter(c => c.bucket === 'vencido').reduce((s, c) => s + c.saldo_usd, 0) * 100) / 100

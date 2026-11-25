@@ -11,18 +11,22 @@ interface CheckoutPaymentKindProps {
   /** Nombres de los productos del carrito que no aplican a Cashea (deshabilita la opción). */
   blockedNames: string[]
   disabled?: boolean
+  /** false = el negocio cobra solo en $ ("Cobras en"): no hay opción Bolívares. */
+  showBs?: boolean
+  /** false = Divisa apagada o cobro solo en Bs: no hay opción Divisa. */
+  showDivisa?: boolean
 }
 
 const OPTIONS: { kind: PaymentKind; label: string }[] = [
   { kind: 'cashea', label: 'Cashea' },
   { kind: 'bs', label: 'Bolívares' },
-  { kind: 'divisa', label: 'Divisa' },
+  { kind: 'divisa', label: '$ Divisa' },
 ]
 
 /** Cómo va a pagar el cliente. Cashea: todo o nada, siempre al precio BCV completo. */
-export function CheckoutPaymentKind({ kind, onChange, financing, blockedNames, disabled = false }: CheckoutPaymentKindProps) {
+export function CheckoutPaymentKind({ kind, onChange, financing, blockedNames, disabled = false, showBs = true, showDivisa = true }: CheckoutPaymentKindProps) {
   const blocked = blockedNames.length > 0
-  const options = OPTIONS.filter(o => o.kind !== 'cashea' || financing !== null)
+  const options = OPTIONS.filter(o => (o.kind !== 'cashea' || financing !== null) && (o.kind !== 'bs' || showBs) && (o.kind !== 'divisa' || showDivisa))
 
   return (
     <div className={styles.wrap}>

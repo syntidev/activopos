@@ -5,7 +5,7 @@ import {
   Search, X, ChevronUp, ChevronDown, ArrowUpDown,
   Receipt, User, Package, CreditCard, Hash,
   Trash2, ChevronLeft, ChevronRight, Loader2,
-  AlertTriangle, Calendar,
+  AlertTriangle, Calendar, FileDown,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
@@ -15,6 +15,8 @@ import { ToastProvider, useToast } from '@/components/ui/Toast'
 import styles from './ventas.module.css'
 import { businessDateKey, shiftDateKey } from '@/lib/business-day'
 import { saleClientName } from '@/lib/sale-client'
+import { docFromSale, openQuotationPrint } from '@/lib/quotation-document'
+import { useQuotationMeta } from '@/hooks/useQuotationMeta'
 import { ComprobanteActions } from '@/components/comprobante/ComprobanteActions'
 import { ShippingActions } from '@/components/comprobante/ShippingActions'
 
@@ -208,6 +210,8 @@ function VentasContent({ isAdmin }: VentasContentProps) {
   const [voidOpen,    setVoidOpen]   = useState(false)
   const [voidReason,  setVoidReason] = useState('')
   const [voiding,     setVoiding]    = useState(false)
+  // Datos del documento de cotización, cargados de antemano para abrir la ventana dentro del clic.
+  const { meta: quoteMeta } = useQuotationMeta()
 
   const debTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -698,6 +702,17 @@ function VentasContent({ isAdmin }: VentasContentProps) {
 
                   {/* Actions */}
                   <div className={styles.actionsSection}>
+                    {selected.status === 'quote' && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        leftIcon={<FileDown size={14} aria-hidden="true" />}
+                        disabled={!quoteMeta}
+                        onClick={() => { if (quoteMeta) openQuotationPrint(docFromSale(selected, quoteMeta)) }}
+                      >
+                        Descargar cotización
+                      </Button>
+                    )}
                     <ComprobanteActions saleId={selected.id} />
                     <ShippingActions saleId={selected.id} />
 

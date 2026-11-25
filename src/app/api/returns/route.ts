@@ -8,6 +8,7 @@ import {
   type ReturnableSaleStatus,
 } from '@/lib/returns'
 import { prisma } from '@/lib/prisma'
+import { financingDebtOfSale } from '@/lib/financing-debt'
 
 const ItemSchema = z.object({
   product_id: z.number().int().positive(),
@@ -264,6 +265,21 @@ export async function POST(req: NextRequest) {
       const conflict = validateAgainst(freshRows)
       if (conflict) {
         throw Object.assign(new Error('OVER_RETURN'), { code: 'OVER_RETURN', detail: conflict })
+      }
+
+      // Venta con deuda de financiamiento (Cashea) rechazado aún sin cobrar: nunca se reembolsa más de lo realmente cobrado
+      // (total − deuda pendiente − lo ya reembolsado); si no, el negocio devolvería dinero que jamás recibió.
+      const debt = await financingDebtOfSale(tx, bid, body.sale_id)
+      if (debt && debt.saldo_usd > 0) {
+        const prev = await tx.return.aggregate({ where: { sale_id: body.sale_id, business_id: bid, status: 'approved' }, _sum: { total_usd: true } })
+        const cobrado = r2(Number(sale.total_usd) - debt.saldo_usd - Number(prev._sum.total_usd ?? 0))
+        if (totalUsd > cobrado + 0.005) {
+          throw Object.assign(new Error('OVER_RETURN'), {
+            code: 'OVER_RETURN',
+            detail: { error: `El reembolso ($${totalUsd.toFixed(2)}) supera lo realmente cobrado ($${Math.max(0, cobrado).toFixed(2)}): la venta tiene una deuda de financiamiento pendiente.`,
+                      code: 'REFUND_EXCEEDS_COLLECTED', cobrado_disponible_usd: Math.max(0, cobrado), deuda_pendiente_usd: debt.saldo_usd },
+          })
+        }
       }
 
       const ret = await tx.return.create({

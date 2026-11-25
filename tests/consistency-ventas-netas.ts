@@ -64,8 +64,8 @@ async function main(): Promise<void> {
     return await res.json() as T
   }
 
-  const created: { sales: number[]; returns: number[]; registers: number[]; products: number[]; variants: number[] } =
-    { sales: [], returns: [], registers: [], products: [], variants: [] }
+  const created: { sales: number[]; returns: number[]; registers: number[]; products: number[]; variants: number[]; orders: number[]; methods: number[] } =
+    { sales: [], returns: [], registers: [], products: [], variants: [], orders: [], methods: [] }
 
   /** Venta de `qty` x `price` cobrada en efectivo. `duplicateLines` parte el mismo producto en 2 líneas con costos distintos. */
   const mkSale = async (ticket: string, soldAt: Date, qty: number, price: number, opts?: { duplicateLines?: boolean; unknownCost?: boolean }) => {
@@ -478,6 +478,57 @@ async function main(): Promise<void> {
     check('e12 devolver baja las ventas (+30 netas)', r2(afterRetUnk.dailyTotal - baseUnk.dailyTotal), 30)
     check('e12 devolver no crea utilidad negativa (range)', r2(afterRetUnk.rangeProfit - baseUnk.rangeProfit), 0)
     check('e12 devolver no crea utilidad negativa (kpis)', r2(afterRetUnk.kpisUtilidad - baseUnk.kpisUtilidad), 0)
+
+    // ── e13: Cashea RECHAZADO cobrado después. Venta $100 = $40 efectivo + $60 Cashea; se rechaza y el cliente abona $60 en efectivo.
+    //    El abono es un SaleAbono de la venta ORIGINAL: no duplica el ingreso, solo mueve el efectivo esperado. ──
+    const finMethod = await prisma.paymentMethod.create({ data: { business_id: BID, name: 'T-CONS Cashea', type: 'other', is_financing: true, is_active: true }, select: { id: true } })
+    created.methods.push(finMethod.id)
+    const mkCashea = async (ticket: string) => {
+      const s = await mkSale(ticket, today, 1, 100)
+      await prisma.salePayment.deleteMany({ where: { sale_id: s.id } })
+      await prisma.salePayment.createMany({ data: [
+        { sale_id: s.id, payment_method_id: ctx.cashMethodId, amount_bs: 40 * RATE, amount_usd: 40, rate_used: RATE },
+        { sale_id: s.id, payment_method_id: finMethod.id,     amount_bs: 60 * RATE, amount_usd: 60, rate_used: RATE },
+      ] })
+      const o = await prisma.order.create({
+        data: { business_id: BID, order_number: `T-${ticket}`, status: 'received', total_usd: 100, total_bs: 100 * RATE, rate_used: RATE, sale_id: s.id, financing_status: 'rejected' },
+        select: { id: true },
+      })
+      created.orders.push(o.id)
+      return s
+    }
+    type CajaOut = { turnoStats: { totalVentasUsd: number; efectivoEsperado: number } }
+    const preD   = await snapshot(today, tomorrow)
+    const cajaPre = await api<CajaOut>('/api/cash/status')
+    const saleD  = await mkCashea('T-CONS-D')
+    const afterSaleD = await snapshot(today, tomorrow)
+    check('e13 la venta cuenta $100 una sola vez (reports/daily)', r2(afterSaleD.dailyTotal - preD.dailyTotal), 100)
+
+    const abonoRes = await fetch(`${BASE}/api/finanzas/cxc/${saleD.id}/abono`, { method: 'POST', headers, body: JSON.stringify({ payment_method_id: ctx.cashMethodId, amount_usd: 60 }) })
+    check('e13 abono de la deuda aceptado (HTTP 201)', abonoRes.status, 201)
+    const abonoBody = await abonoRes.json() as { abono?: { amount_bs: number }; paid?: boolean; saldo_usd?: number }
+    check('e13 la deuda queda en 0', [abonoBody.paid, abonoBody.saldo_usd], [true, 0])
+    const afterAbonoD = await snapshot(today, tomorrow)
+    for (const k of ['dayCobrado', 'dailyTotal', 'rangeTotal', 'monthlyTotal', 'kpisCobrado', 'chartsHoy', 'sumVentas'] as const) {
+      check(`e13 el abono NO suma ingreso (${k})`, r2(afterAbonoD[k] - afterSaleD[k]), 0)
+    }
+    checkNear('e13 el abono NO suma ingreso (finanzas/resumen)', r2(afterAbonoD.finVentas - afterSaleD.finVentas), 0)
+    const cajaPost = await api<CajaOut>('/api/cash/status')
+    checkNear('e13 caja: ventas netas del turno +100', r2(cajaPost.turnoStats.totalVentasUsd - cajaPre.turnoStats.totalVentasUsd), 100)
+    checkNear('e13 caja: efectivo esperado = $40 de la inicial + el abono de $60 en efectivo', cajaPost.turnoStats.efectivoEsperado - cajaPre.turnoStats.efectivoEsperado, 40 * RATE + Number(abonoBody.abono?.amount_bs ?? 0))
+    const cxcAfter = await api<{ items: { sale_id: number }[] }>('/api/finanzas/cxc?limit=100')
+    check('e13 la deuda saldada sale de Cuentas por cobrar', cxcAfter.items.some(i => i.sale_id === saleD.id), false)
+
+    // Devolución posterior: con la deuda saldada se puede reembolsar hasta lo cobrado ($100); con la deuda PENDIENTE, solo lo realmente cobrado ($40).
+    const retD = await doReturn(saleD.id, [{ product_id: ctx.productId, qty: 1 }], ctx.cashMethodId)
+    check('e13 devolución total con la deuda saldada (HTTP 201)', retD.status, 201)
+    const saleE = await mkCashea('T-CONS-E')
+    const retEFull = await doReturn(saleE.id, [{ product_id: ctx.productId, qty: 1 }], ctx.cashMethodId)
+    check('e13 reembolso de $100 con $60 de deuda pendiente → 422', retEFull.status, 422)
+    const retEPart = await doReturn(saleE.id, [{ product_id: ctx.productId, qty: 0.4 }], ctx.cashMethodId)
+    check('e13 reembolso de $40 (lo realmente cobrado) → 201', retEPart.status, 201)
+    const retEMore = await doReturn(saleE.id, [{ product_id: ctx.productId, qty: 0.1 }], ctx.cashMethodId)
+    check('e13 ya reembolsado lo cobrado: nada más → 422', retEMore.status, 422)
   } finally {
     // ── Restaurar: borra SOLO lo que creó esta prueba ──
     if (created.returns.length) {
@@ -489,13 +540,21 @@ async function main(): Promise<void> {
       await prisma.returnItem.deleteMany({ where: { return_id: { in: created.returns } } })
       await prisma.return.deleteMany({ where: { id: { in: created.returns } } })
     }
+    if (created.orders.length) {
+      await prisma.activityLog.deleteMany({ where: { business_id: BID, model_type: 'Order', model_id: { in: created.orders } } })
+      await prisma.order.deleteMany({ where: { id: { in: created.orders } } })
+    }
     if (created.sales.length) {
+      await prisma.saleAbono.deleteMany({ where: { sale_id: { in: created.sales } } })
       await prisma.salePayment.deleteMany({ where: { sale_id: { in: created.sales } } })
       await prisma.saleItem.deleteMany({ where: { sale_id: { in: created.sales } } })
       await prisma.sale.deleteMany({ where: { id: { in: created.sales } } })
     }
     if (created.registers.length) {
       await prisma.cashRegister.deleteMany({ where: { id: { in: created.registers } } })
+    }
+    if (created.methods.length) {
+      await prisma.paymentMethod.deleteMany({ where: { id: { in: created.methods } } })
     }
     // Variantes antes que productos (FK), productos al final.
     if (created.variants.length) {

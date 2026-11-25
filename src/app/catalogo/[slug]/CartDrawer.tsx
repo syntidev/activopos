@@ -9,6 +9,8 @@ import type { PaymentMethod } from './CatalogoGrid'
 import { checkCedula, normalizeCedula } from '@/lib/cedula'
 import { CheckoutPaymentKind } from '@/components/catalog/CheckoutPaymentKind'
 import { useCheckoutFinancing } from '@/components/catalog/CheckoutFinancing'
+import { useCobroFlags } from '@/components/catalog/CobroFlags'
+import { BS_GENERICO, type CartPayMethod } from '@/lib/cart-pay'
 import type { PaymentKind } from '@/types/financing'
 import { clearCheckoutMemory, loadCheckoutMemory, saveCheckoutMemory } from '@/lib/checkout-memory'
 import type { PublicShippingMethod, SavedAddressResponse } from '@/types/shipping'
@@ -72,16 +74,24 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
   const [cPhone,         setCPhone]         = useState('')
   const [phoneError,     setPhoneError]     = useState(false)
   const [cRef,           setCRef]           = useState('')
-  // Métodos normales: la financiadora se elige con Cashea (forma de pago), no como un método más.
-  const regularMethods = paymentMethods.filter(pm => !pm.is_financing)
-  const [cPayment,       setCPayment]       = useState(regularMethods[0]?.name ?? '')
-  const [cKind,          setCKind]          = useState<PaymentKind>('bs')
+  // Formas de pago ya filtradas por "Cobro y precios" (layout del catálogo): Divisa y Bs no se mezclan, "solo $" no ofrece Bs,
+  // y sin método Bs real queda la opción genérica "Bs · tasa BCV" (método 'Bs', igual que la Carta). Cashea se elige como forma de pago.
+  const { pay } = useCobroFlags()
+  const bsOption     = pay.bs.length > 0 || pay.bsGenerico
+  const divisaOption = pay.divisa.length > 0
+  const methodsOf = (k: PaymentKind): CartPayMethod[] =>
+    k === 'divisa' ? pay.divisa : k === 'bs' ? (pay.bs.length > 0 ? pay.bs : pay.bsGenerico ? [BS_GENERICO] : []) : []
+  const firstKind: PaymentKind = bsOption ? 'bs' : 'divisa'
+  const [cPayment,       setCPayment]       = useState(methodsOf(firstKind)[0]?.name ?? '')
+  const [cKind,          setCKind]          = useState<PaymentKind>(firstKind)
   const { financing, excludedIds } = useCheckoutFinancing()
   const [cCedula,        setCCedula]        = useState('')
   const [cedulaError,    setCedulaError]    = useState<string | null>(null)
   // Financiadora = campo is_financing del método elegido (nunca el nombre).
   const casheaName = paymentMethods.find(pm => pm.is_financing)?.name ?? financing?.name ?? 'Cashea'
   const isCashea = cKind === 'cashea' && financing !== null
+  // La lista depende del tipo elegido: Divisa → métodos Divisa; Bs → métodos Bs; Cashea → ninguna.
+  const regularMethods = isCashea ? [] : methodsOf(cKind)
   const financingMethod = isCashea ? { name: casheaName } : null
   const effectivePayment = isCashea ? casheaName : cPayment
   // Productos del carrito que no aplican a Cashea (se avisa antes del 409).
@@ -145,7 +155,12 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
 
   useEffect(() => {
     if (!checkoutOpen) return
-    const t = setTimeout(() => nameRef.current?.focus(), 80)
+    // No le roba el foco a un campo que el cliente (o el autocompletado) ya enfocó: antes el texto del teléfono caía en el nombre.
+    const t = setTimeout(() => {
+      const a = document.activeElement
+      if (a instanceof HTMLInputElement || a instanceof HTMLTextAreaElement) return
+      nameRef.current?.focus()
+    }, 80)
     return () => clearTimeout(t)
   }, [checkoutOpen])
 
@@ -305,7 +320,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
           setCheckoutOpen(false)
           setCartOpen(false)
           setCName(''); setCPhone(''); setCRef(''); setCCedula(''); setCedulaError(null)
-          setCPayment(regularMethods[0]?.name ?? ''); setCKind('bs')
+          setCPayment(methodsOf(firstKind)[0]?.name ?? ''); setCKind(firstKind)
           setZoneIdx(-1)
           setCheckoutStep(1); setDeliveryType('pickup'); setRecipientName(''); setDeliveryAddress('')
           setMethodId(null); setHasSaved(false); setUseSaved(false); setBranchOffice(''); setMemoryNotice(false)
@@ -810,10 +825,12 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
 
                 <CheckoutPaymentKind
                   kind={isCashea ? 'cashea' : cKind}
-                  onChange={(k) => { setCKind(k); setCedulaError(null) }}
+                  onChange={(k) => { setCKind(k); setCPayment(methodsOf(k)[0]?.name ?? ''); setCedulaError(null) }}
                   financing={financing}
                   blockedNames={blockedNames}
                   disabled={submitting}
+                  showBs={bsOption}
+                  showDivisa={divisaOption}
                 />
 
                 {!isCashea && regularMethods.length > 0 && (
@@ -826,7 +843,7 @@ export function CartDrawer({ slug, rate, currency, paymentMethods }: Props) {
                         onClick={() => { setCPayment(pm.name); setCedulaError(null) }}
                         disabled={submitting}
                       >
-                        <p className={styles.paymentCardName}>{pm.name}</p>
+                        <p className={styles.paymentCardName}>{pm.label ?? pm.name}</p>
                       </button>
                     ))}
                   </div>

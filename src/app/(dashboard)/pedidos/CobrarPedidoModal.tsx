@@ -8,7 +8,11 @@ import { ShippingActions } from '@/components/comprobante/ShippingActions'
 import { ShippingEditor, CedulaAlertBadge, ShippingMethodTag } from '@/components/comprobante/ShippingEditor'
 import { checkCedula } from '@/lib/cedula'
 import type { CobrarPedidoData } from '@/types/pedidos'
+import { ClienteResumen } from './ClienteResumen'
+import { dual } from './money'
+import type { PedidoClienteResumen } from './pago'
 import styles from './CobrarPedidoModal.module.css'
+import d from './PedidoPago.module.css'
 
 interface PaymentMethod {
   id: number
@@ -18,16 +22,23 @@ interface PaymentMethod {
   is_financing?: boolean
 }
 
+/** Inicial recibida con un método REAL al cobrar con el método financiador; el saldo (total − inicial) queda asignado a Cashea. */
+export interface InicialCobro {
+  payment_method_id: number
+  amount_usd:        number
+  reference?:        string
+}
+
 interface CobrarPedidoModalProps {
   open: boolean
   order: CobrarPedidoData | null
   onClose: () => void
-  /** Cobra el pedido y devuelve el id de la venta creada. Lanza si falla. */
-  onConfirm: (paymentMethodId: number, reference: string, cedula: string | null) => Promise<number>
+  /** Cobra el pedido y devuelve el id de la venta creada. Lanza (con el mensaje del servidor) si falla. */
+  onConfirm: (paymentMethodId: number, reference: string, cedula: string | null, initial: InicialCobro | null) => Promise<number>
 }
 
 const REFERENCE_TYPES = new Set(['pago_movil', 'zelle', 'transfer', 'binance', 'binance_usdt'])
-const isCashea = (m: PaymentMethod | undefined): boolean => !!m && /cashea/i.test(m.name)
+const toNum = (s: string): number => Number(s.trim().replace(',', '.'))
 
 const fmtUsd = (n: number) =>
   `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -46,10 +57,18 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
   const [copied, setCopied]       = useState(false)
   const [cedula, setCedula]       = useState('')
   const [cedulaCopied, setCedulaCopied] = useState(false)
+  const [initialMethod, setInitialMethod] = useState<number | null>(null)
+  const [initialAmount, setInitialAmount] = useState('')
+  const [initialRef, setInitialRef]       = useState('')
+  const [client, setClient]               = useState<PedidoClienteResumen | null>(null)
 
   useEffect(() => {
     if (!open) {
       setSelected(null)
+      setInitialMethod(null)
+      setInitialAmount('')
+      setInitialRef('')
+      setClient(null)
       setReference('')
       setLoading(false)
       setError(null)
@@ -65,21 +84,26 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
       .then(data => {
         const active = (data.methods ?? []).filter(m => m.is_active)
         setMethods(active)
-        const approved = order?.financing_status === 'approved'
-        const usable = active.filter(m => approved === (m.is_financing === true))
-        if (usable.length > 0 && order?.financing_status !== 'requested') setSelected(usable[0].id)
+        // El método es solo registro: se ofrecen TODOS los activos (Cashea no es compuerta de aprobación).
+        const real = active.filter(m => !m.is_financing)
+        if (active.length > 0) setSelected((real[0] ?? active[0]).id)
+        if (real.length > 0) setInitialMethod(real[0].id)
       })
       .catch(() => {})
       .finally(() => setLoadingPm(false))
+    // Resumen del cliente enlazado (solo lectura; si falla, el cobro sigue sin él).
+    if (order) {
+      fetch(`/api/orders/${order.id}`)
+        .then(r => r.json() as Promise<{ order?: { client?: PedidoClienteResumen | null } }>)
+        .then(j => setClient(j.order?.client ?? null))
+        .catch(() => {})
+    }
   }, [open])
 
-  // Cashea declarado en el pedido (contrato §2.4): aprobado => SOLO financiadoras; solicitado => no se cobra aún;
-  // sin financiamiento o rechazado => solo métodos normales.
-  const finStatus = order?.financing_status ?? null
-  const awaitingApproval = finStatus === 'requested'
-  const visibleMethods = methods.filter(m => (finStatus === 'approved') === (m.is_financing === true))
+  const visibleMethods = methods
+  const realMethods    = methods.filter(m => !m.is_financing)
   const selectedMethod = visibleMethods.find(m => m.id === selected)
-  const cashea   = isCashea(selectedMethod)
+  const cashea   = selectedMethod?.is_financing === true
   const needsRef = cashea || (selectedMethod ? REFERENCE_TYPES.has(selectedMethod.type) : false)
   const refLabel = cashea ? 'N° de orden Cashea' : 'Referencia'
 
@@ -93,6 +117,12 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
   const totalBs  = Number(order?.total_bs ?? 0)
   const rate     = Number(order?.rate_used ?? 0)
   const items    = order?.items ?? []
+
+  // Inicial y saldo a cargo de Cashea (USD y Bs): saldo = total − inicial.
+  const initialUsd = toNum(initialAmount)
+  const initialOk  = Number.isFinite(initialUsd) && initialUsd > 0
+  const saldoUsd   = Math.max(0, Math.round((totalUsd - (initialOk ? initialUsd : 0)) * 100) / 100)
+  const initialFalta = cashea && (!initialOk || initialMethod === null)
 
   const handleCopy = async () => {
     if (!order) return
@@ -118,10 +148,14 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
   const handleConfirm = async () => {
     if (!selected) return
     if (cedulaRequired && !cedulaCheck.ok) { setError(cedulaCheck.message); return }
+    if (initialFalta) { setError('Indica la inicial recibida y el método con el que entró.'); return }
     setLoading(true)
     setError(null)
     try {
-      setSaleId(await onConfirm(selected, reference.trim(), cedulaCheck.ok ? cedulaCheck.value : null))
+      const initial: InicialCobro | null = cashea && initialMethod !== null
+        ? { payment_method_id: initialMethod, amount_usd: Math.round(initialUsd * 100) / 100, ...(initialRef.trim() ? { reference: initialRef.trim() } : {}) }
+        : null
+      setSaleId(await onConfirm(selected, reference.trim(), cedulaCheck.ok ? cedulaCheck.value : null, initial))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cobrar el pedido.')
     } finally {
@@ -189,6 +223,7 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     {order.client_phone ? ` · ${order.client_phone}` : ''}
                   </p>
                 )}
+                {!done && <ClienteResumen client={client} fallbackPhone={order.client_phone} fallbackCedula={order.client_cedula ?? order.ship_cedula} rate={rate} />}
                 <CedulaAlertBadge show={order.cedula_alert} />
                 {isDelivery && <ShippingMethodTag label={order.ship_metodo_label} />}
                 {!done && isDelivery && <ShippingEditor orderId={order.id} order={order} />}
@@ -245,8 +280,6 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     <p className={styles.label}>Método de pago</p>
                     {loadingPm ? (
                       <div className={styles.skeleton} />
-                    ) : awaitingApproval ? (
-                      <p className={styles.emptyMethods} role="alert" data-testid="cobro-awaiting-approval">Este pedido pide Cashea y falta la aprobación. Apruébalo, recházalo o retíralo antes de cobrar.</p>
                     ) : visibleMethods.length === 0 ? (
                       <p className={styles.emptyMethods}>Configura métodos de pago en Configuración primero.</p>
                     ) : (
@@ -282,9 +315,38 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                         />
                       </div>
                     )}
+                    {cashea && (
+                      <div className={d.inicial} data-testid="cobro-inicial">
+                        <p className={d.inicialTitulo}>Inicial recibida</p>
+                        <div className={styles.methods} role="radiogroup" aria-label="Método de la inicial">
+                          {realMethods.map(m => (
+                            <button key={m.id} type="button" role="radio" aria-checked={initialMethod === m.id}
+                              className={`${styles.methodBtn} ${initialMethod === m.id ? styles.methodBtnActive : ''}`}
+                              onClick={() => setInitialMethod(m.id)}>
+                              {m.name}
+                            </button>
+                          ))}
+                        </div>
+                        <div>
+                          <label className={styles.label} htmlFor="cobrar-inicial-monto">Monto de la inicial (USD)</label>
+                          <input id="cobrar-inicial-monto" type="text" inputMode="decimal" autoComplete="off" className={styles.input}
+                            placeholder="0.00" value={initialAmount} onChange={e => { setInitialAmount(e.target.value); setError(null) }}
+                            data-testid="cobro-inicial-monto" />
+                        </div>
+                        <div>
+                          <label className={styles.label} htmlFor="cobrar-inicial-ref">Referencia de la inicial <span className={styles.optional}>(opcional)</span></label>
+                          <input id="cobrar-inicial-ref" type="text" className={styles.input} value={initialRef} onChange={e => setInitialRef(e.target.value)} maxLength={100} />
+                        </div>
+                        <div className={d.saldoCashea} data-testid="cobro-saldo-cashea" aria-live="polite">
+                          <span>Saldo a cargo de Cashea</span>
+                          <strong>{dual(saldoUsd, rate)}</strong>
+                          {initialOk && <span>Inicial recibida: {dual(initialUsd, rate)}</span>}
+                        </div>
+                      </div>
+                    )}
                   </section>
 
-                  {error && <p className={styles.error} role="alert">{error}</p>}
+                  {error && <p className={styles.error} role="alert" data-testid="cobro-error">{error}</p>}
                 </>
               )}
 
@@ -309,7 +371,7 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     type="button"
                     className={styles.confirmBtn}
                     onClick={handleConfirm}
-                    disabled={loading || !selected || loadingPm || awaitingApproval || (cedulaRequired && !cedulaCheck.ok)}
+                    disabled={loading || !selected || loadingPm || initialFalta || (cedulaRequired && !cedulaCheck.ok)}
                   >
                     {loading ? <span className={styles.spinner} aria-hidden="true" /> : null}
                     {loading ? 'Procesando...' : 'Confirmar cobro'}

@@ -20,6 +20,8 @@ interface FinancingPanelProps {
   editWarning?: string
   /** Ticket cobrado o cerrado: solo se muestra el estado. */
   readOnly?: boolean
+  /** Reemplaza la pregunta de confirmar "Rechazar" (p. ej. tras cobrar: el saldo vuelve a ser deuda del cliente). */
+  rejectQuestion?: string
 }
 
 interface ActionDef {
@@ -42,7 +44,7 @@ function actionsFor(financing: TicketFinancing | null): ActionDef[] {
 }
 
 /** Estado de Cashea del ticket + botones para cambiarlo, cada uno con confirmación. */
-export function FinancingPanel({ financing, onAction, busy = false, error, blocked, canRequest = true, editWarning, readOnly = false }: FinancingPanelProps) {
+export function FinancingPanel({ financing, onAction, busy = false, error, blocked, canRequest = true, editWarning, readOnly = false, rejectQuestion }: FinancingPanelProps) {
   const [pending, setPending] = useState<ActionDef | null>(null)
 
   if (!financing && (!canRequest || readOnly)) return null
@@ -72,7 +74,7 @@ export function FinancingPanel({ financing, onAction, busy = false, error, block
               key={def.action}
               type="button"
               className={def.action === 'clear' || def.action === 'reject' ? styles.btnQuiet : styles.btn}
-              onClick={() => setPending(def)}
+              onClick={() => setPending(def.action === 'reject' && rejectQuestion ? { ...def, question: rejectQuestion } : def)}
               disabled={busy}
             >
               {def.label}

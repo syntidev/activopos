@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     const toDate = to ? toBoundExclusive(to) : new Date()
 
-    const [registers, salesInPeriod, returnsInPeriod] = await Promise.all([
+    const [registers, salesInPeriod, returnsInPeriod, cashAbonos] = await Promise.all([
       db.cashRegister.findMany({
         where: {
           // business_id inyectado por el tenant layer
@@ -48,6 +48,11 @@ export async function GET(req: NextRequest) {
         },
       }),
       approvedReturnsInRange(session.businessId, fromDate, toDate),
+      // Abonos EN EFECTIVO del período (crédito o deuda de financiamiento): entran al cajón; no son ingreso nuevo, solo efectivo esperado.
+      db.saleAbono.findMany({
+        where: { created_at: { gte: fromDate, lt: toDate }, sale: { business_id: session.businessId }, payment_method: { type: 'cash' } },
+        select: { amount_bs: true, created_at: true },
+      }),
     ])
 
     const history = registers.map(reg => {
@@ -84,7 +89,7 @@ export async function GET(req: NextRequest) {
               .filter(p => p.payment_method.type === 'cash')
               .reduce((a, p) => a + Number(p.amount_bs), 0),
           0
-        ) - refundedInRegister
+        ) + cashAbonos.filter(a => inThisRegister(a.created_at)).reduce((acc, a) => acc + Number(a.amount_bs), 0) - refundedInRegister
 
       const movIn = reg.movements
         .filter(m => m.type === 'in')

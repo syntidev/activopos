@@ -41,6 +41,7 @@ interface PlanUsageData {
 const PLAN_BADGE_CLASS: Record<PlanTier, string> = {
   gratis:         styles.planBadgeInicio,
   negocio_activo: styles.planBadgeBusiness,
+  operacion:      styles.planBadgeBusiness, // v2, sin publicar: mismo estilo hasta que CLI-B diseñe el badge
 }
 
 function usageBarClass(used: number, limit: number): string {

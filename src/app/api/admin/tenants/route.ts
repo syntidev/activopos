@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { PLAN_TIER_KEYS } from '@/lib/plan-limits'
 import { logError } from '@/lib/safe-log'
 import { buildTenantSettings, createTenant } from '@/lib/tenant-create'
 import { publicPath, SLUG_RE, TEMPLATES, AVAILABLE_CARTA_PRESETS, CARTA_STYLES } from '@/lib/plantillas'
@@ -69,7 +70,7 @@ const createSchema = z.strictObject({
   collect_in:     z.enum(COLLECT_IN).default('both'),
   cashea:         z.boolean().default(false),
   divisa:         z.boolean().default(true),
-  plan:           z.enum(['gratis', 'negocio_activo']).default('negocio_activo'),
+  plan:           z.enum(PLAN_TIER_KEYS).default('negocio_activo'),
   admin_name:     z.string().trim().min(2).max(100),
   admin_email:    z.string().email(),
   // Si no se indica, se genera una y se muestra UNA sola vez.

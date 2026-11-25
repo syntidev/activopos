@@ -271,6 +271,9 @@ model Business {
   service_areas        ServiceArea[]
   dining_tables        DiningTable[]
   floor_elements       FloorElement[]
+  prep_stations        PrepStation[]
+  product_modifiers    ProductModifier[]
+  table_events         TableEvent[]
 
   @@map("businesses")
 }
@@ -318,6 +321,7 @@ model DiningTable {
 
   business Business    @relation(fields: [business_id], references: [id])
   area     ServiceArea @relation(fields: [area_id], references: [id])
+  orders   Order[]
 
   @@unique([business_id, area_id, label])
   @@index([business_id, area_id])
@@ -343,6 +347,85 @@ model FloorElement {
 
   @@index([business_id, area_id])
   @@map("floor_elements")
+}
+
+// ── Restaurante R2: estaciones, modificadores y auditoría de mesa ───────
+
+// Cocina, Barra, Fría… (el ruteo y el KDS llegan en R3; la tabla se crea ahora con la migración de la cuenta).
+model PrepStation {
+  id           Int     @id @default(autoincrement())
+  business_id  Int
+  name         String  @db.VarChar(60)
+  color        String? @db.VarChar(20)
+  // Reservado: el driver de impresión NO está en R1-R5.
+  printer_name String? @db.VarChar(80)
+  warn_min     Int     @default(10)
+  critical_min Int     @default(20)
+  is_default   Boolean @default(false)
+  sort_order   Int     @default(0)
+  active       Boolean @default(true)
+
+  business   Business      @relation(fields: [business_id], references: [id])
+  categories Category[]
+  products   Product[]
+  items      OrderItem[]
+  users      UserStation[]
+
+  @@unique([business_id, name])
+  @@map("prep_stations")
+}
+
+// Rol cocinero <-> estaciones que atiende.
+model UserStation {
+  user_id    Int
+  station_id Int
+
+  user    User        @relation(fields: [user_id], references: [id])
+  station PrepStation @relation(fields: [station_id], references: [id])
+
+  @@id([user_id, station_id])
+  @@map("user_stations")
+}
+
+// "Sin cebolla", "Extra queso +$1.00". product_id y category_id null = aplica a todo el negocio.
+// group_name agrupa opciones ("Término", "Extras"); required = hay que elegir una del grupo para poder agregar.
+model ProductModifier {
+  id          Int     @id @default(autoincrement())
+  business_id Int
+  product_id  Int?
+  category_id Int?
+  group_name  String? @db.VarChar(60)
+  name        String  @db.VarChar(60)
+  price_usd   Decimal @default(0) @db.Decimal(10, 2)
+  required    Boolean @default(false)
+  active      Boolean @default(true)
+  sort_order  Int     @default(0)
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id, product_id])
+  @@index([business_id, category_id])
+  @@map("product_modifiers")
+}
+
+// Auditoría de la mesa y de la cuenta (abrir, anular ítem, transferir…).
+model TableEvent {
+  id          Int      @id @default(autoincrement())
+  business_id Int
+  order_id    Int?
+  table_id    Int?
+  // open | transfer_table | transfer_waiter | merge | split | void_item | void_order | reopen | clean
+  type        String   @db.VarChar(24)
+  from_value  String?  @db.VarChar(60)
+  to_value    String?  @db.VarChar(60)
+  reason      String?  @db.VarChar(255)
+  user_id     Int
+  created_at  DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+
+  @@index([business_id, order_id])
+  @@map("table_events")
 }
 
 // Secciones configurables del catálogo público (landing). Fase 1: hero,
@@ -409,6 +492,9 @@ model User {
   inventory_entries  InventoryEntry[]
   gastos             Gasto[]
   push_subscriptions PushSubscription[]
+  // Restaurante (R2): cuentas de mesa atendidas por este mesonero y estaciones asignadas al cocinero.
+  waited_orders      Order[]            @relation("OrderWaiter")
+  stations           UserStation[]
 
   @@unique([business_id, email])
   @@unique([email])
@@ -424,9 +510,14 @@ model Category {
   sort_order           Int     @default(0)
   active               Boolean @default(true)
   requires_preparation Boolean @default(false)
+  // Restaurante: estación de preparación por defecto de la categoría (ruteo del KDS, R3).
+  station_id           Int?
 
-  business Business  @relation(fields: [business_id], references: [id])
+  business Business     @relation(fields: [business_id], references: [id])
   products Product[]
+  station  PrepStation? @relation(fields: [station_id], references: [id])
+
+  @@index([station_id])
 
   @@unique([business_id, name], name: "name_business")
   @@map("categories")
@@ -514,8 +605,12 @@ model Product {
   purchase_items    PurchaseItem[]
   collections       ProductCollection[]
   reservas          Reserva[]
+  // Restaurante: estación propia del producto (anula la de su categoría; ruteo del KDS, R3).
+  station_id        Int?
+  station           PrepStation? @relation(fields: [station_id], references: [id])
 
   @@index([brand_id])
+  @@index([station_id])
   @@map("products")
 }
 
@@ -1044,6 +1139,15 @@ model Order {
   cedula_alert     Boolean?    @default(false)
   // true = envío con datos por completar (oficina/dirección/cédula): el pedido entra igual y el negocio los confirma por WhatsApp.
   shipping_incomplete Boolean  @default(false)
+  // Restaurante (R2): una cuenta de mesa ES un Order con origin = 'table'. Fuera de mesa todos estos campos son null.
+  table_id            Int?
+  guests              Int?
+  waiter_id           Int?
+  // open | bill_requested | closed | void. El estado de la mesa se DERIVA de aquí; Order.status no se amplía.
+  account_status      String?   @db.VarChar(16)
+  opened_at           DateTime?
+  bill_requested_at   DateTime?
+  closed_at           DateTime?
   created_at       DateTime    @default(now())
   updated_at       DateTime    @updatedAt
 
@@ -1051,8 +1155,11 @@ model Order {
   client        Client?                 @relation(fields: [client_id], references: [id])
   sale          Sale?                   @relation(fields: [sale_id], references: [id])
   ship_metodo   BusinessShippingMethod? @relation(fields: [ship_metodo_id], references: [id])
+  table         DiningTable?            @relation(fields: [table_id], references: [id])
+  waiter        User?                   @relation("OrderWaiter", fields: [waiter_id], references: [id])
   items         OrderItem[]
 
+  @@index([business_id, table_id, account_status])
   @@unique([business_id, order_number])
   // Tope de pedidos abiertos del checkout público: cuenta por cédula o por teléfono dentro del negocio.
   @@index([business_id, client_cedula])
@@ -1116,10 +1223,27 @@ model OrderItem {
   // Carta (C2): nota para la cocina de ESTA linea y snapshot de las opciones elegidas ([{group, option, price_usd}]). price_per_unit_usd ya incluye los extras.
   note               String? @db.VarChar(200)
   modifiers          Json?
+  // Restaurante (R2/R3). kds_status: draft | sent | preparing | ready | served | void; null en pedidos normales.
+  // station_id es un SNAPSHOT que se congela al enviar (cambiar el ruteo después no mueve ítems en vuelo).
+  station_id         Int?
+  kds_status         String?   @db.VarChar(12)
+  course             Int       @default(1)
+  seat               Int?
+  sent_at            DateTime?
+  started_at         DateTime?
+  ready_at           DateTime?
+  served_at          DateTime?
+  kds_updated_at     DateTime?
+  started_by         Int?
+  void_by            Int?
+  void_reason        String?   @db.VarChar(255)
 
   order   Order           @relation(fields: [order_id], references: [id])
   variant ProductVariant? @relation(fields: [variant_id], references: [id])
+  station PrepStation?    @relation(fields: [station_id], references: [id])
 
+  @@index([station_id, kds_status, sent_at])
+  @@index([station_id, kds_updated_at])
   @@map("order_items")
 }
 

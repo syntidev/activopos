@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { freeSpot, renderedSize } from '@/lib/restaurante'
 import {
   TABLE_INCLUDE, badRequest, handleRestauranteError, parseSearchParam, readJson,
-  requireRestauranteAccess, serializeTable, tableCreateSchema, takenBoxes, tablesBySearch,
+  requireRestauranteAccess, serializeTables, tableCreateSchema, takenBoxes, tablesBySearch,
 } from '@/lib/restaurante-server'
 
 const LIST_LIMIT = 500
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ area_id: 'asc' }, { id: 'asc' }],
       take:    LIST_LIMIT,
     })
-    return NextResponse.json({ ok: true, tables: rows.map(serializeTable) })
+    return NextResponse.json({ ok: true, tables: await serializeTables(access.db, rows) })
   } catch (err) {
     return handleRestauranteError(err, 'GET /api/restaurante/mesas')
   }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
         include: TABLE_INCLUDE,
       })
     }))
-    return NextResponse.json({ ok: true, tables: rows.map(serializeTable) }, { status: 201 })
+    return NextResponse.json({ ok: true, tables: await serializeTables(db, rows) }, { status: 201 })
   } catch (err) {
     return handleRestauranteError(err, 'POST /api/restaurante/mesas')
   }

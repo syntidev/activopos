@@ -8,7 +8,7 @@ import { TenantError, getAuthenticatedTenant } from '@/lib/tenant'
 import { parseSearchParam } from '@/lib/reservas'
 import { GRID_MAX, renderedSize, tableStatus, type Box } from '@/lib/restaurante'
 import type {
-  DiningTableDTO, FloorElementDTO, FloorKind, SalonSnapshot, ServiceAreaDTO, TableRotation, TableShape,
+  DiningTableDTO, FloorElementDTO, FloorKind, OpenAccountRef, SalonSnapshot, ServiceAreaDTO, TableRotation, TableShape,
 } from '@/types/restaurante'
 
 /**
@@ -138,15 +138,37 @@ export const elementPatchSchema = z.object({
 export const TABLE_INCLUDE = { area: { select: { name: true } } } satisfies Prisma.DiningTableInclude
 type TableRow = Prisma.DiningTableGetPayload<{ include: typeof TABLE_INCLUDE }>
 
-export function serializeTable(row: TableRow): DiningTableDTO {
+/** Estados de cuenta que ocupan la mesa. Fuente única: de aquí se deriva ocupada / por cobrar. */
+export const OPEN_ACCOUNT_STATUSES = ['open', 'bill_requested'] as const
+
+interface OpenAccountRow { id: number; table_id: number | null; account_status: string | null; total_usd: Prisma.Decimal; total_bs: Prisma.Decimal; opened_at: Date | null }
+
+export function serializeTable(row: TableRow, account: OpenAccountRow | null = null): DiningTableDTO {
+  const st = account?.account_status
+  const ref: OpenAccountRef | null = st === 'open' || st === 'bill_requested' ? { account_status: st } : null
   return {
     id: row.id, area_id: row.area_id, area_name: row.area.name, label: row.label, capacity: row.capacity,
     shape: row.shape as TableShape, pos_x: row.pos_x, pos_y: row.pos_y, width: row.width, height: row.height,
     rotation: row.rotation as TableRotation, active: row.active,
     cleaning_pending: row.cleaning_pending, reserved_for: row.reserved_for, reserved_phone: row.reserved_phone,
     reserved_at: row.reserved_at ? row.reserved_at.toISOString() : null,
-    status: tableStatus(row), // R2: aquí entra la cuenta abierta de la mesa
+    status: tableStatus(row, ref),
+    account_id: account?.id ?? null,
+    account_total_usd: account ? Number(account.total_usd) : null,
+    account_total_bs:  account ? Number(account.total_bs) : null,
+    account_opened_at: account?.opened_at ? account.opened_at.toISOString() : null,
   }
+}
+
+/** Serializa mesas junto con su cuenta abierta (una sola consulta extra, scope de tenant incluido). */
+export async function serializeTables(db: TenantPrisma, rows: readonly TableRow[]): Promise<DiningTableDTO[]> {
+  if (rows.length === 0) return []
+  const accounts = await db.order.findMany({
+    where:  { table_id: { in: rows.map(r => r.id) }, account_status: { in: [...OPEN_ACCOUNT_STATUSES] } },
+    select: { id: true, table_id: true, account_status: true, total_usd: true, total_bs: true, opened_at: true },
+  })
+  const byTable = new Map(accounts.map(a => [a.table_id, a]))
+  return rows.map(r => serializeTable(r, byTable.get(r.id) ?? null))
 }
 
 export function serializeElement(row: Prisma.FloorElementGetPayload<object>): FloorElementDTO {
@@ -171,7 +193,7 @@ export async function loadSalon(db: TenantPrisma): Promise<SalonSnapshot> {
   for (const t of tables) if (t.active) counts.set(t.area_id, (counts.get(t.area_id) ?? 0) + 1)
   return {
     areas:    areas.map(a => serializeArea(a, counts.get(a.id) ?? 0)),
-    tables:   tables.map(serializeTable),
+    tables:   await serializeTables(db, tables),
     elements: elements.map(serializeElement),
   }
 }
@@ -210,7 +232,16 @@ export function badRequest(error: ZodError): NextResponse {
   return NextResponse.json({ error: 'Datos inválidos', issues: error.issues }, { status: 400 })
 }
 
+/** Error de negocio de la cuenta de mesa: estado HTTP, mensaje y datos extra (code, account_id…) para el cliente. */
+export class AccountError extends Error {
+  constructor(readonly status: number, message: string, readonly extra: Record<string, unknown> = {}) {
+    super(message)
+    this.name = 'AccountError'
+  }
+}
+
 export function handleRestauranteError(err: unknown, context: string): NextResponse {
+  if (err instanceof AccountError) return NextResponse.json({ error: err.message, ...err.extra }, { status: err.status })
   if (err instanceof TenantError) return NextResponse.json({ error: err.message }, { status: err.status })
   const code = (err as { code?: string } | null)?.code
   if (code === 'P2002') return NextResponse.json({ error: 'Ya existe un registro con ese nombre' }, { status: 409 })
@@ -221,10 +252,9 @@ export function handleRestauranteError(err: unknown, context: string): NextRespo
 
 /**
  * Cuentas de mesa abiertas del negocio. La desactivación del módulo y el borrado de mesas se bloquean si > 0.
- * Hoy no existen cuentas (llegan con R2): devuelve 0. Punto único donde R2 conecta la consulta real.
  */
-export async function countOpenTableAccounts(_businessId: number): Promise<number> {
-  return 0
+export async function countOpenTableAccounts(businessId: number): Promise<number> {
+  return prisma.order.count({ where: { business_id: businessId, origin: 'table', account_status: { in: [...OPEN_ACCOUNT_STATUSES] } } })
 }
 
 /** Lee el cuerpo JSON sin reventar con un cuerpo vacío o roto. */

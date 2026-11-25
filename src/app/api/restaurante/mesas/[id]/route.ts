@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { tableOpenAccountId } from '@/lib/restaurante-cuenta'
 import {
   TABLE_INCLUDE, TABLE_STRUCTURAL_KEYS, badRequest, handleRestauranteError, readJson,
   requireRestauranteAccess, serializeTable, tablePatchSchema,
@@ -31,6 +32,11 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     if (!access.isAdmin && TABLE_STRUCTURAL_KEYS.some(k => k in rest)) {
       return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
     }
+    // Una mesa con cuenta abierta no se desactiva ni se pasa a otra área: la cuenta quedaría huérfana.
+    if (rest.active === false || rest.area_id !== undefined) {
+      const open = await tableOpenAccountId(access.db, id)
+      if (open !== null) return NextResponse.json({ error: 'La mesa tiene una cuenta abierta. Ciérrala antes de cambiarla.', code: 'TABLE_HAS_OPEN_ACCOUNT', account_id: open }, { status: 409 })
+    }
     if (rest.area_id !== undefined) {
       const area = await access.db.serviceArea.findFirst({ where: { id: rest.area_id } })
       if (!area) return NextResponse.json({ error: 'Área no encontrada' }, { status: 404 })
@@ -53,13 +59,17 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   }
 }
 
-// DELETE /api/restaurante/mesas/[id] — solo admin. (R2: se negará si tiene cuenta abierta)
+// DELETE /api/restaurante/mesas/[id] — solo admin; se niega si la mesa tiene una cuenta abierta
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
   try {
     const access = await requireRestauranteAccess('admin')
     if (access instanceof NextResponse) return access
     const id = parseId(params.id)
     if (id === null) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+    const open = await tableOpenAccountId(access.db, id)
+    if (open !== null) {
+      return NextResponse.json({ error: 'La mesa tiene una cuenta abierta. Ciérrala antes de eliminarla.', code: 'TABLE_HAS_OPEN_ACCOUNT', account_id: open }, { status: 409 })
+    }
     await access.db.diningTable.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (err) {

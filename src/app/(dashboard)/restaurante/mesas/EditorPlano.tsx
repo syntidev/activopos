@@ -88,6 +88,7 @@ export function EditorPlano({ area, tables, elements, onDirtyChange, onDiscard, 
       id, area_id: area.id, area_name: area.name, label: nextLabel(rows), capacity: shape === 'stool' ? 1 : 4, shape,
       pos_x: spot.x, pos_y: spot.y, width: size, height: size, rotation: 0, active: true,
       cleaning_pending: false, reserved_for: null, reserved_phone: null, reserved_at: null, status: 'libre',
+      account_id: null, account_total_usd: null, account_total_bs: null, account_opened_at: null,
     }])
     setSel({ kind: 'table', id })
     touch()
@@ -266,8 +267,8 @@ export function EditorPlano({ area, tables, elements, onDirtyChange, onDiscard, 
                 </div>
               </div>
               <Dimensions row={selTable} onChange={p => updateTable(selTable.id, p)} />
-              <button type="button" className={`${styles.btn} ${styles.btnDanger}`} onClick={removeSelected}><Trash2 size={16} aria-hidden="true" />Eliminar mesa</button>
-              <p className={styles.tip}>No se podrá eliminar una mesa con cuenta abierta (próxima fase).</p>
+              <button type="button" className={`${styles.btn} ${styles.btnDanger}`} onClick={removeSelected} disabled={selTable.account_id !== null}><Trash2 size={16} aria-hidden="true" />Eliminar mesa</button>
+              <p className={styles.tip}>{selTable.account_id !== null ? 'Esta mesa tiene una cuenta abierta: no se puede eliminar hasta cerrarla.' : 'No se puede eliminar una mesa con cuenta abierta.'}</p>
             </div>
           )}
           {selElement && (

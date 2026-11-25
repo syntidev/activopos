@@ -35,6 +35,11 @@ function ensureBusiness(slug: Slug, restaurante: boolean): number {
          VALUES ('ZZ KDS ${slug}','${slug}@zzkds.test','${slug}',1,'ZZ KDS ${slug}',1,'pruebas','negocio_activo','generic','{}',NOW(3))`)
   }
   const id = businessId(slug)
+  // R2: una mesa puede tener cuentas; se borran primero (otros specs las dejan en el negocio A).
+  sql(`DELETE oi FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.business_id=${id} AND o.origin='table'`)
+  sql(`DELETE FROM table_events WHERE business_id=${id}`)
+  sql(`DELETE FROM orders WHERE business_id=${id} AND origin='table'`)
+  sql(`DELETE FROM product_modifiers WHERE business_id=${id}`)
   sql(`DELETE FROM floor_elements WHERE business_id=${id}`)
   sql(`DELETE FROM dining_tables WHERE business_id=${id}`)
   sql(`DELETE FROM service_areas WHERE business_id=${id}`)

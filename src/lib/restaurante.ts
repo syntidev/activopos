@@ -46,6 +46,18 @@ export function matchesTableSearch(
   return tokens.every(t => fields.some(f => f.includes(t)))
 }
 
+/* ── Dinero: USD y Bs siempre juntos, formato sellado ($15.00 / Bs. 8,951.73) ── */
+
+export const formatUsd = (n: number): string => '$' + n.toFixed(2)
+export const formatBs = (n: number): string => `Bs. ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+/** Minutos transcurridos desde un instante ISO ("24 min", "1 h 12 min"). */
+export function elapsedLabel(iso: string | null, now: number = Date.now()): string {
+  if (!iso) return ''
+  const mins = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60_000))
+  return mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)} h ${String(mins % 60).padStart(2, '0')} min`
+}
+
 /* ── Geometría del plano (unidades = celdas de la cuadrícula) ── */
 
 export interface Box { x: number; y: number; w: number; h: number }
@@ -108,10 +120,13 @@ export function chairBoxes(w: number, h: number, capacity: number, shape: Dining
 }
 
 /** Etiqueta corta bajo el número de mesa en el plano y en las fichas. */
-export function statusLabel(status: TableStatus, table: Pick<DiningTableDTO, 'capacity' | 'reserved_at'>): string {
+export function statusLabel(
+  status: TableStatus,
+  table: Pick<DiningTableDTO, 'capacity' | 'reserved_at' | 'account_opened_at' | 'account_total_usd'>,
+): string {
   switch (status) {
-    case 'ocupada':     return 'ocupada'
-    case 'por_cobrar':  return 'por cobrar'
+    case 'ocupada':     return elapsedLabel(table.account_opened_at) || 'ocupada'
+    case 'por_cobrar':  return table.account_total_usd !== null ? formatUsd(table.account_total_usd) : 'por cobrar'
     case 'por_limpiar': return 'limpiar'
     case 'reservada':   return table.reserved_at ? formatHour(table.reserved_at) : 'reservada'
     case 'libre':       return `${table.capacity} pers`

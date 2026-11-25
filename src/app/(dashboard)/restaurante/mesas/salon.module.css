@@ -189,3 +189,19 @@
   .tile_por_cobrar::before { animation: none; opacity: 0.35; }
   .zone, .btn, .tile, .actGo, .dialog, .dialog::backdrop { transition: none; }
 }
+
+/* ── Abrir cuenta (R2) ── */
+.stepper { display: flex; align-items: center; justify-content: space-between; min-height: 48px; border-radius: var(--rs-radio-ctl); background: var(--rs-field); }
+.stepBtn { width: 48px; height: 48px; display: grid; place-items: center; border: 0; background: transparent; color: var(--rs-ink-2); cursor: pointer; border-radius: var(--rs-radio-ctl); transition: transform var(--rs-t-press) var(--rs-ease); }
+.stepBtn:active:not(:disabled) { transform: scale(0.94); }
+.stepBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.stepBtn:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+.stepVal { font: 700 20px var(--rs-mono); color: var(--rs-ink); }
+.checkRow { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; font: 600 14px var(--rs-ui); color: var(--rs-ink); cursor: pointer; }
+.checkRow input { flex: none; width: 20px; height: 20px; accent-color: var(--rs-navy); cursor: pointer; }
+.actMoney { margin: 4px 0 0; font: 700 14px var(--rs-mono); color: var(--rs-ink); }
+.actMoney small { display: block; font: 500 11px var(--rs-mono); color: var(--rs-muted); }
+.act_ocupada .actTag { background: var(--rs-navy); }
+.act_por_cobrar .actTag { background: var(--rs-amber); }
+.act_por_cobrar .actGo { background: var(--rs-amber); }
+@media (prefers-reduced-motion: reduce) { .stepBtn { transition: none; } }

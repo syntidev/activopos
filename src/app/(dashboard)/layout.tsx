@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import { isImpersonating } from '@/lib/impersonation'
 import { DashboardShell } from '@/components/layout/DashboardShell'
 import { OperadorShell } from '@/components/layout/OperadorShell'
+import { MeseroShell } from '@/components/layout/MeseroShell'
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner'
 import { RateProvider } from '@/context/RateContext'
 import { CajaProvider } from '@/context/CajaContext'
@@ -17,6 +18,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   // Rol restringido: shell mínimo, sin providers de caja/tasa ni sidebar del negocio.
   if (session.role === 'operador_reservas') {
     return <OperadorShell session={session}>{children}</OperadorShell>
+  }
+
+  // Rol restringido del módulo Restaurante: su propio shell mínimo (sin sidebar del negocio, sin caja ni tasa del POS).
+  if (session.role === 'waiter') {
+    return <MeseroShell session={session}>{children}</MeseroShell>
   }
 
   const impersonating = await isImpersonating()

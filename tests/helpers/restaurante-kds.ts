@@ -41,12 +41,46 @@ export function ensureBusiness(slug: Slug, restaurante: boolean): number {
          VALUES ('ZZ KDS ${slug}','${slug}@zzkds.test','${slug}',1,'ZZ KDS ${slug}',1,'pruebas','negocio_activo','generic','{}',NOW(3))`)
   }
   const id = businessId(slug)
+  // Cuentas de mesa primero (apuntan a mesas y productos), luego lo demás.
+  sql(`DELETE oi FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.business_id=${id} AND o.origin='table'`)
+  sql(`DELETE FROM table_events WHERE business_id=${id}`)
+  sql(`DELETE FROM orders WHERE business_id=${id} AND origin='table'`)
+  sql(`DELETE FROM product_modifiers WHERE business_id=${id}`)
+  sql(`DELETE FROM products WHERE business_id=${id} AND name LIKE 'ZZ %'`)
+  sql(`DELETE FROM categories WHERE business_id=${id} AND name LIKE 'ZZ %'`)
   sql(`DELETE FROM floor_elements WHERE business_id=${id}`)
   sql(`DELETE FROM dining_tables WHERE business_id=${id}`)
   sql(`DELETE FROM service_areas WHERE business_id=${id}`)
   sql(`DELETE FROM activity_logs WHERE business_id=${id} AND action='restaurante_toggle'`)
   sql(`UPDATE businesses SET restaurante_enabled=${restaurante ? 1 : 0}, modules_enabled='${DEFAULT_MODULES}', subscription_active=1, subscription_expires_at=NULL, catalog_plan='negocio_activo' WHERE id=${id}`)
   return id
+}
+
+/** Usuario del negocio con ese rol (lo crea si falta). Hace falta uno real: la cuenta valida al mesonero contra la tabla users. */
+export function ensureUser(bid: number, role: TestRole, name: string): number {
+  const email = `zzkds-${bid}-${role}-${name.toLowerCase().replace(/\W+/g, '')}@zzkds.test`
+  if (!Number(sql(`SELECT COUNT(*) FROM users WHERE email='${email}'`))) {
+    sql(`INSERT INTO users (business_id,name,email,password,role,is_active,updated_at) VALUES (${bid},'${name}','${email}','!no-login','${role}',1,NOW(3))`)
+  }
+  return Number(sql(`SELECT id FROM users WHERE email='${email}'`))
+}
+
+export interface CartaSeed { categoryId: number; pasta: number; queso: number; cerveza: number }
+
+/** Categoría y productos de prueba: pasta ($14, unidad), queso por kg ($20, peso) y cerveza ($3, unidad). Con costo cargado a propósito. */
+export function seedCarta(bid: number): CartaSeed {
+  sql(`INSERT INTO categories (business_id,name) VALUES (${bid},'ZZ Platos')`)
+  const categoryId = Number(sql(`SELECT id FROM categories WHERE business_id=${bid} AND name='ZZ Platos'`))
+  const add = (name: string, mode: string, field: string, price: number): number => {
+    sql(`INSERT INTO products (business_id,category_id,name,sale_mode,${field},cost_per_unit_usd,active,updated_at) VALUES (${bid},${categoryId},'${name}','${mode}',${price},7.77,1,NOW(3))`)
+    return Number(sql(`SELECT id FROM products WHERE business_id=${bid} AND name='${name}'`))
+  }
+  return {
+    categoryId,
+    pasta:   add('ZZ Pasta carbonara', 'unit', 'price_per_unit_usd', 14),
+    queso:   add('ZZ Queso por kg', 'weight', 'price_per_kg_usd', 20),
+    cerveza: add('ZZ Cerveza Polar', 'unit', 'price_per_unit_usd', 3),
+  }
 }
 
 export type TestRole = 'admin' | 'cashier' | 'waiter' | 'kitchen'

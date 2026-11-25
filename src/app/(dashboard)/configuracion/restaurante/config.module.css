@@ -58,3 +58,16 @@
 @media (prefers-reduced-motion: reduce) {
   .switch, .switch::after, .iconBtn { transition: none; }
 }
+
+/* ── Modificadores ── */
+.seg { display: flex; gap: 2px; padding: 3px; background: var(--rs-seg); border-radius: var(--rs-radio-ctl); width: fit-content; max-width: 100%; overflow-x: auto; }
+.segBtn { flex: none; min-height: 44px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; font: 600 13px var(--rs-ui); color: var(--rs-ink-2); cursor: pointer; white-space: nowrap; }
+.segOn { background: var(--rs-card); color: var(--rs-ink); box-shadow: var(--rs-sombra); }
+.segBtn:focus-visible, .pick:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+.checkRow { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; font: 600 14px var(--rs-ui); color: var(--rs-ink); cursor: pointer; }
+.checkRow input { flex: none; width: 20px; height: 20px; accent-color: var(--rs-navy); cursor: pointer; }
+.pick { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--rs-radio-ctl); background: var(--rs-field); font: 600 14px var(--rs-ui); color: var(--rs-ink); text-align: left; cursor: pointer; }
+.picks { display: flex; flex-direction: column; gap: 4px; }
+.badge { display: inline-block; font: 700 10.5px var(--rs-mono); letter-spacing: 0.06em; text-transform: uppercase; border-radius: 6px; padding: 3px 7px; background: var(--rs-amber-bg); color: var(--rs-amber); }
+.price { font: 700 14px var(--rs-mono); white-space: nowrap; }
+.field .search { margin-left: 0; width: 100%; background: var(--rs-field); box-shadow: none; }

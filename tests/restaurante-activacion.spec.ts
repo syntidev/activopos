@@ -147,7 +147,7 @@ for (const vp of [{ w: 1280, h: 800 }, { w: 375, h: 812 }]) {
 
     await page.locator('[data-tab="restaurante"]').click()
     await expect(page.getByRole('heading', { name: 'Salón: áreas, mesas y plano' })).toBeVisible()
-    await expect(page.getByRole('button', { name: /^Modificadores/ })).toBeDisabled()
+    await expect(page.getByRole('button', { name: /^Modificadores/ })).toBeEnabled() // R2: ya existe la sección
     await expect(page.getByRole('button', { name: /^Estaciones y ruteo/ })).toBeDisabled()
     expect(await noOverflow()).toBe(true)
     await page.screenshot({ path: path.join(SHOTS, `config-restaurante-${vp.w}.png`), fullPage: true })

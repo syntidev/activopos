@@ -1,16 +1,28 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { Minus, Plus, X } from 'lucide-react'
 import type { DiningTableDTO } from '@/types/restaurante'
 import { STATUS_TEXT } from './PlanoSalon'
 import styles from './salon.module.css'
+
+export interface OpenAccountBody {
+  guests: number
+  waiter_id?: number
+  client_name?: string
+  confirm_clean: boolean
+}
 
 interface MesaDetalleProps {
   table: DiningTableDTO | null
   onClose: () => void
   /** Devuelve true si el servidor aceptó el cambio. */
   onPatch: (id: number, body: Record<string, unknown>) => Promise<boolean>
+  waiters: ReadonlyArray<{ id: number; name: string }>
+  currentUserId: number
+  canPickWaiter: boolean
+  /** Abre la cuenta y lleva a ella. Devuelve true si se abrió. */
+  onOpenAccount: (tableId: number, body: OpenAccountBody) => Promise<boolean>
 }
 
 function hourValue(iso: string | null): string {
@@ -28,12 +40,16 @@ function todayAt(hhmm: string): string | null {
   return d.toISOString()
 }
 
-/** Marcas manuales de una mesa: por limpiar y reserva. Ocupada y por cobrar se derivan de la cuenta (R2). */
-export function MesaDetalle({ table, onClose, onPatch }: MesaDetalleProps) {
+/** Mesa sin cuenta: abrir la cuenta y las marcas manuales (por limpiar, reserva). Ocupada y por cobrar se derivan de la cuenta. */
+export function MesaDetalle({ table, onClose, onPatch, waiters, currentUserId, canPickWaiter, onOpenAccount }: MesaDetalleProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const [name, setName] = useState(table?.reserved_for ?? '')
   const [phone, setPhone] = useState(table?.reserved_phone ?? '')
   const [time, setTime] = useState(hourValue(table?.reserved_at ?? null))
+  const [guests, setGuests] = useState(table ? Math.min(2, table.capacity) : 2)
+  const [waiterId, setWaiterId] = useState(currentUserId)
+  const [client, setClient] = useState(table?.reserved_for ?? '')
+  const [clean, setClean] = useState(false)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -51,7 +67,20 @@ export function MesaDetalle({ table, onClose, onPatch }: MesaDetalleProps) {
     if (ok) onClose()
   }
 
+  async function open(): Promise<void> {
+    if (!table || busy) return
+    setBusy(true)
+    const ok = await onOpenAccount(table.id, {
+      guests, confirm_clean: clean,
+      ...(canPickWaiter ? { waiter_id: waiterId } : {}),
+      ...(client.trim() ? { client_name: client.trim() } : {}),
+    })
+    setBusy(false)
+    if (!ok) onClose() // el salón se volvió a leer: si otro la abrió primero, la mesa ya aparece ocupada
+  }
+
   const editable = table && (table.status === 'libre' || table.status === 'reservada' || table.status === 'por_limpiar')
+  const maxGuests = table ? table.capacity + 4 : 1
   const iso = time ? todayAt(time) : null
 
   return (
@@ -75,8 +104,38 @@ export function MesaDetalle({ table, onClose, onPatch }: MesaDetalleProps) {
 
           {editable ? (
             <div className={styles.sheetBody}>
+              <fieldset className={styles.fieldset}>
+                <legend className={styles.fsLegend}>Abrir cuenta</legend>
+                <div className={styles.field}><span id="rs-comensales">Comensales (capacidad {table.capacity})</span>
+                  <div className={styles.stepper} role="group" aria-labelledby="rs-comensales">
+                    <button type="button" className={styles.stepBtn} aria-label="Menos comensales" disabled={guests <= 1} onClick={() => setGuests(g => g - 1)}><Minus size={18} aria-hidden="true" /></button>
+                    <output className={styles.stepVal} aria-live="polite">{guests}</output>
+                    <button type="button" className={styles.stepBtn} aria-label="Más comensales" disabled={guests >= maxGuests} onClick={() => setGuests(g => g + 1)}><Plus size={18} aria-hidden="true" /></button>
+                  </div>
+                </div>
+                {canPickWaiter && waiters.length > 0 && (
+                  <label className={styles.field}><span>Mesonero</span>
+                    <select className={styles.input} value={waiterId} onChange={e => setWaiterId(Number(e.target.value))}>
+                      {waiters.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                    </select>
+                  </label>
+                )}
+                <label className={styles.field}><span>Cliente (opcional)</span>
+                  <input className={styles.input} value={client} onChange={e => setClient(e.target.value)} maxLength={120} autoComplete="off" placeholder="Nombre" />
+                </label>
+                {table.status === 'por_limpiar' && (
+                  <label className={styles.checkRow}>
+                    <input type="checkbox" checked={clean} onChange={e => setClean(e.target.checked)} />
+                    <span>Ya está limpia</span>
+                  </label>
+                )}
+                <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} disabled={busy || (table.status === 'por_limpiar' && !clean)} onClick={() => { void open() }}>
+                  Abrir cuenta
+                </button>
+              </fieldset>
+
               {table.status === 'por_limpiar' ? (
-                <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} disabled={busy} onClick={() => run({ cleaning_pending: false })}>Mesa lista</button>
+                <button type="button" className={styles.btn} disabled={busy} onClick={() => run({ cleaning_pending: false })}>Mesa lista</button>
               ) : (
                 <button type="button" className={styles.btn} disabled={busy} onClick={() => run({ cleaning_pending: true })}>Marcar por limpiar</button>
               )}
@@ -96,7 +155,7 @@ export function MesaDetalle({ table, onClose, onPatch }: MesaDetalleProps) {
                 </div>
                 <div className={styles.fieldRow}>
                   <button
-                    type="button" className={`${styles.btn} ${styles.btnPrimary}`}
+                    type="button" className={styles.btn}
                     disabled={busy || name.trim().length === 0}
                     onClick={() => run({ reserved_for: name.trim(), reserved_phone: phone.trim() || null, reserved_at: iso })}
                   >

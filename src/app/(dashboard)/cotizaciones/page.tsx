@@ -343,7 +343,6 @@ function CotizacionesContent() {
                   <th className={styles.th}>Cliente</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Ítems</th>
                   <th className={`${styles.th} ${styles.thNum}`}>Total USD</th>
-                  <th className={`${styles.th} ${styles.thNum} ${styles.thHidden}`}>Total Bs</th>
                   <th className={styles.th}>Estado</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Válida hasta</th>
                   <th className={`${styles.th} ${styles.thHidden}`}>Fecha</th>
@@ -366,11 +365,6 @@ function CotizacionesContent() {
                     </td>
                     <td className={`${styles.td} ${styles.tdNum}`} data-label="Total USD">
                       <span className={styles.usd}>${q.total_usd.toFixed(2)}</span>
-                    </td>
-                    <td className={`${styles.td} ${styles.tdNum} ${styles.tdHidden}`} data-label="Total Bs">
-                      <span className={styles.bs}>
-                        Bs.&nbsp;{q.total_bs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
                     </td>
                     <td className={styles.td} data-label="Estado">
                       <span className={`${styles.chip} ${statusClass(q.status)}`}>

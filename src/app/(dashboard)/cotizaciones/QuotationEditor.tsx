@@ -781,12 +781,18 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
             Vigencia
           </span>
           <div className={styles.searchRow}>
-            <input id="q-days" type="number" className={styles.numInput} min="0" max="365"
-              aria-label="Días de vigencia" value={validUntil ? validityDays : ''}
-              onChange={e => setValid(shiftDateKey(today, Math.max(0, Math.floor(num(e.target.value)))))} />
-            <input id="q-valid" type="date" className={styles.input} min={today}
-              aria-label="Válida hasta" value={validUntil}
-              onChange={e => setValid(e.target.value)} />
+            <div className={styles.field}>
+              <label htmlFor="q-days" className={styles.label}>Días</label>
+              <input id="q-days" type="number" className={styles.numInput} min="0" max="365"
+                aria-label="Días de vigencia" value={validUntil ? validityDays : ''}
+                onChange={e => setValid(shiftDateKey(today, Math.max(0, Math.floor(num(e.target.value)))))} />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="q-valid" className={styles.label}>Válida hasta</label>
+              <input id="q-valid" type="date" className={styles.input} min={today}
+                aria-label="Válida hasta" value={validUntil}
+                onChange={e => setValid(e.target.value)} />
+            </div>
           </div>
           {validityError && <p className={styles.fieldError} role="alert">{validityError}</p>}
         </div>

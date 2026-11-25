@@ -137,12 +137,6 @@
   color: var(--color-text-primary);
 }
 
-.bs {
-  display: block;
-  font-size: var(--text-xs);
-  color: var(--color-bs);
-}
-
 /* ── Status chips ── */
 .chip {
   display: inline-flex;

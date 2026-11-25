@@ -152,6 +152,8 @@ for (const vp of VIEWPORTS) {
     await expect(modal.getByTestId('credito-total')).toContainText('Bs') // USD y Bs juntos
     await expect(modal.getByTestId('credito-confirmar')).toBeDisabled() // falta el plazo
     await modal.getByTestId('credito-dias-7').click()
+    await expect(modal.getByTestId('credito-aviso-nombre')).toBeVisible() // el nombre del pedido difiere del cliente: exige la casilla
+    await modal.getByTestId('credito-verifique').check()
     await modal.getByTestId('credito-notas').fill('Paga el viernes')
     await page.screenshot({ path: path.join(OUT, `cerrar-credito-${vp.n}.png`) })
     await modal.getByTestId('credito-confirmar').click()
@@ -221,6 +223,7 @@ test('cerrar a crédito: CLIENT_NOT_CONFIRMED se muestra y permite actualizar el
   await detalle.getByTestId('detalle-cerrar-credito').click()
   const modal = page.getByRole('dialog', { name: `Cerrar a crédito · ${E.numero}` })
   await modal.getByTestId('credito-dias-14').click()
+  await modal.getByTestId('credito-verifique').check()
   // El enlace del pedido cambia detrás de la pantalla: el servidor rechaza al cliente confirmado.
   sql(`UPDATE orders SET client_id=${clienteNo} WHERE id=${E.id}`)
   await modal.getByTestId('credito-confirmar').click()

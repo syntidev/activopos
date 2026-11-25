@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ExternalLink, X } from 'lucide-react'
 import { bs, dual, usd } from './money'
-import { TIER_LABEL, type PedidoClienteResumen } from './pago'
+import { TIER_LABEL, nombresDifieren, type PedidoClienteResumen } from './pago'
 import d from './PedidoPago.module.css'
 
 interface ClienteFicha {
@@ -120,6 +120,8 @@ interface ClienteResumenProps {
   fallbackCedula?: string | null
   /** Tasa del pedido, para mostrar el saldo en USD y Bs. */
   rate:           number
+  /** Nombre escrito en el pedido: si difiere del cliente enlazado se avisa (no bloquea). */
+  nombrePedido?:  string | null
   /** Con el pedido y un callback, un pedido sin cliente ofrece "Crear cliente" (el padre vuelve a leer el cliente al enlazarse). */
   orderId?:       number
   onLinked?:      () => void
@@ -179,7 +181,7 @@ function CrearCliente({ orderId, onLinked }: { orderId: number; onLinked: () => 
 }
 
 /** Panel de cliente plegable (detalle del pedido y cobro): datos, pedidos previos y saldo por cobrar (cxc + deuda de financiamiento). */
-export function ClienteResumen({ client, fallbackPhone, fallbackCedula, rate, orderId, onLinked }: ClienteResumenProps) {
+export function ClienteResumen({ client, fallbackPhone, fallbackCedula, rate, nombrePedido, orderId, onLinked }: ClienteResumenProps) {
   const [ficha, setFicha] = useState(false)
   const cerrar = useCallback(() => setFicha(false), [])
 
@@ -211,6 +213,11 @@ export function ClienteResumen({ client, fallbackPhone, fallbackCedula, rate, or
           <ChevronDown size={16} className={d.clienteFlecha} aria-hidden="true" />
         </summary>
         <div className={d.clienteCuerpo}>
+          {nombresDifieren(nombrePedido, client.name) && (
+            <p className={d.aviso} role="note" data-testid="cliente-aviso-nombre">
+              El pedido dice «{nombrePedido?.trim()}»; el cliente enlazado es «{client.name}». Verifica antes de cerrar a crédito.
+            </p>
+          )}
           <dl className={d.datos}>
             <dt>Cédula</dt><dd>{client.cedula ?? fallbackCedula ?? '—'}</dd>
             <dt>Teléfono</dt><dd>{client.phone ?? fallbackPhone ?? '—'}</dd>

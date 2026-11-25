@@ -585,7 +585,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
             )}
 
             <ClienteResumen client={order.client ?? null} fallbackPhone={order.client_phone} fallbackCedula={order.client_cedula} rate={rate}
-              orderId={order.id} onLinked={() => { void recargarPago('Cliente enlazado al pedido') }} />
+              nombrePedido={order.client_name} orderId={order.id} onLinked={() => { void recargarPago('Cliente enlazado al pedido') }} />
 
             <div className={styles.field}>
               <span className={styles.label}>Ítems del pedido</span>
@@ -702,7 +702,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
     {order && (
       <CerrarCreditoModal
         open={creditoOpen}
-        order={{ id: order.id, order_number: order.order_number, total_usd: Number(order.total_usd), rate }}
+        order={{ id: order.id, order_number: order.order_number, total_usd: Number(order.total_usd), rate, client_name: order.client_name }}
         client={order.client ?? null}
         onClose={() => setCreditoOpen(false)}
         onDone={() => { setCreditoOpen(false); void recargarPago('Pedido cerrado a crédito') }}

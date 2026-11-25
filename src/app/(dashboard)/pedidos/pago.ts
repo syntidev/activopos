@@ -41,3 +41,13 @@ export interface ApiErrorBody {
 }
 
 export const TIER_LABEL: Record<string, string> = { detal: 'Detal', mayorista: 'Mayorista' }
+
+/** Nombre para comparar: sin tildes, en minúsculas y con los espacios colapsados. */
+const claveNombre = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+
+/** ¿El nombre escrito en el pedido difiere del nombre del cliente enlazado? Sin nombre en el pedido no hay diferencia que avisar. */
+export function nombresDifieren(nombrePedido: string | null | undefined, nombreCliente: string | null | undefined): boolean {
+  const a = claveNombre(nombrePedido ?? '')
+  const b = claveNombre(nombreCliente ?? '')
+  return a !== '' && b !== '' && a !== b
+}

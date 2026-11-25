@@ -223,7 +223,7 @@ export function CobrarPedidoModal({ open, order, onClose, onConfirm }: CobrarPed
                     {order.client_phone ? ` · ${order.client_phone}` : ''}
                   </p>
                 )}
-                {!done && <ClienteResumen client={client} fallbackPhone={order.client_phone} fallbackCedula={order.client_cedula ?? order.ship_cedula} rate={rate} />}
+                {!done && <ClienteResumen client={client} fallbackPhone={order.client_phone} fallbackCedula={order.client_cedula ?? order.ship_cedula} rate={rate} nombrePedido={order.client_name} />}
                 <CedulaAlertBadge show={order.cedula_alert} />
                 {isDelivery && <ShippingMethodTag label={order.ship_metodo_label} />}
                 {!done && isDelivery && <ShippingEditor orderId={order.id} order={order} />}

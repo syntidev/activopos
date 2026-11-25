@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { dual } from './money'
-import type { ApiErrorBody, PedidoClienteResumen } from './pago'
+import { nombresDifieren, type ApiErrorBody, type PedidoClienteResumen } from './pago'
 import d from './PedidoPago.module.css'
 
 interface CerrarCreditoModalProps {
   open:   boolean
-  order:  { id: number; order_number: string; total_usd: number; rate: number }
+  /** client_name = el nombre escrito en el pedido (puede no coincidir con el del cliente enlazado). */
+  order:  { id: number; order_number: string; total_usd: number; rate: number; client_name?: string | null }
   /** Cliente enlazado al pedido (el que recibe el crédito); se envía como confirmed_client_id. */
   client: PedidoClienteResumen | null
   onClose: () => void
@@ -29,12 +30,17 @@ export function CerrarCreditoModal({ open, order, client, onClose, onDone, onRel
   const [notas, setNotas]   = useState('')
   const [busy, setBusy]     = useState(false)
   const [error, setError]   = useState<{ message: string; code?: string } | null>(null)
+  const [verificado, setVerificado] = useState(false)
 
-  useEffect(() => { if (!open) { setPlazo(null); setFecha(''); setNotas(''); setBusy(false); setError(null) } }, [open])
+  useEffect(() => { if (!open) { setPlazo(null); setFecha(''); setNotas(''); setBusy(false); setError(null); setVerificado(false) } }, [open])
+  // Si el cliente enlazado cambia (CLIENT_NOT_CONFIRMED → actualizar), la verificación anterior ya no vale.
+  useEffect(() => { setVerificado(false) }, [client?.id])
 
   const sinCredito = client?.credit_authorized === false
+  // Nombre escrito en el pedido ≠ nombre del cliente enlazado (sin tildes, mayúsculas ni espacios extra): se avisa y se exige la casilla.
+  const nombreDistinto = !!client && nombresDifieren(order.client_name, client.name)
   const plazoOk    = plazo !== null && (plazo !== 'fecha' || fecha !== '')
-  const puede      = !!client && !sinCredito && plazoOk && !busy
+  const puede      = !!client && !sinCredito && plazoOk && (!nombreDistinto || verificado) && !busy
 
   const confirmar = async (): Promise<void> => {
     if (!client || !puede) return
@@ -86,6 +92,17 @@ export function CerrarCreditoModal({ open, order, client, onClose, onDone, onRel
           </section>
         ) : (
           <p className={d.aviso} role="alert">Este pedido no tiene un cliente enlazado: créalo primero.</p>
+        )}
+        {nombreDistinto && client && (
+          <div className={d.campo}>
+            <p className={d.aviso} role="alert" data-testid="credito-aviso-nombre">
+              El pedido dice «{order.client_name?.trim()}»; el cliente enlazado es «{client.name}». Verifica antes de cerrar a crédito.
+            </p>
+            <label className={d.verifica}>
+              <input type="checkbox" checked={verificado} onChange={e => setVerificado(e.target.checked)} data-testid="credito-verifique" />
+              Verifiqué que es el mismo cliente
+            </label>
+          </div>
         )}
         {sinCredito && <p className={d.aviso} role="alert" data-testid="credito-sin-autorizar">Este cliente no tiene crédito autorizado: un administrador debe autorizarlo en su ficha.</p>}
 

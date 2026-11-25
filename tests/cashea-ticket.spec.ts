@@ -1,6 +1,7 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import bcrypt from 'bcryptjs'
 import { sql } from './alta-helpers'
+import { businessDateKey } from '@/lib/business-day'
 import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts, tokenFor } from './p0-helpers'
 
 /**
@@ -29,9 +30,13 @@ function cleanup(): void {
   const prods = sql(`SELECT id FROM products WHERE business_id=${BUSINESS_ID} AND name LIKE 'ZZ Cashea%'`).split('\n').filter(Boolean)
   if (prods.length > 0) {
     const list = prods.join(',')
+    const orders = sql(`SELECT id FROM orders WHERE business_id=${BUSINESS_ID} AND client_name LIKE 'ZZ Cashea%'`).split('\n').filter(Boolean)
+    const sales = sql(`SELECT DISTINCT sale_id FROM sale_items WHERE product_id IN (${list})`).split('\n').filter(Boolean)
+    // Bitácora de SUS pedidos y ventas (price_mode_changed, sale_paid…): se borra antes que las filas a las que apunta.
+    if (orders.length > 0) sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND model_type='Order' AND model_id IN (${orders.join(',')})`)
+    if (sales.length > 0) sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND model_type='Sale' AND model_id IN (${sales.join(',')})`)
     sql(`DELETE oi FROM order_items oi WHERE oi.product_id IN (${list})`)
     sql(`DELETE FROM orders WHERE business_id=${BUSINESS_ID} AND client_name LIKE 'ZZ Cashea%'`)
-    const sales = sql(`SELECT DISTINCT sale_id FROM sale_items WHERE product_id IN (${list})`).split('\n').filter(Boolean)
     if (sales.length > 0) {
       const sl = sales.join(',')
       sql(`DELETE FROM sale_payments WHERE sale_id IN (${sl})`)
@@ -447,7 +452,8 @@ test('reportes y caja: Cashea se segmenta y no se mezcla con el resto', async ()
   const rep = await (await api.get('/api/reports/sales?financing=cashea&limit=50')).json() as { sales: Array<{ financing_status: string | null }> }
   expect(rep.sales.every(s => s.financing_status !== null)).toBe(true)
 
-  const hoy = new Date().toISOString().slice(0, 10)
+  // Día de Caracas (UTC-4), el mismo que usa el reporte: toISOString() es UTC y cambia de día 4 h antes.
+  const hoy = businessDateKey()
   const day = await (await api.get(`/api/reports/day?date=${hoy}`)).json() as { payment_methods: Array<{ method: string; is_financing: boolean; total_usd: number }>; summary_financing: { usd: number; count: number } }
   const fin = day.payment_methods.find(m => m.method === FIN_NAME)
   expect(fin?.is_financing).toBe(true)

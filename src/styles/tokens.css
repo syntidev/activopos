@@ -1273,3 +1273,34 @@
   --rs-t-ui:        200ms;
   --rs-anillo:      2px;       /* grosor del anillo de foco */
 }
+
+/* Restaurante — KDS por estación (R3): cocina oscura, comanda de papel y urgencia en el encabezado completo. */
+[data-restaurante] {
+  --rs-k-bg:        #0E1015;
+  --rs-k-col:       #161922;
+  --rs-k-chip:      #1C2030;
+  --rs-k-line:      #2A2F40;
+  --rs-k-paper:     #F5F2EA;
+  --rs-k-paper-ink: #16130E;
+  --rs-k-perfora:   #CFC8B6;
+  --rs-k-text:      #E9EAF0;
+  --rs-k-text-2:    #A9AEBF;
+  --rs-k-muted:     #8E94A8;   /* 5.9:1 sobre --rs-k-bg (AA) */
+  --rs-k-quiet:     #7C8296;
+  --rs-k-live:      #7FD3A0;
+  --rs-k-live-dot:  #3FCB78;
+  --rs-k-warn-bg:   #FFE2A8;
+  --rs-k-warn-ink:  #6B4200;
+  --rs-k-mod:       #8A5A00;   /* modificador sobre papel */
+  --rs-k-paper-sub: #6E6656;
+  --rs-k-late-sub:  #FFD3CF;
+  --rs-k-off-sub:   #FFB4AE;
+}
+
+[data-restaurante] {
+  --rs-k-sombra:      0 10px 24px -10px rgba(0, 0, 0, 0.7);
+  --rs-k-sombra-late: 0 0 0 3px var(--rs-red), 0 10px 24px -10px rgba(0, 0, 0, 0.7);
+  --rs-k-live-ring:   0 0 0 4px rgba(63, 203, 120, 0.18);
+  --rs-k-hold:        0.5;
+  --rs-k-done:        0.6;
+}

@@ -1,17 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, Plus, Send, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui'
 import { confirmAction } from '@/context/ConfirmContext'
 import { callApi } from '@/lib/restaurante-client'
 import { elapsedLabel, formatBs, formatUsd } from '@/lib/restaurante'
-import type { AccountDTO, AccountItemDTO } from '@/types/restaurante'
+import type { AccountDTO, AccountItemDTO, ItemKdsStatus } from '@/types/restaurante'
 import { SelectorProducto } from './SelectorProducto'
 import styles from './cuenta.module.css'
 
 const COURSE_NAME: Record<number, string> = { 1: 'Entrada', 2: 'Fondo', 3: 'Postre' }
+
+const POLL_MS = 4_000
+const STATUS_LABEL: Record<ItemKdsStatus, string> = { draft: 'Borrador', sent: 'En cocina', preparing: 'Preparando', ready: 'Listo para servir', served: 'Servido', void: 'Anulado' }
 
 const qtyLabel = (n: number): string => String(Number(n.toFixed(3)))
 
@@ -21,11 +24,41 @@ export function CuentaMesero({ initial }: { initial: AccountDTO }) {
   const [account, setAccount] = useState<AccountDTO>(initial)
   const [adding, setAdding] = useState(false)
   const [busyItem, setBusyItem] = useState<number | null>(null)
+  const [sending, setSending] = useState(false)
+
+  // El estado de cocina (preparando, listo) llega por sondeo; sin polling el mesonero no se enteraría de que un plato salió.
+  const accountId = initial.id
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void callApi<{ account: AccountDTO }>(`/api/restaurante/cuentas/${accountId}`, 'GET').then(r => { if (r.ok) setAccount(r.data.account) })
+    }, POLL_MS)
+    return () => window.clearInterval(id)
+  }, [accountId])
 
   const live = account.items.filter(i => i.kds_status !== 'void')
   const courses = Array.from(new Set(account.items.map(i => i.course))).sort((a, b) => a - b)
   const pay = account.status === 'bill_requested'
   const money = (usd: number): { usd: string; bs: string } => ({ usd: formatUsd(usd), bs: formatBs(usd * account.rate_used) })
+
+  const drafts = account.items.filter(i => i.kds_status === 'draft').length
+
+  async function send(): Promise<void> {
+    setSending(true)
+    const res = await callApi<{ account: AccountDTO; sent: number; direct: number }>(`/api/restaurante/cuentas/${account.id}/enviar`, 'POST', {})
+    setSending(false)
+    if (!res.ok) { toast(res.error, 'error'); return }
+    setAccount(res.data.account)
+    toast(res.data.sent > 0 ? 'Enviado a cocina' : 'Listo para servir', 'success')
+  }
+
+  async function serve(item: AccountItemDTO): Promise<void> {
+    setBusyItem(item.id)
+    const res = await callApi<{ ok: true }>(`/api/restaurante/kds/items/${item.id}`, 'PATCH', { action: 'servido', order_id: account.id })
+    setBusyItem(null)
+    if (!res.ok) { toast(res.error, 'error'); return }
+    const fresh = await callApi<{ account: AccountDTO }>(`/api/restaurante/cuentas/${account.id}`, 'GET')
+    if (fresh.ok) setAccount(fresh.data.account)
+  }
 
   async function remove(item: AccountItemDTO): Promise<void> {
     const ok = await confirmAction({
@@ -84,7 +117,12 @@ export function CuentaMesero({ initial }: { initial: AccountDTO }) {
                       <div className={styles.nm}>{item.product_name}</div>
                       {item.modifiers.length > 0 && <p className={styles.mod}>{item.modifiers.map(x => x.option).join(' · ')}</p>}
                       {item.note && <p className={styles.note}>{item.note}</p>}
-                      <span className={`${styles.tag} ${voided ? styles.tagVoid : ''}`}>{voided ? `Anulado${item.void_reason ? ` · ${item.void_reason}` : ''}` : 'Borrador'}</span>
+                      <span className={`${styles.tag} ${voided ? styles.tagVoid : ''}`}>{voided ? `Anulado${item.void_reason ? ` · ${item.void_reason}` : ''}` : STATUS_LABEL[item.kds_status]}</span>
+                      {item.kds_status === 'ready' && (
+                        <div>
+                          <button type="button" className={styles.remove} disabled={busyItem === item.id} onClick={() => { void serve(item) }}>Marcar servido</button>
+                        </div>
+                      )}
                       {item.kds_status === 'draft' && (
                         <div>
                           <button type="button" className={styles.remove} disabled={busyItem === item.id} onClick={() => { void remove(item) }} aria-label={`Quitar ${item.product_name}`}>
@@ -107,12 +145,15 @@ export function CuentaMesero({ initial }: { initial: AccountDTO }) {
             <div className={styles.totAmt}>{formatUsd(account.total_usd)}<small>{formatBs(account.total_bs)}</small></div>
           </div>
         </section>
-        <p className={styles.tip}>Los ítems quedan como borrador en la cuenta. Los montos se calculan en el servidor con el precio vigente del producto.</p>
+        <p className={styles.tip}>Los montos se calculan en el servidor con el precio vigente del producto. Lo enviado a cocina solo lo anula un administrador.</p>
       </div>
 
       <div className={styles.bar}>
         <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setAdding(true)}>
           <Plus size={18} aria-hidden="true" />Agregar ítem
+        </button>
+        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} disabled={drafts === 0 || sending} onClick={() => { void send() }}>
+          <Send size={18} aria-hidden="true" />{drafts > 0 ? `Enviar a cocina (${drafts})` : 'Enviar a cocina'}
         </button>
       </div>
 

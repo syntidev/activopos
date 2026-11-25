@@ -143,7 +143,7 @@ export const OPEN_ACCOUNT_STATUSES = ['open', 'bill_requested'] as const
 
 interface OpenAccountRow { id: number; table_id: number | null; account_status: string | null; total_usd: Prisma.Decimal; total_bs: Prisma.Decimal; opened_at: Date | null }
 
-export function serializeTable(row: TableRow, account: OpenAccountRow | null = null): DiningTableDTO {
+export function serializeTable(row: TableRow, account: OpenAccountRow | null = null, readyItems = 0): DiningTableDTO {
   const st = account?.account_status
   const ref: OpenAccountRef | null = st === 'open' || st === 'bill_requested' ? { account_status: st } : null
   return {
@@ -157,6 +157,7 @@ export function serializeTable(row: TableRow, account: OpenAccountRow | null = n
     account_total_usd: account ? Number(account.total_usd) : null,
     account_total_bs:  account ? Number(account.total_bs) : null,
     account_opened_at: account?.opened_at ? account.opened_at.toISOString() : null,
+    ready_items: readyItems,
   }
 }
 
@@ -168,7 +169,11 @@ export async function serializeTables(db: TenantPrisma, rows: readonly TableRow[
     select: { id: true, table_id: true, account_status: true, total_usd: true, total_bs: true, opened_at: true },
   })
   const byTable = new Map(accounts.map(a => [a.table_id, a]))
-  return rows.map(r => serializeTable(r, byTable.get(r.id) ?? null))
+  const ready = accounts.length === 0 ? [] : await db.orderItem.groupBy({
+    by: ['order_id'], where: { order_id: { in: accounts.map(a => a.id) }, kds_status: 'ready' }, _count: { _all: true },
+  })
+  const readyByOrder = new Map(ready.map(g => [g.order_id, g._count._all]))
+  return rows.map(r => { const a = byTable.get(r.id) ?? null; return serializeTable(r, a, a ? readyByOrder.get(a.id) ?? 0 : 0) })
 }
 
 export function serializeElement(row: Prisma.FloorElementGetPayload<object>): FloorElementDTO {

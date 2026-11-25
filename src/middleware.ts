@@ -127,6 +127,7 @@ const WAITER_ALLOWED: readonly OperadorRule[] = [
 const KITCHEN_ALLOWED: readonly OperadorRule[] = [
   { path: '/kds' },
   { path: '/api/restaurante/kds' },
+  { path: '/api/kds/orders', methods: ['GET'] },   // KDS legado (negocios sin el módulo): la cocina lo lee
 ]
 
 const RESTRICTED_ROLES: Record<string, { rules: readonly OperadorRule[]; home: string }> = {

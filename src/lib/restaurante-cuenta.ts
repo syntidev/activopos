@@ -16,7 +16,7 @@ import type {
  */
 
 /** Cliente de transacción del cliente con scope de tenant (no es Prisma.TransactionClient: lleva las extensiones). */
-type Tx = Parameters<Extract<Parameters<TenantPrisma['$transaction']>[0], (...args: never[]) => unknown>>[0]
+export type Tx = Parameters<Extract<Parameters<TenantPrisma['$transaction']>[0], (...args: never[]) => unknown>>[0]
 
 const round2 = (n: number): number => Math.round(n * 100) / 100
 const round4 = (n: number): number => Math.round(n * 10_000) / 10_000
@@ -214,7 +214,7 @@ async function recalcTotals(tx: Tx, orderId: number, rate: number): Promise<void
 }
 
 /** Cuenta editable (open o bill_requested) del negocio, con su fila bloqueada. 404 si no existe; 409 si ya está cerrada. */
-async function lockOpenOrder(tx: Tx, businessId: number, orderId: number): Promise<{ id: number; account_status: string | null; rate_used: Prisma.Decimal; price_mode: string; table_id: number | null }> {
+export async function lockOpenOrder(tx: Tx, businessId: number, orderId: number): Promise<{ id: number; account_status: string | null; rate_used: Prisma.Decimal; price_mode: string; table_id: number | null }> {
   await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${businessId} FOR UPDATE`
   const order = await tx.order.findFirst({
     where: { id: orderId, business_id: businessId, origin: 'table' },
@@ -290,17 +290,27 @@ export async function addItem(db: TenantPrisma, businessId: number, orderId: num
   })
 }
 
-/* ── Anular ítem (solo borradores: lo enviado necesita autorización de admin, R3) ── */
+/* ── Anular ítem: un borrador lo quita cualquiera; uno ya enviado a cocina solo un administrador; uno servido no se anula ── */
 
-export async function voidDraftItem(db: TenantPrisma, businessId: number, orderId: number, itemId: number, userId: number, reason: string | undefined): Promise<void> {
+export async function voidDraftItem(
+  db: TenantPrisma, businessId: number, orderId: number, itemId: number, user: { id: number; role: string }, reason: string | undefined,
+): Promise<void> {
+  const userId = user.id
   await db.$transaction(async (tx: Tx) => {
     const order = await lockOpenOrder(tx, businessId, orderId)
     // OrderItem no tiene business_id: se aísla por la cuenta (ya validada contra el negocio de la sesión).
     const item = await tx.orderItem.findFirst({ where: { id: itemId, order_id: order.id } })
     if (!item) throw new AccountError(404, 'Ítem no encontrado')
-    if (item.kds_status !== 'draft') throw new AccountError(422, 'Solo se pueden quitar ítems que aún no se enviaron')
+    const st = item.kds_status
+    if (st === 'void' || st === 'served') throw new AccountError(422, st === 'void' ? 'El ítem ya está anulado' : 'Un ítem ya servido no se anula')
+    if (st !== 'draft' && user.role !== 'admin' && user.role !== 'super_admin') {
+      throw new AccountError(403, 'Anular un ítem que ya se envió a cocina requiere autorización de un administrador')
+    }
 
-    await tx.orderItem.update({ where: { id: item.id }, data: { kds_status: 'void', void_by: userId, void_reason: reason ?? 'Quitado por el mesonero', kds_updated_at: new Date() } })
+    await tx.orderItem.update({
+      where: { id: item.id },
+      data:  { kds_status: 'void', void_by: userId, void_reason: reason ?? (st === 'draft' ? 'Quitado por el mesonero' : 'Anulado por un administrador'), kds_updated_at: new Date() },
+    })
     await recalcTotals(tx, order.id, Number(order.rate_used))
     await tx.tableEvent.create({ data: { business_id: businessId, order_id: order.id, table_id: order.table_id, type: 'void_item', from_value: item.product_name.slice(0, 60), reason: reason ?? null, user_id: userId } })
   })

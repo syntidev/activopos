@@ -4,7 +4,7 @@ import type { DiningTableDTO, FloorElementDTO, SalonSnapshot, ServiceAreaDTO } f
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
-export async function callApi<T>(url: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<ApiResult<T>> {
+export async function callApi<T>(url: string, method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', body?: unknown): Promise<ApiResult<T>> {
   try {
     const res = await fetch(url, {
       method,

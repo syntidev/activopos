@@ -29,6 +29,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
   admin:       'Admin',
   cashier:     'Cajero',
   operador_reservas: 'Operador de reservas',
+  waiter:      'Mesonero',
+  kitchen:     'Cocinero',
 }
 
 function getInitials(name: string): string {

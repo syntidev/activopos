@@ -92,3 +92,7 @@
   .pulse { animation: none; opacity: 0.35; }
   .face, .table { transition: none; }
 }
+
+/* Plato listo en cocina: el mesonero lo ve desde el plano sin abrir la cuenta. */
+.ready circle { fill: var(--rs-green); stroke: var(--rs-card); stroke-width: 0.12px; }
+.ready text { fill: var(--rs-on-accent); font: 700 0.62px var(--rs-mono); }

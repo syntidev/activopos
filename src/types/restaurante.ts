@@ -49,6 +49,8 @@ export interface DiningTableDTO {
   account_total_bs:  number | null
   /** ISO 8601 */
   account_opened_at: string | null
+  /** Ítems de la cuenta que cocina marcó listos y nadie sirvió todavía (R3). */
+  ready_items:       number
 }
 
 export interface FloorElementDTO {
@@ -150,4 +152,65 @@ export interface CatalogDTO {
   rate:       number
   categories: Array<{ id: number; name: string }>
   products:   CatalogProductDTO[]
+}
+
+/* ── Estaciones, ruteo y KDS (R3) ── */
+
+export interface StationDTO {
+  id:           number
+  name:         string
+  color:        string | null
+  warn_min:     number
+  critical_min: number
+  is_default:   boolean
+  sort_order:   number
+  active:       boolean
+  /** Cocineros asignados (solo en el listado de configuración). */
+  users?:       Array<{ id: number; name: string }>
+  /** Comandas activas en la estación (solo en las pestañas del KDS). */
+  open_tickets?: number
+}
+
+export interface KdsItemDTO {
+  id:          number
+  quantity:    number
+  product_name: string
+  modifiers:   ItemModifierDTO[]
+  note:        string | null
+  course:      number
+  status:      ItemKdsStatus
+  /** Curso 2+ que espera a que termine el anterior (o a que lo disparen). */
+  held:        boolean
+  void_reason: string | null
+}
+
+/** Una comanda = los ítems de UNA estación de UNA cuenta. Sin precios. */
+export interface KdsTicketDTO {
+  order_id:     number
+  station_id:   number
+  order_number: string
+  table_label:  string | null
+  area_name:    string | null
+  waiter_name:  string | null
+  /** ISO 8601: el envío más antiguo de los ítems que siguen en preparación. */
+  sent_at:      string
+  items:        KdsItemDTO[]
+}
+
+export interface KdsBoardDTO {
+  stations:    StationDTO[]
+  /** Estación consultada o "todas". */
+  station:     number | 'todas'
+  tickets:     KdsTicketDTO[]
+  /** Cursor para el siguiente sondeo (?since=). Lleva 2 s de margen: reenviar de más es inocuo, perder un cambio no. */
+  server_time: string
+  /** Con ?since: ids de las cuentas cuyas comandas vienen completas en esta respuesta (reemplazan a las del cliente). null = tablero completo. */
+  changed:     number[] | null
+}
+
+export interface RoutingDTO {
+  categories: Array<{ id: number; name: string; station_id: number | null; requires_preparation: boolean }>
+  /** Productos con estación propia (override del ruteo de su categoría). */
+  overrides:  Array<{ id: number; name: string; station_id: number; category_name: string | null }>
+  default_station_id: number | null
 }

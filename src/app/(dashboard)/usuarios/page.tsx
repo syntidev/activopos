@@ -27,11 +27,13 @@ const ROLE_LABEL: Record<UserRole, string> = {
   admin:       'Admin',
   cashier:     'Cajero',
   operador_reservas: 'Operador de reservas',
+  waiter:      'Mesonero',
+  kitchen:     'Cocinero',
 }
 
 /* ── Form interfaces ─────────────────────────────────────── */
 
-type EditableRole = 'admin' | 'cashier' | 'operador_reservas'
+type EditableRole = 'admin' | 'cashier' | 'operador_reservas' | 'waiter' | 'kitchen'
 
 interface NewUserForm {
   name:     string
@@ -57,13 +59,17 @@ function UsuariosContent() {
   const [submitting, setSubmitting] = useState(false)
   // El rol "Operador de reservas" solo se ofrece en negocios con el módulo habilitado.
   const [reservasEnabled, setReservasEnabled] = useState(false)
+  // Mesonero y Cocinero solo se ofrecen en negocios con el módulo Restaurante.
+  const [restauranteEnabled, setRestauranteEnabled] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     fetch('/api/config/business/modules')
       .then(res => (res.ok ? res.json() : null))
-      .then((j: { reservas_enabled?: boolean } | null) => {
-        if (!cancelled) setReservasEnabled(j?.reservas_enabled === true)
+      .then((j: { reservas_enabled?: boolean; restaurante_enabled?: boolean } | null) => {
+        if (cancelled) return
+        setReservasEnabled(j?.reservas_enabled === true)
+        setRestauranteEnabled(j?.restaurante_enabled === true)
       })
       .catch(() => { /* sin el dato, la opción simplemente no aparece */ })
     return () => { cancelled = true }
@@ -137,7 +143,7 @@ function UsuariosContent() {
     // NO colapsar a admin/cashier: un operador_reservas editado y guardado se
     // ascendería a admin sin querer.
     const role: EditableRole =
-      u.role === 'cashier' || u.role === 'operador_reservas' ? u.role : 'admin'
+      u.role === 'cashier' || u.role === 'operador_reservas' || u.role === 'waiter' || u.role === 'kitchen' ? u.role : 'admin'
     setEditTarget(u)
     setEditForm({ name: u.name, email: u.email ?? '', role, is_active: u.is_active })
     setEditError('')
@@ -214,7 +220,7 @@ function UsuariosContent() {
         <ul className={styles.userList} role="list">
           {users.map(u => {
             // Roles restringidos (cajero y operador de reservas) se ven distintos de un admin.
-            const restricted = u.role === 'cashier' || u.role === 'operador_reservas'
+            const restricted = u.role !== 'admin' && u.role !== 'super_admin'
             return (
             <li key={u.id} className={styles.userCard}>
 
@@ -334,6 +340,8 @@ function UsuariosContent() {
               <option value="cashier">Cajero</option>
               <option value="admin">Administrador</option>
               {reservasEnabled && <option value="operador_reservas">Operador de reservas</option>}
+              {restauranteEnabled && <option value="waiter">Mesonero</option>}
+              {restauranteEnabled && <option value="kitchen">Cocinero</option>}
             </select>
           </div>
           {newError && <p className={styles.formError} role="alert">{newError}</p>}
@@ -398,6 +406,8 @@ function UsuariosContent() {
               {(reservasEnabled || editForm.role === 'operador_reservas') && (
                 <option value="operador_reservas">Operador de reservas</option>
               )}
+              {(restauranteEnabled || editForm.role === 'waiter') && <option value="waiter">Mesonero</option>}
+              {(restauranteEnabled || editForm.role === 'kitchen') && <option value="kitchen">Cocinero</option>}
             </select>
           </div>
           <label className={styles.toggleRow}>

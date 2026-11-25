@@ -71,3 +71,8 @@
 .badge { display: inline-block; font: 700 10.5px var(--rs-mono); letter-spacing: 0.06em; text-transform: uppercase; border-radius: 6px; padding: 3px 7px; background: var(--rs-amber-bg); color: var(--rs-amber); }
 .price { font: 700 14px var(--rs-mono); white-space: nowrap; }
 .field .search { margin-left: 0; width: 100%; background: var(--rs-field); box-shadow: none; }
+
+/* Estaciones: tarjetas separadas y lista de cocineros sin el marco por defecto del fieldset. */
+.stack { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4, 16px); }
+.plain { border: 0; margin: 0; padding: 0; min-width: 0; }
+.plain legend { padding: 0; margin-bottom: 6px; font: 600 13px var(--rs-ui); color: var(--rs-ink-2); }

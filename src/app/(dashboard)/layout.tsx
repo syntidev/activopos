@@ -25,6 +25,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     return <MeseroShell session={session}>{children}</MeseroShell>
   }
 
+  if (session.role === 'kitchen') {
+    return <MeseroShell session={session} variant="kitchen">{children}</MeseroShell>
+  }
+
   const impersonating = await isImpersonating()
 
   return (

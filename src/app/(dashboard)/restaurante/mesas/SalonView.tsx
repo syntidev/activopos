@@ -30,6 +30,8 @@ function byLabel(a: DiningTableDTO, b: DiningTableDTO): number {
 }
 
 /** Salón en vivo: zonas, búsqueda, plano (escritorio) o fichas (móvil) y cola "Para hacer ahora". */
+const TABLES_POLL_MS = 5_000
+
 export function SalonView({ initial, isAdmin, waiters, currentUserId, canPickWaiter }: SalonViewProps) {
   const { toast } = useToast()
   const router = useRouter()
@@ -69,6 +71,15 @@ export function SalonView({ initial, isAdmin, waiters, currentUserId, canPickWai
   )
   const detail = snap.tables.find(t => t.id === detailId) ?? null
 
+  /* Sondeo de mesas cada 5 s (estado, totales y platos listos de cocina). En edición no: pisaría lo que se está moviendo. */
+  useEffect(() => {
+    if (editing) return
+    const id = window.setInterval(() => {
+      void callApi<{ tables: DiningTableDTO[] }>('/api/restaurante/mesas', 'GET').then(r => { if (r.ok) setSnap(prev => ({ ...prev, tables: r.data.tables })) })
+    }, TABLES_POLL_MS)
+    return () => window.clearInterval(id)
+  }, [editing])
+
   /* Atajo "/": enfoca la búsqueda sin interferir cuando se escribe en un campo. */
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
@@ -85,7 +96,7 @@ export function SalonView({ initial, isAdmin, waiters, currentUserId, canPickWai
     const res = await callApi<{ table: DiningTableDTO }>(`/api/restaurante/mesas/${id}`, 'PATCH', body)
     if (!res.ok) { toast(res.error, 'error'); return false }
     // El PATCH devuelve la mesa sin su cuenta: se conserva la que ya traíamos.
-    setSnap(s => ({ ...s, tables: s.tables.map(t => (t.id === id ? { ...res.data.table, account_id: t.account_id, account_total_usd: t.account_total_usd, account_total_bs: t.account_total_bs, account_opened_at: t.account_opened_at } : t)) }))
+    setSnap(s => ({ ...s, tables: s.tables.map(t => (t.id === id ? { ...res.data.table, account_id: t.account_id, account_total_usd: t.account_total_usd, account_total_bs: t.account_total_bs, account_opened_at: t.account_opened_at, ready_items: t.ready_items } : t)) }))
     toast(`Mesa ${res.data.table.label} actualizada`, 'success')
     return true
   }, [toast])

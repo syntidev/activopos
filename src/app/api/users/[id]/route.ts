@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
+import { isRestauranteEnabled } from '@/lib/restaurante-server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 
@@ -9,7 +10,7 @@ type RouteContext = { params: { id: string } }
 const PatchSchema = z.object({
   name: z.string().min(2).max(255).optional(),
   email: z.string().email().max(255).optional(),
-  role: z.enum(['admin', 'cashier', 'operador_reservas']).optional(),
+  role: z.enum(['admin', 'cashier', 'operador_reservas', 'waiter', 'kitchen']).optional(),
   is_active: z.boolean().optional(),
 })
 
@@ -54,6 +55,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const target = await resolveUser(db, id)
     if (!target) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+
+    if ((data.role === 'waiter' || data.role === 'kitchen') && !(await isRestauranteEnabled(session.businessId))) {
+      return NextResponse.json({ error: 'El módulo Restaurante no está habilitado para este negocio' }, { status: 422 })
+    }
 
     const user = await db.user.update({
       where: { id }, // business_id inyectado por el tenant layer

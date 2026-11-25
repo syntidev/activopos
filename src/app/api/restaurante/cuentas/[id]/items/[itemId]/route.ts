@@ -18,7 +18,7 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
     const parsed = voidItemSchema.safeParse(raw ?? {})
     if (!parsed.success) return badRequest(parsed.error)
 
-    await voidDraftItem(db, session.businessId, orderId, itemId, session.userId, parsed.data.reason)
+    await voidDraftItem(db, session.businessId, orderId, itemId, { id: session.userId, role: session.role }, parsed.data.reason)
     return NextResponse.json({ ok: true, account: await loadAccount(db, orderId) })
   } catch (err) {
     return handleRestauranteError(err, 'DELETE /api/restaurante/cuentas/[id]/items/[itemId]')

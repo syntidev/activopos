@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogOut, UtensilsCrossed } from 'lucide-react'
+import { ChefHat, LogOut, UtensilsCrossed } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ToastProvider } from '@/components/ui/Toast'
 import { ConfirmProvider } from '@/context/ConfirmContext'
@@ -12,6 +12,8 @@ import styles from './OperadorShell.module.css'
 interface MeseroShellProps {
   session: SessionUser
   children: ReactNode
+  /** 'kitchen' = cocinero (misma carcasa mínima, título y glifo de cocina). */
+  variant?: 'waiter' | 'kitchen'
 }
 
 /**
@@ -19,7 +21,7 @@ interface MeseroShellProps {
  * Solo el nombre de quien atiende y "Salir". El mesonero no ve (ni dispara llamadas a) nada fuera del módulo
  * Restaurante: su lista blanca vive en middleware.ts. Comparte el marco del OperadorShell.
  */
-export function MeseroShell({ session, children }: MeseroShellProps) {
+export function MeseroShell({ session, children, variant = 'waiter' }: MeseroShellProps) {
   const router = useRouter()
 
   const handleLogout = useCallback(async () => {
@@ -37,8 +39,8 @@ export function MeseroShell({ session, children }: MeseroShellProps) {
         <div className={styles.root}>
           <header className={styles.header}>
             <div className={styles.brand}>
-              <UtensilsCrossed size={20} aria-hidden="true" />
-              <span className={styles.title}>Salón</span>
+              {variant === 'kitchen' ? <ChefHat size={20} aria-hidden="true" /> : <UtensilsCrossed size={20} aria-hidden="true" />}
+              <span className={styles.title}>{variant === 'kitchen' ? 'Cocina' : 'Salón'}</span>
             </div>
             <div className={styles.user}>
               <span className={styles.userName}>{session.name}</span>

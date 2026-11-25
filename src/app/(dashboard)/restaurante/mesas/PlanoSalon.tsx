@@ -116,7 +116,7 @@ export function PlanoSalon({
             transform={`translate(${t.pos_x} ${t.pos_y})`}
             role="button"
             tabIndex={0}
-            aria-label={`Mesa ${t.label}, ${t.area_name}, ${t.capacity} ${t.capacity === 1 ? 'persona' : 'personas'}, ${STATUS_TEXT[t.status]}`}
+            aria-label={`Mesa ${t.label}, ${t.area_name}, ${t.capacity} ${t.capacity === 1 ? 'persona' : 'personas'}, ${STATUS_TEXT[t.status]}${t.ready_items > 0 ? `, ${t.ready_items} por servir` : ''}`}
             aria-pressed={isSel('table', t.id)}
             onClick={() => onPick?.('table', t.id)}
             onPointerDown={editable ? e => onItemPointerDown?.(e, 'table', t.id) : undefined}
@@ -136,6 +136,12 @@ export function PlanoSalon({
                 ? <rect className={styles.body} width={s.w} height={s.h} rx={0.34} />
                 : <ellipse className={styles.body} cx={s.w / 2} cy={s.h / 2} rx={s.w / 2} ry={s.h / 2} />}
               <text className={stool ? styles.numSm : styles.num} x={s.w / 2} y={sub ? s.h / 2 - 0.12 : s.h / 2} textAnchor="middle" dominantBaseline="middle">{t.label}</text>
+              {t.ready_items > 0 && (
+                <g className={styles.ready} aria-hidden="true">
+                  <circle cx={s.w - 0.1} cy={0.1} r={0.55} />
+                  <text x={s.w - 0.1} y={0.12} textAnchor="middle" dominantBaseline="middle">{t.ready_items}</text>
+                </g>
+              )}
               {sub && <text className={styles.sub} x={s.w / 2} y={s.h / 2 + 0.42} textAnchor="middle" dominantBaseline="middle">{sub}</text>}
             </g>
           </g>

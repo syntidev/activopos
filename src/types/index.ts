@@ -4,7 +4,7 @@ export interface BusinessSettings {
   pin?: string
 }
 
-export type UserRole = 'super_admin' | 'admin' | 'cashier' | 'operador_reservas'
+export type UserRole = 'super_admin' | 'admin' | 'cashier' | 'operador_reservas' | 'waiter' | 'kitchen'
 
 export interface ClientRecord {
   id: number

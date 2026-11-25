@@ -48,6 +48,8 @@ export function ensureBusiness(slug: Slug, restaurante: boolean): number {
   sql(`DELETE FROM product_modifiers WHERE business_id=${id}`)
   sql(`DELETE FROM products WHERE business_id=${id} AND name LIKE 'ZZ %'`)
   sql(`DELETE FROM categories WHERE business_id=${id} AND name LIKE 'ZZ %'`)
+  sql(`DELETE us FROM user_stations us JOIN prep_stations ps ON ps.id=us.station_id WHERE ps.business_id=${id}`)
+  sql(`DELETE FROM prep_stations WHERE business_id=${id}`)
   sql(`DELETE FROM floor_elements WHERE business_id=${id}`)
   sql(`DELETE FROM dining_tables WHERE business_id=${id}`)
   sql(`DELETE FROM service_areas WHERE business_id=${id}`)

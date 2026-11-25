@@ -5,13 +5,14 @@ import { Prisma } from '@prisma/client'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
+import { isRestauranteEnabled } from '@/lib/restaurante-server'
 
 const PostSchema = z.object({
   name:     z.string().min(2).max(255),
   email:    z.string().email().max(255),
   password: z.string().min(6).max(72).optional(),
   pin:      z.string().regex(/^\d{4}$/).optional(),
-  role:     z.enum(['admin', 'cashier', 'operador_reservas']),
+  role:     z.enum(['admin', 'cashier', 'operador_reservas', 'waiter', 'kitchen']),
 }).refine(d => d.password ?? d.pin, { message: 'password o pin requerido' })
 
 const USER_SELECT = {
@@ -76,6 +77,14 @@ export async function POST(request: Request) {
       })
       if (!business?.reservas_enabled) {
         return NextResponse.json({ error: 'El módulo de Reservas no está habilitado para este negocio' }, { status: 422 })
+      }
+    }
+
+    // Mesonero y cocinero solo existen en negocios con el módulo Restaurante, y solo un administrador los crea.
+    if (data.role === 'waiter' || data.role === 'kitchen') {
+      if (session.role !== 'admin' && session.role !== 'super_admin') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+      if (!(await isRestauranteEnabled(session.businessId))) {
+        return NextResponse.json({ error: 'El módulo Restaurante no está habilitado para este negocio' }, { status: 422 })
       }
     }
 

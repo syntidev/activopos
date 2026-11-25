@@ -120,10 +120,66 @@ interface ClienteResumenProps {
   fallbackCedula?: string | null
   /** Tasa del pedido, para mostrar el saldo en USD y Bs. */
   rate:           number
+  /** Con el pedido y un callback, un pedido sin cliente ofrece "Crear cliente" (el padre vuelve a leer el cliente al enlazarse). */
+  orderId?:       number
+  onLinked?:      () => void
+}
+
+interface ClienteExistente { client_id: number; name: string | null; cedula: string | null }
+
+/** "Crear cliente" del pedido: 409 CLIENT_EXISTS muestra al cliente que ya existe y pide confirmar antes de enlazarlo (confirm_existing). */
+function CrearCliente({ orderId, onLinked }: { orderId: number; onLinked: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [existente, setExistente] = useState<ClienteExistente | null>(null)
+
+  const crear = async (confirmExisting: boolean): Promise<void> => {
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/orders/${orderId}/crear-cliente`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(confirmExisting ? { confirm_existing: true } : {}),
+      })
+      const body = await res.json().catch(() => null) as { ok?: boolean; error?: string; code?: string; client_id?: number; name?: string | null; cedula?: string | null } | null
+      if (res.ok && body?.ok) { setExistente(null); onLinked(); return }
+      if (res.status === 409 && body?.code === 'CLIENT_EXISTS' && typeof body.client_id === 'number') {
+        setExistente({ client_id: body.client_id, name: body.name ?? null, cedula: body.cedula ?? null })
+        return
+      }
+      if (body?.code === 'CLIENT_ALREADY_LINKED') { onLinked(); return } // otro puesto ya lo enlazó: se vuelve a leer
+      setError(body?.error ?? 'No se pudo crear el cliente.')
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className={d.cuerpo}>
+      {existente ? (
+        <div className={d.confirmExistente} role="alertdialog" aria-label="Cliente existente" data-testid="cliente-existe">
+          <span>Ya existe un cliente con esa cédula o teléfono:</span>
+          <strong data-testid="cliente-existe-nombre">{existente.name ?? 'Sin nombre'}</strong>
+          <span data-testid="cliente-existe-cedula">Cédula: {existente.cedula ?? 'sin cédula registrada'}</span>
+          <span>¿Enlazarlo a este pedido? Puede tener crédito.</span>
+          <div className={d.acciones}>
+            <button type="button" className={d.accionSecundaria} onClick={() => setExistente(null)} disabled={busy}>No, cancelar</button>
+            <button type="button" className={d.accionPrimaria} onClick={() => { void crear(true) }} disabled={busy} data-testid="cliente-enlazar-existente">Enlazar a este cliente</button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className={d.accionSecundaria} onClick={() => { void crear(false) }} disabled={busy} data-testid="cliente-crear">Crear cliente</button>
+      )}
+      {error && <p className={d.errorInline} role="alert" data-testid="cliente-crear-error">{error}</p>}
+    </div>
+  )
 }
 
 /** Panel de cliente plegable (detalle del pedido y cobro): datos, pedidos previos y saldo por cobrar (cxc + deuda de financiamiento). */
-export function ClienteResumen({ client, fallbackPhone, fallbackCedula, rate }: ClienteResumenProps) {
+export function ClienteResumen({ client, fallbackPhone, fallbackCedula, rate, orderId, onLinked }: ClienteResumenProps) {
   const [ficha, setFicha] = useState(false)
   const cerrar = useCallback(() => setFicha(false), [])
 
@@ -140,6 +196,7 @@ export function ClienteResumen({ client, fallbackPhone, fallbackCedula, rate }: 
             <dt>Cédula</dt><dd>{fallbackCedula || '—'}</dd>
           </dl>
           <p className={d.sinCliente}>Este pedido no está enlazado a un cliente registrado.</p>
+          {orderId !== undefined && onLinked && <CrearCliente orderId={orderId} onLinked={onLinked} />}
         </div>
       </details>
     )

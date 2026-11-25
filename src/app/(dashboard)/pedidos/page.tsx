@@ -22,6 +22,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { NuevoPedidoModal, type CreatedOrder } from './NuevoPedidoModal'
 import { CobrarPedidoModal, type InicialCobro } from './CobrarPedidoModal'
+import { CobrarDeudaModal } from './CobrarDeudaModal'
 import { DespachoBloqueadoModal } from './DespachoBloqueadoModal'
 import { PagoBadge } from './PagoBadge'
 import type { ApiErrorBody, PedidoPagoFields } from './pago'
@@ -109,6 +110,7 @@ function OrderCard({
   onAdvance,
   onWhatsApp,
   onCobrar,
+  onCobrarDeuda,
   onEntregar,
   onCancelar,
   onOpenDetail,
@@ -118,6 +120,7 @@ function OrderCard({
   onAdvance: (order: Order) => void
   onWhatsApp: (order: Order) => void
   onCobrar: (order: Order) => void
+  onCobrarDeuda: (order: Order) => void
   onEntregar: (order: Order) => void
   onCancelar: (order: Order) => void
   onOpenDetail: (order: Order) => void
@@ -246,6 +249,17 @@ function OrderCard({
             Cobrar
           </button>
         )}
+        {/* Cashea rechazado tras cobrar: el saldo es deuda del cliente y se cobra como abono sobre la venta original. */}
+        {order.pago && order.pago.deuda_cliente_usd > 0 && (
+          <button
+            className={styles.cobrarBtn}
+            onClick={(e) => { e.stopPropagation(); onCobrarDeuda(order) }}
+            aria-label={`Cobrar deuda del pedido ${order.order_number}`}
+            data-testid="cobrar-deuda"
+          >
+            Cobrar deuda
+          </button>
+        )}
       </div>
     </div>
   )
@@ -266,6 +280,7 @@ function KanbanColumn({
   onAdvance,
   onWhatsApp,
   onCobrar,
+  onCobrarDeuda,
   onEntregar,
   onCancelar,
   onOpenDetail,
@@ -282,6 +297,7 @@ function KanbanColumn({
   onAdvance: (order: Order) => void
   onWhatsApp: (order: Order) => void
   onCobrar: (order: Order) => void
+  onCobrarDeuda: (order: Order) => void
   onEntregar: (order: Order) => void
   onCancelar: (order: Order) => void
   onOpenDetail: (order: Order) => void
@@ -327,6 +343,7 @@ function KanbanColumn({
                 onAdvance={onAdvance}
                 onWhatsApp={onWhatsApp}
                 onCobrar={onCobrar}
+                onCobrarDeuda={onCobrarDeuda}
                 onEntregar={onEntregar}
                 onCancelar={onCancelar}
                 onOpenDetail={onOpenDetail}
@@ -365,6 +382,7 @@ function PedidosContent() {
   const [dragOverCol, setDragOverCol] = useState<OrderStatus | null>(null)
   const [modalOpen, setModalOpen]   = useState(false)
   const [cobrarOrder, setCobrarOrder] = useState<Order | null>(null)
+  const [deudaOrder, setDeudaOrder] = useState<Order | null>(null)
   const [detailOrderId, setDetailOrderId] = useState<number | null>(null)
   const [search, setSearch]         = useState('')
   const draggingRef = useRef<Order | null>(null)
@@ -670,6 +688,7 @@ function PedidosContent() {
                 onAdvance={handleAdvance}
                 onWhatsApp={handleWhatsApp}
                 onCobrar={handleCobrarOrder}
+                onCobrarDeuda={(o) => setDeudaOrder(o)}
                 onEntregar={handleEntregar}
                 onCancelar={handleCancelarOrder}
                 onOpenDetail={handleOpenDetail}
@@ -709,6 +728,16 @@ function PedidosContent() {
         onClose={() => setBloqueo(null)}
       />
 
+      {/* Modal: cobrar la deuda de un Cashea rechazado (abono sobre la venta original) */}
+      <CobrarDeudaModal
+        open={deudaOrder !== null}
+        order={deudaOrder}
+        saldoUsd={deudaOrder?.pago?.deuda_cliente_usd ?? 0}
+        rate={Number(deudaOrder?.rate_used ?? 0)}
+        onClose={() => setDeudaOrder(null)}
+        onDone={() => { void fetchOrders() }}
+      />
+
       {/* Modal: Detalle de pedido */}
       <OrderDetalleModal
         open={detailOrderId !== null}
@@ -717,6 +746,7 @@ function PedidosContent() {
         onUpdated={handleOrderUpdated}
         onDelivered={() => { setDetailOrderId(null); toast('Pedido entregado', 'success'); void fetchOrders() }}
         onCobrar={() => { const o = orders.find((x) => x.id === detailOrderId); if (o) { setDetailOrderId(null); setCobrarOrder(o) } }}
+        onCobrarDeuda={() => { const o = orders.find((x) => x.id === detailOrderId); if (o) { setDetailOrderId(null); setDeudaOrder(o) } }}
       />
     </div>
   )

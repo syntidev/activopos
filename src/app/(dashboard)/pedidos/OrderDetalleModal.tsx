@@ -14,6 +14,7 @@ import type { PriceMode, PriceSource } from '@/lib/pos'
 import { priceForMode, variantBases } from '@/lib/pricing'
 import { bs, dual, usd } from './money'
 import { ClienteResumen } from './ClienteResumen'
+import { CerrarCreditoModal } from './CerrarCreditoModal'
 import { PagoResumen } from './PagoBadge'
 import type { PedidoClienteResumen, PedidoPagoFields } from './pago'
 import type { BlockedProduct, FinancingAction, FinancingColumns, TicketFinancing } from '@/types/financing'
@@ -107,6 +108,8 @@ interface Props {
   onDelivered?: () => void
   /** Pedido despachado y sin cobrar: abre el cobro (cobrar un despachado ya lo entrega). */
   onCobrar?: () => void
+  /** Pedido con deuda de un Cashea rechazado: abre el cobro de la deuda. */
+  onCobrarDeuda?: () => void
 }
 
 const EDITABLE_STATUSES = ['received', 'preparing', 'ready']
@@ -139,7 +142,7 @@ function Thumb({ url, name }: { url?: string | null; name: string }) {
 
 /* ── Component ── */
 
-export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDelivered, onCobrar }: Props) {
+export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDelivered, onCobrar, onCobrarDeuda }: Props) {
   const { toast } = useToast()
 
   const [order, setOrder]     = useState<OrderDetail | null>(null)
@@ -147,6 +150,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
   const [loading, setLoading] = useState(false)
   const [saving, setSaving]   = useState(false)
   const [delivering, setDelivering] = useState(false)
+  const [creditoOpen, setCreditoOpen] = useState(false)
   const [error, setError]     = useState('')
   const [businessName, setBusinessName] = useState('')
   const [modeBusy, setModeBusy]   = useState(false)
@@ -169,6 +173,8 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
   const productTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editable = order !== null && EDITABLE_STATUSES.includes(order.status)
+  // Un pedido ya cobrado, a crédito o con deuda de Cashea ya tiene venta: no se puede pedir Cashea (el servidor tampoco lo admite).
+  const yaCobrado = !!order?.pago && (order.pago.pago_estado !== 'por_cobrar' || order.pago.deuda_cliente_usd > 0)
   // El servidor rechaza (409) el cambio en pedidos cobrados/entregados/cancelados: ahí el modo se muestra en solo lectura.
   const modeEditable = order !== null && !CLOSED_STATUSES.includes(order.status)
 
@@ -334,6 +340,16 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
     return {}
   }
 
+  /** Mezcla el pago y el cliente recién leídos (cerrar a crédito, crear cliente, CLIENT_NOT_CONFIRMED) y avisa al tablero. */
+  const recargarPago = async (aviso?: string): Promise<void> => {
+    const fresh = await refreshPago()
+    if (!order) return
+    const next: OrderDetail = { ...order, ...fresh }
+    setOrder(next)
+    onUpdated(next)
+    if (aviso) toast(aviso, 'success')
+  }
+
   const handleFinancing = async (action: FinancingAction) => {
     if (!order || finBusy) return
     setFinBusy(true)
@@ -458,6 +474,17 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
       >
         Corte de cuenta
       </Button>
+      {/* Sin cobrar y sin venta: cerrar a crédito (solo con cliente enlazado; si no, primero "Crear cliente"). */}
+      {order && order.pago_estado === 'por_cobrar' && (order.pago?.deuda_cliente_usd ?? 0) === 0 && order.client && !CLOSED_STATUSES.includes(order.status) && (
+        <Button variant="secondary" size="md" onClick={() => setCreditoOpen(true)} data-testid="detalle-cerrar-credito">
+          Cerrar a crédito
+        </Button>
+      )}
+      {order && (order.pago?.deuda_cliente_usd ?? 0) > 0 && onCobrarDeuda && (
+        <Button variant="primary" size="md" onClick={onCobrarDeuda} data-testid="detalle-cobrar-deuda">
+          Cobrar deuda de Cashea
+        </Button>
+      )}
       {order?.status === 'dispatched' && order.pago?.puede_avanzar && (
         <Button variant="primary" size="md" onClick={handleEntregar} loading={delivering} data-testid="detalle-marcar-entregado">
           Marcar entregado
@@ -557,7 +584,8 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
               </div>
             )}
 
-            <ClienteResumen client={order.client ?? null} fallbackPhone={order.client_phone} fallbackCedula={order.client_cedula} rate={rate} />
+            <ClienteResumen client={order.client ?? null} fallbackPhone={order.client_phone} fallbackCedula={order.client_cedula} rate={rate}
+              orderId={order.id} onLinked={() => { void recargarPago('Cliente enlazado al pedido') }} />
 
             <div className={styles.field}>
               <span className={styles.label}>Ítems del pedido</span>
@@ -649,7 +677,7 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
               busy={finBusy}
               error={finError}
               blocked={finBlocked}
-              canRequest={hasFinancier && modeEditable}
+              canRequest={hasFinancier && modeEditable && !yaCobrado}
               readOnly={!modeEditable}
               editWarning={ITEMS_EDIT_WARNING}
             />
@@ -671,6 +699,16 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDeliver
         )}
       </div>
     </Modal>
+    {order && (
+      <CerrarCreditoModal
+        open={creditoOpen}
+        order={{ id: order.id, order_number: order.order_number, total_usd: Number(order.total_usd), rate }}
+        client={order.client ?? null}
+        onClose={() => setCreditoOpen(false)}
+        onDone={() => { setCreditoOpen(false); void recargarPago('Pedido cerrado a crédito') }}
+        onReloadClient={() => { void recargarPago() }}
+      />
+    )}
     <ConfirmDialog
       open={confirmClose}
       title="Tienes cambios sin guardar"

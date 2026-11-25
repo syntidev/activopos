@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
+import { businessDateKey } from '@/lib/business-day'
 
 const ItemSchema = z.object({
   product_id:   z.number().int().positive().optional(),
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
         take:  limit,
         include: {
           client: { select: { id: true, name: true, phone: true } },
-          items:  { select: { id: true, name: true, qty: true, price_usd: true, total_usd: true } },
+          items:  { select: { id: true, product_id: true, name: true, qty: true, price_usd: true, discount_pct: true, total_usd: true } },
         },
       }),
       db.quotation.count({ where }),
@@ -97,6 +98,9 @@ export async function POST(req: NextRequest) {
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const body = PostSchema.parse(await req.json())
+    if (body.valid_until && body.valid_until < businessDateKey()) {
+      return NextResponse.json({ error: 'La vigencia no puede ser anterior a hoy' }, { status: 422 })
+    }
     const bid  = session.businessId
     const { rate } = await getActiveRate(bid)
     const year = new Date().getFullYear()

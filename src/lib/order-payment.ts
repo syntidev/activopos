@@ -28,6 +28,8 @@ export interface OrderPago {
   saldo_pendiente_usd: number
   /** true = el pedido puede despacharse/entregarse sin autorización extra (cobrado, a crédito o con saldo de financiamiento rechazado). */
   puede_avanzar:       boolean
+  /** true = puede despacharse: puede_avanzar, o el cliente del pedido tiene crédito autorizado (aunque aún no se haya cerrado a crédito). Entregar sigue exigiendo puede_avanzar. */
+  puede_despachar:     boolean
 }
 
 /** include de Prisma que necesita derivePago (venta enlazada con sus pagos y abonos). */
@@ -57,9 +59,18 @@ const sum = (xs: readonly { amount_usd: unknown }[]): number => r2(xs.reduce((a,
 // Solo lo realizado cuenta como cobrado. Una venta 'returned' (devolución total) ya reembolsó todo: NO es cobrado ni deja avanzar el pedido.
 const COBRADAS: readonly string[] = REALIZED_SALE_STATUSES
 
+/**
+ * puede_despachar se conserva por compatibilidad y es IGUAL a puede_avanzar: un cliente con crédito autorizado se despacha tras
+ * "cerrar a crédito" (que revisa el tope), nunca por la sola autorización (el catálogo público podría suplantar su identidad).
+ */
 export function derivePago(o: PagoSource): OrderPago {
+  const p = derive(o)
+  return { ...p, puede_despachar: p.puede_avanzar }
+}
+
+function derive(o: PagoSource): OrderPago {
   const total = r2(Number(o.total_usd))
-  const base: OrderPago = { pago_estado: 'por_cobrar', total_usd: total, recibido_usd: 0, cashea_asignado_usd: 0, deuda_cliente_usd: 0, saldo_pendiente_usd: total, puede_avanzar: false }
+  const base: OrderPago = { pago_estado: 'por_cobrar', total_usd: total, recibido_usd: 0, cashea_asignado_usd: 0, deuda_cliente_usd: 0, saldo_pendiente_usd: total, puede_avanzar: false, puede_despachar: false }
   const s = o.sale
   if (!s) return base
 
@@ -73,7 +84,11 @@ export function derivePago(o: PagoSource): OrderPago {
   const recibido = sum(s.payments.filter(p => !p.payment_method.is_financing))
   if (o.financing_status === 'rejected' && cashea > 0) {
     // Financiamiento rechazado/retirado después de cobrar: lo asignado a Cashea pasa a ser deuda del cliente. Sin bloquear etapas.
-    return { ...base, recibido_usd: recibido, deuda_cliente_usd: cashea, saldo_pendiente_usd: cashea, puede_avanzar: true }
+    // Los abonos de ESTA venta 'paid' solo existen como pagos de esa deuda (cobrar-deuda-financiamiento / CxC): la reducen.
+    const abonado = Math.min(cashea, sum(s.abonos))
+    const deuda   = r2(cashea - abonado)
+    if (deuda <= 0) return { ...base, pago_estado: 'cobrado', recibido_usd: r2(recibido + abonado), saldo_pendiente_usd: 0, puede_avanzar: true }
+    return { ...base, recibido_usd: r2(recibido + abonado), deuda_cliente_usd: deuda, saldo_pendiente_usd: deuda, puede_avanzar: true }
   }
   return { ...base, pago_estado: 'cobrado', recibido_usd: recibido, cashea_asignado_usd: cashea, saldo_pendiente_usd: 0, puede_avanzar: true }
 }

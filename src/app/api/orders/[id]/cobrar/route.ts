@@ -4,11 +4,11 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { generateTicketNumber } from '@/lib/ticket'
-import { VARIANT_PRICING_SELECT } from '@/lib/pricing'
-import { PriceModeError, priceModeSchema, repriceOrderTx } from '@/lib/price-mode'
+import { PriceModeError, priceModeSchema } from '@/lib/price-mode'
 import { DIVISA_BLOCKS_FINANCING_MESSAGE, FinancingError, assertFinancingEligible } from '@/lib/ticket-financing'
 import { checkCedula, type CedulaCheck } from '@/lib/cedula'
 import { lenientCheckoutCedula } from '@/lib/customer-identity'
+import { buildOrderSaleLines, deductOrderStockTx } from '@/lib/order-sale'
 
 type Context = { params: { id: string } }
 
@@ -96,93 +96,14 @@ export async function POST(req: NextRequest, { params }: Context) {
       if (!cedulaCheck.ok) throw new Error(`CEDULA_REQUIRED:${cedulaCheck.message}`)
       const clientCedula = cedulaCheck.value
 
-      const productIds = Array.from(new Set(order.items.map(i => i.product_id)))
-      const products   = await tx.product.findMany({
-        where:  { id: { in: productIds }, business_id: session.businessId },
-        select: { id: true, sale_mode: true, base_unit_label: true,
-                  price_per_unit_usd: true, price_per_kg_usd: true, cost_per_unit_usd: true,
-                  product_type: true,
-                  components: {
-                    select: {
-                      component_id: true, quantity: true, unit_label: true,
-                      component: { select: { id: true, name: true } },
-                    },
-                  } },
-      })
-      const productMap = new Map(products.map(p => [p.id, p]))
-      if (products.length !== productIds.length) throw new Error('PRODUCTS_CHANGED')
-
-      // DT-14: faltaba sumar precio_extra de la variante -- esta ruta
-      // recalculaba el precio SOLO desde el producto base, ignorando el
-      // variant_id del pedido (que hasta ahora ni se guardaba). Mismo criterio
-      // que api/catalog/[slug]/order/route.ts al crear el pedido: precio_extra
-      // se re-consulta acá también (no del snapshot), consistente con SEC-01.
-      const variantIds = order.items
-        .map(i => i.variant_id)
-        .filter((v): v is number => v !== null)
-      const variants = variantIds.length > 0
-        ? await tx.productVariant.findMany({
-            where:  { id: { in: variantIds } },
-            select: { id: true, ...VARIANT_PRICING_SELECT },
-          })
-        : []
-      const variantMap = new Map(variants.map(v => [v.id, v]))
-
-      // SEC-01: precios desde la DB, nunca del snapshot ni del cliente. El modo (bcv | divisa) lo decide el pedido o
-      // el body; repriceOrderTx deja el pedido y sus líneas ya recalculados (regla única en lib/pricing.ts).
-      const mode     = body.price_mode ?? priceModeSchema.catch('bcv').parse(order.price_mode)
-      const repriced = await repriceOrderTx(tx, { businessId: session.businessId, userId: session.userId }, orderId, mode, rate)
-      const lineById = new Map(repriced.items.map(l => [l.id, l]))
+      // SEC-01: precios desde la DB, nunca del snapshot ni del cliente. El modo (bcv | divisa) lo decide el pedido o el body.
+      const ctx   = { businessId: session.businessId, userId: session.userId }
+      const lines = await buildOrderSaleLines(tx, ctx, order, rate, body.price_mode)
+      const { mode, saleItems, total_usd, total_bs } = lines
       if (pm.is_financing && mode === 'divisa') throw new FinancingError(409, DIVISA_BLOCKS_FINANCING_MESSAGE)
       const financingSnapshot = pm.is_financing
         ? await assertFinancingEligible(tx, session.businessId, order.items.map(i => i.product_id))
         : null
-
-      const saleItems = order.items.map(item => {
-        const p        = productMap.get(item.product_id)
-        const variant  = item.variant_id !== null ? variantMap.get(item.variant_id) : undefined
-        const line     = lineById.get(item.id)
-        const priceUsd = line ? line.price_per_unit_usd : Number(item.price_per_unit_usd)
-        const subtotal_usd = Math.round(Number(item.quantity) * priceUsd * 100) / 100
-        const subtotal_bs  = Math.round(subtotal_usd * rate * 100) / 100
-        // Mismo criterio que sales/route.ts: snapshot inmutable de la receta al
-        // momento del cobro, para combos/fabricables (GAP-COMBO-PEDIDOS: esta
-        // ruta nunca lo calculaba, quedaba siempre null para pedidos con kits).
-        const recipe_snapshot =
-          p && p.product_type !== 'simple' && p.components.length > 0
-            ? JSON.stringify(
-                p.components.map(c => ({
-                  component_id:   c.component_id,
-                  component_name: c.component.name,
-                  quantity:       c.quantity,
-                  unit_label:     c.unit_label,
-                }))
-              )
-            : null
-        return {
-          product_id:         item.product_id,
-          product_name:       item.product_name,
-          sale_mode:          p?.sale_mode ?? 'unit',
-          unit_label:         p?.base_unit_label ?? 'und',
-          quantity:           Number(item.quantity),
-          price_per_unit_usd: priceUsd,
-          // costo desconocido = NULL (igual que POST /api/sales); con 0 se contaría como ganancia ficticia.
-          cost_per_unit_usd:  p && p.cost_per_unit_usd != null ? Number(p.cost_per_unit_usd) : null,
-          subtotal_usd,
-          subtotal_bs,
-          rate_used:          rate,
-          discount_usd:       0,
-          recipe_snapshot,
-          // Si la variante fue borrada desde que se creó el pedido, no hay fila
-          // que referenciar (evita violar el FK de sale_items.variant_id) --
-          // mismo criterio permisivo que priceUsd arriba cuando falta el producto.
-          variant_id:         variant ? item.variant_id : null,
-          price_source:       line?.price_source ?? 'bcv',
-        }
-      })
-
-      const total_usd = Math.round(saleItems.reduce((acc, i) => acc + i.subtotal_usd, 0) * 100) / 100
-      const total_bs  = Math.round(total_usd * rate * 100) / 100
 
       const ticket_number = await generateTicketNumber(session.businessId, tx)
 
@@ -236,68 +157,7 @@ export async function POST(req: NextRequest, { params }: Context) {
         select: { id: true },
       })
 
-      // Stock: SIEMPRE se descuenta desde los OrderItem reales de este pedido,
-      // nunca desde una reserva congelada de la creación (GAP-CATALOGO-1 — la
-      // versión anterior reclasificaba reservas por product_id y solo caía al
-      // fallback de descuento si NINGUNA reserva matcheaba para todo el
-      // pedido; un ítem agregado en una edición posterior, o uno con cantidad
-      // cambiada, se colaba sin descontar porque los DEMÁS ítems sí tenían
-      // reserva y el count nunca llegaba a 0). Se libera cualquier reserva de
-      // este pedido —incluida la de un ítem que se haya quitado en una
-      // edición, que si no queda huérfana bloqueando stock para siempre— y se
-      // crean las deducciones 'sale' directo desde order.items, sin depender
-      // de que la reserva haya quedado sincronizada.
-      await tx.inventoryEntry.deleteMany({
-        where: {
-          business_id: session.businessId,
-          entry_type:  'reservation',
-          notes:       { endsWith: order.order_number },
-        },
-      })
-
-      // GAP-COMBO-PEDIDOS: esta ruta descontaba siempre contra item.product_id
-      // sin mirar product_type/components -- un pedido con un Kit (combo)
-      // nunca tocaba el stock de sus componentes reales, solo el pool del
-      // propio combo (que no se usa para nada). Mismo bloque que
-      // sales/route.ts POST ya usa para venta directa.
-      const deductions = order.items.flatMap(item => {
-        const p = productMap.get(item.product_id)
-        if (p && p.product_type !== 'simple' && p.components.length > 0) {
-          return p.components.map(comp => ({
-            business_id: session.businessId,
-            product_id:  comp.component_id,
-            quantity:    -(Number(item.quantity) * comp.quantity),
-            waste:       0,
-            entry_type:  'sale',
-            notes:       `VENTA #${ticket_number} (componente de ${item.product_name}, pedido ${order.order_number})`,
-            created_by:  session.userId,
-          }))
-        }
-        return [{
-          business_id: session.businessId,
-          product_id:  item.product_id,
-          quantity:    -Number(item.quantity),
-          waste:       0,
-          entry_type:  'sale',
-          notes:       `VENTA #${ticket_number} (pedido ${order.order_number})`,
-          created_by:  session.userId,
-        }]
-      })
-      await tx.inventoryEntry.createMany({ data: deductions })
-
-      // Stock de variante: mismo patrón que sales/route.ts (solo productos
-      // simples). Esta ruta nunca lo descontaba -> variant.stock quedaba
-      // inflado tras cada venta de catálogo. Baja aquí, al pagar; al crear el
-      // pedido solo se reserva el pool del producto.
-      for (const item of order.items) {
-        const p = productMap.get(item.product_id)
-        if (item.variant_id === null || !variantMap.has(item.variant_id)) continue
-        if (p && p.product_type !== 'simple') continue
-        await tx.productVariant.update({
-          where: { id: item.variant_id },
-          data:  { stock: { decrement: Number(item.quantity) } },
-        })
-      }
+      await deductOrderStockTx(tx, ctx, order, lines, ticket_number)
 
       // Cobrar NO cambia la etapa: solo un pedido ya 'dispatched' se entrega al cobrar (el cobro era lo único que faltaba).
       await tx.order.update({

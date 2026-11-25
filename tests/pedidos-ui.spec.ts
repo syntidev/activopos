@@ -202,3 +202,94 @@ test('pedido sin cliente enlazado: el panel muestra solo teléfono y cédula del
   await expect(resumen).toContainText('no está enlazado a un cliente registrado')
   await expect(detalle.getByTestId('cliente-ver-ficha')).toHaveCount(0)
 })
+
+/** Pedido listo → (opcional) cobrado con efectivo → despachado (sin cobrar: con override de admin). */
+async function despachado(page: Page, cobrado: boolean): Promise<{ id: number; numero: string }> {
+  const o = await pedido(page, true)
+  for (const s of ['preparing', 'ready']) expect((await page.request.patch(`/api/orders/${o.id}`, { data: { status: s } })).status()).toBe(200)
+  if (cobrado) {
+    const efectivo = Number(sql(`SELECT id FROM payment_methods WHERE business_id=${BIZ} AND name='${M_EFECTIVO}'`))
+    const c = await page.request.post(`/api/orders/${o.id}/cobrar`, { data: { payment_method_id: efectivo } })
+    expect(c.status(), await c.text()).toBe(200)
+  }
+  const d = await page.request.patch(`/api/orders/${o.id}`, { data: { status: 'dispatched', ...(cobrado ? {} : { override_reason: 'Prueba ZZB sin cobrar' }) } })
+  expect(d.status(), await d.text()).toBe(200)
+  return o
+}
+
+const estadoDe = (id: number): string => sql(`SELECT status FROM orders WHERE id=${id}`)
+
+for (const vp of VIEWPORTS) {
+  test(`entregar: cobrado+despachado → "Marcar entregado"; sin cobrar+despachado → solo "Cobrar" @${vp.n}`, async ({ page }) => {
+    await page.setViewportSize({ width: vp.w, height: vp.h })
+    await sesion(page, 'admin')
+    const C = await despachado(page, true)
+    const E = await despachado(page, false)
+    await page.goto('/pedidos')
+
+    // Sin cobrar: solo "Cobrar" (cobrar un despachado ya lo entrega); nada de "Marcar entregado".
+    const cardE = tarjeta(page, E.numero)
+    await expect(cardE.getByTestId('pago-badge')).toHaveText('Por cobrar')
+    await expect(cardE.getByRole('button', { name: `Cobrar pedido ${E.numero}` })).toBeVisible()
+    await expect(cardE.getByTestId('marcar-entregado')).toHaveCount(0)
+
+    // Cobrado: "Marcar entregado" (≥ 44 px) y ya no "Cobrar".
+    const cardC = tarjeta(page, C.numero)
+    const entregar = cardC.getByTestId('marcar-entregado')
+    await expect(entregar).toBeVisible()
+    expect((await entregar.boundingBox())!.height).toBeGreaterThanOrEqual(43.5)
+    await expect(cardC.getByRole('button', { name: /^Cobrar pedido/ })).toHaveCount(0)
+    await cardC.scrollIntoViewIfNeeded()
+    await cardC.screenshot({ path: path.join(OUT, `tarjeta-marcar-entregado-${vp.n}.png`) })
+    await page.screenshot({ path: path.join(OUT, `tablero-despachado-${vp.n}.png`) })
+
+    await entregar.click()
+    await expect(page.getByText('Pedido entregado').first()).toBeVisible()
+    await expect(cardC).toHaveCount(0) // sale del tablero
+    expect(estadoDe(C.id)).toBe('delivered')
+    expect(estadoDe(E.id)).toBe('dispatched')
+  })
+}
+
+test('detalle: cobrado+despachado → "Marcar entregado" entrega; sin cobrar → "Cobrar" abre el cobro', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await sesion(page, 'admin')
+  const D = await despachado(page, true)
+  const E = await despachado(page, false)
+  await page.goto('/pedidos')
+
+  await tarjeta(page, E.numero).getByText(E.numero, { exact: true }).click()
+  const detE = page.getByRole('dialog', { name: `Pedido ${E.numero}` })
+  await expect(detE.getByTestId('detalle-marcar-entregado')).toHaveCount(0)
+  await detE.getByTestId('detalle-cobrar').click()
+  await expect(page.getByRole('dialog', { name: `Cobrar pedido ${E.numero}` })).toBeVisible()
+  await page.getByRole('dialog', { name: `Cobrar pedido ${E.numero}` }).getByRole('button', { name: 'Cancelar' }).click()
+
+  await tarjeta(page, D.numero).getByText(D.numero, { exact: true }).click()
+  const detD = page.getByRole('dialog', { name: `Pedido ${D.numero}` })
+  await expect(detD.getByTestId('detalle-cobrar')).toHaveCount(0)
+  await detD.getByTestId('detalle-marcar-entregado').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: path.join(OUT, 'detalle-marcar-entregado-1280.png') })
+  await detD.getByTestId('detalle-marcar-entregado').click()
+  await expect(detD).toHaveCount(0)
+  await expect(page.getByText('Pedido entregado').first()).toBeVisible()
+  expect(estadoDe(D.id)).toBe('delivered')
+})
+
+test('entregar sin cobrar: el 422 PAYMENT_REQUIRED se muestra con su motivo y el override de admin no aplica', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await sesion(page, 'admin')
+  const F = await despachado(page, true)
+  const venta = sql(`SELECT sale_id FROM orders WHERE id=${F.id}`)
+  await page.goto('/pedidos')
+  const entregar = tarjeta(page, F.numero).getByTestId('marcar-entregado')
+  await expect(entregar).toBeVisible()
+  // El cobro desaparece detrás de la pantalla (estado viejo en el tablero): el servidor lo rechaza.
+  sql(`UPDATE orders SET sale_id=NULL WHERE id=${F.id}`)
+  await entregar.click()
+  await expect(page.getByText('el pedido debe estar cobrado o a crédito')).toBeVisible()
+  await expect(page.getByTestId('despacho-bloqueado')).toHaveCount(0) // sin diálogo de override: solo aplica a despachar
+  expect(estadoDe(F.id)).toBe('dispatched')
+  await page.screenshot({ path: path.join(OUT, 'entregar-422-375.png') })
+  sql(`UPDATE orders SET sale_id=${venta} WHERE id=${F.id}`) // se restaura para que la limpieza borre la venta
+})

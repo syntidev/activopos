@@ -103,6 +103,10 @@ interface Props {
   orderId: number
   onClose: () => void
   onUpdated: (order: OrderDetail) => void
+  /** Se llamó a "Marcar entregado" y el servidor lo aceptó (el padre cierra el detalle y refresca el tablero). */
+  onDelivered?: () => void
+  /** Pedido despachado y sin cobrar: abre el cobro (cobrar un despachado ya lo entrega). */
+  onCobrar?: () => void
 }
 
 const EDITABLE_STATUSES = ['received', 'preparing', 'ready']
@@ -135,13 +139,14 @@ function Thumb({ url, name }: { url?: string | null; name: string }) {
 
 /* ── Component ── */
 
-export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) {
+export function OrderDetalleModal({ open, orderId, onClose, onUpdated, onDelivered, onCobrar }: Props) {
   const { toast } = useToast()
 
   const [order, setOrder]     = useState<OrderDetail | null>(null)
   const [items, setItems]     = useState<EditableItem[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving]   = useState(false)
+  const [delivering, setDelivering] = useState(false)
   const [error, setError]     = useState('')
   const [businessName, setBusinessName] = useState('')
   const [modeBusy, setModeBusy]   = useState(false)
@@ -395,6 +400,31 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
     }
   }
 
+  /* ── Entregar: solo despachado y cobrado/a crédito; el 422 del servidor se muestra con su motivo (sin override para entregar) ── */
+
+  const handleEntregar = async () => {
+    if (!order || delivering) return
+    setDelivering(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ status: 'delivered' }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null) as { error?: string } | null
+        setError(body?.error ?? 'No se pudo marcar el pedido como entregado')
+        return
+      }
+      onDelivered?.()
+    } catch {
+      setError('Error de conexión. Intenta de nuevo.')
+    } finally {
+      setDelivering(false)
+    }
+  }
+
   /* ── Corte de cuenta (imprimir, no cambia estado) ── */
 
   const handleCorte = () => {
@@ -428,6 +458,16 @@ export function OrderDetalleModal({ open, orderId, onClose, onUpdated }: Props) 
       >
         Corte de cuenta
       </Button>
+      {order?.status === 'dispatched' && order.pago?.puede_avanzar && (
+        <Button variant="primary" size="md" onClick={handleEntregar} loading={delivering} data-testid="detalle-marcar-entregado">
+          Marcar entregado
+        </Button>
+      )}
+      {order?.status === 'dispatched' && order.pago && !order.pago.puede_avanzar && onCobrar && (
+        <Button variant="primary" size="md" onClick={onCobrar} data-testid="detalle-cobrar">
+          Cobrar
+        </Button>
+      )}
       {editable && (
         <Button
           variant="primary"

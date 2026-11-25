@@ -12,6 +12,7 @@ import {
   Clock,
   Package,
   DollarSign,
+  Check,
   Search,
   X,
 } from 'lucide-react'
@@ -108,6 +109,7 @@ function OrderCard({
   onAdvance,
   onWhatsApp,
   onCobrar,
+  onEntregar,
   onCancelar,
   onOpenDetail,
 }: {
@@ -116,6 +118,7 @@ function OrderCard({
   onAdvance: (order: Order) => void
   onWhatsApp: (order: Order) => void
   onCobrar: (order: Order) => void
+  onEntregar: (order: Order) => void
   onCancelar: (order: Order) => void
   onOpenDetail: (order: Order) => void
 }) {
@@ -189,6 +192,17 @@ function OrderCard({
             {nextStatus === 'dispatched' && '→ Despachar'}
           </button>
         )}
+        {/* Despachado y cobrado (o a crédito): se puede entregar. Sin cobrar solo queda "Cobrar" (cobrar un despachado ya lo entrega). */}
+        {order.status === 'dispatched' && order.pago?.puede_avanzar && (
+          <button
+            className={styles.advanceBtn}
+            onClick={(e) => { e.stopPropagation(); onEntregar(order) }}
+            aria-label={`Marcar entregado el pedido ${order.order_number}`}
+            data-testid="marcar-entregado"
+          >
+            <Check size={13} aria-hidden="true" /> Marcar entregado
+          </button>
+        )}
         <button
           className={styles.waBtn}
           onClick={(e) => { e.stopPropagation(); onWhatsApp(order) }}
@@ -252,6 +266,7 @@ function KanbanColumn({
   onAdvance,
   onWhatsApp,
   onCobrar,
+  onEntregar,
   onCancelar,
   onOpenDetail,
 }: {
@@ -267,6 +282,7 @@ function KanbanColumn({
   onAdvance: (order: Order) => void
   onWhatsApp: (order: Order) => void
   onCobrar: (order: Order) => void
+  onEntregar: (order: Order) => void
   onCancelar: (order: Order) => void
   onOpenDetail: (order: Order) => void
 }) {
@@ -311,6 +327,7 @@ function KanbanColumn({
                 onAdvance={onAdvance}
                 onWhatsApp={onWhatsApp}
                 onCobrar={onCobrar}
+                onEntregar={onEntregar}
                 onCancelar={onCancelar}
                 onOpenDetail={onOpenDetail}
               />
@@ -447,6 +464,15 @@ function PedidosContent() {
       return
     }
     toast(r.message, 'error')
+  }
+
+  /** Entregar: el override de admin NO aplica aquí (solo a despachar). Un 422 PAYMENT_REQUIRED se muestra con su motivo. */
+  const handleEntregar = async (order: Order) => {
+    const r = await moverPedido(order, 'delivered')
+    if (!r.ok) { toast(r.message, 'error'); return }
+    setOrders((prev) => prev.filter((o) => o.id !== order.id))
+    toast('Pedido entregado', 'success')
+    void fetchOrders()
   }
 
   const despacharSinCobrar = async (reason: string) => {
@@ -644,6 +670,7 @@ function PedidosContent() {
                 onAdvance={handleAdvance}
                 onWhatsApp={handleWhatsApp}
                 onCobrar={handleCobrarOrder}
+                onEntregar={handleEntregar}
                 onCancelar={handleCancelarOrder}
                 onOpenDetail={handleOpenDetail}
               />
@@ -688,6 +715,8 @@ function PedidosContent() {
         orderId={detailOrderId ?? 0}
         onClose={() => setDetailOrderId(null)}
         onUpdated={handleOrderUpdated}
+        onDelivered={() => { setDetailOrderId(null); toast('Pedido entregado', 'success'); void fetchOrders() }}
+        onCobrar={() => { const o = orders.find((x) => x.id === detailOrderId); if (o) { setDetailOrderId(null); setCobrarOrder(o) } }}
       />
     </div>
   )

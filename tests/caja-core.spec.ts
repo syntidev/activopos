@@ -9,7 +9,8 @@
  *   C04 → POST /api/cash/close (2ª vez)   → 400 "No hay caja abierta"  [DT-012]
  *   C05 → GET  /api/rates/bcv sin sesión  → rate > 0, sin writes       [DT-013]
  *
- * Sesión propia: un JWT firmado con JWT_SECRET (negocio 87, tenant de pruebas), igual que los specs P0.
+ * Sesión propia: un JWT firmado con JWT_SECRET para el negocio 267 "ZZ D Pruebas" (tenant propio de CLI-D;
+ * el 87 es OnBike Margarita, datos del cliente real, y no se toca).
  * No usa tests/.auth-state.json: ese archivo vence y dejaba el spec entero sin correr.
  *
  * beforeAll cierra la caja abierta (si la hay) y abre una propia. afterAll borra los registros y logs que
@@ -17,7 +18,7 @@
  */
 
 import { test, expect, request as newRequestCtx } from '@playwright/test'
-import { BASE, BUSINESS_ID, apiAs, login } from './p0-helpers'
+import { BASE, BUSINESS_ID, apiAs, assertOwnTenant, login } from './d-tenant'
 import { sql } from './alta-helpers'
 
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
@@ -30,6 +31,7 @@ let maxLogBefore = 0
 let previouslyOpenId = 0
 
 test.beforeAll(async () => {
+  assertOwnTenant()
   const api = await apiAs()
 
   // Tasa BCV activa

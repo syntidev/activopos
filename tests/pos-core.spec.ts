@@ -5,17 +5,21 @@
  * Pre-condiciones (verificadas en beforeAll del suite):
  *   - Servidor corriendo en localhost:3000
  *   - Producto "Arepa con Pollo" (id=10) con stock > 0
- *   - Caja abierta
+ *   - Caja abierta: el spec abre la suya si el tenant no tiene una y la cierra al final
+ *     (si ya había una abierta, la usa y no la toca)
  *   - BCV rate disponible
  */
 import { test, expect } from '@playwright/test'
+import { closeOwnCashRegister, openOwnCashRegister } from './cash-helpers'
 
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
+let abriCaja = false
 
 // Auth state inyectado por playwright.config.ts (setup project)
 
 test.describe('POS Core Flow — Certificación Sprint 10', () => {
   test.beforeAll(async ({ request }) => {
+    abriCaja = await openOwnCashRegister(request)
     // Ensure "Arepa con Pollo" has stock — depletes from repeated T05 runs
     const listRes = await request.get(`${BASE_URL}/api/products?limit=100`)
     const listBody = await listRes.json() as { products?: Array<{ id: number; name: string }> }
@@ -26,6 +30,10 @@ test.describe('POS Core Flow — Certificación Sprint 10', () => {
       })
     }
   })
+  test.afterAll(async ({ request }) => {
+    if (abriCaja) await closeOwnCashRegister(request)
+  })
+
   test('T01 — dashboard carga con KPIs visibles', async ({ page }) => {
     await page.goto(`${BASE_URL}/escritorio`)
     await page.waitForLoadState('networkidle')

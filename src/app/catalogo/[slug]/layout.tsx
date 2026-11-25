@@ -4,7 +4,8 @@ import { identityMetadata, identityViewport } from '@/lib/web-identity'
 import { Ga4 } from '@/components/catalog/CatalogSeo'
 import { CartProvider } from './CartContext'
 import { CheckoutFinancingProvider } from '@/components/catalog/CheckoutFinancing'
-import { loadCheckoutFinancing } from '@/lib/catalog-checkout-financing'
+import { CobroFlagsProvider } from '@/components/catalog/CobroFlags'
+import { loadCheckoutFinancing, loadCobroFlags } from '@/lib/catalog-checkout-financing'
 
 interface LayoutProps {
   children: ReactNode
@@ -21,9 +22,13 @@ export const generateViewport = ({ params }: LayoutProps): Promise<Viewport> => 
 export default async function CatalogoSlugLayout({ children, params }: LayoutProps) {
   // Cashea en el checkout: solo si el negocio tiene financiamiento activo; los excluidos se cruzan con el carrito.
   const { financing, excludedIds } = await loadCheckoutFinancing(params.slug)
+  // Formas de pago del carrito ya filtradas por "Cobro y precios" (Divisa, Bs real o Bs genérico).
+  const { casheaActive, pay } = await loadCobroFlags(params.slug)
   return (
     <CheckoutFinancingProvider financing={financing} excludedIds={excludedIds}>
-      <CartProvider slug={params.slug}><Ga4 slug={params.slug} />{children}</CartProvider>
+      <CobroFlagsProvider casheaActive={casheaActive} pay={pay}>
+        <CartProvider slug={params.slug}><Ga4 slug={params.slug} />{children}</CartProvider>
+      </CobroFlagsProvider>
     </CheckoutFinancingProvider>
   )
 }

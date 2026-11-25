@@ -13,7 +13,9 @@ type Context = { params: { id: string } }
 
 // Mismo contrato de plazo que el POS (POST /api/sales): preset 7/14/21/30 o personalizado, con su vencimiento y notas.
 const schema = z.object({
-  credit_days:  z.number().int().positive().max(365).optional(),
+  // El personal confirma A QUÉ cliente se le carga el crédito: debe ser el del pedido (el enlace puede venir de datos escritos en el catálogo).
+  confirmed_client_id: z.number().int().positive(),
+  credit_days: z.number().int().positive().max(365).optional(),
   due_date:     z.string().datetime().optional(),
   credit_notes: z.string().max(500).optional(),
 })
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest, { params }: Context) {
   try {
     body = schema.parse(await req.json())
   } catch {
-    return NextResponse.json({ error: 'Datos inválidos', field: 'credit_days', code: 'INVALID_BODY' }, { status: 400 })
+    return NextResponse.json({ error: 'Datos inválidos: indica confirmed_client_id y el plazo.', field: 'confirmed_client_id', code: 'INVALID_BODY' }, { status: 400 })
   }
   if (body.credit_days === undefined && body.due_date === undefined) {
     return NextResponse.json({ error: 'Indica el plazo del crédito (días o fecha de vencimiento).', field: 'credit_days', code: 'TERM_REQUIRED' }, { status: 422 })
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest, { params }: Context) {
       const client = order.client_id === null ? null
         : await tx.client.findFirst({ where: { id: order.client_id, business_id: session.businessId }, select: { id: true, name: true, credit_authorized: true, credit_limit_usd: true } })
       if (!client) throw new CreditError(422, 'El pedido necesita un cliente registrado para cerrarse a crédito.', 'client', 'CLIENT_REQUIRED')
+      if (client.id !== body.confirmed_client_id) throw new CreditError(422, 'Confirma el cliente del pedido: el indicado no coincide.', 'confirmed_client_id', 'CLIENT_NOT_CONFIRMED')
       if (!client.credit_authorized) throw new CreditError(422, 'El cliente no tiene crédito autorizado.', 'credit', 'CREDIT_NOT_AUTHORIZED')
 
       // Serializa cierres a crédito del MISMO cliente: el tope se evalúa sobre su saldo ya confirmado.

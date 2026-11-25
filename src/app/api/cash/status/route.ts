@@ -13,7 +13,7 @@ export async function GET() {
 
     if (!register) return NextResponse.json({ isOpen: false })
 
-    const [ventas, payments, movements, abonosAgg, refunds, financingAgg] = await Promise.all([
+    const [ventas, payments, movements, abonosAgg, refunds, financingAgg, cashAbonosAgg] = await Promise.all([
       // Ventas netas del turno -- fuente única (src/lib/sales-returns.ts).
       netSales(session.businessId, register.opened_at),
 
@@ -61,10 +61,21 @@ export async function GET() {
         },
         _sum: { amount_usd: true, amount_bs: true },
       }),
+
+      // Abonos EN EFECTIVO del turno (crédito o deuda de financiamiento): el dinero entró al cajón con su método real.
+      // No son ingreso nuevo (la venta ya se contó); solo mueven el efectivo esperado.
+      db.saleAbono.aggregate({
+        where: {
+          created_at: { gte: register.opened_at },
+          sale: { business_id: session.businessId },
+          payment_method: { type: 'cash' },
+        },
+        _sum: { amount_bs: true },
+      }),
     ])
 
     const cashVentasBs =
-      payments.reduce((a, p) => a + Number(p.amount_bs), 0) - refunds.bs
+      payments.reduce((a, p) => a + Number(p.amount_bs), 0) + Number(cashAbonosAgg._sum.amount_bs ?? 0) - refunds.bs
 
     const movIn = movements
       .filter(m => m.type === 'in')

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
+import { prisma } from '@/lib/prisma'
+import { listFinancingDebts } from '@/lib/financing-debt'
 
 const DAYS_VENCER = 7
 const DAYS_LEGACY = 30
@@ -28,6 +30,14 @@ export async function GET() {
       const bucket   = deadline < now ? 'vencido' : deadline <= vencer7 ? 'por_vencer' : 'vigente'
       buckets[bucket].count++
       buckets[bucket].total_usd = Math.round((buckets[bucket].total_usd + saldoUsd) * 100) / 100
+    }
+
+    // Deuda de financiamiento (Cashea) rechazado ya cobrado: mismo plazo legado desde la venta.
+    for (const d of await listFinancingDebts(prisma, session.businessId)) {
+      const deadline = new Date(d.created_at.getTime() + DAYS_LEGACY * 86_400_000)
+      const bucket   = deadline < now ? 'vencido' : deadline <= vencer7 ? 'por_vencer' : 'vigente'
+      buckets[bucket].count++
+      buckets[bucket].total_usd = Math.round((buckets[bucket].total_usd + d.saldo_usd) * 100) / 100
     }
 
     return NextResponse.json({ ok: true, ...buckets })

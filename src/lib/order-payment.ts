@@ -59,10 +59,13 @@ const sum = (xs: readonly { amount_usd: unknown }[]): number => r2(xs.reduce((a,
 // Solo lo realizado cuenta como cobrado. Una venta 'returned' (devolución total) ya reembolsó todo: NO es cobrado ni deja avanzar el pedido.
 const COBRADAS: readonly string[] = REALIZED_SALE_STATUSES
 
-/** creditoAutorizado = el cliente enlazado (del MISMO negocio) tiene credit_authorized: habilita despachar sin cobrar ni cerrar a crédito. */
-export function derivePago(o: PagoSource, creditoAutorizado = false): OrderPago {
+/**
+ * puede_despachar se conserva por compatibilidad y es IGUAL a puede_avanzar: un cliente con crédito autorizado se despacha tras
+ * "cerrar a crédito" (que revisa el tope), nunca por la sola autorización (el catálogo público podría suplantar su identidad).
+ */
+export function derivePago(o: PagoSource): OrderPago {
   const p = derive(o)
-  return { ...p, puede_despachar: p.puede_avanzar || creditoAutorizado }
+  return { ...p, puede_despachar: p.puede_avanzar }
 }
 
 function derive(o: PagoSource): OrderPago {
@@ -81,7 +84,11 @@ function derive(o: PagoSource): OrderPago {
   const recibido = sum(s.payments.filter(p => !p.payment_method.is_financing))
   if (o.financing_status === 'rejected' && cashea > 0) {
     // Financiamiento rechazado/retirado después de cobrar: lo asignado a Cashea pasa a ser deuda del cliente. Sin bloquear etapas.
-    return { ...base, recibido_usd: recibido, deuda_cliente_usd: cashea, saldo_pendiente_usd: cashea, puede_avanzar: true }
+    // Los abonos de ESTA venta 'paid' solo existen como pagos de esa deuda (cobrar-deuda-financiamiento / CxC): la reducen.
+    const abonado = Math.min(cashea, sum(s.abonos))
+    const deuda   = r2(cashea - abonado)
+    if (deuda <= 0) return { ...base, pago_estado: 'cobrado', recibido_usd: r2(recibido + abonado), saldo_pendiente_usd: 0, puede_avanzar: true }
+    return { ...base, recibido_usd: r2(recibido + abonado), deuda_cliente_usd: deuda, saldo_pendiente_usd: deuda, puede_avanzar: true }
   }
   return { ...base, pago_estado: 'cobrado', recibido_usd: recibido, cashea_asignado_usd: cashea, saldo_pendiente_usd: 0, puede_avanzar: true }
 }

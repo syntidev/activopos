@@ -14,6 +14,7 @@ const TAG = String(Date.now()).slice(-6)
 const PREFIJO = 'ZZA Ped'
 const PRODUCTO = `${PREFIJO} Producto ${TAG}`
 const M_EFECTIVO = `${PREFIJO} Efectivo`
+const M_CASHEA = `${PREFIJO} Cashea`
 const TEL = `0414${TAG}1`
 const CED = `V${TAG}11`
 
@@ -26,6 +27,9 @@ let productId = 0
 let clienteId = 0
 let ajeno = 0
 let efectivoId = 0
+let casheaId = 0
+let financingOriginal = 'NULL'
+let abrimosCaja = false
 
 const token = (role: string) =>
   new SignJWT({ userId: ADMIN, businessId: BID, role, name: 'ZZA Pedidos' })
@@ -43,6 +47,8 @@ function limpiar(): void {
     sql(`DELETE FROM orders WHERE id IN (${ordenes})`)
   }
   if (ventas) {
+    sql(`DELETE FROM return_items WHERE return_id IN (SELECT id FROM returns WHERE sale_id IN (${ventas}))`)
+    sql(`DELETE FROM returns WHERE sale_id IN (${ventas})`)
     sql(`DELETE FROM activity_logs WHERE business_id=${BID} AND model_type='Sale' AND model_id IN (${ventas})`)
     sql(`DELETE FROM sale_payments WHERE sale_id IN (${ventas})`)
     sql(`DELETE FROM sale_abonos WHERE sale_id IN (${ventas})`)
@@ -56,9 +62,13 @@ function limpiar(): void {
 }
 
 test.beforeAll(async () => {
+  financingOriginal = sql(`SELECT IFNULL(JSON_EXTRACT(settings,'$.financing'),'NULL') FROM businesses WHERE id=${BID}`)
   limpiar()
-  sql(`INSERT INTO payment_methods (business_id,name,type,sort_order,is_active,is_financing) VALUES (${BID},'${M_EFECTIVO}','cash',-30,1,0)`)
+  // financiamiento activo en el negocio de pruebas (se restaura al final)
+  sql(`UPDATE businesses SET settings=JSON_SET(COALESCE(settings,JSON_OBJECT()),'$.financing',JSON_OBJECT('enabled',true,'mode','cashea','provider_name','Cashea','phrase','Paga en cuotas con Cashea')) WHERE id=${BID}`)
+  sql(`INSERT INTO payment_methods (business_id,name,type,sort_order,is_active,is_financing) VALUES (${BID},'${M_EFECTIVO}','cash',-30,1,0),(${BID},'${M_CASHEA}','other',-29,1,1)`)
   efectivoId = Number(sql(`SELECT id FROM payment_methods WHERE business_id=${BID} AND name='${M_EFECTIVO}'`))
+  casheaId = Number(sql(`SELECT id FROM payment_methods WHERE business_id=${BID} AND name='${M_CASHEA}'`))
   sql(`INSERT INTO products (business_id,name,images,price_per_unit_usd,sale_mode,product_type,active,available_in_pos,show_in_catalog,catalog_visibility,is_available,availability,updated_at)
        VALUES (${BID},'${PRODUCTO}','[]',100,'service','simple',1,1,0,'visible',1,'in_stock',NOW(3))`)
   productId = Number(sql(`SELECT id FROM products WHERE business_id=${BID} AND name='${PRODUCTO}'`))
@@ -67,10 +77,20 @@ test.beforeAll(async () => {
   ajeno = Number(sql(`SELECT id FROM clients WHERE business_id<>${BID} ORDER BY id LIMIT 1`)) // solo lectura: cliente de OTRO negocio
   admin = await ctx('admin')
   cajero = await ctx('cashier')
+  // cobrar la deuda entra al turno: hace falta un turno abierto en el negocio de pruebas (si no hay, se abre aquí y se cierra al final)
+  if (sql(`SELECT COUNT(*) FROM cash_registers WHERE business_id=${BID} AND closed_at IS NULL`) === '0') {
+    const r = await admin.post('/api/cash/open', { data: { opening_amount_usd: 0, opening_amount_bs: 0 } })
+    expect(r.status(), await r.text()).toBeLessThan(300)
+    abrimosCaja = true
+  }
 })
 
 test.afterAll(async () => {
   limpiar()
+  sql(financingOriginal === 'NULL'
+    ? `UPDATE businesses SET settings=JSON_REMOVE(settings,'$.financing') WHERE id=${BID} AND settings IS NOT NULL`
+    : `UPDATE businesses SET settings=JSON_SET(settings,'$.financing',CAST('${financingOriginal}' AS JSON)) WHERE id=${BID}`)
+  if (abrimosCaja) await admin?.post('/api/cash/close', { data: { closing_amount_usd: 0, closing_amount_bs: 0 } })
   await admin?.dispose()
   await cajero?.dispose()
 })
@@ -85,7 +105,8 @@ async function pedido(extra: object = { client_id: clienteId }): Promise<number>
 const detalle = async (id: number) => ((await (await admin.get(`/api/orders/${id}`)).json()) as { order: Record<string, any> }).order // eslint-disable-line @typescript-eslint/no-explicit-any
 const estado = (id: number): string => sql(`SELECT status FROM orders WHERE id=${id}`)
 const mover = (id: number, status: string, extra: object = {}) => admin.patch(`/api/orders/${id}`, { data: { status, ...extra } })
-const credito = (id: number, data: object = { credit_days: 15 }) => admin.post(`/api/orders/${id}/cerrar-credito`, { data })
+// confirmed_client_id: el personal confirma a qué cliente se le carga el crédito (por defecto el del pedido de prueba).
+const credito = (id: number, data: object = { credit_days: 15 }) => admin.post(`/api/orders/${id}/cerrar-credito`, { data: { confirmed_client_id: clienteId, ...data } })
 const ficha = (data: object) => admin.patch(`/api/clients/${clienteId}`, { data })
 const entradasVenta = (id: number): string[] => lineas(sql(`SELECT CONCAT(quantity,'/',waste) FROM inventory_entries WHERE business_id=${BID} AND product_id=${productId} AND entry_type='sale' AND notes LIKE CONCAT('%pedido ',(SELECT order_number FROM orders WHERE id=${id}),'%')`))
 
@@ -177,30 +198,48 @@ test('validaciones del cierre: plazo obligatorio, vencimiento futuro, sin client
   expect(sql(`SELECT IFNULL(sale_id,'NULL') FROM orders WHERE id=${colgado}`)).toBe('NULL')
 })
 
-test('despacho con cliente autorizado SIN cerrar a crédito: despacha, pero entregar sigue exigiendo cobro o crédito', async () => {
+test('cliente autorizado SIN cerrar a crédito NO se despacha (puede_despachar = puede_avanzar); tras cerrar a crédito sí, y se entrega', async () => {
   expect((await ficha({ credit_authorized: true, credit_limit_usd: null })).status()).toBe(200)
   const id = await pedido()
   for (const s of ['preparing', 'ready']) expect((await mover(id, s)).status()).toBe(200)
   const d0 = await detalle(id)
-  expect(d0.pago).toMatchObject({ pago_estado: 'por_cobrar', puede_avanzar: false, puede_despachar: true })
+  expect(d0.pago).toMatchObject({ pago_estado: 'por_cobrar', puede_avanzar: false, puede_despachar: false })
   const lista = (await (await admin.get('/api/orders?limit=100')).json()) as { orders: Array<{ id: number; pago: { puede_despachar: boolean } }> }
-  expect(lista.orders.find(o => o.id === id)?.pago.puede_despachar, 'el listado lo dice igual').toBe(true)
+  expect(lista.orders.find(o => o.id === id)?.pago.puede_despachar, 'el listado lo dice igual').toBe(false)
 
+  const bloqueado = await mover(id, 'dispatched')
+  expect(bloqueado.status()).toBe(422)
+  expect(await bloqueado.json()).toMatchObject({ field: 'payment', code: 'PAYMENT_REQUIRED', pago_estado: 'por_cobrar' })
+
+  // cerrar a crédito (revisa el tope) → a_credito → ya se puede despachar y entregar
+  expect((await credito(id)).status()).toBe(200)
+  const d1 = await detalle(id)
+  expect(d1.pago_estado).toBe('a_credito')
+  expect(d1.pago).toMatchObject({ puede_avanzar: true, puede_despachar: true })
   const desp = await mover(id, 'dispatched')
   expect(desp.status(), await desp.text()).toBe(200)
-  expect((await desp.json()).override, 'sin override: lo permite el crédito').toBeUndefined()
-  expect(sql(`SELECT COUNT(*) FROM activity_logs WHERE business_id=${BID} AND model_type='Order' AND model_id=${id} AND action='order_dispatch_override'`)).toBe('0')
-
-  const ent = await mover(id, 'delivered')
-  expect(ent.status()).toBe(422)
-  expect(await ent.json()).toMatchObject({ field: 'payment', code: 'PAYMENT_REQUIRED', pago_estado: 'por_cobrar' })
-
-  // cerrar a crédito → a_credito → ya se puede entregar
-  expect((await credito(id)).status()).toBe(200)
-  expect((await detalle(id)).pago_estado).toBe('a_credito')
+  expect((await desp.json()).override, 'sin override: lo permite el cierre a crédito').toBeUndefined()
   const fin = await mover(id, 'delivered')
   expect(fin.status(), await fin.text()).toBe(200)
   expect(estado(id)).toBe('delivered')
+})
+
+test('hallazgo de seguridad: un pedido del CATÁLOGO con la cédula/teléfono de un cliente autorizado queda enlazado pero NO se despacha sin cobro ni cierre', async () => {
+  expect((await ficha({ credit_authorized: true, credit_limit_usd: null })).status()).toBe(200)
+  const id = await pedido({ origin: 'catalog', client_id: undefined, client_name: `${PREFIJO} Suplantador ${TAG}`, client_cedula: CED, client_phone: TEL })
+  expect(sql(`SELECT client_id FROM orders WHERE id=${id}`), 'el enlace automático lo asocia al cliente autorizado').toBe(String(clienteId))
+  for (const s of ['preparing', 'ready']) expect((await mover(id, s)).status()).toBe(200)
+  const r = await mover(id, 'dispatched')
+  expect(r.status(), 'la autorización de crédito NO abre el despacho').toBe(422)
+  expect(await r.json()).toMatchObject({ code: 'PAYMENT_REQUIRED' })
+  // y el cierre a crédito exige que el personal confirme el cliente: sin id → 400; con un id distinto → 422
+  const sinId = await admin.post(`/api/orders/${id}/cerrar-credito`, { data: { credit_days: 15 } })
+  expect(sinId.status()).toBe(400)
+  const otro = await credito(id, { confirmed_client_id: clienteId + 999_999, credit_days: 15 })
+  expect(otro.status()).toBe(422)
+  expect(await otro.json()).toMatchObject({ field: 'confirmed_client_id', code: 'CLIENT_NOT_CONFIRMED' })
+  expect(sql(`SELECT IFNULL(sale_id,'NULL') FROM orders WHERE id=${id}`)).toBe('NULL')
+  expect(entradasVenta(id)).toEqual([])
 })
 
 test('sin crédito autorizado el despacho vuelve a exigir cobro (override de admin con motivo se conserva)', async () => {
@@ -269,13 +308,21 @@ test('crear-cliente: crea con los datos del pedido, enlaza el existente (sin dup
   const p2 = await pedido({ client_id: undefined, client_name: `${PREFIJO} Otro ${TAG}`, client_phone: '04165550000', client_cedula: cedNueva })
   expect(sql(`SELECT client_id FROM orders WHERE id=${p2}`), 'al crearse ya se auto-enlazó por cédula').toBe(String(j.client_id))
   sql(`UPDATE orders SET client_id=NULL WHERE id=${p2} AND business_id=${BID}`) // simula un pedido huérfano (creado antes que el cliente)
-  const r2 = await admin.post(`/api/orders/${p2}/crear-cliente`)
+  // existe un cliente con esa cédula: NO se enlaza en silencio → 409 con quién es, y no queda nada enlazado
+  const sinConfirmar = await admin.post(`/api/orders/${p2}/crear-cliente`)
+  expect(sinConfirmar.status()).toBe(409)
+  expect(await sinConfirmar.json()).toMatchObject({ field: 'client', code: 'CLIENT_EXISTS', client_id: j.client_id, name: nombre, cedula: cedGuardada })
+  expect(sql(`SELECT IFNULL(client_id,'NULL') FROM orders WHERE id=${p2}`)).toBe('NULL')
+  expect(cuenta(), 'el 409 no crea nada').toBe(1)
+  // con confirm_existing:true el personal autoriza el enlace
+  const r2 = await admin.post(`/api/orders/${p2}/crear-cliente`, { data: { confirm_existing: true } })
   expect(r2.status(), await r2.text()).toBe(200)
   expect(await r2.json()).toMatchObject({ client_id: j.client_id, created: false })
   // solo teléfono coincidente → también enlaza
   const p3 = await pedido({ client_id: undefined, client_name: `${PREFIJO} Tres ${TAG}`, client_phone: `${telNuevo.slice(0, 4)}-${telNuevo.slice(4)}` })
   sql(`UPDATE orders SET client_id=NULL WHERE id=${p3} AND business_id=${BID}`)
-  expect(await (await admin.post(`/api/orders/${p3}/crear-cliente`)).json()).toMatchObject({ client_id: j.client_id, created: false })
+  expect((await admin.post(`/api/orders/${p3}/crear-cliente`)).status(), 'por teléfono también pide confirmación').toBe(409)
+  expect(await (await admin.post(`/api/orders/${p3}/crear-cliente`, { data: { confirm_existing: true } })).json()).toMatchObject({ client_id: j.client_id, created: false })
   expect(cuenta(), 'sin duplicados').toBe(1)
 
   // ya enlazado → 409; pedido inexistente → 404; el cajero también puede (acceso a Clientes)
@@ -285,4 +332,107 @@ test('crear-cliente: crea con los datos del pedido, enlaza el existente (sin dup
   expect((await admin.post('/api/orders/999999999/crear-cliente')).status()).toBe(404)
   const p4 = await pedido({ client_id: undefined, client_name: `${PREFIJO} Cuatro ${TAG}` })
   expect((await cajero.post(`/api/orders/${p4}/crear-cliente`)).status()).toBe(200)
+})
+
+/* ── Deuda de un Cashea RECHAZADO ya cobrado: $100 = $40 inicial (efectivo) + $60 Cashea ── */
+
+async function casheaRechazado(): Promise<number> {
+  const id = await pedido()
+  expect((await admin.patch(`/api/orders/${id}/financing`, { data: { action: 'request' } })).status()).toBe(200)
+  const c = await admin.post(`/api/orders/${id}/cobrar`, { data: { payment_method_id: casheaId, initial: { payment_method_id: efectivoId, amount_usd: 40 }, cedula: 'V12345678' } })
+  expect(c.status(), await c.text()).toBe(200)
+  expect((await admin.patch(`/api/orders/${id}/financing`, { data: { action: 'reject' } })).status()).toBe(200)
+  return id
+}
+const caja = async () => ((await (await admin.get('/api/cash/status')).json()) as { turnoStats: { efectivoEsperado: number; totalVentasUsd: number } }).turnoStats
+const saleOf = (id: number): number => Number(sql(`SELECT sale_id FROM orders WHERE id=${id}`))
+const deuda = (id: number) => admin.post(`/api/orders/${id}/cobrar-deuda-financiamiento`, { data: { payment_method_id: efectivoId, amount_usd: 1 } })
+
+test('deuda de Cashea rechazado: validaciones del cobro (monto, método real, sin deuda, caja)', async () => {
+  const id = await casheaRechazado()
+  expect((await detalle(id)).pago).toMatchObject({ pago_estado: 'por_cobrar', deuda_cliente_usd: 60, saldo_pendiente_usd: 60 })
+  const exceso = await admin.post(`/api/orders/${id}/cobrar-deuda-financiamiento`, { data: { payment_method_id: efectivoId, amount_usd: 60.5 } })
+  expect(exceso.status()).toBe(422)
+  expect(await exceso.json()).toMatchObject({ code: 'AMOUNT_EXCEEDS_DEBT', field: 'amount_usd', saldo_usd: 60 })
+  for (const [nombre, metodo] of [['el financiador', casheaId], ['un método de otro negocio', Number(sql(`SELECT id FROM payment_methods WHERE business_id<>${BID} ORDER BY id LIMIT 1`))], ['un método inexistente', 999999999]] as const) {
+    const r = await admin.post(`/api/orders/${id}/cobrar-deuda-financiamiento`, { data: { payment_method_id: metodo, amount_usd: 10 } })
+    expect(r.status(), nombre).toBe(422)
+    expect(await r.json(), nombre).toMatchObject({ code: 'INVALID_METHOD', field: 'payment_method_id' })
+  }
+  expect((await admin.post(`/api/orders/${id}/cobrar-deuda-financiamiento`, { data: { amount_usd: 10 } })).status()).toBe(400)
+  // un pedido sin Cashea rechazado no tiene deuda
+  const normal = await pedido()
+  expect((await admin.post(`/api/orders/${normal}/cobrar`, { data: { payment_method_id: efectivoId } })).status()).toBe(200)
+  const sinDeuda = await deuda(normal)
+  expect(sinDeuda.status()).toBe(409)
+  expect(await sinDeuda.json()).toMatchObject({ code: 'NO_DEBT' })
+  expect(sql(`SELECT COUNT(*) FROM sale_abonos WHERE sale_id IN (${saleOf(id)},${saleOf(normal)})`), 'ningún intento inválido dejó abonos').toBe('0')
+})
+
+test('cobrar la deuda: SaleAbono sobre la venta ORIGINAL (sin venta nueva), caja +efectivo, ventas netas intactas, y sale de CxC al saldarse', async () => {
+  const id = await casheaRechazado()
+  const venta = saleOf(id)
+  const ventasAntes = sql(`SELECT COUNT(*) FROM sales WHERE business_id=${BID} AND client_id=${clienteId}`)
+  const pagosAntes = sql(`SELECT COUNT(*) FROM sale_payments WHERE sale_id=${venta}`)
+  const c0 = await caja()
+  const deudaCli0: number = (await detalle(id)).client.deuda_financiamiento_usd // incluye deudas de otros pedidos del mismo cliente
+
+  // aparece en Finanzas › CxC como deuda de financiamiento
+  const cxc0 = (await (await admin.get('/api/finanzas/cxc?limit=100')).json()) as { items: Array<{ sale_id: number; kind: string; saldo_usd: number; total_usd: number }> }
+  expect(cxc0.items.find(i => i.sale_id === venta)).toMatchObject({ kind: 'financiamiento', saldo_usd: 60, total_usd: 60 })
+  const resumen0 = (await (await admin.get('/api/finanzas/cxc/summary')).json()) as Record<'vencido' | 'por_vencer' | 'vigente', { count: number; total_usd: number }>
+  expect(resumen0.vencido.total_usd + resumen0.por_vencer.total_usd + resumen0.vigente.total_usd, 'el resumen suma la deuda').toBeGreaterThanOrEqual(60)
+
+  // abono parcial desde el pedido (efectivo, método real)
+  const p1 = await admin.post(`/api/orders/${id}/cobrar-deuda-financiamiento`, { data: { payment_method_id: efectivoId, amount_usd: 20 } })
+  expect(p1.status(), await p1.text()).toBe(201)
+  expect(await p1.json()).toMatchObject({ saldo_usd: 40, pagada: false, pago_estado: 'por_cobrar' })
+  expect(sql(`SELECT status FROM sales WHERE id=${venta}`), 'la venta original no cambia de estado').toBe('paid')
+  expect(sql(`SELECT COUNT(*) FROM sales WHERE business_id=${BID} AND client_id=${clienteId}`), 'sin venta nueva').toBe(ventasAntes)
+  expect(sql(`SELECT COUNT(*) FROM sale_payments WHERE sale_id=${venta}`), 'la línea Cashea queda como está (sin movimientos nuevos)').toBe(pagosAntes)
+  expect(sql(`SELECT CONCAT(payment_method_id,'|',amount_usd,'|',IFNULL(cash_register_id,'NULL')<>'NULL') FROM sale_abonos WHERE sale_id=${venta}`)).toBe(`${efectivoId}|20.00|1`)
+  const d1 = await detalle(id)
+  expect(d1.pago).toMatchObject({ pago_estado: 'por_cobrar', deuda_cliente_usd: 40, saldo_pendiente_usd: 40, recibido_usd: 60 })
+  expect(d1.client.deuda_financiamiento_usd, 'la deuda del cliente baja lo abonado').toBeCloseTo(deudaCli0 - 20, 2)
+
+  // caja: solo el efectivo mueve el esperado (+ el monto en Bs del abono); ventas netas NO suben (ya contaban los $100)
+  const c1 = await caja()
+  const abonoBs = Number(sql(`SELECT amount_bs FROM sale_abonos WHERE sale_id=${venta}`))
+  expect(c1.efectivoEsperado - c0.efectivoEsperado).toBeCloseTo(abonoBs, 1)
+  expect(c1.totalVentasUsd).toBeCloseTo(c0.totalVentasUsd, 2)
+
+  // el resto, desde Finanzas › CxC (misma venta original)
+  const p2 = await admin.post(`/api/finanzas/cxc/${venta}/abono`, { data: { payment_method_id: efectivoId, amount_usd: 40 } })
+  expect(p2.status(), await p2.text()).toBe(201)
+  expect(await p2.json()).toMatchObject({ saldo_usd: 0, paid: true })
+  expect(sql(`SELECT status FROM sales WHERE id=${venta}`)).toBe('paid')
+  const d2 = await detalle(id)
+  expect(d2.pago).toMatchObject({ pago_estado: 'cobrado', deuda_cliente_usd: 0, saldo_pendiente_usd: 0, recibido_usd: 100 })
+  expect(d2.client.deuda_financiamiento_usd).toBeCloseTo(deudaCli0 - 60, 2)
+  const cxc2 = (await (await admin.get('/api/finanzas/cxc?limit=100')).json()) as { items: Array<{ sale_id: number }> }
+  expect(cxc2.items.find(i => i.sale_id === venta), 'saldada: sale de CxC').toBeUndefined()
+  const c2 = await caja()
+  expect(c2.efectivoEsperado - c0.efectivoEsperado).toBeCloseTo(Number(sql(`SELECT SUM(amount_bs) FROM sale_abonos WHERE sale_id=${venta}`)), 1)
+  expect(c2.totalVentasUsd, 'ventas netas siguen en lo mismo: el dinero no se contó dos veces').toBeCloseTo(c0.totalVentasUsd, 2)
+  // ya sin deuda: otro cobro → 409
+  expect((await deuda(id)).status()).toBe(409)
+
+  // devolución posterior con la deuda saldada: puede reembolsar lo cobrado completo ($100)
+  const ret = await admin.post('/api/returns', { data: { sale_id: venta, reason: 'Prueba de devolución', refund_payment_method_id: efectivoId, items: [{ product_id: productId, qty: 1 }] } })
+  expect(ret.status(), await ret.text()).toBe(201)
+})
+
+test('devolución con la deuda de Cashea PENDIENTE: reembolsa como máximo lo realmente cobrado ($40 de $100)', async () => {
+  const id = await casheaRechazado()
+  const venta = saleOf(id)
+  const dev = (qty: number) => admin.post('/api/returns', { data: { sale_id: venta, reason: 'Prueba de tope', refund_payment_method_id: efectivoId, items: [{ product_id: productId, qty }] } })
+  const total = await dev(1)
+  expect(total.status(), 'el reembolso de $100 supera los $40 realmente cobrados').toBe(422)
+  expect(await total.json()).toMatchObject({ code: 'REFUND_EXCEEDS_COLLECTED', cobrado_disponible_usd: 40, deuda_pendiente_usd: 60 })
+  expect(sql(`SELECT COUNT(*) FROM returns WHERE sale_id=${venta}`)).toBe('0')
+  const ok = await dev(0.4)
+  expect(ok.status(), await ok.text()).toBe(201)
+  const otra = await dev(0.1)
+  expect(otra.status(), 'ya se reembolsó lo cobrado: nada más').toBe(422)
+  expect(await otra.json()).toMatchObject({ code: 'REFUND_EXCEEDS_COLLECTED', cobrado_disponible_usd: 0 })
 })

@@ -10,9 +10,12 @@ type Context = { params: { id: string } }
 
 /* ── POST /api/orders/[id]/crear-cliente — crea (o enlaza, si ya existe) el cliente del pedido con sus datos ── */
 
-export async function POST(_req: Request, { params }: Context) {
+export async function POST(req: Request, { params }: Context) {
   const orderId = Number(params.id)
   if (!Number.isFinite(orderId)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+  // Body opcional: confirm_existing:true autoriza enlazar a un cliente que YA existe (nunca en silencio: puede tener crédito).
+  const raw: unknown = await req.json().catch(() => ({}))
+  const confirmExisting = typeof raw === 'object' && raw !== null && (raw as { confirm_existing?: unknown }).confirm_existing === true
 
   try {
     const { session } = await getAuthenticatedTenant()
@@ -31,6 +34,10 @@ export async function POST(_req: Request, { params }: Context) {
 
       const cedula = lenientCheckoutCedula(order.client_cedula).value
       const existingId = await findExistingClientId(tx, session.businessId, { cedula, phone: order.client_phone })
+      if (existingId !== null && !confirmExisting) {
+        const ex = await tx.client.findFirst({ where: { id: existingId, business_id: session.businessId }, select: { id: true, name: true, cedula: true } })
+        return { status: 409, body: { error: 'Ya existe un cliente con esa cédula o teléfono. Confírmalo para enlazarlo.', field: 'client', code: 'CLIENT_EXISTS', client_id: ex?.id ?? existingId, name: ex?.name ?? null, cedula: ex?.cedula ?? null } }
+      }
       const clientId = existingId ?? (await tx.client.create({
         data:   { business_id: session.businessId, name, phone: phoneForClient(order.client_phone), cedula, origin: 'pos' },
         select: { id: true },

@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         where,
         include: {
           items: true,
-          client: { select: { id: true, name: true, phone: true, credit_authorized: true } },
+          client: { select: { id: true, name: true, phone: true } },
           ...ORDER_PAGO_INCLUDE,
         },
         orderBy: { created_at: 'desc' },
@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
       ok: true,
       // Estado de pago derivado (por_cobrar | cobrado | a_credito) y su desglose; la venta enlazada no se expone aquí.
       orders: orders.map(({ sale, ...o }) => {
-        const pago = derivePago({ ...o, sale }, o.client?.credit_authorized === true) // db = tenant layer: el cliente ya es del negocio
+        const pago = derivePago({ ...o, sale })
         return { ...o, pago_estado: pago.pago_estado, pago }
       }),
       pagination: {

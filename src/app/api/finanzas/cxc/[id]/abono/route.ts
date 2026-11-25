@@ -5,6 +5,7 @@ import { checkPlanLimit, planDenied } from '@/lib/plan-guard'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
 import { createNotification } from '@/lib/notifications'
+import { DebtPaymentError, financingDebtOfSale, payFinancingDebtTx } from '@/lib/financing-debt'
 
 const abonoSchema = z.object({
   amount_usd:        z.number().positive(),
@@ -48,7 +49,17 @@ export async function POST(req: NextRequest, { params }: Context) {
         where:   { id: saleId, business_id: session.businessId, status: 'credit' },
         include: { abonos: { select: { amount_usd: true } } },
       })
-      if (!sale) throw new Error(TX_404)
+      if (!sale) {
+        // No es una venta a crédito: puede ser la deuda de un financiamiento (Cashea) rechazado ya cobrado → abono sobre la venta ORIGINAL.
+        const debt = await financingDebtOfSale(tx, session.businessId, saleId)
+        if (!debt) throw new Error(TX_404)
+        const reg = await tx.cashRegister.findFirst({ where: { business_id: session.businessId, closed_at: null }, select: { id: true } })
+        const r = await payFinancingDebtTx(tx, { businessId: session.businessId, userId: session.userId }, saleId, {
+          payment_method_id: body.payment_method_id, amount_usd: body.amount_usd, rate, notes: body.notes, cashRegisterId: reg?.id ?? null,
+        })
+        const ab = await tx.saleAbono.findUniqueOrThrow({ where: { id: r.abono_id } })
+        return { abono: ab, saldoFinal: r.saldo_usd, nowPaid: r.pagada, ticketNumber: debt.ticket_number }
+      }
 
       const totalUsd    = Number(sale.total_usd)
       const abonadoPrev = sale.abonos.reduce((a, b) => a + Number(b.amount_usd), 0)
@@ -106,6 +117,9 @@ export async function POST(req: NextRequest, { params }: Context) {
     }
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', issues: err.issues }, { status: 400 })
+    }
+    if (err instanceof DebtPaymentError) {
+      return NextResponse.json({ error: err.message, code: err.code, ...err.extra }, { status: err.status === 404 ? 404 : 400 })
     }
     if (err instanceof Error) {
       if (err.message === TX_404) return NextResponse.json({ error: TX_404 }, { status: 404 })

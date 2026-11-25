@@ -55,7 +55,7 @@ export async function GET(
     void _sale
     // Solo un cliente de ESTE negocio cuenta (business_id de la sesión).
     const ownClient = order.client && order.client.business_id === session.businessId ? order.client : null
-    const pago = derivePago(found, ownClient?.credit_authorized === true)
+    const pago = derivePago(found)
 
     // Resumen del cliente: saldo por cobrar = ventas a crédito + saldos de financiamiento rechazado ya cobrado (lib/client-credit).
     let client: Record<string, unknown> | null = null
@@ -109,7 +109,7 @@ export async function PATCH(
 
     const order = await prisma.order.findFirst({
       where: { id, business_id: session.businessId },
-      select: { id: true, status: true, origin: true, total_usd: true, financing_status: true, client: { select: { business_id: true, credit_authorized: true } }, ...ORDER_PAGO_INCLUDE },
+      select: { id: true, status: true, origin: true, total_usd: true, financing_status: true, ...ORDER_PAGO_INCLUDE },
     })
 
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
@@ -126,9 +126,9 @@ export async function PATCH(
     // registra; lo que cuenta es el estado de pago derivado (cobrado = inicial recibida + saldo asignado a Cashea).
     let overridden = false
     if ((order.origin as string) !== 'table' && (status === 'dispatched' || status === 'delivered')) {
-      // Despachar también se permite con el crédito del cliente autorizado (aunque no se haya cerrado a crédito); entregar exige cobrado o a crédito.
-      const pago = derivePago(order, order.client?.business_id === session.businessId && order.client.credit_authorized)
-      if (!(status === 'delivered' ? pago.puede_avanzar : pago.puede_despachar)) {
+      // Despachar y entregar exigen cobrado o a crédito (cerrar-credito revisa el tope); autorizar crédito al cliente NO basta.
+      const pago = derivePago(order)
+      if (!pago.puede_avanzar) {
         if (status === 'delivered') {
           return NextResponse.json(
             { error: 'Para entregar, el pedido debe estar cobrado o a crédito.', field: 'payment', code: 'PAYMENT_REQUIRED', pago_estado: pago.pago_estado }, { status: 422 })

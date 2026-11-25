@@ -118,7 +118,7 @@ test('guardar e imprimir: datos reales del negocio, usuario, número guardado y 
   expect(html).toContain('Atendido por: Admin Demo')
   expect(html).toContain(`N&deg; ${numero}`)
   // la talla en la línea
-  expect(html).toContain(`${NAME} &mdash; TCOT`)
+  expect(html).toContain(`${NAME} — TCOT`)
   // nada fijo
   expect(html).not.toContain('Mi Negocio')
   expect(html).not.toContain('Atendido por: Cajero')

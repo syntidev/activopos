@@ -7,10 +7,13 @@ import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, FileText, X, Check, ChevronRight, FileDown,
-  Send, Trash2, MessageCircle, Pencil, MoreHorizontal,
+  Send, Trash2, MessageCircle, Pencil, MoreHorizontal, Copy,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { normalizePhone } from '@/lib/utils'
+import { businessDateKey, shiftDateKey } from '@/lib/business-day'
+import { daysBetweenYmd, docFromQuotation, fmtYmd, openQuotationPrint } from '@/lib/quotation-document'
+import { useQuotationMeta } from '@/hooks/useQuotationMeta'
 import styles from './cotizaciones.module.css'
 
 /* ── Types ── */
@@ -31,7 +34,7 @@ interface Quotation {
   client: { id: number; name: string; phone: string | null } | null;
   items: Array<{
     id?: number; product_id?: number | null;
-    name: string; qty: number; price_usd: number; total_usd?: number;
+    name: string; qty: number; price_usd: number; discount_pct?: number | null; total_usd?: number;
   }>;
 }
 
@@ -63,6 +66,15 @@ const STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: 'converted', label: 'Cobrada' },
 ]
 
+const DEFAULT_VALIDITY_DAYS = 7
+
+// Estados desde los que no se edita: la salida útil es "Duplicar como nueva".
+const DUPLICABLE_STATUSES = ['accepted', 'rejected', 'expired', 'converted']
+
+// convert exige product_id en todos los ítems (SaleItem.product_id es NOT NULL): se avisa antes del clic.
+const CONVERT_BLOCKED = 'Tiene ítems sin producto: conviértelos a un producto o crea la venta en el POS'
+const hasManualItem = (q: Quotation): boolean => q.items.some(i => i.product_id == null)
+
 function statusClass(status: string) {
   switch (status) {
     case 'draft':     return styles.statusDraft
@@ -84,7 +96,7 @@ function statusClass(status: string) {
 function whatsappUrl(q: Quotation): string {
   const phone = normalizePhone(q.client?.phone ?? '')
   const validez = q.valid_until
-    ? `\nVálida hasta: ${fmtDate(q.valid_until)}`
+    ? `\nVálida hasta: ${fmtYmd(q.valid_until.slice(0, 10))}`
     : ''
   const msg =
     `Hola ${q.client?.name ?? ''}, te comparto la cotización ${q.number}:\n` +
@@ -107,6 +119,8 @@ function CotizacionesContent() {
   const [filter, setFilter]         = useState('')
   const [busy, setBusy]             = useState<number | null>(null)
   const [menuId, setMenuId]         = useState<number | null>(null)
+  // Datos del documento: se cargan al abrir la página para que el clic abra la ventana sin esperas.
+  const { meta } = useQuotationMeta()
 
   // Un solo listener global mientras haya menú abierto: click afuera o Escape
   // lo cierran. Sin esto el menú queda pegado al navegar por la tabla.
@@ -193,6 +207,48 @@ function CotizacionesContent() {
         toast(`Cotización ${q.number} eliminada`, 'success')
       } else {
         toast(d.error ?? 'Error al eliminar', 'error')
+      }
+    } catch {
+      toast('Error de conexión', 'error')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  function handlePrint(q: Quotation) {
+    if (meta) openQuotationPrint(docFromQuotation(q, meta))
+  }
+
+  // Borrador nuevo con los mismos ítems y cliente; vigencia renovada con la misma duración que tenía.
+  async function handleDuplicate(q: Quotation) {
+    setBusy(q.id)
+    try {
+      const issued = businessDateKey(new Date(q.created_at))
+      const days = q.valid_until
+        ? Math.max(1, daysBetweenYmd(issued, q.valid_until.slice(0, 10)))
+        : DEFAULT_VALIDITY_DAYS
+      const r = await fetch('/api/quotations', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          ...(q.client ? { client_id: q.client.id } : {}),
+          ...(q.notes  ? { notes: q.notes }         : {}),
+          valid_until: shiftDateKey(businessDateKey(), days),
+          items: q.items.map(i => ({
+            ...(i.product_id ? { product_id: i.product_id } : {}),
+            name:      i.name,
+            qty:       i.qty,
+            price_usd: i.price_usd,
+            ...(i.discount_pct ? { discount_pct: i.discount_pct } : {}),
+          })),
+        }),
+      })
+      const d = await r.json() as { quotation?: { id: number; number: string }; error?: string }
+      if (r.ok && d.quotation) {
+        toast(`Duplicada como ${d.quotation.number}`, 'success')
+        router.push(`/cotizaciones/${d.quotation.id}/editar`)
+      } else {
+        toast(d.error ?? 'Error al duplicar', 'error')
       }
     } catch {
       toast('Error de conexión', 'error')
@@ -323,7 +379,7 @@ function CotizacionesContent() {
                     </td>
                     <td className={`${styles.td} ${styles.tdHidden}`} data-label="Válida hasta">
                       <span className={styles.muted}>
-                        {q.valid_until ? fmtDate(q.valid_until) : '—'}
+                        {q.valid_until ? fmtYmd(q.valid_until.slice(0, 10)) : '—'}
                       </span>
                     </td>
                     <td className={`${styles.td} ${styles.tdHidden}`} data-label="Fecha">
@@ -333,7 +389,7 @@ function CotizacionesContent() {
                       <div className={styles.actionsRow}>
                         {/* Primarios: lo que el dueño hace todos los días. El resto
                             vive en el menú "···" para que la fila no tenga 5 botones. */}
-                        {q.status === 'draft' && (
+                        {(q.status === 'draft' || q.status === 'sent') && (
                           <button
                             className={styles.miniBtn}
                             onClick={() => router.push(`/cotizaciones/${q.id}/editar`)}
@@ -350,9 +406,12 @@ function CotizacionesContent() {
                           <button
                             className={styles.convertBtn}
                             onClick={() => handleConvert(q)}
-                            disabled={busy === q.id}
+                            disabled={busy === q.id || hasManualItem(q)}
                             type="button"
-                            aria-label={`Cobrar cotización ${q.number}`}
+                            title={hasManualItem(q) ? CONVERT_BLOCKED : undefined}
+                            aria-label={hasManualItem(q)
+                              ? `Cobrar cotización ${q.number} no disponible: ${CONVERT_BLOCKED}`
+                              : `Cobrar cotización ${q.number}`}
                           >
                             {busy === q.id
                               ? <span className={styles.spinnerSm} aria-hidden="true" />
@@ -362,13 +421,27 @@ function CotizacionesContent() {
                           </button>
                         )}
 
-                        {/* PDF y WhatsApp NO aparecen en borrador: todavía no es un
-                            documento para mandarle al cliente. */}
-                        {q.status !== 'draft' && (
+                        {DUPLICABLE_STATUSES.includes(q.status) && (
+                          <button
+                            className={styles.miniBtn}
+                            onClick={() => handleDuplicate(q)}
+                            disabled={busy === q.id}
+                            type="button"
+                            title="Duplicar como nueva"
+                            aria-label={`Duplicar cotización ${q.number} como nueva`}
+                          >
+                            <Copy size={12} aria-hidden="true" />
+                            Duplicar
+                          </button>
+                        )}
+
+                        {/* Descargar y WhatsApp en TODOS los estados, borrador incluido. */}
+                        {(
                           <>
                             <button
                               className={styles.pdfBtn}
-                              onClick={() => window.open(`/api/quotations/${q.id}/pdf`, '_blank')}
+                              onClick={() => handlePrint(q)}
+                              disabled={!meta}
                               type="button"
                               aria-label={`Descargar PDF de cotización ${q.number}`}
                             >
@@ -421,6 +494,15 @@ function CotizacionesContent() {
                           </div>
                         )}
                       </div>
+                      {q.status === 'expired' && (
+                        <p className={styles.rowNote}>
+                          Venció{q.valid_until ? ` el ${fmtYmd(q.valid_until.slice(0, 10))}` : ''}.
+                          {' '}Duplícala como nueva para renovarla.
+                        </p>
+                      )}
+                      {q.status === 'accepted' && hasManualItem(q) && (
+                        <p className={styles.rowNote}>{CONVERT_BLOCKED}</p>
+                      )}
                     </td>
                   </tr>
                 ))}

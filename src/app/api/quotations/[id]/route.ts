@@ -4,6 +4,7 @@ import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { prisma } from '@/lib/prisma'
 import { getActiveRate } from '@/lib/bcv'
+import { businessDateKey } from '@/lib/business-day'
 
 type Context = { params: { id: string } }
 
@@ -92,6 +93,9 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     if (session.role === 'cashier') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
 
     const body = PatchSchema.parse(await req.json())
+    if (body.valid_until && body.valid_until < businessDateKey()) {
+      return NextResponse.json({ error: 'La vigencia no puede ser anterior a hoy' }, { status: 422 })
+    }
 
     const existing = await db.quotation.findFirst({ where: { id } }) // business_id inyectado
     if (!existing) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 })

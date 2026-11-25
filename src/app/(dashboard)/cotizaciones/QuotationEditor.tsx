@@ -4,9 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, Search, Plus, Minus, Trash2, X, User, Calendar,
-  Package, Save, Send, Loader2, PackagePlus, UserPlus, Percent,
+  Package, Save, Send, Loader2, PackagePlus, UserPlus, Percent, Eye, FileDown,
 } from 'lucide-react'
 import { ToastProvider, useToast } from '@/components/ui/Toast'
+import { businessDateKey, shiftDateKey } from '@/lib/business-day'
+import { daysBetweenYmd, docFromQuotation, openQuotationPrint } from '@/lib/quotation-document'
+import { useQuotationMeta } from '@/hooks/useQuotationMeta'
 import { useHardwareScanner } from '@/hooks/useHardwareScanner'
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard'
 import styles from './editor.module.css'
@@ -35,6 +38,7 @@ interface EditorItem {
 interface LoadedQuotation {
   id: number
   number: string
+  created_at: string
   status: string
   notes: string | null
   valid_until: string | null
@@ -59,8 +63,7 @@ const pct = (s: string) => Math.min(100, Math.max(0, num(s)))
 const lineTotal = (it: EditorItem) =>
   r2(num(it.qty) * num(it.price) * (1 - pct(it.discount_pct) / 100))
 
-const fmtBs = (n: number) =>
-  n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const DEFAULT_VALIDITY_DAYS = 7
 
 // valid_until llega como ISO del servidor; el input date exige YYYY-MM-DD.
 const toDateInput = (iso: string | null) => iso ? iso.slice(0, 10) : ''
@@ -263,9 +266,12 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
 
   const [items, setItems]      = useState<EditorItem[]>([])
   const [client, setClient]    = useState<Client | null>(null)
-  const [validUntil, setValid] = useState('')
+  const today = businessDateKey()
+  const [validUntil, setValid] = useState(() => isEdit ? '' : shiftDateKey(today, DEFAULT_VALIDITY_DAYS))
+  const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [notes, setNotes]      = useState('')
-  const [rate, setRate]        = useState(0)
+  // Datos del negocio y usuario para el documento: se cargan antes del clic (gesto de window.open).
+  const { meta } = useQuotationMeta()
 
   const [productSearch, setProductSearch] = useState('')
   const [products, setProducts]           = useState<Product[]>([])
@@ -284,14 +290,6 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
   // Claves estables de fila: el índice se rompe al eliminar en el medio.
   const keyRef  = useRef(0)
   const nextKey = () => { keyRef.current += 1; return `it-${keyRef.current}` }
-
-  /* ── Tasa activa ── */
-  useEffect(() => {
-    fetch('/api/rates/bcv')
-      .then(r => r.json())
-      .then((j: { rate?: number }) => { if (j.rate) setRate(Number(j.rate)) })
-      .catch(() => { /* sin tasa: el editor sigue operando en USD */ })
-  }, [])
 
   /* ── Carga en modo edición ── */
   useEffect(() => {
@@ -321,6 +319,7 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
         setClient(q.client)
         setNotes(q.notes ?? '')
         setValid(toDateInput(q.valid_until))
+        setCreatedAt(q.created_at)
         setItems(q.items.map(i => ({
           key:          nextKey(),
           product_id:   i.product_id ?? undefined,
@@ -452,15 +451,43 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
   const subtotal  = r2(items.reduce((s, i) => s + num(i.qty) * num(i.price), 0))
   const total     = r2(items.reduce((s, i) => s + lineTotal(i), 0))
   const descuento = r2(subtotal - total)
-  const totalBs   = r2(total * rate)
 
-  const canSave = items.length > 0 &&
+  // La API responde 422 igual; acá se evita el viaje y se avisa en el campo.
+  const validityError = validUntil !== '' && validUntil < today
+    ? 'La vigencia no puede ser anterior a hoy' : ''
+  const validityDays = validUntil ? daysBetweenYmd(today, validUntil) : 0
+
+  const canSave = items.length > 0 && !validityError &&
     items.every(i => i.name.trim() !== '' && num(i.qty) > 0 && num(i.price) >= 0)
+
+  /* ── Documento único (vista previa y descarga) ── */
+
+  function buildDoc(label: string) {
+    if (!meta) return null
+    return docFromQuotation({
+      number:      label || null,
+      created_at:  createdAt,
+      valid_until: validUntil || null,
+      notes:       notes.trim() || null,
+      client,
+      total_usd:   total,
+      items: items.map(i => ({
+        name: i.name.trim() || 'Sin descripción', qty: num(i.qty),
+        price_usd: num(i.price), discount_pct: pct(i.discount_pct),
+      })),
+    }, meta)
+  }
+
+  function preview() {
+    const d = buildDoc(number)
+    if (d) openQuotationPrint(d)
+  }
 
   /* ── Guardar ── */
 
-  async function save(sendAfter: boolean) {
+  async function save(mode: 'draft' | 'send' | 'download') {
     if (!canSave || saving) return
+    const sendAfter = mode === 'send'
     setSaving(true)
     try {
       const payloadItems = items.map(i => ({
@@ -526,6 +553,10 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
       }
 
       toast(sendAfter ? `${label} guardada y marcada como Enviada` : `${label} guardada`, 'success')
+      if (mode === 'download') {
+        const d = buildDoc(label)
+        if (d) openQuotationPrint(d)
+      }
       router.push('/cotizaciones')
     } catch {
       toast('Error de conexión', 'error')
@@ -743,14 +774,21 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
           )}
         </div>
 
-        {/* Válida hasta */}
+        {/* Vigencia: días y fecha son la misma cosa; editar una recalcula la otra. */}
         <div className={styles.field}>
-          <label htmlFor="q-valid" className={styles.label}>
+          <span className={styles.label}>
             <Calendar size={11} aria-hidden="true" />
-            Válida hasta
-          </label>
-          <input id="q-valid" type="date" className={styles.input}
-            value={validUntil} onChange={e => setValid(e.target.value)} />
+            Vigencia
+          </span>
+          <div className={styles.searchRow}>
+            <input id="q-days" type="number" className={styles.numInput} min="0" max="365"
+              aria-label="Días de vigencia" value={validUntil ? validityDays : ''}
+              onChange={e => setValid(shiftDateKey(today, Math.max(0, Math.floor(num(e.target.value)))))} />
+            <input id="q-valid" type="date" className={styles.input} min={today}
+              aria-label="Válida hasta" value={validUntil}
+              onChange={e => setValid(e.target.value)} />
+          </div>
+          {validityError && <p className={styles.fieldError} role="alert">{validityError}</p>}
         </div>
 
         {/* Ítems */}
@@ -877,14 +915,6 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
             <span>Total</span>
             <span className={styles.grandUsd}>${total.toFixed(2)}</span>
           </div>
-          <div className={styles.bsRow}>
-            <span>Equivalente</span>
-            <span>Bs.&nbsp;{fmtBs(totalBs)}</span>
-          </div>
-          <p className={styles.rateNote}>
-            * El monto en Bs es referencial.
-            {rate > 0 && ` Tasa usada: Bs. ${fmtBs(rate)} por USD.`}
-          </p>
         </div>
 
         {/* Notas */}
@@ -898,14 +928,24 @@ function EditorContent({ quotationId }: QuotationEditorProps) {
         {/* Acciones */}
         <div className={styles.actions}>
           <button type="button" className={styles.btnSec}
-            onClick={() => save(false)} disabled={saving || !canSave}>
+            onClick={preview} disabled={saving || !canSave || !meta}>
+            <Eye size={14} aria-hidden="true" />
+            Vista previa
+          </button>
+          <button type="button" className={styles.btnSec}
+            onClick={() => save('draft')} disabled={saving || !canSave}>
             {saving
               ? <Loader2 size={14} className={styles.spin} aria-hidden="true" />
               : <Save size={14} aria-hidden="true" />}
             Guardar borrador
           </button>
+          <button type="button" className={styles.btnSec}
+            onClick={() => save('download')} disabled={saving || !canSave || !meta}>
+            <FileDown size={14} aria-hidden="true" />
+            Guardar y descargar
+          </button>
           <button type="button" className={styles.btnPri}
-            onClick={() => save(true)} disabled={saving || !canSave}>
+            onClick={() => save('send')} disabled={saving || !canSave}>
             {saving
               ? <Loader2 size={14} className={styles.spin} aria-hidden="true" />
               : <Send size={14} aria-hidden="true" />}

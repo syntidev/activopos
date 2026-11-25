@@ -28,6 +28,8 @@ export interface OrderPago {
   saldo_pendiente_usd: number
   /** true = el pedido puede despacharse/entregarse sin autorización extra (cobrado, a crédito o con saldo de financiamiento rechazado). */
   puede_avanzar:       boolean
+  /** true = puede despacharse: puede_avanzar, o el cliente del pedido tiene crédito autorizado (aunque aún no se haya cerrado a crédito). Entregar sigue exigiendo puede_avanzar. */
+  puede_despachar:     boolean
 }
 
 /** include de Prisma que necesita derivePago (venta enlazada con sus pagos y abonos). */
@@ -57,9 +59,15 @@ const sum = (xs: readonly { amount_usd: unknown }[]): number => r2(xs.reduce((a,
 // Solo lo realizado cuenta como cobrado. Una venta 'returned' (devolución total) ya reembolsó todo: NO es cobrado ni deja avanzar el pedido.
 const COBRADAS: readonly string[] = REALIZED_SALE_STATUSES
 
-export function derivePago(o: PagoSource): OrderPago {
+/** creditoAutorizado = el cliente enlazado (del MISMO negocio) tiene credit_authorized: habilita despachar sin cobrar ni cerrar a crédito. */
+export function derivePago(o: PagoSource, creditoAutorizado = false): OrderPago {
+  const p = derive(o)
+  return { ...p, puede_despachar: p.puede_avanzar || creditoAutorizado }
+}
+
+function derive(o: PagoSource): OrderPago {
   const total = r2(Number(o.total_usd))
-  const base: OrderPago = { pago_estado: 'por_cobrar', total_usd: total, recibido_usd: 0, cashea_asignado_usd: 0, deuda_cliente_usd: 0, saldo_pendiente_usd: total, puede_avanzar: false }
+  const base: OrderPago = { pago_estado: 'por_cobrar', total_usd: total, recibido_usd: 0, cashea_asignado_usd: 0, deuda_cliente_usd: 0, saldo_pendiente_usd: total, puede_avanzar: false, puede_despachar: false }
   const s = o.sale
   if (!s) return base
 

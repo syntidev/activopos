@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
 import { prisma } from '@/lib/prisma'
 import { ORDER_PAGO_INCLUDE, derivePago } from '@/lib/order-payment'
+import { clientDebt } from '@/lib/client-credit'
 
 // PERMISOS — INTENCIONAL: sin guard de rol. cashier edita/cancela pedidos como admin.
 // Atención al cliente, no dato sensible. Sellado en MATRIZ_ROLES_PERMISOS_SELLADA.md (#2).
@@ -44,7 +45,7 @@ export async function GET(
       where: { id }, // business_id inyectado por el tenant layer
       include: {
         items: true,
-        client: { select: { id: true, business_id: true, name: true, phone: true, cedula: true, address: true, price_tier: true } },
+        client: { select: { id: true, business_id: true, name: true, phone: true, cedula: true, address: true, price_tier: true, credit_authorized: true, credit_limit_usd: true } },
         ...ORDER_PAGO_INCLUDE,
       },
     })
@@ -52,23 +53,24 @@ export async function GET(
     if (!found) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
     const { sale: _sale, ...order } = found
     void _sale
-    const pago = derivePago(found)
+    // Solo un cliente de ESTE negocio cuenta (business_id de la sesión).
+    const ownClient = order.client && order.client.business_id === session.businessId ? order.client : null
+    const pago = derivePago(found, ownClient?.credit_authorized === true)
 
-    // Resumen del cliente: solo si pertenece a ESTE negocio (business_id de la sesión). Saldo por cobrar = ventas a crédito + saldos de
-    // financiamiento rechazado ya cobrado. Todas las consultas pasan por el tenant layer.
+    // Resumen del cliente: saldo por cobrar = ventas a crédito + saldos de financiamiento rechazado ya cobrado (lib/client-credit).
     let client: Record<string, unknown> | null = null
-    if (order.client && order.client.business_id === session.businessId) {
-      const c = order.client
-      const [previos, credito, rechazados] = await Promise.all([
+    if (ownClient) {
+      const c = ownClient
+      const [previos, debt] = await Promise.all([
         db.order.count({ where: { client_id: c.id, id: { not: id }, status: { not: 'cancelled' }, created_at: { lt: order.created_at } } }),
-        db.sale.findMany({ where: { client_id: c.id, status: 'credit' }, select: { total_usd: true, abonos: { select: { amount_usd: true } } } }),
-        db.order.findMany({ where: { client_id: c.id, financing_status: 'rejected', sale_id: { not: null } }, select: { total_usd: true, financing_status: true, ...ORDER_PAGO_INCLUDE } }),
+        clientDebt(prisma, session.businessId, c.id),
       ])
-      const saldoCxc = Math.round(credito.reduce((a, s) => a + Math.max(0, Number(s.total_usd) - s.abonos.reduce((x, ab) => x + Number(ab.amount_usd), 0)), 0) * 100) / 100
-      const deudaFin = Math.round(rechazados.reduce((a, o) => a + derivePago(o).deuda_cliente_usd, 0) * 100) / 100
+      const limite = c.credit_limit_usd === null ? null : Number(c.credit_limit_usd)
       client = {
         id: c.id, name: c.name, cedula: c.cedula, phone: c.phone, address: c.address, price_tier: c.price_tier,
-        pedidos_previos: previos, saldo_cxc_usd: saldoCxc, deuda_financiamiento_usd: deudaFin, saldo_por_cobrar_usd: Math.round((saldoCxc + deudaFin) * 100) / 100,
+        pedidos_previos: previos, ...debt,
+        credit_authorized: c.credit_authorized, credit_limit_usd: limite,
+        credito_disponible_usd: !c.credit_authorized ? 0 : limite === null ? null : Math.max(0, Math.round((limite - debt.saldo_por_cobrar_usd) * 100) / 100),
       }
     }
 
@@ -107,7 +109,7 @@ export async function PATCH(
 
     const order = await prisma.order.findFirst({
       where: { id, business_id: session.businessId },
-      select: { id: true, status: true, origin: true, total_usd: true, financing_status: true, ...ORDER_PAGO_INCLUDE },
+      select: { id: true, status: true, origin: true, total_usd: true, financing_status: true, client: { select: { business_id: true, credit_authorized: true } }, ...ORDER_PAGO_INCLUDE },
     })
 
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
@@ -124,8 +126,9 @@ export async function PATCH(
     // registra; lo que cuenta es el estado de pago derivado (cobrado = inicial recibida + saldo asignado a Cashea).
     let overridden = false
     if ((order.origin as string) !== 'table' && (status === 'dispatched' || status === 'delivered')) {
-      const pago = derivePago(order)
-      if (!pago.puede_avanzar) {
+      // Despachar también se permite con el crédito del cliente autorizado (aunque no se haya cerrado a crédito); entregar exige cobrado o a crédito.
+      const pago = derivePago(order, order.client?.business_id === session.businessId && order.client.credit_authorized)
+      if (!(status === 'delivered' ? pago.puede_avanzar : pago.puede_despachar)) {
         if (status === 'delivered') {
           return NextResponse.json(
             { error: 'Para entregar, el pedido debe estar cobrado o a crédito.', field: 'payment', code: 'PAYMENT_REQUIRED', pago_estado: pago.pago_estado }, { status: 422 })

@@ -11,6 +11,7 @@ import { logError } from '@/lib/safe-log'
 import { resolveLinePrice } from '@/lib/pricing'
 import { priceModeSchema } from '@/lib/price-mode'
 import { ORDER_PAGO_INCLUDE, derivePago } from '@/lib/order-payment'
+import { findUniqueClientId } from '@/lib/order-client'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISOS — INTENCIONAL: Pedidos NO tiene guard de rol. cashier ve/crea/edita
@@ -47,8 +48,9 @@ const createSchema = z.object({
   client_id:      z.number().int().positive().optional(),
   client_name:    z.string().min(1).max(120).optional(),
   client_phone:   z.string().max(20).optional(),
+  client_cedula:  z.string().max(20).optional(),
   client_address: z.string().max(500).optional(),
-  notes:          z.string().max(500).optional(),
+  notes:         z.string().max(500).optional(),
   delivery_fee:   z.number().nonnegative().default(0),
   origin:         z.enum(['whatsapp', 'catalog', 'phone', 'pos']).default('whatsapp'),
   estimated_time: z.number().int().positive().optional(),
@@ -85,7 +87,7 @@ export async function GET(req: NextRequest) {
         where,
         include: {
           items: true,
-          client: { select: { id: true, name: true, phone: true } },
+          client: { select: { id: true, name: true, phone: true, credit_authorized: true } },
           ...ORDER_PAGO_INCLUDE,
         },
         orderBy: { created_at: 'desc' },
@@ -99,7 +101,7 @@ export async function GET(req: NextRequest) {
       ok: true,
       // Estado de pago derivado (por_cobrar | cobrado | a_credito) y su desglose; la venta enlazada no se expone aquí.
       orders: orders.map(({ sale, ...o }) => {
-        const pago = derivePago({ ...o, sale })
+        const pago = derivePago({ ...o, sale }, o.client?.credit_authorized === true) // db = tenant layer: el cliente ya es del negocio
         return { ...o, pago_estado: pago.pago_estado, pago }
       }),
       pagination: {
@@ -153,6 +155,9 @@ export async function POST(req: NextRequest) {
         if (!ownClient) throw new Error('Cliente no encontrado')
       }
 
+      // Sin client_id: se enlaza solo si UN cliente del negocio coincide por cédula o teléfono normalizado; si no, queda sin cliente.
+      const linkedClientId = data.client_id ?? await findUniqueClientId(tx, session.businessId, { cedula: data.client_cedula, phone: data.client_phone })
+
       // A5-1: prices from DB — anti price-tampering (never trust client-supplied prices)
       const productIds = Array.from(new Set(data.items.map((i) => i.product_id)))
       const products   = await tx.product.findMany({
@@ -196,9 +201,10 @@ export async function POST(req: NextRequest) {
           order_number,
           status:         'received',
           origin:         data.origin,
-          client_id:      data.client_id,
+          client_id:      linkedClientId,
           client_name:    data.client_name,
           client_phone:   data.client_phone,
+          client_cedula:  data.client_cedula,
           client_address: data.client_address,
           notes:          data.notes,
           delivery_fee:   data.delivery_fee,

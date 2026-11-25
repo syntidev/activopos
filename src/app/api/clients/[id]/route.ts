@@ -16,6 +16,9 @@ const patchSchema = z.object({
   address: z.string().trim().max(500).nullable().optional(),
   // Marca que el negocio ya confirmó la identidad (solo admin).
   verified: z.boolean().optional(),
+  // Crédito del cliente (solo admin). Tope en USD; null = sin límite.
+  credit_authorized: z.boolean().optional(),
+  credit_limit_usd:  z.number().min(0).max(99_999_999.99).nullable().optional(),
 })
 
 type RouteContext = { params: { id: string } }
@@ -105,6 +108,11 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     // Confirmar la identidad de un cliente web es decisión del admin, no del mostrador.
     if (data.verified !== undefined && session.role === 'cashier') {
       return NextResponse.json({ error: 'Sin permiso para verificar clientes' }, { status: 403 })
+    }
+
+    // Autorizar crédito o fijar su tope compromete dinero del negocio: solo admin/super_admin.
+    if ((data.credit_authorized !== undefined || data.credit_limit_usd !== undefined) && session.role !== 'admin' && session.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Solo un administrador puede autorizar crédito.', field: 'credit_authorized', code: 'CREDIT_FORBIDDEN' }, { status: 403 })
     }
 
     const existing = await db.client.findFirst({

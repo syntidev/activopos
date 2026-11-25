@@ -101,7 +101,7 @@ export function SalonView({ initial, isAdmin }: SalonViewProps) {
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Aún no hay áreas ni mesas</p>
           <p className={styles.emptyText}>Crea tu primera área (Salón, Terraza, Barra…) y sus mesas en la configuración del módulo.</p>
-          {isAdmin && <Link href="/configuracion/restaurante" className={`${styles.btn} ${styles.btnPrimary}`}>Configurar áreas y mesas</Link>}
+          {isAdmin && <Link href="/configuracion?tab=restaurante" className={`${styles.btn} ${styles.btnPrimary}`}>Configurar áreas y mesas</Link>}
         </div>
       </div>
     )
@@ -141,7 +141,7 @@ export function SalonView({ initial, isAdmin }: SalonViewProps) {
             </button>
           )}
           {isAdmin && (
-            <Link href="/configuracion/restaurante" className={styles.btn}><Settings2 size={16} aria-hidden="true" />Configurar</Link>
+            <Link href="/configuracion?tab=restaurante" className={styles.btn}><Settings2 size={16} aria-hidden="true" />Configurar</Link>
           )}
         </div>
       </header>

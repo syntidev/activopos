@@ -1,13 +1,9 @@
-import type { Metadata } from 'next'
-import { getAuthenticatedTenant } from '@/lib/tenant'
-import { loadSalon } from '@/lib/restaurante-server'
-import { ConfigRestaurante } from './ConfigRestaurante'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = { title: 'Configuración · Restaurante' }
-export const dynamic = 'force-dynamic'
-
-/** Áreas y mesas del módulo Restaurante. El flag lo valida el layout; el middleware limita /configuracion a admin. */
-export default async function ConfigRestaurantePage() {
-  const { db } = await getAuthenticatedTenant()
-  return <ConfigRestaurante initial={await loadSalon(db)} />
+/**
+ * La configuración del módulo vive ahora en Configuración › Restaurante (pestaña). Esta ruta se mantiene
+ * como atajo: con el flag redirige a la pestaña; sin el flag, el layout de esta carpeta ya respondió 404.
+ */
+export default function ConfigRestaurantePage() {
+  redirect('/configuracion?tab=restaurante')
 }

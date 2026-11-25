@@ -34,7 +34,8 @@ import {
   Shield,
   ArrowRightLeft,
   FileText,
-  UtensilsCrossed,
+  LayoutGrid,
+  SlidersHorizontal,
   ChevronDown,
   type LucideIcon,
 } from 'lucide-react'
@@ -112,8 +113,6 @@ const NAV_GROUPS: NavGroup[] = [
       // Preventa/inscripción con logística propia (no pasa por Order/Sale). Solo admin Y solo
       // negocios con Business.reservas_enabled (hoy: OnBike). Sin el flag ni el link ni la ruta existen.
       { href: '/reservas', icon: ClipboardList, label: 'Reservas',                             colorKey: 'ventas', adminOnly: true, featureFlag: 'reservas' },
-      // Plano de mesas del módulo Restaurante. Visible para cajero y admin, solo con Business.restaurante_enabled.
-      { href: '/restaurante/mesas', icon: UtensilsCrossed, label: 'Salón',                         colorKey: 'ventas', featureFlag: 'restaurante' },
     ],
   },
   {
@@ -152,11 +151,16 @@ const NAV_GROUPS: NavGroup[] = [
   /* ── Grupos preservados: no listados en la nueva estructura pedida,
      mantenidos para no perder acceso a KDS / Analytics / Tu Día (ninguna
      ruta se elimina — ver nota en el commit) ── */
+  // Grupo del módulo Restaurante. Los ítems con featureFlag 'restaurante' existen solo con Business.restaurante_enabled;
+  // si ninguno es visible, el grupo entero desaparece. Sin el flag queda solo "Cocina (KDS)" (solo admin), como antes.
+  // Preparado para sumar Cuentas (R2), Cocina por estación (R3) y Reportes (R5) como un ítem más de esta lista.
   {
     label: 'RESTAURANTE',
-    adminOnly: true,
+    collapsible: true,
     items: [
-      { href: '/kds', icon: ChefHat, label: 'Cocina (KDS)', moduleKey: 'kds', colorKey: 'inventario' },
+      { href: '/restaurante/mesas',            icon: LayoutGrid,        label: 'Plano',       colorKey: 'ventas', featureFlag: 'restaurante' },
+      { href: '/configuracion?tab=restaurante', icon: SlidersHorizontal, label: 'Configurar',  colorKey: 'admin',  featureFlag: 'restaurante', adminOnly: true },
+      { href: '/kds', icon: ChefHat, label: 'Cocina (KDS)', moduleKey: 'kds', colorKey: 'inventario', adminOnly: true },
     ],
   },
   {

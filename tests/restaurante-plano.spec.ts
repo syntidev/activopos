@@ -78,7 +78,7 @@ test('1 · sin flag: la página, el link y la API no existen', async ({ page, co
   expect((await page.request.get(`${BASE}/configuracion/restaurante`)).status()).toBe(404)
 
   await page.goto('/escritorio')
-  await expect(page.getByRole('link', { name: 'Salón' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Plano' })).toHaveCount(0)
 
   expect((await page.request.get(`${BASE}/api/restaurante/mesas`)).status()).toBe(404)
   expect((await page.request.post(`${BASE}/api/restaurante/areas`, { data: { name: 'X' } })).status()).toBe(404)
@@ -100,7 +100,7 @@ test('2 · con flag: crear área y 3 mesas, arrastrar una y conservar la posici�
   const before = (await listTables(page)).find(t => t.label === '1')!
 
   await page.goto('/restaurante/mesas')
-  await expect(page.getByRole('link', { name: 'Salón' }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Plano' }).first()).toBeVisible()
   await page.getByRole('button', { name: 'Editar plano' }).click()
 
   const svg = page.getByRole('group', { name: /Editor del plano/ })
@@ -188,7 +188,7 @@ for (const vp of [{ w: 1280, h: 800 }, { w: 375, h: 812 }]) {
     }
 
     await page.goto('/configuracion/restaurante')
-    await expect(page.getByRole('heading', { name: 'Configuración · Restaurante' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Salón: áreas, mesas y plano' })).toBeVisible()
     expect(await noHorizontalOverflow(page)).toBe(true)
     await page.screenshot({ path: path.join(CAPTURAS, `config-${vp.w}.png`), fullPage: true })
   })

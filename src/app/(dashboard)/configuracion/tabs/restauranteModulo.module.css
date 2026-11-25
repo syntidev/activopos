@@ -1,0 +1,33 @@
+/* Tarjeta y modales de activación de Restaurante (Configuración › Módulos). Tokens globales: el modal vive en un portal. */
+
+.upgrade { margin: 0; font-size: 12.5px; color: var(--text-secondary); }
+.upgradeBtn {
+  min-height: var(--touch-min); padding: 0 var(--space-2); border: 0; background: transparent; cursor: pointer;
+  color: var(--brand); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.upgradeBtn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+.body { display: flex; flex-direction: column; gap: var(--space-3); }
+.lead { margin: 0; font-size: 14px; color: var(--text-primary); }
+.note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.list li { display: flex; align-items: flex-start; gap: var(--space-2); font-size: 14px; color: var(--text-primary); }
+.list svg { flex: none; margin-top: 2px; color: var(--success); }
+
+.check {
+  display: flex; align-items: flex-start; gap: var(--space-3); min-height: var(--touch-min);
+  padding: var(--space-3); border-radius: var(--radius-lg); background: var(--bg-hover); cursor: pointer;
+}
+.check input { flex: none; width: 20px; height: 20px; margin-top: 2px; accent-color: var(--brand); cursor: pointer; }
+.check span { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--text-primary); }
+.check small { font-size: 12.5px; color: var(--text-secondary); }
+
+.error { margin: var(--space-3) 0 0; padding: var(--space-3); border-radius: var(--radius-md); background: var(--danger-soft); color: var(--danger); font-size: 13px; }
+.footer { display: flex; justify-content: flex-end; gap: var(--space-3); flex-wrap: wrap; }
+
+/* En móvil el botón flotante de ayuda (z-index 900, global) queda sobre cualquier modal: los botones se apilan, primario arriba. */
+@media (max-width: 759px) {
+  .footer { flex-direction: column-reverse; align-items: stretch; width: 100%; }
+  .footer > * { width: 100%; }
+}

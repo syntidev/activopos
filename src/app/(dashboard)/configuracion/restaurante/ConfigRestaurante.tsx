@@ -89,7 +89,7 @@ export function ConfigRestaurante({ initial }: { initial: SalonSnapshot }) {
   return (
     <div className={styles.root}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Configuración · Restaurante</h1>
+        <h2 className={styles.title}>Salón: áreas, mesas y plano</h2>
         <span className={styles.lock}>Módulo activo para este negocio</span>
         <Link href="/restaurante/mesas" className={styles.btn}><PencilRuler size={16} aria-hidden="true" />Abrir editor de plano</Link>
       </header>

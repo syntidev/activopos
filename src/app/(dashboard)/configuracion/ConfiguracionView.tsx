@@ -43,8 +43,10 @@ import { TabEnvios }          from './tabs/TabEnvios'
 import { TabCarta }           from './tabs/TabCarta'
 import { TabIdentidadWeb }    from './tabs/TabIdentidadWeb'
 import { TabSeoAnalitica }    from './tabs/TabSeoAnalitica'
+import { TabRestaurante }     from './tabs/TabRestaurante'
+import type { SalonSnapshot } from '@/types/restaurante'
 
-type TabKey = 'seo' | 'identidad' | 'cobroprecios' | 'envios' | 'carta' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan'
+type TabKey = 'seo' | 'identidad' | 'cobroprecios' | 'envios' | 'carta' | 'general' | 'empresa' | 'impresion' | 'cobros' | 'tema' | 'landing' | 'colecciones' | 'marcas' | 'kit200k' | 'usuarios' | 'modulos' | 'notificaciones' | 'plan' | 'restaurante'
 
 interface Tab {
   key: TabKey
@@ -91,9 +93,19 @@ interface ConfiguracionViewProps {
   kitEnabled: boolean
   /** catalog_template = 'carta': se ocultan las pestañas que no aplican y aparece "Carta". */
   isCarta: boolean
+  /** Business.restaurante_enabled: sin él no existe la pestaña Restaurante. */
+  restauranteEnabled: boolean
+  /** Áreas, mesas y mobiliario del negocio; null cuando el módulo está apagado. */
+  salon: SalonSnapshot | null
+  /** Clases de next/font del módulo (vacío si está apagado). */
+  restauranteFontClass: string
+  /** ?tab=restaurante abre esa pestaña al entrar. */
+  initialTab?: string
 }
 
 const KIT_TAB: Tab = { key: 'kit200k', label: 'Kit 200K', Icon: Ticket }
+
+const RESTAURANTE_TAB: Tab = { key: 'restaurante', label: 'Restaurante', Icon: UtensilsCrossed }
 
 // Negocio con plantilla Carta: su vitrina se configura en UNA pestaña "Carta"; no aplican Tema/Landing/Colecciones/Marcas (premium) ni Envíos por encomienda.
 const CARTA_TAB: Tab = { key: 'carta', label: 'Carta', Icon: UtensilsCrossed }
@@ -101,10 +113,14 @@ const CARTA_TAB: Tab = { key: 'carta', label: 'Carta', Icon: UtensilsCrossed }
 const IDENTIDAD_TAB: Tab = { key: 'identidad', label: 'Identidad web', Icon: Globe }
 const SEO_TAB: Tab = { key: 'seo', label: 'SEO y Analítica', Icon: BarChart3 }
 
-export function ConfiguracionView({ session, landingSectionsEnabled, identidadEnabled, kitEnabled, isCarta }: ConfiguracionViewProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('general')
+export function ConfiguracionView({
+  session, landingSectionsEnabled, identidadEnabled, kitEnabled, isCarta,
+  restauranteEnabled, salon, restauranteFontClass, initialTab,
+}: ConfiguracionViewProps) {
+  const startTab: TabKey | null = initialTab === 'restaurante' && restauranteEnabled ? 'restaurante' : null
+  const [activeTab, setActiveTab] = useState<TabKey>(startTab ?? 'general')
   // Móvil: 'menu' = lista de grupos; 'tab' = contenido de la opción elegida (con "Volver"). En escritorio se ven ambos y esto no aplica.
-  const [vista, setVista] = useState<'menu' | 'tab'>('menu')
+  const [vista, setVista] = useState<'menu' | 'tab'>(startTab ? 'tab' : 'menu')
   const elegir = (key: TabKey): void => { setActiveTab(key); setVista('tab') }
 
   // Gate de plan resuelto server-side (page.tsx) — sin el flag, el grupo
@@ -118,6 +134,7 @@ export function ConfiguracionView({ session, landingSectionsEnabled, identidadEn
   const GROUPS: { label: string; tabs: Tab[] }[] = [
     { label: 'Negocio',         tabs: negocioTabs },
     { label: 'Catálogo Público', tabs: catalogoTabs },
+    ...(restauranteEnabled ? [{ label: 'Restaurante', tabs: [RESTAURANTE_TAB] }] : []),
     { label: 'Sistema',         tabs: SISTEMA_TABS },
   ]
 
@@ -181,7 +198,14 @@ export function ConfiguracionView({ session, landingSectionsEnabled, identidadEn
         {activeTab === 'identidad'   && identidadEnabled       && <TabIdentidadWeb businessId={session.businessId} />}
         {activeTab === 'seo'         && identidadEnabled       && <TabSeoAnalitica businessId={session.businessId} />}
         {activeTab === 'kit200k'     && kitEnabled            && <TabKit200k     businessId={session.businessId} />}
-        {activeTab === 'modulos'        && <TabModulos        businessId={session.businessId} />}
+        {activeTab === 'restaurante' && restauranteEnabled && salon && <TabRestaurante initial={salon} fontClass={restauranteFontClass} />}
+        {activeTab === 'modulos'        && (
+          <TabModulos
+            businessId={session.businessId}
+            canManageRestaurante={session.role === 'admin' || session.role === 'super_admin'}
+            restauranteEnabled={restauranteEnabled}
+          />
+        )}
         {activeTab === 'notificaciones' && <TabNotificaciones businessId={session.businessId} />}
         {activeTab === 'plan'           && <TabPlan     businessId={session.businessId} />}
         {activeTab === 'usuarios'       && (

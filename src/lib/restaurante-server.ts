@@ -219,6 +219,14 @@ export function handleRestauranteError(err: unknown, context: string): NextRespo
   return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
 }
 
+/**
+ * Cuentas de mesa abiertas del negocio. La desactivación del módulo y el borrado de mesas se bloquean si > 0.
+ * Hoy no existen cuentas (llegan con R2): devuelve 0. Punto único donde R2 conecta la consulta real.
+ */
+export async function countOpenTableAccounts(_businessId: number): Promise<number> {
+  return 0
+}
+
 /** Lee el cuerpo JSON sin reventar con un cuerpo vacío o roto. */
 export async function readJson(req: Request): Promise<unknown> {
   try { return await req.json() } catch { return null }

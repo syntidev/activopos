@@ -1,0 +1,30 @@
+/* Configuración › Restaurante: marco de la pestaña y subsecciones. Valores: tokens --rs-* (tokens.css). */
+
+.scope {
+  background: var(--rs-page);
+  color: var(--rs-ink);
+  font-family: var(--rs-ui);
+  border-radius: var(--rs-radio);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+@media (max-width: 759px) { .scope { padding: var(--space-4); } }
+
+.subnav {
+  display: flex; gap: 2px; padding: 3px; width: fit-content; max-width: 100%;
+  background: var(--rs-seg); border-radius: var(--rs-radio-ctl); overflow-x: auto; scrollbar-width: none;
+}
+.subnav::-webkit-scrollbar { display: none; }
+
+.sub {
+  display: inline-flex; align-items: center; gap: 8px; flex: none;
+  min-height: 44px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent;
+  font: 600 13px var(--rs-ui); color: var(--rs-ink-2); white-space: nowrap; cursor: pointer;
+}
+.sub:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+.subOn { background: var(--rs-card); color: var(--rs-ink); box-shadow: var(--rs-sombra); }
+.sub:disabled { cursor: not-allowed; color: var(--rs-muted); }
+.soon { font: 600 11px var(--rs-mono); color: var(--rs-muted); border: 1px dashed var(--rs-res-edge); border-radius: 6px; padding: 1px 6px; }

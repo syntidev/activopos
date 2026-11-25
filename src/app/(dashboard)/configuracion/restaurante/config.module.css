@@ -1,10 +1,10 @@
 /* Configuración del módulo Restaurante. Valores: solo tokens --rs-* y globales. */
 
-.root { background: var(--rs-page); color: var(--rs-ink); font-family: var(--rs-ui); border-radius: var(--rs-radio); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
-@media (max-width: 759px) { .root { padding: var(--space-4); } }
+/* Vive dentro de Configuración › Restaurante (tabs/TabRestaurante): el marco y el fondo los pone la pestaña. */
+.root { color: var(--rs-ink); font-family: var(--rs-ui); display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
 
 .head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3) var(--space-4); }
-.title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+.title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .lock { padding: 8px 14px; border-radius: var(--rs-radio-ctl); background: var(--rs-navy-soft); color: var(--rs-navy); font: 600 12px var(--rs-mono); }
 .head .btn { margin-left: auto; }
 @media (max-width: 759px) { .head .btn { margin-left: 0; } }

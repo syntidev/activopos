@@ -46,8 +46,16 @@ export function DashboardShell({ session, isImpersonating, children }: Dashboard
       const detail = (e as CustomEvent<string[]>).detail
       if (Array.isArray(detail)) setEnabledModules(detail)
     }
+    // Activar/desactivar Restaurante (Configuración › Módulos) vive en otro árbol: avisa por evento, como los módulos.
+    function onRestauranteUpdated(e: Event) {
+      setRestauranteEnabled((e as CustomEvent<boolean>).detail === true)
+    }
     window.addEventListener('activopos:modules-updated', onModulesUpdated)
-    return () => window.removeEventListener('activopos:modules-updated', onModulesUpdated)
+    window.addEventListener('activopos:restaurante-updated', onRestauranteUpdated)
+    return () => {
+      window.removeEventListener('activopos:modules-updated', onModulesUpdated)
+      window.removeEventListener('activopos:restaurante-updated', onRestauranteUpdated)
+    }
   }, [])
 
   /* ── Close mobile drawer on desktop resize ── */

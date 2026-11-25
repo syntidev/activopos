@@ -136,3 +136,10 @@ export const pulsoEventsLimiter = new RateLimiterMemory({
   points:   60,   // 60 lotes por ip:slug
   duration: 60,   // por minuto
 })
+
+// Activar/desactivar el módulo Restaurante (POST /api/restaurante/activacion): llave = business_id de la sesión.
+// Es una acción rara y con efectos en el menú de todo el negocio; 10 por minuto sobra. Por proceso, como los demás.
+export const restauranteToggleLimiter = new RateLimiterMemory({
+  points:   10,   // 10 cambios por negocio
+  duration: 60,   // por minuto
+})

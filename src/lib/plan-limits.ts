@@ -2,8 +2,10 @@
 // permanente, nunca vence) + negocio_activo (único plan pago, $19/mes).
 // -1 = ilimitado. Los flags booleanos gatean módulos completos.
 export const PLAN_LIMITS = {
-  gratis:         { products: 40, users: 1,  catalog: false, ai: false, suppliers: false, finanzas: false, exports: false, theme: false, landing_sections: false, analytics: false },
-  negocio_activo: { products: -1, users: 10, catalog: true,  ai: true,  suppliers: true,  finanzas: true,  exports: true,  theme: true,  landing_sections: true,  analytics: true  },
+  // restaurante: DECISIÓN PENDIENTE de Carlos (aún no hay política de precios del módulo). Hoy `true` en ambos
+  // planes; ponerlo en `false` en gratis activa el aviso de mejora de plan y el 403 sin tocar más código.
+  gratis:         { products: 40, users: 1,  catalog: false, ai: false, suppliers: false, finanzas: false, exports: false, theme: false, landing_sections: false, analytics: false, restaurante: true },
+  negocio_activo: { products: -1, users: 10, catalog: true,  ai: true,  suppliers: true,  finanzas: true,  exports: true,  theme: true,  landing_sections: true,  analytics: true,  restaurante: true },
 } as const
 
 export type PlanTier = keyof typeof PLAN_LIMITS

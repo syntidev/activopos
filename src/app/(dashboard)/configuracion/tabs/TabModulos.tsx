@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import type { PlanTier } from '@/lib/plan-limits'
 import styles from '../configuracion.module.css'
+import { RestauranteModuloCard } from './RestauranteModuloCard'
 
 interface Module {
   key: string
@@ -66,9 +67,15 @@ const OPTIONAL_MODULES: OptionalModule[] = [
   },
 ]
 
-interface Props { businessId: number }
+interface Props {
+  businessId: number
+  /** admin y super_admin: solo ellos ven la tarjeta de Restaurante. */
+  canManageRestaurante: boolean
+  /** Business.restaurante_enabled (lo lee el servidor al renderizar Configuración). */
+  restauranteEnabled: boolean
+}
 
-export function TabModulos({ businessId: _businessId }: Props) {
+export function TabModulos({ businessId: _businessId, canManageRestaurante, restauranteEnabled }: Props) {
   const { toast } = useToast()
   const [enabled, setEnabled] = useState<Set<string>>(new Set(DEFAULT_ENABLED))
   const [saving, setSaving] = useState(false)
@@ -282,6 +289,14 @@ export function TabModulos({ businessId: _businessId }: Props) {
             </div>
           )
         })}
+        {canManageRestaurante && (
+          <RestauranteModuloCard
+            enabled={restauranteEnabled}
+            kdsEnabled={enabled.has('kds')}
+            currentPlan={currentPlan}
+            onModulesChanged={mods => setEnabled(new Set(mods))}
+          />
+        )}
       </div>
     </div>
     </div>

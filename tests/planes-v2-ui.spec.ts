@@ -98,6 +98,12 @@ for (const vp of VIEWPORTS) {
     expect(addonsDb()).toBe('')
     await page.screenshot({ path: path.join(OUT, `admin-addons-${vp.n}.png`) })
     await page.getByTestId('ps-addon-kds').uncheck()
+    // Nota del add-on con plan gratis (solo estado del formulario, sin guardar): aparece con Gratis y desaparece con un plan pago.
+    await expect(page.getByTestId('ps-addon-gratis-nota')).toHaveCount(0)
+    await form.locator('#ps-plan').selectOption('gratis')
+    await expect(page.getByTestId('ps-addon-gratis-nota')).toHaveText('Se activa al subir a un plan pago.')
+    await form.locator('#ps-plan').selectOption('negocio_activo')
+    await expect(page.getByTestId('ps-addon-gratis-nota')).toHaveCount(0)
   })
 }
 

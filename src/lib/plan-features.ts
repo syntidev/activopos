@@ -1,4 +1,4 @@
-import type { PlanTier } from './plan-limits'
+import { PLAN_LIMITS, type PlanTier } from './plan-limits'
 
 // Fuente única de copy de features para la vitrina pública. Curado desde el
 // INVENTARIO_FUNCIONES (17 jul 2026, barrido de código) — sólo funciones reales
@@ -117,4 +117,62 @@ export const NEGOCIO_CATEGORIES: FeatureCategoryGroup[] = [
 // muestra su lista corta y no la comparativa por categoría.
 export function featuresByCategoryForTier(tier: PlanTier): FeatureCategoryGroup[] {
   return tier === 'negocio_activo' ? NEGOCIO_CATEGORIES : []
+}
+
+// ── /planes v2 (solo con PRICES_PUBLISHED): escalera Gratis / Entrada / Operación ──
+// NO incluye KDS ni su add-on (no se ofrece hasta certificar R3) ni nada fiscal.
+
+/** Operación — highlights de la card (todo lo de Entrada más el salón). */
+export const OPERACION_HIGHLIGHTS: string[] = [
+  'Todo lo de Entrada',
+  'Restaurante: plano de mesas y cuenta por mesa',
+]
+
+/** Celda de la tabla comparativa: incluido / no incluido (boolean) o un valor corto ("Hasta 40", "Ilimitados"). */
+export type CeldaComparativa = boolean | string
+
+export interface FilaComparativa {
+  label:     string
+  gratis:    CeldaComparativa
+  entrada:   CeldaComparativa
+  operacion: CeldaComparativa
+}
+
+export interface GrupoComparativa {
+  key:   string
+  label: string
+  rows:  FilaComparativa[]
+}
+
+const TIERS_V2 = ['gratis', 'negocio_activo', 'operacion'] as const
+
+const todos = (label: string): FilaComparativa => ({ label, gratis: true, entrada: true, operacion: true })
+const desdeEntrada = (label: string): FilaComparativa => ({ label, gratis: false, entrada: true, operacion: true })
+
+/** "Hasta 40" / "Ilimitados" (negativo = sin tope en PLAN_LIMITS). */
+const tope = (n: number): string => (n < 0 ? 'Ilimitados' : `Hasta ${n}`)
+
+/**
+ * Tabla comparativa agrupada por categoría. Los límites salen de PLAN_LIMITS (cero números escritos aquí) y cada línea de Entrada
+ * viene del inventario curado de arriba; Operación solo suma lo que su nivel ya habilita.
+ */
+export function comparativaPorCategoria(): GrupoComparativa[] {
+  const [g, e, o] = TIERS_V2.map(t => PLAN_LIMITS[t])
+  const esLimite = (f: string): boolean => /^Hasta \d+ /.test(f) || /^\d+ usuarios?$/.test(f)
+  return [
+    { key: 'base', label: 'Lo esencial', rows: GRATIS_FEATURES.filter(f => !esLimite(f)).map(todos) },
+    {
+      key: 'capacidad', label: 'Capacidad', rows: [
+        { label: 'Productos', gratis: tope(g.products), entrada: tope(e.products), operacion: tope(o.products) },
+        { label: 'Usuarios',  gratis: tope(g.users),    entrada: tope(e.users),    operacion: tope(o.users) },
+      ],
+    },
+    ...NEGOCIO_CATEGORIES.map(c => ({ key: c.category, label: c.label, rows: c.items.filter(f => !esLimite(f)).map(desdeEntrada) }))
+      .filter(c => c.rows.length > 0),
+    {
+      key: 'operacion', label: 'Operación', rows: [
+        { label: 'Restaurante: plano de mesas y cuenta por mesa', gratis: g.restaurante, entrada: e.restaurante, operacion: o.restaurante },
+      ],
+    },
+  ]
 }

@@ -49,7 +49,7 @@ function money(usd: number, currency: Currency, rate: number): string {
   return currency === 'bs' && rate > 0 ? fmtBs(usd, rate) : fmtUsd(usd)
 }
 
-const MONTHLY_FULL = 19 // tarifa mensual sin descuento — base del tachado "sería"
+const MONTHLY_FULL = BILLING_CYCLES.negocio_activo.mensual.monthlyEquivalent // tarifa mensual sin descuento — base del tachado "sería"
 
 export default function PricingSection({ bcvRate, showHeader = true, showMoreLink = true }: Props) {
   const [cycleIdx, setCycleIdx] = useState(0)

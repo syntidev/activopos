@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Sparkles, Check, ArrowRight } from 'lucide-react'
+import { PLAN_LIMITS } from '@/lib/plan-limits'
 import { Modal } from './Modal'
 import styles from './UpgradeModal.module.css'
 
@@ -13,7 +14,7 @@ interface UpgradeModalProps {
 
 const PERKS = [
   'Productos ilimitados',
-  'Hasta 10 usuarios',
+  `Hasta ${PLAN_LIMITS.negocio_activo.users} usuarios`,
   'Catálogo digital, finanzas, reportes y más',
 ]
 

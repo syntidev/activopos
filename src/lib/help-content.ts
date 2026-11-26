@@ -8,6 +8,8 @@
    desde la grilla. El chat de texto libre (BOT_RULES) sí los cubre ya.
    ============================================================ */
 
+import { PLAN_LIMITS } from './plan-limits'
+
 export interface HelpStep {
   title: string
   body:  string
@@ -807,7 +809,7 @@ export const helpContent = {
       },
       {
         title: 'Usuarios y roles',
-        body:  'Agrega cajeros con acceso limitado al POS y administradores con acceso completo, con permisos granulares por sección. Según tu plan: Gratis 1 usuario, Negocio Activo hasta 10.',
+        body:  `Agrega cajeros con acceso limitado al POS y administradores con acceso completo, con permisos granulares por sección. Según tu plan: Gratis ${PLAN_LIMITS.gratis.users} usuario, Negocio Activo hasta ${PLAN_LIMITS.negocio_activo.users}.`,
       },
     ],
     faqs: [
@@ -825,7 +827,7 @@ export const helpContent = {
       },
       {
         q: '¿Puedo tener varios usuarios?',
-        a: 'Sí. Gratis: 1 usuario. Negocio Activo: hasta 10, con permisos según su rol.',
+        a: `Sí. Gratis: ${PLAN_LIMITS.gratis.users} usuario. Negocio Activo: hasta ${PLAN_LIMITS.negocio_activo.users}, con permisos según su rol.`,
       },
       {
         q: '¿Cómo cambio el color del catálogo?',
@@ -863,7 +865,7 @@ export const helpContent = {
     faqs: [
       {
         q: '¿Cuántos usuarios puedo tener?',
-        a: 'Según tu plan: Gratis 1 usuario, Negocio Activo hasta 10.',
+        a: `Según tu plan: Gratis ${PLAN_LIMITS.gratis.users} usuario, Negocio Activo hasta ${PLAN_LIMITS.negocio_activo.users}.`,
       },
       {
         q: '¿Puedo desactivar un usuario sin borrarlo?',

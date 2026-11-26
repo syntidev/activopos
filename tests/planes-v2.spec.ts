@@ -9,9 +9,22 @@ import { ADDON_KEYS, BILLING_CYCLES, PLAN_TIER_KEYS, PRICES_PUBLISHED, WORKING_A
 
 /**
  * Planes v2 (backend): derecho (plan + add-on) × preferencia (modules_enabled) × estado de cuenta, aplicado al USAR el KDS en el servidor.
- * Tenant propio ZZA (E2E_BUSINESS_ID): su plan, add-ons, suscripción y módulos se GUARDAN y se RESTAURAN al final. Servidor local en :3001.
+ *
+ * Tenant propio ZZA (CLI-A = 216): su plan, add-ons, suscripción y módulos se tocan y se restauran al estado base al final.
+ * Convención de tenants y puertos: .doc/CONVENCION_Tenants_de_Prueba.md.
+ *
+ * E2E_BASE_URL es OBLIGATORIA, sin valor por defecto: esta spec ESCRIBE en la DB (plan, add-ons, suscripción de un tenant) y un puerto
+ * por defecto puede ser el servidor de OTRA carpeta/CLI, que usa otro código y otras reglas contra la misma base. Hay que apuntar
+ * explícitamente al servidor de ESTA carpeta, p. ej.:  E2E_BASE_URL=http://localhost:3001 npx playwright test tests/planes-v2.spec.ts
  */
-const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3001'
+const BASE = process.env.E2E_BASE_URL ?? ''
+if (!BASE) {
+  throw new Error(
+    'planes-v2.spec: falta E2E_BASE_URL. Defínela con el servidor de ESTA carpeta (CLI-A suele usar http://localhost:3001; ' +
+    'el :3000 y otros pueden ser de otra carpeta). Ejemplo: E2E_BASE_URL=http://localhost:3001 npx playwright test tests/planes-v2.spec.ts. ' +
+    'No hay valor por defecto porque esta spec modifica el plan y los add-ons de un tenant en la base compartida.',
+  )
+}
 const { businessId: BID, adminId: ADMIN } = ownBusiness()
 const TAG = String(Date.now()).slice(-6)
 const BASE_MODULES = 'pos,inventory,caja,pedidos,catalog,finanzas,reportes,analytics,suppliers'

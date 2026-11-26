@@ -1,6 +1,6 @@
 # RUNBOOK — Conceder el add-on KDS a los tenants de producción (Planes v2)
 # Generado: 25 Noviembre 2026 | CLI-A | Estado: LISTO, NO EJECUTADO. Nada de esto se corrió contra el VPS.
-# Script: `scripts/grant-addon.ts` (rama `feat/planes-v2`). No contiene ids fijos: los recibe por argumento.
+# Script: `scripts/grant-addon.cjs` (Node simple, ya en main). No contiene ids fijos: los recibe por argumento.
 
 ## Por qué hace falta
 
@@ -11,23 +11,55 @@ salvo que antes tengan el add-on. Ids de producción acordados: **4, 8, 33, 55**
 El script concede el add-on a esa lista **explícita**, es **dry-run por defecto**, **idempotente**, y deja un `ActivityLog`
 `addon_updated` por negocio. Sin ids no hace nada (sale con error). Ninguna migración ni el build lo invocan.
 
-## Orden dentro del deploy (receta de CLAUDE.md)
+## Orden dentro del deploy
 
-El script necesita que la columna `businesses.addons` exista y que el cliente Prisma esté generado. Va **entre `migrate deploy` y el restart**:
+> **NO usar `npx prisma migrate deploy` en el VPS.** Hay 17 migraciones antiguas sin registrar en `_prisma_migrations`: `migrate deploy` las
+> aplicaría de nuevo y fallaría por columnas duplicadas (P3018), bloqueando toda migración futura. En el VPS el esquema se aplica con
+> **`db push`** y las migraciones nuevas se **marcan** como aplicadas con `migrate resolve --applied`.
+
+El script necesita que la columna `businesses.addons` exista y que el cliente Prisma esté generado. El grant va **después del `db push` +
+`migrate resolve` y antes de `pm2 restart`**:
 
 ```
 cd /var/www/activopos
 git pull origin main                     # (cuando feat/planes-v2 esté en main, tras aprobación de Carlos)
 npx prisma generate
-npx prisma migrate deploy                # aplica 20261125000001_business_addons (columna addons, aditiva)
+npx prisma db push                       # crea las columnas nuevas desde schema.prisma (businesses.addons, clients.credit_*, ...)
+npx prisma migrate status                # lista lo pendiente (ver nota abajo)
+npx prisma migrate resolve --applied 20261125000001_business_addons
+#   + las demás migraciones NUEVAS de este release cuya columna acaba de crear el db push o ya existía (ver "Migraciones a marcar")
 # ── AQUÍ: dry-run, revisar, y recién entonces la ejecución real (abajo) ──
-touch /var/lock/activopos-deploy.lock
+touch /var/lock/activopos-deploy.lock    # pausa el healthcheck durante el build
 pm2 stop activopos
 rm -rf .next
 npm run build
 pm2 restart activopos --update-env
 pm2 save
-rm -f /var/lock/activopos-deploy.lock
+rm -f /var/lock/activopos-deploy.lock    # SIEMPRE, también si el build falló
+```
+
+**Leer la salida de `db push` antes de seguir.** Si anuncia pérdida de datos o quiere borrar tablas/columnas, **PARAR**: nunca usar
+`--accept-data-loss`. (Lección registrada en `CHECKLIST_ALTA_MARCA_CATALOGO.md`: un respaldo guardado como tabla dentro de la base hace que
+`db push` intente borrarla; los respaldos van a archivo `/root/*.sql`.)
+
+**Qué esperar de `migrate status`:** seguirá listando como no aplicadas las 17 migraciones antiguas. Es lo esperado y **no se tocan aquí**.
+Solo se marcan las migraciones nuevas de este release.
+
+### Migraciones a marcar (una vez confirmado que su columna existe tras el `db push`)
+
+| Migración | Qué crea |
+|---|---|
+| `20261124000002_client_credit` | `clients.credit_authorized`, `clients.credit_limit_usd` |
+| `20261125000001_business_addons` | `businesses.addons` |
+| `20261126000001_sale_cargo_pct` | `sales.cargo_pct` (en el VPS ya existe; solo se marca) |
+
+Para cada una: confirmar la columna y marcarla.
+
+```sql
+SHOW COLUMNS FROM businesses LIKE 'addons';        -- y las equivalentes de las otras dos
+```
+```
+npx prisma migrate resolve --applied <nombre_de_la_migracion>
 ```
 
 Mientras corre el código viejo, la columna `addons` es inocua (nadie la lee): conceder antes del restart no cambia nada para los clientes.

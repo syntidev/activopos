@@ -24,6 +24,14 @@ export const isPaidPlan = (plan: string | null | undefined): plan is Exclude<Pla
 export const ADDON_KEYS = ['kds'] as const
 export type AddonKey = typeof ADDON_KEYS[number]
 
+/** Add-ons válidos de un CSV (ignora claves desconocidas, sin repetidos, orden estable). Puro: lo usan rutas y scripts. */
+export function parseAddons(raw: string | null | undefined): AddonKey[] {
+  const set = new Set((raw ?? '').split(',').map(s => s.trim()).filter(Boolean))
+  return ADDON_KEYS.filter(k => set.has(k))
+}
+
+export const serializeAddons = (keys: readonly AddonKey[]): string => ADDON_KEYS.filter(k => keys.includes(k)).join(',')
+
 /** Módulos/funciones con derecho (entitlement) propio: el flag del nivel O el add-on. */
 export const ENTITLEMENT_KEYS = ['kds', 'restaurante'] as const
 export type EntitlementKey = typeof ENTITLEMENT_KEYS[number]

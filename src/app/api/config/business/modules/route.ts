@@ -4,13 +4,14 @@ import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PLAN_LIMITS, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
 import { planDenied } from '@/lib/plan-guard'
-import { ENTITLEMENT_SELECT, entitlementDeniedReason, entitlementsOf, hasEntitlement, parseAddons } from '@/lib/entitlements'
-import type { EntitlementKey } from '@/lib/plan-limits'
+import { ENTITLEMENT_SELECT, entitlementDeniedReason, entitlementsOf, hasEntitlement, parseAddons, type PreferenceModuleKey } from '@/lib/entitlements'
 
 const ALLOWED_MODULES = [
   'pos', 'inventory', 'caja', 'pedidos', 'catalog',
-  'finanzas', 'reportes', 'analytics', 'kds', 'delivery', 'suppliers', 'restaurante',
+  'finanzas', 'reportes', 'analytics', 'kds', 'delivery', 'suppliers',
 ] as const
+// 'restaurante' NO es un módulo de esta lista: es un derecho (PLAN_LIMITS.restaurante, ver GET → entitlements) y su preferencia será
+// Business.restaurante_enabled (feat/restaurante). Enviarlo aquí responde 400 y nunca entra a modules_enabled.
 
 // core modules are always active — matches TabModulos.tsx alwaysOn:true.
 // Todo lo demás (caja, pedidos, catalog, finanzas, reportes, analytics) es
@@ -30,8 +31,8 @@ const modulesSchema = z.object({
 // flags de PLAN_LIMITS ya resueltos, en vez de 4 llamadas que cada una vuelve
 // a consultar la DB.
 const GATED_MODULES = ['catalog', 'finanzas', 'analytics', 'suppliers'] as const
-// Módulos con derecho propio (plan O add-on): 'kds' y 'restaurante' (Planes v2). Se evalúan con lib/entitlements.
-const ENTITLED_MODULES = ['kds', 'restaurante'] as const satisfies readonly EntitlementKey[]
+// Módulos con derecho propio (plan O add-on de un plan pago) cuya preferencia vive en modules_enabled: hoy 'kds' (Planes v2).
+const ENTITLED_MODULES = ['kds'] as const satisfies readonly PreferenceModuleKey[]
 const GATE_MESSAGE: Record<typeof GATED_MODULES[number], string> = {
   catalog:   `El catálogo digital requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
   finanzas:  `El módulo de finanzas requiere plan ${PLAN_DISPLAY.negocio_activo}.`,
@@ -60,8 +61,8 @@ export async function PATCH(req: NextRequest) {
     // desactivar siempre se permite, sin importar el plan.
     const currentlyEnabled = new Set((current.modules_enabled ?? '').split(',').filter(Boolean))
     const newlyActivated = GATED_MODULES.filter(m => body.modules.includes(m) && !currentlyEnabled.has(m))
-    // kds y restaurante son DERECHOS: el flag del nivel O un add-on (businesses.addons, solo lo escribe el super_admin).
-    const newlyEntitled: EntitlementKey[] = ENTITLED_MODULES.filter(m => body.modules.includes(m) && !currentlyEnabled.has(m))
+    // kds es un DERECHO: el flag del nivel O un add-on de un plan pago (businesses.addons, solo lo escribe el super_admin).
+    const newlyEntitled: PreferenceModuleKey[] = ENTITLED_MODULES.filter(m => body.modules.includes(m) && !currentlyEnabled.has(m))
 
     if (newlyActivated.length > 0 || newlyEntitled.length > 0) {
       if (!current.subscription_active) return planDenied('Tu suscripción está suspendida. Contacta a soporte.')

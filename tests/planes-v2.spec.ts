@@ -1,5 +1,7 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import { SignJWT } from 'jose'
+import { spawnSync } from 'child_process'
+import path from 'path'
 import { envValue, sql } from './alta-helpers'
 import { ownBusiness } from './helpers/own-business'
 import { BILLING_CYCLES, PRICES_PUBLISHED, WORKING_ADDON_CYCLES, WORKING_BILLING_CYCLES } from '../src/lib/plan-limits'
@@ -86,7 +88,8 @@ test('matriz nivel × add-on × preferencia × suscripción: la API de KDS, la l
       for (const pref of [true, false]) {
         for (const sub of ['vigente', 'vencida', 'suspendida'] as const) {
           setState({ plan, addon, pref, sub })
-          const derecho = sub === 'vigente' && (plan === 'operacion' || addon)
+          // el add-on es complemento de un plan PAGO: gratis + add-on = sin derecho
+          const derecho = sub === 'vigente' && (plan === 'operacion' || (addon && plan !== 'gratis'))
           const esperado = derecho ? (pref ? 200 : 403) : 403
           const codigo = derecho ? (pref ? null : 'MODULE_DISABLED') : 'PLAN_LIMIT'
           const caso = `${plan} addon=${addon} pref=${pref} sub=${sub}`
@@ -111,22 +114,30 @@ test('matriz nivel × add-on × preferencia × suscripción: la API de KDS, la l
   expect(fallos).toEqual([])
 })
 
-test('PATCH de módulos: activar kds/restaurante exige el derecho (plan o add-on); apagar siempre se puede', async () => {
+test('PATCH de módulos: activar kds exige el derecho (plan o add-on de un plan pago); apagar siempre se puede; restaurante NO es un módulo', async () => {
   const modulos = (...extra: string[]) => ({ modules: ['pos', 'inventory', 'caja', ...extra] })
   setState({ plan: 'negocio_activo', addon: false, pref: false, sub: 'vigente' })
   const sin = await tenant.patch('/api/config/business/modules', { data: modulos('kds') })
   expect(sin.status()).toBe(403)
   expect(await sin.json()).toMatchObject({ code: 'PLAN_LIMIT' })
-  expect((await tenant.patch('/api/config/business/modules', { data: modulos('restaurante') })).status()).toBe(403)
   expect(estadoDb().split('|')[2], 'un PATCH rechazado no escribe nada').toBe(BASE_MODULES)
 
   setState({ plan: 'negocio_activo', addon: true, pref: false, sub: 'vigente' })
   expect((await tenant.patch('/api/config/business/modules', { data: modulos('kds') })).status()).toBe(200)
   expect(estadoDb().split('|')[2]).toContain('kds')
-  expect((await tenant.patch('/api/config/business/modules', { data: modulos('restaurante') })).status(), 'el add-on KDS no concede Restaurante').toBe(403)
 
   setState({ plan: 'operacion', addon: false, pref: false, sub: 'vigente' })
-  expect((await tenant.patch('/api/config/business/modules', { data: modulos('kds', 'restaurante') })).status()).toBe(200)
+  expect((await tenant.patch('/api/config/business/modules', { data: modulos('kds') })).status()).toBe(200)
+
+  // 'restaurante' ya no es un módulo de modules_enabled (es un derecho; su preferencia será restaurante_enabled): 400 para TODOS los niveles
+  for (const plan of ['gratis', 'negocio_activo', 'operacion'] as const) {
+    setState({ plan, addon: true, pref: false, sub: 'vigente' })
+    const r = await tenant.patch('/api/config/business/modules', { data: modulos('restaurante') })
+    expect(r.status(), `restaurante en ${plan}`).toBe(400)
+    expect(estadoDb().split('|')[2], 'y nunca entra a modules_enabled').not.toContain('restaurante')
+  }
+  setState({ plan: 'operacion', addon: false, pref: false, sub: 'vigente' })
+  expect(((await (await tenant.get('/api/config/business/modules')).json()) as { allowed_modules: string[] }).allowed_modules).not.toContain('restaurante')
 
   // bajó de plan: lo ya encendido no se apaga por el chequeo; apagar siempre se permite
   setState({ plan: 'negocio_activo', addon: false, pref: true, sub: 'vigente' })
@@ -228,6 +239,87 @@ test('dos PATCH simultáneos del tenant sobre modules_enabled no pisan el derech
   expect([rt.status(), rs.status()]).toEqual([200, 200])
   const [plan2, addons2] = estadoDb().split('|')
   expect([plan2, addons2]).toEqual(['operacion', ''])
+})
+
+test('gratis + add-on = SIN derecho: el KDS, el PATCH de módulos y los derechos lo niegan aunque el add-on esté guardado', async () => {
+  setState({ plan: 'gratis', addon: true, pref: true, sub: 'vigente' })
+  const kds = await tenant.get('/api/kds/orders')
+  expect(kds.status()).toBe(403)
+  expect(await kds.json()).toMatchObject({ code: 'PLAN_LIMIT' })
+  const mods = (await (await tenant.get('/api/config/business/modules')).json()) as { entitlements: Record<string, boolean>; addons: string[] }
+  expect(mods.entitlements).toEqual({ kds: false, restaurante: false })
+  expect(mods.addons, 'el add-on sigue guardado (se activa solo al subir a un plan pago)').toEqual(['kds'])
+  expect((await tenant.get('/kds', { maxRedirects: 0 })).status()).toBe(404)
+  setState({ plan: 'gratis', addon: true, pref: false, sub: 'vigente' })
+  expect((await tenant.patch('/api/config/business/modules', { data: { modules: ['pos', 'inventory', 'kds'] } })).status()).toBe(403)
+
+  // el panel lo refleja: guardar add-on sobre gratis se permite pero el estado canónico dice sin derecho; al subir de plan se activa
+  const g = await planPatch({ plan: 'gratis', addons: ['kds'] })
+  expect((await g.json()).business).toMatchObject({ catalog_plan: 'gratis', addons: ['kds'], entitlements: { kds: false } })
+  const up = await planPatch({ plan: 'negocio_activo', addons: ['kds'] })
+  expect((await up.json()).business).toMatchObject({ catalog_plan: 'negocio_activo', entitlements: { kds: true } })
+})
+
+/* ── scripts/grant-addon.ts: lista EXPLÍCITA, dry-run por defecto, idempotente, ActivityLog por negocio ── */
+
+const TSNODE = path.join(__dirname, '..', 'node_modules', 'ts-node', 'dist', 'bin.js')
+const grant = (...args: string[]) => {
+  const r = spawnSync(process.execPath, [TSNODE, '-r', './scripts/register-paths.cjs', '--project', 'tests/tsconfig.json', 'scripts/grant-addon.ts', ...args], { cwd: path.join(__dirname, '..'), encoding: 'utf-8', timeout: 120_000 })
+  return { code: r.status, out: `${r.stdout}\n${r.stderr}` }
+}
+const conAddons = (): string => sql(`SELECT COUNT(*) FROM businesses WHERE addons<>'' AND id<>${BID}`)
+
+test('script grant-addon: sin ids no hace nada; dry-run no escribe; --apply exige un super_admin; idempotente; omite gratis; solo toca los ids dados', async () => {
+  setState({ plan: 'negocio_activo', addon: false, pref: true, sub: 'vigente' })
+  const superId = sql(`SELECT id FROM users WHERE role='super_admin' ORDER BY id LIMIT 1`)
+  expect(Number(superId), 'hace falta un super_admin en la DB local').toBeGreaterThan(0)
+  const otros = conAddons()
+  const logs0 = logsAddon()
+
+  const sinIds = grant('--addon', 'kds', '--apply', '--by', superId)
+  expect(sinIds.code).toBe(1)
+  expect(sinIds.out).toContain('Sin ids')
+  expect(grant('--addon', 'kds', '--ids', 'abc').code, 'ids no numéricos').toBe(1)
+  expect(grant('--addon', 'cocina', '--ids', String(BID)).code, 'add-on desconocido').toBe(1)
+  expect(estadoDb().split('|')[1]).toBe('')
+
+  // dry-run (por defecto): informa, no escribe
+  const dry = grant('--addon', 'kds', '--ids', `${BID},999999999`)
+  expect(dry.code).toBe(0)
+  expect(dry.out).toContain('DRY-RUN')
+  expect(dry.out).toMatch(new RegExp(`#${BID}\\s+would_grant`))
+  expect(dry.out).toMatch(/#999999999\s+not_found/)
+  expect(estadoDb().split('|')[1], 'dry-run no escribe').toBe('')
+  expect(logsAddon()).toBe(logs0)
+
+  // --apply exige --by de un super_admin real
+  expect(grant('--addon', 'kds', '--ids', String(BID), '--apply').code).toBe(1)
+  expect(grant('--addon', 'kds', '--ids', String(BID), '--apply', '--by', String(ADMIN)).code, 'un admin de negocio no basta').toBe(1)
+  expect(estadoDb().split('|')[1]).toBe('')
+
+  // aplicar: concede, un ActivityLog por negocio, y no toca ningún otro negocio
+  const ok = grant('--addon', 'kds', '--ids', String(BID), '--apply', '--by', superId)
+  expect(ok.code, ok.out).toBe(0)
+  expect(ok.out).toMatch(new RegExp(`#${BID}\\s+granted`))
+  expect(estadoDb().split('|')[1]).toBe('kds')
+  expect(logsAddon()).toBe(logs0 + 1)
+  expect(sql(`SELECT CONCAT(user_id,'|',JSON_EXTRACT(new_values,'$.source')) FROM activity_logs WHERE business_id=${BID} AND action='addon_updated' ORDER BY id DESC LIMIT 1`)).toBe(`${superId}|"scripts/grant-addon.ts"`)
+  expect(conAddons(), 'ningún otro negocio cambió').toBe(otros)
+  // contexto nuevo: el script tardó segundos y la conexión keep-alive del `tenant` ya expiró (ECONNRESET al reusarla)
+  await tenant.dispose()
+  tenant = await ctx('admin')
+  expect((await (await tenant.get('/api/config/business/modules')).json()).entitlements.kds).toBe(true)
+
+  // idempotente: segunda vez no cambia ni registra
+  const otra = grant('--addon', 'kds', '--ids', String(BID), '--apply', '--by', superId)
+  expect(otra.out).toMatch(new RegExp(`#${BID}\\s+already`))
+  expect(logsAddon()).toBe(logs0 + 1)
+
+  // plan gratis: se omite (el add-on no concede derecho sobre gratis)
+  setState({ plan: 'gratis', addon: false, pref: true, sub: 'vigente' })
+  const gratis = grant('--addon', 'kds', '--ids', String(BID), '--apply', '--by', superId)
+  expect(gratis.out).toMatch(new RegExp(`#${BID}\\s+skipped_free`))
+  expect(estadoDb().split('|')[1]).toBe('')
 })
 
 test('limpieza: el tenant queda como estaba al empezar', () => {

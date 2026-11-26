@@ -18,9 +18,12 @@ export interface TenantPlanState {
   subscription_expires_at: string | null
   /** Add-ons contratados (derecho). */
   addons:                  AddonKey[]
-  /** Preferencia del tenant (no se edita desde este endpoint). */
+  /** Preferencia del tenant (no se edita desde este endpoint). NUNCA contiene 'restaurante': su preferencia será Business.restaurante_enabled (feat/restaurante). */
   modules_enabled:         string[]
-  /** Derechos efectivos HOY (plan vigente + add-ons): lo que Sidebar/TabModulos deben respetar. */
+  /**
+   * Derechos efectivos HOY (plan vigente + add-ons de un plan PAGO; gratis + add-on = sin derecho): lo que Sidebar/TabModulos deben respetar.
+   * 'restaurante' es solo derecho (nivel operacion); 'kds' = nivel operacion o add-on kds.
+   */
   entitlements:            Entitlements
   /** Pedidos abiertos en cocina (send_to_kds, recibido/preparando/listo): el panel los muestra y pide confirmación al quitar KDS o bajar de nivel. */
   open_kds_orders:         number

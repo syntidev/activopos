@@ -1,10 +1,11 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import { SignJWT } from 'jose'
 import { spawnSync } from 'child_process'
+import fs from 'fs'
 import path from 'path'
 import { envValue, sql } from './alta-helpers'
 import { ownBusiness } from './helpers/own-business'
-import { BILLING_CYCLES, PRICES_PUBLISHED, WORKING_ADDON_CYCLES, WORKING_BILLING_CYCLES } from '../src/lib/plan-limits'
+import { ADDON_KEYS, BILLING_CYCLES, PLAN_TIER_KEYS, PRICES_PUBLISHED, WORKING_ADDON_CYCLES, WORKING_BILLING_CYCLES, isPaidPlan, parseAddons } from '../src/lib/plan-limits'
 
 /**
  * Planes v2 (backend): derecho (plan + add-on) × preferencia (modules_enabled) × estado de cuenta, aplicado al USAR el KDS en el servidor.
@@ -40,6 +41,11 @@ function setState(o: { plan: Plan; addon: boolean; pref: boolean; sub: Sub }): v
 }
 const estadoDb = () => sql(`SELECT CONCAT_WS('|',catalog_plan,addons,modules_enabled,subscription_active) FROM businesses WHERE id=${BID}`)
 const logsAddon = (): number => Number(sql(`SELECT COUNT(*) FROM activity_logs WHERE business_id=${BID} AND model_type='Business' AND model_id=${BID} AND action='addon_updated'`))
+const logsPlan = (): number => Number(sql(`SELECT COUNT(*) FROM activity_logs WHERE business_id=${BID} AND model_type='Business' AND model_id=${BID} AND action='plan_updated'`))
+const ultimoPlanLog = (): { old: Record<string, unknown>; new: Record<string, unknown>; user: number } => {
+  const r = sql(`SELECT JSON_OBJECT('old',old_values,'new',new_values,'user',user_id) FROM activity_logs WHERE business_id=${BID} AND action='plan_updated' ORDER BY id DESC LIMIT 1`)
+  return JSON.parse(r) as { old: Record<string, unknown>; new: Record<string, unknown>; user: number }
+}
 const planPatch = (data: object) => superAdmin.patch(`/api/admin/tenants/${BID}/plan`, { data: { status: 'active', ...data } })
 
 function limpiarPedidos(): void {
@@ -62,7 +68,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   limpiarPedidos()
-  sql(`DELETE FROM activity_logs WHERE business_id=${BID} AND model_type='Business' AND model_id=${BID} AND action='addon_updated'`)
+  sql(`DELETE FROM activity_logs WHERE business_id=${BID} AND model_type='Business' AND model_id=${BID} AND action IN ('addon_updated','plan_updated')`)
   sql(`UPDATE businesses SET catalog_plan=${original.plan ? `'${original.plan}'` : 'NULL'}, addons='${original.addons}', modules_enabled='${original.modules}',
        subscription_active=${original.active || 1}, subscription_expires_at=${original.expires === 'NULL' ? 'NULL' : `'${original.expires}'`} WHERE id=${BID}`)
   await tenant?.dispose()
@@ -193,6 +199,47 @@ test('PATCH admin de plan: operacion, add-ons como CONJUNTO ABSOLUTO, ActivityLo
   expect(estadoDb().split('|')[2], 'bajar de nivel / quitar el add-on NO edita modules_enabled').toBe(modulosAntes)
 })
 
+test("ActivityLog 'plan_updated' (old/new) solo cuando cambia el plan, la suspensión o el vencimiento", async () => {
+  setState({ plan: 'negocio_activo', addon: false, pref: true, sub: 'vigente' })
+  const n0 = logsPlan()
+
+  // sin cambios de derecho de cuenta → sin log (aunque se reenvíe el mismo estado, cambie el catálogo o los add-ons)
+  expect((await planPatch({ plan: 'negocio_activo' })).status()).toBe(200)
+  expect((await planPatch({ plan: 'negocio_activo', catalog_active: true })).status()).toBe(200)
+  expect((await planPatch({ plan: 'negocio_activo', addons: ['kds'] })).status()).toBe(200)
+  expect(logsPlan(), 'catálogo/add-ons no son un cambio de plan').toBe(n0)
+
+  // cambia el plan
+  expect((await planPatch({ plan: 'operacion' })).status()).toBe(200)
+  expect(logsPlan()).toBe(n0 + 1)
+  const a = ultimoPlanLog()
+  expect(a.old).toEqual({ catalog_plan: 'negocio_activo', subscription_active: true, subscription_expires_at: null })
+  expect(a.new).toEqual({ catalog_plan: 'operacion', subscription_active: true, subscription_expires_at: null })
+  expect(a.user, 'queda quién lo hizo').toBe(ADMIN)
+
+  // cambia el vencimiento
+  expect((await planPatch({ plan: 'operacion', expires_at: '2027-01-15' })).status()).toBe(200)
+  expect(logsPlan()).toBe(n0 + 2)
+  expect(ultimoPlanLog()).toMatchObject({ old: { subscription_expires_at: null }, new: { subscription_expires_at: '2027-01-15' } })
+  // reenviar la misma fecha no registra nada; quitarla sí
+  expect((await planPatch({ plan: 'operacion', expires_at: '2027-01-15' })).status()).toBe(200)
+  expect(logsPlan()).toBe(n0 + 2)
+  expect((await planPatch({ plan: 'operacion', expires_at: null })).status()).toBe(200)
+  expect(logsPlan()).toBe(n0 + 3)
+  expect(ultimoPlanLog()).toMatchObject({ old: { subscription_expires_at: '2027-01-15' }, new: { subscription_expires_at: null } })
+
+  // suspender y reactivar
+  expect((await planPatch({ plan: 'operacion', status: 'suspended' })).status()).toBe(200)
+  expect(logsPlan()).toBe(n0 + 4)
+  expect(ultimoPlanLog()).toMatchObject({ old: { subscription_active: true }, new: { subscription_active: false } })
+  expect((await planPatch({ plan: 'operacion', status: 'active' })).status()).toBe(200)
+  expect(logsPlan()).toBe(n0 + 5)
+
+  // un PATCH inválido no deja log
+  expect((await planPatch({ plan: 'platino' })).status()).toBe(400)
+  expect(logsPlan()).toBe(n0 + 5)
+})
+
 test('downgrade con pedidos abiertos en cocina: el panel recibe el conteo, no se borra nada y el KDS se corta al usar', async () => {
   setState({ plan: 'operacion', addon: false, pref: true, sub: 'vigente' })
   limpiarPedidos()
@@ -262,9 +309,10 @@ test('gratis + add-on = SIN derecho: el KDS, el PATCH de módulos y los derechos
 
 /* ── scripts/grant-addon.ts: lista EXPLÍCITA, dry-run por defecto, idempotente, ActivityLog por negocio ── */
 
-const TSNODE = path.join(__dirname, '..', 'node_modules', 'ts-node', 'dist', 'bin.js')
+// Node SIMPLE (como en el VPS): sin ts-node, sin dotenv, sin tsconfig-paths.
+const SCRIPT = path.join(__dirname, '..', 'scripts', 'grant-addon.cjs')
 const grant = (...args: string[]) => {
-  const r = spawnSync(process.execPath, [TSNODE, '-r', './scripts/register-paths.cjs', '--project', 'tests/tsconfig.json', 'scripts/grant-addon.ts', ...args], { cwd: path.join(__dirname, '..'), encoding: 'utf-8', timeout: 120_000 })
+  const r = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: path.join(__dirname, '..'), encoding: 'utf-8', timeout: 120_000 })
   return { code: r.status, out: `${r.stdout}\n${r.stderr}` }
 }
 const conAddons = (): string => sql(`SELECT COUNT(*) FROM businesses WHERE addons<>'' AND id<>${BID}`)
@@ -287,8 +335,14 @@ test('script grant-addon: sin ids no hace nada; dry-run no escribe; --apply exig
   const dry = grant('--addon', 'kds', '--ids', `${BID},999999999`)
   expect(dry.code).toBe(0)
   expect(dry.out).toContain('DRY-RUN')
-  expect(dry.out).toMatch(new RegExp(`#${BID}\\s+would_grant`))
-  expect(dry.out).toMatch(/#999999999\s+not_found/)
+  expect(dry.out).toMatch(/would_grant/)
+  expect(dry.out).toMatch(/#999999999\s+no existe/)
+  // el dry-run imprime por id: nombre, plan, suscripción, vencimiento, si kds está en modules_enabled (y cero advertencias si todo está bien)
+  expect(dry.out).toContain(`#${BID}  ${sql(`SELECT name FROM businesses WHERE id=${BID}`)}`)
+  expect(dry.out).toContain('plan: negocio_activo | subscription_active: sí | subscription_expires_at: sin vencimiento')
+  expect(dry.out).toContain('kds en modules_enabled: sí')
+  expect(dry.out).not.toContain('⚠')
+  expect(dry.out).toMatch(/Base de datos: .+ \/ .+/)
   expect(estadoDb().split('|')[1], 'dry-run no escribe').toBe('')
   expect(logsAddon()).toBe(logs0)
 
@@ -300,10 +354,10 @@ test('script grant-addon: sin ids no hace nada; dry-run no escribe; --apply exig
   // aplicar: concede, un ActivityLog por negocio, y no toca ningún otro negocio
   const ok = grant('--addon', 'kds', '--ids', String(BID), '--apply', '--by', superId)
   expect(ok.code, ok.out).toBe(0)
-  expect(ok.out).toMatch(new RegExp(`#${BID}\\s+granted`))
+  expect(ok.out).toContain('→ granted')
   expect(estadoDb().split('|')[1]).toBe('kds')
   expect(logsAddon()).toBe(logs0 + 1)
-  expect(sql(`SELECT CONCAT(user_id,'|',JSON_EXTRACT(new_values,'$.source')) FROM activity_logs WHERE business_id=${BID} AND action='addon_updated' ORDER BY id DESC LIMIT 1`)).toBe(`${superId}|"scripts/grant-addon.ts"`)
+  expect(sql(`SELECT CONCAT(user_id,'|',JSON_EXTRACT(new_values,'$.source')) FROM activity_logs WHERE business_id=${BID} AND action='addon_updated' ORDER BY id DESC LIMIT 1`)).toBe(`${superId}|"scripts/grant-addon.cjs"`)
   expect(conAddons(), 'ningún otro negocio cambió').toBe(otros)
   // contexto nuevo: el script tardó segundos y la conexión keep-alive del `tenant` ya expiró (ECONNRESET al reusarla)
   await tenant.dispose()
@@ -312,14 +366,50 @@ test('script grant-addon: sin ids no hace nada; dry-run no escribe; --apply exig
 
   // idempotente: segunda vez no cambia ni registra
   const otra = grant('--addon', 'kds', '--ids', String(BID), '--apply', '--by', superId)
-  expect(otra.out).toMatch(new RegExp(`#${BID}\\s+already`))
+  expect(otra.out).toContain('→ already')
   expect(logsAddon()).toBe(logs0 + 1)
 
   // plan gratis: se omite (el add-on no concede derecho sobre gratis)
   setState({ plan: 'gratis', addon: false, pref: true, sub: 'vigente' })
   const gratis = grant('--addon', 'kds', '--ids', String(BID), '--apply', '--by', superId)
-  expect(gratis.out).toMatch(new RegExp(`#${BID}\\s+skipped_free`))
+  expect(gratis.out).toContain('→ skipped_free')
   expect(estadoDb().split('|')[1]).toBe('')
+})
+
+test('script grant-addon: el dry-run advierte por id (plan gratis, suscripción vencida o suspendida, módulo apagado) y muestra las fechas', () => {
+  const dry = () => grant('--addon', 'kds', '--ids', String(BID)).out
+
+  setState({ plan: 'gratis', addon: false, pref: false, sub: 'vigente' })
+  const g = dry()
+  expect(g).toContain('plan: gratis')
+  expect(g).toContain('⚠ plan gratis: el add-on NO concede derecho sobre gratis')
+  expect(g).toContain('⚠ kds apagado en modules_enabled')
+  expect(g).not.toContain('suscripción vencida')
+
+  setState({ plan: 'operacion', addon: false, pref: true, sub: 'vencida' })
+  const v = dry()
+  const ayer = sql(`SELECT DATE(subscription_expires_at) FROM businesses WHERE id=${BID}`)
+  expect(v).toContain(`subscription_expires_at: ${ayer}`)
+  expect(v).toContain(`⚠ suscripción vencida el ${ayer}`)
+  expect(v).not.toContain('kds apagado')
+
+  setState({ plan: 'negocio_activo', addon: false, pref: true, sub: 'suspendida' })
+  const s = dry()
+  expect(s).toContain('subscription_active: NO')
+  expect(s).toContain('⚠ suscripción suspendida')
+  expect(estadoDb().split('|')[1], 'ningún dry-run escribe').toBe('')
+})
+
+test('script grant-addon: es Node simple y no se desalinea de plan-limits (add-ons, planes de pago, parseo)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const g = require('../scripts/grant-addon.cjs') as { ADDON_KEYS: string[]; PAID_PLANS: string[]; parseAddons: (s: string) => string[] }
+  expect(g.ADDON_KEYS).toEqual([...ADDON_KEYS])
+  expect(g.PAID_PLANS).toEqual(PLAN_TIER_KEYS.filter(isPaidPlan))
+  expect(g.parseAddons('kds, cocina ,kds,')).toEqual(parseAddons('kds, cocina ,kds,'))
+  const fuente = fs.readFileSync(SCRIPT, 'utf-8')
+  expect(fuente, 'solo dependencias de producción').not.toMatch(/require\(['"](ts-node|dotenv|tsconfig-paths)/)
+  expect(fuente, 'sin imports de TypeScript ni de src/').not.toMatch(/\bimport\b.+from|require\(['"]\.\.?\/src/)
+  expect(fuente, 'sin ids fijos de producción en el código').not.toMatch(/ids\s*=\s*\[|\[\s*4\s*,\s*8\s*,\s*33\s*,\s*55\s*\]/)
 })
 
 test('limpieza: el tenant queda como estaba al empezar', () => {

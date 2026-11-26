@@ -75,8 +75,18 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const result = await prisma.$transaction(async (tx) => {
     // Cerrojo de la fila: dos guardados del admin sobre el mismo tenant no se pisan (se evalúa sobre lo ya confirmado).
     await tx.$queryRaw`SELECT id FROM businesses WHERE id = ${id} FOR UPDATE`
-    const existing = await tx.business.findUnique({ where: { id }, select: { id: true, catalog_active: true, addons: true } })
+    const existing = await tx.business.findUnique({
+      where:  { id },
+      select: { id: true, catalog_active: true, addons: true, catalog_plan: true, subscription_active: true, subscription_expires_at: true },
+    })
     if (!existing) return null
+
+    // Cambio de DERECHO de cuenta (plan, suspensión o vencimiento): queda en la bitácora con old/new. Solo si algo cambió de verdad.
+    const ymd = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null)
+    const prevPlan    = existing.catalog_plan ?? 'gratis'
+    const nextActive  = data.status !== 'suspended'
+    const nextExpires = data.expires_at === undefined ? ymd(existing.subscription_expires_at) : (data.expires_at ?? null)
+    const planChanged = prevPlan !== data.plan || existing.subscription_active !== nextActive || ymd(existing.subscription_expires_at) !== nextExpires
 
     // Publicación del catálogo: el interruptor manda si vino; si no, un plan CON catálogo en estado Activo lo enciende solo
     // (un negocio creado por registro quedaba con catalog_active=0 y /c/[slug] daba "no disponible" aunque todo se viera "Activo").
@@ -104,6 +114,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           : {}),
       },
     })
+    if (planChanged) {
+      await tx.activityLog.create({
+        data: {
+          business_id: id, user_id: session.userId, action: 'plan_updated', model_type: 'Business', model_id: id,
+          old_values: { catalog_plan: prevPlan, subscription_active: existing.subscription_active, subscription_expires_at: ymd(existing.subscription_expires_at) },
+          new_values: { catalog_plan: data.plan, subscription_active: nextActive, subscription_expires_at: nextExpires },
+        },
+      })
+    }
     if (catalogChanged) {
       await tx.activityLog.create({
         data: {

@@ -36,8 +36,11 @@ Mientras corre el código viejo, la columna `addons` es inocua (nadie la lee): c
 
 1. **Los 4 negocios están en un plan de pago** (`negocio_activo` u `operacion`). Sobre `gratis` el add-on **no concede derecho**: el script los
    omite (`skipped_free`). Si alguno es `gratis`, primero se decide su plan desde el panel admin.
-2. **Hay `ts-node` en el VPS** (es devDependency): `npx ts-node --version`. Si el VPS instala solo dependencias de producción, instalar
-   las de desarrollo para esta tarea o correr el script desde una máquina con acceso a la DB de producción por túnel autorizado.
+2. **Node simple, sin `ts-node`**: el script es `scripts/grant-addon.cjs` (CommonJS). Solo usa `@prisma/client` y `@prisma/adapter-mariadb`
+   (dependencias de producción, ya instaladas) y lee los `.env` a mano (`.env.production` primero, luego `.env`, igual que Next en producción);
+   no necesita `dotenv`, `ts-node` ni `tsconfig-paths`. Requiere el cliente Prisma generado (`npx prisma generate`, ya en la receta de arriba).
+   Comprobación previa: `node -v` (cualquier Node ≥ 16 sirve) y `node -e "require('@prisma/client'); require('@prisma/adapter-mariadb'); console.log('ok')"`
+   desde `/var/www/activopos`.
 3. **Id de un super_admin de producción** para `--by` (queda en el `ActivityLog`). Se obtiene con:
    ```sql
    SELECT id, email FROM users WHERE role = 'super_admin';
@@ -71,10 +74,32 @@ Si alguno sale `kds_encendido = 0` y sí usa la cocina, avisar a Carlos: la pref
 
 ```
 cd /var/www/activopos
-npm run grant:addon -- --addon kds --ids 4,8,33,55
+node scripts/grant-addon.cjs --addon kds --ids 4,8,33,55
 ```
 
-Salida esperada, una línea por negocio:
+(`npm run grant:addon -- --addon kds --ids 4,8,33,55` hace exactamente lo mismo.)
+
+La primera línea de la salida dice **a qué base de datos se conecta** (`Base de datos: <host> / <nombre>`): verificar que es la de producción antes de seguir.
+Por cada id imprime:
+
+```
+  #4  <nombre del negocio>
+      plan: negocio_activo | subscription_active: sí | subscription_expires_at: 2026-12-31
+      kds en modules_enabled: sí | add-ons actuales: []
+      ⚠ <advertencias, si las hay>
+      → would_grant  [] → [kds]
+```
+
+Advertencias posibles (cada una puede dejar al cliente sin KDS aunque tenga el add-on; **resolverlas antes del deploy**):
+
+| Advertencia | Qué hacer |
+|---|---|
+| `plan gratis: el add-on NO concede derecho sobre gratis` | El script lo omite. Decidir su plan desde el panel admin |
+| `suscripción suspendida` | Sin derecho hasta reactivarla |
+| `suscripción vencida el AAAA-MM-DD` | Sin derecho hasta renovar |
+| `kds apagado en modules_enabled` | El tenant debe encenderlo en Configuración > Módulos; el add-on no basta |
+
+Resultado final por negocio (`→`):
 
 | Resultado | Significa |
 |---|---|
@@ -83,7 +108,7 @@ Salida esperada, una línea por negocio:
 | `skipped_free` | Plan gratis: el add-on no concede derecho; resolver su plan primero |
 | `not_found` | El id no existe en esta base: **parar y revisar los ids** |
 
-Se sigue solo si los 4 salen `would_grant` (o `already`).
+Se sigue solo si los 4 salen `would_grant` (o `already`) y las advertencias están resueltas o aceptadas por Carlos.
 
 ## 3) EJECUCIÓN REAL
 
@@ -91,7 +116,7 @@ Reemplazar `<ID_SUPER_ADMIN>` por el id del paso de requisitos.
 
 ```
 cd /var/www/activopos
-npm run grant:addon -- --addon kds --ids 4,8,33,55 --apply --by <ID_SUPER_ADMIN>
+node scripts/grant-addon.cjs --addon kds --ids 4,8,33,55 --apply --by <ID_SUPER_ADMIN>
 ```
 
 Es seguro repetirlo: lo ya concedido sale `already` y no escribe ni registra de nuevo.

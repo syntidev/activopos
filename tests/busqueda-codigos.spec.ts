@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts, login } from './p0-helpers'
+import { BASE, BUSINESS_ID, SLUG, apiAs, cashSnapshot, cleanupTestProducts, login, purgeCashSince, setCatalogTemplate, type CashSnapshot } from './d-tenant'
+import { closeOwnCashRegister, openOwnCashRegister } from './cash-helpers'
 
 /**
  * T4 búsqueda por código y SKU de variante (negocio 87). Caso real de prod: producto con tallas XS y M, cada una
@@ -21,9 +22,16 @@ interface ProductHit { id: number; matched_variant_id: number | null; matched_va
 let pid = 0
 let xsId = 0
 
+let restoreTemplate: () => void = () => undefined
+let abriCaja = false
+let cashBefore: CashSnapshot = { register: 0, log: 0, sale: 0 }
+
 test.beforeAll(async () => {
   cleanupTestProducts('Busq')
+  cashBefore = cashSnapshot()
+  restoreTemplate = setCatalogTemplate('premium') // sin plantilla premium /catalogo-premium/<slug> responde 404
   const api = await apiAs()
+  abriCaja = await openOwnCashRegister(api) // el POS por UI exige caja abierta: se abre una propia
   const r = await api.post('/api/products', {
     data: {
       name: NAME, description: `Pantaloneta ciclismo. Ref: ${REF}`, cost_per_unit_usd: 10, price_per_unit_usd: 25, has_variants: true,
@@ -43,7 +51,16 @@ test.beforeAll(async () => {
   expect(h.status()).toBe(201)
   await api.dispose()
 })
-test.afterAll(() => { cleanupTestProducts('Busq') })
+test.afterAll(async () => {
+  if (abriCaja) {
+    const api = await apiAs()
+    await closeOwnCashRegister(api)
+    await api.dispose()
+  }
+  cleanupTestProducts('Busq')
+  purgeCashSince(cashBefore)
+  restoreTemplate()
+})
 
 test.describe('Productos (GET /api/products?search=)', () => {
   const casos: Array<[string, string, string]> = [

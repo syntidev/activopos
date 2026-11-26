@@ -1,5 +1,5 @@
 import { test, expect, request as pwRequest } from '@playwright/test'
-import { BASE, SLUG } from './p0-helpers'
+import { BASE, SLUG } from './d-tenant'
 
 /**
  * Búsqueda pública del catálogo (GET /api/catalog/[slug]/search): además del tope por IP (60/min) hay un tope por

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, apiAs, cleanupTestProducts, login } from './p0-helpers'
+import { ADMIN_ID, BASE, BUSINESS_ID, apiAs, cleanupTestProducts, ensureOwnCategory, login, removeOwnCategory } from './d-tenant'
 
 /**
  * P0 borrado y edición (negocio 87). Antes: DELETE devolvía 500 mudo por FKs RESTRICT (inventory_entries,
@@ -10,12 +10,13 @@ import { BASE, BUSINESS_ID, apiAs, cleanupTestProducts, login } from './p0-helpe
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 test.describe.configure({ mode: 'serial' })
 
-const CATEGORY_ID = Number(sql(`SELECT id FROM categories WHERE business_id=${BUSINESS_ID} AND active=1 LIMIT 1`))
+const CATEGORY_ID = ensureOwnCategory() // el 267 no trae categorías: se crea una propia y se borra al final
 
 test.beforeAll(() => { cleanupTestProducts('Borrar') })
 test.afterAll(() => {
   cleanupTestProducts('Borrar')
   sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND action IN ('product_deleted','product_deactivated') AND JSON_UNQUOTE(JSON_EXTRACT(old_values,'$.name')) LIKE 'ZZ Borrar%'`)
+  removeOwnCategory()
 })
 
 /** Bitácora de borrar/desactivar: `quién|acción|nombre` (el producto ya puede no existir, el nombre va en old_values). */
@@ -45,7 +46,7 @@ test('Alta rápida con stock: DELETE borra (200 deleted), antes 500 mudo', async
   expect(j).toMatchObject({ ok: true, action: 'deleted', code: 'DELETED' })
   expect(typeof j.message).toBe('string')
   expect(exists(id)).toBe(0)
-  expect(removalLog(id)).toBe('86|product_deleted|ZZ Borrar AltaRapida') // quién y cuál quedan en la bitácora
+  expect(removalLog(id)).toBe(`${ADMIN_ID}|product_deleted|ZZ Borrar AltaRapida`) // quién y cuál quedan en la bitácora
   await api.dispose()
 })
 
@@ -76,7 +77,7 @@ test('con historial (pedido): no borra, desactiva con mensaje claro en español'
   expect(j.message).toMatch(/historial/)
   expect(exists(id)).toBe(1)
   expect(sql(`SELECT active FROM products WHERE id=${id}`)).toBe('0')
-  expect(removalLog(id)).toBe('86|product_deactivated|ZZ Borrar Historial')
+  expect(removalLog(id)).toBe(`${ADMIN_ID}|product_deactivated|ZZ Borrar Historial`)
   const forced = await api.delete(`/api/products/${id}?force=true`)
   expect(forced.status()).toBe(200)
   expect(exists(id)).toBe(1)

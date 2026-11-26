@@ -1,6 +1,6 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, apiAs, cleanupTestProducts, tokenFor } from './p0-helpers'
+import { ADMIN_ID, BASE, BUSINESS_ID, apiAs, cashSnapshot, cleanupTestProducts, ensureSecondAdmin, purgeCashSince, removeSecondAdmin, tokenFor, type CashSnapshot } from './d-tenant'
 
 /**
  * Modo de precio del ticket (bcv | divisa), negocio 87 local. 'divisa' = wholesale_price_usd / _per_kg_usd.
@@ -50,12 +50,12 @@ async function crearProducto(api: APIRequestContext, data: Record<string, unknow
   return (await r.json()).product.id as number
 }
 
-/** Sesión con un usuario y rol concretos del negocio 87 (QA: 86/104 admin, 105 cajero). */
+/** Sesión con un usuario y rol concretos del tenant 267 (admin 212, segundo admin propio, cajero 213). */
 async function apiRole(userId: number, role: string): Promise<APIRequestContext> {
   return pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${await tokenFor(userId, role)}` } })
 }
 const CASHIER_ID = Number(sql(`SELECT id FROM users WHERE business_id=${BUSINESS_ID} AND role='cashier' ORDER BY id LIMIT 1`))
-const OTHER_ADMIN_ID = Number(sql(`SELECT id FROM users WHERE business_id=${BUSINESS_ID} AND role='admin' AND id<>86 ORDER BY id LIMIT 1`))
+const OTHER_ADMIN_ID = ensureSecondAdmin()
 
 /** Bitácora de cambios de modo: una fila `quién|modo_anterior>modo_nuevo` por cambio real. */
 const modeLog = (modelType: 'Sale' | 'Order', modelId: number): string[] =>
@@ -67,8 +67,11 @@ async function cambiarModo(api: APIRequestContext, kind: 'sales' | 'orders', id:
   return api.patch(`/api/${kind}/${id}/price-mode`, { data: { price_mode: mode } })
 }
 
+let before: CashSnapshot = { register: 0, log: 0, sale: 0 }
+
 test.beforeAll(async () => {
   cleanup()
+  before = cashSnapshot()
   const api = await apiAs()
   ids.a = await crearProducto(api, { name: 'ZZ Divisa A', cost_per_unit_usd: 40, price_per_unit_usd: 100, wholesale_price_usd: 80, stock_quantity: 20 })
   ids.b = await crearProducto(api, { name: 'ZZ Divisa B sin divisa', cost_per_unit_usd: 20, price_per_unit_usd: 50, stock_quantity: 20 })
@@ -90,7 +93,7 @@ test.beforeAll(async () => {
   expect((await api.patch(`/api/clients/${ids.cliente}`, { data: { price_tier: 'mayorista' } })).status()).toBe(200)
   await api.dispose()
 })
-test.afterAll(() => { cleanup() })
+test.afterAll(() => { cleanup(); removeSecondAdmin(); purgeCashSince(before) })
 
 test('pedido web: cambiar a divisa recalcula líneas y total; volver a bcv lo restaura', async () => {
   const api = await apiAs()
@@ -339,7 +342,7 @@ test('bitácora: cada cambio real de modo registra quién, de qué modo a cuál,
   await cambiarModo(api, 'sales', sale.id, 'divisa')
   await cambiarModo(api, 'sales', sale.id, 'divisa') // mismo modo: recalcula pero no es un cambio
   await cambiarModo(api, 'sales', sale.id, 'bcv')
-  expect(modeLog('Sale', sale.id)).toEqual(['86|bcv>divisa', '86|divisa>bcv'])
+  expect(modeLog('Sale', sale.id)).toEqual([`${ADMIN_ID}|bcv>divisa`, `${ADMIN_ID}|divisa>bcv`])
 
   const o = await api.post('/api/orders', { data: { origin: 'catalog', client_name: 'ZZ Divisa bitacora', items: [{ product_id: ids.a, product_name: 'ZZ Divisa A', quantity: 1 }] } })
   const orderId = (await o.json()).order.id as number
@@ -348,7 +351,7 @@ test('bitácora: cada cambio real de modo registra quién, de qué modo a cuál,
   expect(modeLog('Order', orderId)).toEqual([`${OTHER_ADMIN_ID}|bcv>divisa`])
   // cobrar con otro modo en el body también es un cambio de modo y queda registrado
   expect((await api.post(`/api/orders/${orderId}/cobrar`, { data: { payment_method_id: CASH_ID, price_mode: 'bcv' } })).status()).toBe(200)
-  expect(modeLog('Order', orderId)).toEqual([`${OTHER_ADMIN_ID}|bcv>divisa`, '86|divisa>bcv'])
+  expect(modeLog('Order', orderId)).toEqual([`${OTHER_ADMIN_ID}|bcv>divisa`, `${ADMIN_ID}|divisa>bcv`])
   await admin2.dispose()
   await api.dispose()
 })

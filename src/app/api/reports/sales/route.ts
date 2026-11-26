@@ -42,6 +42,8 @@ export async function GET(req: NextRequest) {
           }
         : {}),
       ...(query.cashier_id && { cashier_id: query.cashier_id }),
+        // Restaurante (R4): el cobro de una mesa aún sin pagar vive en la cuenta, no en las listas del POS (editarlo aquí lo desacoplaría de la cuenta).
+      NOT: { status: 'pending' as const, table_order_id: { not: null } },
       ...(query.price_mode && { price_mode: query.price_mode }),
       ...(query.financing === 'cashea' ? { financing_status: { not: null } } : query.financing === 'none' ? { financing_status: null } : {}),
     }

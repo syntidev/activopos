@@ -566,3 +566,28 @@
 }
 
 .confirmExistente strong { color: var(--color-text-primary); }
+
+/* ── Aviso de nombre distinto + casilla de verificación (cerrar a crédito) ── */
+
+.verifica {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.verifica input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-brand);
+}
+
+.verifica input:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

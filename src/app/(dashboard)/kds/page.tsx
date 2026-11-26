@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth'
-import { isRestauranteEnabled } from '@/lib/restaurante-server'
+import { canUseRestaurante, loadEntitlementSource } from '@/lib/entitlements'
 import { IBM_Plex_Mono, Instrument_Sans } from 'next/font/google'
 import KdsLegacy from './KdsLegacy'
 import { EstacionKds } from './EstacionKds'
@@ -13,7 +13,8 @@ const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['500', '600', '700'], 
  */
 export default async function KdsPage({ searchParams }: { searchParams: { vista?: string } }) {
   const session = await getSession()
-  const restaurante = session !== null && (await isRestauranteEnabled(session.businessId))
+  const business = session ? await loadEntitlementSource(session.businessId) : null
+  const restaurante = session !== null && business !== null && canUseRestaurante(business)
   const porEstacion = restaurante && (session.role === 'kitchen' || searchParams.vista !== 'pedidos')
   if (!porEstacion) return <KdsLegacy />
   return (

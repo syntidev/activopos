@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { catalogUnavailableReason } from '@/lib/catalog'
 import { SuspendToggle, ImpersonateButton, PlanStatusForm } from '../../TenantActions'
+import { entitlementsOf, parseAddons } from '@/lib/entitlements'
 import { PlantillaPicker } from '../../PlantillaPicker'
 import { publicPath, readPlantilla } from '@/lib/plantillas'
 import styles from '../../admin.module.css'
@@ -27,14 +28,19 @@ async function getTenantDetail(id: number) {
       active:       true,
       subscription_active:     true,
       subscription_expires_at: true,
+      addons:          true,
+      modules_enabled: true,
+      restaurante_enabled: true,
       created_at:   true,
       _count:       { select: { products: true, users: true, orders: true } },
     },
   })
   if (!business) return null
 
-  const [salesMonth, recentActivity] = await Promise.all([
+  const [salesMonth, openKdsOrders, recentActivity] = await Promise.all([
     prisma.sale.count({ where: { business_id: id, status: 'paid', sold_at: { gte: monthStart } } }),
+    // Pedidos abiertos en cocina (mismo criterio que GET/PATCH /api/admin/tenants/[id]/plan): el formulario pide confirmación al quitar KDS.
+    prisma.order.count({ where: { business_id: id, send_to_kds: true, status: { in: ['received', 'preparing', 'ready'] } } }),
     prisma.activityLog.findMany({
       where:   { business_id: id },
       orderBy: { created_at: 'desc' },
@@ -43,7 +49,7 @@ async function getTenantDetail(id: number) {
     }),
   ])
 
-  return { business, salesMonth, recentActivity }
+  return { business, salesMonth, openKdsOrders, recentActivity }
 }
 
 export default async function TenantDetailPage({ params }: { params: { id: string } }) {
@@ -53,7 +59,7 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
   const data = await getTenantDetail(id)
   if (!data) notFound()
 
-  const { business, salesMonth, recentActivity } = data
+  const { business, salesMonth, openKdsOrders, recentActivity } = data
 
   return (
     <div>
@@ -82,6 +88,9 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
           active={business.subscription_active}
           expiresAt={business.subscription_expires_at ? business.subscription_expires_at.toISOString().slice(0, 10) : null}
           catalogActive={business.catalog_active}
+          addons={parseAddons(business.addons)}
+          kdsEntitled={entitlementsOf(business).kds}
+          openKdsOrders={openKdsOrders}
         />
       </div>
 

@@ -66,6 +66,7 @@ test('2 · el admin activa y aparece el módulo; al desactivar vuelven los 404 y
 
 test('3 · activar con KDS marca el módulo kds; sin la casilla no lo toca', async ({ page, context }) => {
   await login(context, E, 'admin')
+  sql(`UPDATE businesses SET modules_enabled = REPLACE(modules_enabled, ',kds', '') WHERE id=${E}`) // el helper enciende kds por defecto; este caso parte sin él
   expect(modules(E)).not.toContain('kds')
   expect((await post(page, { enabled: true })).status()).toBe(200)
   expect(modules(E)).not.toContain('kds')

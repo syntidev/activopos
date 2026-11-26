@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { assertThresholds, makeDefault, stationPatchSchema, toStation } from '@/lib/restaurante-kds'
+import { assertNoLiveTickets, assertThresholds, makeDefault, stationPatchSchema, toStation } from '@/lib/restaurante-kds'
 import { AccountError, badRequest, handleRestauranteError, readJson, requireRestauranteAccess } from '@/lib/restaurante-server'
 import { setStationUsers, usersByStation } from '@/lib/user-stations'
 
@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     if (!current) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
     assertThresholds(fields.warn_min ?? current.warn_min, fields.critical_min ?? current.critical_min)
     if (fields.active === false && current.is_default) throw new AccountError(422, 'La estación por defecto no se puede desactivar: marca otra como por defecto primero')
+    if (fields.active === false && current.active) await assertNoLiveTickets(db, session.businessId, id)
     if (is_default === false && current.is_default) throw new AccountError(422, 'Marca otra estación como por defecto en lugar de quitar esta')
 
     if (user_ids !== undefined) await setStationUsers(db, session.businessId, id, user_ids)
@@ -51,6 +52,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     if (!st) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
     if (st.is_default) throw new AccountError(422, 'La estación por defecto no se elimina: marca otra como por defecto primero')
 
+    await assertNoLiveTickets(db, access.session.businessId, id)
     const [cats, prods, items] = await Promise.all([
       db.category.count({ where: { station_id: id } }), db.product.count({ where: { station_id: id } }), db.orderItem.count({ where: { station_id: id } }),
     ])

@@ -17,6 +17,8 @@ interface RestauranteModuloCardProps {
   /** "kds" ya está en modules_enabled: entonces no se ofrece activarlo otra vez. */
   kdsEnabled: boolean
   currentPlan: PlanTier
+  /** Derecho al módulo según el servidor (GET /api/config/business/modules → entitlements.restaurante). null = aún no se sabe. */
+  entitled: boolean | null
   /** Recibe la lista nueva de módulos cuando la activación también encendió el KDS. */
   onModulesChanged: (modules: string[]) => void
 }
@@ -28,7 +30,7 @@ const ENABLES = [
 ]
 
 /** Tarjeta de Configuración › Módulos: activa o desactiva el módulo Restaurante con confirmación. Solo admin. */
-export function RestauranteModuloCard({ enabled, kdsEnabled, currentPlan, onModulesChanged }: RestauranteModuloCardProps) {
+export function RestauranteModuloCard({ enabled, kdsEnabled, currentPlan, entitled, onModulesChanged }: RestauranteModuloCardProps) {
   const router = useRouter()
   const { toast } = useToast()
   const { guardedFetch, upgradeReason, clearUpgrade } = usePlanGate()
@@ -38,8 +40,9 @@ export function RestauranteModuloCard({ enabled, kdsEnabled, currentPlan, onModu
   const [error, setError] = useState<string | null>(null)
   const [showUpgrade, setShowUpgrade] = useState(false)
 
-  const locked = !enabled && !PLAN_LIMITS[currentPlan].restaurante
-  const lockedReason = `El módulo Restaurante requiere plan ${PLAN_DISPLAY.negocio_activo}.`
+  // El derecho lo decide el servidor (plan Operación, suscripción vigente); sin esa respuesta se usa el flag del plan.
+  const locked = !enabled && (entitled === null ? !PLAN_LIMITS[currentPlan].restaurante : !entitled)
+  const lockedReason = `El módulo Restaurante requiere plan ${PLAN_DISPLAY.operacion}.`
 
   function open(kind: 'on' | 'off'): void {
     setError(null)
@@ -77,7 +80,7 @@ export function RestauranteModuloCard({ enabled, kdsEnabled, currentPlan, onModu
 
   return (
     <>
-      <div className={`${cfg.optModuleCard} ${enabled ? cfg.optModuleCardActive : ''}`}>
+      <div className={`${cfg.optModuleCard} ${enabled ? cfg.optModuleCardActive : ''}`} data-testid="mod-card-restaurante" data-locked={locked ? 'true' : 'false'}>
         <div className={cfg.optModuleCardHeader}>
           <div className={cfg.optModuleCardLeft}>
             <span className={cfg.optModuleIconCircle} aria-hidden="true"><UtensilsCrossed size={18} strokeWidth={1.75} /></span>
@@ -90,7 +93,8 @@ export function RestauranteModuloCard({ enabled, kdsEnabled, currentPlan, onModu
             <button
               type="button"
               className={`${cfg.toggleBtn} ${enabled ? cfg.toggleBtnOn : ''} ${locked ? cfg.toggleBtnDisabled : ''}`}
-              aria-label={locked ? 'Restaurante requiere el plan Negocio Activo' : `${enabled ? 'Desactivar' : 'Activar'} Restaurante`}
+              data-testid="mod-switch-restaurante"
+              aria-label={locked ? `Restaurante requiere el plan ${PLAN_DISPLAY.operacion}` : `${enabled ? 'Desactivar' : 'Activar'} Restaurante`}
               aria-pressed={enabled}
               disabled={locked}
               onClick={() => open(enabled ? 'off' : 'on')}
@@ -102,7 +106,7 @@ export function RestauranteModuloCard({ enabled, kdsEnabled, currentPlan, onModu
         <p className={cfg.optModuleDesc}>Plano de mesas, cuentas del mesonero y estaciones de cocina para restaurantes, bares y cafeterías.</p>
         {locked && (
           <p className={styles.upgrade}>
-            Disponible en Negocio Activo.{' '}
+            Disponible en el plan {PLAN_DISPLAY.operacion}.{' '}
             <button type="button" className={styles.upgradeBtn} onClick={() => setShowUpgrade(true)}>Mejorar plan</button>
           </p>
         )}

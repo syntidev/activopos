@@ -14,7 +14,7 @@ let A = 0, E = 0, admin = 0
 let carta: CartaSeed
 let tableId = 0, accountId = 0, normalId = 0
 
-const call = (page: Page, method: 'POST' | 'PATCH', url: string, data: Record<string, unknown>) =>
+const call = (page: Page, method: 'GET' | 'POST' | 'PATCH', url: string, data?: Record<string, unknown>) =>
   page.request.fetch(`${BASE}${url}`, { method, data })
 
 test.beforeAll(() => {
@@ -88,24 +88,48 @@ test('A2 · /api/kds/orders no lista cuentas de mesa pero sí los pedidos normal
   expect(viejo.map(o => o.id)).not.toContain(accountId)
 })
 
-test('A3 · el plan gratis no activa el módulo (403 PLAN_LIMIT); desactivar sigue permitido', async ({ page, context }) => {
+test('A3 · gratis y negocio_activo no activan el módulo (403 PLAN_LIMIT); operacion sí; desactivar sigue permitido', async ({ page, context }) => {
   await login(context, E, 'admin', 1)
   sql(`UPDATE businesses SET catalog_plan='gratis', restaurante_enabled=0 WHERE id=${E}`)
   const res = await call(page, 'POST', '/api/restaurante/activacion', { enabled: true })
   expect(res.status()).toBe(403)
   const body = (await res.json()) as { code: string; error: string }
   expect(body.code).toBe('PLAN_LIMIT')
-  expect(body.error).toContain('Negocio Activo')
+  expect(body.error).toContain('Operación')
   expect(sql(`SELECT restaurante_enabled FROM businesses WHERE id=${E}`)).toBe('0')
+  // Planes v2: negocio_activo (Entrada) tampoco da el derecho; solo operacion.
+  sql(`UPDATE businesses SET catalog_plan='negocio_activo' WHERE id=${E}`)
+  const entrada = await call(page, 'POST', '/api/restaurante/activacion', { enabled: true })
+  expect(entrada.status()).toBe(403)
+  expect(((await entrada.json()) as { code: string }).code).toBe('PLAN_LIMIT')
 
   // Un negocio gratis que ya lo tenía puede apagarlo.
   sql(`UPDATE businesses SET restaurante_enabled=1 WHERE id=${E}`)
   expect((await call(page, 'POST', '/api/restaurante/activacion', { enabled: false })).status()).toBe(200)
   expect(sql(`SELECT restaurante_enabled FROM businesses WHERE id=${E}`)).toBe('0')
 
-  // Con plan de pago sí activa.
-  sql(`UPDATE businesses SET catalog_plan='negocio_activo' WHERE id=${E}`)
+  // Con el plan que da el derecho sí activa.
+  sql(`UPDATE businesses SET catalog_plan='operacion' WHERE id=${E}`)
   expect((await call(page, 'POST', '/api/restaurante/activacion', { enabled: true })).status()).toBe(200)
+})
+
+test('uso sin derecho · flag encendido pero plan bajado o suscripción vencida: 403 PLAN_LIMIT; flag apagado: 404', async ({ page, context }) => {
+  await login(context, E, 'admin', 1)
+  sql(`UPDATE businesses SET catalog_plan='operacion', restaurante_enabled=1, subscription_active=1, subscription_expires_at=NULL WHERE id=${E}`)
+  expect((await call(page, 'GET', '/api/restaurante/areas')).status()).toBe(200)
+
+  sql(`UPDATE businesses SET catalog_plan='negocio_activo' WHERE id=${E}`) // plan bajado con el flag aún encendido
+  const bajado = await call(page, 'GET', '/api/restaurante/areas')
+  expect(bajado.status()).toBe(403)
+  expect(((await bajado.json()) as { code: string }).code).toBe('PLAN_LIMIT')
+  expect((await call(page, 'GET', '/api/restaurante/kds')).status()).toBe(403)
+
+  sql(`UPDATE businesses SET catalog_plan='operacion', subscription_expires_at=UTC_TIMESTAMP(3) - INTERVAL 1 DAY WHERE id=${E}`) // vencida
+  expect((await call(page, 'GET', '/api/restaurante/areas')).status()).toBe(403)
+
+  sql(`UPDATE businesses SET subscription_expires_at=NULL, restaurante_enabled=0 WHERE id=${E}`)
+  expect((await call(page, 'GET', '/api/restaurante/areas')).status()).toBe(404) // sin flag el módulo no existe
+  sql(`UPDATE businesses SET catalog_plan='operacion' WHERE id=${E}`)
 })
 
 test('M3 · el contador de pedidos pendientes no cuenta la cuenta de mesa', async ({ page, context }) => {

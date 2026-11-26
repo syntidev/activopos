@@ -38,7 +38,7 @@ const DEFAULT_MODULES = 'pos,inventory,caja,pedidos,catalog,finanzas,reportes,an
 export function ensureBusiness(slug: Slug, restaurante: boolean): number {
   if (!businessId(slug)) {
     sql(`INSERT INTO businesses (name,email,catalog_slug,catalog_active,catalog_title,onboarding_completed,segment,catalog_plan,catalog_template,settings,updated_at)
-         VALUES ('ZZ KDS ${slug}','${slug}@zzkds.test','${slug}',1,'ZZ KDS ${slug}',1,'pruebas','negocio_activo','generic','{}',NOW(3))`)
+         VALUES ('ZZ KDS ${slug}','${slug}@zzkds.test','${slug}',1,'ZZ KDS ${slug}',1,'pruebas','operacion','generic','{}',NOW(3))`)
   }
   const id = businessId(slug)
   // Cuentas de mesa primero (apuntan a mesas y productos), luego lo demás.
@@ -65,7 +65,7 @@ export function ensureBusiness(slug: Slug, restaurante: boolean): number {
   sql(`DELETE FROM dining_tables WHERE business_id=${id}`)
   sql(`DELETE FROM service_areas WHERE business_id=${id}`)
   sql(`DELETE FROM activity_logs WHERE business_id=${id} AND action='restaurante_toggle'`)
-  sql(`UPDATE businesses SET restaurante_enabled=${restaurante ? 1 : 0}, modules_enabled='${DEFAULT_MODULES}', subscription_active=1, subscription_expires_at=NULL, catalog_plan='negocio_activo' WHERE id=${id}`)
+  sql(`UPDATE businesses SET restaurante_enabled=${restaurante ? 1 : 0}, modules_enabled='${restaurante ? DEFAULT_MODULES + ',kds' : DEFAULT_MODULES}', subscription_active=1, subscription_expires_at=NULL, catalog_plan='operacion' WHERE id=${id}`)
   return id
 }
 

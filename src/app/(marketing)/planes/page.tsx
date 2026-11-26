@@ -3,13 +3,14 @@ import type { Metadata } from 'next'
 import { Check, MessageCircle, Tag } from 'lucide-react'
 import MarketingHero from '@/components/marketing/MarketingHero'
 import { getParallelRate } from '@/lib/bcv'
-import { BILLING_CYCLES, PLAN_DISPLAY, type BillingCycleKey, type PlanTier } from '@/lib/plan-limits'
+import { BILLING_CYCLES, PLAN_DISPLAY, PRICES_PUBLISHED, type BillingCycleKey, type PlanTier } from '@/lib/plan-limits'
 import { featuresForTier, featuresByCategoryForTier } from '@/lib/plan-features'
 import { WA_BASE } from '@/lib/marketing-contact'
 import PricingSection from '@/components/marketing/sections/PricingSection'
+import PlanesV2 from './PlanesV2'
 import styles from './page.module.css'
 
-export const metadata: Metadata = {
+const META_ACTUAL: Metadata = {
   title: 'Planes y precios',
   description:
     'ActivoPOS tiene 2 planes: Gratis para siempre y Negocio Activo con todo incluido. Precios reales en USD, ciclo mensual, trimestral, semestral o anual, sin sorpresas.',
@@ -20,6 +21,21 @@ export const metadata: Metadata = {
     url: 'https://activopos.com/planes',
   },
 }
+
+// Con PRICES_PUBLISHED la página muestra la escalera v2 (Gratis / Entrada / Operación): el nombre de la escalera sale de plan-limits.
+const META_V2: Metadata = {
+  title: 'Planes y precios',
+  description:
+    'ActivoPOS: Gratis para siempre, y planes de pago con precio fijo por el período (mensual, trimestral, semestral o anual). Precios reales en USD, sin contrato.',
+  alternates: { canonical: '/planes' },
+  openGraph: {
+    title: 'Planes y precios — ActivoPOS',
+    description: 'Gratis para siempre o planes de pago con precio fijo por el período. Precios reales en USD.',
+    url: 'https://activopos.com/planes',
+  },
+}
+
+export const metadata: Metadata = PRICES_PUBLISHED ? META_V2 : META_ACTUAL
 
 export const revalidate = 300
 
@@ -86,9 +102,13 @@ function buildProductJsonLd() {
   }))
 }
 
-export default async function PlanesPage() {
+export default async function PlanesPage({ searchParams }: { searchParams?: { vista?: string } }) {
   // Precio de suscripción en Bs = tasa paralela, nunca BCV. 0 => la card oculta el Bs.
   const bcvRate = (await getParallelRate()) ?? 0
+  // Escalera v2: solo con PRICES_PUBLISHED. ?vista=v2 permite revisarla SIN publicar, pero únicamente fuera de producción
+  // (en producción el parámetro se ignora: los precios de trabajo no se filtran).
+  const verV2 = PRICES_PUBLISHED || (process.env.NODE_ENV !== 'production' && searchParams?.vista === 'v2')
+  if (verV2) return <PlanesV2 bcvRate={bcvRate} />
   const productJsonLd = buildProductJsonLd()
   const gratisFeats = featuresForTier('gratis')
   const paidGroups = featuresByCategoryForTier('negocio_activo')

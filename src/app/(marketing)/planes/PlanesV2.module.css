@@ -1,0 +1,126 @@
+/* /planes v2 (solo con PRICES_PUBLISHED): instalación y tabla comparativa por categoría. Solo tokens. */
+
+.instalacion {
+  padding: 0 0 56px;
+}
+
+.instalacionCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px;
+  background: var(--mkt-card);
+  border: 1px dashed var(--mkt-border-dashed);
+  border-radius: 20px;
+}
+
+.instalacionTitulo {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--mkt-text-1);
+}
+
+.instalacionTexto {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--mkt-text-2);
+  max-width: 56ch;
+}
+
+.instalacionPrecio {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--brand);
+  white-space: nowrap;
+}
+
+.tablaSeccion {
+  padding: 0 0 72px;
+}
+
+.tituloSeccion {
+  margin: 0 0 24px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--mkt-text-1);
+}
+
+.tablaWrap {
+  /* position: relative contiene los textos solo-lectores (position: absolute) dentro del scroll de la tabla; sin él ensanchaban la página. */
+  position: relative;
+  overflow-x: auto;
+  border: 1px solid var(--mkt-border);
+  border-radius: 20px;
+  background: var(--mkt-card);
+}
+
+.tabla {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.tabla th,
+.tabla td {
+  padding: 12px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--mkt-border);
+  color: var(--mkt-text-1);
+}
+
+.tabla thead th {
+  background: var(--mkt-card-subtle);
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.tabla th:first-child,
+.tabla td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.grupo th {
+  padding: 10px 16px;
+  text-align: left;
+  background: var(--mkt-bg-alt);
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.si { color: var(--success); }
+.no { color: var(--mkt-text-3); }
+
+.valor {
+  font-weight: 600;
+  color: var(--mkt-text-1);
+}
+
+.solo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}

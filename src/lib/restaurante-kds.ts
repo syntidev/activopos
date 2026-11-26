@@ -4,8 +4,9 @@ import type { Prisma } from '@prisma/client'
 import type { SessionPayload } from '@/lib/auth'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { getAuthenticatedTenant } from '@/lib/tenant'
+import { guardRestaurante } from '@/lib/entitlements'
 import { assertNotBilled, lockOpenOrder, type Tx } from '@/lib/restaurante-cuenta'
-import { AccountError, OPEN_ACCOUNT_STATUSES, isRestauranteEnabled } from '@/lib/restaurante-server'
+import { AccountError, OPEN_ACCOUNT_STATUSES } from '@/lib/restaurante-server'
 import { stationIdsOfUser } from '@/lib/user-stations'
 import type { ItemKdsStatus, ItemModifierDTO, KdsBoardDTO, KdsItemDTO, KdsTicketDTO, RoutingDTO, StationDTO } from '@/types/restaurante'
 
@@ -26,7 +27,8 @@ export interface KdsAccess {
 /** Puerta del KDS: flag del negocio (404) y rol cocinero (sus estaciones) o administrador (todas). Nadie más (403). */
 export async function requireKdsAccess(): Promise<KdsAccess | NextResponse> {
   const { session, db } = await getAuthenticatedTenant()
-  if (!(await isRestauranteEnabled(session.businessId))) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+  const denied = await guardRestaurante(session.businessId)
+  if (denied) return denied
   if (session.role === 'admin' || session.role === 'super_admin') return { session, db, stationIds: 'all' }
   if (session.role === 'kitchen') return { session, db, stationIds: await stationIdsOfUser(db, session.businessId, session.userId) }
   return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
@@ -68,6 +70,12 @@ export const routingSchema = z.union([
 
 export function toStation(s: Prisma.PrepStationGetPayload<object>, extra: { users?: StationDTO['users']; open_tickets?: number } = {}): StationDTO {
   return { id: s.id, name: s.name, color: s.color, warn_min: s.warn_min, critical_min: s.critical_min, is_default: s.is_default, sort_order: s.sort_order, active: s.active, ...extra }
+}
+
+/** Comandas vivas (enviadas, en preparación o listas sin servir) de una estación. Con alguna, la estación no se desactiva ni se elimina. */
+export async function assertNoLiveTickets(db: TenantPrisma, businessId: number, stationId: number): Promise<void> {
+  const live = await db.orderItem.count({ where: { station_id: stationId, kds_status: { in: ['sent', 'preparing', 'ready'] }, order: { business_id: businessId, origin: 'table', account_status: { in: [...OPEN_ACCOUNT_STATUSES] } } } })
+  if (live > 0) throw new AccountError(409, `La estación tiene ${live} ${live === 1 ? 'ítem' : 'ítems'} en cocina: termínalos o muévelos antes de desactivarla`, { code: 'STATION_BUSY', live_items: live })
 }
 
 /** Deja UNA sola estación por defecto activa por negocio (MySQL no tiene índice único parcial: se valida aquí). */
@@ -183,9 +191,14 @@ function heldIds(items: readonly HoldItem[], fired: ReadonlySet<number>): Set<nu
 }
 
 /** Libera un curso sin esperar al anterior. Queda en la bitácora de la mesa y avisa a las pantallas (kds_updated_at). */
-export async function fireCourse(db: TenantPrisma, businessId: number, userId: number, orderId: number, course: number): Promise<void> {
+export async function fireCourse(db: TenantPrisma, businessId: number, userId: number, orderId: number, course: number, stations: number[] | 'all' = 'all'): Promise<void> {
   await db.$transaction(async (tx: Tx) => {
     const order = await lockOpenOrder(tx, businessId, orderId)
+    // Un cocinero solo dispara cursos que esperan en SUS estaciones.
+    if (stations !== 'all') {
+      const mine = await tx.orderItem.count({ where: { order_id: order.id, course, kds_status: 'sent', station_id: { in: stations } } })
+      if (mine === 0) throw new AccountError(403, 'Ese curso no espera en ninguna de tus estaciones')
+    }
     const waiting = await tx.orderItem.count({ where: { order_id: order.id, course, kds_status: 'sent' } })
     if (waiting === 0) throw new AccountError(422, `No hay ítems del curso ${course} esperando en cocina`)
     await tx.tableEvent.create({ data: { business_id: businessId, order_id: order.id, table_id: order.table_id, type: 'fire', to_value: String(course), user_id: userId } })
@@ -266,6 +279,7 @@ export async function serveItem(db: TenantPrisma, businessId: number, orderId: n
 
 const OVERLAP_MS = 2_000
 const BOARD_LIMIT = 300
+const CHANGED_LIMIT = 100
 
 function parseMods(json: Prisma.JsonValue | null): ItemModifierDTO[] {
   if (!Array.isArray(json)) return []
@@ -303,8 +317,12 @@ export async function loadBoard(db: TenantPrisma, businessId: number, access: Kd
   if (since !== null && targets.length > 0) {
     const rows = await db.orderItem.findMany({
       where:    { station_id: { in: targets }, kds_updated_at: { gt: since }, order: { business_id: businessId, origin: 'table' } },
-      select:   { order_id: true }, distinct: ['order_id'], take: 100,
+      select:   { order_id: true }, distinct: ['order_id'], take: CHANGED_LIMIT + 1,
     })
+    // Más cambios de los que cabe devolver: se avisa al cliente para que haga un refresco completo (nunca se pierde un cambio en silencio).
+    if (rows.length > CHANGED_LIMIT) {
+      return { stations: stationRows.map(s => toStation(s)), station, tickets: [], server_time: serverTime, changed: [], refresh_full: true }
+    }
     changed = rows.map(r => r.order_id)
   }
 
@@ -359,6 +377,6 @@ export async function loadBoard(db: TenantPrisma, businessId: number, access: Kd
 
   return {
     stations: stationRows.map(s => toStation(s, { open_tickets: counts.get(s.id) ?? 0 })),
-    station, tickets: sorted, server_time: serverTime, changed,
+    station, tickets: sorted, server_time: serverTime, changed, refresh_full: false,
   }
 }

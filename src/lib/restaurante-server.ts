@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { guardRestaurante } from '@/lib/entitlements'
 import { z, ZodError } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
@@ -27,15 +28,14 @@ export interface RestauranteAccess {
 /**
  * Puerta ÚNICA de todos los endpoints del módulo. En orden:
  *  1. sesión válida (si no, TenantError → 401)
- *  2. flag Business.restaurante_enabled (si no, 404: sin flag el módulo no existe)
+ *  2. flag Business.restaurante_enabled (si no, 404: sin flag el módulo no existe) y derecho del plan (si no, 403 PLAN_LIMIT)
  *  3. rol: admin y super_admin todo; cashier y waiter leen y marcan; kitchen nada en R1.
  *     level 'admin' exige admin/super_admin (estructura del plano).
  */
 export async function requireRestauranteAccess(level: 'read' | 'admin' = 'read'): Promise<RestauranteAccess | NextResponse> {
   const { session, db } = await getAuthenticatedTenant()
-  if (!(await isRestauranteEnabled(session.businessId))) {
-    return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
-  }
+  const denied = await guardRestaurante(session.businessId)
+  if (denied) return denied
   const isAdmin = session.role === 'admin' || session.role === 'super_admin'
   const canRead = isAdmin || session.role === 'cashier' || session.role === 'waiter'
   if (!canRead || (level === 'admin' && !isAdmin)) {

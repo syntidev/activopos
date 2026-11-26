@@ -4,6 +4,7 @@ import { ChevronDown, MessageCircle, HelpCircle } from 'lucide-react'
 import RevealSection from '@/components/marketing/shared/RevealSection'
 import MarketingHero from '@/components/marketing/MarketingHero'
 import { WA_BASE } from '@/lib/marketing-contact'
+import { BILLING_CYCLES, PLAN_LIMITS } from '@/lib/plan-limits'
 import styles from './faq.module.css'
 
 /* ─────────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ const CATEGORIES = [
     items: [
       {
         q: '¿Cuánto cuesta ActivoPOS?',
-        a: 'Tenemos dos planes con precios públicos: Gratis para siempre (hasta 40 productos y 1 usuario, sin tarjeta) y Negocio Activo por $19/mes (productos ilimitados, hasta 10 usuarios, catálogo digital, finanzas y todo el sistema). Los ciclos trimestral, semestral y anual tienen descuento. Mira el detalle y elige en la página de Planes.',
+        a: `Tenemos dos planes con precios públicos: Gratis para siempre (hasta ${PLAN_LIMITS.gratis.products} productos y ${PLAN_LIMITS.gratis.users} usuario, sin tarjeta) y Negocio Activo por $${BILLING_CYCLES.negocio_activo.mensual.monthlyEquivalent}/mes (productos ilimitados, hasta ${PLAN_LIMITS.negocio_activo.users} usuarios, catálogo digital, finanzas y todo el sistema). Los ciclos trimestral, semestral y anual tienen descuento. Mira el detalle y elige en la página de Planes.`,
       },
       {
         q: '¿Hay período de prueba?',

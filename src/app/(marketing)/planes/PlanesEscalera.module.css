@@ -1,0 +1,201 @@
+/* Escalera de planes v2 (solo con PRICES_PUBLISHED): selector de período + tarjetas. Solo tokens. */
+
+.selector {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  margin-bottom: 32px;
+}
+
+.grupo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.periodo,
+.otros {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--mkt-border);
+  border-radius: 9999px;
+  background: var(--mkt-card);
+  color: var(--mkt-text-2);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.periodo:hover,
+.otros:hover { color: var(--brand); border-color: var(--brand); }
+
+.periodo:focus-visible,
+.otros:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.periodoOn {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--mkt-card);
+}
+
+.periodoOn:hover { color: var(--mkt-card); }
+
+.otros {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--mkt-border-dashed);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px 24px;
+  background: var(--mkt-card);
+  border: 1px solid var(--mkt-border);
+  border-radius: 20px;
+}
+
+.cardDestacada {
+  border: 2px solid var(--brand);
+  background: var(--mkt-card-subtle);
+}
+
+.cinta {
+  position: absolute;
+  top: -13px;
+  left: 24px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: var(--brand);
+  color: var(--mkt-card);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nombre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--mkt-text-1);
+}
+
+.precioBloque {
+  display: grid;
+  gap: 6px;
+  min-height: 120px;
+  align-content: start;
+}
+
+.precio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+}
+
+.monto {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--mkt-text-1);
+}
+
+.unidad {
+  font-size: 14px;
+  color: var(--mkt-text-2);
+}
+
+.fijo {
+  justify-self: start;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: var(--success-soft);
+  color: var(--success-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.equivale,
+.bs {
+  margin: 0;
+  font-size: 13px;
+  color: var(--mkt-text-2);
+}
+
+.lista {
+  display: grid;
+  align-content: start; /* sin esto las filas se estiran para llenar la altura de la tarjeta */
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+}
+
+.lista li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--mkt-text-1);
+}
+
+.lista svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--success);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.cta:hover { background: var(--brand); color: var(--mkt-card); }
+
+.cta:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.ctaDestacada {
+  background: var(--cta);
+  color: var(--mkt-cta-on);
+}
+
+.ctaDestacada:hover { background: var(--cta); color: var(--mkt-cta-on); filter: brightness(0.95); }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .precioBloque { min-height: 0; }
+}

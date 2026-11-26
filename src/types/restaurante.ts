@@ -226,6 +226,8 @@ export interface KdsBoardDTO {
   server_time: string
   /** Con ?since: ids de las cuentas cuyas comandas vienen completas en esta respuesta (reemplazan a las del cliente). null = tablero completo. */
   changed:     number[] | null
+  /** true = hubo más cambios de los que caben en un sondeo con cursor: el cliente debe pedir el tablero completo (sin ?since). */
+  refresh_full: boolean
 }
 
 export interface RoutingDTO {

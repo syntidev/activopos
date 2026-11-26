@@ -189,6 +189,7 @@ function Board({ isAdmin }: Props) {
         return
       }
       const b = r.data
+      if (b.refresh_full) { cursor.current = null; window.setTimeout(() => void poll(true), 0); return } // demasiados cambios: tablero completo
       cursor.current = b.server_time
       setOnline(true); setLastOk(Date.now()); setLoaded(true); setStations(b.stations)
       setSel(cur => cur ?? (b.stations[0]?.id ?? 'todas'))

@@ -32,7 +32,7 @@ function businessId(slug: Slug): number { return Number(sql(`SELECT id FROM busi
 function ensureBusiness(slug: Slug, restaurante: boolean): number {
   if (!businessId(slug)) {
     sql(`INSERT INTO businesses (name,email,catalog_slug,catalog_active,catalog_title,onboarding_completed,segment,catalog_plan,catalog_template,settings,updated_at)
-         VALUES ('ZZ KDS ${slug}','${slug}@zzkds.test','${slug}',1,'ZZ KDS ${slug}',1,'pruebas','negocio_activo','generic','{}',NOW(3))`)
+         VALUES ('ZZ KDS ${slug}','${slug}@zzkds.test','${slug}',1,'ZZ KDS ${slug}',1,'pruebas','operacion','generic','{}',NOW(3))`)
   }
   const id = businessId(slug)
   // R2: una mesa puede tener cuentas; se borran primero (otros specs las dejan en el negocio A).

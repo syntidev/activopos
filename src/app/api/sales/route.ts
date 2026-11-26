@@ -109,6 +109,8 @@ export async function GET(req: NextRequest) {
         : { status: status as SaleStatus }
       : {}),
     ...dateFilter,
+    // Restaurante (R4): el cobro de una mesa aún sin pagar vive en la cuenta, no en las listas del POS (editarlo aquí lo desacoplaría de la cuenta).
+    NOT: { status: 'pending' as const, table_order_id: { not: null } },
     ...(priceMode ? { price_mode: priceMode } : {}),
     ...(financing === 'cashea' ? { financing_status: { not: null } } : financing === 'none' ? { financing_status: null } : {}),
     ...(cashierId ? { cashier_id: parseInt(cashierId, 10) } : {}),

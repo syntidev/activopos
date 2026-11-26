@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   ShoppingCart, Package, Calculator, ShoppingBag,
-  Store, TrendingUp, BarChart2, Activity, Monitor, Truck,
+  Store, TrendingUp, BarChart2, Activity, Monitor, Truck, Lock, UtensilsCrossed,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
-import type { PlanTier } from '@/lib/plan-limits'
+import { ADDON_DISPLAY, PLAN_DISPLAY, type EntitlementKey, type PlanTier } from '@/lib/plan-limits'
 import styles from '../configuracion.module.css'
 import { RestauranteModuloCard } from './RestauranteModuloCard'
 
@@ -48,6 +48,12 @@ interface OptionalModule {
   desc: string
   segments: string[]
   Icon: React.ElementType
+  /** Si tiene derecho propio (plan o add-on): el servidor lo evalúa y la UI lo bloquea con candado cuando entitlements lo niega. */
+  entitlement?: EntitlementKey
+  /** Mensaje de mejora cuando el derecho está negado. */
+  upgradeHint?: string
+  /** Módulo aún en construcción: se avisa con una etiqueta (el derecho ya existe, la pantalla todavía no). */
+  inDevelopment?: boolean
 }
 
 const OPTIONAL_MODULES: OptionalModule[] = [
@@ -57,6 +63,8 @@ const OPTIONAL_MODULES: OptionalModule[] = [
     desc: 'Muestra los pedidos en tiempo real para tu cocina o despacho.',
     segments: ['Restaurantes', 'Cafeterías', 'Dark kitchens'],
     Icon: Monitor,
+    entitlement: 'kds',
+    upgradeHint: `Disponible en el plan ${PLAN_DISPLAY.operacion} o con el complemento ${ADDON_DISPLAY.kds}.`,
   },
   {
     key: 'delivery',
@@ -84,6 +92,9 @@ export function TabModulos({ businessId: _businessId, canManageRestaurante, rest
   // (arriba) solo controla visibilidad de sidebar y no sabe nada de plan; este
   // fetch es la única fuente de verdad de "qué puede usar este negocio hoy".
   const [currentPlan, setCurrentPlan] = useState<PlanTier>('gratis')
+  // Derechos efectivos (plan vigente + add-ons) que devuelve GET /api/config/business/modules. null = aún sin leer: no se bloquea nada
+  // por adivinar (el servidor igual rechaza activar lo que no está pagado).
+  const [entitlements, setEntitlements] = useState<Record<EntitlementKey, boolean> | null>(null)
 
   useEffect(() => {
     fetch('/api/plan')
@@ -99,8 +110,9 @@ export function TabModulos({ businessId: _businessId, canManageRestaurante, rest
     try {
       const res = await fetch('/api/config/business/modules')
       if (!res.ok) return
-      const j = await res.json() as { modules_enabled?: string[] }
+      const j = await res.json() as { modules_enabled?: string[]; entitlements?: Record<EntitlementKey, boolean> }
       if (Array.isArray(j.modules_enabled)) setEnabled(new Set(j.modules_enabled))
+      if (j.entitlements) setEntitlements(j.entitlements)
     } catch {
       // API not yet available — defaults remain
     }
@@ -130,7 +142,11 @@ export function TabModulos({ businessId: _businessId, canManageRestaurante, rest
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ modules: Array.from(next) }),
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        // El servidor explica por qué (p. ej. "requiere el plan Operación"): se muestra tal cual.
+        const denied = await res.json().catch(() => null) as { error?: string } | null
+        throw new Error(denied?.error ?? '')
+      }
       const j = await res.json() as { modules_enabled?: string[] }
       window.dispatchEvent(new CustomEvent(MODULES_UPDATED_EVENT, { detail: j.modules_enabled ?? Array.from(next) }))
 
@@ -144,14 +160,14 @@ export function TabModulos({ businessId: _businessId, canManageRestaurante, rest
           caja_mode: next.has('caja') ? 'cash' : 'nocash',
         }),
       })
-    } catch {
+    } catch (err) {
       setEnabled(prev => {
         const reverted = new Set(prev)
         if (isOn) reverted.add(key)
         else reverted.delete(key)
         return reverted
       })
-      toast('Error al guardar el módulo', 'error')
+      toast(err instanceof Error && err.message ? err.message : 'Error al guardar el módulo', 'error')
     } finally {
       setOptSaving(prev => ({ ...prev, [key]: false }))
     }
@@ -250,13 +266,17 @@ export function TabModulos({ businessId: _businessId, canManageRestaurante, rest
       </p>
 
       <div className={styles.optModulesGrid}>
-        {OPTIONAL_MODULES.map(({ key, label, desc, segments, Icon }) => {
-          const isOn = enabled.has(key)
+        {OPTIONAL_MODULES.map(({ key, label, desc, segments, Icon, entitlement, upgradeHint, inDevelopment }) => {
+          // Derecho negado (solo cuando el servidor lo dice explícitamente): candado, switch apagado y deshabilitado, mensaje de mejora.
+          const locked = entitlement !== undefined && entitlements?.[entitlement] === false
+          const isOn = enabled.has(key) && !locked
           const isSaving = optSaving[key] ?? false
           return (
             <div
               key={key}
               className={`${styles.optModuleCard} ${isOn ? styles.optModuleCardActive : ''}`}
+              data-testid={`mod-card-${key}`}
+              data-locked={locked ? 'true' : 'false'}
             >
               <div className={styles.optModuleCardHeader}>
                 <div className={styles.optModuleCardLeft}>
@@ -265,22 +285,34 @@ export function TabModulos({ businessId: _businessId, canManageRestaurante, rest
                   </span>
                   <span className={styles.optModuleLabel}>{label}</span>
                   <span className={styles.optModuleBadge}>Opcional</span>
+                  {locked && (
+                    <span className={styles.proBadge} data-testid={`mod-lock-${key}`}>
+                      <Lock size={11} aria-hidden="true" /> Mejora
+                    </span>
+                  )}
+                  {inDevelopment && !locked && <span className={styles.optModuleBadge}>En desarrollo</span>}
                 </div>
                 <div className={styles.optModuleCardRight}>
                   {isOn && <span className={styles.optModuleActiveBadge}>Activo</span>}
                   <button
                     type="button"
-                    className={`${styles.toggleBtn} ${isOn ? styles.toggleBtnOn : ''} ${isSaving ? styles.toggleBtnDisabled : ''}`}
-                    aria-label={`${isOn ? 'Desactivar' : 'Activar'} ${label}`}
+                    className={`${styles.toggleBtn} ${isOn ? styles.toggleBtnOn : ''} ${(isSaving || locked) ? styles.toggleBtnDisabled : ''}`}
+                    aria-label={locked ? `${label}: ${upgradeHint ?? 'requiere mejorar el plan'}` : `${isOn ? 'Desactivar' : 'Activar'} ${label}`}
                     aria-pressed={isOn}
-                    disabled={isSaving}
-                    onClick={() => { void toggleOptional(key) }}
+                    disabled={isSaving || locked}
+                    data-testid={`mod-switch-${key}`}
+                    onClick={() => { if (!locked) void toggleOptional(key) }}
                   >
                     <span className={`${styles.toggleKnob} ${isOn ? styles.toggleKnobOn : ''}`} />
                   </button>
                 </div>
               </div>
               <p className={styles.optModuleDesc}>{desc}</p>
+              {locked && (
+                <p className={styles.moduleLockedHint} role="note" data-testid={`mod-upgrade-${key}`}>
+                  Mejora tu plan para activarlo. {upgradeHint}
+                </p>
+              )}
               <div className={styles.optModuleSegments}>
                 {segments.map(seg => (
                   <span key={seg} className={styles.optModulePill}>{seg}</span>
@@ -294,6 +326,7 @@ export function TabModulos({ businessId: _businessId, canManageRestaurante, rest
             enabled={restauranteEnabled}
             kdsEnabled={enabled.has('kds')}
             currentPlan={currentPlan}
+            entitled={entitlements ? entitlements.restaurante : null}
             onModulesChanged={mods => setEnabled(new Set(mods))}
           />
         )}

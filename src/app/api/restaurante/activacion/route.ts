@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { planDenied } from '@/lib/plan-guard'
-import { PLAN_DISPLAY, PLAN_LIMITS, type PlanTier } from '@/lib/plan-limits'
+import { ENTITLEMENT_SELECT, entitlementDeniedReason, hasEntitlement } from '@/lib/entitlements'
 import { getClientIp, restauranteToggleLimiter } from '@/lib/rate-limit'
 import { badRequest, countOpenTableAccounts, readJson } from '@/lib/restaurante-server'
 
@@ -39,10 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const current = await prisma.business.findUnique({
       where:  { id: session.businessId },
-      select: {
-        restaurante_enabled: true, modules_enabled: true, catalog_plan: true,
-        subscription_active: true, subscription_expires_at: true,
-      },
+      select: ENTITLEMENT_SELECT,
     })
     if (!current) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
 
@@ -52,15 +49,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (enabled) {
-      // Mismo gate que los módulos de pago: suscripción vigente y flag del plan, leídos de la DB (nunca del cliente).
-      if (!current.subscription_active) return planDenied('Tu suscripción está suspendida. Contacta a soporte.')
-      if (current.subscription_expires_at && new Date() > current.subscription_expires_at) {
-        return planDenied('Tu plan expiró. Renueva para continuar.')
-      }
-      const plan = (current.catalog_plan as PlanTier | null) ?? 'gratis'
-      if (!(PLAN_LIMITS[plan] ?? PLAN_LIMITS.gratis).restaurante) {
-        return planDenied(`El módulo Restaurante requiere plan ${PLAN_DISPLAY.negocio_activo}.`)
-      }
+      // Derecho (plan Operación o el que PLAN_LIMITS.restaurante habilite) con suscripción vigente: lo lee el servidor de la DB, nunca del cliente.
+      // restaurante_enabled es la PREFERENCIA del tenant; el derecho no se puede dar uno mismo.
+      if (!hasEntitlement(current, 'restaurante')) return planDenied(entitlementDeniedReason(current, 'restaurante'))
     } else {
       const open = await countOpenTableAccounts(session.businessId)
       if (open > 0) {
@@ -71,7 +62,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const nextModules = enabled && enable_kds === true && !modules.includes('kds') ? [...modules, 'kds'] : modules
+    const nextModules = enabled && enable_kds === true && hasEntitlement(current, 'kds') && !modules.includes('kds') ? [...modules, 'kds'] : modules
     await prisma.$transaction([
       prisma.business.update({
         where: { id: session.businessId },

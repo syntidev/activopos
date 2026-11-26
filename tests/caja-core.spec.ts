@@ -9,50 +9,68 @@
  *   C04 → POST /api/cash/close (2ª vez)   → 400 "No hay caja abierta"  [DT-012]
  *   C05 → GET  /api/rates/bcv sin sesión  → rate > 0, sin writes       [DT-013]
  *
- * beforeAll garantiza un registro abierto independiente del estado previo.
- * afterAll reabre un registro para no romper suites paralelas (pos-core.spec.ts).
+ * Sesión propia: un JWT firmado con JWT_SECRET para el negocio 267 "ZZ D Pruebas" (tenant propio de CLI-D;
+ * el 87 es OnBike Margarita, datos del cliente real, y no se toca).
+ * No usa tests/.auth-state.json: ese archivo vence y dejaba el spec entero sin correr.
+ *
+ * beforeAll cierra la caja abierta (si la hay) y abre una propia. afterAll borra los registros y logs que
+ * creó este spec y reabre la caja que estaba abierta antes, dejando el tenant como lo encontró.
  */
 
 import { test, expect, request as newRequestCtx } from '@playwright/test'
+import { BASE, BUSINESS_ID, apiAs, assertOwnTenant, login } from './d-tenant'
+import { sql } from './alta-helpers'
 
-const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
+test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 
-test.beforeAll(async ({ request }) => {
+// `page.request` comparte las cookies del contexto: la sesión se agrega ahí antes de cada test.
+test.beforeEach(async ({ page }) => { await login(page) })
+
+let maxRegisterBefore = 0
+let maxLogBefore = 0
+let previouslyOpenId = 0
+
+test.beforeAll(async () => {
+  assertOwnTenant()
+  const api = await apiAs()
+
   // Tasa BCV activa
-  const ratesRes  = await request.get(`${BASE}/api/rates/bcv`)
+  const ratesRes  = await api.get('/api/rates/bcv')
   const ratesBody = await ratesRes.json() as { ok?: boolean; rate?: number }
   if (!ratesBody.ok || !ratesBody.rate) throw new Error('Pre-condición: tasa BCV no disponible')
 
+  // Estado previo, para restaurarlo al final
+  maxRegisterBefore = Number(sql(`SELECT IFNULL(MAX(id),0) FROM cash_registers WHERE business_id=${BUSINESS_ID}`))
+  maxLogBefore      = Number(sql(`SELECT IFNULL(MAX(id),0) FROM activity_logs WHERE business_id=${BUSINESS_ID}`))
+  previouslyOpenId  = Number(sql(`SELECT IFNULL(MAX(id),0) FROM cash_registers WHERE business_id=${BUSINESS_ID} AND closed_at IS NULL`))
+
   // Asegurar caja abierta — cerrar existente si hay, luego abrir una limpia
-  const statusRes  = await request.get(`${BASE}/api/cash/status`)
+  const statusRes  = await api.get('/api/cash/status')
   const statusBody = await statusRes.json() as { isOpen: boolean }
 
   if (statusBody.isOpen) {
-    await request.post(`${BASE}/api/cash/close`, {
+    await api.post('/api/cash/close', {
       data: { closing_amount_usd: 0, closing_amount_bs: 0, close_notes: 'Reset previo a certificación' },
     })
   }
 
-  const openRes = await request.post(`${BASE}/api/cash/open`, {
+  const openRes = await api.post('/api/cash/open', {
     data: {
       opening_amount_usd: 25,
       opening_amount_bs:  25 * ratesBody.rate,
     },
   })
   if (!openRes.ok()) throw new Error(`Setup falló al abrir caja: HTTP ${openRes.status()}`)
+  await api.dispose()
 })
 
-test.afterAll(async ({ request }) => {
-  // Restaurar estado: abrir una caja nueva para que pos-core.spec.ts encuentre caja abierta
-  const statusRes  = await request.get(`${BASE}/api/cash/status`)
-  const statusBody = await statusRes.json() as { isOpen: boolean }
-
-  if (!statusBody.isOpen) {
-    const ratesRes  = await request.get(`${BASE}/api/rates/bcv`)
-    const ratesBody = await ratesRes.json() as { rate: number }
-    await request.post(`${BASE}/api/cash/open`, {
-      data: { opening_amount_usd: 25, opening_amount_bs: 25 * ratesBody.rate },
-    })
+test.afterAll(async () => {
+  // Limpieza: solo lo creado por este spec (ids posteriores a los del inicio) y los logs de caja de esa ventana.
+  sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND id > ${maxLogBefore} AND model_type='CashRegister'`)
+  sql(`DELETE FROM cash_registers WHERE business_id=${BUSINESS_ID} AND id > ${maxRegisterBefore}`)
+  // La caja que estaba abierta antes la cerró el beforeAll: se reabre tal cual.
+  if (previouslyOpenId > 0) {
+    sql(`UPDATE cash_registers SET closed_at=NULL, closing_amount_bs=NULL, closing_amount_usd=NULL, close_notes=NULL WHERE id=${previouslyOpenId} AND business_id=${BUSINESS_ID}`)
   }
 })
 

@@ -361,3 +361,14 @@ test('hallazgos de seguridad · porciones sin deriva ni subtotal 0, propina acot
   await as('waiter', context, waiter)
   expect((await call(page, 'POST', `/api/restaurante/cuentas/${acc.id}/transferir`, { waiter_id: waiter2 })).status()).toBe(403)
 })
+
+test('las ventas de mesa pendientes no aparecen en las listas del POS', async ({ page, context }) => {
+  await as('cashier', context, cashier)
+  const acc = await account(page, [[carta.pasta, 1]])
+  const sale = await charge(page, acc.id)
+  const list = async (url: string) => (await json<{ sales: Array<{ id: number }> }>(await call(page, 'GET', url))).sales.map(s => s.id)
+  expect(await list('/api/sales?status=pending&limit=100')).not.toContain(sale.id)
+  expect(await list('/api/sales?limit=100')).not.toContain(sale.id)
+  expect((await pay(page, sale.id, [{ payment_method_id: pmUsd, amount_usd: 14, amount_bs: sale.total_bs }])).status()).toBe(200)
+  expect(await list('/api/sales?limit=100')).toContain(sale.id) // ya cobrada, sí es una venta más
+})

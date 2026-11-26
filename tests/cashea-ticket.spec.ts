@@ -1,10 +1,12 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import bcrypt from 'bcryptjs'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts, tokenFor } from './p0-helpers'
+import { businessDateKey } from '@/lib/business-day'
+import { ADMIN_ID, BASE, BUSINESS_ID, SLUG, apiAs, assertOwnTenant, cleanupTestProducts, tokenFor } from './d-tenant'
+import { closeOwnCashRegister, openOwnCashRegister } from './cash-helpers'
 
 /**
- * Cashea (financiamiento) declarado en el ticket — negocio 87 local. Contrato: .doc/CONTRATO_CASHEA_TICKET.md.
+ * Cashea (financiamiento) declarado en el ticket — negocio 267 "ZZ D Pruebas" (tenant propio de CLI-D; el 87 es del cliente real). Contrato: .doc/CONTRATO_CASHEA_TICKET.md.
  * Cubre: pedido web válido, producto excluido (409), financiamiento apagado (409), cashea + divisa (409 en ambos sentidos),
  * transiciones y bitácora, cobro bloqueado sin aprobar (pedido y POS), todo o nada, y reportes/caja.
  */
@@ -29,9 +31,13 @@ function cleanup(): void {
   const prods = sql(`SELECT id FROM products WHERE business_id=${BUSINESS_ID} AND name LIKE 'ZZ Cashea%'`).split('\n').filter(Boolean)
   if (prods.length > 0) {
     const list = prods.join(',')
+    const orders = sql(`SELECT id FROM orders WHERE business_id=${BUSINESS_ID} AND client_name LIKE 'ZZ Cashea%'`).split('\n').filter(Boolean)
+    const sales = sql(`SELECT DISTINCT sale_id FROM sale_items WHERE product_id IN (${list})`).split('\n').filter(Boolean)
+    // Bitácora de SUS pedidos y ventas (price_mode_changed, sale_paid…): se borra antes que las filas a las que apunta.
+    if (orders.length > 0) sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND model_type='Order' AND model_id IN (${orders.join(',')})`)
+    if (sales.length > 0) sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND model_type='Sale' AND model_id IN (${sales.join(',')})`)
     sql(`DELETE oi FROM order_items oi WHERE oi.product_id IN (${list})`)
     sql(`DELETE FROM orders WHERE business_id=${BUSINESS_ID} AND client_name LIKE 'ZZ Cashea%'`)
-    const sales = sql(`SELECT DISTINCT sale_id FROM sale_items WHERE product_id IN (${list})`).split('\n').filter(Boolean)
     if (sales.length > 0) {
       const sl = sales.join(',')
       sql(`DELETE FROM sale_payments WHERE sale_id IN (${sl})`)
@@ -87,10 +93,18 @@ const finLog = (modelType: 'Sale' | 'Order', modelId: number): string[] =>
        FROM activity_logs WHERE business_id=${BUSINESS_ID} AND action LIKE 'financing_%' AND model_type='${modelType}' AND model_id=${modelId} ORDER BY id`)
     .split('\n').map(l => l.trim()).filter(Boolean)
 
+let abriCaja = false
+let maxRegisterBefore = 0
+let maxLogBefore = 0
+
 test.beforeAll(async () => {
+  assertOwnTenant()
   cleanup()
+  maxRegisterBefore = Number(sql(`SELECT IFNULL(MAX(id),0) FROM cash_registers WHERE business_id=${BUSINESS_ID}`))
+  maxLogBefore      = Number(sql(`SELECT IFNULL(MAX(id),0) FROM activity_logs WHERE business_id=${BUSINESS_ID}`))
   publico = await pwRequest.newContext({ baseURL: BASE })
   const api = await apiAs()
+  abriCaja = await openOwnCashRegister(api) // las ventas pagadas del POS exigen caja abierta: se abre una propia
   await financiamiento(api, true)
   ids.a = await crear(api, { name: 'ZZ Cashea A', cost_per_unit_usd: 40, price_per_unit_usd: 100, wholesale_price_usd: 80, stock_quantity: 50, show_in_catalog: true, catalog_visibility: 'visible' })
   ids.excluido = await crear(api, { name: 'ZZ Cashea Excluido', cost_per_unit_usd: 10, price_per_unit_usd: 30, stock_quantity: 50, show_in_catalog: true, catalog_visibility: 'visible', financing_excluded: true })
@@ -100,8 +114,17 @@ test.beforeAll(async () => {
 })
 test.afterAll(async () => {
   await publico.dispose()
+  if (abriCaja) {
+    const api = await apiAs()
+    await closeOwnCashRegister(api)
+    await api.dispose()
+  }
   sql(`UPDATE businesses SET settings = JSON_REMOVE(JSON_REMOVE(IFNULL(settings, JSON_OBJECT()), '$.financing'), '$.catalog_financing_badge') WHERE id = ${BUSINESS_ID}`)
   cleanup()
+  // La caja propia (y sus movimientos y bitácora) se borra después de las ventas, que son las que la referencian.
+  sql(`DELETE FROM cash_movements WHERE business_id=${BUSINESS_ID} AND cash_register_id > ${maxRegisterBefore}`)
+  sql(`DELETE FROM activity_logs WHERE business_id=${BUSINESS_ID} AND id > ${maxLogBefore} AND model_type='CashRegister'`)
+  sql(`DELETE FROM cash_registers WHERE business_id=${BUSINESS_ID} AND id > ${maxRegisterBefore}`)
 })
 
 test('pedido web con Cashea válido: queda solicitado, con snapshot de proveedor y frase, a precio BCV', async () => {
@@ -194,11 +217,11 @@ test('estados: solicitado → aprobado → rechazado → solicitado → retirado
   expect((await api.patch(`/api/orders/${orderId}/financing`, { data: { action: 'volar' } })).status()).toBe(400)
 
   expect(finLog('Order', orderId)).toEqual([
-    '86|financing_requested|null>requested',
-    '86|financing_status_changed|requested>approved',
-    '86|financing_status_changed|approved>rejected',
-    '86|financing_status_changed|rejected>requested',
-    '86|financing_cleared|requested>null',
+    `${ADMIN_ID}|financing_requested|null>requested`,
+    `${ADMIN_ID}|financing_status_changed|requested>approved`,
+    `${ADMIN_ID}|financing_status_changed|approved>rejected`,
+    `${ADMIN_ID}|financing_status_changed|rejected>requested`,
+    `${ADMIN_ID}|financing_cleared|requested>null`,
   ])
   await api.dispose()
 })
@@ -246,7 +269,7 @@ test('POS: mismo resultado — declarar, no cobrar sin aprobar, todo o nada y el
   expect(v.status(), JSON.stringify(await v.json().catch(() => ({})))).toBe(201)
   const sale = (await v.json()).sale as SaleResp
   expect(sale).toMatchObject({ price_mode: 'bcv', financing_status: 'requested' })
-  expect(finLog('Sale', sale.id)).toEqual(['86|financing_requested|null>requested'])
+  expect(finLog('Sale', sale.id)).toEqual([`${ADMIN_ID}|financing_requested|null>requested`])
   const totalBs = Number(sql(`SELECT total_bs FROM sales WHERE id=${sale.id}`))
   const pagoFin = [{ payment_method_id: ids.finMethod, amount_bs: totalBs, amount_usd: Number(sale.total_usd), reference: 'CASH-9' }]
   const pagoCash = [{ payment_method_id: CASH_ID, amount_bs: totalBs, amount_usd: Number(sale.total_usd) }]
@@ -296,7 +319,7 @@ test('cambiar los ítems con financiamiento vivo: producto excluido 409; un apro
   const bien = await api.patch(`/api/orders/${orderId}/items`, { data: { items: [{ product_id: ids.a, product_name: 'ZZ Cashea A', quantity: 2 }] } })
   expect(bien.status()).toBe(200)
   expect(sql(`SELECT CONCAT(financing_status,'|',total_usd) FROM orders WHERE id=${orderId}`)).toBe('requested|200.00')
-  expect(finLog('Order', orderId).slice(-1)).toEqual(['86|financing_status_changed|approved>requested'])
+  expect(finLog('Order', orderId).slice(-1)).toEqual([`${ADMIN_ID}|financing_status_changed|approved>requested`])
   // (en pedidos el cobro ya no depende de la aprobación: Cashea solo registra; ver "cobro del pedido: Cashea ya no es compuerta")
 
   // Borrador del POS: mismo comportamiento
@@ -382,7 +405,7 @@ test('descuento con PIN sobre un ticket aprobado: vuelve a solicitado (con motiv
   expect(d.status(), JSON.stringify(await d.json().catch(() => ({})))).toBe(200)
   expect(sql(`SELECT CONCAT_WS('|', financing_status, total_usd) FROM sales WHERE id=${sale.id}`)).toBe('requested|180.00')
   const log = sql(`SELECT CONCAT(user_id,'|',IFNULL(reason,'')) FROM activity_logs WHERE business_id=${BUSINESS_ID} AND model_type='Sale' AND model_id=${sale.id} AND action='financing_status_changed' ORDER BY id DESC LIMIT 1`)
-  expect(log).toBe('86|Se aplicó un descuento: el monto debe aprobarse de nuevo')
+  expect(log).toBe(`${ADMIN_ID}|Se aplicó un descuento: el monto debe aprobarse de nuevo`)
 
   const totalBs = Number(sql(`SELECT total_bs FROM sales WHERE id=${sale.id}`))
   const pagoFin = [{ payment_method_id: ids.finMethod, amount_bs: totalBs, amount_usd: 180 }]
@@ -447,7 +470,8 @@ test('reportes y caja: Cashea se segmenta y no se mezcla con el resto', async ()
   const rep = await (await api.get('/api/reports/sales?financing=cashea&limit=50')).json() as { sales: Array<{ financing_status: string | null }> }
   expect(rep.sales.every(s => s.financing_status !== null)).toBe(true)
 
-  const hoy = new Date().toISOString().slice(0, 10)
+  // Día de Caracas (UTC-4), el mismo que usa el reporte: toISOString() es UTC y cambia de día 4 h antes.
+  const hoy = businessDateKey()
   const day = await (await api.get(`/api/reports/day?date=${hoy}`)).json() as { payment_methods: Array<{ method: string; is_financing: boolean; total_usd: number }>; summary_financing: { usd: number; count: number } }
   const fin = day.payment_methods.find(m => m.method === FIN_NAME)
   expect(fin?.is_financing).toBe(true)

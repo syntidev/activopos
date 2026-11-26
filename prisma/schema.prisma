@@ -221,6 +221,9 @@ model Business {
   // Feature flag por negocio del módulo Restaurante (mismo patrón que reservas_enabled):
   // apagado por defecto, se enciende por SQL del equipo, nunca por una API del tenant.
   restaurante_enabled          Boolean   @default(false)
+  // Add-ons contratados (CSV tipado por ADDON_KEYS en lib/plan-limits.ts, hoy solo 'kds'). Es un DERECHO: solo lo escribe el super_admin
+  // (PATCH /api/admin/tenants/[id]/plan). NO es modules_enabled (preferencia del tenant). Quitarlo no borra datos ni edita modules_enabled.
+  addons                       String    @default("") @db.VarChar(200)
   // Config editable del microsite /kit-200k (texto de evento, SEO, badge,
   // activo, link en header) -- mismo patrón que cobro_data: un solo blob
   // JSON por negocio, sin tabla aparte. Shape real en src/lib/kit-config.ts

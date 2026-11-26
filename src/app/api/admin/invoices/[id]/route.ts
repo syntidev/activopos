@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { type PlanTier } from '@/lib/plan-limits'
+import { PLAN_TIER_KEYS, isPaidPlan, type PlanTier } from '@/lib/plan-limits'
 
 type RouteContext = { params: { id: string } }
 
@@ -14,12 +14,12 @@ const PatchSchema = z
     action: z.enum(['approve', 'reject']),
     notes:  z.string().max(1000).optional(),
     // Al aprobar, el admin elige plan y ciclo en el modal — el Invoice no los guarda.
-    plan:   z.enum(['gratis', 'negocio_activo']).optional(),
+    plan:   z.enum(PLAN_TIER_KEYS).optional(),
     ciclo:  z.enum(['mensual', 'trimestral', 'semestral', 'anual']).optional(),
   })
   .refine(b => b.action !== 'approve' || !!b.plan, { message: 'Al aprobar se requiere plan', path: ['plan'] })
-  .refine(b => b.action !== 'approve' || b.plan !== 'negocio_activo' || !!b.ciclo, {
-    message: 'negocio_activo requiere ciclo', path: ['ciclo'],
+  .refine(b => b.action !== 'approve' || !isPaidPlan(b.plan) || !!b.ciclo, {
+    message: 'Un plan de pago requiere ciclo', path: ['ciclo'],
   })
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
@@ -96,7 +96,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   // gratis nunca vence; negocio_activo vence a los N meses del ciclo elegido.
   const plan = data.plan as PlanTier
   const expiresAt =
-    plan === 'negocio_activo' && data.ciclo
+    isPaidPlan(plan) && data.ciclo
       ? (() => {
           const d = new Date()
           d.setMonth(d.getMonth() + CYCLE_MONTHS[data.ciclo])

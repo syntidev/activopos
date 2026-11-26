@@ -12,6 +12,7 @@ import { resolveLinePrice } from '@/lib/pricing'
 import { priceModeSchema } from '@/lib/price-mode'
 import { ORDER_PAGO_INCLUDE, derivePago } from '@/lib/order-payment'
 import { findUniqueClientId } from '@/lib/order-client'
+import { guardEntitlement } from '@/lib/entitlements'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PERMISOS — INTENCIONAL: Pedidos NO tiene guard de rol. cashier ve/crea/edita
@@ -63,10 +64,16 @@ const createSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { db } = await getAuthenticatedTenant()
+    const { session, db } = await getAuthenticatedTenant()
 
     const params = Object.fromEntries(req.nextUrl.searchParams.entries())
     const query = querySchema.parse(params)
+
+    // La lista de la pantalla de cocina (/kds) es USO del KDS: send_to_kds=true exige derecho + módulo encendido.
+    if (query.send_to_kds === 'true') {
+      const denied = await guardEntitlement(session.businessId, 'kds')
+      if (denied) return denied
+    }
 
     const where = {
       // business_id inyectado por el tenant layer

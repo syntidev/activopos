@@ -317,3 +317,70 @@ test('capturas · KDS 1280 y 375, sin conexión, config y cuenta', async ({ page
   await expect(page.getByText('Enviar a cocina').first()).toBeVisible({ timeout: 8_000 })
   await page.screenshot({ path: path.join(R3, 'cuenta-375.png'), fullPage: true })
 })
+
+/* ── Hallazgos de CLI-C sobre R3 ── */
+
+/** Cuenta nueva (admin) con ítems enviados; devuelve su id. */
+async function accountWith(page: Page, label: string, items: Array<[number, number, number]>): Promise<number> {
+  const t = (await body<{ tables: Array<{ id: number }> }>(await call(page, 'POST', '/api/restaurante/mesas', { area_id: areaId, label, capacity: 2 }))).tables[0].id
+  const id = (await body<{ account: { id: number } }>(await call(page, 'POST', '/api/restaurante/cuentas', { table_id: t, guests: 1, waiter_id: waiter }))).account.id
+  for (const [product_id, quantity, course] of items) await call(page, 'POST', `/api/restaurante/cuentas/${id}/items`, { product_id, quantity, course })
+  expect((await call(page, 'POST', `/api/restaurante/cuentas/${id}/enviar`, {})).status()).toBe(200)
+  return id
+}
+
+test('R3-1 · una estación con comandas vivas no se desactiva ni se elimina (409)', async ({ page, context }) => {
+  await login(context, A, 'admin', admin)
+  await accountWith(page, 'R31', [[carta.cerveza, 1, 1]]) // la cerveza va a Barra
+  const off = await call(page, 'PATCH', `/api/restaurante/estaciones/${barra}`, { active: false })
+  expect(off.status()).toBe(409)
+  expect((await body<{ code: string }>(off)).code).toBe('STATION_BUSY')
+  expect((await call(page, 'DELETE', `/api/restaurante/estaciones/${barra}`)).status()).toBe(409)
+  expect(sql(`SELECT active FROM prep_stations WHERE id=${barra}`)).toBe('1')
+})
+
+test('R3-4 · /api/kds/orders solo muestra al cocinero lo ruteado a SUS estaciones', async ({ page, context }) => {
+  sql(`UPDATE businesses SET modules_enabled = CONCAT(modules_enabled, ',kds') WHERE id=${A} AND modules_enabled NOT LIKE '%kds%'`)
+  sql(`DELETE oi FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.business_id=${A} AND o.order_number='ZZ-K1'`)
+  sql(`DELETE FROM orders WHERE business_id=${A} AND order_number='ZZ-K1'`)
+  sql(`INSERT INTO orders (business_id,order_number,status,origin,total_usd,total_bs,rate_used,updated_at) VALUES (${A},'ZZ-K1','received','pos',17,600,35,NOW(3))`)
+  const oid = Number(sql(`SELECT id FROM orders WHERE business_id=${A} AND order_number='ZZ-K1'`))
+  sql(`INSERT INTO order_items (order_id,product_id,product_name,quantity,price_per_unit_usd,subtotal_usd) VALUES (${oid},${carta.pasta},'ZZ Pasta carbonara',1,14,14),(${oid},${carta.cerveza},'ZZ Cerveza Polar',1,3,3)`)
+
+  const lines = async (uid: number): Promise<string[]> => {
+    await login(context, A, 'kitchen', uid)
+    const r = await call(page, 'GET', '/api/kds/orders')
+    expect(r.status()).toBe(200)
+    const o = (await body<{ orders: Array<{ order_number: string; items: Array<{ product_name: string }> }> }>(r)).orders.find(x => x.order_number === 'ZZ-K1')
+    return (o?.items ?? []).map(i => i.product_name)
+  }
+  expect(await lines(cook)).toEqual(['ZZ Pasta carbonara'])      // cocinero de Cocina: sin la cerveza de Barra
+  expect(await lines(bartender)).toEqual(['ZZ Pasta carbonara', 'ZZ Cerveza Polar']) // la pasta no está ruteada por producto: sigue visible; la cerveza es suya
+  sql(`DELETE oi FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.business_id=${A} AND o.order_number='ZZ-K1'`)
+  sql(`DELETE FROM orders WHERE business_id=${A} AND order_number='ZZ-K1'`)
+})
+
+test('R3-5 · Disparar respeta la estación del cocinero', async ({ page, context }) => {
+  await login(context, A, 'admin', admin)
+  const id = await accountWith(page, 'R35', [[carta.cerveza, 1, 1], [carta.cerveza, 1, 2]]) // todo en Barra
+  await login(context, A, 'kitchen', cook) // el de Cocina
+  expect((await call(page, 'POST', '/api/restaurante/kds/disparar', { order_id: id, course: 2 })).status()).toBe(403)
+  await login(context, A, 'kitchen', bartender) // el de Barra
+  expect((await call(page, 'POST', '/api/restaurante/kds/disparar', { order_id: id, course: 2 })).status()).toBe(200)
+})
+
+test('R3-2 · si los cambios superan el tope del sondeo con since, avisa refresh_full', async ({ page, context }) => {
+  await login(context, A, 'kitchen', cook)
+  const before = await board(page)
+  // 101 cuentas con un ítem de Cocina cambiado "ahora" (más que el tope de 100 por sondeo).
+  sql(`INSERT INTO orders (business_id,order_number,status,origin,account_status,total_usd,total_bs,rate_used,opened_at,updated_at)
+       WITH RECURSIVE n AS (SELECT 1 i UNION ALL SELECT i+1 FROM n WHERE i<101)
+       SELECT ${A}, CONCAT('ZZ-OV-', i), 'received', 'table', 'open', 14, 500, 35, UTC_TIMESTAMP(3), NOW(3) FROM n`)
+  sql(`INSERT INTO order_items (order_id,product_id,product_name,quantity,price_per_unit_usd,subtotal_usd,station_id,kds_status,sent_at,kds_updated_at)
+       SELECT o.id, ${carta.pasta}, 'ZZ Pasta carbonara', 1, 14, 14, ${cocina}, 'sent', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3)
+       FROM orders o WHERE o.business_id=${A} AND o.order_number LIKE 'ZZ-OV-%'`)
+  const delta = (await body<Board & { refresh_full: boolean }>(await call(page, 'GET', `/api/restaurante/kds?station=todas&since=${encodeURIComponent(before.server_time)}`)))
+  expect(delta.refresh_full).toBe(true)
+  expect(delta.tickets).toEqual([])
+  expect((await board(page) as Board & { refresh_full: boolean }).refresh_full).toBe(false) // el tablero completo no lo pide
+})

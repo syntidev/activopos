@@ -85,6 +85,12 @@ export const WORKING_PRICES = {
   addons:         { kds: 8 } satisfies Record<AddonKey, number>,
 } as const
 
+/** Instalación y configuración inicial: precio "desde" (USD) que muestra /planes v2. Único lugar editable. */
+export const INSTALACION_DESDE_USD = 150
+
+/** Nombre de la escalera v2 en /planes ('negocio_activo' = Entrada se mantiene en DB). El naming final NO está aprobado: vive solo aquí. */
+export const LADDER_NAME = { negocio_activo: 'Entrada', operacion: 'Operación' } as const satisfies Record<Exclude<PlanTier, 'gratis'>, string>
+
 /** true SOLO cuando Carlos apruebe publicar: pasa los precios de trabajo a BILLING_CYCLES (vitrina, /planes, llms). Hoy false. */
 export const PRICES_PUBLISHED = false
 

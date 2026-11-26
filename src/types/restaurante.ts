@@ -97,6 +97,20 @@ export interface AccountItemDTO {
   course:             number
   kds_status:         ItemKdsStatus
   void_reason:        string | null
+  /** Cantidad ya cubierta por ventas de la cuenta (no canceladas). Lo que falta cobrar = quantity - billed_quantity. */
+  billed_quantity:    number
+}
+
+/** Venta hija de una cuenta de mesa (R4). Los montos salen del servidor. */
+export interface AccountSaleDTO {
+  id:            number
+  ticket_number: string
+  status:        'pending' | 'paid' | 'partial_return' | 'returned' | 'cancelled' | 'credit' | 'quote' | 'draft'
+  total_usd:     number
+  total_bs:      number
+  rate_used:     number
+  /** Propina cargada a esta venta (fuera del total). */
+  tip_usd:       number
 }
 
 export interface AccountSummaryDTO {
@@ -121,6 +135,10 @@ export interface AccountDTO extends AccountSummaryDTO {
   /** Tasa con la que se abrió la cuenta: total_bs = total_usd × rate_used. */
   rate_used:         number
   items:             AccountItemDTO[]
+  /** Ventas hijas (cobros) de la cuenta, de la más vieja a la más nueva; sin las canceladas. */
+  sales:             AccountSaleDTO[]
+  /** Mesas que se unieron a esta cuenta ("juntar"), además de la principal. */
+  joined_tables:     string[]
 }
 
 export interface ModifierDTO {

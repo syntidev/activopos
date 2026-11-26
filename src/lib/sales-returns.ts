@@ -367,6 +367,19 @@ export async function cashRefundTotals(businessId: number, from: Date, to?: Date
   return { usd: r2(num(agg._sum.total_usd)), bs: r2(num(agg._sum.total_bs)) }
 }
 
+/**
+ * Propinas EN EFECTIVO de ventas de mesa en el rango (restaurante, R4). La propina va fuera de sales.total_usd, así que NO es venta
+ * neta; pero el efectivo entró al cajón y mueve el efectivo esperado. Las de tarjeta u otro método no lo mueven. Una propina cuenta
+ * mientras su venta siga realizada (pagada o con devolución parcial); si la venta se anula, la propina deja de contarse.
+ */
+export async function cashTipTotals(businessId: number, from: Date, to?: Date): Promise<MoneyTotals> {
+  const agg = await prisma.saleTip.aggregate({
+    where: { business_id: businessId, is_cash: true, created_at: range(from, to), sale: { status: { in: [...REALIZED_SALE_STATUSES] } } },
+    _sum: { amount_usd: true, amount_bs: true },
+  })
+  return { usd: r2(num(agg._sum.amount_usd)), bs: r2(num(agg._sum.amount_bs)) }
+}
+
 export interface ApprovedReturnRow {
   /** Cuándo se reembolsó — para imputarlo al turno de caja correcto. */
   refunded_at: Date

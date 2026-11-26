@@ -1,0 +1,73 @@
+/* Cobro de mesa (R4): pre-cuenta, división y propina. Valores: tokens --rs-* (tokens.css). */
+
+.body { display: flex; flex-direction: column; gap: 14px; color: var(--rs-ink); font-family: var(--rs-ui); }
+
+.primary, .ghost {
+  min-height: 52px; padding: 0 18px; border-radius: var(--rs-radio-ctl); border: 0; cursor: pointer;
+  font: 700 15px var(--rs-ui); letter-spacing: 0.01em; flex: 1;
+  transition: transform var(--rs-t-press) var(--rs-ease);
+}
+.primary { background: var(--rs-navy); color: var(--rs-on-accent); }
+.primary:disabled { background: var(--rs-switch-off); cursor: not-allowed; }
+.ghost { background: transparent; color: var(--rs-navy); box-shadow: inset 0 0 0 2px var(--rs-navy); }
+.primary:active, .ghost:active { transform: scale(0.97); }
+.primary:focus-visible, .ghost:focus-visible, .chip:focus-visible, .segBtn:focus-visible, .stepBtn:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+.row { display: flex; gap: 10px; }
+
+.hint { margin: 0; font: 500 12.5px/1.45 var(--rs-ui); color: var(--rs-ink-2); }
+.field { display: flex; flex-direction: column; gap: 6px; font: 600 12.5px var(--rs-ui); color: var(--rs-ink-2); }
+.input, .select {
+  min-height: 48px; padding: 0 12px; border: 0; border-radius: var(--rs-radio-ctl); background: var(--rs-field); color: var(--rs-ink);
+  font: 500 16px var(--rs-mono); width: 100%;
+}
+.select { font-family: var(--rs-ui); font-size: 14px; }
+.input:focus-visible, .select:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+
+/* Pre-cuenta: papel con borde punteado, como la comanda */
+.pre { background: var(--rs-floor); border-radius: var(--rs-radio); padding: 12px 14px; box-shadow: inset 0 0 0 1.5px var(--rs-bar-edge); }
+.preLines { list-style: none; margin: 0; padding: 0; }
+.preLine, .splitLine { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 8px; padding: 9px 0; border-bottom: 1px dashed var(--rs-bar-edge); align-items: start; }
+.splitLine { grid-template-columns: minmax(0, 1fr) 140px; align-items: center; }
+.preQty { font: 700 15px var(--rs-mono); }
+.preName { font: 600 14px var(--rs-ui); overflow-wrap: anywhere; }
+.preName small { display: block; margin-top: 2px; font: 600 12px var(--rs-mono); color: var(--rs-amber); }
+.preAmt { font: 700 14px var(--rs-mono); text-align: right; white-space: nowrap; }
+.preAmt small, .preTotal small, .sums small, .saleCard small { display: block; margin-top: 1px; font: 500 11px var(--rs-mono); color: var(--rs-muted); }
+.preTotal { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 12px; }
+.preTotal span { font: 600 12px var(--rs-ui); letter-spacing: 0.04em; text-transform: uppercase; color: var(--rs-ink-2); }
+.preTotal strong { font: 700 26px var(--rs-mono); letter-spacing: -0.02em; text-align: right; }
+
+/* Dividir */
+.split { display: flex; flex-direction: column; gap: 12px; }
+.seg { display: flex; gap: 2px; padding: 3px; background: var(--rs-seg); border-radius: var(--rs-radio-ctl); }
+.segBtn { flex: 1; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--rs-ink-2); font: 600 14px var(--rs-ui); cursor: pointer; }
+.segOn { background: var(--rs-card); color: var(--rs-ink); box-shadow: var(--rs-sombra); }
+.sums { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sums li { display: flex; justify-content: space-between; align-items: flex-end; font: 600 13px var(--rs-ui); }
+.sums strong { font: 700 15px var(--rs-mono); text-align: right; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.stepBtn { width: 52px; height: 52px; border-radius: 50%; border: 0; background: var(--rs-field); color: var(--rs-ink); font: 700 22px var(--rs-mono); cursor: pointer; }
+.stepBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.stepVal { font: 700 20px var(--rs-mono); min-width: 120px; text-align: center; }
+
+/* Venta creada */
+.saleCard { display: flex; justify-content: space-between; align-items: flex-end; background: var(--rs-navy-soft); border-radius: var(--rs-radio); padding: 14px 16px; font: 600 13px var(--rs-mono); }
+.saleCard strong { font: 700 24px var(--rs-mono); letter-spacing: -0.02em; text-align: right; }
+
+/* Propina */
+.tip { display: flex; flex-direction: column; gap: 12px; }
+.tipTitle { margin: 0; font: 700 17px var(--rs-ui); }
+.chips { display: flex; gap: 8px; }
+.chip { flex: 1; min-height: 44px; border: 0; border-radius: var(--rs-radio-ctl); background: var(--rs-navy-soft); color: var(--rs-navy); font: 700 14px var(--rs-mono); cursor: pointer; }
+
+/* Acciones de la cuenta (pedir cuenta, cobrar, juntar, transferir, reabrir) */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.act { flex: 1 1 140px; min-height: 48px; padding: 0 14px; border-radius: var(--rs-radio-ctl); border: 0; background: var(--rs-card); color: var(--rs-ink); box-shadow: inset 0 0 0 1.5px var(--rs-table-edge); font: 600 14px var(--rs-ui); cursor: pointer; }
+.act:focus-visible { outline: var(--rs-anillo) solid var(--rs-navy-2); outline-offset: 2px; }
+.actPay { background: var(--rs-amber); color: var(--rs-on-accent); box-shadow: none; }
+.actDanger { color: var(--rs-red); box-shadow: inset 0 0 0 1.5px var(--rs-red); }
+.salesList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.saleRow { display: flex; justify-content: space-between; font: 600 12.5px var(--rs-mono); color: var(--rs-ink-2); }
+.badgePaid { color: var(--rs-green); }
+
+@media (prefers-reduced-motion: reduce) { .primary, .ghost { transition: none; } }

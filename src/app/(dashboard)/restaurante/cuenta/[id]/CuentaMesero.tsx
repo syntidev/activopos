@@ -8,8 +8,11 @@ import { confirmAction } from '@/context/ConfirmContext'
 import { callApi } from '@/lib/restaurante-client'
 import { elapsedLabel, formatBs, formatUsd } from '@/lib/restaurante'
 import type { AccountDTO, AccountItemDTO, ItemKdsStatus } from '@/types/restaurante'
+import { AccionesCuenta } from './AccionesCuenta'
+import { CobroMesa } from './CobroMesa'
 import { SelectorProducto } from './SelectorProducto'
 import styles from './cuenta.module.css'
+import cobro from './cobro.module.css'
 
 const COURSE_NAME: Record<number, string> = { 1: 'Entrada', 2: 'Fondo', 3: 'Postre' }
 
@@ -19,12 +22,13 @@ const STATUS_LABEL: Record<ItemKdsStatus, string> = { draft: 'Borrador', sent: '
 const qtyLabel = (n: number): string => String(Number(n.toFixed(3)))
 
 /** Cuenta de mesa del mesonero (móvil primero): ítems por curso, modificadores, notas y total en USD y Bs. */
-export function CuentaMesero({ initial }: { initial: AccountDTO }) {
+export function CuentaMesero({ initial, canCharge, isAdmin }: { initial: AccountDTO; canCharge: boolean; isAdmin: boolean }) {
   const { toast } = useToast()
   const [account, setAccount] = useState<AccountDTO>(initial)
   const [adding, setAdding] = useState(false)
   const [busyItem, setBusyItem] = useState<number | null>(null)
   const [sending, setSending] = useState(false)
+  const [charging, setCharging] = useState(false)
 
   // El estado de cocina (preparando, listo) llega por sondeo; sin polling el mesonero no se enteraría de que un plato salió.
   const accountId = initial.id
@@ -38,6 +42,7 @@ export function CuentaMesero({ initial }: { initial: AccountDTO }) {
   const live = account.items.filter(i => i.kds_status !== 'void')
   const courses = Array.from(new Set(account.items.map(i => i.course))).sort((a, b) => a - b)
   const pay = account.status === 'bill_requested'
+  const closed = account.status === 'closed'
   const money = (usd: number): { usd: string; bs: string } => ({ usd: formatUsd(usd), bs: formatBs(usd * account.rate_used) })
 
   const drafts = account.items.filter(i => i.kds_status === 'draft').length
@@ -81,7 +86,7 @@ export function CuentaMesero({ initial }: { initial: AccountDTO }) {
         <div className={styles.topRow}>
           <Link href="/restaurante/mesas" className={styles.back} aria-label="Volver al salón"><ChevronLeft size={24} aria-hidden="true" /></Link>
           <h1 className={styles.title}>Mesa {account.table_label}<small>{account.area_name}</small></h1>
-          <span className={`${styles.pill} ${pay ? styles.pillPay : ''}`}>{pay ? 'Por cobrar' : 'Ocupada'}</span>
+          <span className={`${styles.pill} ${pay ? styles.pillPay : ''}`}>{closed ? 'Cerrada' : pay ? 'Por cobrar' : 'Ocupada'}</span>
         </div>
         <ul className={styles.meta}>
           {account.guests !== null && <li>{account.guests} {account.guests === 1 ? 'comensal' : 'comensales'}</li>}
@@ -145,17 +150,32 @@ export function CuentaMesero({ initial }: { initial: AccountDTO }) {
             <div className={styles.totAmt}>{formatUsd(account.total_usd)}<small>{formatBs(account.total_bs)}</small></div>
           </div>
         </section>
+        {account.sales.length > 0 && (
+          <section className={styles.card} aria-label="Cobros de la cuenta">
+            <ul className={cobro.salesList}>
+              {account.sales.map(s => (
+                <li key={s.id} className={cobro.saleRow}>
+                  <span>{s.ticket_number}</span>
+                  <span className={s.status === 'paid' ? cobro.badgePaid : ''}>{s.status === 'paid' ? 'Pagada' : 'Pendiente'} · {formatUsd(s.total_usd)}{s.tip_usd > 0 ? ` · propina ${formatUsd(s.tip_usd)}` : ''}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <AccionesCuenta account={account} isAdmin={isAdmin} canCharge={canCharge} onCharge={() => setCharging(true)} onAccount={setAccount} />
         <p className={styles.tip}>Los montos se calculan en el servidor con el precio vigente del producto. Lo enviado a cocina solo lo anula un administrador.</p>
       </div>
 
       <div className={styles.bar}>
-        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setAdding(true)}>
+        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} disabled={closed || account.sales.length > 0} onClick={() => setAdding(true)}>
           <Plus size={18} aria-hidden="true" />Agregar ítem
         </button>
         <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} disabled={drafts === 0 || sending} onClick={() => { void send() }}>
           <Send size={18} aria-hidden="true" />{drafts > 0 ? `Enviar a cocina (${drafts})` : 'Enviar a cocina'}
         </button>
       </div>
+
+      {canCharge && <CobroMesa open={charging} account={account} onClose={() => setCharging(false)} onAccount={setAccount} />}
 
       <SelectorProducto open={adding} accountId={account.id} onClose={() => setAdding(false)} onAdded={acc => { setAccount(acc); setAdding(false) }} />
     </div>

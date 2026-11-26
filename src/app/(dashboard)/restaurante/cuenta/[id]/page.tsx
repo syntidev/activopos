@@ -23,5 +23,5 @@ export default async function CuentaPage({ params }: { params: { id: string } })
     if (err instanceof AccountError) notFound()
     throw err
   }
-  return <CuentaMesero initial={account} />
+  return <CuentaMesero initial={account} canCharge={session.role !== 'waiter'} isAdmin={session.role === 'admin' || session.role === 'super_admin'} />
 }

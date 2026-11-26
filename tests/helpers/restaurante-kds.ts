@@ -42,9 +42,20 @@ export function ensureBusiness(slug: Slug, restaurante: boolean): number {
   }
   const id = businessId(slug)
   // Cuentas de mesa primero (apuntan a mesas y productos), luego lo demás.
+  // R4: cobros de mesa (propinas, pagos y líneas de sus ventas) y mesas unidas, antes de borrar las cuentas.
+  const tableOrders = `SELECT id FROM orders WHERE business_id=${id} AND origin='table'`
+  sql(`DELETE ri FROM return_items ri JOIN returns r ON r.id=ri.return_id JOIN sales s ON s.id=r.sale_id WHERE s.table_order_id IN (${tableOrders})`)
+  sql(`DELETE r FROM returns r JOIN sales s ON s.id=r.sale_id WHERE s.table_order_id IN (${tableOrders})`)
+  sql(`DELETE st FROM sale_tips st JOIN sales s ON s.id=st.sale_id WHERE s.table_order_id IN (${tableOrders})`)
+  sql(`DELETE sp FROM sale_payments sp JOIN sales s ON s.id=sp.sale_id WHERE s.table_order_id IN (${tableOrders})`)
+  sql(`DELETE si FROM sale_items si JOIN sales s ON s.id=si.sale_id WHERE s.table_order_id IN (${tableOrders})`)
+  sql(`DELETE FROM sales WHERE table_order_id IN (${tableOrders})`)
+  sql(`DELETE ot FROM order_tables ot JOIN orders o ON o.id=ot.order_id WHERE o.business_id=${id}`)
   sql(`DELETE oi FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.business_id=${id} AND o.origin='table'`)
   sql(`DELETE FROM table_events WHERE business_id=${id}`)
   sql(`DELETE FROM orders WHERE business_id=${id} AND origin='table'`)
+  // /pay deja movimientos de inventario de los productos de prueba (FK RESTRICT): fuera antes de borrar los productos.
+  sql(`DELETE ie FROM inventory_entries ie JOIN products p ON p.id=ie.product_id WHERE p.business_id=${id} AND p.name LIKE 'ZZ %'`)
   sql(`DELETE FROM product_modifiers WHERE business_id=${id}`)
   sql(`DELETE FROM products WHERE business_id=${id} AND name LIKE 'ZZ %'`)
   sql(`DELETE FROM categories WHERE business_id=${id} AND name LIKE 'ZZ %'`)

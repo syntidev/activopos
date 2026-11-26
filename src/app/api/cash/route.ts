@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { REALIZED_SALE_STATUSES, cashRefundTotals } from '@/lib/sales-returns'
+import { REALIZED_SALE_STATUSES, cashRefundTotals, cashTipTotals } from '@/lib/sales-returns'
 
 export async function GET() {
   try {
@@ -19,7 +19,7 @@ export async function GET() {
       })
     }
 
-    const [cashPayments, movements, refunds] = await Promise.all([
+    const [cashPayments, movements, refunds, tips] = await Promise.all([
       // SalePayment no tiene business_id — aislado por la relación sale.business_id
       db.salePayment.findMany({
         where: {
@@ -39,9 +39,11 @@ export async function GET() {
         select: { type: true, amount_bs: true },
       }),
       cashRefundTotals(session.businessId, register.opened_at),
+      // Propinas en efectivo de mesas (restaurante): no son venta, pero entraron al cajón.
+      cashTipTotals(session.businessId, register.opened_at),
     ])
 
-    const cashIn  = cashPayments.reduce((acc, p) => acc + Number(p.amount_bs), 0) - refunds.bs
+    const cashIn  = cashPayments.reduce((acc, p) => acc + Number(p.amount_bs), 0) - refunds.bs + tips.bs
     const movIn   = movements.filter(m => m.type === 'in' ).reduce((a, m) => a + Number(m.amount_bs), 0)
     const movOut  = movements.filter(m => m.type === 'out').reduce((a, m) => a + Number(m.amount_bs), 0)
     const current = Number(register.opening_amount_bs) + cashIn + movIn - movOut

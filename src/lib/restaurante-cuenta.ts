@@ -66,6 +66,12 @@ export const ACCOUNT_INCLUDE = {
   table:  { select: { label: true, area: { select: { name: true } } } },
   waiter: { select: { name: true } },
   items:  { orderBy: { id: 'asc' } },
+  table_sales: {
+    where:   { status: { not: 'cancelled' } },
+    orderBy: { id: 'asc' },
+    select:  { id: true, ticket_number: true, status: true, total_usd: true, total_bs: true, rate_used: true, tips: { select: { amount_usd: true } }, items: { select: { order_item_id: true, quantity: true } } },
+  },
+  joined_tables: { select: { table: { select: { label: true } } } },
 } satisfies Prisma.OrderInclude
 type AccountRow = Prisma.OrderGetPayload<{ include: typeof ACCOUNT_INCLUDE }>
 
@@ -81,16 +87,16 @@ function parseModifiers(json: Prisma.JsonValue | null): ItemModifierDTO[] {
   return out
 }
 
-function toItem(i: AccountRow['items'][number]): AccountItemDTO {
+function toItem(i: AccountRow['items'][number], billed: ReadonlyMap<number, number>): AccountItemDTO {
   return {
     id: i.id, product_id: i.product_id, product_name: i.product_name, quantity: Number(i.quantity),
     price_per_unit_usd: Number(i.price_per_unit_usd), subtotal_usd: Number(i.subtotal_usd),
     note: i.note, modifiers: parseModifiers(i.modifiers), course: i.course,
-    kds_status: (i.kds_status ?? 'draft') as ItemKdsStatus, void_reason: i.void_reason,
+    kds_status: (i.kds_status ?? 'draft') as ItemKdsStatus, void_reason: i.void_reason, billed_quantity: billed.get(i.id) ?? 0,
   }
 }
 
-function toSummary(o: Omit<AccountRow, 'items'>): AccountSummaryDTO {
+function toSummary(o: Omit<AccountRow, 'items' | 'table_sales' | 'joined_tables'>): AccountSummaryDTO {
   return {
     id: o.id, order_number: o.order_number, table_id: o.table_id, table_label: o.table?.label ?? null,
     area_name: o.table?.area.name ?? null, status: (o.account_status ?? 'open') as AccountStatus, guests: o.guests,
@@ -100,9 +106,16 @@ function toSummary(o: Omit<AccountRow, 'items'>): AccountSummaryDTO {
 }
 
 export function toAccount(o: AccountRow): AccountDTO {
+  const billed = new Map<number, number>()
+  for (const s of o.table_sales) for (const l of s.items) if (l.order_item_id !== null) billed.set(l.order_item_id, (billed.get(l.order_item_id) ?? 0) + Number(l.quantity))
   return {
     ...toSummary(o), waiter_id: o.waiter_id, bill_requested_at: o.bill_requested_at ? o.bill_requested_at.toISOString() : null,
-    rate_used: Number(o.rate_used), items: o.items.map(toItem),
+    rate_used: Number(o.rate_used), items: o.items.map(i => toItem(i, billed)),
+    sales: o.table_sales.map(s => ({
+      id: s.id, ticket_number: s.ticket_number, status: s.status, total_usd: Number(s.total_usd), total_bs: Number(s.total_bs),
+      rate_used: Number(s.rate_used), tip_usd: round2(s.tips.reduce((a, t) => a + Number(t.amount_usd), 0)),
+    })),
+    joined_tables: o.joined_tables.map(j => j.table.label),
   }
 }
 
@@ -144,7 +157,11 @@ export async function listAccounts(db: TenantPrisma, opts: { tokens: readonly st
 
 /** ¿La mesa tiene una cuenta abierta? Bloquea eliminarla o desactivarla. */
 export async function tableOpenAccountId(db: TenantPrisma, tableId: number): Promise<number | null> {
-  const open = await db.order.findFirst({ where: { table_id: tableId, account_status: { in: [...OPEN_ACCOUNT_STATUSES] } }, select: { id: true } })
+  // Una mesa unida a otra cuenta ("juntar") también está ocupada por ella.
+  const open = await db.order.findFirst({
+    where:  { account_status: { in: [...OPEN_ACCOUNT_STATUSES] }, OR: [{ table_id: tableId }, { joined_tables: { some: { table_id: tableId } } }] },
+    select: { id: true },
+  })
   return open?.id ?? null
 }
 
@@ -213,6 +230,12 @@ async function recalcTotals(tx: Tx, orderId: number, rate: number): Promise<void
   await tx.order.update({ where: { id: orderId }, data: { total_usd: total, total_bs: round2(total * rate) } })
 }
 
+/** Una cuenta con cobros (ventas no canceladas) ya no admite cambios de ítems: el total de la venta quedaría distinto al de la cuenta. */
+export async function assertNotBilled(tx: Tx, orderId: number): Promise<void> {
+  const n = await tx.sale.count({ where: { table_order_id: orderId, status: { not: 'cancelled' } } })
+  if (n > 0) throw new AccountError(409, 'La cuenta ya tiene cobros: no se puede modificar. Un administrador puede reabrirla.')
+}
+
 /** Cuenta editable (open o bill_requested) del negocio, con su fila bloqueada. 404 si no existe; 409 si ya está cerrada. */
 export async function lockOpenOrder(tx: Tx, businessId: number, orderId: number): Promise<{ id: number; account_status: string | null; rate_used: Prisma.Decimal; price_mode: string; table_id: number | null }> {
   await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} AND business_id = ${businessId} FOR UPDATE`
@@ -236,6 +259,7 @@ export interface AddItemInput { productId: number; quantity: number; modifierIds
 export async function addItem(db: TenantPrisma, businessId: number, orderId: number, userId: number, input: AddItemInput): Promise<void> {
   await db.$transaction(async (tx: Tx) => {
     const order = await lockOpenOrder(tx, businessId, orderId)
+    await assertNotBilled(tx, order.id)
 
     const product = await tx.product.findFirst({
       where: { id: input.productId, business_id: businessId, active: true },
@@ -298,6 +322,7 @@ export async function voidDraftItem(
   const userId = user.id
   await db.$transaction(async (tx: Tx) => {
     const order = await lockOpenOrder(tx, businessId, orderId)
+    await assertNotBilled(tx, order.id)
     // OrderItem no tiene business_id: se aísla por la cuenta (ya validada contra el negocio de la sesión).
     const item = await tx.orderItem.findFirst({ where: { id: itemId, order_id: order.id } })
     if (!item) throw new AccountError(404, 'Ítem no encontrado')

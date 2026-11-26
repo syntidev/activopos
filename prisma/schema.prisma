@@ -274,6 +274,7 @@ model Business {
   prep_stations        PrepStation[]
   product_modifiers    ProductModifier[]
   table_events         TableEvent[]
+  sale_tips            SaleTip[]
 
   @@map("businesses")
 }
@@ -298,30 +299,31 @@ model ServiceArea {
 }
 
 model DiningTable {
-  id          Int     @id @default(autoincrement())
-  business_id Int
-  area_id     Int
-  label       String  @db.VarChar(20)
-  capacity    Int     @default(4)
+  id               Int       @id @default(autoincrement())
+  business_id      Int
+  area_id          Int
+  label            String    @db.VarChar(20)
+  capacity         Int       @default(4)
   // rect | round | stool. Las sillas no se guardan: se dibujan según capacity.
-  shape       String  @default("rect") @db.VarChar(10)
+  shape            String    @default("rect") @db.VarChar(10)
   // Posición y tamaño en celdas de la cuadrícula del plano (no píxeles).
-  pos_x       Int     @default(0)
-  pos_y       Int     @default(0)
-  width       Int     @default(2)
-  height      Int     @default(2)
+  pos_x            Int       @default(0)
+  pos_y            Int       @default(0)
+  width            Int       @default(2)
+  height           Int       @default(2)
   // 0 | 90 | 180 | 270
-  rotation    Int     @default(0)
-  active      Boolean @default(true)
+  rotation         Int       @default(0)
+  active           Boolean   @default(true)
   // Marcas manuales: ocupada y por_cobrar se derivan de la cuenta, estas no.
   cleaning_pending Boolean   @default(false)
   reserved_for     String?   @db.VarChar(80)
   reserved_phone   String?   @db.VarChar(30)
   reserved_at      DateTime?
 
-  business Business    @relation(fields: [business_id], references: [id])
-  area     ServiceArea @relation(fields: [area_id], references: [id])
+  business Business     @relation(fields: [business_id], references: [id])
+  area     ServiceArea  @relation(fields: [area_id], references: [id])
   orders   Order[]
+  joined   OrderTable[]
 
   @@unique([business_id, area_id, label])
   @@index([business_id, area_id])
@@ -517,9 +519,8 @@ model Category {
   products Product[]
   station  PrepStation? @relation(fields: [station_id], references: [id])
 
-  @@index([station_id])
-
   @@unique([business_id, name], name: "name_business")
+  @@index([station_id])
   @@map("categories")
 }
 
@@ -588,9 +589,9 @@ model Product {
   created_at                 DateTime          @default(now())
   updated_at                 DateTime          @updatedAt
 
-  business          Business            @relation(fields: [business_id], references: [id])
-  category          Category?           @relation(fields: [category_id], references: [id])
-  brand             Brand?              @relation(fields: [brand_id], references: [id])
+  business          Business             @relation(fields: [business_id], references: [id])
+  category          Category?            @relation(fields: [category_id], references: [id])
+  brand             Brand?               @relation(fields: [brand_id], references: [id])
   inventory_entries InventoryEntry[]
   sale_items        SaleItem[]
   variants          ProductVariant[]
@@ -598,16 +599,16 @@ model Product {
   // (Caracas) en que el plato esta agotado: pasado ese dia deja de contar solo, sin cron.
   carta_tags        Json?
   allergens         Json?
-  sold_out_date     DateTime?        @db.Date
+  sold_out_date     DateTime?            @db.Date
   option_groups     ProductOptionGroup[]
-  components        ProductComponent[]  @relation("ComboComponents")
-  usedIn            ProductComponent[]  @relation("ComponentUsedIn")
+  components        ProductComponent[]   @relation("ComboComponents")
+  usedIn            ProductComponent[]   @relation("ComponentUsedIn")
   purchase_items    PurchaseItem[]
   collections       ProductCollection[]
   reservas          Reserva[]
   // Restaurante: estación propia del producto (anula la de su categoría; ruteo del KDS, R3).
   station_id        Int?
-  station           PrepStation? @relation(fields: [station_id], references: [id])
+  station           PrepStation?         @relation(fields: [station_id], references: [id])
 
   @@index([brand_id])
   @@index([station_id])
@@ -758,27 +759,27 @@ model InventoryEntry {
 }
 
 model Client {
-  id          Int             @id @default(autoincrement())
-  business_id Int
-  name        String          @db.VarChar(120)
-  phone       String?         @db.VarChar(20)
-  email       String?         @db.VarChar(120)
-  cedula      String?         @db.VarChar(15)
-  notes       String?         @db.Text
-  price_tier  ClientPriceTier @default(detal)
-  is_active   Boolean         @default(true)
+  id                Int             @id @default(autoincrement())
+  business_id       Int
+  name              String          @db.VarChar(120)
+  phone             String?         @db.VarChar(20)
+  email             String?         @db.VarChar(120)
+  cedula            String?         @db.VarChar(15)
+  notes             String?         @db.Text
+  price_tier        ClientPriceTier @default(detal)
+  is_active         Boolean         @default(true)
   // Dónde nació el cliente: 'pos' (cajero) | 'web' (carrito público). Se valida en código.
-  origin      String?         @default("pos") @db.VarChar(10)
+  origin            String?         @default("pos") @db.VarChar(10)
   // Cédula/identidad confirmada por el negocio. Los clientes creados desde la web nacen sin verificar.
-  verified    Boolean?        @default(false)
+  verified          Boolean?        @default(false)
   // Dirección de envío guardada ("misma dirección" en el checkout). Solo la escribe el negocio o el
   // primer pedido web del cliente; un pedido público posterior NUNCA la sobrescribe.
-  address     String?         @db.Text
+  address           String?         @db.Text
   // Crédito del cliente: solo un administrador lo autoriza. Tope NULL = sin límite; se compara contra su saldo por cobrar (CxC + deuda de financiamiento).
-  credit_authorized Boolean   @default(false)
-  credit_limit_usd  Decimal?  @db.Decimal(10, 2)
-  created_at  DateTime        @default(now())
-  updated_at  DateTime        @updatedAt
+  credit_authorized Boolean         @default(false)
+  credit_limit_usd  Decimal?        @db.Decimal(10, 2)
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
 
   business   Business    @relation(fields: [business_id], references: [id])
   sales      Sale[]
@@ -792,15 +793,15 @@ model Client {
 }
 
 model PaymentMethod {
-  id          Int     @id @default(autoincrement())
-  business_id Int
-  name        String  @db.VarChar(60)
-  type        PmType  @default(cash)
-  is_active   Boolean @default(true)
+  id           Int     @id @default(autoincrement())
+  business_id  Int
+  name         String  @db.VarChar(60)
+  type         PmType  @default(cash)
+  is_active    Boolean @default(true)
   // Financiadora (ej. Cashea): exige cédula de persona natural al cobrar. Lo
   // marca el admin en Configuración; nunca se infiere del nombre.
   is_financing Boolean @default(false)
-  sort_order  Int     @default(0)
+  sort_order   Int     @default(0)
 
   business       Business       @relation(fields: [business_id], references: [id])
   sale_payments  SalePayment[]
@@ -856,18 +857,23 @@ model Sale {
   created_at         DateTime   @default(now())
   updated_at         DateTime   @updatedAt
 
-  business      Business      @relation(fields: [business_id], references: [id])
-  cashier       User          @relation("SaleCashier", fields: [cashier_id], references: [id])
-  client        Client?       @relation(fields: [client_id], references: [id])
-  discount_auth User?         @relation("SaleDiscountAuth", fields: [discount_auth_by], references: [id])
-  quotation     Quotation?    @relation(fields: [quotation_id], references: [id])
-  items         SaleItem[]
-  payments      SalePayment[]
-  abonos        SaleAbono[]
-  returns       Return[]
-  order         Order?
+  business       Business      @relation(fields: [business_id], references: [id])
+  cashier        User          @relation("SaleCashier", fields: [cashier_id], references: [id])
+  client         Client?       @relation(fields: [client_id], references: [id])
+  discount_auth  User?         @relation("SaleDiscountAuth", fields: [discount_auth_by], references: [id])
+  quotation      Quotation?    @relation(fields: [quotation_id], references: [id])
+  items          SaleItem[]
+  payments       SalePayment[]
+  abonos         SaleAbono[]
+  returns        Return[]
+  order          Order?
+  // Restaurante (R4): N ventas -> 1 cuenta de mesa (Order.sale_id es unique y queda null en las cuentas de mesa).
+  table_order_id Int?
+  table_order    Order?        @relation("TableAccountSales", fields: [table_order_id], references: [id])
+  tips           SaleTip[]
 
   @@index([quotation_id])
+  @@index([table_order_id])
   @@map("sales")
 }
 
@@ -891,12 +897,15 @@ model SaleItem {
   override_reason     String?  @db.VarChar(255)
   // Origen del precio aplicado: 'bcv' | 'divisa' | 'manual' | 'fallback_bcv'. NULL (filas viejas) = 'bcv'.
   price_source        String?  @db.VarChar(15)
+  // Restaurante (R4): línea de la cuenta de mesa que cubre esta línea de venta. NULL fuera de mesa.
+  order_item_id       Int?
 
   sale         Sale            @relation(fields: [sale_id], references: [id])
   product      Product         @relation(fields: [product_id], references: [id])
   variant      ProductVariant? @relation(fields: [variant_id], references: [id])
   return_items ReturnItem[]
 
+  @@index([order_item_id])
   @@map("sale_items")
 }
 
@@ -1060,32 +1069,32 @@ model Gasto {
 }
 
 model ProductVariant {
-  id              Int      @id @default(autoincrement())
-  product_id      Int
-  tipo            String   @db.VarChar(30)
-  valor           String   @db.VarChar(50)
-  sku             String?  @db.VarChar(50)
+  id               Int      @id @default(autoincrement())
+  product_id       Int
+  tipo             String   @db.VarChar(30)
+  valor            String   @db.VarChar(50)
+  sku              String?  @db.VarChar(50)
   // Código de barras (EAN) de ESTA variante: el POS lo resuelve al escanear (producto + talla). Sin @@unique:
   // la unicidad por negocio se valida en código (ProductVariant no tiene business_id).
-  barcode         String?  @db.VarChar(50)
-  precio_extra    Decimal  @default(0) @db.Decimal(10, 2)
-  price_usd       Float?
+  barcode          String?  @db.VarChar(50)
+  precio_extra     Decimal  @default(0) @db.Decimal(10, 2)
+  price_usd        Float?
   // Precio Divisa PROPIO de la variante (mismo tipo que price_usd). Nulo = usa el Divisa del producto (+precio_extra) si
   // la variante no tiene Full propio; con Full propio y sin Divisa propio, en modo Divisa se cobra el Full (fallback_bcv).
   divisa_price_usd Float?
-  cost_usd        Float?
-  stock           Int      @default(0)
-  color_hex       String?  @db.VarChar(7)
-  combination_key String?  @map("combination_key") @db.VarChar(255)
+  cost_usd         Float?
+  stock            Int      @default(0)
+  color_hex        String?  @db.VarChar(7)
+  combination_key  String?  @map("combination_key") @db.VarChar(255)
   // Categoría del preset usado al crear la variante (ej. 'zap-adulto',
   // 'ropa-nino') — ver PRESET_GROUPS en ProductFormLayout.tsx. `tipo` solo
   // guarda 'talla'|'color'|'personalizado' (restringido por Zod), así que sin
   // este campo se pierde qué preset generó la talla. Nullable: variantes viejas
   // o creadas a mano sin preset no tienen grupo.
-  variant_group   String?  @db.VarChar(30)
-  is_active       Boolean  @default(true)
-  sort_order      Int      @default(0)
-  created_at      DateTime @default(now())
+  variant_group    String?  @db.VarChar(30)
+  is_active        Boolean  @default(true)
+  sort_order       Int      @default(0)
+  created_at       DateTime @default(now())
 
   product     Product     @relation(fields: [product_id], references: [id])
   sale_items  SaleItem[]
@@ -1097,73 +1106,75 @@ model ProductVariant {
 }
 
 model Order {
-  id               Int         @id @default(autoincrement())
-  business_id      Int
-  order_number     String      @db.VarChar(20)
-  status           OrderStatus @default(received)
-  origin           OrderOrigin @default(whatsapp)
-  client_id        Int?
-  client_name      String?     @db.VarChar(120)
-  client_phone     String?     @db.VarChar(20)
-  client_address   String?     @db.Text
+  id                  Int         @id @default(autoincrement())
+  business_id         Int
+  order_number        String      @db.VarChar(20)
+  status              OrderStatus @default(received)
+  origin              OrderOrigin @default(whatsapp)
+  client_id           Int?
+  client_name         String?     @db.VarChar(120)
+  client_phone        String?     @db.VarChar(20)
+  client_address      String?     @db.Text
   // Cédula declarada en ESTE pedido (snapshot): dos clientes pueden compartir teléfono.
-  client_cedula    String?     @db.VarChar(20)
-  delivery_type    String?     @default("pickup") @db.VarChar(20)
-  recipient_name   String?     @db.VarChar(120)
-  delivery_address String?     @db.Text
-  notes            String?     @db.Text
-  delivery_fee     Decimal     @default(0) @db.Decimal(10, 2)
+  client_cedula       String?     @db.VarChar(20)
+  delivery_type       String?     @default("pickup") @db.VarChar(20)
+  recipient_name      String?     @db.VarChar(120)
+  delivery_address    String?     @db.Text
+  notes               String?     @db.Text
+  delivery_fee        Decimal     @default(0) @db.Decimal(10, 2)
   // Modo de precio del pedido: 'bcv' (por defecto) | 'divisa'. Se puede cambiar hasta que se cobre.
-  price_mode       String      @default("bcv") @db.VarChar(10)
+  price_mode          String      @default("bcv") @db.VarChar(10)
   // Financiamiento (Cashea) declarado en el pedido: NULL = no usa. Igual que sales.financing_*.
-  financing_status   String?   @db.VarChar(12)
-  financing_provider String?   @db.VarChar(40)
-  financing_phrase   String?   @db.VarChar(80)
+  financing_status    String?     @db.VarChar(12)
+  financing_provider  String?     @db.VarChar(40)
+  financing_phrase    String?     @db.VarChar(80)
   // Lo que el cliente declaró en el checkout público: 'cashea' | 'bs' | 'divisa' (el precio sigue siendo BCV).
-  payment_kind       String?   @db.VarChar(10)
-  total_usd        Decimal     @db.Decimal(10, 2)
-  total_bs         Decimal     @db.Decimal(12, 2)
-  rate_used        Decimal     @db.Decimal(10, 4)
-  estimated_time   Int?
-  sale_id          Int?        @unique
-  send_to_kds      Boolean     @default(false)
+  payment_kind        String?     @db.VarChar(10)
+  total_usd           Decimal     @db.Decimal(10, 2)
+  total_bs            Decimal     @db.Decimal(12, 2)
+  rate_used           Decimal     @db.Decimal(10, 4)
+  estimated_time      Int?
+  sale_id             Int?        @unique
+  send_to_kds         Boolean     @default(false)
   // Snapshot de envío tal como se capturó en ESTE pedido (no cambia si luego se edita el cliente
   // ni el método). El cliente del pedido es client_id (ya existía, nullable).
-  ship_nombre      String?     @db.VarChar(120)
-  ship_cedula      String?     @db.VarChar(20)
-  ship_telefono    String?     @db.VarChar(20)
-  ship_direccion   String?     @db.Text
-  ship_metodo_id   Int?
+  ship_nombre         String?     @db.VarChar(120)
+  ship_cedula         String?     @db.VarChar(20)
+  ship_telefono       String?     @db.VarChar(20)
+  ship_direccion      String?     @db.Text
+  ship_metodo_id      Int?
   // Método de envío CONGELADO al crear el pedido: si luego se renombra o se borra el método,
   // el pedido conserva lo que el cliente eligió.
-  ship_metodo_label String?    @db.VarChar(120)
-  ship_metodo_kind  String?    @db.VarChar(20)
+  ship_metodo_label   String?     @db.VarChar(120)
+  ship_metodo_kind    String?     @db.VarChar(20)
   // true = la cédula del pedido ya pertenece a un cliente registrado con OTRO nombre (aviso para el negocio).
-  cedula_alert     Boolean?    @default(false)
+  cedula_alert        Boolean?    @default(false)
   // true = envío con datos por completar (oficina/dirección/cédula): el pedido entra igual y el negocio los confirma por WhatsApp.
-  shipping_incomplete Boolean  @default(false)
+  shipping_incomplete Boolean     @default(false)
   // Restaurante (R2): una cuenta de mesa ES un Order con origin = 'table'. Fuera de mesa todos estos campos son null.
   table_id            Int?
   guests              Int?
   waiter_id           Int?
   // open | bill_requested | closed | void. El estado de la mesa se DERIVA de aquí; Order.status no se amplía.
-  account_status      String?   @db.VarChar(16)
+  account_status      String?     @db.VarChar(16)
   opened_at           DateTime?
   bill_requested_at   DateTime?
   closed_at           DateTime?
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
 
   business      Business                @relation(fields: [business_id], references: [id])
   client        Client?                 @relation(fields: [client_id], references: [id])
   sale          Sale?                   @relation(fields: [sale_id], references: [id])
+  table_sales   Sale[]                  @relation("TableAccountSales")
+  joined_tables OrderTable[]
   ship_metodo   BusinessShippingMethod? @relation(fields: [ship_metodo_id], references: [id])
   table         DiningTable?            @relation(fields: [table_id], references: [id])
   waiter        User?                   @relation("OrderWaiter", fields: [waiter_id], references: [id])
   items         OrderItem[]
 
-  @@index([business_id, table_id, account_status])
   @@unique([business_id, order_number])
+  @@index([business_id, table_id, account_status])
   // Tope de pedidos abiertos del checkout público: cuenta por cédula o por teléfono dentro del negocio.
   @@index([business_id, client_cedula])
   @@index([business_id, client_phone])
@@ -1208,23 +1219,23 @@ model BusinessShippingMethod {
 }
 
 model OrderItem {
-  id                 Int     @id @default(autoincrement())
+  id                 Int       @id @default(autoincrement())
   order_id           Int
   product_id         Int
-  product_name       String  @db.VarChar(120)
-  variant_label      String? @db.VarChar(100)
+  product_name       String    @db.VarChar(120)
+  variant_label      String?   @db.VarChar(100)
   // DT-14: sin esto, /api/orders/[id]/cobrar no podía re-consultar
   // precio_extra de la variante al convertir el pedido en venta -- recalculaba
   // el precio solo desde el producto base y perdía el extra. variant_label
   // (arriba) es solo texto para mostrar, no sirve para volver a la DB.
   variant_id         Int?
-  quantity           Decimal @db.Decimal(10, 3)
-  price_per_unit_usd Decimal @db.Decimal(10, 4)
-  subtotal_usd       Decimal @db.Decimal(10, 2)
+  quantity           Decimal   @db.Decimal(10, 3)
+  price_per_unit_usd Decimal   @db.Decimal(10, 4)
+  subtotal_usd       Decimal   @db.Decimal(10, 2)
   // Origen del precio aplicado: 'bcv' | 'divisa' | 'manual' | 'fallback_bcv'. NULL (filas viejas) = 'bcv'.
-  price_source       String? @db.VarChar(15)
+  price_source       String?   @db.VarChar(15)
   // Carta (C2): nota para la cocina de ESTA linea y snapshot de las opciones elegidas ([{group, option, price_usd}]). price_per_unit_usd ya incluye los extras.
-  note               String? @db.VarChar(200)
+  note               String?   @db.VarChar(200)
   modifiers          Json?
   // Restaurante (R2/R3). kds_status: draft | sent | preparing | ready | served | void; null en pedidos normales.
   // station_id es un SNAPSHOT que se congela al enviar (cambiar el ruteo después no mueve ítems en vuelo).
@@ -1314,24 +1325,24 @@ model QuotationItem {
 }
 
 model Return {
-  id             Int          @id @default(autoincrement())
-  business_id    Int
-  sale_id        Int
-  reason         String       @db.VarChar(500)
-  status         ReturnStatus @default(pending)
-  total_usd      Decimal      @db.Decimal(10, 2)
-  total_bs       Decimal      @db.Decimal(12, 2)
-  rate_used      Decimal      @db.Decimal(10, 4)
-  restores_stock Boolean      @default(true)
+  id                       Int          @id @default(autoincrement())
+  business_id              Int
+  sale_id                  Int
+  reason                   String       @db.VarChar(500)
+  status                   ReturnStatus @default(pending)
+  total_usd                Decimal      @db.Decimal(10, 2)
+  total_bs                 Decimal      @db.Decimal(12, 2)
+  rate_used                Decimal      @db.Decimal(10, 4)
+  restores_stock           Boolean      @default(true)
   // Método por el que SALIÓ el dinero del reembolso. Solo los de
   // PaymentMethod.type='cash' afectan el efectivo esperado de la caja
   // (estándar contable 2026-10-06). Nullable: devoluciones previas al estándar
   // no lo registran -- esas se siguen asumiendo en efectivo, que era la
   // decisión vigente cuando se crearon.
   refund_payment_method_id Int?
-  created_by     Int
-  created_at     DateTime     @default(now())
-  updated_at     DateTime     @updatedAt
+  created_by               Int
+  created_at               DateTime     @default(now())
+  updated_at               DateTime     @updatedAt
 
   business              Business       @relation(fields: [business_id], references: [id])
   sale                  Sale           @relation(fields: [sale_id], references: [id])
@@ -1343,12 +1354,12 @@ model Return {
 }
 
 model ReturnItem {
-  id         Int     @id @default(autoincrement())
-  return_id  Int
-  product_id Int
-  qty        Decimal @db.Decimal(10, 3)
-  price_usd  Decimal @db.Decimal(10, 4)
-  total_usd  Decimal @db.Decimal(10, 2)
+  id                Int      @id @default(autoincrement())
+  return_id         Int
+  product_id        Int
+  qty               Decimal  @db.Decimal(10, 3)
+  price_usd         Decimal  @db.Decimal(10, 4)
+  total_usd         Decimal  @db.Decimal(10, 2)
   // Línea EXACTA de la venta que se devuelve. Sin esto, (sale_id, product_id)
   // no identifica la línea: sale_items no tiene @@unique de ese par y el mismo
   // producto puede estar en 2 líneas (variantes, override de precio).
@@ -1869,4 +1880,41 @@ model ProductOption {
 
   @@index([group_id])
   @@map("product_options")
+}
+
+// Restaurante (R4): propina de una venta de mesa. Va FUERA de sales.total_usd (netSales no cambia). Solo el efectivo mueve el efectivo
+// esperado de caja (cashTipTotals en lib/sales-returns.ts).
+model SaleTip {
+  id                Int      @id @default(autoincrement())
+  business_id       Int
+  sale_id           Int
+  waiter_id         Int?
+  payment_method_id Int
+  is_cash           Boolean
+  amount_usd        Decimal  @db.Decimal(10, 2)
+  amount_bs         Decimal  @db.Decimal(12, 2)
+  rate_used         Decimal  @db.Decimal(10, 4)
+  created_by        Int
+  created_at        DateTime @default(now())
+
+  business Business @relation(fields: [business_id], references: [id])
+  sale     Sale     @relation(fields: [sale_id], references: [id])
+
+  @@index([business_id, created_at])
+  @@index([sale_id])
+  @@map("sale_tips")
+}
+
+// Restaurante (R4): mesas adicionales de una cuenta unida ("juntar"). La mesa principal sigue en Order.table_id.
+model OrderTable {
+  id       Int @id @default(autoincrement())
+  order_id Int
+  table_id Int
+
+  order Order       @relation(fields: [order_id], references: [id])
+  table DiningTable @relation(fields: [table_id], references: [id])
+
+  @@unique([order_id, table_id])
+  @@index([table_id])
+  @@map("order_tables")
 }

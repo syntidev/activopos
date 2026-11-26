@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedTenant, TenantError } from '@/lib/tenant'
-import { REALIZED_SALE_STATUSES, cashRefundTotals, netSales } from '@/lib/sales-returns'
+import { REALIZED_SALE_STATUSES, cashRefundTotals, cashTipTotals, netSales } from '@/lib/sales-returns'
 
 export async function GET() {
   try {
@@ -13,7 +13,7 @@ export async function GET() {
 
     if (!register) return NextResponse.json({ isOpen: false })
 
-    const [ventas, payments, movements, abonosAgg, refunds, financingAgg, cashAbonosAgg] = await Promise.all([
+    const [ventas, payments, movements, abonosAgg, refunds, tips, financingAgg, cashAbonosAgg] = await Promise.all([
       // Ventas netas del turno -- fuente única (src/lib/sales-returns.ts).
       netSales(session.businessId, register.opened_at),
 
@@ -48,6 +48,9 @@ export async function GET() {
 
       // Reembolsos EN EFECTIVO pagados durante este turno.
       cashRefundTotals(session.businessId, register.opened_at),
+
+      // Propinas EN EFECTIVO del turno (restaurante): fuera de las ventas netas, pero mueven el efectivo esperado.
+      cashTipTotals(session.businessId, register.opened_at),
 
       // Cobros del turno con métodos financiadores (Cashea): aparte, nunca mezclados con efectivo, Bs o Divisa.
       db.salePayment.aggregate({
@@ -86,7 +89,7 @@ export async function GET() {
       .reduce((a, m) => a + Number(m.amount_bs), 0)
 
     const efectivoEsperado =
-      Number(register.opening_amount_bs) + cashVentasBs + movIn - movOut
+      Number(register.opening_amount_bs) + cashVentasBs + tips.bs + movIn - movOut
 
     return NextResponse.json({
       isOpen: true,
@@ -103,6 +106,7 @@ export async function GET() {
         totalVentasBs: ventas.net.bs,
         totalVentasUsd: ventas.net.usd,
         cashVentasBs,
+        propinasEfectivoBs: tips.bs,
         movIn,
         movOut,
         efectivoEsperado,

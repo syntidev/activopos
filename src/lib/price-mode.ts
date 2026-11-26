@@ -124,6 +124,8 @@ export async function repriceSaleTx(
   if (!sale || (actor.role === 'cashier' && sale.cashier_id !== actor.userId)) {
     throw new PriceModeError(404, 'Venta no encontrada')
   }
+  // Restaurante (R4): la venta de una cuenta de mesa sale de OrderItem (con modificadores). Re-preciarla desde el catálogo la desacoplaría de la cuenta.
+  if (sale.table_order_id !== null) throw new PriceModeError(409, 'La venta de una mesa no cambia de modo de precio: se fija al abrir la cuenta')
   if (!OPEN_SALE_STATUSES.includes(sale.status)) {
     throw new PriceModeError(
       409,

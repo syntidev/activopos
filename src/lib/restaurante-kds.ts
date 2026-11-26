@@ -4,7 +4,7 @@ import type { Prisma } from '@prisma/client'
 import type { SessionPayload } from '@/lib/auth'
 import type { TenantPrisma } from '@/lib/prisma-tenant'
 import { getAuthenticatedTenant } from '@/lib/tenant'
-import { lockOpenOrder, type Tx } from '@/lib/restaurante-cuenta'
+import { assertNotBilled, lockOpenOrder, type Tx } from '@/lib/restaurante-cuenta'
 import { AccountError, OPEN_ACCOUNT_STATUSES, isRestauranteEnabled } from '@/lib/restaurante-server'
 import { stationIdsOfUser } from '@/lib/user-stations'
 import type { ItemKdsStatus, ItemModifierDTO, KdsBoardDTO, KdsItemDTO, KdsTicketDTO, RoutingDTO, StationDTO } from '@/types/restaurante'
@@ -138,6 +138,7 @@ export async function setRouting(db: TenantPrisma, input: z.infer<typeof routing
 export async function sendItems(db: TenantPrisma, businessId: number, orderId: number, userId: number, course: number | null): Promise<{ sent: number; direct: number }> {
   return db.$transaction(async (tx: Tx) => {
     const order = await lockOpenOrder(tx, businessId, orderId)
+    await assertNotBilled(tx, order.id)
     const drafts = await tx.orderItem.findMany({ where: { order_id: order.id, kds_status: 'draft', ...(course !== null ? { course } : {}) }, orderBy: { id: 'asc' } })
     if (drafts.length === 0) throw new AccountError(422, course !== null ? `No hay ítems del curso ${course} por enviar` : 'No hay ítems por enviar')
 

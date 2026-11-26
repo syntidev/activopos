@@ -164,11 +164,14 @@ export function serializeTable(row: TableRow, account: OpenAccountRow | null = n
 /** Serializa mesas junto con su cuenta abierta (una sola consulta extra, scope de tenant incluido). */
 export async function serializeTables(db: TenantPrisma, rows: readonly TableRow[]): Promise<DiningTableDTO[]> {
   if (rows.length === 0) return []
+  const ids = rows.map(r => r.id)
   const accounts = await db.order.findMany({
-    where:  { table_id: { in: rows.map(r => r.id) }, account_status: { in: [...OPEN_ACCOUNT_STATUSES] } },
-    select: { id: true, table_id: true, account_status: true, total_usd: true, total_bs: true, opened_at: true },
+    where:  { account_status: { in: [...OPEN_ACCOUNT_STATUSES] }, OR: [{ table_id: { in: ids } }, { joined_tables: { some: { table_id: { in: ids } } } }] },
+    select: { id: true, table_id: true, account_status: true, total_usd: true, total_bs: true, opened_at: true, joined_tables: { select: { table_id: true } } },
   })
-  const byTable = new Map(accounts.map(a => [a.table_id, a]))
+  // Una mesa unida ("juntar") figura ocupada con la cuenta de la mesa principal.
+  const byTable = new Map<number | null, (typeof accounts)[number]>()
+  for (const a of accounts) { byTable.set(a.table_id, a); for (const j of a.joined_tables) byTable.set(j.table_id, a) }
   const ready = accounts.length === 0 ? [] : await db.orderItem.groupBy({
     by: ['order_id'], where: { order_id: { in: accounts.map(a => a.id) }, kds_status: 'ready' }, _count: { _all: true },
   })
@@ -265,4 +268,12 @@ export async function countOpenTableAccounts(businessId: number): Promise<number
 /** Lee el cuerpo JSON sin reventar con un cuerpo vacío o roto. */
 export async function readJson(req: Request): Promise<unknown> {
   try { return await req.json() } catch { return null }
+}
+
+/** Cobro y propinas: cajero y administrador. El mesonero no cobra (decisión de Carlos): 403. */
+export async function requireCashierAccess(): Promise<RestauranteAccess | NextResponse> {
+  const access = await requireRestauranteAccess()
+  if (access instanceof NextResponse) return access
+  if (access.session.role === 'waiter') return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+  return access
 }

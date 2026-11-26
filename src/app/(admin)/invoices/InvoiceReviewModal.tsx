@@ -4,7 +4,10 @@ import { useState } from 'react'
 import { useToast } from '@/components/ui/Toast'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { BILLING_CYCLES } from '@/lib/plan-limits'
 import styles from './invoices.module.css'
+
+const CICLOS = BILLING_CYCLES.negocio_activo
 
 interface Props {
   invoiceId:    number
@@ -92,10 +95,10 @@ export function InvoiceReviewModal({ invoiceId, invoiceLabel, action, onClose, o
                 value={ciclo}
                 onChange={e => setCiclo(e.target.value as Ciclo)}
               >
-                <option value="mensual">Mensual ($19 · 1 mes)</option>
-                <option value="trimestral">Trimestral ($50 · 3 meses)</option>
-                <option value="semestral">Semestral ($90 · 6 meses)</option>
-                <option value="anual">Anual ($156 · 12 meses)</option>
+                <option value="mensual">Mensual (${CICLOS.mensual.totalAmount} · 1 mes)</option>
+                <option value="trimestral">Trimestral (${CICLOS.trimestral.totalAmount} · 3 meses)</option>
+                <option value="semestral">Semestral (${CICLOS.semestral.totalAmount} · 6 meses)</option>
+                <option value="anual">Anual (${CICLOS.anual.totalAmount} · 12 meses)</option>
               </select>
             </div>
           )}

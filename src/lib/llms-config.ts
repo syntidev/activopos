@@ -2,7 +2,7 @@
 // src/app/llms.txt/route.ts y src/app/llms-full.txt/route.ts). Editar acá,
 // nunca los .txt a mano — no existen como archivos estáticos.
 
-import { BILLING_CYCLES, type BillingCycleKey } from '@/lib/plan-limits'
+import { BILLING_CYCLES, PLAN_LIMITS, type BillingCycleKey } from '@/lib/plan-limits'
 
 export const SITE_BASE_URL = 'https://activopos.com'
 
@@ -212,8 +212,8 @@ export const NOT_INCLUDED = [
 ]
 
 export const PLANS: Plan[] = [
-  { name: 'Gratis', priceUsd: 0, shortDescription: 'hasta 40 productos, 1 usuario, POS y dual moneda BCV. Gratis permanente.', fullDescription: 'hasta 40 productos y 1 usuario, con POS táctil, lector de código de barras por la cámara del móvil y precios simultáneos en USD y Bs a tasa BCV. Gratis de forma permanente, para empezar a vender sin costo.' },
-  { name: 'Negocio Activo', priceUsd: 19, shortDescription: 'productos ilimitados, hasta 10 usuarios, catálogo digital, finanzas completas.', fullDescription: 'productos ilimitados, hasta 10 usuarios, catálogo digital con checkout por WhatsApp, gestión de clientes y proveedores, finanzas completas (cuentas por cobrar y por pagar, punto de equilibrio) y cotizaciones con PDF. Único plan pago, 19 USD al mes con descuento por permanencia en ciclos trimestral, semestral y anual.' },
+  { name: 'Gratis', priceUsd: 0, shortDescription: `hasta ${PLAN_LIMITS.gratis.products} productos, ${PLAN_LIMITS.gratis.users} usuario, POS y dual moneda BCV. Gratis permanente.`, fullDescription: `hasta ${PLAN_LIMITS.gratis.products} productos y ${PLAN_LIMITS.gratis.users} usuario, con POS táctil, lector de código de barras por la cámara del móvil y precios simultáneos en USD y Bs a tasa BCV. Gratis de forma permanente, para empezar a vender sin costo.` },
+  { name: 'Negocio Activo', priceUsd: BILLING_CYCLES.negocio_activo.mensual.monthlyEquivalent, shortDescription: `productos ilimitados, hasta ${PLAN_LIMITS.negocio_activo.users} usuarios, catálogo digital, finanzas completas.`, fullDescription: `productos ilimitados, hasta ${PLAN_LIMITS.negocio_activo.users} usuarios, catálogo digital con checkout por WhatsApp, gestión de clientes y proveedores, finanzas completas (cuentas por cobrar y por pagar, punto de equilibrio) y cotizaciones con PDF. Único plan pago, ${BILLING_CYCLES.negocio_activo.mensual.monthlyEquivalent} USD al mes con descuento por permanencia en ciclos trimestral, semestral y anual.` },
 ]
 
 // Los precios por ciclo NO se duplican acá — se leen de plan-limits.ts, la

@@ -32,6 +32,7 @@ import {
 import { ToastProvider, useToast } from '@/components/ui/Toast'
 import { HelpModal } from '@/components/help/HelpModal'
 import { type HelpModule } from '@/lib/help-content'
+import { BILLING_CYCLES, PLAN_LIMITS } from '@/lib/plan-limits'
 import { botReplyAI, type BotRule } from '@/lib/ayuda-bot'
 import styles from './ayuda.module.css'
 
@@ -230,7 +231,7 @@ const BOT_RULES: BotRule[] = [
   // 12. Planes — 'precio'/'cuanto cuesta'/'pro' sueltos se sacaron: 'pro' es
   // substring de "producto"/"proveedor" (match falso constante) y 'precio' sin
   // calificar competía con preguntas de precio de producto (regla 0).
-  { keywords: ['plan','planes','cuanto cuesta activopos','cuanto cuesta el sistema','precio del plan','plan gratis','plan negocio activo','upgrade','mejorar plan'], response: 'Hay dos planes: Gratis (permanente, sin tarjeta — hasta 40 productos y 1 usuario, POS e inventario) y Negocio Activo ($19/mes — productos ilimitados, hasta 10 usuarios, catálogo digital, finanzas, proveedores y todo el sistema). Puedes mejorar tu plan desde Configuración.' },
+  { keywords: ['plan','planes','cuanto cuesta activopos','cuanto cuesta el sistema','precio del plan','plan gratis','plan negocio activo','upgrade','mejorar plan'], response: `Hay dos planes: Gratis (permanente, sin tarjeta — hasta ${PLAN_LIMITS.gratis.products} productos y ${PLAN_LIMITS.gratis.users} usuario, POS e inventario) y Negocio Activo ($${BILLING_CYCLES.negocio_activo.mensual.monthlyEquivalent}/mes — productos ilimitados, hasta ${PLAN_LIMITS.negocio_activo.users} usuarios, catálogo digital, finanzas, proveedores y todo el sistema). Puedes mejorar tu plan desde Configuración.` },
 
   // 13. Preguntas frecuentes venezolanas
   { keywords: ['seniat','factura fiscal','factura legal'], response: 'ActivoPOS no reemplaza tu facturación fiscal ante el SENIAT — la complementa. Los tickets que genera son comprobantes de venta para tu control interno, no facturas fiscales.' },

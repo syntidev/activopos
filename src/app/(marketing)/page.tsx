@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { getBcvRate, getParallelRate } from '@/lib/bcv'
-import { BILLING_CYCLES } from '@/lib/plan-limits'
+import { BILLING_CYCLES, PLAN_LIMITS } from '@/lib/plan-limits'
 import HeroSection from '@/components/marketing/sections/HeroSection'
 import PainSection from '@/components/marketing/sections/PainSection'
 import LivePulseSection from '@/components/marketing/sections/LivePulseSection'
@@ -65,6 +65,9 @@ const ORGANIZATION_JSON_LD = {
   ],
 }
 
+// Precios y límites salen de plan-limits.ts: al activar PRICES_PUBLISHED este JSON-LD cambia solo.
+const NA = BILLING_CYCLES.negocio_activo
+
 const SOFTWARE_APPLICATION_JSON_LD = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
@@ -81,20 +84,20 @@ const SOFTWARE_APPLICATION_JSON_LD = {
       price: '0.00',
       priceCurrency: 'USD',
       priceValidUntil: '2027-12-31',
-      description: 'Hasta 40 productos, 1 usuario, POS táctil, BCV automático. Gratis para siempre.',
+      description: `Hasta ${PLAN_LIMITS.gratis.products} productos, ${PLAN_LIMITS.gratis.users} usuario, POS táctil, BCV automático. Gratis para siempre.`,
     },
     {
       '@type': 'Offer',
       name: 'Negocio Activo — Mensual',
-      price: '19.00',
+      price: NA.mensual.totalAmount.toFixed(2),
       priceCurrency: 'USD',
       priceValidUntil: '2027-12-31',
-      description: 'Productos ilimitados, hasta 10 usuarios, catálogo digital, finanzas completas.',
+      description: `Productos ilimitados, hasta ${PLAN_LIMITS.negocio_activo.users} usuarios, catálogo digital, finanzas completas.`,
     },
     {
       '@type': 'Offer',
       name: 'Negocio Activo — Anual',
-      price: '156.00',
+      price: NA.anual.totalAmount.toFixed(2),
       priceCurrency: 'USD',
       priceValidUntil: '2027-12-31',
       // El ahorro sale de plan-limits (30% sellado de marketing); antes decía 32% a mano y contradecía la fuente única.
@@ -131,7 +134,7 @@ const FAQ_PAGE_JSON_LD = {
       name: '¿Cuánto cuesta ActivoPOS?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'El plan Gratis es $0 para siempre. El plan Negocio Activo cuesta $19 al mes, o $13 al mes si pagas anual ($156 al año).',
+        text: `El plan Gratis es $0 para siempre. El plan Negocio Activo cuesta $${NA.mensual.monthlyEquivalent} al mes, o $${NA.anual.monthlyEquivalent} al mes si pagas anual ($${NA.anual.totalAmount} al año).`,
       },
     },
     {

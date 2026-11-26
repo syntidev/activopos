@@ -188,6 +188,7 @@ export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt,
             </label>
           ))}
         </div>
+        {plan === 'gratis' && <span className={styles.planStatusHint} data-testid="ps-addon-gratis-nota">Se activa al subir a un plan pago.</span>}
         <span className={styles.planStatusHint}>Se guarda con «Guardar cambios». KDS ya viene incluido en {PLAN_DISPLAY.operacion}.</span>
       </div>
       {confirmKds !== null && (

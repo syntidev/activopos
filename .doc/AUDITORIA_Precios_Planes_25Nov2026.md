@@ -60,7 +60,9 @@ Leyenda: **LEE** = lee `plan-limits.ts` (no puede desincronizarse) · **COINCIDE
 
 Maquetas del producto: `src/app/not-found.tsx` L13-16 ("$0.00"), `components/marketing/sections/LivePulseSection.tsx` (cobrado hoy $431.40, cuenta por pagar $120.00, etc.), `FeatureTabsSection.tsx` ($15.00 camisa, $8.50, $3.60, ticket $51.70), `FeatureListBentoSection.tsx` ($340.00, $128.50…), `lib/og/image.tsx` L29 (comentario con "$15.00") y `lib/social/brand.ts` L110 (ejemplo "$12.50 / Bs. 456.00"). Todo es dato ilustrativo.
 
-## B. Riesgo al publicar los precios nuevos (NO corregido; coincide hoy)
+## B. Riesgo al publicar los precios nuevos — RESUELTO (26 nov 2026)
+
+Los valores de esta sección ya leen `plan-limits.ts` (`BILLING_CYCLES` / `PLAN_LIMITS`): JSON-LD de portada (ofertas y FAQPage), `faq/page.tsx`, `llms-config.ts` (`priceUsd` y textos), `PricingSection` (`MONTHLY_FULL`), `InvoiceReviewModal`, límites de `help-content.ts`, bot de `(dashboard)/ayuda/page.tsx` y `UpgradeModal`. Con `PRICES_PUBLISHED=false` el texto visible, el JSON-LD y `llms*.txt` quedaron idénticos byte a byte (diff contra línea base; solo cambia el ticker de tasa en vivo de la portada). Lo que sigue es el análisis original.
 
 Cuando `PRICES_PUBLISHED` pase a `true`, `BILLING_CYCLES.negocio_activo` pasa a $29 y estos lugares seguirían diciendo $19 / $13 / $156. Conviene derivarlos de `plan-limits.ts` en el mismo cambio que active el flag:
 

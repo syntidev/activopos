@@ -4,6 +4,7 @@ import path from 'node:path'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { PLAN_TIER_KEYS, isPaidPlan } from '@/lib/plan-limits'
 
 type RouteContext = { params: { id: string } }
 
@@ -55,7 +56,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
 const PatchSchema = z.object({
   active: z.boolean().optional(),
-  plan:   z.enum(['gratis', 'negocio_activo']).optional(),
+  plan:   z.enum(PLAN_TIER_KEYS).optional(),
 })
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
@@ -82,7 +83,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       // lo apaga: el dueño puede haberlo activado por su cuenta.
       // subscription_expires_at NO se toca acá: si ya hay fecha pagada, este
       // endpoint no la pisa (eso es trabajo de tenants/[id]/plan).
-      ...(data.plan === 'negocio_activo' ? { catalog_active: true, subscription_active: true } : {}),
+      ...(isPaidPlan(data.plan) ? { catalog_active: true, subscription_active: true } : {}),
       // gratis no vence: se limpia la fecha para que plan-guard no lo expire.
       // subscription_active queda true — es bandera de suspensión, no de plan pago.
       ...(data.plan === 'gratis' ? { subscription_active: true, subscription_expires_at: null } : {}),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { canUse, loadEntitlementSource } from '@/lib/entitlements'
 import { getActiveRate } from '@/lib/bcv'
 import {
   catalogLimiter, catalogOrderCedulaLimiter, catalogOrderIpLimiter, catalogOrderPhoneLimiter, getClientIp,
@@ -307,7 +308,10 @@ async function createOrder(req: NextRequest, { params }: RouteContext): Promise<
     }
   }
 
-  const needsKds = dbProducts.some(p => p.category?.requires_preparation === true)
+  // A cocina solo si hay algo que preparar Y el negocio puede USAR el KDS (derecho del plan/add-on, suscripción vigente, módulo encendido).
+  // Sin derecho el pedido del cliente se acepta igual: solo no se envía a la pantalla de cocina (nunca se rechaza una compra por el plan).
+  const kdsSource = await loadEntitlementSource(business.id)
+  const needsKds = dbProducts.some(p => p.category?.requires_preparation === true) && !!kdsSource && canUse(kdsSource, 'kds')
 
   const { rate } = await getActiveRate(business.id)
 

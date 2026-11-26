@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts } from './p0-helpers'
+import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts, setCatalogTemplate, setDivisaMethods } from './d-tenant'
 
 /**
  * P0 precios del catálogo público (negocio 87): muestra SIEMPRE price_per_unit_usd, sin tachado.
@@ -12,8 +12,13 @@ test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 test.describe.configure({ mode: 'serial' })
 let pid = 0
 
+let restoreTemplate: () => void = () => undefined
+let restoreDivisa: () => void = () => undefined
+
 test.beforeAll(async () => {
   cleanupTestProducts('Precio')
+  restoreTemplate = setCatalogTemplate('premium') // sin plantilla premium /catalogo-premium/<slug> responde 404
+  restoreDivisa = setDivisaMethods() // como en el 87: Divisa configurada, y aun así el catálogo muestra el precio de venta
   const api = await apiAs()
   const r = await api.post('/api/products', {
     data: {
@@ -27,7 +32,7 @@ test.beforeAll(async () => {
   await api.dispose()
 })
 
-test.afterAll(() => { cleanupTestProducts('Precio') })
+test.afterAll(() => { cleanupTestProducts('Precio'); restoreDivisa(); restoreTemplate() })
 
 test('API pública: price_usd es el precio de venta (492), no el mayorista ni el de divisa', async () => {
   const api = await apiAs(null)

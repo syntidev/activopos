@@ -1,6 +1,6 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, apiAs, cleanupTestProducts, tokenFor } from './p0-helpers'
+import { BASE, BUSINESS_ID, apiAs, cleanupTestProducts, tokenFor } from './d-tenant'
 
 /**
  * GET /api/products/search?id=12 | ?id=12,15,40 (máx. 50): hidratar borradores del POS por id exacto con rol CAJERO

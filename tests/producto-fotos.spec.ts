@@ -3,38 +3,27 @@ import { existsSync, mkdtempSync } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
 import sharp from 'sharp'
-import { SignJWT } from 'jose'
-import { envValue } from './alta-helpers'
+import { ADMIN_ID as ADMIN_A, BASE, BUSINESS_ID, CASHIER_ID as ADMIN_B, cashSnapshot, login, purgeCashSince, tokenFor, type CashSnapshot } from './d-tenant'
 
 /**
- * Fotos del formulario de producto (negocio 87, servidor local; E2E_BASE_URL para otro puerto).
+ * Fotos del formulario de producto (tenant propio 267 "ZZ D Pruebas", servidor local; E2E_BASE_URL para otro puerto).
  * Regresión P0: las casillas dejaron de aceptar archivos porque el límite de subidas era por IP y, sin
  * X-Real-IP / cf-connecting-ip, todos los negocios compartían un solo contador (20 por minuto).
+ * ADMIN_B es el segundo usuario del tenant (el cajero 213, con sesión de admin): el 267 no tiene un segundo admin.
  */
-const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
-const BUSINESS_ID = 87
-const ADMIN_A = 86
-const ADMIN_B = 104
 const ROOT = path.join(__dirname, '..')
 
 test.use({ baseURL: BASE, storageState: { cookies: [], origins: [] } })
 test.describe.configure({ mode: 'serial' })
 
-async function tokenFor(userId: number): Promise<string> {
-  return new SignJWT({ userId, businessId: BUSINESS_ID, role: 'admin', name: 'Admin OnBike' })
-    .setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('1h')
-    .sign(new TextEncoder().encode(envValue('JWT_SECRET')))
-}
-
-async function login(page: Page, userId = ADMIN_A): Promise<void> {
-  await page.context().addCookies([{ name: 'activopos_session', value: await tokenFor(userId), url: BASE }])
-}
-
 const FORMATS = ['png', 'jpg', 'webp'] as const
 const files: Record<(typeof FORMATS)[number], string> = { png: '', jpg: '', webp: '' }
 const createdIds: number[] = []
 
+let before: CashSnapshot = { register: 0, log: 0, sale: 0 }
+
 test.beforeAll(async () => {
+  before = cashSnapshot()
   const dir = mkdtempSync(path.join(tmpdir(), 'fotos-e2e-'))
   const base = sharp({ create: { width: 640, height: 480, channels: 3, background: { r: 200, g: 40, b: 40 } } })
   files.png = path.join(dir, 'foto.png');   await base.clone().png().toFile(files.png)
@@ -46,6 +35,7 @@ test.afterAll(async () => {
   const api = await pwRequest.newContext({ baseURL: BASE, extraHTTPHeaders: { cookie: `activopos_session=${await tokenFor(ADMIN_A)}` } })
   for (const id of createdIds) await api.delete(`/api/products/${id}`)
   await api.dispose()
+  purgeCashSince(before) // la bitácora product_deleted de esos borrados
 })
 
 /** Clic real en "Foto N" -> selector de archivos -> elegir archivo -> espera el 201 de la subida. */

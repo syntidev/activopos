@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts } from './p0-helpers'
+import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts } from './d-tenant'
 
 /**
  * T3 financiamiento (negocio 87): config por negocio (cashea / other / own), logo subido, elegibilidad

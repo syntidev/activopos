@@ -1,10 +1,11 @@
 import { test, expect, request as pwRequest, type APIRequestContext, type Page } from '@playwright/test'
 import { sql } from './alta-helpers'
-import { BASE, BUSINESS_ID, SLUG, apiAs, cleanupTestProducts, login } from './p0-helpers'
+import { BASE, BUSINESS_ID, SLUG, apiAs, cashSnapshot, cleanupTestProducts, login, purgeCashSince, setCatalogTemplate, setDivisaMethods, type CashSnapshot } from './d-tenant'
+import { closeOwnCashRegister, openOwnCashRegister } from './cash-helpers'
 
 /**
  * Interfaz de Cashea (financiamiento declarado en el ticket): checkout del catálogo, Pedidos y POS.
- * Contrato: .doc/CONTRATO_CASHEA_TICKET.md. Negocio 87, servidor local. Capturas en test-results/cashea/.
+ * Contrato: .doc/CONTRATO_CASHEA_TICKET.md. Tenant propio 267, servidor local. Capturas en test-results/cashea/.
  */
 const FIN_NAME = 'ZZ Cashea UI Pago'
 const SHOTS = 'test-results/cashea'
@@ -46,9 +47,18 @@ async function financiamiento(enabled: boolean): Promise<void> {
   expect(r.status()).toBe(200)
 }
 
+let restoreTemplate: () => void = () => undefined
+let restoreDivisa: () => void = () => undefined
+let abriCaja = false
+let cashBefore: CashSnapshot = { register: 0, log: 0, sale: 0 }
+
 test.beforeAll(async () => {
   cleanup()
+  cashBefore = cashSnapshot()
+  restoreTemplate = setCatalogTemplate('premium') // sin plantilla premium /catalogo-premium/<slug> responde 404
+  restoreDivisa = setDivisaMethods() // sin catalog_divisa_methods el checkout no ofrece la opción Divisa
   api = await apiAs()
+  abriCaja = await openOwnCashRegister(api) // el POS por UI exige caja abierta: se abre una propia
   publico = await pwRequest.newContext({ baseURL: BASE })
   await financiamiento(true)
   const base = { cost_per_unit_usd: 40, price_per_unit_usd: 100, stock_quantity: 50, show_in_catalog: true, catalog_visibility: 'visible' }
@@ -60,7 +70,11 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await financiamiento(false).catch(() => undefined)
   sql(`UPDATE businesses SET settings = JSON_REMOVE(JSON_REMOVE(IFNULL(settings, JSON_OBJECT()), '$.financing'), '$.catalog_financing_badge') WHERE id = ${BUSINESS_ID}`)
+  if (abriCaja) await closeOwnCashRegister(api)
   cleanup()
+  purgeCashSince(cashBefore)
+  restoreDivisa()
+  restoreTemplate()
   await api.dispose()
   await publico.dispose()
 })

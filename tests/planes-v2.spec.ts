@@ -69,8 +69,9 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   limpiarPedidos()
   sql(`DELETE FROM activity_logs WHERE business_id=${BID} AND model_type='Business' AND model_id=${BID} AND action IN ('addon_updated','plan_updated')`)
-  sql(`UPDATE businesses SET catalog_plan=${original.plan ? `'${original.plan}'` : 'NULL'}, addons='${original.addons}', modules_enabled='${original.modules}',
-       subscription_active=${original.active || 1}, subscription_expires_at=${original.expires === 'NULL' ? 'NULL' : `'${original.expires}'`} WHERE id=${BID}`)
+  // Estado BASE del tenant ZZA (el que necesitan las demás specs: Finanzas, crédito, etc.), NO "lo que se encontró": una corrida anterior
+  // fallida puede haberlo dejado en gratis/suspendido y restaurar eso envenenaría a las specs siguientes. Solo modules_enabled se devuelve tal cual.
+  sql(`UPDATE businesses SET catalog_plan='negocio_activo', addons='', modules_enabled='${original.modules}', subscription_active=1, subscription_expires_at=NULL WHERE id=${BID}`)
   await tenant?.dispose()
   await superAdmin?.dispose()
 })

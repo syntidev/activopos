@@ -36,6 +36,12 @@ const liveItems = (t: KdsTicketDTO): KdsItemDTO[] => t.items.filter(i => i.statu
 
 function elapsedMs(t: KdsTicketDTO, now: number): number { return Math.max(0, now - new Date(t.sent_at).getTime()) }
 
+/** Comanda lista: el tiempo que tardó (envío → listo), fijo. Sin ready_at registrado, cae al reloj corrido. */
+function shownMs(t: KdsTicketDTO, column: Column, now: number): number {
+  if (column === 'listas' && t.ready_at) return Math.max(0, new Date(t.ready_at).getTime() - new Date(t.sent_at).getTime())
+  return elapsedMs(t, now)
+}
+
 function clock(ms: number): string {
   const total = Math.floor(ms / 1000)
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
@@ -70,7 +76,7 @@ interface TicketProps {
 }
 
 function Ticket({ ticket, column, station, now, queued, onAct, onFire }: TicketProps) {
-  const ms = elapsedMs(ticket, now)
+  const ms = shownMs(ticket, column, now)
   const warn = station !== undefined && column !== 'listas' && ms >= station.warn_min * 60_000
   const cls = [styles.tk, column === 'atrasadas' ? styles.late : warn ? styles.warn : '', column === 'listas' ? styles.done : ''].filter(Boolean).join(' ')
   const startable = ticket.items.find(i => i.status === 'sent' && !i.held)

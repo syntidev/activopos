@@ -194,6 +194,8 @@ export interface KdsTicketDTO {
   waiter_name:  string | null
   /** ISO 8601: el envío más antiguo de los ítems que siguen en preparación. */
   sent_at:      string
+  /** ISO 8601: cuándo quedó lista la comanda (el último ítem listo); null si aún no o si no se registró. */
+  ready_at:     string | null
   items:        KdsItemDTO[]
 }
 

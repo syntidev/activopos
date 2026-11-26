@@ -251,6 +251,28 @@ test('sin flag · negocio sin Restaurante: /api/restaurante/kds es 404 y el KDS 
   await expect(page.getByRole('link', { name: 'Pedidos normales' })).toHaveCount(0)
 })
 
+test('Listas · muestra el tiempo hasta que quedó lista (fijo), no el reloj corrido desde el envío', async ({ page, context }) => {
+  await login(context, A, 'admin', admin)
+  const tid = (await body<{ tables: Array<{ id: number }> }>(await call(page, 'POST', '/api/restaurante/mesas', { area_id: areaId, label: '15', capacity: 2 }))).tables[0].id
+  const acc = (await body<{ account: { id: number } }>(await call(page, 'POST', '/api/restaurante/cuentas', { table_id: tid, guests: 1, waiter_id: waiter }))).account.id
+  await call(page, 'POST', `/api/restaurante/cuentas/${acc}/items`, { product_id: carta.pasta, quantity: 1 })
+  await call(page, 'POST', `/api/restaurante/cuentas/${acc}/enviar`, {})
+  // Enviada hace 5 min y lista hace 2: tardó 03:00 y ese número no debe seguir corriendo.
+  sql(`UPDATE order_items SET kds_status='ready', sent_at = UTC_TIMESTAMP(3) - INTERVAL 5 MINUTE, ready_at = UTC_TIMESTAMP(3) - INTERVAL 2 MINUTE, kds_updated_at = UTC_TIMESTAMP(3) WHERE order_id=${acc}`)
+
+  await login(context, A, 'kitchen', cook)
+  const t = (await board(page)).tickets.find(x => x.order_id === acc) as (Board['tickets'][number] & { ready_at: string | null; sent_at: string }) | undefined
+  expect(t?.ready_at).not.toBeNull()
+  expect((new Date(t?.ready_at ?? 0).getTime() - new Date(t?.sent_at ?? 0).getTime()) / 1000).toBeCloseTo(180, 0)
+
+  await page.goto('/kds')
+  const card = page.getByRole('article', { name: 'Comanda 15' })
+  await expect(card).toBeVisible({ timeout: 8_000 })
+  await expect(card).toContainText('03:00')
+  await page.waitForTimeout(2_500)
+  await expect(card).toContainText('03:00')
+})
+
 test('capturas · KDS 1280 y 375, sin conexión, config y cuenta', async ({ page, context }) => {
   // Más comandas con distintas edades para que el tablero muestre todo el lenguaje de color.
   await login(context, A, 'admin', admin)
@@ -259,7 +281,7 @@ test('capturas · KDS 1280 y 375, sin conexión, config y cuenta', async ({ page
     const acc = (await body<{ account: { id: number } }>(await call(page, 'POST', '/api/restaurante/cuentas', { table_id: tid, guests: 2, waiter_id: waiter }))).account.id
     await call(page, 'POST', `/api/restaurante/cuentas/${acc}/items`, { product_id: carta.pasta, quantity: qty, note: 'bien cocido' })
     await call(page, 'POST', `/api/restaurante/cuentas/${acc}/enviar`, {})
-    sql(`UPDATE order_items SET kds_status='${status}', sent_at = UTC_TIMESTAMP(3) - INTERVAL ${minutes} MINUTE, kds_updated_at = UTC_TIMESTAMP(3) WHERE order_id=${acc}`)
+    sql(`UPDATE order_items SET kds_status='${status}', sent_at = UTC_TIMESTAMP(3) - INTERVAL ${minutes} MINUTE, kds_updated_at = UTC_TIMESTAMP(3), ready_at = IF(kds_status='ready', UTC_TIMESTAMP(3) - INTERVAL 1 MINUTE, NULL) WHERE order_id=${acc}`)
   }
   await mesa('9', 1, 'sent', 2); await mesa('11', 12, 'preparing', 3); await mesa('12', 24, 'preparing', 2); await mesa('13', 3, 'ready', 1)
 

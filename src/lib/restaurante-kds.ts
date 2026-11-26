@@ -336,9 +336,15 @@ export async function loadBoard(db: TenantPrisma, businessId: number, access: Kd
     } else {
       tickets.set(key, {
         order_id: it.order_id, station_id: it.station_id ?? 0, order_number: it.order.order_number, table_label: it.order.table?.label ?? null,
-        area_name: it.order.table?.area.name ?? null, waiter_name: it.order.waiter?.name ?? null, sent_at: sentAt, items: [dto],
+        area_name: it.order.table?.area.name ?? null, waiter_name: it.order.waiter?.name ?? null, sent_at: sentAt, ready_at: null, items: [dto],
       })
     }
+  }
+  // Hora en que quedó lista: la del último ítem listo (todos los vivos lo están cuando la comanda cae en "Listas").
+  for (const it of items) {
+    const t = tickets.get(`${it.order_id}:${it.station_id}`)
+    const at = it.kds_status === 'ready' && it.ready_at ? it.ready_at.toISOString() : null
+    if (t && at && (t.ready_at === null || at > t.ready_at)) t.ready_at = at
   }
   const sorted = Array.from(tickets.values()).sort((a, b) => a.sent_at.localeCompare(b.sent_at))
   for (const t of sorted) t.items.sort((a, b) => a.course - b.course || a.id - b.id)

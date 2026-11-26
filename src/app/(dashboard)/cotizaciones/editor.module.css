@@ -356,9 +356,10 @@
   background: var(--color-surface);
 }
 
+/* El stepper pide su ancho completo (min-content) y no se comprime; precio y descuento se reparten el resto. */
 .itemControls {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: min-content minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-2);
   align-items: flex-end;
 }
@@ -367,10 +368,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  min-width: min-content;
 }
 
 .stepBtn {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   min-width: var(--touch-min);
@@ -385,11 +388,43 @@
 .stepBtn:hover { background: var(--color-surface-3); }
 .stepBtn:focus-visible { outline: var(--focus-ring); }
 
+/* Cantidad: sin flechas nativas (comían el ancho) y sin padding lateral, para que quepan 4 cifras con decimales. */
 .qtyInput {
   composes: input;
-  width: var(--space-11);
+  flex: none;
+  width: var(--qty-field-w);
+  padding-inline: 0;
   text-align: center;
+  font-variant-numeric: tabular-nums;
   background: var(--color-surface);
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.qtyInput::-webkit-inner-spin-button,
+.qtyInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Escritorio (puntero fino): botones compactos y campo más ancho. Táctil conserva --touch-min. */
+@media (hover: hover) and (pointer: fine) {
+  .stepBtn {
+    min-width: var(--qty-btn-fine);
+    min-height: var(--qty-btn-fine);
+  }
+
+  .qtyInput {
+    width: var(--qty-field-w-fine);
+    min-height: var(--qty-btn-fine);
+    padding-inline: var(--space-1);
+  }
+}
+
+/* Pantalla angosta: el stepper ocupa su propia fila y precio/descuento comparten la de abajo. */
+@media (max-width: 520px) {
+  .itemControls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .stepper { grid-column: 1 / -1; }
 }
 
 .numInput {

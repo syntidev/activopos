@@ -233,6 +233,11 @@
   --touch-comfy:        48px;
   --touch-large:        56px;
 
+  /* Stepper de cantidad (editor de cotización): botón compacto con puntero fino y un campo que muestra 4 cifras con decimales */
+  --qty-btn-fine:       var(--space-9);   /* 36px: solo hover:hover + pointer:fine; en táctil el botón sigue en --touch-min */
+  --qty-field-w:        4.5rem;           /* 72px táctil: "10000.5" completo, sin padding lateral */
+  --qty-field-w-fine:   5.5rem;           /* 88px escritorio */
+
   /* Z-index */
   --z-base:    0;
   --z-raised:  10;

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from './prisma'
 import { planDenied } from './plan-guard'
 import {
-  ADDON_KEYS, ENTITLEMENT_KEYS, PLAN_LIMITS, PLAN_DISPLAY,
+  ADDON_KEYS, ENTITLEMENT_KEYS, PLAN_LIMITS, PLAN_DISPLAY, isPaidPlan, parseAddons, serializeAddons,
   type AddonKey, type EntitlementKey, type PlanTier,
 } from './plan-limits'
 
@@ -32,13 +32,8 @@ export type Entitlements = Record<EntitlementKey, boolean>
 const csv = (v: string | null | undefined): string[] => (v ?? '').split(',').map(s => s.trim()).filter(Boolean)
 const isAddon = (k: string): k is AddonKey => (ADDON_KEYS as readonly string[]).includes(k)
 
-/** Add-ons válidos de un CSV (ignora claves desconocidas, sin repetidos, orden estable). */
-export function parseAddons(raw: string | null | undefined): AddonKey[] {
-  const set = new Set(csv(raw))
-  return ADDON_KEYS.filter(k => set.has(k))
-}
-
-export const serializeAddons = (keys: readonly AddonKey[]): string => ADDON_KEYS.filter(k => keys.includes(k)).join(',')
+// parseAddons/serializeAddons viven en lib/plan-limits (puros); se re-exportan para no romper imports.
+export { parseAddons, serializeAddons }
 
 export function planOf(b: Pick<EntitlementSource, 'catalog_plan'>): PlanTier {
   const p = b.catalog_plan as PlanTier | null
@@ -51,15 +46,25 @@ export function subscriptionValid(b: Pick<EntitlementSource, 'subscription_activ
   return !(b.subscription_expires_at && now > b.subscription_expires_at)
 }
 
-/** Derecho: suscripción vigente Y (flag del nivel O add-on). */
+/**
+ * Derecho: suscripción vigente Y (flag del nivel O add-on). El add-on es un COMPLEMENTO de un plan pago: sobre 'gratis' no concede nada
+ * (gratis + add-on = sin derecho), aunque el super_admin lo haya guardado.
+ */
 export function hasEntitlement(b: EntitlementSource, key: EntitlementKey, now: Date = new Date()): boolean {
   if (!subscriptionValid(b, now)) return false
-  if (PLAN_LIMITS[planOf(b)][key]) return true
-  return isAddon(key) && parseAddons(b.addons).includes(key)
+  const plan = planOf(b)
+  if (PLAN_LIMITS[plan][key]) return true
+  return isPaidPlan(plan) && isAddon(key) && parseAddons(b.addons).includes(key)
 }
 
-/** Derecho Y preferencia: el módulo está pagado Y el tenant lo tiene encendido. */
-export function canUse(b: EntitlementSource, key: EntitlementKey, now: Date = new Date()): boolean {
+/**
+ * Módulos cuya PREFERENCIA vive en modules_enabled (hoy solo 'kds'). 'restaurante' NO está aquí: es un derecho (PLAN_LIMITS.restaurante) y
+ * su preferencia será Business.restaurante_enabled (viene con feat/restaurante), que se combina con hasEntitlement(b, 'restaurante').
+ */
+export type PreferenceModuleKey = Extract<EntitlementKey, 'kds'>
+
+/** Derecho Y preferencia: el módulo está pagado Y el tenant lo tiene encendido en modules_enabled. */
+export function canUse(b: EntitlementSource, key: PreferenceModuleKey, now: Date = new Date()): boolean {
   return hasEntitlement(b, key, now) && csv(b.modules_enabled).includes(key)
 }
 
@@ -87,7 +92,7 @@ export async function loadEntitlementSource(businessId: number): Promise<Entitle
  *   sin derecho (plan/add-on/suscripción) → planDenied() = 403 { code: 'PLAN_LIMIT' }  (el frontend muestra el paywall)
  *   con derecho pero módulo apagado por el tenant → 403 { code: 'MODULE_DISABLED' }    (NO es un paywall: se enciende en Configuración)
  */
-export async function guardEntitlement(businessId: number, key: EntitlementKey): Promise<NextResponse | null> {
+export async function guardEntitlement(businessId: number, key: PreferenceModuleKey): Promise<NextResponse | null> {
   const b = await loadEntitlementSource(businessId)
   if (!b) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
   if (!hasEntitlement(b, key)) return planDenied(entitlementDeniedReason(b, key))

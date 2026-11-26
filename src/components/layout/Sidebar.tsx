@@ -159,6 +159,7 @@ const NAV_GROUPS: NavGroup[] = [
     collapsible: true,
     items: [
       { href: '/restaurante/mesas',            icon: LayoutGrid,        label: 'Plano',       colorKey: 'ventas', featureFlag: 'restaurante' },
+      { href: '/restaurante/reportes',         icon: TrendingUp,        label: 'Reportes',    colorKey: 'caja',   featureFlag: 'restaurante', adminOnly: true },
       { href: '/configuracion?tab=restaurante', icon: SlidersHorizontal, label: 'Configurar',  colorKey: 'admin',  featureFlag: 'restaurante', adminOnly: true },
       { href: '/kds', icon: ChefHat, label: 'Cocina (KDS)', moduleKey: 'kds', colorKey: 'inventario', adminOnly: true },
     ],

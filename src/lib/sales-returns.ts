@@ -380,6 +380,85 @@ export async function cashTipTotals(businessId: number, from: Date, to?: Date): 
   return { usd: r2(num(agg._sum.amount_usd)), bs: r2(num(agg._sum.amount_bs)) }
 }
 
+/* ───────────────────────── Restaurante (R5) ───────────────────────── */
+
+export interface TableSaleNet {
+  saleId:      number
+  waiterId:    number | null
+  waiterName:  string | null
+  areaId:      number | null
+  areaName:    string | null
+  tableLabel:  string | null
+  /** Neto de ESA venta: total − devoluciones aprobadas. La propina NO está aquí (va en cashTipTotals / tipsByWaiter). */
+  net:         MoneyTotals
+}
+
+/**
+ * Ventas de cuentas de mesa en el rango, ya netas de devoluciones aprobadas (mismos filtros de estado y de fecha que netSales).
+ * Los reportes del restaurante agrupan estas filas por mesonero o área; ningún endpoint rehace los filtros de status.
+ */
+export async function tableSalesNet(businessId: number, from: Date, to?: Date): Promise<TableSaleNet[]> {
+  const sales = await prisma.sale.findMany({
+    where:  { business_id: businessId, table_order_id: { not: null }, status: { in: [...REALIZED_SALE_STATUSES] }, sold_at: range(from, to) },
+    select: {
+      id: true, total_usd: true, total_bs: true,
+      table_order: { select: { waiter_id: true, waiter: { select: { name: true } }, table: { select: { label: true, area_id: true, area: { select: { name: true } } } } } },
+    },
+    orderBy: { id: 'asc' },
+    take: 20_000,
+  })
+  if (sales.length === 0) return []
+  const returns = await prisma.return.groupBy({
+    by:    ['sale_id'],
+    where: { business_id: businessId, status: 'approved', sale_id: { in: sales.map(x => x.id) } },
+    _sum:  { total_usd: true, total_bs: true },
+  })
+  const back = new Map(returns.map(r => [r.sale_id, { usd: num(r._sum.total_usd), bs: num(r._sum.total_bs) }]))
+  return sales.map(x => {
+    const b = back.get(x.id) ?? { usd: 0, bs: 0 }
+    const o = x.table_order
+    return {
+      saleId: x.id, waiterId: o?.waiter_id ?? null, waiterName: o?.waiter?.name ?? null,
+      areaId: o?.table?.area_id ?? null, areaName: o?.table?.area.name ?? null, tableLabel: o?.table?.label ?? null,
+      net: { usd: r2(num(x.total_usd) - b.usd), bs: r2(num(x.total_bs) - b.bs) },
+    }
+  })
+}
+
+export interface TipsByWaiter {
+  waiterId:   number | null
+  waiterName: string | null
+  /** Propina recibida en efectivo (entra al cajón) y en otros métodos, por separado. */
+  cash:       MoneyTotals
+  other:      MoneyTotals
+  count:      number
+}
+
+/**
+ * Propinas de ventas de mesa en el rango, por mesonero. Mismo criterio que cashTipTotals: cuentan mientras su venta siga realizada y se
+ * anclan a cuándo se registró la propina. Siempre aparte de las ventas netas.
+ */
+export async function tipsByWaiter(businessId: number, from: Date, to?: Date): Promise<TipsByWaiter[]> {
+  const tips = await prisma.saleTip.findMany({
+    where:  { business_id: businessId, created_at: range(from, to), sale: { status: { in: [...REALIZED_SALE_STATUSES] } } },
+    select: { waiter_id: true, is_cash: true, amount_usd: true, amount_bs: true },
+    take: 20_000,
+  })
+  const ids = Array.from(new Set(tips.flatMap(t => (t.waiter_id === null ? [] : [t.waiter_id]))))
+  const users = ids.length > 0 ? await prisma.user.findMany({ where: { business_id: businessId, id: { in: ids } }, select: { id: true, name: true } }) : []
+  const names = new Map(users.map(u => [u.id, u.name]))
+  const by = new Map<number | null, TipsByWaiter>()
+  for (const t of tips) {
+    const row = by.get(t.waiter_id) ?? { waiterId: t.waiter_id, waiterName: t.waiter_id === null ? null : names.get(t.waiter_id) ?? null, cash: { usd: 0, bs: 0 }, other: { usd: 0, bs: 0 }, count: 0 }
+    const target = t.is_cash ? row.cash : row.other
+    target.usd = r2(target.usd + num(t.amount_usd))
+    target.bs  = r2(target.bs + num(t.amount_bs))
+    row.count += 1
+    by.set(t.waiter_id, row)
+  }
+  return Array.from(by.values())
+}
+
 export interface ApprovedReturnRow {
   /** Cuándo se reembolsó — para imputarlo al turno de caja correcto. */
   refunded_at: Date

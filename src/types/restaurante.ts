@@ -236,3 +236,40 @@ export interface RoutingDTO {
   overrides:  Array<{ id: number; name: string; station_id: number; category_name: string | null }>
   default_station_id: number | null
 }
+
+/* ── Reportes del restaurante (R5) ── */
+
+export interface ReportMoneyDTO { usd: number; bs: number }
+
+export interface ReportSalesRowDTO {
+  /** id del mesonero o del área; null = sin dato. */
+  id:     number | null
+  name:   string
+  /** Ventas (cuentas cobradas) y neto de devoluciones. Sin propinas. */
+  sales:  number
+  net:    ReportMoneyDTO
+}
+
+export interface ReportRotationAreaDTO { area: string; closed: number; avg_minutes: number | null }
+
+export interface ReportStationDTO {
+  id: number; name: string
+  items: number
+  /** Minutos: espera en cola (envío → inicio), preparación (inicio → listo) y total (envío → listo). */
+  wait_p50: number | null; wait_p90: number | null
+  prep_p50: number | null; prep_p90: number | null
+  total_p50: number | null; total_p90: number | null
+}
+
+export interface ReportTipRowDTO { id: number | null; name: string; count: number; cash: ReportMoneyDTO; other: ReportMoneyDTO; total: ReportMoneyDTO }
+
+export interface RestauranteReportDTO {
+  /** Claves de día del negocio (YYYY-MM-DD), inclusivas. */
+  from: string
+  to:   string
+  net_sales: { total: ReportMoneyDTO; sales: number; by_waiter: ReportSalesRowDTO[]; by_area: ReportSalesRowDTO[] }
+  rotation:  { closed_accounts: number; active_tables: number; turns_per_table: number | null; avg_minutes: number | null; by_area: ReportRotationAreaDTO[] }
+  stations:  ReportStationDTO[]
+  /** Propinas: SIEMPRE aparte de net_sales. */
+  tips:      { total: ReportMoneyDTO; cash: ReportMoneyDTO; other: ReportMoneyDTO; by_waiter: ReportTipRowDTO[] }
+}

@@ -883,6 +883,60 @@ export const helpContent = {
     tip: 'Cambia la contraseña de un cajero desde su perfil si se la olvida.',
   },
 
+  /* ── Restaurante ──────────────────────────────────────── */
+  restaurante: {
+    title: 'Restaurante',
+    steps: [
+      {
+        title: 'Arma tu salón',
+        body:  'En Configuración → Restaurante → Salón crea las áreas y las mesas (puedes hacerlas en lote) y acomódalas en el plano. Cada mesa muestra su estado: libre, ocupada, por cobrar o por limpiar.',
+      },
+      {
+        title: 'Abre la mesa y toma el pedido',
+        body:  'El mesonero toca la mesa, indica los comensales y abre la cuenta. Agrega ítems con sus modificadores (sin cebolla, extra queso) y envíalos a cocina: cada plato llega a la estación que le toca.',
+      },
+      {
+        title: 'Cocina trabaja su pantalla',
+        body:  'Cada cocinero ve solo las comandas de su estación. Empezar, Listo y Deshacer (30 segundos). Si una comanda pasa del tiempo ámbar o rojo, el encabezado cambia de color. El mesonero ve en el plano cuántos platos están listos para servir.',
+      },
+      {
+        title: 'Pide la cuenta',
+        body:  'Cuando la mesa termina, el mesonero toca Pedir cuenta. El cajero ve la pre-cuenta con los montos en USD y Bs, y cobra con el mismo cobro del punto de venta.',
+      },
+      {
+        title: 'Divide y cobra',
+        body:  'Puedes cobrar todo junto, dividir por ítems en varias subcuentas o en partes iguales (hasta 10 pagos por venta). La cuenta se cierra cuando todo está pagado y la mesa queda por limpiar hasta que marques Mesa lista.',
+      },
+      {
+        title: 'Propinas y reportes',
+        body:  'La propina se registra aparte del total: no cambia tus ventas netas. La de efectivo suma al efectivo esperado de caja; la de tarjeta no. En Reportes ves ventas por mesonero y área, rotación, tiempos por estación y propinas, y puedes exportar CSV o PDF.',
+      },
+    ],
+    faqs: [
+      {
+        q: '¿Qué plan necesito?',
+        a: `El plan Operación. Lo activa el administrador del sistema; luego tú lo enciendes en Configuración → Módulos. Ahora mismo Negocio Activo ${PLAN_LIMITS.negocio_activo.restaurante ? 'lo incluye' : 'no lo incluye'}.`,
+      },
+      {
+        q: '¿El mesonero puede cobrar?',
+        a: 'No. El mesonero abre mesas, agrega y envía ítems, sirve y pide la cuenta. El cobro es del cajero o del administrador.',
+      },
+      {
+        q: '¿Qué pasa si me equivoco con un ítem ya enviado a cocina?',
+        a: 'Solo un administrador lo anula. En la pantalla de cocina aparece tachado y el cocinero toca Visto.',
+      },
+      {
+        q: '¿Puedo juntar dos mesas o pasar la cuenta a otra?',
+        a: 'Sí: Juntar cuentas y Transferir mesa, mientras la cuenta no tenga cobros. Quedan registrados en la bitácora de la mesa.',
+      },
+      {
+        q: '¿Se cobró mal una cuenta, qué hago?',
+        a: 'Un administrador puede reabrirla. Si ya hay ventas pagadas, primero se anulan en el punto de venta (eso devuelve el inventario) y luego se reabre.',
+      },
+    ],
+    tip: 'Si el internet se cae, la pantalla de cocina avisa SIN CONEXIÓN y guarda hasta 20 acciones para enviarlas cuando vuelva.',
+  },
+
 } satisfies Record<string, HelpContent>
 
 export type HelpModule = keyof typeof helpContent

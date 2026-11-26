@@ -204,8 +204,9 @@ test('7 · tablet 1024×768 sin scroll horizontal y los umbrales ámbar/rojo cam
 
 test('M1 · el admin crea mesonero y cocinero solo con el módulo habilitado', async ({ page, context }) => {
   // El plan tiene tope de usuarios por negocio: se retiran los sobrantes de otros specs (los que tengan historial se quedan).
-  for (const email of ['m1-%', 'zzkds-%-adminguardas@%', 'zzkds-%-adminsalon@%', 'zzkds-%-cajasalon@%', 'zzkds-%-luisr@%', 'zzkds-%-cajera@%']) {
-    try { sql(`DELETE FROM users WHERE business_id=${A} AND email LIKE '${email}'`) } catch { /* con historial: se queda */ }
+  const keep = [admin, waiter, cook, bartender].join(',')
+  for (const id of sql(`SELECT id FROM users WHERE business_id=${A} AND (email LIKE 'm1-%' OR email LIKE 'zzkds-%') AND id NOT IN (${keep})`).split(/\s+/).filter(Boolean)) {
+    try { sql(`DELETE FROM users WHERE id=${id}`) } catch { /* con historial: se queda */ }
   }
   await login(context, A, 'admin', admin)
   const mk = (bid: string, role: string) => call(page, 'POST', '/api/users', { name: `Nuevo ${role} ${bid}`, email: `m1-${role}-${bid}-${Date.now()}@zzkds.test`, password: 'clave-segura-1', role })

@@ -195,3 +195,47 @@ Relaciones clave nuevas/relevantes:
 - ✅ **Tasa manual scopeada por tenant (Sprint 63)**: `POST /api/rates/manual` confirmado con `business_id` de `getSession()`, no del body — cierra el leak cross-tenant de DT-07.
 
 Para verificación E2E real en navegador (Playwright), ver skill `webapp-testing` / agente `e2e-runner` — ejecutado en Sprint 52 solo para `/registro` (ver arriba); el resto de flujos sigue verificado por lectura de código.
+
+---
+
+## 9. MÓDULO RESTAURANTE (R1–R5) — añadido a mano el 2026-11-26 (rama `feat/restaurante`)
+
+> Sección escrita por CLI-KDS al cerrar R5. El resto de este archivo sigue siendo el mapa generado por CLI-C (sprint 63); regenerarlo lo reemplazará.
+
+**Acceso:** derecho (`PLAN_LIMITS.restaurante`, plan Operación, suscripción vigente) **Y** preferencia (`Business.restaurante_enabled`). Sin flag → 404;
+sin derecho → `403 PLAN_LIMIT`. Guardas únicas: `guardRestaurante` (`lib/entitlements.ts`) vía `requireRestauranteAccess` / `requireKdsAccess` / `requireCashierAccess`
+(`lib/restaurante-server.ts`, `lib/restaurante-kds.ts`). Guía: `.doc/restaurante/GUIA_Activacion.md`.
+
+**Estado por fase:** R1 plano y configuración ✔ · R2 cuenta de mesa y modificadores ✔ · R3 estaciones, ruteo y KDS ✔ · R4 pedir cuenta, cobro, dividir, propina,
+juntar y transferir ✔ · R5 reportes, flujo completo y operación ✔ (a la espera de aprobación visual de Carlos). Lo que quedó fuera: `.doc/restaurante/QUE_QUEDO_FUERA.md`.
+
+### Endpoints (`/api/restaurante/…`)
+| Ruta | Quién | Para qué |
+|---|---|---|
+| `areas`, `mesas`, `elementos` | admin (lectura: cajero/mesonero) | salón: áreas, mesas, mobiliario, estado derivado de la mesa |
+| `activacion` (POST) | admin | enciende/apaga el módulo (derecho vía `hasEntitlement`; apagar bloqueado con cuentas abiertas) |
+| `cuentas` (GET/POST), `cuentas/[id]` | mesonero, cajero, admin | abrir cuenta (409 si la mesa está ocupada), leer cuenta con ventas hijas y cantidades cobradas |
+| `cuentas/[id]/items`, `…/enviar` | idem | agregar/quitar ítems (precio siempre del servidor), enviar borradores a estaciones |
+| `cuentas/[id]/pedir-cuenta`, `…/juntar`, `…/transferir` | idem | pasar a "por cobrar"; unir cuentas; cambiar de mesa/mesonero (TableEvent) |
+| `cuentas/[id]/cobrar`, `…/dividir`, `…/sincronizar` | cajero, admin | crear ventas `pending` desde la cuenta (todo, por ítems, partes iguales); cerrar al pagar |
+| `cuentas/[id]/reabrir` | admin | cancela cobros pendientes y reabre |
+| `propinas` (POST) | cajero, admin | propina de una venta cobrada, fuera del total |
+| `estaciones`, `estaciones/[id]`, `ruteo` | admin | estaciones, cocineros por estación, ruteo producto → categoría → por defecto |
+| `kds`, `kds/items/[id]`, `kds/disparar` | cocinero (sus estaciones), admin | tablero con cursor `since`, iniciar/listo/deshacer/visto, servido, disparar curso |
+| `modificadores`, `productos` | admin / lectura | modificadores y búsqueda de carta (sin costos) |
+| `reportes`, `reportes/export` | admin | ventas netas por mesonero y área, rotación, tiempos p50/p90, propinas (JSON y CSV) |
+
+El cobro NO toca `/api/sales/[id]/pay` ni `/cargo` (de `main`): `cobrar`/`dividir` crean la `Sale` en `pending` con precios del servidor y el dinero entra por `/pay`.
+
+### Páginas
+`/restaurante/mesas` (plano y editor) · `/restaurante/cuenta/[id]` (cuenta, cobro, dividir, propina, acciones) · `/restaurante/reportes` (admin) ·
+`/kds` (por estación con el módulo; el KDS de siempre sin él o con `?vista=pedidos`) · Configuración → Restaurante (Salón, Modificadores, Estaciones y ruteo) · Configuración → Módulos (tarjeta Restaurante).
+
+### Librerías (`src/lib/`)
+`restaurante.ts` (puro: estado de mesa, formatos) · `restaurante-server.ts` (guardas, esquemas, serialización) · `restaurante-cuenta.ts` (cuenta, ítems, anulación) ·
+`restaurante-kds.ts` (ruteo, envío, transiciones, cursos, tablero) · `restaurante-cobro.ts` (ventas desde la cuenta, dividir, cerrar, reabrir, propina, juntar, transferir) ·
+`restaurante-reportes.ts` (rotación, tiempos, agrupación) · `user-stations.ts` (cocinero ↔ estación aislado por negocio) · `table-order-guard.ts` (las rutas de Pedidos rechazan cuentas de mesa).
+Dinero: `sales-returns.ts` es la fuente única (`cashTipTotals`, `tableSalesNet`, `tipsByWaiter`); ningún endpoint nuevo replica filtros de `status`.
+
+### Verificación
+Specs: `restaurante-{plano,activacion,cuenta,guardas,kds,cobro,reportes,flujo-completo}.spec.ts` · `test:consistency` escenario e14 (mesa dividida con propinas) en un tenant propio.

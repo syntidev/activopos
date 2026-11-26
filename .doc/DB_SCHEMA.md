@@ -408,3 +408,40 @@ const net = (stock._sum.quantity ?? 0) - (stock._sum.waste ?? 0)
 5. Transferencia    → type: transfer
 6. Binance USDT     → type: binance
 ```
+
+---
+
+## Módulo Restaurante (R1–R5) — añadido a mano el 2026-11-26
+
+Migraciones, todas aditivas: `20261124000001_restaurante_base`, `20261125000001_restaurante_cuenta`, `20261126000001_restaurante_cobro`.
+Nunca `db push` en el VPS (ver `.doc/restaurante/CHECKLIST_Deploy_VPS.md`).
+
+### Tablas nuevas
+| Tabla | Qué guarda | Clave |
+|---|---|---|
+| `service_areas` | áreas del salón (Salón, Terraza…) | `business_id` |
+| `dining_tables` | mesas: etiqueta, capacidad, forma, posición en la cuadrícula, `cleaning_pending`, reserva manual | único (`business_id`, `area_id`, `label`) |
+| `floor_elements` | barra, puerta, pasaplatos, pared (solo plano) | `business_id` |
+| `prep_stations` | estaciones: nombre, color, `warn_min`/`critical_min`, `is_default`, `active` | `business_id` |
+| `user_stations` | cocinero ↔ estación (**sin** `business_id`: se aísla por la FK al usuario y a la estación, `lib/user-stations.ts`) | (`user_id`, `station_id`) |
+| `product_modifiers` | "Sin cebolla", "Extra queso +$": grupo, precio, obligatorio, ámbito (negocio/categoría/producto) | `business_id` |
+| `table_events` | bitácora: open, close, bill, merge, transfer_table, transfer_waiter, send, fire, reopen… | (`business_id`, `order_id`) |
+| `order_tables` | mesas adicionales de una cuenta unida (**sin** `business_id`: por `order_id`) | único (`order_id`, `table_id`) |
+| `sale_tips` | propina de una venta de mesa: `is_cash`, `amount_usd`, `amount_bs`, `rate_used`, `waiter_id`. **Fuera de `sales.total_usd`** | (`business_id`, `created_at`) |
+
+### Columnas nuevas en tablas existentes
+| Tabla | Columnas |
+|---|---|
+| `businesses` | `restaurante_enabled` (preferencia; el derecho sale de `catalog_plan`) |
+| `users` | roles `waiter`, `kitchen` en el enum `role` |
+| `orders` | `origin = 'table'`; `table_id`, `guests`, `waiter_id`, `account_status` (`open`/`bill_requested`/`closed`/`void`), `opened_at`, `bill_requested_at`, `closed_at` |
+| `order_items` | `course`, `seat`, `kds_status` (`draft`/`sent`/`preparing`/`ready`/`served`/`void`), `station_id`, `sent_at`, `started_at`, `started_by`, `ready_at`, `served_at`, `kds_updated_at`, `void_by`, `void_reason` (`modifiers` Json ya existía: snapshot de los modificadores elegidos) |
+| `categories`, `products` | `station_id` (ruteo producto → categoría → por defecto). `categories.requires_preparation` ya existía (baseline) y ahora decide si un plato sin estación cae a la por defecto |
+| `sales` | `table_order_id` (N ventas → 1 cuenta; `orders.sale_id` queda null en cuentas de mesa) |
+| `sale_items` | `order_item_id` (línea de la cuenta que cubre; permite dividir por ítems y cantidades fraccionarias) |
+
+### Reglas
+- El estado de la mesa (libre/ocupada/por cobrar/por limpiar) **se deriva** de la cuenta y de `cleaning_pending`; nunca se guarda ocupada.
+- Una cuenta se cierra cuando todo lo pedido está cubierto por ventas **y** todas están pagadas (`syncAccount`).
+- `OrderItem`, `SaleItem`, `UserStation` y `OrderTable` no tienen `business_id`: el aislamiento es por la cuenta, la venta, el usuario o la estación del negocio de la sesión.
+- Índices para el sondeo del KDS: (`station_id`, `kds_status`, `sent_at`) y (`station_id`, `kds_updated_at`) en `order_items`.

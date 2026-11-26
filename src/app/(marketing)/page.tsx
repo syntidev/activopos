@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import type { Metadata } from 'next'
 import { getBcvRate, getParallelRate } from '@/lib/bcv'
+import { BILLING_CYCLES } from '@/lib/plan-limits'
 import HeroSection from '@/components/marketing/sections/HeroSection'
 import PainSection from '@/components/marketing/sections/PainSection'
 import LivePulseSection from '@/components/marketing/sections/LivePulseSection'
@@ -96,7 +97,8 @@ const SOFTWARE_APPLICATION_JSON_LD = {
       price: '156.00',
       priceCurrency: 'USD',
       priceValidUntil: '2027-12-31',
-      description: 'Equivale a $13.00 por mes. 32% de ahorro vs mensual.',
+      // El ahorro sale de plan-limits (30% sellado de marketing); antes decía 32% a mano y contradecía la fuente única.
+      description: `Equivale a $${BILLING_CYCLES.negocio_activo.anual.monthlyEquivalent.toFixed(2)} por mes. ${BILLING_CYCLES.negocio_activo.anual.savingsPct}% de ahorro vs mensual.`,
     },
   ],
   provider: {

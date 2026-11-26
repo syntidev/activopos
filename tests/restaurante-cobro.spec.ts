@@ -372,3 +372,26 @@ test('las ventas de mesa pendientes no aparecen en las listas del POS', async ({
   expect((await pay(page, sale.id, [{ payment_method_id: pmUsd, amount_usd: 14, amount_bs: sale.total_bs }])).status()).toBe(200)
   expect(await list('/api/sales?limit=100')).toContain(sale.id) // ya cobrada, sí es una venta más
 })
+
+test('recibo: mesa, mesonero y propina (aparte del total) en ticket-data y en el ticket impreso', async ({ page, context }) => {
+  await as('cashier', context, cashier)
+  const acc = await account(page, [[carta.pasta, 1]])
+  const sale = await charge(page, acc.id)
+  expect((await pay(page, sale.id, [{ payment_method_id: pmUsd, amount_usd: 14, amount_bs: sale.total_bs }])).status()).toBe(200)
+  expect((await call(page, 'POST', '/api/restaurante/propinas', { sale_id: sale.id, payment_method_id: pmUsd, amount_usd: 3 })).status()).toBe(201)
+  const data = await json<{ ticket: { sale: { total_usd: number; table: { label: string; waiter_name: string } | null; tips: Array<{ amount_usd: number; amount_bs: number; method: string }> } } }>(await call(page, 'GET', `/api/sales/${sale.id}/ticket-data`))
+  expect(data.ticket.sale.total_usd).toBe(14) // la propina NO suma al total
+  expect(data.ticket.sale.table?.label).toBe(lastLabel)
+  expect(data.ticket.sale.table?.waiter_name).toBe('Maria P')
+  expect(data.ticket.sale.tips).toEqual([{ method: 'ZZ Efectivo USD', amount_usd: 3, amount_bs: bs(3) }])
+  const html = await (await call(page, 'GET', `/api/sales/${sale.id}/ticket`)).text()
+  expect(html).toContain(`Mesa: ${lastLabel}`)
+  expect(html).toContain('Mesonero: Maria P')
+  expect(html).toContain('PROPINA')
+  // Una venta que no es de mesa no cambia: sin Mesa ni Propina.
+  const normal = Number(sql(`SELECT id FROM sales WHERE business_id=${A} AND table_order_id IS NULL ORDER BY id DESC LIMIT 1`))
+  if (normal > 0) {
+    const h2 = await (await call(page, 'GET', `/api/sales/${normal}/ticket`)).text()
+    expect(h2).not.toContain('PROPINA')
+  }
+})

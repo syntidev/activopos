@@ -529,6 +529,33 @@ async function main(): Promise<void> {
     check('e13 reembolso de $40 (lo realmente cobrado) → 201', retEPart.status, 201)
     const retEMore = await doReturn(saleE.id, [{ product_id: ctx.productId, qty: 0.1 }], ctx.cashMethodId)
     check('e13 ya reembolsado lo cobrado: nada más → 422', retEMore.status, 422)
+
+    // -- Escenario 14 (restaurante R4): MESA DIVIDIDA en 2 ventas + propinas (efectivo y tarjeta) --
+    // La propina va FUERA de sales.total_usd: las ventas netas no cambian en ninguna superficie; solo la propina en efectivo sube el
+    // efectivo esperado de caja (cashTipTotals), la de tarjeta no.
+    const preM = await snapshot(today, tomorrow)
+    const cajaPreM = await api<CajaOut>('/api/cash/status')
+    const cuenta = await prisma.order.create({
+      data: { business_id: BID, order_number: 'T-CONS-MESA', status: 'received', origin: 'table', account_status: 'open', total_usd: 50, total_bs: 50 * RATE, rate_used: RATE },
+      select: { id: true },
+    })
+    created.orders.push(cuenta.id)
+    const sub1 = await mkSale('T-CONS-M1', today, 1, 30)
+    const sub2 = await mkSale('T-CONS-M2', today, 1, 20)
+    await prisma.sale.updateMany({ where: { id: { in: [sub1.id, sub2.id] } }, data: { table_order_id: cuenta.id } })
+    await prisma.saleTip.createMany({ data: [
+      { business_id: BID, sale_id: sub1.id, payment_method_id: ctx.cashMethodId,  is_cash: true,  amount_usd: 5, amount_bs: 5 * RATE, rate_used: RATE, created_by: ctx.userId },
+      { business_id: BID, sale_id: sub2.id, payment_method_id: ctx.otherMethodId, is_cash: false, amount_usd: 4, amount_bs: 4 * RATE, rate_used: RATE, created_by: ctx.userId },
+    ] })
+    const postM = await snapshot(today, tomorrow)
+    const cajaPostM = await api<CajaOut>('/api/cash/status')
+    for (const k of ['dayCobrado', 'dailyTotal', 'rangeTotal', 'monthlyTotal', 'kpisCobrado', 'chartsHoy', 'sumVentas'] as const) {
+      check(`e14 mesa dividida: venta neta $50 sin propinas (${k})`, r2(postM[k] - preM[k]), 50)
+    }
+    checkNear('e14 finanzas/resumen: $50 sin propinas', r2(postM.finVentas - preM.finVentas), 50)
+    check('e14 caja: ventas netas del turno +$50', r2(cajaPostM.turnoStats.totalVentasUsd - cajaPreM.turnoStats.totalVentasUsd), 50)
+    // Efectivo esperado: las 2 ventas se cobraron en efectivo ($50) + la propina en efectivo ($5); la de tarjeta ($4) no entra al cajón.
+    checkNear('e14 caja: efectivo esperado = ventas en efectivo + propina en efectivo (no la de tarjeta)', cajaPostM.turnoStats.efectivoEsperado - cajaPreM.turnoStats.efectivoEsperado, 55 * RATE)
   } finally {
     // ── Restaurar: borra SOLO lo que creó esta prueba ──
     if (created.returns.length) {
@@ -545,6 +572,7 @@ async function main(): Promise<void> {
       await prisma.order.deleteMany({ where: { id: { in: created.orders } } })
     }
     if (created.sales.length) {
+      await prisma.saleTip.deleteMany({ where: { sale_id: { in: created.sales } } })
       await prisma.saleAbono.deleteMany({ where: { sale_id: { in: created.sales } } })
       await prisma.salePayment.deleteMany({ where: { sale_id: { in: created.sales } } })
       await prisma.saleItem.deleteMany({ where: { sale_id: { in: created.sales } } })

@@ -77,6 +77,10 @@ export interface ThermalTicketData {
     rate:          number
     items:         ThermalTicketItem[]
     payments:      { method: string; amount_usd: number }[]
+    /** Restaurante (R4): solo en ventas de una cuenta de mesa. */
+    table?:        { label: string; waiter_name: string | null } | null
+    /** Propinas de la venta: van APARTE del total (no suman a total_usd). */
+    tips?:         { method: string; amount_usd: number; amount_bs: number }[]
   }
 }
 

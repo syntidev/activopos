@@ -91,6 +91,7 @@ export function renderComprobanteImage(t: ComprobanteTicket): Promise<Blob> {
   ]
   if (s.sold_at) rows.push({ left: new Date(s.sold_at).toLocaleString('es-VE'), muted: true })
   if (s.client_name) rows.push({ left: `Cliente: ${s.client_name}`, muted: true })
+  if (s.table) rows.push({ left: `Mesa ${s.table.label}${s.table.waiter_name ? ` · Mesonero ${s.table.waiter_name}` : ''}`, muted: true })
   rows.push({ left: '', gap: 8 })
   for (const i of s.items) {
     const label = `${i.name}${i.variant_label ? ` (${i.variant_label})` : ''} x${i.quantity}`
@@ -100,6 +101,12 @@ export function renderComprobanteImage(t: ComprobanteTicket): Promise<Blob> {
   rows.push({ left: 'Total', right: `$${s.total_usd.toFixed(2)}`, bold: true })
   rows.push({ left: `Tasa BCV ${s.rate.toFixed(2)}`, right: bs(s.total_bs), muted: true })
   if (s.payments.length > 0) rows.push({ left: `Pago: ${s.payments.map(p => p.method).join(', ')}`, muted: true })
+  if (s.tips && s.tips.length > 0) {
+    const usd = s.tips.reduce((a, t) => a + t.amount_usd, 0)
+    const tbs = s.tips.reduce((a, t) => a + t.amount_bs, 0)
+    rows.push({ left: 'Propina (aparte del total)', right: `${usd.toFixed(2)}`, bold: true })
+    rows.push({ left: '', right: bs(tbs), muted: true })
+  }
   if (t.business.footer) rows.push({ left: t.business.footer, muted: true })
 
   const height = PAD * 2 + rows.reduce((a, r) => a + LINE + (r.gap ?? 0), 0)

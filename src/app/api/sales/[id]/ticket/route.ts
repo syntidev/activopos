@@ -63,6 +63,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
             include: { payment_method: { select: { name: true } } },
           },
           cashier: { select: { name: true } },
+          table_order: { select: { table: { select: { label: true } }, waiter: { select: { name: true } } } },
+          tips: { select: { amount_usd: true, amount_bs: true } },
           // Una venta con cliente elegido del listado guarda client_id pero
           // deja client_name/client_phone en null (solo se llenan cuando el
           // nombre se tipea suelto en el POS). Sin esta relación el ticket
@@ -171,6 +173,13 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         ).join('')
       : ''
 
+    // Propina: aparte del total (no suma a total_usd), en USD y Bs.
+    const tipUsd = sale.tips.reduce((a, t) => a + Number(t.amount_usd), 0)
+    const tipBs  = sale.tips.reduce((a, t) => a + Number(t.amount_bs), 0)
+    const tipsHtml = sale.tips.length > 0
+      ? `<div class="hr"></div><div class="row b"><span>PROPINA ${foreignLabel}:</span><span>${fForeign(tipUsd)}</span></div><div class="row"><span>PROPINA Bs:</span><span>${fBs(tipBs)}</span></div><div>(no incluida en el total)</div>`
+      : ''
+
     const clientName  = sale.client_name  ?? sale.client?.name  ?? null
     const clientPhone = sale.client_phone ?? sale.client?.phone ?? null
 
@@ -228,6 +237,7 @@ ${business.ticket_show_phone   && business.phone   ? `<div class="c">Tel: ${esc(
 <div>Ticket: ${esc(sale.ticket_number)}</div>
 <div>Fecha:  ${sale.sold_at ? fmtDate(sale.sold_at) : '—'}</div>
 ${business.ticket_show_cashier_name ? `<div>Cajero: ${esc(sale.cashier.name)}</div>` : ''}
+${sale.table_order ? `<div>Mesa: ${esc(sale.table_order.table?.label ?? '')}</div>${sale.table_order.waiter ? `<div>Mesonero: ${esc(sale.table_order.waiter.name)}</div>` : ''}` : ''}
 <div class="hr"></div>
 ${customerHtml}
 ${itemsHtml}
@@ -239,6 +249,7 @@ ${showBs      ? `<div class="row b"><span>TOTAL Bs:</span><span>${fBs(totalBs)}<
 ${business.ticket_show_bcv_rate ? `<div class="row"><span>Tasa BCV:</span><span>${rate.toFixed(4)}</span></div>` : ''}
 <div class="hr"></div>
 ${paymentsHtml}
+${tipsHtml}
 <div class="hr"></div>
 ${footerMsg}
 <div class="c">&#161;Gracias por su compra!</div>

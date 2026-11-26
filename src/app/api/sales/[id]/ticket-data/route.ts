@@ -36,6 +36,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
           },
           payments: { include: { payment_method: { select: { name: true } } } },
           cashier:  { select: { name: true } },
+          // Restaurante (R4): mesa, mesonero y propinas de una venta de cuenta de mesa.
+          table_order: { select: { table: { select: { label: true } }, waiter: { select: { name: true } } } },
+          tips:        { select: { amount_usd: true, amount_bs: true, payment_method_id: true } },
           // Cliente elegido del listado: guarda client_id pero deja
           // client_name/client_phone en null en la venta.
           client:   { select: { name: true, phone: true } },
@@ -63,6 +66,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     ])
 
     if (!sale)     return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
+    const tipMethods = sale.tips.length > 0 ? await db.paymentMethod.findMany({ where: { id: { in: sale.tips.map(t => t.payment_method_id) } }, select: { id: true, name: true } }) : []
+    const methodName = new Map(tipMethods.map(m => [m.id, m.name]))
     if (!business) return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
 
     const ticket: ThermalTicketData = {
@@ -111,6 +116,8 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
           discount_usd:       Number(item.discount_usd),
         })),
         payments: sale.payments.map(p => ({ method: p.payment_method.name, amount_usd: Number(p.amount_usd) })),
+        table: sale.table_order ? { label: sale.table_order.table?.label ?? '', waiter_name: sale.table_order.waiter?.name ?? null } : null,
+        tips:  sale.tips.map(t => ({ method: methodName.get(t.payment_method_id) ?? '', amount_usd: Number(t.amount_usd), amount_bs: Number(t.amount_bs) })),
       },
     }
 

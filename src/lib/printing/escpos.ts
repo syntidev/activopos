@@ -125,6 +125,10 @@ export function layoutSaleTicket(
   L.push(txt(`Ticket: ${sanitize(s.ticket_number)}`))
   L.push(txt(`Fecha: ${fmtDate(s.sold_at)}`))
   if (f.show_cashier_name) for (const l of wrap(sanitize(`Cajero: ${s.cashier_name}`), cols)) L.push(txt(l))
+  if (s.table) {
+    L.push(txt(sanitize(`Mesa: ${s.table.label}`)))
+    if (s.table.waiter_name) for (const l of wrap(sanitize(`Mesonero: ${s.table.waiter_name}`), cols)) L.push(txt(l))
+  }
 
   if (f.show_customer_data && (s.client_name || s.client_phone)) {
     if (s.client_name)  for (const l of wrap(sanitize(`Cliente: ${s.client_name}`), cols)) L.push(txt(l))
@@ -162,6 +166,15 @@ export function layoutSaleTicket(
       const amount = showForeign ? foreign(pay.amount_usd) : fmtBs(pay.amount_usd * s.rate)
       L.push(txt(row(sanitize(`Metodo: ${pay.method}`), amount, cols)))
     }
+  }
+  // Propina: aparte del total, con su monto en USD y Bs.
+  if (s.tips && s.tips.length > 0) {
+    const tipUsd = s.tips.reduce((a, t) => a + t.amount_usd, 0)
+    const tipBs  = s.tips.reduce((a, t) => a + t.amount_bs, 0)
+    L.push(txt(hr))
+    L.push(txt(row('PROPINA USD:', foreign(tipUsd), cols), true))
+    L.push(txt(row('PROPINA Bs:', fmtBs(tipBs), cols)))
+    L.push(txt('(no incluida en el total)'))
   }
   L.push(txt(hr))
 

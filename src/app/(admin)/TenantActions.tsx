@@ -3,7 +3,8 @@
 import { useState, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, LogIn, Trash2 } from 'lucide-react'
-import { PLAN_LIMITS, PLAN_DISPLAY, type PlanTier } from '@/lib/plan-limits'
+import { ADDON_DISPLAY, ADDON_KEYS, PLAN_LIMITS, PLAN_DISPLAY, type AddonKey, type PlanTier } from '@/lib/plan-limits'
+import type { PlanGetResponse, PlanPatchResponse, TenantPlanState } from '@/types/plan'
 import styles from './admin.module.css'
 
 interface SuspendToggleProps {
@@ -52,22 +53,66 @@ interface PlanStatusFormProps {
   active:    boolean         // subscription_active (distinto de Business.active del SuspendToggle)
   expiresAt: string | null   // YYYY-MM-DD, null = indefinido
   catalogActive: boolean     // businesses.catalog_active: valor REAL de la DB
+  /** Add-ons contratados (derecho: solo lo escribe el super_admin desde este formulario). */
+  addons:        AddonKey[]
+  /** ¿Hoy hay derecho a KDS (nivel o add-on)? Base para saber si un guardado lo QUITA. */
+  kdsEntitled:   boolean
+  /** Pedidos abiertos en cocina al cargar la página. */
+  openKdsOrders: number
 }
 
-/* Sección "Plan y estado" del detalle de tenant. Conecta al endpoint existente
+/* Sección "Plan y estado" del detalle de tenant. Conecta al endpoint
  * tenants/[id]/plan, que escribe catalog_plan + subscription_active +
- * subscription_expires_at. Estado 'active'|'suspended' (el endpoint también
- * acepta 'expired', pero acá el admin solo activa o suspende). */
-export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt, catalogActive }: PlanStatusFormProps) {
+ * subscription_expires_at + add-ons. Estado 'active'|'suspended' (el endpoint también
+ * acepta 'expired', pero acá el admin solo activa o suspende).
+ * Planes v2: los add-ons van en ESTE formulario con UN solo botón (sin switches que guardan solos), el cliente envía el conjunto
+ * ABSOLUTO deseado y, tras guardar, todo se rehidrata de la respuesta canónica del servidor (sin actualización optimista). */
+export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt, catalogActive, addons: initialAddons, kdsEntitled, openKdsOrders }: PlanStatusFormProps) {
   const router = useRouter()
   const [published, setPublished] = useState(catalogActive)
-  const [plan, setPlan]       = useState<PlanTier>(initialPlan === 'negocio_activo' ? 'negocio_activo' : 'gratis')
+  const [plan, setPlan]       = useState<PlanTier>(PLANS.includes(initialPlan as PlanTier) ? (initialPlan as PlanTier) : 'gratis')
   const [status, setStatus]   = useState<'active' | 'suspended'>(active ? 'active' : 'suspended')
   const [expires, setExpires] = useState(expiresAt ?? '')
+  const [addons, setAddons]   = useState<AddonKey[]>(initialAddons)
   const [saving, setSaving]   = useState(false)
   const [msg, setMsg]         = useState<string | null>(null)
+  // Último estado canónico GUARDADO (del servidor): base para saber qué cambió y si el guardado quita KDS.
+  const [saved, setSaved]     = useState({ published: catalogActive, kdsEntitled, open: openKdsOrders })
+  // Conteo de pedidos abiertos en cocina que el admin debe confirmar antes de quitar KDS (null = sin confirmación pendiente).
+  const [confirmKds, setConfirmKds] = useState<number | null>(null)
 
+  const toggleAddon = (k: AddonKey): void => {
+    setConfirmKds(null)
+    setAddons(prev => (prev.includes(k) ? prev.filter(a => a !== k) : ADDON_KEYS.filter(x => x === k || prev.includes(x))))
+  }
+
+  // ¿Este guardado QUITA el derecho a KDS? Sí si hoy lo hay y ni el nivel elegido ni el add-on lo mantienen.
+  const quitaKds = saved.kdsEntitled && !(PLAN_LIMITS[plan].kds || addons.includes('kds'))
+
+  async function leerEstado(): Promise<TenantPlanState | null> {
+    try {
+      const res = await fetch(`/api/admin/tenants/${tenantId}/plan`)
+      return res.ok ? ((await res.json()) as PlanGetResponse).business : null
+    } catch {
+      return null
+    }
+  }
+
+  // Si el guardado quita KDS se lee el conteo ACTUAL de pedidos abiertos en cocina: con alguno, se muestra y se pide confirmación.
   async function handleSave() {
+    setMsg(null)
+    if (!quitaKds) { await guardar(); return }
+    setSaving(true)
+    const fresh = await leerEstado()
+    setSaving(false)
+    if (!fresh) { setMsg('No se pudo verificar los pedidos abiertos en cocina. Intenta de nuevo.'); return }
+    setSaved(s => ({ ...s, open: fresh.open_kds_orders }))
+    if (fresh.open_kds_orders > 0) { setConfirmKds(fresh.open_kds_orders); return }
+    await guardar()
+  }
+
+  async function guardar() {
+    setConfirmKds(null)
     setSaving(true)
     setMsg(null)
     try {
@@ -75,15 +120,24 @@ export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt,
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         // El interruptor solo viaja si el admin lo movió: si no, el servidor decide (plan con catálogo + Activo = publicar).
-        body:    JSON.stringify({ plan, status, expires_at: expires || null, ...(published !== catalogActive ? { catalog_active: published } : {}) }),
+        // addons = conjunto ABSOLUTO deseado (nunca "alternar").
+        body:    JSON.stringify({ plan, status, expires_at: expires || null, addons, ...(published !== saved.published ? { catalog_active: published } : {}) }),
       })
       if (res.ok) {
-        const out = await res.json() as { catalog_published_auto?: boolean; business?: { catalog_active?: boolean } }
-        if (out.business?.catalog_active !== undefined) setPublished(out.business.catalog_active)
-        setMsg(out.catalog_published_auto ? 'Cambios guardados. Catálogo publicado.' : 'Cambios guardados.')
+        const out = await res.json() as PlanPatchResponse
+        const b = out.business
+        // Rehidratar SOLO desde la respuesta canónica del servidor.
+        setPlan(b.catalog_plan)
+        setStatus(b.subscription_active ? 'active' : 'suspended')
+        setExpires(b.subscription_expires_at ?? '')
+        setPublished(b.catalog_active)
+        setAddons(b.addons)
+        setSaved({ published: b.catalog_active, kdsEntitled: b.entitlements.kds, open: b.open_kds_orders })
+        setMsg(out.addons_changed ? 'Cambios guardados. Add-ons actualizados.' : out.catalog_published_auto ? 'Cambios guardados. Catálogo publicado.' : 'Cambios guardados.')
         router.refresh()
       } else {
-        setMsg('No se pudo guardar.')
+        const err = await res.json().catch(() => null) as { error?: string } | null
+        setMsg(err?.error ?? 'No se pudo guardar.')
       }
     } catch {
       setMsg('Error de conexión.')
@@ -124,12 +178,40 @@ export function PlanStatusForm({ tenantId, plan: initialPlan, active, expiresAt,
         </button>
         <span className={styles.planStatusHint}>Apagado = /c/[slug] da &quot;no disponible&quot;.</span>
       </div>
+      <div className={styles.planStatusField}>
+        <span className={styles.infoLabel} id="ps-addons-label">Add-ons</span>
+        <div className={styles.addonList} role="group" aria-labelledby="ps-addons-label" data-testid="ps-addons">
+          {ADDON_KEYS.map(k => (
+            <label key={k} className={styles.addonItem}>
+              <input type="checkbox" data-testid={`ps-addon-${k}`} checked={addons.includes(k)} onChange={() => toggleAddon(k)} disabled={saving} />
+              <span>{ADDON_DISPLAY[k]}</span>
+            </label>
+          ))}
+        </div>
+        <span className={styles.planStatusHint}>Se guarda con «Guardar cambios». KDS ya viene incluido en {PLAN_DISPLAY.operacion}.</span>
+      </div>
+      {confirmKds !== null && (
+        <div className={styles.addonConfirm} role="alertdialog" aria-label="Confirmar quitar KDS" data-testid="ps-kds-confirm">
+          <p>
+            Hay <strong data-testid="ps-kds-count">{confirmKds}</strong> pedido{confirmKds === 1 ? '' : 's'} abierto{confirmKds === 1 ? '' : 's'} en la cocina (KDS).
+            Al quitar el KDS, deja de funcionar al usarlo y esos pedidos dejan de verse en la pantalla de cocina. No se borra ningún dato.
+          </p>
+          <div className={styles.addonConfirmActions}>
+            <button type="button" className={`${styles.actionLink} ${styles.actionBtn} ${styles.actionDanger}`} onClick={() => void guardar()} disabled={saving} data-testid="ps-kds-confirm-ok">
+              Confirmar y guardar
+            </button>
+            <button type="button" className={`${styles.actionLink} ${styles.actionBtn}`} onClick={() => setConfirmKds(null)} disabled={saving}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
       <div className={styles.planStatusActions}>
-        <button type="button" className={`${styles.actionLink} ${styles.actionBtn}`}
-          onClick={() => void handleSave()} disabled={saving}>
+        <button type="button" className={`${styles.actionLink} ${styles.actionBtn}`} data-testid="ps-guardar"
+          onClick={() => void handleSave()} disabled={saving || confirmKds !== null}>
           {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
-        {msg && <span className={styles.planStatusMsg}>{msg}</span>}
+        {msg && <span className={styles.planStatusMsg} role="status" data-testid="ps-msg">{msg}</span>}
       </div>
     </div>
   )
